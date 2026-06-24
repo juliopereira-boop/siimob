@@ -4,789 +4,1224 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Repasse — ALPHA ONE</title>
-  <link rel="stylesheet" href="/css/alpha.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body { overflow: hidden; }
-    .main-content { overflow: hidden; display: flex; flex-direction: column; }
+    :root {
+      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
+      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
+      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+      --shadow-lg:0 4px 16px rgba(0,0,0,.1),0 16px 48px rgba(0,0,0,.08);
+      --green:#059669; --blue:#2563eb; --violet:#7c3aed;
+      --amber:#d97706; --red:#dc2626; --teal:#0d9488;
+      --radius:10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    input,select,textarea,button{font-family:inherit}
+    a{text-decoration:none;color:inherit}
 
-    /* ── Filter bar ────────────────────────────── */
-    .filter-bar {
-      display: flex; gap: .5rem; padding: .5rem 1rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg2); flex-shrink: 0;
-      align-items: center; flex-wrap: wrap;
-    }
-    .filter-bar select {
-      font-size: .775rem; height: 1.9rem;
-      padding: 0 .625rem; min-width: 9rem; max-width: 14rem;
-    }
-    .filter-sep { width: 1px; height: 1.25rem; background: var(--border); margin: 0 .15rem; flex-shrink: 0; }
-    .filter-clear {
-      font-size: .72rem; color: var(--text3); cursor: pointer; padding: .2rem .5rem;
-      border-radius: .35rem; transition: all .15s;
-    }
-    .filter-clear:hover { color: var(--accent); background: rgba(124,58,237,.08); }
+    /* ── Header ── */
+    .hdr{background:#0f1520;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.5rem;gap:1rem}
+    .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
+    .hdr-logo-mark{width:28px;height:28px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:900;color:#fff}
+    .hdr-logo span{color:#7c3aed}
+    .hdr-right{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .hdr-user{font-size:.78rem;color:rgba(255,255,255,.6)}
+    .hdr-user strong{color:#fff}
+    .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);border-radius:7px;padding:.35rem .85rem;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-hdr:hover{background:rgba(255,255,255,.12)}
+    .btn-hdr-primary{background:#7c3aed;border-color:#7c3aed;color:#fff}
+    .btn-hdr-primary:hover{background:#6d28d9}
 
-    /* ── Board ──────────────────────────────────── */
-    .board-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05)}
+    .tab-btn{padding:.55rem 1.1rem;color:rgba(255,255,255,.45);font-size:.78rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+    .tab-btn:hover{color:rgba(255,255,255,.75)}
+    .tab-btn.active{color:#fff;border-bottom-color:#7c3aed}
 
-    /* ── Rich kanban card ───────────────────────── */
-    .k-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: .25rem; }
-    .k-card-name { font-size: .875rem; font-weight: 700; letter-spacing: -.015em; flex: 1; line-height: 1.3; }
-    .k-card-sub { font-size: .75rem; color: var(--text2); margin-bottom: .35rem; }
-    .k-card-cpf {
-      font-size: .7rem; color: var(--text3); font-family: monospace;
-      cursor: pointer; display: inline-flex; align-items: center; gap: .25rem;
-      margin-bottom: .4rem; transition: color .15s;
-    }
-    .k-card-cpf:hover { color: var(--text2); }
-    .k-card-badges { display: flex; flex-wrap: wrap; gap: .25rem; margin-bottom: .4rem; }
-    .k-card-val {
-      font-size: .78rem; font-weight: 700; color: #c4b5fd;
-      margin-bottom: .35rem;
-    }
-    .k-card-meta { display: flex; align-items: center; justify-content: space-between; margin-top: .35rem; }
-    .k-card-age { font-size: .68rem; color: var(--text3); }
+    /* ── Layout ── */
+    .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
 
-    /* Interview status pills inside card */
-    .k-interview {
-      display: flex; gap: .2rem; margin-top: .5rem;
-      border-top: 1px solid var(--border); padding-top: .45rem;
-    }
-    .int-pill {
-      flex: 1; text-align: center; font-size: .65rem; font-weight: 700;
-      padding: .22rem .2rem; border-radius: .35rem; cursor: pointer;
-      border: 1px solid transparent; transition: all .15s;
-      color: var(--text3); background: var(--bg3);
-    }
-    .int-pill:hover { border-color: var(--border); color: var(--text2); }
-    .int-pill.ip-pendente { background: rgba(107,114,128,.15); color: #9ca3af; border-color: rgba(107,114,128,.25); }
-    .int-pill.ip-agendada  { background: rgba(245,158,11,.12);  color: #fcd34d; border-color: rgba(245,158,11,.25); }
-    .int-pill.ip-aprovada  { background: rgba(16,185,129,.12);  color: #6ee7b7; border-color: rgba(16,185,129,.25); }
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:.35rem;border:none;border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-primary{background:#7c3aed;color:#fff}
+    .btn-primary:hover{background:#6d28d9}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
+    .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
+    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger:hover{background:#fecaca}
+    .btn-sm{padding:.3rem .7rem;font-size:.75rem}
+    .btn-xs{padding:.2rem .5rem;font-size:.7rem}
 
-    /* Eval chip */
-    .eval-chip {
-      display: inline-flex; align-items: center; gap: .25rem;
-      border-radius: 99px; padding: .18rem .55rem;
-      font-size: .67rem; font-weight: 700;
-    }
-    .eval-ok   { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.2); }
-    .eval-warn { background: rgba(245,158,11,.15);  color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
-    .eval-dead { background: rgba(239,68,68,.15);   color: #fca5a5; border: 1px solid rgba(239,68,68,.2); }
+    /* ── Panel ── */
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 
-    /* ── Detail panel extras ───────────────────── */
-    .dp-stage-row { display: flex; gap: .5rem; align-items: center; }
-    .dp-stage-row select { flex: 1; }
-    .val-badge {
-      display: inline-block;
-      background: var(--grad-soft);
-      border: 1px solid rgba(124,58,237,.2);
-      border-radius: var(--radius-sm);
-      padding: .35rem .75rem;
-      font-size: .875rem; font-weight: 700; color: #c4b5fd;
-    }
-    .obs-area {
-      width: 100%; min-height: 5.5rem; resize: vertical;
-      background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      padding: .625rem .875rem; font-size: .85rem; font-family: var(--font);
-      line-height: 1.6; outline: none; transition: border-color .15s, box-shadow .15s;
-    }
-    .obs-area:focus { border-color: rgba(124,58,237,.5); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
-    .pdf-parsed {
-      background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: .875rem;
-      font-size: .78rem; color: var(--text2); margin-top: .625rem; line-height: 1.6;
-    }
-    .dp-interview-row {
-      display: flex; gap: .5rem; margin-top: .25rem;
-    }
-    .dp-int-btn {
-      flex: 1; padding: .45rem; text-align: center;
-      font-size: .775rem; font-weight: 700; cursor: pointer;
-      border-radius: var(--radius-sm); border: 1px solid var(--border);
-      background: var(--bg3); color: var(--text2); transition: all .15s;
-    }
-    .dp-int-btn:hover { border-color: rgba(124,58,237,.4); color: var(--text); }
-    .dp-int-btn.active-pend { background: rgba(107,114,128,.2); color: #9ca3af; border-color: rgba(107,114,128,.4); }
-    .dp-int-btn.active-sch  { background: rgba(245,158,11,.15);  color: #fcd34d; border-color: rgba(245,158,11,.4); }
-    .dp-int-btn.active-ok   { background: rgba(16,185,129,.12);  color: #6ee7b7; border-color: rgba(16,185,129,.4); }
+    /* ── KPI ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.875rem;margin-bottom:1.25rem}
+    .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%}
+    .kpi-card.kpi-blue::before{background:var(--blue)}
+    .kpi-card.kpi-green::before{background:var(--green)}
+    .kpi-card.kpi-amber::before{background:var(--amber)}
+    .kpi-card.kpi-red::before{background:var(--red)}
+    .kpi-card.kpi-violet::before{background:var(--violet)}
+    .kpi-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.35rem}
+    .kpi-value{font-size:1.75rem;font-weight:800;letter-spacing:-.03em}
+    .kpi-sub{font-size:.72rem;color:var(--t3);margin-top:.2rem}
 
-    .new-card-modal .modal { max-width: 28rem; }
-    .pdf-btn {
-      display: flex; align-items: center; gap: .35rem;
-      font-size: .78rem;
-    }
+    /* ── Funnel ── */
+    .funnel-row{display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1px solid var(--border)}
+    .funnel-row:last-child{border-bottom:none}
+    .funnel-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .funnel-name{width:170px;font-size:.78rem;font-weight:600;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .funnel-bar-wrap{flex:1;background:#f0f2f7;border-radius:99px;height:7px;overflow:hidden}
+    .funnel-bar{height:100%;border-radius:99px;transition:width .4s}
+    .funnel-count{width:28px;font-size:.75rem;font-weight:700;text-align:right}
+    .funnel-pct{width:36px;font-size:.7rem;color:var(--t3);text-align:right}
+
+    /* ── Rank ── */
+    .rank-row{display:flex;align-items:center;gap:.75rem;padding:.45rem 0;border-bottom:1px solid var(--border)}
+    .rank-row:last-child{border-bottom:none}
+    .rank-num{width:18px;font-size:.72rem;font-weight:800;color:var(--t3);text-align:center}
+    .rank-name{flex:1;font-size:.78rem;font-weight:600}
+    .rank-val{font-size:.78rem;font-weight:700;color:var(--blue)}
+
+    /* ── Regional tabs ── */
+    .regional-tabs{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1rem}
+    .reg-tab{padding:.35rem .85rem;border-radius:99px;font-size:.75rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--t2);transition:all .15s}
+    .reg-tab:hover{border-color:var(--border2)}
+    .reg-tab.active{background:#0f1520;color:#fff;border-color:#0f1520}
+
+    /* ── Filters ── */
+    .filter-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+    .filter-bar input,.filter-bar select{padding:.38rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.78rem;background:var(--card);color:var(--t1)}
+    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+
+    /* ── Kanban ── */
+    .kanban-wrap{display:flex;gap:.875rem;overflow-x:auto;padding-bottom:1.25rem;align-items:flex-start}
+    .kanban-wrap::-webkit-scrollbar{height:5px}
+    .kanban-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+    .k-col{width:268px;flex-shrink:0;display:flex;flex-direction:column}
+    .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.625rem .75rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.78rem;font-weight:700}
+    .k-col-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.1rem .45rem;font-size:.68rem;font-weight:800}
+    .k-col-body{background:#e8ebf2;border-radius:0 0 var(--radius) var(--radius);padding:.5rem;min-height:100px;display:flex;flex-direction:column;gap:.45rem;transition:background .15s}
+    .k-col-body.drag-over{background:#dde1ea;outline:2px dashed rgba(124,58,237,.4);outline-offset:-2px}
+
+    /* ── Kanban card ── */
+    .k-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem .8rem;cursor:grab;box-shadow:var(--shadow);transition:all .2s;position:relative;border-left-width:4px;border-left-style:solid}
+    .k-card:active{cursor:grabbing}
+    .k-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .k-card.dragging{opacity:.4;transform:scale(.97)}
+
+    .kc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.4rem;margin-bottom:.35rem}
+    .kc-name{font-weight:700;font-size:.82rem;line-height:1.3;flex:1}
+    .kc-badges{display:flex;gap:.25rem;flex-wrap:wrap;flex-shrink:0;align-items:flex-start}
+    .badge-novo{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:99px;font-size:.6rem;font-weight:800;padding:.1rem .4rem}
+    .badge-days{background:#f0f2f7;color:var(--t3);border-radius:99px;font-size:.6rem;font-weight:700;padding:.1rem .4rem;font-family:'DM Mono',monospace}
+    .badge-days.warn{background:#fff7ed;color:#c2410c}
+    .badge-days.alert{background:#fef2f2;color:#dc2626}
+
+    .kc-cpf{font-size:.7rem;font-family:'DM Mono',monospace;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;gap:.2rem;margin-bottom:.3rem;transition:color .12s}
+    .kc-cpf:hover{color:var(--blue)}
+
+    .kc-prop{font-size:.74rem;color:var(--t2);margin-bottom:.3rem}
+    .kc-prop .empr{font-weight:700;color:var(--t1)}
+
+    .kc-chips{display:flex;gap:.25rem;flex-wrap:wrap;margin-bottom:.35rem}
+    .chip{display:inline-flex;align-items:center;gap:.2rem;border-radius:99px;padding:.15rem .5rem;font-size:.67rem;font-weight:600;white-space:nowrap}
+    .chip-partner{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+    .chip-manager{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+    .chip-re{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+    .chip-value{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+
+    .kc-entrevista{display:flex;gap:.2rem;flex-wrap:wrap;margin-bottom:.3rem}
+    .ent-btn{border:none;border-radius:99px;font-size:.65rem;font-weight:700;padding:.18rem .5rem;cursor:pointer;transition:all .15s;opacity:.5;background:var(--bg);color:var(--t2)}
+    .ent-btn.active{opacity:1}
+    .ent-pendente.active{background:#fef9c3;color:#854d0e}
+    .ent-agendado.active{background:#dbeafe;color:#1e40af}
+    .ent-aprovado.active{background:#dcfce7;color:#166534}
+    .ent-reprovado.active{background:#fee2e2;color:#991b1b}
+    .ent-btn:not(.active):hover{opacity:.8}
+
+    .obs-tooltip{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:#0f1520;color:#fff;border-radius:8px;padding:.6rem .75rem;font-size:.73rem;line-height:1.5;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.25);display:none;pointer-events:none;max-width:260px}
+    .obs-tooltip::after{content:'';position:absolute;top:100%;left:1rem;border:5px solid transparent;border-top-color:#0f1520}
+    .k-card:hover .obs-tooltip{display:block}
+
+    .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border)}
+    .kc-date{font-size:.65rem;color:var(--t4);font-family:'DM Mono',monospace}
+    .kc-actions{display:flex;gap:.2rem}
+    .kc-action-btn{width:22px;height:22px;border:none;border-radius:5px;background:var(--bg);color:var(--t3);cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .kc-action-btn:hover{background:var(--border);color:var(--t1)}
+
+    /* ── List table ── */
+    .tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow)}
+    table{width:100%;border-collapse:collapse;font-size:.78rem}
+    thead th{background:#f7f8fb;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:.625rem .875rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f9fafb}
+    tbody td{padding:.55rem .875rem;vertical-align:middle}
+    .tbl-stage-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:.35rem}
+    .tbl-name{font-weight:700}
+    .tbl-cpf{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--t3)}
+
+    /* ── Modal ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .modal-bg.hidden{display:none}
+    .modal{background:var(--card);border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:780px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+    .modal-hdr{padding:1rem 1.375rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-title{font-size:1rem;font-weight:800;letter-spacing:-.02em}
+    .modal-sub{font-size:.73rem;color:var(--t3);margin-top:.1rem}
+    .modal-close{width:28px;height:28px;border:none;border-radius:7px;background:var(--bg);color:var(--t2);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center}
+    .modal-close:hover{background:var(--border)}
+    .modal-tabs{display:flex;padding:0 1.375rem;border-bottom:1px solid var(--border);flex-shrink:0}
+    .modal-tab{padding:.5rem .875rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+    .modal-tab.active{color:var(--violet);border-bottom-color:var(--violet)}
+    .modal-body{flex:1;overflow-y:auto;padding:1.25rem 1.375rem}
+
+    /* ── Form ── */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.875rem}
+    .form-group{display:flex;flex-direction:column;gap:.3rem}
+    .form-group.full{grid-column:1/-1}
+    .form-group label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
+    .form-group input,.form-group select,.form-group textarea{padding:.48rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--t1);background:var(--card)}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .form-group textarea{resize:vertical;min-height:80px;font-family:'DM Sans',sans-serif}
+    .form-section-title{font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1.1rem 0 .75rem;display:flex;align-items:center;gap:.5rem}
+    .form-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* ── Timeline ── */
+    .timeline{display:flex;flex-direction:column}
+    .tl-item{display:flex;gap:.875rem;padding:.625rem 0;border-bottom:1px solid var(--border)}
+    .tl-item:last-child{border-bottom:none}
+    .tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
+    .tl-dot.stage{background:#ede9fe;color:#6d28d9}
+    .tl-dot.comment{background:#dbeafe;color:#1e40af}
+    .tl-dot.edit{background:#f0fdf4;color:#166534}
+    .tl-dot.doc{background:#fff7ed;color:#c2410c}
+    .tl-content{flex:1}
+    .tl-desc{font-size:.8rem;line-height:1.4}
+    .tl-meta{font-size:.7rem;color:var(--t3);margin-top:.15rem}
+
+    /* ── Fluxo popup ── */
+    .fluxo-popup{position:fixed;z-index:600;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:.875rem;min-width:230px}
+    .fluxo-popup.hidden{display:none}
+    .fluxo-stage-opt{display:flex;align-items:center;gap:.6rem;padding:.4rem .6rem;border-radius:7px;cursor:pointer;font-size:.8rem;font-weight:600;transition:background .12s}
+    .fluxo-stage-opt:hover{background:var(--bg)}
+    .fluxo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+    /* ── PDF zone ── */
+    .pdf-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s}
+    .pdf-zone:hover,.pdf-zone.drag-over{border-color:var(--violet);background:#f5f3ff}
+    .pdf-zone-icon{font-size:2rem;margin-bottom:.5rem}
+    .pdf-zone-text{font-size:.8rem;color:var(--t3);font-weight:600}
+
+    /* ── Config ── */
+    .config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.875rem}
+    .config-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+    .config-card:hover{border-color:rgba(124,58,237,.4);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+    .config-card-icon{font-size:1.5rem;margin-bottom:.75rem}
+    .config-card-name{font-size:.875rem;font-weight:700;margin-bottom:.25rem}
+    .config-card-desc{font-size:.73rem;color:var(--t2);line-height:1.5;flex:1}
+
+    /* ── Tags ── */
+    .tag-list{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.75rem}
+    .tag-item{display:inline-flex;align-items:center;gap:.3rem;background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:.2rem .65rem;font-size:.75rem;font-weight:600}
+    .tag-rm{cursor:pointer;color:var(--t4);transition:color .15s}
+    .tag-rm:hover{color:var(--red)}
+
+    /* ── Section title ── */
+    .sec-title{font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem}
+    .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* ── Spinner ── */
+    .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Toast ── */
+    #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem}
+    .toast{padding:.6rem 1rem;border-radius:9px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .2s ease}
+    @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+    .toast-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .toast-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+    .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
   </style>
 </head>
 <body>
-<div class="layout">
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">A1</div>
-      <div class="logo-text">ALPHA <span>ONE</span></div>
+
+<!-- ═══════ HEADER ═══════ -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo">
+      <div class="hdr-logo-mark">A1</div>
+      ALPHA <span>ONE</span>
     </div>
-    <div class="sidebar-nav">
-      <div class="nav-section-label">Menu</div>
-      <a href="" class="nav-item" id="nav-home"><span class="nav-icon">⬡</span> Dashboard</a>
-      <a href="#"  class="nav-item active"><span class="nav-icon">🔁</span> Repasse</a>
-      <a href="" class="nav-item" id="nav-registro"><span class="nav-icon">📋</span> Registro</a>
-      <div class="nav-section-label" style="margin-top:.75rem">Ferramentas</div>
-      <a href="" class="nav-item" id="nav-workflow"><span class="nav-icon">⚙</span> Workflow</a>
-      <a href="" class="nav-item" id="nav-config"><span class="nav-icon">🔧</span> Configurações</a>
+    <div class="hdr-right">
+      <div class="hdr-user" id="hdr-user"></div>
+      <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
+      <button class="btn-hdr" onclick="openPdfModal()">📄 Proposta PDF</button>
+      <a class="btn-hdr" id="btn-back">← Dashboard</a>
+      <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
-    <div class="sidebar-footer">
-      <div class="user-card">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <div class="user-info">
-          <div class="user-name" id="user-name">—</div>
-          <div class="user-role" id="user-role">—</div>
+  </div>
+  <div class="tabs-bar">
+    <div class="tab-btn active" onclick="switchTab('dashboard',this)">📊 Dashboard</div>
+    <div class="tab-btn" onclick="switchTab('pipeline',this)">🔁 Pipeline</div>
+    <div class="tab-btn" onclick="switchTab('repasses',this)">📋 Repasses</div>
+    <div class="tab-btn" onclick="switchTab('config',this)">⚙ Configurações</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div id="tab-dashboard">
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-blue"><div class="kpi-label">Total</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">repasses ativos</div></div>
+      <div class="kpi-card kpi-amber"><div class="kpi-label">Em análise</div><div class="kpi-value" id="kpi-pending">—</div><div class="kpi-sub">pendentes</div></div>
+      <div class="kpi-card kpi-green"><div class="kpi-label">Aprovados</div><div class="kpi-value" id="kpi-approved">—</div><div class="kpi-sub">etapas finais</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-label">Novos</div><div class="kpi-value" id="kpi-new">—</div><div class="kpi-sub">não visualizados</div></div>
+      <div class="kpi-card kpi-violet"><div class="kpi-label">Entrevistas</div><div class="kpi-value" id="kpi-interviews">—</div><div class="kpi-sub">agendadas</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:1rem">
+      <div class="panel" style="padding:1.25rem">
+        <div class="sec-title">Funil por etapa</div>
+        <div id="funnel-list"><div class="spinner"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="panel" style="padding:1.25rem;flex:1">
+          <div class="sec-title">Top Correspondentes</div>
+          <div id="rank-list"><div class="spinner"></div></div>
+        </div>
+        <div class="panel" style="padding:1.25rem">
+          <div class="sec-title">Por Regional</div>
+          <div id="regional-rank-list"><div class="spinner"></div></div>
         </div>
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="a1Logout()" style="margin-top:.5rem">Sair da conta</button>
     </div>
-  </nav>
+  </div>
 
-  <div class="main-content">
-    <!-- Topbar -->
-    <div class="topbar">
-      <div class="topbar-title">Gestão de Repasse</div>
-      <div class="topbar-actions">
-        <div class="search-wrap">
-          <input id="search" type="text" placeholder="Buscar cliente, unidade, CPF...">
-        </div>
-        <button class="btn btn-ghost btn-sm pdf-btn" onclick="triggerGlobalPDF()" title="Upload de proposta PDF">
-          📎 Upload PDF
-        </button>
-        <button class="btn btn-primary" onclick="openNewModal()">+ Novo card</button>
-        <div class="presence-bar" style="border:none;padding:0;background:transparent" id="presence-count"></div>
-      </div>
-    </div>
-
-    <!-- Filter bar -->
-    <div class="filter-bar" id="filter-bar" style="display:none">
-      <select id="f-regional" onchange="applyFilters()">
-        <option value="">Todas as regionais</option>
-      </select>
-      <div class="filter-sep"></div>
-      <select id="f-dev" onchange="applyFilters()">
-        <option value="">Todos empreendimentos</option>
-      </select>
-      <div class="filter-sep"></div>
-      <select id="f-partner" onchange="applyFilters()">
-        <option value="">Todos parceiros</option>
-      </select>
-      <div class="filter-sep"></div>
-      <select id="f-interview" onchange="applyFilters()">
-        <option value="">Entrevista: todas</option>
+  <!-- ══════════ PIPELINE ══════════ -->
+  <div id="tab-pipeline" style="display:none">
+    <div class="regional-tabs" id="regional-tabs"></div>
+    <div class="filter-bar">
+      <input id="f-search" type="text" placeholder="🔍 Buscar cliente, CPF...">
+      <select id="f-empr"><option value="">Empreendimento</option></select>
+      <select id="f-parceiro"><option value="">Correspondente</option></select>
+      <select id="f-re"><option value="">Imobiliária</option></select>
+      <select id="f-entrevista">
+        <option value="">Entrevista</option>
         <option value="pendente">Pendente</option>
-        <option value="agendada">Agendada</option>
-        <option value="aprovada">Aprovada</option>
+        <option value="agendado">Agendada</option>
+        <option value="aprovado">Aprovada</option>
+        <option value="reprovado">Reprovada</option>
       </select>
-      <div class="filter-sep"></div>
-      <span class="filter-clear" onclick="clearFilters()">✕ Limpar filtros</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Limpar</button>
+      <span id="filter-count" style="font-size:.72rem;color:var(--t3)"></span>
     </div>
+    <div class="kanban-wrap" id="kanban-board"></div>
+  </div>
 
-    <div class="board-area" id="board-area">
-      <div class="group-tabs" id="group-tabs" style="display:none"></div>
-      <div class="board-outer" id="board"></div>
+  <!-- ══════════ REPASSES (list) ══════════ -->
+  <div id="tab-repasses" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+      <div style="display:flex;gap:.5rem">
+        <input id="tbl-search" type="text" placeholder="🔍 Buscar..." style="padding:.4rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem;width:210px">
+        <select id="tbl-stage-filter" style="padding:.4rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.78rem">
+          <option value="">Todas as etapas</option>
+        </select>
+      </div>
+      <span id="tbl-count" style="font-size:.75rem;color:var(--t3)"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th><th>CPF</th><th>Empreendimento</th><th>Etapa</th>
+            <th>Correspondente</th><th>Valor</th><th>Entrevista</th><th>Dias</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="cases-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════ CONFIGURAÇÕES ══════════ -->
+  <div id="tab-config" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div>
+        <div class="sec-title">Workflow & Etapas</div>
+        <div class="config-grid">
+          <a class="config-card" id="link-wf">
+            <div class="config-card-icon">⚙</div>
+            <div class="config-card-name">Editor de Workflow</div>
+            <div class="config-card-desc">Edite etapas, conexões e regionais do pipeline no editor visual de nós.</div>
+            <div style="margin-top:.875rem"><span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:99px;padding:.15rem .55rem;font-size:.7rem;font-weight:700">✓ Disponível</span></div>
+          </a>
+          <a class="config-card" id="link-admin">
+            <div class="config-card-icon">👥</div>
+            <div class="config-card-name">Usuários & Parceiros</div>
+            <div class="config-card-desc">Gerencie equipe, correspondentes, CCA e controle de acesso.</div>
+            <div style="margin-top:.875rem"><span style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;border-radius:99px;padding:.15rem .55rem;font-size:.7rem;font-weight:700">Admin</span></div>
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="sec-title">Flags de etapa</div>
+        <div class="panel" style="padding:1.25rem">
+          <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.78rem">Carregando...</span></div>
+          <div style="display:flex;gap:.5rem">
+            <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.4rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem">
+            <button class="btn btn-primary btn-sm" onclick="addFlag()">+ Adicionar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1.25rem">
+      <div class="sec-title">Regionais cadastradas</div>
+      <div class="panel" style="padding:1.25rem">
+        <p style="font-size:.78rem;color:var(--t2);margin-bottom:.875rem">Regionais são definidas pelo <code style="color:#7c3aed;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.</p>
+        <div class="tag-list" id="regionals-cfg-list"><span style="color:var(--t3);font-size:.78rem">Carregando...</span></div>
+        <a class="btn btn-ghost btn-sm" id="link-wf-groups">Editar no Workflow →</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<!-- ═══════ MODAL: Card detail ═══════ -->
+<div class="modal-bg hidden" id="modal-card-bg">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="mc-title">Repasse</div>
+        <div class="modal-sub" id="mc-sub"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <select id="mc-stage-sel" style="padding:.32rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.78rem;font-weight:600"></select>
+        <button class="modal-close" onclick="closeModal('modal-card-bg')">✕</button>
+      </div>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-mtab="det" onclick="switchModalTab('det',this)">Dados</div>
+      <div class="modal-tab" data-mtab="hist" onclick="switchModalTab('hist',this)">Histórico</div>
+      <div class="modal-tab" data-mtab="evts" onclick="switchModalTab('evts',this)">Eventos</div>
+      <div class="modal-tab" data-mtab="docs" onclick="switchModalTab('docs',this)">Documentos</div>
+    </div>
+    <div class="modal-body" id="mc-body"></div>
+    <div style="padding:.875rem 1.375rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <button class="btn btn-danger btn-sm" onclick="archiveCase()">🗑 Arquivar</button>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-ghost" onclick="closeModal('modal-card-bg')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCase()">Salvar alterações</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Detail panel -->
-<div class="detail-panel" id="dp">
-  <div class="detail-header">
-    <div>
-      <div style="font-size:1rem;font-weight:800;letter-spacing:-.02em" id="dp-name">—</div>
-      <div style="font-size:.775rem;color:var(--text2);margin-top:.1rem" id="dp-subtitle">—</div>
-    </div>
-    <div style="display:flex;gap:.4rem">
-      <button class="btn btn-ghost btn-icon" onclick="closeDetail()" title="Fechar (Esc)">✕</button>
-    </div>
-  </div>
-
-  <div class="detail-body">
-    <!-- Stage -->
-    <div class="detail-section">📍 Etapa atual</div>
-    <div class="dp-stage-row">
-      <select id="dp-stage" onchange="changeStage()"></select>
-      <button class="btn btn-ghost btn-sm" onclick="changeStage()">Mover</button>
-    </div>
-
-    <!-- Interview -->
-    <div class="detail-section" style="margin-top:1rem">🎙 Status da entrevista</div>
-    <div class="dp-interview-row" id="dp-interview-row">
-      <div class="dp-int-btn" id="dp-int-pend" onclick="setInterview('pendente')">⏳ Pendente</div>
-      <div class="dp-int-btn" id="dp-int-sch"  onclick="setInterview('agendada')">📅 Agendada</div>
-      <div class="dp-int-btn" id="dp-int-ok"   onclick="setInterview('aprovada')">✓ Aprovada</div>
-    </div>
-
-    <!-- Client -->
-    <div class="detail-section" style="margin-top:1rem">👤 Cliente</div>
-    <div class="detail-grid">
-      <div class="detail-field"><label>Nome</label><div class="val" id="dp-cname">—</div></div>
-      <div class="detail-field"><label>CPF</label>
-        <div class="val" id="dp-ccpf" style="cursor:pointer" title="Clique para copiar" onclick="copyVal(this)">—</div>
-      </div>
-      <div class="detail-field"><label>Telefone</label><div class="val" id="dp-cphone">—</div></div>
-      <div class="detail-field"><label>E-mail</label><div class="val" id="dp-cemail">—</div></div>
-    </div>
-
-    <!-- Property -->
-    <div class="detail-section">🏠 Imóvel</div>
-    <div class="detail-grid-3">
-      <div class="detail-field"><label>Empreendimento</label><div class="val" id="dp-dev">—</div></div>
-      <div class="detail-field"><label>Bloco</label><div class="val" id="dp-block">—</div></div>
-      <div class="detail-field"><label>Unidade</label><div class="val" id="dp-unit">—</div></div>
-    </div>
-    <div class="detail-grid" style="margin-top:.75rem">
-      <div class="detail-field">
-        <label>Valor do contrato</label>
-        <div class="val" id="dp-value">—</div>
-      </div>
-      <div class="detail-field">
-        <label>Validade avaliação</label>
-        <div class="val" id="dp-eval">—</div>
-      </div>
-    </div>
-
-    <!-- Partner -->
-    <div class="detail-section">🤝 Parceiro / Corretor</div>
-    <div class="detail-grid">
-      <div class="detail-field"><label>Parceiro / CCA</label><div class="val" id="dp-partner">—</div></div>
-      <div class="detail-field"><label>Imobiliária</label><div class="val" id="dp-realstate">—</div></div>
-      <div class="detail-field"><label>Corretor</label><div class="val" id="dp-broker">—</div></div>
-      <div class="detail-field"><label>Tel. corretor</label><div class="val" id="dp-bphone">—</div></div>
-    </div>
-
-    <!-- PDF -->
-    <div class="detail-section">📄 Proposta (PDF)</div>
-    <div class="pdf-drop" id="pdf-drop"
-         onclick="document.getElementById('pdf-file').click()"
-         ondragover="event.preventDefault();this.classList.add('drag')"
-         ondragleave="this.classList.remove('drag')"
-         ondrop="handleDrop(event)">
-      <div class="pdf-drop-icon">📎</div>
-      <div>Clique ou arraste o PDF da proposta</div>
-      <div style="font-size:.72rem;margin-top:.25rem;color:var(--text3)">Formatos aceitos: PDF</div>
-    </div>
-    <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="handlePDF(event)">
-    <div id="pdf-parsed" style="display:none"></div>
-
-    <!-- Observations -->
-    <div class="detail-section">📝 Observações</div>
-    <textarea class="obs-area" id="dp-obs" placeholder="Anotações internas, pendências, contato..."></textarea>
-    <button class="btn btn-primary btn-full" style="margin-top:.625rem" onclick="saveObs()">
-      Salvar observações
-    </button>
-
-    <!-- Timeline -->
-    <div class="detail-section">🕐 Histórico</div>
-    <div class="timeline" id="dp-timeline">
-      <div style="color:var(--text3);font-size:.8rem">Carregando...</div>
-    </div>
-  </div>
-</div>
-
-<!-- New card modal -->
-<div id="new-modal" class="modal-backdrop new-card-modal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Novo card de repasse</div>
-      <button class="btn btn-ghost btn-icon" onclick="closeNewModal()">✕</button>
+<!-- ═══════ MODAL: New case ═══════ -->
+<div class="modal-bg hidden" id="modal-new-bg">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Repasse</div>
+      <button class="modal-close" onclick="closeModal('modal-new-bg')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Nome do cliente *</label>
-        <input id="nc-name" type="text" placeholder="Maria da Silva" autofocus>
-      </div>
-      <div class="detail-grid">
-        <div class="form-group" style="margin:0">
-          <label>CPF</label>
-          <input id="nc-cpf" type="text" placeholder="000.000.000-00" maxlength="14">
+      <div class="form-grid">
+        <div class="form-group full"><label>Cliente *</label><input id="n-name" type="text" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF</label><input id="n-cpf" type="text" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>Telefone</label><input id="n-phone" type="text" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>E-mail</label><input id="n-email" type="email"></div>
+        <div class="form-group full"><label>Empreendimento</label><input id="n-development" type="text" list="dl-developments"></div>
+        <div class="form-group"><label>Bloco</label><input id="n-block" type="text"></div>
+        <div class="form-group"><label>Unidade</label><input id="n-unit" type="text"></div>
+        <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="number" step="0.01"></div>
+        <div class="form-group"><label>Correspondente</label><input id="n-partner" type="text" list="dl-partners"></div>
+        <div class="form-group"><label>Imobiliária</label><input id="n-re" type="text"></div>
+        <div class="form-group"><label>Corretor</label><input id="n-broker" type="text"></div>
+        <div class="form-group"><label>Gerente</label><input id="n-manager" type="text"></div>
+        <div class="form-group"><label>Etapa inicial</label>
+          <select id="n-stage"><option value="">— Selecione —</option></select>
         </div>
-        <div class="form-group" style="margin:0">
-          <label>Telefone</label>
-          <input id="nc-phone" type="tel" placeholder="(00) 90000-0000">
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:.75rem">
-        <label>Empreendimento</label>
-        <input id="nc-dev" type="text" placeholder="Residencial Aurora">
-      </div>
-      <div class="detail-grid" style="margin-top:.75rem">
-        <div class="form-group" style="margin:0"><label>Bloco</label><input id="nc-block" placeholder="A"></div>
-        <div class="form-group" style="margin:0"><label>Unidade</label><input id="nc-unit" placeholder="101"></div>
-      </div>
-      <div class="form-group" style="margin-top:.75rem">
-        <label>Parceiro / CCA</label>
-        <input id="nc-partner" type="text" placeholder="Nome do parceiro">
+        <div class="form-group"><label>Venc. Avaliação</label><input id="n-eval" type="date"></div>
+        <div class="form-group full"><label>Observações</label><textarea id="n-obs" rows="3"></textarea></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeNewModal()">Cancelar</button>
-      <button class="btn btn-primary" id="nc-btn" onclick="createCard()">Criar card</button>
+    <div style="padding:.875rem 1.375rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createCase()">Criar Repasse</button>
     </div>
   </div>
 </div>
 
-<!-- Global PDF upload (hidden) -->
-<input type="file" id="pdf-global" accept=".pdf" style="display:none" onchange="handleGlobalPDF(event)">
+<!-- ═══════ MODAL: PDF ═══════ -->
+<div class="modal-bg hidden" id="modal-pdf-bg">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hdr">
+      <div class="modal-title">Upload de Proposta PDF</div>
+      <button class="modal-close" onclick="closeModal('modal-pdf-bg')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pdf-zone" id="pdf-zone" onclick="document.getElementById('pdf-input').click()">
+        <div class="pdf-zone-icon">📄</div>
+        <div class="pdf-zone-text">Clique ou arraste um PDF aqui</div>
+        <div style="font-size:.72rem;color:var(--t4);margin-top:.25rem">Proposta bancária ou análise</div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePdfFile(this.files[0])">
+      <div id="pdf-processing" style="display:none;text-align:center;padding:2rem">
+        <div class="spinner" style="margin:0 auto .75rem"></div>
+        <div style="font-size:.8rem;color:var(--t3)">Processando PDF...</div>
+      </div>
+      <div id="pdf-preview" style="display:none">
+        <div style="font-size:.75rem;font-weight:700;color:var(--t2);margin-bottom:.875rem">Dados extraídos — confirme antes de importar:</div>
+        <div class="form-grid">
+          <div class="form-group full"><label>Cliente</label><input id="pdf-name" type="text"></div>
+          <div class="form-group"><label>CPF</label><input id="pdf-cpf" type="text"></div>
+          <div class="form-group"><label>Valor</label><input id="pdf-value" type="text"></div>
+          <div class="form-group full"><label>Empreendimento</label><input id="pdf-development" type="text"></div>
+          <div class="form-group full"><label>Correspondente</label><input id="pdf-partner" type="text"></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.875rem 1.375rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pdf-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-pdf-import" style="display:none" onclick="importFromPdf()">Importar dados →</button>
+    </div>
+  </div>
+</div>
 
-<div id="a1-toast"></div>
+<datalist id="dl-developments"></datalist>
+<datalist id="dl-partners"></datalist>
+<div class="fluxo-popup hidden" id="fluxo-popup"></div>
+<div id="toast-wrap"></div>
+
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-let STAGES = [], CARDS = [], GROUPS = [], ACTIVE_GROUP = null, ACTIVE_CARD = null;
-let SEARCH = '', F_DEV = '', F_PARTNER = '', F_INTERVIEW = '';
+'use strict';
 
+const G = {
+  user: null, slug: null,
+  stages: [], cases: [], groups: [],
+  currentGroup: '__all__',
+  filters: { search:'', empr:'', parceiro:'', re:'', entrevista:'' },
+  activeTab: 'dashboard',
+  editingCaseId: null, editingCaseData: null,
+  pdfData: null,
+  flags: [],
+  edges: {},
+};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
-  let user;
-  try {
-    user = a1RequireAuth();
-    await a1RequireModule('repasse');
-  } catch { return; }
+  try { G.user = a1RequireAuth(); } catch { return; }
+  try { a1RequireModule('repasse'); } catch { return; }
+  G.slug = A1.slug;
 
-  const slug = A1.slug;
-  document.getElementById('nav-home').href     = `/${slug}/dashboard`;
-  document.getElementById('nav-registro').href = `/${slug}/registro`;
-  document.getElementById('nav-workflow').href = `/${slug}/workflow`;
-  document.getElementById('nav-config').href   = `/${slug}/configuracoes`;
+  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> · ${esc(G.user.role)}`;
+  document.getElementById('btn-back').href  = `/${G.slug}/dashboard`;
+  document.getElementById('link-wf').href   = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('link-admin').href = `/${G.slug}/admin`;
+  document.getElementById('link-wf-groups').href = `/${G.slug}/workflow?module=repasse`;
 
-  const init2 = user.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  document.getElementById('user-avatar').textContent = init2;
-  document.getElementById('user-name').textContent   = user.name;
-  document.getElementById('user-role').textContent   = user.role;
-
-  await Promise.all([loadStages(), loadCards()]);
-  buildFilterOptions();
-  renderGroups();
-  renderBoard();
+  await loadData();
+  renderDashboard();
+  renderPipeline();
+  renderList();
+  loadFlags();
   a1StartHeartbeat('repasse');
-  renderPresence();
-
-  let searchT;
-  document.getElementById('search').addEventListener('input', e => {
-    clearTimeout(searchT);
-    searchT = setTimeout(() => { SEARCH = e.target.value.toLowerCase(); renderBoard(); }, 220);
-  });
-
-  document.getElementById('nc-cpf').addEventListener('input', maskCPF);
 }
 
-async function loadStages() {
-  STAGES = await fetch(
-    `${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`,
-    { headers: A1.headers() }
-  ).then(r=>r.json()).catch(()=>[]);
+// ─── Data ─────────────────────────────────────────────────────────────────────
+async function loadData() {
+  const [stages, cases, edgeRows] = await Promise.all([
+    fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() })
+      .then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc`, { headers: A1.headers() })
+      .then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() })
+      .then(r=>r.json()).catch(()=>[]),
+  ]);
 
-  const seen = new Set();
-  GROUPS = [];
-  STAGES.forEach(s => {
-    if (s.group_key && !seen.has(s.group_key)) { seen.add(s.group_key); GROUPS.push(s.group_key); }
-  });
-}
-
-async function loadCards() {
-  CARDS = await fetch(
-    `${A1.rest('a1_cases')}?module_key=eq.repasse&order=updated_at.desc`,
-    { headers: A1.headers() }
-  ).then(r=>r.json()).catch(()=>[]);
-}
-
-function buildFilterOptions() {
-  const devSel  = document.getElementById('f-dev');
-  const partSel = document.getElementById('f-partner');
-  const regSel  = document.getElementById('f-regional');
-
-  const devs  = [...new Set(CARDS.map(c=>c.development).filter(Boolean))].sort();
-  const parts = [...new Set(CARDS.map(c=>c.partner_name).filter(Boolean))].sort();
-
-  devs.forEach(d  => { const o=document.createElement('option'); o.value=d; o.textContent=d; devSel.appendChild(o); });
-  parts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; partSel.appendChild(o); });
-
-  GROUPS.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; regSel.appendChild(o); });
-
-  if (GROUPS.length || devs.length || parts.length) {
-    document.getElementById('filter-bar').style.display = 'flex';
+  G.stages = stages;
+  G.cases  = cases;
+  G.edges  = {};
+  for (const e of edgeRows) {
+    if (!G.edges[e.from_id]) G.edges[e.from_id] = [];
+    G.edges[e.from_id].push(e.to_id);
   }
+  G.groups = [...new Set(stages.map(s=>s.group_key).filter(Boolean))];
+  populateFilterOptions();
 }
 
-function applyFilters() {
-  F_DEV       = document.getElementById('f-dev').value;
-  F_PARTNER   = document.getElementById('f-partner').value;
-  F_INTERVIEW = document.getElementById('f-interview').value;
-  const reg   = document.getElementById('f-regional').value;
-  ACTIVE_GROUP = reg || null;
-  renderGroups();
-  renderBoard();
+function populateFilterOptions() {
+  const emprs    = [...new Set(G.cases.map(c=>c.development).filter(Boolean))].sort();
+  const partners = [...new Set(G.cases.map(c=>c.partner_name).filter(Boolean))].sort();
+  const res      = [...new Set(G.cases.map(c=>c.real_estate_name).filter(Boolean))].sort();
+
+  document.getElementById('dl-developments').innerHTML = emprs.map(e=>`<option value="${esc(e)}">`).join('');
+  document.getElementById('dl-partners').innerHTML     = partners.map(p=>`<option value="${esc(p)}">`).join('');
+
+  document.getElementById('f-empr').innerHTML     = '<option value="">Empreendimento</option>' + emprs.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  document.getElementById('f-parceiro').innerHTML = '<option value="">Correspondente</option>' + partners.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  document.getElementById('f-re').innerHTML       = '<option value="">Imobiliária</option>'   + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
+
+  document.getElementById('tbl-stage-filter').innerHTML =
+    '<option value="">Todas as etapas</option>' +
+    G.stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
 
-function clearFilters() {
-  document.getElementById('f-dev').value       = '';
-  document.getElementById('f-partner').value   = '';
-  document.getElementById('f-interview').value = '';
-  document.getElementById('f-regional').value  = '';
-  F_DEV = F_PARTNER = F_INTERVIEW = '';
-  ACTIVE_GROUP = null;
-  renderGroups();
-  renderBoard();
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  ['dashboard','pipeline','repasses','config'].forEach(t =>
+    document.getElementById('tab-'+t).style.display = t===tab?'':'none'
+  );
+  G.activeTab = tab;
 }
 
-function renderGroups() {
-  const bar = document.getElementById('group-tabs');
-  if (!GROUPS.length) return;
-  bar.style.display = 'flex';
-  bar.innerHTML = `<div class="group-tab ${!ACTIVE_GROUP?'active':''}" onclick="setGroup(null)">Todos</div>` +
-    GROUPS.map(g => `<div class="group-tab ${ACTIVE_GROUP===g?'active':''}" onclick="setGroup('${g}')">${g}</div>`).join('');
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const sm = stageMap();
+  const total      = G.cases.length;
+  const pending    = G.cases.filter(c=>sm[c.stage_id]?.is_pending).length;
+  const approved   = G.cases.filter(c=>sm[c.stage_id]?.is_final).length;
+  const isNew      = G.cases.filter(c=>c.is_new).length;
+  const interviews = G.cases.filter(c=>c.payload?.entrevista_status==='agendado').length;
+
+  setT('kpi-total', total);
+  setT('kpi-pending', pending);
+  setT('kpi-approved', approved);
+  setT('kpi-new', isNew);
+  setT('kpi-interviews', interviews);
+
+  // Funnel
+  const fEl = document.getElementById('funnel-list');
+  if (!G.stages.length) { fEl.innerHTML='<span style="color:var(--t3);font-size:.78rem">Nenhuma etapa configurada. <a href="/'+G.slug+'/workflow?module=repasse" style="color:var(--violet)">Editar workflow →</a></span>'; }
+  else {
+    const counts  = {};
+    for (const c of G.cases) counts[c.stage_id] = (counts[c.stage_id]||0)+1;
+    const maxN = Math.max(1,...G.stages.map(s=>counts[s.id]||0));
+    fEl.innerHTML = G.stages.map(s=>{
+      const n = counts[s.id]||0;
+      const pct = total ? Math.round(n/total*100):0;
+      return `<div class="funnel-row">
+        <div class="funnel-dot" style="background:${s.color}"></div>
+        <div class="funnel-name" title="${esc(s.name)}">${esc(s.name)}</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.round(n/maxN*100)}%;background:${s.color}"></div></div>
+        <div class="funnel-count">${n}</div>
+        <div class="funnel-pct">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Partner ranking
+  const pCounts={};
+  for (const c of G.cases) if(c.partner_name) pCounts[c.partner_name]=(pCounts[c.partner_name]||0)+1;
+  const pSorted = Object.entries(pCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('rank-list').innerHTML = pSorted.length
+    ? pSorted.map(([n,c],i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(n)}</div><div class="rank-val">${c}</div></div>`).join('')
+    : '<span style="color:var(--t3);font-size:.78rem">Nenhum dado.</span>';
+
+  // Regional ranking
+  const rCounts={};
+  for (const c of G.cases){ const g=sm[c.stage_id]?.group_key||'Sem regional'; rCounts[g]=(rCounts[g]||0)+1; }
+  const rSorted = Object.entries(rCounts).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('regional-rank-list').innerHTML = rSorted.length
+    ? rSorted.map(([n,c],i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(n)}</div><div class="rank-val">${c}</div></div>`).join('')
+    : '<span style="color:var(--t3);font-size:.78rem">Nenhum dado.</span>';
 }
 
-function setGroup(g) { ACTIVE_GROUP = g; document.getElementById('f-regional').value = g||''; renderGroups(); renderBoard(); }
+// ─── Pipeline ─────────────────────────────────────────────────────────────────
+function renderPipeline() {
+  renderRegionalTabs();
+  renderKanban();
+}
 
-function cols() { return ACTIVE_GROUP ? STAGES.filter(s => s.group_key === ACTIVE_GROUP) : STAGES; }
+function renderRegionalTabs() {
+  const tabs = [{ key:'__all__',label:'Todos' },...G.groups.map(g=>({key:g,label:g}))];
+  document.getElementById('regional-tabs').innerHTML = tabs.map(t=>
+    `<div class="reg-tab ${G.currentGroup===t.key?'active':''}" onclick="selectGroup('${esc(t.key)}')">${esc(t.label)}</div>`
+  ).join('');
+}
 
-function filteredCards(stageId) {
-  return CARDS.filter(c => {
-    if (c.stage_id !== stageId) return false;
-    if (F_DEV && c.development !== F_DEV) return false;
-    if (F_PARTNER && c.partner_name !== F_PARTNER) return false;
-    if (F_INTERVIEW) {
-      const ei = (c.payload?.entrevista) || 'pendente';
-      if (ei !== F_INTERVIEW) return false;
-    }
-    if (SEARCH) {
-      const hay = [c.client_name, c.client_cpf, c.unit, c.development, c.partner_name].join(' ').toLowerCase();
-      if (!hay.includes(SEARCH)) return false;
-    }
+function selectGroup(k) { G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
+
+function filteredCases() {
+  const { search, empr, parceiro, re, entrevista } = G.filters;
+  const sm = stageMap();
+  const isPartner = G.user.role==='partner';
+  return G.cases.filter(c => {
+    if (isPartner && c.partner_name!==G.user.name) return false;
+    const stage = sm[c.stage_id];
+    if (G.currentGroup!=='__all__' && stage?.group_key!==G.currentGroup) return false;
+    if (search){ const q=search.toLowerCase(),hay=`${c.client_name} ${c.client_cpf} ${c.development} ${c.partner_name}`.toLowerCase(); if(!hay.includes(q)) return false; }
+    if (empr    && c.development!==empr)             return false;
+    if (parceiro && c.partner_name!==parceiro)        return false;
+    if (re       && c.real_estate_name!==re)          return false;
+    if (entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
   });
 }
 
-function evalChip(d) {
-  if (!d) return '';
-  const days = Math.ceil((new Date(d) - Date.now()) / 86400000);
-  const cls  = days < 0 ? 'eval-dead' : days <= 7 ? 'eval-warn' : 'eval-ok';
-  const lbl  = days < 0 ? `Vencido` : `${days}d`;
-  return `<span class="eval-chip ${cls}">${lbl}</span>`;
-}
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  const filtered = filteredCases();
+  const sm = stageMap();
 
-function timeInStage(enteredAt) {
-  if (!enteredAt) return '';
-  const h = Math.round((Date.now() - new Date(enteredAt)) / 3600000);
-  if (h < 1)  return '<1h';
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  return d < 7 ? `${d}d` : `${Math.floor(d/7)}sem`;
-}
+  let vis = G.stages;
+  if (G.currentGroup!=='__all__') vis = G.stages.filter(s=>s.group_key===G.currentGroup||!s.group_key);
 
-function maskCPF(e) {
-  let v = e.target.value.replace(/\D/g,'').slice(0,11);
-  if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
-  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
-  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
-  e.target.value = v;
-}
-
-function renderCard(c) {
-  const val = c.contract_value
-    ? `R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
-    : '';
-
-  const cpfRaw = (c.client_cpf||'').replace(/\D/g,'');
-  const cpfFmt = cpfRaw.length === 11
-    ? cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4')
-    : c.client_cpf || '';
-  const cpfMask = cpfFmt ? cpfFmt.slice(0,7) + '***-**' : '';
-
-  const age = timeInStage(c.stage_entered_at);
-  const ei  = (c.payload?.entrevista) || 'pendente';
-
-  const ipiClasses = {
-    pendente: 'ip-pendente',
-    agendada: 'ip-agendada',
-    aprovada: 'ip-aprovada',
-  };
-
-  return `
-    <div class="k-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
-      <div class="k-card-header">
-        <div class="k-card-name">${c.client_name}</div>
-        ${c.is_new ? '<span class="badge badge-blue" style="flex-shrink:0">Novo</span>' : ''}
-      </div>
-      <div class="k-card-sub">${[c.development, [c.block,c.unit].filter(Boolean).join('/')].filter(Boolean).join(' · ') || '<span style="color:var(--text3)">Imóvel não informado</span>'}</div>
-      ${cpfMask ? `<div class="k-card-cpf" onclick="event.stopPropagation();copyText('${cpfFmt}')" title="Copiar CPF">${cpfMask} <span style="opacity:.5">📋</span></div>` : ''}
-      ${val ? `<div class="k-card-val">${val}</div>` : ''}
-      <div class="k-card-badges">
-        ${c.partner_name    ? `<span class="badge badge-purple" style="font-size:.67rem">${c.partner_name}</span>` : ''}
-        ${c.real_estate_name? `<span class="badge badge-gray"   style="font-size:.67rem">${c.real_estate_name}</span>` : ''}
-        ${evalChip(c.evaluation_expiry)}
-      </div>
-      <div class="k-interview" onclick="event.stopPropagation()">
-        <div class="int-pill ${ei==='pendente'?'ip-pendente':''}" onclick="setInterviewCard('${c.id}','pendente')">⏳ Pendente</div>
-        <div class="int-pill ${ei==='agendada'?'ip-agendada':''}" onclick="setInterviewCard('${c.id}','agendada')">📅 Agendada</div>
-        <div class="int-pill ${ei==='aprovada'?'ip-aprovada':''}" onclick="setInterviewCard('${c.id}','aprovada')">✓ Aprovada</div>
-      </div>
-      ${age ? `<div class="k-card-meta"><span class="k-card-age">⏱ ${age} nesta etapa</span></div>` : ''}
-    </div>`;
-}
-
-function renderBoard() {
-  const board  = document.getElementById('board');
-  const stages = cols();
-  board.innerHTML = '';
-
-  if (!stages.length) {
-    board.innerHTML = '<div style="color:var(--text3);padding:2rem;font-size:.875rem">Nenhuma etapa configurada. <a href="" id="wf-link" style="color:var(--accent)">Configure o workflow →</a></div>';
-    const l = document.getElementById('wf-link');
-    if (l) l.href = `/${A1.slug}/workflow`;
+  if (!vis.length) {
+    board.innerHTML = `<div style="color:var(--t3);font-size:.8rem;padding:1rem">Nenhuma etapa configurada. <a href="/${G.slug}/workflow?module=repasse" style="color:var(--violet)">Editar workflow →</a></div>`;
     return;
   }
 
-  stages.forEach(s => {
-    const cs  = filteredCards(s.id);
-    const col = document.createElement('div');
-    col.className = 'kanban-col';
-    const dotColor = s.color || 'var(--accent)';
-    col.innerHTML = `
-      <div class="kanban-col-header">
-        <div class="col-dot" style="background:${dotColor};box-shadow:0 0 6px ${dotColor}44"></div>
-        <div class="col-title">${s.name}</div>
-        <div class="col-count">${cs.length}</div>
+  const byStage = {};
+  for (const s of vis) byStage[s.id] = [];
+  for (const c of filtered) if (byStage[c.stage_id]!==undefined) byStage[c.stage_id].push(c);
+
+  board.innerHTML = vis.map(s=>`
+    <div class="k-col">
+      <div class="k-col-header" style="background:${s.color}">
+        <span>${esc(s.name)}</span>
+        <span class="k-col-count">${(byStage[s.id]||[]).length}</span>
       </div>
-      <div class="kanban-col-body">
-        ${cs.length
-          ? cs.map(c => renderCard(c)).join('')
-          : '<div class="k-card-empty">Sem cards</div>'}
-      </div>`;
-    board.appendChild(col);
-  });
+      <div class="k-col-body" data-stage-id="${s.id}"
+           ondragover="onDragOver(event)" ondrop="onDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
+        ${(byStage[s.id]||[]).map(c=>renderCard(c,s)).join('')}
+      </div>
+    </div>`).join('');
+
+  const fc = filtered.length;
+  document.getElementById('filter-count').textContent = fc!==G.cases.length ? `${fc} de ${G.cases.length} cards` : '';
 }
 
-async function setInterviewCard(cardId, status) {
-  const c = CARDS.find(x => x.id === cardId);
+function renderCard(c, stage) {
+  const days = daysSince(c.stage_entered_at);
+  const dc   = days>14?'alert':days>7?'warn':'';
+  const ent  = c.payload?.entrevista_status||'pendente';
+  return `<div class="k-card" style="border-left-color:${stage.color}"
+    draggable="true" data-id="${c.id}"
+    ondragstart="onDragStart(event,this)" ondragend="this.classList.remove('dragging')"
+    onclick="openCard('${c.id}')">
+    ${c.observations?`<div class="obs-tooltip">${esc(c.observations)}</div>`:''}
+    <div class="kc-top">
+      <div class="kc-name">${esc(c.client_name)}</div>
+      <div class="kc-badges">
+        ${c.is_new?'<span class="badge-novo">NOVO</span>':''}
+        <span class="badge-days ${dc}">${days}d</span>
+      </div>
+    </div>
+    ${c.client_cpf?`<div class="kc-cpf" onclick="copyCpf(event,'${esc(c.client_cpf)}')">📋 ${fmtCpf(c.client_cpf)}</div>`:''}
+    <div class="kc-prop">
+      ${c.development?`<span class="empr">${esc(c.development)}</span>`:''}
+      ${c.block?` · Bl <b>${esc(c.block)}</b>`:''}${c.unit?` Un <b>${esc(c.unit)}</b>`:''}
+    </div>
+    <div class="kc-chips">
+      ${c.partner_name?`<span class="chip chip-partner">🤝 ${esc(c.partner_name)}</span>`:''}
+      ${c.manager_name?`<span class="chip chip-manager">👤 ${esc(c.manager_name)}</span>`:''}
+      ${c.real_estate_name?`<span class="chip chip-re">🏢 ${esc(c.real_estate_name)}</span>`:''}
+      ${c.contract_value?`<span class="chip chip-value">${fmtBRL(c.contract_value)}</span>`:''}
+    </div>
+    <div class="kc-entrevista" onclick="event.stopPropagation()">
+      ${['pendente','agendado','aprovado','reprovado'].map(st=>`
+        <button class="ent-btn ent-${st}${ent===st?' active':''}"
+          onclick="setEnt('${c.id}','${st}',event)">
+          ${st[0].toUpperCase()+st.slice(1)}
+        </button>`).join('')}
+    </div>
+    <div class="kc-footer">
+      <span class="kc-date">${fmtDate(c.created_at)}</span>
+      <div class="kc-actions">
+        <button class="kc-action-btn" title="Mover etapa" onclick="openFluxo(event,'${c.id}','${stage.id}')">⇒</button>
+        <button class="kc-action-btn" title="Editar" onclick="openCard('${c.id}')">✏</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Drag & Drop ──────────────────────────────────────────────────────────────
+function onDragStart(e,el){ el.classList.add('dragging'); G.dragCard=el.dataset.id; e.dataTransfer.effectAllowed='move'; }
+function onDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drag-over'); }
+function onDrop(e,col){ e.preventDefault(); col.classList.remove('drag-over'); if(G.dragCard) { moveCard(G.dragCard,col.dataset.stageId); G.dragCard=null; } }
+
+async function moveCard(caseId, stageId) {
+  const stage = G.stages.find(s=>s.id===stageId);
+  if (!stage) return;
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`, {
+    method:'PATCH', headers:A1.headers(),
+    body:JSON.stringify({ stage_id:stageId, stage_name:stage.name, stage_entered_at:new Date().toISOString() })
+  });
+  await Promise.all([
+    fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(), body:JSON.stringify({ case_id:caseId, type:'stage_change', description:`Movido para: ${stage.name}`, actor_name:G.user.name }) }),
+    fetch(A1.rest('a1_stage_history'), { method:'POST', headers:A1.headers(), body:JSON.stringify({ case_id:caseId, stage_id:stageId, stage_name:stage.name, entered_at:new Date().toISOString() }) }),
+  ]);
+  const idx=G.cases.findIndex(c=>c.id===caseId);
+  if(idx>-1){ G.cases[idx].stage_id=stageId; G.cases[idx].stage_name=stage.name; G.cases[idx].stage_entered_at=new Date().toISOString(); }
+  renderKanban(); renderDashboard();
+  toast(`Movido para "${stage.name}"`, 'success');
+}
+
+// ─── Fluxo ────────────────────────────────────────────────────────────────────
+function openFluxo(e, caseId, stageId) {
+  e.stopPropagation();
+  const targets = (G.edges[stageId]||[]).map(id=>G.stages.find(s=>s.id===id)).filter(Boolean);
+  const list    = targets.length ? targets : G.stages.filter(s=>s.id!==stageId);
+  if (!list.length) { toast('Sem próximas etapas.','info'); return; }
+  const popup = document.getElementById('fluxo-popup');
+  popup.innerHTML = `<div style="font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.5rem">Mover para:</div>`
+    + list.map(s=>`<div class="fluxo-stage-opt" onclick="moveCard('${caseId}','${s.id}');closeFluxo()"><div class="fluxo-dot" style="background:${s.color}"></div>${esc(s.name)}</div>`).join('');
+  popup.classList.remove('hidden');
+  const r = e.target.getBoundingClientRect();
+  popup.style.top  = (r.bottom+window.scrollY+4)+'px';
+  popup.style.left = (r.left+window.scrollX)+'px';
+  setTimeout(()=>document.addEventListener('click',closeFluxo,{once:true}),10);
+}
+function closeFluxo(){ document.getElementById('fluxo-popup').classList.add('hidden'); }
+
+// ─── Card modal ───────────────────────────────────────────────────────────────
+async function openCard(id) {
+  const c = G.cases.find(x=>x.id===id);
   if (!c) return;
-  c.payload = { ...(c.payload||{}), entrevista: status };
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${cardId}`, {
-    method:'PATCH', headers: A1.headers(),
-    body: JSON.stringify({ payload: c.payload })
-  });
-  renderBoard();
-  if (ACTIVE_CARD?.id === cardId) updateInterviewButtons(status);
-  toast(`Entrevista: ${status}`, 'success');
-}
-
-async function setInterview(status) {
-  if (!ACTIVE_CARD) return;
-  await setInterviewCard(ACTIVE_CARD.id, status);
-}
-
-function updateInterviewButtons(status) {
-  document.getElementById('dp-int-pend').className = 'dp-int-btn' + (status==='pendente'?' active-pend':'');
-  document.getElementById('dp-int-sch').className  = 'dp-int-btn' + (status==='agendada'?' active-sch':'');
-  document.getElementById('dp-int-ok').className   = 'dp-int-btn' + (status==='aprovada'?' active-ok':'');
-}
-
-async function openDetail(id) {
-  ACTIVE_CARD = CARDS.find(c => c.id === id);
-  if (!ACTIVE_CARD) return;
-  const c = ACTIVE_CARD;
-
-  document.getElementById('dp-name').textContent     = c.client_name;
-  document.getElementById('dp-subtitle').textContent = [c.development, c.block, c.unit].filter(Boolean).join(' / ') || 'Imóvel não informado';
-
-  document.getElementById('dp-cname').textContent    = c.client_name  || '—';
-  document.getElementById('dp-ccpf').textContent     = formatCPF(c.client_cpf) || '—';
-  document.getElementById('dp-cphone').textContent   = c.client_phone || '—';
-  document.getElementById('dp-cemail').textContent   = c.client_email || '—';
-  document.getElementById('dp-dev').textContent      = c.development  || '—';
-  document.getElementById('dp-block').textContent    = c.block        || '—';
-  document.getElementById('dp-unit').textContent     = c.unit         || '—';
-  document.getElementById('dp-partner').textContent  = c.partner_name     || '—';
-  document.getElementById('dp-realstate').textContent= c.real_estate_name || '—';
-  document.getElementById('dp-broker').textContent   = c.broker_name      || '—';
-  document.getElementById('dp-bphone').textContent   = c.broker_phone     || '—';
-  document.getElementById('dp-obs').value            = c.observations     || '';
-
-  const val = c.contract_value
-    ? `<span class="val-badge">R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>`
-    : '—';
-  document.getElementById('dp-value').innerHTML = val;
-  document.getElementById('dp-eval').innerHTML  = c.evaluation_expiry
-    ? `${evalChip(c.evaluation_expiry)} <span style="font-size:.78rem;color:var(--text2)">${new Date(c.evaluation_expiry).toLocaleDateString('pt-BR')}</span>`
-    : '—';
-
-  const sel = document.getElementById('dp-stage');
-  sel.innerHTML = STAGES.map(s => `<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${s.name}</option>`).join('');
-
-  updateInterviewButtons((c.payload?.entrevista) || 'pendente');
+  G.editingCaseId   = id;
+  G.editingCaseData = {...c, payload:{...(c.payload||{})}};
 
   if (c.is_new) {
-    fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, { method:'PATCH', headers: A1.headers(), body: JSON.stringify({is_new:false}) });
-    c.is_new = false;
+    fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{ method:'PATCH', headers:A1.headers(), body:JSON.stringify({is_new:false}) });
+    c.is_new=false;
   }
 
-  loadTimeline(c.id);
-  document.getElementById('dp').classList.add('open');
+  document.getElementById('mc-title').textContent = c.client_name;
+  document.getElementById('mc-sub').textContent   = [c.development,c.block&&`Bl ${c.block}`,c.unit&&`Un ${c.unit}`].filter(Boolean).join(' · ');
+  document.getElementById('mc-stage-sel').innerHTML = G.stages.map(s=>`<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${esc(s.name)}</option>`).join('');
+
+  document.querySelectorAll('#modal-card-bg .modal-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('#modal-card-bg .modal-tab[data-mtab="det"]').classList.add('active');
+  renderModalDet();
+  document.getElementById('modal-card-bg').classList.remove('hidden');
 }
 
-function closeDetail() { document.getElementById('dp').classList.remove('open'); ACTIVE_CARD = null; }
-
-async function loadTimeline(caseId) {
-  const events = await fetch(
-    `${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=20`,
-    { headers: A1.headers() }
-  ).then(r=>r.json()).catch(()=>[]);
-
-  document.getElementById('dp-timeline').innerHTML = events.length
-    ? events.map(e => `
-        <div class="timeline-item">
-          <div class="timeline-time">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
-          <div class="timeline-desc">${e.description || e.type}</div>
-        </div>`).join('')
-    : '<div style="color:var(--text3);font-size:.8rem">Sem eventos registrados.</div>';
+function switchModalTab(tab,el){
+  document.querySelectorAll('#modal-card-bg .modal-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='det') renderModalDet();
+  else if(tab==='hist') renderModalHist();
+  else if(tab==='evts') renderModalEvts();
+  else if(tab==='docs') renderModalDocs();
 }
 
-async function changeStage() {
-  if (!ACTIVE_CARD) return;
-  const sid   = document.getElementById('dp-stage').value;
-  const stage = STAGES.find(s => s.id === sid);
-  const user  = A1.user;
-
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method:'PATCH', headers: A1.headers(),
-    body: JSON.stringify({ stage_id: sid, stage_name: stage?.name, stage_entered_at: new Date().toISOString() })
-  });
-
-  await fetch(A1.rest('a1_events'), {
-    method:'POST', headers: A1.headers(),
-    body: JSON.stringify({
-      case_id: ACTIVE_CARD.id, type:'stage_change',
-      description:`${ACTIVE_CARD.stage_name} → ${stage?.name}`,
-      actor_name: user?.name
-    })
-  });
-
-  ACTIVE_CARD.stage_id = sid;
-  ACTIVE_CARD.stage_name = stage?.name;
-  ACTIVE_CARD.stage_entered_at = new Date().toISOString();
-  await loadCards();
-  renderBoard();
-  loadTimeline(ACTIVE_CARD.id);
-  toast('Etapa atualizada', 'success');
+function renderModalDet() {
+  const c = G.editingCaseData||{};
+  const p = c.payload||{};
+  document.getElementById('mc-body').innerHTML = `
+    <div class="form-section-title">Dados do cliente</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Nome</label><input id="e-name" value="${esc(c.client_name||'')}"></div>
+      <div class="form-group"><label>CPF</label><input id="e-cpf" value="${esc(c.client_cpf||'')}"></div>
+      <div class="form-group"><label>Telefone</label><input id="e-phone" value="${esc(c.client_phone||'')}"></div>
+      <div class="form-group"><label>E-mail</label><input id="e-email" value="${esc(c.client_email||'')}"></div>
+    </div>
+    <div class="form-section-title">Imóvel</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Empreendimento</label><input id="e-development" value="${esc(c.development||'')}" list="dl-developments"></div>
+      <div class="form-group"><label>Bloco</label><input id="e-block" value="${esc(c.block||'')}"></div>
+      <div class="form-group"><label>Unidade</label><input id="e-unit" value="${esc(c.unit||'')}"></div>
+      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="number" step="0.01" value="${c.contract_value||''}"></div>
+      <div class="form-group"><label>Venc. Avaliação</label><input id="e-eval" type="date" value="${c.evaluation_expiry||''}"></div>
+    </div>
+    <div class="form-section-title">Parceiro & equipe</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Correspondente</label><input id="e-partner" value="${esc(c.partner_name||'')}" list="dl-partners"></div>
+      <div class="form-group"><label>Imobiliária</label><input id="e-re" value="${esc(c.real_estate_name||'')}"></div>
+      <div class="form-group"><label>Corretor</label><input id="e-broker" value="${esc(c.broker_name||'')}"></div>
+      <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
+      <div class="form-group"><label>Gerente</label><input id="e-manager" value="${esc(c.manager_name||'')}"></div>
+    </div>
+    <div class="form-section-title">Entrevista</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Status</label>
+        <select id="e-ent-status">
+          ${['pendente','agendado','aprovado','reprovado'].map(s=>`<option value="${s}" ${(p.entrevista_status||'pendente')===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Data/hora</label><input id="e-ent-date" type="datetime-local" value="${p.entrevista_data||''}"></div>
+    </div>
+    <div class="form-section-title">Observações</div>
+    <div class="form-group full"><textarea id="e-obs" rows="4">${esc(c.observations||'')}</textarea></div>`;
 }
 
-async function saveObs() {
-  if (!ACTIVE_CARD) return;
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method:'PATCH', headers: A1.headers(),
-    body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
-  });
-  toast('Observações salvas', 'success');
+function renderModalHist() {
+  const body = document.getElementById('mc-body');
+  body.innerHTML = '<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
+  fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${G.editingCaseId}&order=entered_at.desc`, { headers:A1.headers() })
+    .then(r=>r.json()).then(rows=>{
+      if (!rows.length) { body.innerHTML='<span style="color:var(--t3);font-size:.8rem">Sem histórico de etapas.</span>'; return; }
+      body.innerHTML = '<div class="timeline">'+rows.map(h=>`
+        <div class="tl-item">
+          <div class="tl-dot stage">⇒</div>
+          <div class="tl-content">
+            <div class="tl-desc"><b>${esc(h.stage_name)}</b></div>
+            <div class="tl-meta">${fmtDT(h.entered_at)}${h.exited_at?` → ${fmtDT(h.exited_at)}`:' · atual'}</div>
+          </div>
+        </div>`).join('')+'</div>';
+    }).catch(()=>{ body.innerHTML='<span style="color:var(--red);font-size:.8rem">Erro ao carregar.</span>'; });
 }
 
-function openNewModal() {
-  document.getElementById('new-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('nc-name').focus(), 50);
+function renderModalEvts() {
+  const body = document.getElementById('mc-body');
+  body.innerHTML = '<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
+  const commentBox = `<div style="margin-top:1rem;display:flex;gap:.5rem">
+    <input id="new-comment" placeholder="Adicionar comentário..." style="flex:1;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem">
+    <button class="btn btn-primary btn-sm" onclick="addComment()">Enviar</button></div>`;
+  const icons = { stage_change:'⇒', comment:'💬', edit:'✏', document:'📎' };
+  const cls   = { stage_change:'stage', comment:'comment', edit:'edit', document:'doc' };
+  fetch(`${A1.rest('a1_events')}?case_id=eq.${G.editingCaseId}&order=created_at.desc`, { headers:A1.headers() })
+    .then(r=>r.json()).then(evts=>{
+      if (!evts.length) { body.innerHTML='<span style="color:var(--t3);font-size:.8rem">Sem eventos.</span>'+commentBox; return; }
+      body.innerHTML = '<div class="timeline">'+evts.map(ev=>`
+        <div class="tl-item">
+          <div class="tl-dot ${cls[ev.type]||'comment'}">${icons[ev.type]||'•'}</div>
+          <div class="tl-content">
+            <div class="tl-desc">${esc(ev.description||'')}</div>
+            <div class="tl-meta">${esc(ev.actor_name||'')} · ${fmtDT(ev.created_at)}</div>
+          </div>
+        </div>`).join('')+'</div>'+commentBox;
+    }).catch(()=>{ body.innerHTML='<span style="color:var(--red)">Erro.</span>'+commentBox; });
 }
-function closeNewModal() { document.getElementById('new-modal').style.display = 'none'; }
 
-async function createCard() {
-  const name = document.getElementById('nc-name').value.trim();
-  if (!name) { toast('Informe o nome do cliente', 'error'); return; }
+function renderModalDocs() {
+  const c = G.editingCaseData||{};
+  document.getElementById('mc-body').innerHTML = `
+    <div class="pdf-zone" onclick="document.getElementById('doc-attach').click()" style="margin-bottom:1rem">
+      <div class="pdf-zone-icon">📎</div>
+      <div class="pdf-zone-text">Clique para anexar documento PDF</div>
+    </div>
+    <input type="file" id="doc-attach" accept=".pdf" style="display:none" onchange="attachDoc(this.files[0])">
+    ${c.attachment_pdf?`
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+      <span style="font-size:1.25rem">📄</span>
+      <div style="flex:1"><div style="font-size:.8rem;font-weight:700">${esc(c.attachment_name||'Documento.pdf')}</div></div>
+      <a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
+    </div>`:'<div style="color:var(--t3);font-size:.78rem">Nenhum documento anexado.</div>'}`;
+}
 
-  const btn = document.getElementById('nc-btn');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
-
-  const initial = STAGES.find(s => s.is_initial) || STAGES[0];
-  const [card]  = await fetch(A1.rest('a1_cases'), {
-    method:'POST', headers: A1.returnHeaders(),
-    body: JSON.stringify({
-      module_key:   'repasse',
-      stage_id:     initial?.id,
-      stage_name:   initial?.name,
-      stage_entered_at: new Date().toISOString(),
-      client_name:  name,
-      client_cpf:   document.getElementById('nc-cpf').value.replace(/\D/g,''),
-      client_phone: document.getElementById('nc-phone').value,
-      development:  document.getElementById('nc-dev').value.trim(),
-      block:        document.getElementById('nc-block').value.trim(),
-      unit:         document.getElementById('nc-unit').value.trim(),
-      partner_name: document.getElementById('nc-partner').value.trim(),
-      is_new: true
-    })
-  }).then(r=>r.json()).catch(()=>[null]);
-
-  if (card) {
-    CARDS.unshift(card);
-    buildFilterOptions();
-    renderBoard();
-    ['nc-name','nc-cpf','nc-phone','nc-dev','nc-block','nc-unit','nc-partner'].forEach(id => document.getElementById(id).value='');
-    closeNewModal();
-    openDetail(card.id);
-    toast('Card criado', 'success');
+async function saveCase() {
+  const id = G.editingCaseId;
+  if (!id) return;
+  const stageId = document.getElementById('mc-stage-sel').value;
+  const stage   = G.stages.find(s=>s.id===stageId);
+  const oldStage = G.editingCaseData.stage_id;
+  const payload = {
+    ...(G.editingCaseData.payload||{}),
+    entrevista_status: document.getElementById('e-ent-status')?.value,
+    entrevista_data: document.getElementById('e-ent-date')?.value||null,
+  };
+  const patch = {
+    client_name:      v('e-name'),
+    client_cpf:       v('e-cpf'),
+    client_phone:     v('e-phone'),
+    client_email:     v('e-email'),
+    development:      v('e-development'),
+    block:            v('e-block'),
+    unit:             v('e-unit'),
+    contract_value:   parseFloat(v('e-value'))||null,
+    evaluation_expiry:v('e-eval')||null,
+    partner_name:     v('e-partner'),
+    real_estate_name: v('e-re'),
+    broker_name:      v('e-broker'),
+    broker_phone:     v('e-broker-phone'),
+    manager_name:     v('e-manager'),
+    observations:     v('e-obs'),
+    stage_id:         stageId,
+    stage_name:       stage?.name||G.editingCaseData.stage_name,
+    payload,
+  };
+  if (stageId!==oldStage) {
+    patch.stage_entered_at = new Date().toISOString();
+    Promise.all([
+      fetch(A1.rest('a1_stage_history'),{ method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()}) }),
+      fetch(A1.rest('a1_events'),{ method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'stage_change',description:`Movido para: ${stage?.name}`,actor_name:G.user.name}) }),
+    ]);
   }
-  btn.disabled = false; btn.textContent = 'Criar card';
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{ method:'PATCH',headers:A1.headers(),body:JSON.stringify(patch) });
+  if (res.ok) {
+    const idx=G.cases.findIndex(c=>c.id===id);
+    if(idx>-1) G.cases[idx]={...G.cases[idx],...patch};
+    toast('Salvo!','success');
+    closeModal('modal-card-bg');
+    renderKanban(); renderList(); renderDashboard(); populateFilterOptions();
+  } else toast('Erro ao salvar','error');
 }
 
-function handlePDF(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const el = document.getElementById('pdf-parsed');
-  el.style.display = 'block';
-  el.className = 'pdf-parsed';
-  el.innerHTML = `<strong>Arquivo carregado:</strong> ${file.name}<br><span style="color:var(--text3)">Integre pdf.js + parseProposta() para extrair dados automaticamente.</span>`;
+async function archiveCase() {
+  if(!confirm('Arquivar este repasse?')) return;
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{ method:'DELETE',headers:A1.headers() });
+  G.cases=G.cases.filter(c=>c.id!==G.editingCaseId);
+  closeModal('modal-card-bg');
+  renderKanban(); renderList(); renderDashboard();
+  toast('Arquivado','info');
 }
 
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('pdf-drop').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) handlePDF({ target: { files: [file] } });
+async function addComment() {
+  const input=document.getElementById('new-comment');
+  const text=input?.value?.trim();
+  if(!text) return;
+  await fetch(A1.rest('a1_events'),{ method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'comment',description:text,actor_name:G.user.name}) });
+  input.value='';
+  toast('Comentário adicionado','success');
+  renderModalEvts();
 }
 
-function triggerGlobalPDF() { document.getElementById('pdf-global').click(); }
-function handleGlobalPDF(e) {
-  if (!e.target.files[0]) return;
-  toast('PDF recebido — abra um card para associar', 'info');
+// ─── New case ─────────────────────────────────────────────────────────────────
+function openNewCase() {
+  const sel=document.getElementById('n-stage');
+  const initials=G.stages.filter(s=>s.is_initial);
+  sel.innerHTML='<option value="">— Selecione —</option>'
+    +(initials.length?initials:G.stages).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  document.getElementById('modal-new-bg').classList.remove('hidden');
 }
 
-async function renderPresence() {
-  const since = new Date(Date.now()-2*60*1000).toISOString();
-  const users = await fetch(`${A1.rest('a1_presence')}?last_seen=gte.${since}`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]);
-  const el = document.getElementById('presence-count');
-  el.innerHTML = users.length
-    ? `<span class="badge badge-green" style="gap:.3rem"><span style="display:inline-block;width:.4rem;height:.4rem;border-radius:50%;background:#10b981;box-shadow:0 0 4px #10b981"></span>${users.length} online</span>`
-    : '';
+async function createCase() {
+  const name=v('n-name');
+  if(!name){toast('Informe o nome do cliente','error');return;}
+  const stageId=document.getElementById('n-stage').value;
+  const stage=G.stages.find(s=>s.id===stageId);
+  const body={
+    module_key:'repasse', client_name:name, client_cpf:v('n-cpf'),
+    client_phone:v('n-phone'), client_email:v('n-email'),
+    development:v('n-development'), block:v('n-block'), unit:v('n-unit'),
+    contract_value:parseFloat(v('n-value'))||null,
+    partner_name:v('n-partner'), real_estate_name:v('n-re'),
+    broker_name:v('n-broker'), manager_name:v('n-manager'),
+    evaluation_expiry:v('n-eval')||null,
+    observations:v('n-obs'),
+    stage_id:stageId||null, stage_name:stage?.name||null,
+    is_new:true, payload:{}
+  };
+  const res=await fetch(A1.rest('a1_cases'),{ method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body) });
+  const [created]=await res.json().catch(()=>[null]);
+  if(created?.id){
+    G.cases.unshift(created);
+    if(stageId) fetch(A1.rest('a1_stage_history'),{ method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()}) });
+    toast('Repasse criado!','success');
+    closeModal('modal-new-bg');
+    renderKanban(); renderList(); renderDashboard(); populateFilterOptions();
+  } else toast('Erro ao criar','error');
 }
 
-function formatCPF(raw) {
-  if (!raw) return '';
-  const d = raw.replace(/\D/g,'');
-  return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4') : raw;
+// ─── Interview ────────────────────────────────────────────────────────────────
+async function setEnt(caseId, status, e) {
+  e.stopPropagation();
+  const payload={...(G.cases.find(c=>c.id===caseId)?.payload||{}), entrevista_status:status};
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{ method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload}) });
+  const idx=G.cases.findIndex(c=>c.id===caseId);
+  if(idx>-1) G.cases[idx].payload=payload;
+  renderKanban();
+  toast(`Entrevista: ${status}`,'success');
 }
 
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); toast('CPF copiado!', 'success'); } catch {}
+// ─── List ─────────────────────────────────────────────────────────────────────
+function renderList() {
+  const search=document.getElementById('tbl-search')?.value?.toLowerCase()||'';
+  const stageF=document.getElementById('tbl-stage-filter')?.value||'';
+  const sm=stageMap();
+  const filtered=G.cases.filter(c=>{
+    if(stageF&&c.stage_id!==stageF) return false;
+    if(search){ const hay=`${c.client_name} ${c.client_cpf} ${c.development} ${c.partner_name}`.toLowerCase(); if(!hay.includes(search)) return false; }
+    return true;
+  });
+  document.getElementById('tbl-count').textContent=`${filtered.length} repasse${filtered.length!==1?'s':''}`;
+  document.getElementById('cases-tbody').innerHTML=filtered.map(c=>{
+    const stage=sm[c.stage_id];
+    const days=daysSince(c.stage_entered_at);
+    const dc=days>14?'var(--red)':days>7?'var(--amber)':'var(--t3)';
+    return `<tr>
+      <td><span class="tbl-name">${esc(c.client_name)}</span>${c.is_new?'<span class="badge-novo" style="margin-left:.4rem">NOVO</span>':''}</td>
+      <td><span class="tbl-cpf">${fmtCpf(c.client_cpf||'')}</span></td>
+      <td>${esc(c.development||'—')}${c.unit?` <span style="color:var(--t3)">Un ${esc(c.unit)}</span>`:''}</td>
+      <td>${stage?`<span class="tbl-stage-dot" style="background:${stage.color}"></span>${esc(stage.name)}`:'—'}</td>
+      <td>${esc(c.partner_name||'—')}</td>
+      <td>${c.contract_value?fmtBRL(c.contract_value):'—'}</td>
+      <td style="font-size:.72rem;color:var(--t2)">${c.payload?.entrevista_status||'—'}</td>
+      <td><span style="font-size:.72rem;font-family:'DM Mono',monospace;color:${dc}">${days}d</span></td>
+      <td><button class="btn btn-ghost btn-xs" onclick="openCard('${c.id}')">Editar</button></td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:2rem">Nenhum repasse encontrado.</td></tr>`;
 }
 
-function copyVal(el) {
-  const t = el.textContent.trim();
-  if (t && t !== '—') copyText(t);
+// ─── Flags ────────────────────────────────────────────────────────────────────
+async function loadFlags() {
+  G.flags=await fetch(`${A1.rest('a1_stage_flags')}?order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  renderFlags();
+  // Regionais cfg
+  const el=document.getElementById('regionals-cfg-list');
+  el.innerHTML=G.groups.length
+    ? G.groups.map(g=>`<div class="tag-item"><span>📍</span>${esc(g)}</div>`).join('')
+    : '<span style="color:var(--t3);font-size:.78rem">Nenhuma regional. Defina group_key no Workflow.</span>';
 }
 
-function toast(msg, type='info') {
-  const el = document.getElementById('a1-toast');
-  const d  = document.createElement('div');
-  d.className = `toast-item toast-${type}`;
-  d.textContent = msg;
-  el.appendChild(d);
-  setTimeout(() => d.remove(), 3500);
+function renderFlags(){
+  const el=document.getElementById('flags-list');
+  el.innerHTML=G.flags.length
+    ? G.flags.map(f=>`<div class="tag-item"><span style="color:${f.color||'#7c3aed'}">🏷</span>${esc(f.name)}<span class="tag-rm" onclick="removeFlag('${f.id}')">✕</span></div>`).join('')
+    : '<span style="color:var(--t3);font-size:.78rem">Nenhuma flag cadastrada.</span>';
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeDetail(); closeNewModal(); }
+async function addFlag(){
+  const input=document.getElementById('new-flag-input');
+  const name=input.value.trim();
+  if(!name){toast('Informe o nome','error');return;}
+  const [flag]=await fetch(A1.rest('a1_stage_flags'),{ method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({name,color:'#7c3aed'}) }).then(r=>r.json()).catch(()=>[null]);
+  if(flag){G.flags.push(flag);renderFlags();input.value='';toast('Flag criada','success');}
+  else toast('Erro ao criar flag','error');
+}
+
+async function removeFlag(id){
+  await fetch(`${A1.rest('a1_stage_flags')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  G.flags=G.flags.filter(f=>f.id!==id);
+  renderFlags();
+  toast('Flag removida','info');
+}
+
+// ─── PDF ──────────────────────────────────────────────────────────────────────
+function openPdfModal(){
+  G.pdfData=null;
+  document.getElementById('pdf-zone').style.display='';
+  document.getElementById('pdf-processing').style.display='none';
+  document.getElementById('pdf-preview').style.display='none';
+  document.getElementById('btn-pdf-import').style.display='none';
+  document.getElementById('pdf-input').value='';
+  document.getElementById('modal-pdf-bg').classList.remove('hidden');
+}
+
+async function handlePdfFile(file){
+  if(!file) return;
+  document.getElementById('pdf-zone').style.display='none';
+  document.getElementById('pdf-processing').style.display='';
+  try {
+    if(typeof pdfjsLib==='undefined') throw new Error('PDF.js não carregado');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    let txt='';
+    for(let i=1;i<=Math.min(pdf.numPages,5);i++){
+      const page=await pdf.getPage(i);
+      const tc=await page.getTextContent();
+      txt+=tc.items.map(x=>x.str).join(' ')+'\n';
+    }
+    G.pdfData=parsePdf(txt,file.name);
+    document.getElementById('pdf-processing').style.display='none';
+    document.getElementById('pdf-preview').style.display='';
+    document.getElementById('btn-pdf-import').style.display='';
+    document.getElementById('pdf-name').value        = G.pdfData.name||'';
+    document.getElementById('pdf-cpf').value         = G.pdfData.cpf||'';
+    document.getElementById('pdf-value').value       = G.pdfData.value||'';
+    document.getElementById('pdf-development').value = G.pdfData.development||'';
+    document.getElementById('pdf-partner').value     = G.pdfData.partner||'';
+  } catch(err){
+    document.getElementById('pdf-processing').style.display='none';
+    document.getElementById('pdf-zone').style.display='';
+    toast('Erro PDF: '+err.message,'error');
+  }
+}
+
+function parsePdf(text){
+  const d={};
+  const cpf=text.match(/\d{3}[.\s]\d{3}[.\s]\d{3}[-\s]\d{2}/);
+  if(cpf) d.cpf=cpf[0].replace(/\s/g,'');
+  const val=text.match(/R\$\s*[\d.,]+/);
+  if(val) d.value=val[0].replace('R$','').trim();
+  const nome=text.match(/(?:NOME|PROPONENTE|CLIENTE)\s*[:\-]?\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-Za-záéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ\s]{5,50})/i);
+  if(nome) d.name=nome[1].trim();
+  const empr=text.match(/(?:EMPREENDIMENTO|IMÓVEL|UNIDADE)\s*[:\-]?\s*([^\n]{5,60})/i);
+  if(empr) d.development=empr[1].trim();
+  return d;
+}
+
+function importFromPdf(){
+  if(!G.pdfData) return;
+  closeModal('modal-pdf-bg');
+  openNewCase();
+  setTimeout(()=>{
+    if(G.pdfData.name)        document.getElementById('n-name').value=G.pdfData.name;
+    if(G.pdfData.cpf)         document.getElementById('n-cpf').value=G.pdfData.cpf;
+    if(G.pdfData.development) document.getElementById('n-development').value=G.pdfData.development;
+    if(G.pdfData.partner)     document.getElementById('n-partner').value=G.pdfData.partner;
+  },80);
+}
+
+async function attachDoc(file){
+  if(!file||!G.editingCaseId) return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{ method:'PATCH',headers:A1.headers(),body:JSON.stringify({attachment_pdf:e.target.result,attachment_name:file.name}) });
+    const idx=G.cases.findIndex(c=>c.id===G.editingCaseId);
+    if(idx>-1){G.cases[idx].attachment_pdf=e.target.result;G.cases[idx].attachment_name=file.name;}
+    G.editingCaseData=G.cases[idx];
+    renderModalDocs();
+    toast('Documento anexado','success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── Filter events ────────────────────────────────────────────────────────────
+document.addEventListener('input', e=>{
+  if(e.target.id==='f-search')  { G.filters.search=e.target.value; renderKanban(); }
+  if(e.target.id==='tbl-search') renderList();
 });
+document.addEventListener('change', e=>{
+  if(e.target.id==='f-empr')        { G.filters.empr=e.target.value; renderKanban(); }
+  if(e.target.id==='f-parceiro')    { G.filters.parceiro=e.target.value; renderKanban(); }
+  if(e.target.id==='f-re')          { G.filters.re=e.target.value; renderKanban(); }
+  if(e.target.id==='f-entrevista')  { G.filters.entrevista=e.target.value; renderKanban(); }
+  if(e.target.id==='tbl-stage-filter') renderList();
+});
+
+function clearFilters(){
+  G.filters={search:'',empr:'',parceiro:'',re:'',entrevista:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-entrevista'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderKanban();
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function stageMap(){ return Object.fromEntries(G.stages.map(s=>[s.id,s])); }
+function v(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtCpf(cpf){ const d=cpf.replace(/\D/g,''); return d.length===11?`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`:cpf; }
+function fmtBRL(v){ return Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtDate(dt){ return dt?new Date(dt).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—'; }
+function fmtDT(dt){ return dt?new Date(dt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'; }
+function daysSince(dt){ return dt?Math.floor((Date.now()-new Date(dt))/86400000):0; }
+function copyCpf(e,cpf){ e.stopPropagation(); navigator.clipboard.writeText(cpf).then(()=>toast('CPF copiado!','info')); }
+function setT(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+function closeModal(id){
+  document.getElementById(id).classList.add('hidden');
+  if(id==='modal-card-bg'){ G.editingCaseId=null; G.editingCaseData=null; }
+}
+
+function toast(msg,type='info'){
+  const wrap=document.getElementById('toast-wrap');
+  const d=document.createElement('div');
+  d.className=`toast toast-${type}`; d.textContent=msg;
+  wrap.appendChild(d);
+  setTimeout(()=>d.remove(),3200);
+}
+
+// PDF drag-and-drop on zone
+const pdfZone=document.getElementById('pdf-zone');
+pdfZone.addEventListener('dragover',e=>{ e.preventDefault(); pdfZone.classList.add('drag-over'); });
+pdfZone.addEventListener('dragleave',()=>pdfZone.classList.remove('drag-over'));
+pdfZone.addEventListener('drop',e=>{ e.preventDefault(); pdfZone.classList.remove('drag-over'); handlePdfFile(e.dataTransfer.files[0]); });
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) closeModal(bg.id); }));
 
 init();
 </script>
