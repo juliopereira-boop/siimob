@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Superadmin — ALPHA ONE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/alpha.css">
+  <style>
+    .sa-header { background: #1e1b4b; border-bottom: 2px solid var(--accent); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .sa-logo   { font-weight: 800; font-size: 1.2rem; }
+    .sa-logo span { color: #f59e0b; }
+    .sa-warn   { background: #78350f33; border: 1px solid #f59e0b44; color: #fcd34d; padding: .5rem 1rem; border-radius: .375rem; font-size: .78rem; }
+    .sa-body   { padding: 1.5rem; max-width: 64rem; margin: 0 auto; }
+    .section-title { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 .75rem; display: flex; align-items: center; gap: .5rem; }
+    .inline-form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-end; }
+    .inline-form .form-group { margin: 0; min-width: 10rem; }
+    .inline-form input, .inline-form select { width: 100%; }
+    td button { font-size: .75rem; padding: .2rem .6rem; }
+    .key-box {
+      background: var(--bg3); border: 1px solid var(--border); border-radius: .375rem;
+      padding: .6rem .875rem; font-family: monospace; font-size: .8rem; color: #a5b4fc;
+      word-break: break-all;
+    }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .tab { padding: .6rem 1.25rem; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font-size: .875rem; font-weight: 600; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+<!-- Auth gate — prompts for service key before showing anything -->
+<div id="auth-gate" style="display:flex;align-items:center;justify-content:center;height:100vh">
+  <div style="width:22rem">
+    <div style="font-size:1.5rem;font-weight:800;margin-bottom:1.5rem;text-align:center">ALPHA <span style="color:#f59e0b">ONE</span> · SA</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Service Role Key</label>
+        <input id="sa-key-input" type="password" placeholder="eyJhbGciOiJ..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Supabase URL</label>
+        <input id="sa-url-input" type="text" placeholder="https://xxx.supabase.co" value="">
+      </div>
+      <div id="sa-auth-err" style="display:none" class="error-msg" style="color:#fca5a5;font-size:.8rem;margin-bottom:.75rem"></div>
+      <button class="btn btn-primary btn-full" onclick="saAuth()">Entrar como Superadmin</button>
+    </div>
+    <div class="sa-warn" style="margin-top:1rem">⚠ Nunca compartilhe a Service Role Key. Use apenas neste painel.</div>
+  </div>
+</div>
+
+<!-- Main panel (hidden until auth) -->
+<div id="sa-panel" style="display:none">
+  <div class="sa-header">
+    <div class="sa-logo">ALPHA <span>ONE</span> · Superadmin</div>
+    <div style="display:flex;gap:.75rem;align-items:center">
+      <span class="sa-warn" style="font-size:.72rem">⚡ Service Role ativo</span>
+      <button class="btn btn-ghost" onclick="saLogout()" style="font-size:.78rem">Sair</button>
+    </div>
+  </div>
+
+  <div class="sa-body">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('tenants')">Clientes (Tenants)</div>
+      <div class="tab" onclick="switchTab('modules')">Módulos</div>
+      <div class="tab" onclick="switchTab('plans')">Planos</div>
+    </div>
+
+    <!-- TENANTS TAB -->
+    <div id="tab-tenants" class="tab-content active">
+      <div class="section-title">➕ Novo cliente</div>
+      <div class="inline-form" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem">
+        <div class="form-group"><label>Nome</label><input id="n-name" placeholder="Construtora ABC"></div>
+        <div class="form-group"><label>Slug</label><input id="n-slug" placeholder="construtora-abc"></div>
+        <div class="form-group"><label>E-mail</label><input id="n-email" type="email" placeholder="contato@..."></div>
+        <div class="form-group"><label>Plano</label>
+          <select id="n-plan">
+            <option value="starter">Starter (3 users)</option>
+            <option value="pro">Pro (10 users)</option>
+            <option value="enterprise">Enterprise (30 users)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>CNPJ</label><input id="n-cnpj" placeholder="00.000.000/0000-00"></div>
+        <div style="align-self:flex-end">
+          <button class="btn btn-primary" onclick="createTenant()">Criar</button>
+        </div>
+      </div>
+
+      <div class="section-title">📋 Clientes cadastrados</div>
+      <div class="table-wrap">
+        <table id="tenant-table">
+          <thead><tr>
+            <th>Nome</th><th>Slug</th><th>Plano</th><th>Max users</th>
+            <th>Status</th><th>Trial expira</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="tenant-tbody">
+            <tr><td colspan="7" style="color:var(--muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MODULES TAB -->
+    <div id="tab-modules" class="tab-content">
+      <div class="section-title">🔓 Gerenciar módulos por cliente</div>
+      <div class="inline-form" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem">
+        <div class="form-group"><label>Cliente</label><select id="mod-tenant" style="min-width:14rem"><option value="">Selecione...</option></select></div>
+        <div class="form-group"><label>Módulo</label>
+          <select id="mod-key">
+            <option value="repasse">Repasse</option>
+            <option value="registro">Registro</option>
+            <option value="analytics">Analytics</option>
+            <option value="pipeline_pro">Pipeline Pro</option>
+            <option value="integrations">Integrações</option>
+            <option value="multi_region">Multi-regional</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Validade (deixe vazio = permanente)</label><input id="mod-expires" type="date"></div>
+        <div style="align-self:flex-end;display:flex;gap:.5rem">
+          <button class="btn btn-primary" onclick="unlockModule()">Desbloquear</button>
+          <button class="btn btn-danger"  onclick="lockModule()">Bloquear</button>
+        </div>
+      </div>
+
+      <div class="section-title">Módulos ativos por cliente</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Módulo</th><th>Desbloqueado em</th><th>Expira em</th><th>Por</th></tr></thead>
+          <tbody id="modules-tbody"><tr><td colspan="5" style="color:var(--muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PLANS TAB -->
+    <div id="tab-plans" class="tab-content">
+      <div class="section-title">📦 Planos disponíveis</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Key</th><th>Nome</th><th>Max users</th><th>Preço</th></tr></thead>
+          <tbody id="plans-tbody"><tr><td colspan="4" style="color:var(--muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;color:var(--muted);font-size:.8rem">
+        Para alterar planos ou preços, edite diretamente na tabela <code>a1_plans</code> do Supabase.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/js/config.js"></script>
+<script>
+// ─── Superadmin state (service role key, not exposed to tenants) ─────────────
+let SA_URL = '';
+let SA_KEY = '';
+let TENANTS = [];
+
+function saHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'apikey':       SA_KEY,
+    'Authorization':`Bearer ${SA_KEY}`
+  };
+}
+
+function saRest(table) { return `${SA_URL}/rest/v1/${table}`; }
+
+// ─── Auth gate ───────────────────────────────────────────────────────────────
+async function saAuth() {
+  SA_URL = (document.getElementById('sa-url-input').value || A1_URL).replace(/\/$/, '');
+  SA_KEY = document.getElementById('sa-key-input').value.trim();
+
+  if (!SA_KEY) { saErr('Informe a Service Role Key.'); return; }
+
+  // Quick test: try to read tenants
+  try {
+    const res = await fetch(saRest('a1_tenants') + '?limit=1', { headers: saHeaders() });
+    if (!res.ok) throw new Error('Chave inválida ou URL errada.');
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('sa-panel').style.display  = 'block';
+    loadAll();
+  } catch (e) {
+    saErr(e.message || 'Erro de conexão.');
+  }
+}
+
+function saErr(msg) {
+  const el = document.getElementById('sa-auth-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function saLogout() {
+  SA_KEY = '';
+  SA_URL = '';
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.getElementById('sa-panel').style.display  = 'none';
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const tabs = ['tenants','modules','plans'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// ─── Load all ────────────────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.all([loadTenants(), loadTenantModules(), loadPlans()]);
+  populateTenantSelects();
+}
+
+async function loadTenants() {
+  TENANTS = await fetch(
+    saRest('a1_tenants') + '?order=created_at.desc',
+    { headers: saHeaders() }
+  ).then(r => r.json());
+
+  const tbody = document.getElementById('tenant-tbody');
+  tbody.innerHTML = TENANTS.map(t => `
+    <tr>
+      <td><strong>${t.name}</strong></td>
+      <td><code>${t.slug}</code></td>
+      <td><span class="badge badge-indigo">${t.plan_key}</span></td>
+      <td>
+        <input type="number" value="${t.max_users}" min="1" style="width:4rem;background:var(--bg3);border:1px solid var(--border);border-radius:.3rem;color:var(--text);padding:.2rem .4rem;font-size:.8rem"
+               onchange="setUserLimit('${t.id}', this.value)">
+      </td>
+      <td>
+        <span class="badge ${t.status==='active'?'badge-green':t.status==='trial'?'badge-yellow':'badge-red'}">${t.status}</span>
+      </td>
+      <td style="font-size:.78rem;color:var(--muted)">${t.trial_ends_at ? new Date(t.trial_ends_at).toLocaleDateString('pt-BR') : '—'}</td>
+      <td style="display:flex;gap:.3rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="changePlan('${t.id}')">Plano</button>
+        ${t.status!=='suspended'
+          ? `<button class="btn btn-danger" onclick="suspendTenant('${t.id}')">Suspender</button>`
+          : `<button class="btn btn-primary" onclick="reactivateTenant('${t.id}')">Reativar</button>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function loadTenantModules() {
+  const rows = await fetch(
+    saRest('a1_tenant_modules') + '?order=unlocked_at.desc',
+    { headers: saHeaders() }
+  ).then(r => r.json());
+
+  const tbody = document.getElementById('modules-tbody');
+  tbody.innerHTML = rows.length
+    ? rows.map(r => {
+        const t = TENANTS.find(x => x.id === r.tenant_id);
+        return `<tr>
+          <td>${t?.name || r.tenant_id.slice(0,8)}</td>
+          <td><span class="badge badge-indigo">${r.module_key}</span></td>
+          <td style="font-size:.78rem">${new Date(r.unlocked_at).toLocaleString('pt-BR')}</td>
+          <td style="font-size:.78rem;color:${r.expires_at?'var(--warn)':'var(--success)'}">${r.expires_at ? new Date(r.expires_at).toLocaleDateString('pt-BR') : 'Permanente'}</td>
+          <td style="font-size:.78rem;color:var(--muted)">${r.unlocked_by}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" style="color:var(--muted)">Nenhum módulo desbloqueado manualmente.</td></tr>';
+}
+
+async function loadPlans() {
+  const plans = await fetch(saRest('a1_plans'), { headers: saHeaders() }).then(r => r.json());
+  document.getElementById('plans-tbody').innerHTML = plans.map(p => `
+    <tr>
+      <td><code>${p.key}</code></td>
+      <td>${p.name}</td>
+      <td>${p.max_users}</td>
+      <td>${p.price_brl > 0 ? 'R$ ' + Number(p.price_brl).toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'Gratuito'}</td>
+    </tr>`).join('');
+}
+
+function populateTenantSelects() {
+  ['mod-tenant'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Selecione...</option>` +
+      TENANTS.map(t => `<option value="${t.id}">${t.name} (${t.slug})</option>`).join('');
+    if (cur) sel.value = cur;
+  });
+}
+
+// ─── Tenant ops ──────────────────────────────────────────────────────────────
+async function createTenant() {
+  const name  = document.getElementById('n-name').value.trim();
+  const slug  = document.getElementById('n-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
+  const email = document.getElementById('n-email').value.trim();
+  const plan  = document.getElementById('n-plan').value;
+  const cnpj  = document.getElementById('n-cnpj').value.trim();
+
+  if (!name || !slug || !email) { toast('Preencha nome, slug e e-mail.', 'error'); return; }
+
+  const maxMap = { starter: 3, pro: 10, enterprise: 30 };
+  const res    = await fetch(saRest('a1_tenants'), {
+    method: 'POST',
+    headers: { ...saHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify({ name, slug, email, cnpj, plan_key: plan, max_users: maxMap[plan] })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    toast(err?.message?.includes('unique') ? 'Slug já em uso.' : 'Erro ao criar.', 'error');
+    return;
+  }
+
+  toast(`Cliente "${name}" criado. Slug: /${slug}/login`, 'success');
+  ['n-name','n-slug','n-email','n-cnpj'].forEach(id => document.getElementById(id).value = '');
+  loadAll();
+}
+
+async function setUserLimit(tenantId, val) {
+  await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
+    method: 'PATCH',
+    headers: saHeaders(),
+    body: JSON.stringify({ max_users: parseInt(val) })
+  });
+  toast('Limite de usuários atualizado.', 'success');
+}
+
+async function changePlan(tenantId) {
+  const plan = prompt('Novo plano (starter / pro / enterprise):');
+  if (!['starter','pro','enterprise'].includes(plan)) { toast('Plano inválido.', 'error'); return; }
+  const maxMap = { starter: 3, pro: 10, enterprise: 30 };
+  await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
+    method: 'PATCH',
+    headers: saHeaders(),
+    body: JSON.stringify({ plan_key: plan, max_users: maxMap[plan], status: 'active' })
+  });
+  toast('Plano atualizado.', 'success');
+  loadTenants();
+}
+
+async function suspendTenant(tenantId) {
+  if (!confirm('Suspender este cliente?')) return;
+  await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
+    method: 'PATCH', headers: saHeaders(), body: JSON.stringify({ status: 'suspended' })
+  });
+  toast('Conta suspensa.', 'error');
+  loadTenants();
+}
+
+async function reactivateTenant(tenantId) {
+  await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
+    method: 'PATCH', headers: saHeaders(), body: JSON.stringify({ status: 'active' })
+  });
+  toast('Conta reativada.', 'success');
+  loadTenants();
+}
+
+// ─── Module ops ──────────────────────────────────────────────────────────────
+async function unlockModule() {
+  const tenantId  = document.getElementById('mod-tenant').value;
+  const moduleKey = document.getElementById('mod-key').value;
+  const expiresAt = document.getElementById('mod-expires').value || null;
+
+  if (!tenantId) { toast('Selecione um cliente.', 'error'); return; }
+
+  await fetch(saRest('a1_tenant_modules'), {
+    method: 'POST',
+    headers: { ...saHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({
+      tenant_id:   tenantId,
+      module_key:  moduleKey,
+      unlocked_by: 'superadmin@alphaone.com.br',
+      expires_at:  expiresAt ? new Date(expiresAt).toISOString() : null
+    })
+  });
+  toast(`Módulo "${moduleKey}" desbloqueado.`, 'success');
+  loadTenantModules();
+}
+
+async function lockModule() {
+  const tenantId  = document.getElementById('mod-tenant').value;
+  const moduleKey = document.getElementById('mod-key').value;
+  if (!tenantId) { toast('Selecione um cliente.', 'error'); return; }
+  if (!confirm(`Bloquear módulo "${moduleKey}"?`)) return;
+
+  await fetch(`${saRest('a1_tenant_modules')}?tenant_id=eq.${tenantId}&module_key=eq.${moduleKey}`, {
+    method: 'DELETE', headers: saHeaders()
+  });
+  toast(`Módulo "${moduleKey}" bloqueado.`, 'error');
+  loadTenantModules();
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el   = document.getElementById('a1-toast');
+  const item = document.createElement('div');
+  item.className = `toast-item toast-${type}`;
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), 4000);
+}
+
+document.getElementById('sa-url-input').value = A1_URL;
+document.getElementById('sa-key-input').addEventListener('keydown', e => { if (e.key === 'Enter') saAuth(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — ALPHA ONE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/alpha.css">
+  <style>
+    .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; padding: 1.5rem; }
+    .module-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: border-color .15s, transform .1s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .module-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .module-card.locked { opacity: .45; cursor: not-allowed; }
+    .module-card.locked:hover { border-color: var(--border); transform: none; }
+    .module-icon  { font-size: 2rem; margin-bottom: .75rem; }
+    .module-name  { font-weight: 700; margin-bottom: .25rem; }
+    .module-desc  { font-size: .78rem; color: var(--muted); }
+    .module-badge { margin-top: .75rem; }
+    .plan-info {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.5rem; margin: 1.5rem 1.5rem 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .plan-badge { font-weight: 700; text-transform: uppercase; font-size: .75rem; color: var(--accent); }
+    .trial-warn  { color: var(--warn); font-size: .8rem; }
+    .presence-bar {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: .5rem 1.5rem; display: flex; align-items: center; gap: .75rem;
+      font-size: .75rem; color: var(--muted);
+    }
+    .presence-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--success); }
+    .user-chip {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: var(--bg3); border-radius: 99px; padding: .15rem .6rem;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-nav">
+      <a href="#" class="nav-item active">
+        <span class="nav-item-icon">⬡</span> Dashboard
+      </a>
+      <a href="" class="nav-item" id="nav-repasse">
+        <span class="nav-item-icon">🔁</span> Repasse
+      </a>
+      <a href="" class="nav-item" id="nav-registro">
+        <span class="nav-item-icon">📋</span> Registro
+      </a>
+    </div>
+    <div class="sidebar-footer">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
+      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">
+        Sair
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="tenant-title">Carregando...</div>
+      <div class="topbar-actions">
+        <span class="badge badge-indigo" id="plan-display"></span>
+        <a href="" class="btn btn-ghost" id="admin-link" style="display:none;font-size:.78rem">⚙ Admin</a>
+      </div>
+    </div>
+
+    <!-- Online users -->
+    <div class="presence-bar" id="presence-bar"></div>
+
+    <!-- Plan info / trial warning -->
+    <div class="plan-info" id="plan-info" style="display:none">
+      <div>
+        <div class="plan-badge" id="plan-label"></div>
+        <div id="trial-msg" class="trial-warn" style="margin-top:.2rem"></div>
+      </div>
+      <a href="" id="upgrade-link" style="font-size:.78rem;color:var(--accent);text-decoration:none">
+        Ver planos →
+      </a>
+    </div>
+
+    <!-- Modules grid -->
+    <div class="modules-grid" id="modules-grid">
+      <div style="color:var(--muted);padding:1rem">Carregando módulos...</div>
+    </div>
+  </div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const ALL_MODULES = [
+  { key: 'repasse',      icon: '🔁', name: 'Gestão de Repasse',  desc: 'Pipeline kanban com análise de propostas PDF e gestão de parceiros', path: 'repasse' },
+  { key: 'registro',     icon: '📋', name: 'Gestão de Registro', desc: 'Contratos, workflow visual e integração bancária', path: 'registro' },
+  { key: 'analytics',    icon: '📊', name: 'Analytics',          desc: 'Dashboards de performance e metas', path: null },
+  { key: 'pipeline_pro', icon: '⚡', name: 'Pipeline Pro',       desc: 'Etapas ilimitadas, automações e flags customizáveis', path: null },
+  { key: 'integrations', icon: '🔗', name: 'Integrações',        desc: 'Webhooks, API REST e sistemas externos', path: null },
+  { key: 'multi_region', icon: '🗺️', name: 'Multi-regional',     desc: 'Pipelines separados por regional', path: null }
+];
+
+async function init() {
+  let user;
+  try { user = a1RequireAuth(); } catch { return; }
+
+  const slug = A1.slug;
+
+  // Set up nav links
+  document.getElementById('nav-repasse').href  = `/${slug}/repasse`;
+  document.getElementById('nav-registro').href = `/${slug}/registro`;
+  document.getElementById('tenant-title').textContent = user.tenant_name || slug;
+  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
+  document.getElementById('plan-display').textContent = (user.plan || 'starter').toUpperCase();
+
+  // Admin link
+  if (['owner','admin'].includes(user.role)) {
+    const lnk = document.getElementById('admin-link');
+    lnk.href = `/${slug}/admin`;
+    lnk.style.display = '';
+  }
+
+  // Plan info
+  if (user.status === 'trial' && user.trial_ends_at) {
+    const days = Math.ceil((new Date(user.trial_ends_at) - Date.now()) / 86400000);
+    document.getElementById('plan-info').style.display = 'flex';
+    document.getElementById('plan-label').textContent  = `Plano ${user.plan}`;
+    if (days > 0) {
+      document.getElementById('trial-msg').textContent = `Trial: ${days} dias restantes`;
+    } else {
+      document.getElementById('trial-msg').textContent = 'Trial expirado — contate o suporte';
+    }
+  }
+
+  // Load enabled modules
+  await renderModules(slug);
+
+  // Presence
+  await renderPresence();
+  a1StartHeartbeat('dashboard');
+}
+
+async function renderModules(slug) {
+  const grid = document.getElementById('modules-grid');
+  grid.innerHTML = '';
+
+  const checks = await Promise.all(
+    ALL_MODULES.map(m =>
+      fetch(A1.rpc('a1_has_module'), {
+        method: 'POST',
+        headers: A1.headers(),
+        body: JSON.stringify({ p_module_key: m.key })
+      }).then(r => r.json()).catch(() => false)
+    )
+  );
+
+  ALL_MODULES.forEach((m, i) => {
+    const unlocked = checks[i];
+    const card = document.createElement('a');
+    card.className = 'module-card' + (unlocked ? '' : ' locked');
+    card.href = (unlocked && m.path) ? `/${slug}/${m.path}` : 'javascript:void(0)';
+
+    if (!unlocked || !m.path) {
+      card.onclick = e => {
+        if (!unlocked) { e.preventDefault(); toast('Módulo bloqueado. Contate o administrador.', 'error'); }
+        else if (!m.path) { e.preventDefault(); toast('Em breve.', 'info'); }
+      };
+    }
+
+    card.innerHTML = `
+      <div class="module-icon">${m.icon}</div>
+      <div class="module-name">${m.name}</div>
+      <div class="module-desc">${m.desc}</div>
+      <div class="module-badge">
+        ${unlocked
+          ? '<span class="badge badge-green">✓ Disponível</span>'
+          : '<span class="badge badge-gray">🔒 Bloqueado</span>'}
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+async function renderPresence() {
+  const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const users = await fetch(
+    `${A1.rest('a1_presence')}?last_seen=gte.${since}`,
+    { headers: A1.headers() }
+  ).then(r => r.json()).catch(() => []);
+
+  const bar = document.getElementById('presence-bar');
+  if (!users.length) { bar.innerHTML = '<span>Nenhum usuário online</span>'; return; }
+
+  bar.innerHTML = `<div class="presence-dot"></div>
+    <span style="margin-right:.5rem">${users.length} online:</span>
+    ${users.map(u => `<span class="user-chip">${u.name}</span>`).join('')}`;
+}
+
+function toast(msg, type = 'info') {
+  const el = document.getElementById('a1-toast');
+  const item = document.createElement('div');
+  item.className = `toast-item toast-${type}`;
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), 3500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — ALPHA ONE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/alpha.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-nav">
+      <a href="" class="nav-item" id="nav-home"><span class="nav-item-icon">⬡</span> Dashboard</a>
+    </div>
+    <div class="sidebar-footer">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
+      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title">Administração</div>
+    </div>
+
+    <div style="padding:1.5rem;max-width:52rem">
+      <!-- Users section -->
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span>Usuários</span>
+        <button class="btn btn-primary" onclick="openNewUser()">+ Novo usuário</button>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:2rem">
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>CPF</th><th>Função</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="6" style="color:var(--muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Partners section -->
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span>Parceiros</span>
+        <button class="btn btn-primary" onclick="openNewPartner()">+ Novo parceiro</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>Tipo</th><th>CPF</th><th>Status</th><th>Aprovado</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="partners-tbody">
+            <tr><td colspan="6" style="color:var(--muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New User Modal -->
+<div id="user-modal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo usuário</div>
+      <button class="btn btn-ghost" onclick="closeUserModal()" style="padding:.4rem .75rem">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome</label><input id="u-name" type="text"></div>
+      <div class="form-group"><label>CPF</label><input id="u-cpf" type="text" maxlength="14"></div>
+      <div class="form-group"><label>E-mail</label><input id="u-email" type="email"></div>
+      <div class="form-group"><label>Senha inicial</label><input id="u-pw" type="password"></div>
+      <div class="form-group">
+        <label>Função</label>
+        <select id="u-role">
+          <option value="user">Usuário</option>
+          <option value="manager">Gerente</option>
+          <option value="admin">Admin</option>
+          <option value="viewer">Somente visualização</option>
+        </select>
+      </div>
+      <div id="u-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
+      <button class="btn btn-primary" id="u-btn" onclick="createUser()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Partner Modal -->
+<div id="partner-modal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo parceiro</div>
+      <button class="btn btn-ghost" onclick="closePartnerModal()" style="padding:.4rem .75rem">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome</label><input id="p-name" type="text"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="p-type">
+          <option value="partner">Parceiro</option>
+          <option value="broker">Corretor</option>
+          <option value="dispatcher">Despachante</option>
+          <option value="agent">Agente</option>
+        </select>
+      </div>
+      <div class="form-group"><label>CPF</label><input id="p-cpf" type="text" maxlength="14"></div>
+      <div class="form-group"><label>E-mail</label><input id="p-email" type="email"></div>
+      <div class="form-group"><label>Telefone</label><input id="p-phone" type="tel"></div>
+      <div class="form-group"><label>Senha de acesso</label><input id="p-pw" type="password"></div>
+      <div id="p-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePartnerModal()">Cancelar</button>
+      <button class="btn btn-primary" id="p-btn" onclick="createPartner()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+async function init() {
+  let user;
+  try { user = a1RequireAuth(['owner','admin']); } catch { return; }
+
+  const slug = A1.slug;
+  document.getElementById('nav-home').href        = `/${slug}/dashboard`;
+  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
+
+  loadUsers();
+  loadPartners();
+}
+
+async function loadUsers() {
+  const users = await fetch(
+    `${A1.rest('a1_users')}?role=not.eq.partner&order=created_at.asc`,
+    { headers: A1.headers() }
+  ).then(r => r.json());
+
+  document.getElementById('users-tbody').innerHTML = users.map(u => `
+    <tr>
+      <td>${u.name}</td>
+      <td>${u.cpf || '—'}</td>
+      <td><span class="badge badge-gray">${u.role}</span></td>
+      <td>${u.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${u.last_seen ? new Date(u.last_seen).toLocaleString('pt-BR') : 'Nunca'}</td>
+      <td>
+        <button class="btn btn-ghost" style="font-size:.75rem" onclick="toggleUser('${u.id}', ${u.is_active})">
+          ${u.is_active ? 'Desativar' : 'Ativar'}
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+async function loadPartners() {
+  const partners = await fetch(
+    `${A1.rest('a1_partners')}?order=created_at.asc`,
+    { headers: A1.headers() }
+  ).then(r => r.json());
+
+  document.getElementById('partners-tbody').innerHTML = partners.length
+    ? partners.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td><span class="badge badge-indigo">${p.type}</span></td>
+          <td>${p.cpf || '—'}</td>
+          <td>${p.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
+          <td>${p.approved ? '<span class="badge badge-green">Sim</span>' : '<span class="badge badge-yellow">Não</span>'}</td>
+          <td style="display:flex;gap:.3rem">
+            ${!p.approved ? `<button class="btn btn-primary" style="font-size:.75rem" onclick="approvePartner('${p.id}')">Aprovar</button>` : ''}
+            <button class="btn btn-ghost" style="font-size:.75rem" onclick="togglePartner('${p.id}', ${p.is_active})">${p.is_active ? 'Desativar' : 'Ativar'}</button>
+          </td>
+        </tr>`).join('')
+    : '<tr><td colspan="6" style="color:var(--muted)">Nenhum parceiro cadastrado.</td></tr>';
+}
+
+function openNewUser()     { document.getElementById('user-modal').style.display    = 'flex'; }
+function closeUserModal()  { document.getElementById('user-modal').style.display    = 'none'; }
+function openNewPartner()  { document.getElementById('partner-modal').style.display = 'flex'; }
+function closePartnerModal(){ document.getElementById('partner-modal').style.display = 'none'; }
+
+async function createUser() {
+  const btn = document.getElementById('u-btn');
+  btn.disabled = true;
+  btn.textContent = 'Criando...';
+  try {
+    await a1CreateUser({
+      name:     document.getElementById('u-name').value,
+      cpf:      document.getElementById('u-cpf').value,
+      email:    document.getElementById('u-email').value,
+      password: document.getElementById('u-pw').value,
+      role:     document.getElementById('u-role').value
+    });
+    closeUserModal();
+    toast('Usuário criado.', 'success');
+    loadUsers();
+  } catch (e) {
+    document.getElementById('u-err').textContent = e.message;
+    document.getElementById('u-err').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Criar';
+  }
+}
+
+async function createPartner() {
+  const btn = document.getElementById('p-btn');
+  btn.disabled = true;
+  const hash = await hashPassword(document.getElementById('p-pw').value);
+
+  const res = await fetch(A1.rest('a1_partners'), {
+    method: 'POST',
+    headers: A1.returnHeaders(),
+    body: JSON.stringify({
+      name:          document.getElementById('p-name').value,
+      type:          document.getElementById('p-type').value,
+      cpf:           document.getElementById('p-cpf').value.replace(/\D/g,''),
+      email:         document.getElementById('p-email').value,
+      phone:         document.getElementById('p-phone').value,
+      password_hash: hash
+    })
+  });
+
+  if (res.ok) {
+    closePartnerModal();
+    toast('Parceiro cadastrado.', 'success');
+    loadPartners();
+  } else {
+    const err = await res.json();
+    document.getElementById('p-err').textContent = err?.message?.includes('unique') ? 'CPF já cadastrado.' : 'Erro ao cadastrar.';
+    document.getElementById('p-err').style.display = 'block';
+  }
+  btn.disabled = false;
+}
+
+async function toggleUser(id, current) {
+  await fetch(`${A1.rest('a1_users')}?id=eq.${id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ is_active: !current })
+  });
+  toast(current ? 'Usuário desativado.' : 'Usuário ativado.', 'success');
+  loadUsers();
+}
+
+async function approvePartner(id) {
+  await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ approved: true })
+  });
+  toast('Parceiro aprovado.', 'success');
+  loadPartners();
+}
+
+async function togglePartner(id, current) {
+  await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ is_active: !current })
+  });
+  loadPartners();
+}
+
+function toast(msg, type = 'info') {
+  const el   = document.getElementById('a1-toast');
+  const item = document.createElement('div');
+  item.className = `toast-item toast-${type}`;
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), 3500);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeUserModal(); closePartnerModal(); }
+});
+
+init();
+</script>
+</body>
+</html>

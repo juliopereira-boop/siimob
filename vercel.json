@@ -1,0 +1,24 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/",                  "destination": "/index.html" },
+    { "source": "/:slug/login",       "destination": "/login.html" },
+    { "source": "/:slug/repasse",     "destination": "/repasse.html" },
+    { "source": "/:slug/registro",    "destination": "/registro.html" },
+    { "source": "/:slug/dashboard",   "destination": "/dashboard.html" },
+    { "source": "/:slug/admin",       "destination": "/tenant-admin.html" },
+    { "source": "/superadmin",        "destination": "/superadmin.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",         "value": "DENY" },
+        { "key": "X-XSS-Protection",        "value": "1; mode=block" },
+        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

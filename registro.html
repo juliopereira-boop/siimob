@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro — ALPHA ONE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/alpha.css">
+  <style>
+    body { overflow: hidden; }
+    .board-wrap { height: calc(100vh - 4rem); overflow: hidden; padding: 1rem; }
+    .detail-panel {
+      position: fixed; right: 0; top: 0; bottom: 0; width: 36rem; max-width: 100vw;
+      background: var(--bg2); border-left: 1px solid var(--border);
+      z-index: 50; overflow-y: auto; transform: translateX(100%);
+      transition: transform .2s ease;
+    }
+    .detail-panel.open { transform: translateX(0); }
+    .detail-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .detail-body   { padding: 1.5rem; }
+    .detail-section { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.25rem 0 .5rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+    .detail-field label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .25rem; }
+    .topbar-search input {
+      background: var(--bg3); border: 1px solid var(--border); border-radius: .4rem;
+      color: var(--text); padding: .4rem .75rem; font-size: .8rem; outline: none; width: 14rem;
+    }
+    .topbar-search input:focus { border-color: var(--accent); }
+    .xlsx-drop {
+      border: 2px dashed var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      color: var(--muted); cursor: pointer; font-size: .8rem; transition: border-color .15s;
+    }
+    .xlsx-drop:hover { border-color: var(--accent); color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-nav">
+      <a href="" class="nav-item" id="nav-home"><span class="nav-item-icon">⬡</span> Dashboard</a>
+      <a href="" class="nav-item" id="nav-repasse"><span class="nav-item-icon">🔁</span> Repasse</a>
+      <a href="#" class="nav-item active"><span class="nav-item-icon">📋</span> Registro</a>
+    </div>
+    <div class="sidebar-footer">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
+      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="topbar">
+      <div class="topbar-title">Gestão de Registro</div>
+      <div class="topbar-actions">
+        <div class="topbar-search"><input id="search-input" type="text" placeholder="Buscar contrato, CPF, unidade..."></div>
+        <button class="btn btn-ghost" onclick="openImport()">⬆ Importar</button>
+        <button class="btn btn-primary" onclick="openNew()">+ Novo</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="kanban-board" id="kanban-board">
+        <div style="color:var(--muted);padding:1rem">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <div>
+      <div style="font-weight:700;font-size:1rem" id="dp-name">—</div>
+      <div style="font-size:.75rem;color:var(--muted)" id="dp-sub">—</div>
+    </div>
+    <button class="btn btn-ghost" onclick="closeDetail()" style="padding:.4rem .75rem">✕</button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-section">Etapa</div>
+    <select class="form-group" id="dp-stage" style="width:100%" onchange="changeStage()">
+      <option>Carregando...</option>
+    </select>
+
+    <div class="detail-section">Contrato</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div class="detail-field"><label>Cliente</label><div id="dp-client">—</div></div>
+      <div class="detail-field"><label>CPF</label><div id="dp-cpf">—</div></div>
+      <div class="detail-field"><label>Empreendimento</label><div id="dp-dev">—</div></div>
+      <div class="detail-field"><label>Unidade</label><div id="dp-unit">—</div></div>
+      <div class="detail-field"><label>Valor</label><div id="dp-value">—</div></div>
+      <div class="detail-field"><label>Responsável</label><div id="dp-manager">—</div></div>
+    </div>
+
+    <!-- Extra data from xlsx (stored in payload) -->
+    <div class="detail-section">Dados bancários / extras</div>
+    <pre id="dp-payload" style="font-size:.72rem;color:var(--muted);background:var(--bg3);padding:.75rem;border-radius:.375rem;overflow-x:auto;white-space:pre-wrap"></pre>
+
+    <div class="detail-section">Observações</div>
+    <textarea id="dp-obs" style="width:100%;min-height:5rem;resize:vertical;background:var(--bg3);border:1px solid var(--border);border-radius:.4rem;color:var(--text);padding:.6rem;font-family:inherit;font-size:.85rem"></textarea>
+    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" onclick="saveObs()">Salvar</button>
+
+    <div class="detail-section">Histórico</div>
+    <div id="dp-events" style="display:flex;flex-direction:column;gap:.5rem">
+      <div style="color:var(--muted);font-size:.8rem">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div id="import-modal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Importar planilha bancária</div>
+      <button class="btn btn-ghost" onclick="closeImport()" style="padding:.4rem .75rem">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">
+        Arraste ou selecione o arquivo .xlsx. O sistema detecta o formato automaticamente
+        (aba <strong>Banco_uau</strong> ou <strong>UNIDADES</strong>).
+      </p>
+      <div class="xlsx-drop" onclick="document.getElementById('xlsx-file').click()">
+        📊 Clique para selecionar o arquivo .xlsx
+      </div>
+      <input type="file" id="xlsx-file" accept=".xlsx,.xls" style="display:none" onchange="handleXLSX(event)">
+      <div id="import-result" style="margin-top:1rem;font-size:.85rem;color:var(--muted)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeImport()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+let STAGES = [];
+let CARDS  = [];
+let ACTIVE_CARD = null;
+let SEARCH_Q    = '';
+
+async function init() {
+  let user;
+  try {
+    user = a1RequireAuth();
+    await a1RequireModule('registro');
+  } catch { return; }
+
+  const slug = A1.slug;
+  document.getElementById('nav-home').href    = `/${slug}/dashboard`;
+  document.getElementById('nav-repasse').href = `/${slug}/repasse`;
+  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
+
+  await Promise.all([loadStages(), loadCards()]);
+  renderBoard();
+  a1StartHeartbeat('registro');
+
+  let debounce;
+  document.getElementById('search-input').addEventListener('input', e => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => { SEARCH_Q = e.target.value.toLowerCase(); renderBoard(); }, 250);
+  });
+}
+
+async function loadStages() {
+  STAGES = await fetch(
+    `${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`,
+    { headers: A1.headers() }
+  ).then(r => r.json());
+}
+
+async function loadCards() {
+  CARDS = await fetch(
+    `${A1.rest('a1_cases')}?module_key=eq.registro&order=updated_at.desc`,
+    { headers: A1.headers() }
+  ).then(r => r.json());
+}
+
+function filteredCards(stageId) {
+  return CARDS.filter(c => {
+    if (c.stage_id !== stageId) return false;
+    if (!SEARCH_Q) return true;
+    return (c.client_name || '').toLowerCase().includes(SEARCH_Q)
+        || (c.client_cpf  || '').includes(SEARCH_Q)
+        || (c.unit        || '').toLowerCase().includes(SEARCH_Q)
+        || (c.development || '').toLowerCase().includes(SEARCH_Q);
+  });
+}
+
+function renderBoard() {
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = '';
+  STAGES.forEach(stage => {
+    const cards = filteredCards(stage.id);
+    const col   = document.createElement('div');
+    col.className = 'kanban-col';
+    col.innerHTML = `
+      <div class="kanban-col-header">
+        <div class="kanban-col-dot" style="background:${stage.color}"></div>
+        <div class="kanban-col-title">${stage.name}</div>
+        <div class="kanban-col-count">${cards.length}</div>
+      </div>
+      <div class="kanban-col-body">
+        ${cards.map(c => `
+          <div class="kanban-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
+            <div class="kanban-card-name">${c.client_name}</div>
+            <div class="kanban-card-sub">${[c.development, c.unit].filter(Boolean).join(' · ') || '—'}</div>
+            <div class="kanban-card-meta">
+              ${c.manager_name ? `<span class="badge badge-gray">${c.manager_name}</span>` : ''}
+            </div>
+          </div>`).join('') || '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:.75rem">Vazio</div>'}
+      </div>`;
+    board.appendChild(col);
+  });
+}
+
+async function openDetail(cardId) {
+  ACTIVE_CARD = CARDS.find(c => c.id === cardId);
+  if (!ACTIVE_CARD) return;
+  const c = ACTIVE_CARD;
+
+  document.getElementById('dp-name').textContent    = c.client_name;
+  document.getElementById('dp-sub').textContent     = [c.development, c.unit].filter(Boolean).join(' / ');
+  document.getElementById('dp-client').textContent  = c.client_name  || '—';
+  document.getElementById('dp-cpf').textContent     = c.client_cpf   || '—';
+  document.getElementById('dp-dev').textContent     = c.development   || '—';
+  document.getElementById('dp-unit').textContent    = c.unit          || '—';
+  document.getElementById('dp-value').textContent   = c.contract_value
+    ? 'R$ ' + Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
+  document.getElementById('dp-manager').textContent = c.manager_name  || '—';
+  document.getElementById('dp-obs').value           = c.observations   || '';
+
+  // Payload (extra data from xlsx)
+  const payload = c.payload && Object.keys(c.payload).length
+    ? JSON.stringify(c.payload, null, 2)
+    : 'Nenhum dado extra.';
+  document.getElementById('dp-payload').textContent = payload;
+
+  const sel = document.getElementById('dp-stage');
+  sel.innerHTML = STAGES.map(s =>
+    `<option value="${s.id}" ${s.id === c.stage_id ? 'selected' : ''}>${s.name}</option>`
+  ).join('');
+
+  if (c.is_new) {
+    fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
+      method: 'PATCH', headers: A1.headers(), body: JSON.stringify({ is_new: false })
+    });
+    c.is_new = false;
+  }
+
+  loadEvents(cardId);
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  ACTIVE_CARD = null;
+}
+
+async function loadEvents(cardId) {
+  const events = await fetch(
+    `${A1.rest('a1_events')}?case_id=eq.${cardId}&order=created_at.desc&limit=20`,
+    { headers: A1.headers() }
+  ).then(r => r.json());
+
+  document.getElementById('dp-events').innerHTML = events.length
+    ? events.map(e => `
+        <div style="background:var(--bg3);border-radius:.375rem;padding:.6rem .875rem">
+          <div style="font-size:.7rem;color:var(--muted)">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
+          <div style="font-size:.8rem;margin-top:.1rem">${e.description || e.type}</div>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:.8rem">Sem histórico.</div>';
+}
+
+async function changeStage() {
+  if (!ACTIVE_CARD) return;
+  const newStageId = document.getElementById('dp-stage').value;
+  const newStage   = STAGES.find(s => s.id === newStageId);
+  const user       = A1.user;
+
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ stage_id: newStageId, stage_name: newStage?.name, stage_entered_at: new Date().toISOString() })
+  });
+
+  await fetch(A1.rest('a1_events'), {
+    method: 'POST', headers: A1.headers(),
+    body: JSON.stringify({
+      case_id:     ACTIVE_CARD.id,
+      type:        'stage_change',
+      description: `${ACTIVE_CARD.stage_name} → ${newStage?.name}`,
+      actor_name:  user?.name
+    })
+  });
+
+  ACTIVE_CARD.stage_id   = newStageId;
+  ACTIVE_CARD.stage_name = newStage?.name;
+  await loadCards();
+  renderBoard();
+  toast('Etapa atualizada.', 'success');
+  loadEvents(ACTIVE_CARD.id);
+}
+
+async function saveObs() {
+  if (!ACTIVE_CARD) return;
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
+  });
+  toast('Salvo.', 'success');
+}
+
+async function openNew() {
+  const name = prompt('Nome do cliente / contrato:');
+  if (!name) return;
+  const initial = STAGES.find(s => s.is_initial) || STAGES[0];
+  const [card]  = await fetch(A1.rest('a1_cases'), {
+    method: 'POST', headers: A1.returnHeaders(),
+    body: JSON.stringify({ module_key: 'registro', stage_id: initial?.id, stage_name: initial?.name, client_name: name })
+  }).then(r => r.json());
+  CARDS.unshift(card);
+  renderBoard();
+  openDetail(card.id);
+  toast('Contrato criado.', 'success');
+}
+
+// Import xlsx — plug in your SheetJS (xlsx) parser here
+function openImport()  { document.getElementById('import-modal').style.display = 'flex'; }
+function closeImport() { document.getElementById('import-modal').style.display = 'none'; }
+
+async function handleXLSX(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('import-result').textContent =
+    'Arquivo selecionado: ' + file.name + '. Integre a biblioteca SheetJS (xlsx) para processar.';
+  // When integrating xlsx:
+  // 1. Read file as ArrayBuffer
+  // 2. Parse with XLSX.read()
+  // 3. Detect tab name: 'Banco_uau' (Ceará) or 'UNIDADES' (Piauí)
+  // 4. Map rows to a1_cases fields + payload JSONB for extra columns
+  // 5. POST to a1_cases with module_key = 'registro'
+}
+
+function toast(msg, type = 'info') {
+  const el   = document.getElementById('a1-toast');
+  const item = document.createElement('div');
+  item.className = `toast-item toast-${type}`;
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), 3500);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeImport(); } });
+
+init();
+</script>
+</body>
+</html>
