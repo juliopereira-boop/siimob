@@ -36,11 +36,18 @@
 <body>
 <div class="layout">
   <nav class="sidebar">
-    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-logo">
+      <div class="logo-mark">A1</div>
+      <div class="logo-text">ALPHA <span>ONE</span></div>
+    </div>
     <div class="sidebar-nav">
-      <a href="" class="nav-item" id="nav-home"><span class="nav-item-icon">⬡</span> Dashboard</a>
-      <a href="" class="nav-item" id="nav-repasse"><span class="nav-item-icon">🔁</span> Repasse</a>
-      <a href="#" class="nav-item active"><span class="nav-item-icon">📋</span> Registro</a>
+      <div class="nav-section-label">Menu</div>
+      <a href="" class="nav-item" id="nav-home"><span class="nav-icon">⬡</span> Dashboard</a>
+      <a href="" class="nav-item" id="nav-repasse"><span class="nav-icon">🔁</span> Repasse</a>
+      <a href="#" class="nav-item active"><span class="nav-icon">📋</span> Registro</a>
+      <div class="nav-section-label" style="margin-top:.75rem">Ferramentas</div>
+      <a href="" class="nav-item" id="nav-workflow"><span class="nav-icon">⚙</span> Workflow</a>
+      <a href="" class="nav-item" id="nav-config"><span class="nav-icon">🔧</span> Configurações</a>
     </div>
     <div class="sidebar-footer">
       <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
@@ -148,8 +155,10 @@ async function init() {
   } catch { return; }
 
   const slug = A1.slug;
-  document.getElementById('nav-home').href    = `/${slug}/dashboard`;
-  document.getElementById('nav-repasse').href = `/${slug}/repasse`;
+  document.getElementById('nav-home').href     = `/${slug}/dashboard`;
+  document.getElementById('nav-repasse').href  = `/${slug}/repasse`;
+  document.getElementById('nav-workflow').href = `/${slug}/workflow`;
+  document.getElementById('nav-config').href   = `/${slug}/configuracoes`;
   document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
 
   await Promise.all([loadStages(), loadCards()]);

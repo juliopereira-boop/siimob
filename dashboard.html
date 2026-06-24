@@ -131,6 +131,13 @@
       <a href="" class="nav-item" id="nav-registro">
         <span class="nav-icon">📋</span> Registro
       </a>
+      <div class="nav-section-label" style="margin-top:.75rem">Ferramentas</div>
+      <a href="" class="nav-item" id="nav-workflow">
+        <span class="nav-icon">⚙</span> Workflow
+      </a>
+      <a href="" class="nav-item" id="nav-config">
+        <span class="nav-icon">🔧</span> Configurações
+      </a>
     </div>
     <div class="sidebar-footer">
       <div class="user-card">
@@ -205,6 +212,8 @@ async function init() {
 
   document.getElementById('nav-repasse').href  = `/${slug}/repasse`;
   document.getElementById('nav-registro').href = `/${slug}/registro`;
+  document.getElementById('nav-workflow').href = `/${slug}/workflow`;
+  document.getElementById('nav-config').href   = `/${slug}/configuracoes`;
   document.getElementById('tenant-title').textContent = user.tenant_name || slug;
   document.getElementById('plan-display').textContent = (user.plan||'starter').toUpperCase();
 

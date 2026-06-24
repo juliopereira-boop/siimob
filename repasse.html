@@ -7,58 +7,116 @@
   <link rel="stylesheet" href="/css/alpha.css">
   <style>
     body { overflow: hidden; }
-    .main-content { overflow: hidden; }
-    .board-area {
-      flex: 1; overflow: hidden;
-      display: flex; flex-direction: column;
-    }
+    .main-content { overflow: hidden; display: flex; flex-direction: column; }
 
-    /* Detail panel extras */
-    .dp-stage-row {
-      display: flex; gap: .5rem; align-items: center;
+    /* ── Filter bar ────────────────────────────── */
+    .filter-bar {
+      display: flex; gap: .5rem; padding: .5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2); flex-shrink: 0;
+      align-items: center; flex-wrap: wrap;
     }
+    .filter-bar select {
+      font-size: .775rem; height: 1.9rem;
+      padding: 0 .625rem; min-width: 9rem; max-width: 14rem;
+    }
+    .filter-sep { width: 1px; height: 1.25rem; background: var(--border); margin: 0 .15rem; flex-shrink: 0; }
+    .filter-clear {
+      font-size: .72rem; color: var(--text3); cursor: pointer; padding: .2rem .5rem;
+      border-radius: .35rem; transition: all .15s;
+    }
+    .filter-clear:hover { color: var(--accent); background: rgba(124,58,237,.08); }
+
+    /* ── Board ──────────────────────────────────── */
+    .board-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* ── Rich kanban card ───────────────────────── */
+    .k-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: .25rem; }
+    .k-card-name { font-size: .875rem; font-weight: 700; letter-spacing: -.015em; flex: 1; line-height: 1.3; }
+    .k-card-sub { font-size: .75rem; color: var(--text2); margin-bottom: .35rem; }
+    .k-card-cpf {
+      font-size: .7rem; color: var(--text3); font-family: monospace;
+      cursor: pointer; display: inline-flex; align-items: center; gap: .25rem;
+      margin-bottom: .4rem; transition: color .15s;
+    }
+    .k-card-cpf:hover { color: var(--text2); }
+    .k-card-badges { display: flex; flex-wrap: wrap; gap: .25rem; margin-bottom: .4rem; }
+    .k-card-val {
+      font-size: .78rem; font-weight: 700; color: #c4b5fd;
+      margin-bottom: .35rem;
+    }
+    .k-card-meta { display: flex; align-items: center; justify-content: space-between; margin-top: .35rem; }
+    .k-card-age { font-size: .68rem; color: var(--text3); }
+
+    /* Interview status pills inside card */
+    .k-interview {
+      display: flex; gap: .2rem; margin-top: .5rem;
+      border-top: 1px solid var(--border); padding-top: .45rem;
+    }
+    .int-pill {
+      flex: 1; text-align: center; font-size: .65rem; font-weight: 700;
+      padding: .22rem .2rem; border-radius: .35rem; cursor: pointer;
+      border: 1px solid transparent; transition: all .15s;
+      color: var(--text3); background: var(--bg3);
+    }
+    .int-pill:hover { border-color: var(--border); color: var(--text2); }
+    .int-pill.ip-pendente { background: rgba(107,114,128,.15); color: #9ca3af; border-color: rgba(107,114,128,.25); }
+    .int-pill.ip-agendada  { background: rgba(245,158,11,.12);  color: #fcd34d; border-color: rgba(245,158,11,.25); }
+    .int-pill.ip-aprovada  { background: rgba(16,185,129,.12);  color: #6ee7b7; border-color: rgba(16,185,129,.25); }
+
+    /* Eval chip */
+    .eval-chip {
+      display: inline-flex; align-items: center; gap: .25rem;
+      border-radius: 99px; padding: .18rem .55rem;
+      font-size: .67rem; font-weight: 700;
+    }
+    .eval-ok   { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.2); }
+    .eval-warn { background: rgba(245,158,11,.15);  color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
+    .eval-dead { background: rgba(239,68,68,.15);   color: #fca5a5; border: 1px solid rgba(239,68,68,.2); }
+
+    /* ── Detail panel extras ───────────────────── */
+    .dp-stage-row { display: flex; gap: .5rem; align-items: center; }
     .dp-stage-row select { flex: 1; }
-
     .val-badge {
       display: inline-block;
       background: var(--grad-soft);
       border: 1px solid rgba(124,58,237,.2);
       border-radius: var(--radius-sm);
       padding: .35rem .75rem;
-      font-size: .875rem; font-weight: 700;
-      color: #c4b5fd;
+      font-size: .875rem; font-weight: 700; color: #c4b5fd;
     }
-
-    .eval-chip {
-      display: inline-flex; align-items: center; gap: .3rem;
-      border-radius: 99px; padding: .2rem .65rem;
-      font-size: .7rem; font-weight: 700;
-    }
-    .eval-ok   { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.2); }
-    .eval-warn { background: rgba(245,158,11,.15);  color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
-    .eval-dead { background: rgba(239,68,68,.15);   color: #fca5a5; border: 1px solid rgba(239,68,68,.2); }
-
     .obs-area {
       width: 100%; min-height: 5.5rem; resize: vertical;
       background: var(--bg3); border: 1px solid var(--border);
       border-radius: var(--radius-sm); color: var(--text);
       padding: .625rem .875rem; font-size: .85rem; font-family: var(--font);
-      line-height: 1.6; outline: none;
-      transition: border-color .15s, box-shadow .15s;
+      line-height: 1.6; outline: none; transition: border-color .15s, box-shadow .15s;
     }
-    .obs-area:focus {
-      border-color: rgba(124,58,237,.5);
-      box-shadow: 0 0 0 3px rgba(124,58,237,.1);
-    }
-
+    .obs-area:focus { border-color: rgba(124,58,237,.5); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
     .pdf-parsed {
       background: var(--bg3); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: .875rem;
-      font-size: .78rem; color: var(--text2);
-      margin-top: .625rem; line-height: 1.6;
+      font-size: .78rem; color: var(--text2); margin-top: .625rem; line-height: 1.6;
     }
+    .dp-interview-row {
+      display: flex; gap: .5rem; margin-top: .25rem;
+    }
+    .dp-int-btn {
+      flex: 1; padding: .45rem; text-align: center;
+      font-size: .775rem; font-weight: 700; cursor: pointer;
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text2); transition: all .15s;
+    }
+    .dp-int-btn:hover { border-color: rgba(124,58,237,.4); color: var(--text); }
+    .dp-int-btn.active-pend { background: rgba(107,114,128,.2); color: #9ca3af; border-color: rgba(107,114,128,.4); }
+    .dp-int-btn.active-sch  { background: rgba(245,158,11,.15);  color: #fcd34d; border-color: rgba(245,158,11,.4); }
+    .dp-int-btn.active-ok   { background: rgba(16,185,129,.12);  color: #6ee7b7; border-color: rgba(16,185,129,.4); }
 
     .new-card-modal .modal { max-width: 28rem; }
+    .pdf-btn {
+      display: flex; align-items: center; gap: .35rem;
+      font-size: .78rem;
+    }
   </style>
 </head>
 <body>
@@ -73,6 +131,9 @@
       <a href="" class="nav-item" id="nav-home"><span class="nav-icon">⬡</span> Dashboard</a>
       <a href="#"  class="nav-item active"><span class="nav-icon">🔁</span> Repasse</a>
       <a href="" class="nav-item" id="nav-registro"><span class="nav-icon">📋</span> Registro</a>
+      <div class="nav-section-label" style="margin-top:.75rem">Ferramentas</div>
+      <a href="" class="nav-item" id="nav-workflow"><span class="nav-icon">⚙</span> Workflow</a>
+      <a href="" class="nav-item" id="nav-config"><span class="nav-icon">🔧</span> Configurações</a>
     </div>
     <div class="sidebar-footer">
       <div class="user-card">
@@ -82,20 +143,48 @@
           <div class="user-role" id="user-role">—</div>
         </div>
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="a1Logout()" style="margin-top:.5rem">Sair</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="a1Logout()" style="margin-top:.5rem">Sair da conta</button>
     </div>
   </nav>
 
   <div class="main-content">
+    <!-- Topbar -->
     <div class="topbar">
       <div class="topbar-title">Gestão de Repasse</div>
       <div class="topbar-actions">
         <div class="search-wrap">
           <input id="search" type="text" placeholder="Buscar cliente, unidade, CPF...">
         </div>
+        <button class="btn btn-ghost btn-sm pdf-btn" onclick="triggerGlobalPDF()" title="Upload de proposta PDF">
+          📎 Upload PDF
+        </button>
         <button class="btn btn-primary" onclick="openNewModal()">+ Novo card</button>
         <div class="presence-bar" style="border:none;padding:0;background:transparent" id="presence-count"></div>
       </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar" id="filter-bar" style="display:none">
+      <select id="f-regional" onchange="applyFilters()">
+        <option value="">Todas as regionais</option>
+      </select>
+      <div class="filter-sep"></div>
+      <select id="f-dev" onchange="applyFilters()">
+        <option value="">Todos empreendimentos</option>
+      </select>
+      <div class="filter-sep"></div>
+      <select id="f-partner" onchange="applyFilters()">
+        <option value="">Todos parceiros</option>
+      </select>
+      <div class="filter-sep"></div>
+      <select id="f-interview" onchange="applyFilters()">
+        <option value="">Entrevista: todas</option>
+        <option value="pendente">Pendente</option>
+        <option value="agendada">Agendada</option>
+        <option value="aprovada">Aprovada</option>
+      </select>
+      <div class="filter-sep"></div>
+      <span class="filter-clear" onclick="clearFilters()">✕ Limpar filtros</span>
     </div>
 
     <div class="board-area" id="board-area">
@@ -125,11 +214,21 @@
       <button class="btn btn-ghost btn-sm" onclick="changeStage()">Mover</button>
     </div>
 
+    <!-- Interview -->
+    <div class="detail-section" style="margin-top:1rem">🎙 Status da entrevista</div>
+    <div class="dp-interview-row" id="dp-interview-row">
+      <div class="dp-int-btn" id="dp-int-pend" onclick="setInterview('pendente')">⏳ Pendente</div>
+      <div class="dp-int-btn" id="dp-int-sch"  onclick="setInterview('agendada')">📅 Agendada</div>
+      <div class="dp-int-btn" id="dp-int-ok"   onclick="setInterview('aprovada')">✓ Aprovada</div>
+    </div>
+
     <!-- Client -->
-    <div class="detail-section">👤 Cliente</div>
+    <div class="detail-section" style="margin-top:1rem">👤 Cliente</div>
     <div class="detail-grid">
       <div class="detail-field"><label>Nome</label><div class="val" id="dp-cname">—</div></div>
-      <div class="detail-field"><label>CPF</label><div class="val" id="dp-ccpf">—</div></div>
+      <div class="detail-field"><label>CPF</label>
+        <div class="val" id="dp-ccpf" style="cursor:pointer" title="Clique para copiar" onclick="copyVal(this)">—</div>
+      </div>
       <div class="detail-field"><label>Telefone</label><div class="val" id="dp-cphone">—</div></div>
       <div class="detail-field"><label>E-mail</label><div class="val" id="dp-cemail">—</div></div>
     </div>
@@ -155,7 +254,7 @@
     <!-- Partner -->
     <div class="detail-section">🤝 Parceiro / Corretor</div>
     <div class="detail-grid">
-      <div class="detail-field"><label>Parceiro</label><div class="val" id="dp-partner">—</div></div>
+      <div class="detail-field"><label>Parceiro / CCA</label><div class="val" id="dp-partner">—</div></div>
       <div class="detail-field"><label>Imobiliária</label><div class="val" id="dp-realstate">—</div></div>
       <div class="detail-field"><label>Corretor</label><div class="val" id="dp-broker">—</div></div>
       <div class="detail-field"><label>Tel. corretor</label><div class="val" id="dp-bphone">—</div></div>
@@ -220,6 +319,10 @@
         <div class="form-group" style="margin:0"><label>Bloco</label><input id="nc-block" placeholder="A"></div>
         <div class="form-group" style="margin:0"><label>Unidade</label><input id="nc-unit" placeholder="101"></div>
       </div>
+      <div class="form-group" style="margin-top:.75rem">
+        <label>Parceiro / CCA</label>
+        <input id="nc-partner" type="text" placeholder="Nome do parceiro">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeNewModal()">Cancelar</button>
@@ -228,11 +331,15 @@
   </div>
 </div>
 
+<!-- Global PDF upload (hidden) -->
+<input type="file" id="pdf-global" accept=".pdf" style="display:none" onchange="handleGlobalPDF(event)">
+
 <div id="a1-toast"></div>
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
-let STAGES = [], CARDS = [], GROUPS = [], ACTIVE_GROUP = null, ACTIVE_CARD = null, SEARCH = '';
+let STAGES = [], CARDS = [], GROUPS = [], ACTIVE_GROUP = null, ACTIVE_CARD = null;
+let SEARCH = '', F_DEV = '', F_PARTNER = '', F_INTERVIEW = '';
 
 async function init() {
   let user;
@@ -244,6 +351,8 @@ async function init() {
   const slug = A1.slug;
   document.getElementById('nav-home').href     = `/${slug}/dashboard`;
   document.getElementById('nav-registro').href = `/${slug}/registro`;
+  document.getElementById('nav-workflow').href = `/${slug}/workflow`;
+  document.getElementById('nav-config').href   = `/${slug}/configuracoes`;
 
   const init2 = user.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   document.getElementById('user-avatar').textContent = init2;
@@ -251,26 +360,78 @@ async function init() {
   document.getElementById('user-role').textContent   = user.role;
 
   await Promise.all([loadStages(), loadCards()]);
-  renderGroups(); renderBoard();
+  buildFilterOptions();
+  renderGroups();
+  renderBoard();
   a1StartHeartbeat('repasse');
   renderPresence();
 
-  let t;
+  let searchT;
   document.getElementById('search').addEventListener('input', e => {
-    clearTimeout(t);
-    t = setTimeout(() => { SEARCH = e.target.value.toLowerCase(); renderBoard(); }, 220);
+    clearTimeout(searchT);
+    searchT = setTimeout(() => { SEARCH = e.target.value.toLowerCase(); renderBoard(); }, 220);
   });
+
+  document.getElementById('nc-cpf').addEventListener('input', maskCPF);
 }
 
 async function loadStages() {
-  STAGES = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json());
+  STAGES = await fetch(
+    `${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`,
+    { headers: A1.headers() }
+  ).then(r=>r.json()).catch(()=>[]);
+
   const seen = new Set();
   GROUPS = [];
-  STAGES.forEach(s => { if (s.group_key && !seen.has(s.group_key)) { seen.add(s.group_key); GROUPS.push(s.group_key); } });
+  STAGES.forEach(s => {
+    if (s.group_key && !seen.has(s.group_key)) { seen.add(s.group_key); GROUPS.push(s.group_key); }
+  });
 }
 
 async function loadCards() {
-  CARDS = await fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=updated_at.desc`, { headers: A1.headers() }).then(r=>r.json());
+  CARDS = await fetch(
+    `${A1.rest('a1_cases')}?module_key=eq.repasse&order=updated_at.desc`,
+    { headers: A1.headers() }
+  ).then(r=>r.json()).catch(()=>[]);
+}
+
+function buildFilterOptions() {
+  const devSel  = document.getElementById('f-dev');
+  const partSel = document.getElementById('f-partner');
+  const regSel  = document.getElementById('f-regional');
+
+  const devs  = [...new Set(CARDS.map(c=>c.development).filter(Boolean))].sort();
+  const parts = [...new Set(CARDS.map(c=>c.partner_name).filter(Boolean))].sort();
+
+  devs.forEach(d  => { const o=document.createElement('option'); o.value=d; o.textContent=d; devSel.appendChild(o); });
+  parts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; partSel.appendChild(o); });
+
+  GROUPS.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; regSel.appendChild(o); });
+
+  if (GROUPS.length || devs.length || parts.length) {
+    document.getElementById('filter-bar').style.display = 'flex';
+  }
+}
+
+function applyFilters() {
+  F_DEV       = document.getElementById('f-dev').value;
+  F_PARTNER   = document.getElementById('f-partner').value;
+  F_INTERVIEW = document.getElementById('f-interview').value;
+  const reg   = document.getElementById('f-regional').value;
+  ACTIVE_GROUP = reg || null;
+  renderGroups();
+  renderBoard();
+}
+
+function clearFilters() {
+  document.getElementById('f-dev').value       = '';
+  document.getElementById('f-partner').value   = '';
+  document.getElementById('f-interview').value = '';
+  document.getElementById('f-regional').value  = '';
+  F_DEV = F_PARTNER = F_INTERVIEW = '';
+  ACTIVE_GROUP = null;
+  renderGroups();
+  renderBoard();
 }
 
 function renderGroups() {
@@ -281,69 +442,149 @@ function renderGroups() {
     GROUPS.map(g => `<div class="group-tab ${ACTIVE_GROUP===g?'active':''}" onclick="setGroup('${g}')">${g}</div>`).join('');
 }
 
-function setGroup(g) { ACTIVE_GROUP = g; renderGroups(); renderBoard(); }
+function setGroup(g) { ACTIVE_GROUP = g; document.getElementById('f-regional').value = g||''; renderGroups(); renderBoard(); }
 
 function cols() { return ACTIVE_GROUP ? STAGES.filter(s => s.group_key === ACTIVE_GROUP) : STAGES; }
 
-function cards(stageId) {
+function filteredCards(stageId) {
   return CARDS.filter(c => {
     if (c.stage_id !== stageId) return false;
-    if (!SEARCH) return true;
-    return (c.client_name||'').toLowerCase().includes(SEARCH)
-        || (c.client_cpf||'').includes(SEARCH)
-        || (c.unit||'').toLowerCase().includes(SEARCH)
-        || (c.development||'').toLowerCase().includes(SEARCH);
+    if (F_DEV && c.development !== F_DEV) return false;
+    if (F_PARTNER && c.partner_name !== F_PARTNER) return false;
+    if (F_INTERVIEW) {
+      const ei = (c.payload?.entrevista) || 'pendente';
+      if (ei !== F_INTERVIEW) return false;
+    }
+    if (SEARCH) {
+      const hay = [c.client_name, c.client_cpf, c.unit, c.development, c.partner_name].join(' ').toLowerCase();
+      if (!hay.includes(SEARCH)) return false;
+    }
+    return true;
   });
 }
 
 function evalChip(d) {
   if (!d) return '';
   const days = Math.ceil((new Date(d) - Date.now()) / 86400000);
-  const cls = days < 0 ? 'eval-dead' : days <= 7 ? 'eval-warn' : 'eval-ok';
-  const label = days < 0 ? 'Vencido' : `${days}d`;
-  return `<span class="eval-chip ${cls}">${label}</span>`;
+  const cls  = days < 0 ? 'eval-dead' : days <= 7 ? 'eval-warn' : 'eval-ok';
+  const lbl  = days < 0 ? `Vencido` : `${days}d`;
+  return `<span class="eval-chip ${cls}">${lbl}</span>`;
+}
+
+function timeInStage(enteredAt) {
+  if (!enteredAt) return '';
+  const h = Math.round((Date.now() - new Date(enteredAt)) / 3600000);
+  if (h < 1)  return '<1h';
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return d < 7 ? `${d}d` : `${Math.floor(d/7)}sem`;
+}
+
+function maskCPF(e) {
+  let v = e.target.value.replace(/\D/g,'').slice(0,11);
+  if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  e.target.value = v;
+}
+
+function renderCard(c) {
+  const val = c.contract_value
+    ? `R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+    : '';
+
+  const cpfRaw = (c.client_cpf||'').replace(/\D/g,'');
+  const cpfFmt = cpfRaw.length === 11
+    ? cpfRaw.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4')
+    : c.client_cpf || '';
+  const cpfMask = cpfFmt ? cpfFmt.slice(0,7) + '***-**' : '';
+
+  const age = timeInStage(c.stage_entered_at);
+  const ei  = (c.payload?.entrevista) || 'pendente';
+
+  const ipiClasses = {
+    pendente: 'ip-pendente',
+    agendada: 'ip-agendada',
+    aprovada: 'ip-aprovada',
+  };
+
+  return `
+    <div class="k-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
+      <div class="k-card-header">
+        <div class="k-card-name">${c.client_name}</div>
+        ${c.is_new ? '<span class="badge badge-blue" style="flex-shrink:0">Novo</span>' : ''}
+      </div>
+      <div class="k-card-sub">${[c.development, [c.block,c.unit].filter(Boolean).join('/')].filter(Boolean).join(' · ') || '<span style="color:var(--text3)">Imóvel não informado</span>'}</div>
+      ${cpfMask ? `<div class="k-card-cpf" onclick="event.stopPropagation();copyText('${cpfFmt}')" title="Copiar CPF">${cpfMask} <span style="opacity:.5">📋</span></div>` : ''}
+      ${val ? `<div class="k-card-val">${val}</div>` : ''}
+      <div class="k-card-badges">
+        ${c.partner_name    ? `<span class="badge badge-purple" style="font-size:.67rem">${c.partner_name}</span>` : ''}
+        ${c.real_estate_name? `<span class="badge badge-gray"   style="font-size:.67rem">${c.real_estate_name}</span>` : ''}
+        ${evalChip(c.evaluation_expiry)}
+      </div>
+      <div class="k-interview" onclick="event.stopPropagation()">
+        <div class="int-pill ${ei==='pendente'?'ip-pendente':''}" onclick="setInterviewCard('${c.id}','pendente')">⏳ Pendente</div>
+        <div class="int-pill ${ei==='agendada'?'ip-agendada':''}" onclick="setInterviewCard('${c.id}','agendada')">📅 Agendada</div>
+        <div class="int-pill ${ei==='aprovada'?'ip-aprovada':''}" onclick="setInterviewCard('${c.id}','aprovada')">✓ Aprovada</div>
+      </div>
+      ${age ? `<div class="k-card-meta"><span class="k-card-age">⏱ ${age} nesta etapa</span></div>` : ''}
+    </div>`;
 }
 
 function renderBoard() {
-  const board = document.getElementById('board');
+  const board  = document.getElementById('board');
   const stages = cols();
   board.innerHTML = '';
 
   if (!stages.length) {
-    board.innerHTML = '<div style="color:var(--text3);padding:2rem;font-size:.875rem">Nenhuma etapa configurada para este módulo.</div>';
+    board.innerHTML = '<div style="color:var(--text3);padding:2rem;font-size:.875rem">Nenhuma etapa configurada. <a href="" id="wf-link" style="color:var(--accent)">Configure o workflow →</a></div>';
+    const l = document.getElementById('wf-link');
+    if (l) l.href = `/${A1.slug}/workflow`;
     return;
   }
 
   stages.forEach(s => {
-    const cs = cards(s.id);
+    const cs  = filteredCards(s.id);
     const col = document.createElement('div');
     col.className = 'kanban-col';
+    const dotColor = s.color || 'var(--accent)';
     col.innerHTML = `
       <div class="kanban-col-header">
-        <div class="col-dot" style="color:${s.color};background:${s.color}"></div>
+        <div class="col-dot" style="background:${dotColor};box-shadow:0 0 6px ${dotColor}44"></div>
         <div class="col-title">${s.name}</div>
         <div class="col-count">${cs.length}</div>
       </div>
       <div class="kanban-col-body">
-        ${cs.length ? cs.map(c => {
-          const val = c.contract_value
-            ? `R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
-            : '';
-          return `
-            <div class="k-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
-              <div class="k-card-name">${c.client_name}</div>
-              <div class="k-card-sub">${[c.development, c.unit].filter(Boolean).join(' · ') || '—'}</div>
-              ${val ? `<div class="k-card-val">${val}</div>` : ''}
-              <div class="k-card-footer">
-                ${c.partner_name ? `<span class="badge badge-purple">${c.partner_name}</span>` : ''}
-                ${evalChip(c.evaluation_expiry)}
-                ${c.is_new ? '<span class="badge badge-blue">Novo</span>' : ''}
-              </div>
-            </div>`;
-        }).join('') : '<div class="k-card-empty">Sem cards</div>'}
+        ${cs.length
+          ? cs.map(c => renderCard(c)).join('')
+          : '<div class="k-card-empty">Sem cards</div>'}
       </div>`;
     board.appendChild(col);
   });
+}
+
+async function setInterviewCard(cardId, status) {
+  const c = CARDS.find(x => x.id === cardId);
+  if (!c) return;
+  c.payload = { ...(c.payload||{}), entrevista: status };
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${cardId}`, {
+    method:'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ payload: c.payload })
+  });
+  renderBoard();
+  if (ACTIVE_CARD?.id === cardId) updateInterviewButtons(status);
+  toast(`Entrevista: ${status}`, 'success');
+}
+
+async function setInterview(status) {
+  if (!ACTIVE_CARD) return;
+  await setInterviewCard(ACTIVE_CARD.id, status);
+}
+
+function updateInterviewButtons(status) {
+  document.getElementById('dp-int-pend').className = 'dp-int-btn' + (status==='pendente'?' active-pend':'');
+  document.getElementById('dp-int-sch').className  = 'dp-int-btn' + (status==='agendada'?' active-sch':'');
+  document.getElementById('dp-int-ok').className   = 'dp-int-btn' + (status==='aprovada'?' active-ok':'');
 }
 
 async function openDetail(id) {
@@ -353,8 +594,9 @@ async function openDetail(id) {
 
   document.getElementById('dp-name').textContent     = c.client_name;
   document.getElementById('dp-subtitle').textContent = [c.development, c.block, c.unit].filter(Boolean).join(' / ') || 'Imóvel não informado';
+
   document.getElementById('dp-cname').textContent    = c.client_name  || '—';
-  document.getElementById('dp-ccpf').textContent     = c.client_cpf   || '—';
+  document.getElementById('dp-ccpf').textContent     = formatCPF(c.client_cpf) || '—';
   document.getElementById('dp-cphone').textContent   = c.client_phone || '—';
   document.getElementById('dp-cemail').textContent   = c.client_email || '—';
   document.getElementById('dp-dev').textContent      = c.development  || '—';
@@ -377,6 +619,8 @@ async function openDetail(id) {
   const sel = document.getElementById('dp-stage');
   sel.innerHTML = STAGES.map(s => `<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${s.name}</option>`).join('');
 
+  updateInterviewButtons((c.payload?.entrevista) || 'pendente');
+
   if (c.is_new) {
     fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, { method:'PATCH', headers: A1.headers(), body: JSON.stringify({is_new:false}) });
     c.is_new = false;
@@ -389,7 +633,11 @@ async function openDetail(id) {
 function closeDetail() { document.getElementById('dp').classList.remove('open'); ACTIVE_CARD = null; }
 
 async function loadTimeline(caseId) {
-  const events = await fetch(`${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=20`, { headers: A1.headers() }).then(r=>r.json());
+  const events = await fetch(
+    `${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=20`,
+    { headers: A1.headers() }
+  ).then(r=>r.json()).catch(()=>[]);
+
   document.getElementById('dp-timeline').innerHTML = events.length
     ? events.map(e => `
         <div class="timeline-item">
@@ -412,23 +660,35 @@ async function changeStage() {
 
   await fetch(A1.rest('a1_events'), {
     method:'POST', headers: A1.headers(),
-    body: JSON.stringify({ case_id: ACTIVE_CARD.id, type:'stage_change', description:`${ACTIVE_CARD.stage_name} → ${stage?.name}`, actor_name: user?.name })
+    body: JSON.stringify({
+      case_id: ACTIVE_CARD.id, type:'stage_change',
+      description:`${ACTIVE_CARD.stage_name} → ${stage?.name}`,
+      actor_name: user?.name
+    })
   });
 
-  ACTIVE_CARD.stage_id = sid; ACTIVE_CARD.stage_name = stage?.name;
-  await loadCards(); renderBoard(); loadTimeline(ACTIVE_CARD.id);
+  ACTIVE_CARD.stage_id = sid;
+  ACTIVE_CARD.stage_name = stage?.name;
+  ACTIVE_CARD.stage_entered_at = new Date().toISOString();
+  await loadCards();
+  renderBoard();
+  loadTimeline(ACTIVE_CARD.id);
   toast('Etapa atualizada', 'success');
 }
 
 async function saveObs() {
   if (!ACTIVE_CARD) return;
   await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method:'PATCH', headers: A1.headers(), body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
+    method:'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
   });
   toast('Observações salvas', 'success');
 }
 
-function openNewModal() { document.getElementById('new-modal').style.display = 'flex'; setTimeout(()=>document.getElementById('nc-name').focus(),50); }
+function openNewModal() {
+  document.getElementById('new-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('nc-name').focus(), 50);
+}
 function closeNewModal() { document.getElementById('new-modal').style.display = 'none'; }
 
 async function createCard() {
@@ -438,31 +698,38 @@ async function createCard() {
   const btn = document.getElementById('nc-btn');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
 
-  const initial = STAGES.find(s=>s.is_initial) || STAGES[0];
+  const initial = STAGES.find(s => s.is_initial) || STAGES[0];
   const [card]  = await fetch(A1.rest('a1_cases'), {
     method:'POST', headers: A1.returnHeaders(),
     body: JSON.stringify({
       module_key:   'repasse',
       stage_id:     initial?.id,
       stage_name:   initial?.name,
+      stage_entered_at: new Date().toISOString(),
       client_name:  name,
       client_cpf:   document.getElementById('nc-cpf').value.replace(/\D/g,''),
       client_phone: document.getElementById('nc-phone').value,
       development:  document.getElementById('nc-dev').value.trim(),
       block:        document.getElementById('nc-block').value.trim(),
-      unit:         document.getElementById('nc-unit').value.trim()
+      unit:         document.getElementById('nc-unit').value.trim(),
+      partner_name: document.getElementById('nc-partner').value.trim(),
+      is_new: true
     })
-  }).then(r=>r.json());
+  }).then(r=>r.json()).catch(()=>[null]);
 
-  CARDS.unshift(card); renderBoard();
-  ['nc-name','nc-cpf','nc-phone','nc-dev','nc-block','nc-unit'].forEach(id => document.getElementById(id).value='');
-  closeNewModal();
-  openDetail(card.id);
-  toast('Card criado', 'success');
+  if (card) {
+    CARDS.unshift(card);
+    buildFilterOptions();
+    renderBoard();
+    ['nc-name','nc-cpf','nc-phone','nc-dev','nc-block','nc-unit','nc-partner'].forEach(id => document.getElementById(id).value='');
+    closeNewModal();
+    openDetail(card.id);
+    toast('Card criado', 'success');
+  }
   btn.disabled = false; btn.textContent = 'Criar card';
 }
 
-async function handlePDF(e) {
+function handlePDF(e) {
   const file = e.target.files[0];
   if (!file) return;
   const el = document.getElementById('pdf-parsed');
@@ -478,6 +745,12 @@ function handleDrop(e) {
   if (file) handlePDF({ target: { files: [file] } });
 }
 
+function triggerGlobalPDF() { document.getElementById('pdf-global').click(); }
+function handleGlobalPDF(e) {
+  if (!e.target.files[0]) return;
+  toast('PDF recebido — abra um card para associar', 'info');
+}
+
 async function renderPresence() {
   const since = new Date(Date.now()-2*60*1000).toISOString();
   const users = await fetch(`${A1.rest('a1_presence')}?last_seen=gte.${since}`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]);
@@ -487,13 +760,28 @@ async function renderPresence() {
     : '';
 }
 
+function formatCPF(raw) {
+  if (!raw) return '';
+  const d = raw.replace(/\D/g,'');
+  return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4') : raw;
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('CPF copiado!', 'success'); } catch {}
+}
+
+function copyVal(el) {
+  const t = el.textContent.trim();
+  if (t && t !== '—') copyText(t);
+}
+
 function toast(msg, type='info') {
   const el = document.getElementById('a1-toast');
   const d  = document.createElement('div');
   d.className = `toast-item toast-${type}`;
   d.textContent = msg;
   el.appendChild(d);
-  setTimeout(()=>d.remove(), 3500);
+  setTimeout(() => d.remove(), 3500);
 }
 
 document.addEventListener('keydown', e => {
