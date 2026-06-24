@@ -4,58 +4,109 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Entrar — ALPHA ONE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/alpha.css">
   <style>
-    .login-wrap { max-width: 22rem; width: 100%; }
-    .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -.04em; margin-bottom: 1.5rem; text-align: center; }
-    .logo span { color: var(--accent); }
-    .tenant-name {
-      text-align: center;
-      color: var(--muted);
-      font-size: .8rem;
+    .login-wrap { width: 100%; max-width: 23rem; }
+
+    .login-header { text-align: center; margin-bottom: 2rem; }
+    .login-logo {
+      display: inline-flex; align-items: center; gap: .625rem;
       margin-bottom: 1.5rem;
+    }
+    .login-logo-mark {
+      width: 2.5rem; height: 2.5rem;
+      background: var(--grad);
+      border-radius: .625rem;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: .9rem; color: #fff;
+      box-shadow: 0 8px 32px rgba(124,58,237,.45);
+    }
+    .login-logo-text { font-size: 1.2rem; font-weight: 800; letter-spacing: -.03em; }
+    .login-logo-text span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .tenant-pill {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(124,58,237,.12);
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 99px;
+      padding: .25rem .875rem;
+      font-size: .775rem; color: #c4b5fd;
+      font-weight: 600;
+    }
+
+    .login-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 24px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+    }
+
+    .login-card::before {
+      content: '';
+      display: block;
+      height: 2px;
+      background: var(--grad);
+      border-radius: 99px;
+      margin-bottom: 1.75rem;
+    }
+
+    .tab-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .4rem;
+      background: var(--bg3);
+      border-radius: .5rem;
+      padding: .2rem;
+      margin-bottom: 1.5rem;
+      gap: .2rem;
     }
-    .tenant-slug { color: var(--accent); font-weight: 600; }
-    .tab-row { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
     .tab {
-      flex: 1; padding: .6rem; text-align: center; font-size: .8rem; font-weight: 600;
-      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
-      transition: color .15s, border-color .15s;
+      flex: 1; padding: .45rem .75rem;
+      text-align: center; font-size: .775rem; font-weight: 600;
+      color: var(--text2); cursor: pointer;
+      border-radius: .35rem;
+      transition: all .18s;
     }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .error-msg {
-      background: #7f1d1d33; border: 1px solid #dc262633; color: #fca5a5;
-      padding: .6rem .875rem; border-radius: .4rem; font-size: .8rem; margin-bottom: 1rem;
+    .tab.active {
+      background: var(--bg2);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,.4);
     }
+
     .back-link {
-      display: block; text-align: center; color: var(--muted);
-      font-size: .75rem; margin-top: 1.25rem; text-decoration: none;
+      display: block; text-align: center;
+      color: var(--text3); font-size: .75rem;
+      margin-top: 1.25rem; text-decoration: none;
+      transition: color .15s;
     }
-    .back-link:hover { color: var(--text); }
+    .back-link:hover { color: var(--text2); }
   </style>
 </head>
 <body>
 <div class="page-center">
   <div class="login-wrap">
-    <div class="logo">ALPHA <span>ONE</span></div>
-    <div class="tenant-name">
-      <span>Empresa:</span>
-      <span class="tenant-slug" id="tenant-slug-display">—</span>
+    <div class="login-header">
+      <div class="login-logo">
+        <div class="login-logo-mark">A1</div>
+        <div class="login-logo-text">ALPHA <span>ONE</span></div>
+      </div>
+      <div>
+        <div class="tenant-pill" id="tenant-pill">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <circle cx="5" cy="5" r="4" fill="#7c3aed" opacity=".5"/>
+            <circle cx="5" cy="5" r="2" fill="#c4b5fd"/>
+          </svg>
+          <span id="tenant-slug-display">—</span>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
+    <div class="login-card">
       <div class="tab-row">
-        <div class="tab active" onclick="switchTab('user')"  id="tab-user">Usuário</div>
-        <div class="tab"        onclick="switchTab('partner')" id="tab-partner">Parceiro</div>
+        <div class="tab active" id="tab-user"    onclick="switchTab('user')">Usuário</div>
+        <div class="tab"        id="tab-partner" onclick="switchTab('partner')">Parceiro</div>
       </div>
 
-      <div id="error-msg" class="error-msg" style="display:none"></div>
+      <div id="error-box" class="alert alert-error" style="display:none;margin-bottom:1rem"></div>
 
       <form id="login-form" onsubmit="doLogin(event)">
         <div class="form-group">
@@ -63,12 +114,12 @@
           <input id="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"
                  autocomplete="username" maxlength="14" required>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom:1.5rem">
           <label>Senha</label>
           <input id="password" type="password" placeholder="••••••••"
                  autocomplete="current-password" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+        <button type="submit" class="btn btn-primary btn-full" id="btn-login" style="padding:.75rem">
           Entrar
         </button>
       </form>
@@ -84,22 +135,18 @@
 <script src="/js/auth.js"></script>
 <script>
   let activeTab = 'user';
-  const slug    = getSlugFromURL();
-
-  // Show slug
+  const slug = getSlugFromURL();
   document.getElementById('tenant-slug-display').textContent = slug || '?';
 
-  // If already logged in for this slug, go to dashboard
   if (A1.token && A1.slug === slug && A1.user) {
     window.location.href = `/${slug}/dashboard`;
   }
 
-  // CPF mask
   document.getElementById('cpf').addEventListener('input', e => {
-    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    let v = e.target.value.replace(/\D/g,'').slice(0,11);
+    if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
     e.target.value = v;
   });
 
@@ -109,36 +156,26 @@
     document.getElementById('tab-partner').classList.toggle('active', tab === 'partner');
   }
 
-  function showError(msg) {
-    const el = document.getElementById('error-msg');
-    el.textContent = msg;
-    el.style.display = 'block';
-  }
-
   async function doLogin(e) {
     e.preventDefault();
-    const cpf      = document.getElementById('cpf').value;
-    const password = document.getElementById('password').value;
-    const btn      = document.getElementById('btn-login');
-    const errEl    = document.getElementById('error-msg');
+    const cpf = document.getElementById('cpf').value;
+    const pw  = document.getElementById('password').value;
+    const btn = document.getElementById('btn-login');
+    const err = document.getElementById('error-box');
 
-    errEl.style.display = 'none';
+    err.style.display = 'none';
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div>';
+    btn.innerHTML = '<div class="spinner"></div> Entrando...';
 
     try {
-      if (!slug) throw new Error('URL inválida. Acesse /<slug>/login');
-
-      if (activeTab === 'user') {
-        await a1Login(slug, cpf, password);
-      } else {
-        await a1PartnerLogin(slug, cpf, password);
-      }
-
+      if (!slug) throw new Error('URL inválida. Acesse /slug/login');
+      activeTab === 'user'
+        ? await a1Login(slug, cpf, pw)
+        : await a1PartnerLogin(slug, cpf, pw);
       window.location.href = `/${slug}/dashboard`;
-
-    } catch (err) {
-      showError(err.message || 'Erro ao fazer login.');
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'Entrar';
     }

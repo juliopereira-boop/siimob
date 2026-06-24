@@ -4,176 +4,236 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Repasse — ALPHA ONE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/alpha.css">
   <style>
     body { overflow: hidden; }
-    .topbar-search input {
-      background: var(--bg3); border: 1px solid var(--border); border-radius: .4rem;
-      color: var(--text); padding: .4rem .75rem; font-size: .8rem; outline: none; width: 14rem;
+    .main-content { overflow: hidden; }
+    .board-area {
+      flex: 1; overflow: hidden;
+      display: flex; flex-direction: column;
     }
-    .topbar-search input:focus { border-color: var(--accent); }
-    .group-tabs { display: flex; gap: .25rem; padding: .5rem 1rem; border-bottom: 1px solid var(--border); overflow-x: auto; }
-    .group-tab {
-      padding: .3rem .75rem; border-radius: .3rem; font-size: .78rem; font-weight: 600;
-      color: var(--muted); cursor: pointer; white-space: nowrap; transition: background .15s;
+
+    /* Detail panel extras */
+    .dp-stage-row {
+      display: flex; gap: .5rem; align-items: center;
     }
-    .group-tab:hover  { background: var(--bg3); color: var(--text); }
-    .group-tab.active { background: #312e8133; color: var(--accent); }
-    .board-wrap { height: calc(100vh - 7rem); overflow: hidden; }
-    /* Card detail panel */
-    .detail-panel {
-      position: fixed; right: 0; top: 0; bottom: 0; width: 36rem; max-width: 100vw;
-      background: var(--bg2); border-left: 1px solid var(--border);
-      z-index: 50; overflow-y: auto; transform: translateX(100%);
-      transition: transform .2s ease;
+    .dp-stage-row select { flex: 1; }
+
+    .val-badge {
+      display: inline-block;
+      background: var(--grad-soft);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: var(--radius-sm);
+      padding: .35rem .75rem;
+      font-size: .875rem; font-weight: 700;
+      color: #c4b5fd;
     }
-    .detail-panel.open { transform: translateX(0); }
-    .detail-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .detail-body   { padding: 1.5rem; }
-    .detail-field  { margin-bottom: 1rem; }
-    .detail-field label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .25rem; }
-    .detail-field .val { font-size: .9rem; }
-    .detail-section { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.25rem 0 .5rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
-    .stage-select-wrap { margin-top: .75rem; }
-    .stage-select { width: 100%; }
-    .events-list { display: flex; flex-direction: column; gap: .5rem; }
-    .event-item { background: var(--bg3); border-radius: .375rem; padding: .6rem .875rem; }
-    .event-time  { font-size: .7rem; color: var(--muted); }
-    .event-desc  { font-size: .8rem; margin-top: .1rem; }
-    .partner-select { font-size: .85rem; }
-    .pdf-drop {
-      border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center;
-      color: var(--muted); cursor: pointer; transition: border-color .15s;
+
+    .eval-chip {
+      display: inline-flex; align-items: center; gap: .3rem;
+      border-radius: 99px; padding: .2rem .65rem;
+      font-size: .7rem; font-weight: 700;
     }
-    .pdf-drop:hover, .pdf-drop.drag { border-color: var(--accent); color: var(--text); }
-    .pdf-parsed { background: var(--bg3); border-radius: .375rem; padding: .75rem; margin-top: .75rem; font-size: .8rem; }
+    .eval-ok   { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.2); }
+    .eval-warn { background: rgba(245,158,11,.15);  color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
+    .eval-dead { background: rgba(239,68,68,.15);   color: #fca5a5; border: 1px solid rgba(239,68,68,.2); }
+
+    .obs-area {
+      width: 100%; min-height: 5.5rem; resize: vertical;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: .625rem .875rem; font-size: .85rem; font-family: var(--font);
+      line-height: 1.6; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .obs-area:focus {
+      border-color: rgba(124,58,237,.5);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.1);
+    }
+
+    .pdf-parsed {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: .875rem;
+      font-size: .78rem; color: var(--text2);
+      margin-top: .625rem; line-height: 1.6;
+    }
+
+    .new-card-modal .modal { max-width: 28rem; }
   </style>
 </head>
 <body>
 <div class="layout">
   <nav class="sidebar">
-    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-logo">
+      <div class="logo-mark">A1</div>
+      <div class="logo-text">ALPHA <span>ONE</span></div>
+    </div>
     <div class="sidebar-nav">
-      <a href="" class="nav-item" id="nav-home"><span class="nav-item-icon">⬡</span> Dashboard</a>
-      <a href="#" class="nav-item active"><span class="nav-item-icon">🔁</span> Repasse</a>
-      <a href="" class="nav-item" id="nav-registro"><span class="nav-item-icon">📋</span> Registro</a>
+      <div class="nav-section-label">Menu</div>
+      <a href="" class="nav-item" id="nav-home"><span class="nav-icon">⬡</span> Dashboard</a>
+      <a href="#"  class="nav-item active"><span class="nav-icon">🔁</span> Repasse</a>
+      <a href="" class="nav-item" id="nav-registro"><span class="nav-icon">📋</span> Registro</a>
     </div>
     <div class="sidebar-footer">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
-      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="a1Logout()" style="margin-top:.5rem">Sair</button>
     </div>
   </nav>
 
-  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
+  <div class="main-content">
     <div class="topbar">
       <div class="topbar-title">Gestão de Repasse</div>
       <div class="topbar-actions">
-        <div class="topbar-search"><input type="text" id="search-input" placeholder="Buscar cliente, CPF, unidade..."></div>
-        <button class="btn btn-primary" onclick="openNewCard()">+ Novo</button>
-        <span class="badge badge-gray" id="presence-count">1 online</span>
+        <div class="search-wrap">
+          <input id="search" type="text" placeholder="Buscar cliente, unidade, CPF...">
+        </div>
+        <button class="btn btn-primary" onclick="openNewModal()">+ Novo card</button>
+        <div class="presence-bar" style="border:none;padding:0;background:transparent" id="presence-count"></div>
       </div>
     </div>
 
-    <!-- Group tabs (replaces hardcoded "regional" tabs) -->
-    <div class="group-tabs" id="group-tabs" style="display:none"></div>
-
-    <!-- Kanban board -->
-    <div class="board-wrap" style="padding:1rem;overflow-x:auto">
-      <div class="kanban-board" id="kanban-board">
-        <div style="color:var(--muted);padding:1rem">Carregando pipeline...</div>
-      </div>
+    <div class="board-area" id="board-area">
+      <div class="group-tabs" id="group-tabs" style="display:none"></div>
+      <div class="board-outer" id="board"></div>
     </div>
   </div>
 </div>
 
-<!-- Card Detail Panel -->
-<div class="detail-panel" id="detail-panel">
+<!-- Detail panel -->
+<div class="detail-panel" id="dp">
   <div class="detail-header">
     <div>
-      <div style="font-weight:700;font-size:1rem" id="dp-name">—</div>
-      <div style="font-size:.75rem;color:var(--muted)" id="dp-unit">—</div>
+      <div style="font-size:1rem;font-weight:800;letter-spacing:-.02em" id="dp-name">—</div>
+      <div style="font-size:.775rem;color:var(--text2);margin-top:.1rem" id="dp-subtitle">—</div>
     </div>
-    <button class="btn btn-ghost" onclick="closeDetail()" style="padding:.4rem .75rem">✕</button>
+    <div style="display:flex;gap:.4rem">
+      <button class="btn btn-ghost btn-icon" onclick="closeDetail()" title="Fechar (Esc)">✕</button>
+    </div>
   </div>
+
   <div class="detail-body">
-    <!-- Stage change -->
-    <div class="detail-section">Etapa</div>
-    <div class="stage-select-wrap">
-      <select class="form-group select stage-select" id="dp-stage" onchange="changeStage()">
-        <option value="">Carregando...</option>
-      </select>
+    <!-- Stage -->
+    <div class="detail-section">📍 Etapa atual</div>
+    <div class="dp-stage-row">
+      <select id="dp-stage" onchange="changeStage()"></select>
+      <button class="btn btn-ghost btn-sm" onclick="changeStage()">Mover</button>
     </div>
 
     <!-- Client -->
-    <div class="detail-section">Cliente</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-      <div class="detail-field"><label>Nome</label><div class="val" id="dp-client-name">—</div></div>
-      <div class="detail-field"><label>CPF</label><div class="val" id="dp-client-cpf">—</div></div>
-      <div class="detail-field"><label>Telefone</label><div class="val" id="dp-client-phone">—</div></div>
-      <div class="detail-field"><label>E-mail</label><div class="val" id="dp-client-email">—</div></div>
+    <div class="detail-section">👤 Cliente</div>
+    <div class="detail-grid">
+      <div class="detail-field"><label>Nome</label><div class="val" id="dp-cname">—</div></div>
+      <div class="detail-field"><label>CPF</label><div class="val" id="dp-ccpf">—</div></div>
+      <div class="detail-field"><label>Telefone</label><div class="val" id="dp-cphone">—</div></div>
+      <div class="detail-field"><label>E-mail</label><div class="val" id="dp-cemail">—</div></div>
     </div>
 
     <!-- Property -->
-    <div class="detail-section">Imóvel</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
+    <div class="detail-section">🏠 Imóvel</div>
+    <div class="detail-grid-3">
       <div class="detail-field"><label>Empreendimento</label><div class="val" id="dp-dev">—</div></div>
       <div class="detail-field"><label>Bloco</label><div class="val" id="dp-block">—</div></div>
-      <div class="detail-field"><label>Unidade</label><div class="val" id="dp-unit2">—</div></div>
-      <div class="detail-field"><label>Valor contrato</label><div class="val" id="dp-value">—</div></div>
-      <div class="detail-field"><label>Validade avaliação</label><div class="val" id="dp-eval">—</div></div>
+      <div class="detail-field"><label>Unidade</label><div class="val" id="dp-unit">—</div></div>
+    </div>
+    <div class="detail-grid" style="margin-top:.75rem">
+      <div class="detail-field">
+        <label>Valor do contrato</label>
+        <div class="val" id="dp-value">—</div>
+      </div>
+      <div class="detail-field">
+        <label>Validade avaliação</label>
+        <div class="val" id="dp-eval">—</div>
+      </div>
     </div>
 
     <!-- Partner -->
-    <div class="detail-section">Parceiro / Corretor</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+    <div class="detail-section">🤝 Parceiro / Corretor</div>
+    <div class="detail-grid">
       <div class="detail-field"><label>Parceiro</label><div class="val" id="dp-partner">—</div></div>
       <div class="detail-field"><label>Imobiliária</label><div class="val" id="dp-realstate">—</div></div>
       <div class="detail-field"><label>Corretor</label><div class="val" id="dp-broker">—</div></div>
-      <div class="detail-field"><label>Tel. corretor</label><div class="val" id="dp-broker-phone">—</div></div>
+      <div class="detail-field"><label>Tel. corretor</label><div class="val" id="dp-bphone">—</div></div>
     </div>
 
     <!-- PDF -->
-    <div class="detail-section">Proposta (PDF)</div>
+    <div class="detail-section">📄 Proposta (PDF)</div>
     <div class="pdf-drop" id="pdf-drop"
          onclick="document.getElementById('pdf-file').click()"
-         ondragover="e => {e.preventDefault();this.classList.add('drag')}"
-         ondragleave="() => this.classList.remove('drag')"
-         ondrop="handlePDFDrop(event)">
-      <div>📄 Clique ou arraste o PDF da proposta</div>
-      <div style="font-size:.75rem;margin-top:.3rem">Suporta propostas e fluxo de parcelas</div>
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="handleDrop(event)">
+      <div class="pdf-drop-icon">📎</div>
+      <div>Clique ou arraste o PDF da proposta</div>
+      <div style="font-size:.72rem;margin-top:.25rem;color:var(--text3)">Formatos aceitos: PDF</div>
     </div>
-    <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="handlePDFFile(event)">
-    <div id="pdf-parsed" class="pdf-parsed" style="display:none"></div>
+    <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="handlePDF(event)">
+    <div id="pdf-parsed" style="display:none"></div>
 
     <!-- Observations -->
-    <div class="detail-section">Observações</div>
-    <textarea id="dp-obs" style="width:100%;min-height:5rem;resize:vertical;background:var(--bg3);border:1px solid var(--border);border-radius:.4rem;color:var(--text);padding:.6rem;font-size:.85rem;font-family:inherit" placeholder="Anotações internas..."></textarea>
-    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" onclick="saveObs()">Salvar observações</button>
+    <div class="detail-section">📝 Observações</div>
+    <textarea class="obs-area" id="dp-obs" placeholder="Anotações internas, pendências, contato..."></textarea>
+    <button class="btn btn-primary btn-full" style="margin-top:.625rem" onclick="saveObs()">
+      Salvar observações
+    </button>
 
     <!-- Timeline -->
-    <div class="detail-section">Histórico</div>
-    <div class="events-list" id="dp-events">
-      <div style="color:var(--muted);font-size:.8rem">Carregando...</div>
+    <div class="detail-section">🕐 Histórico</div>
+    <div class="timeline" id="dp-timeline">
+      <div style="color:var(--text3);font-size:.8rem">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- New card modal -->
+<div id="new-modal" class="modal-backdrop new-card-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo card de repasse</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeNewModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome do cliente *</label>
+        <input id="nc-name" type="text" placeholder="Maria da Silva" autofocus>
+      </div>
+      <div class="detail-grid">
+        <div class="form-group" style="margin:0">
+          <label>CPF</label>
+          <input id="nc-cpf" type="text" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Telefone</label>
+          <input id="nc-phone" type="tel" placeholder="(00) 90000-0000">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:.75rem">
+        <label>Empreendimento</label>
+        <input id="nc-dev" type="text" placeholder="Residencial Aurora">
+      </div>
+      <div class="detail-grid" style="margin-top:.75rem">
+        <div class="form-group" style="margin:0"><label>Bloco</label><input id="nc-block" placeholder="A"></div>
+        <div class="form-group" style="margin:0"><label>Unidade</label><input id="nc-unit" placeholder="101"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeNewModal()">Cancelar</button>
+      <button class="btn btn-primary" id="nc-btn" onclick="createCard()">Criar card</button>
     </div>
   </div>
 </div>
 
 <div id="a1-toast"></div>
-
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
-// ─── State ──────────────────────────────────────────────────────────────────
-let STAGES       = [];
-let CARDS        = [];
-let GROUPS       = [];
-let ACTIVE_GROUP = null;
-let ACTIVE_CARD  = null;
-let SEARCH_Q     = '';
+let STAGES = [], CARDS = [], GROUPS = [], ACTIVE_GROUP = null, ACTIVE_CARD = null, SEARCH = '';
 
-// ─── Bootstrap ──────────────────────────────────────────────────────────────
 async function init() {
   let user;
   try {
@@ -182,288 +242,262 @@ async function init() {
   } catch { return; }
 
   const slug = A1.slug;
-  document.getElementById('nav-home').href    = `/${slug}/dashboard`;
+  document.getElementById('nav-home').href     = `/${slug}/dashboard`;
   document.getElementById('nav-registro').href = `/${slug}/registro`;
-  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
+
+  const init2 = user.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('user-avatar').textContent = init2;
+  document.getElementById('user-name').textContent   = user.name;
+  document.getElementById('user-role').textContent   = user.role;
 
   await Promise.all([loadStages(), loadCards()]);
-  renderGroupTabs();
-  renderBoard();
+  renderGroups(); renderBoard();
   a1StartHeartbeat('repasse');
+  renderPresence();
 
-  // Search debounce
-  let debounce;
-  document.getElementById('search-input').addEventListener('input', e => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => { SEARCH_Q = e.target.value.toLowerCase(); renderBoard(); }, 250);
+  let t;
+  document.getElementById('search').addEventListener('input', e => {
+    clearTimeout(t);
+    t = setTimeout(() => { SEARCH = e.target.value.toLowerCase(); renderBoard(); }, 220);
   });
 }
 
-// ─── Data loaders ───────────────────────────────────────────────────────────
 async function loadStages() {
-  const res = await fetch(
-    `${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`,
-    { headers: A1.headers() }
-  );
-  STAGES = await res.json();
-
-  // Extract unique group_keys
+  STAGES = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json());
   const seen = new Set();
   GROUPS = [];
-  for (const s of STAGES) {
-    if (s.group_key && !seen.has(s.group_key)) {
-      seen.add(s.group_key);
-      GROUPS.push(s.group_key);
-    }
-  }
+  STAGES.forEach(s => { if (s.group_key && !seen.has(s.group_key)) { seen.add(s.group_key); GROUPS.push(s.group_key); } });
 }
 
 async function loadCards() {
-  const res = await fetch(
-    `${A1.rest('a1_cases')}?module_key=eq.repasse&order=updated_at.desc`,
-    { headers: A1.headers() }
-  );
-  CARDS = await res.json();
+  CARDS = await fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=updated_at.desc`, { headers: A1.headers() }).then(r=>r.json());
 }
 
-// ─── Render ─────────────────────────────────────────────────────────────────
-function renderGroupTabs() {
+function renderGroups() {
   const bar = document.getElementById('group-tabs');
   if (!GROUPS.length) return;
   bar.style.display = 'flex';
-  bar.innerHTML = `<div class="group-tab ${!ACTIVE_GROUP ? 'active' : ''}" onclick="setGroup(null)">Todos</div>` +
-    GROUPS.map(g => `<div class="group-tab ${ACTIVE_GROUP === g ? 'active' : ''}" onclick="setGroup('${g}')">${g}</div>`).join('');
+  bar.innerHTML = `<div class="group-tab ${!ACTIVE_GROUP?'active':''}" onclick="setGroup(null)">Todos</div>` +
+    GROUPS.map(g => `<div class="group-tab ${ACTIVE_GROUP===g?'active':''}" onclick="setGroup('${g}')">${g}</div>`).join('');
 }
 
-function setGroup(g) {
-  ACTIVE_GROUP = g;
-  renderGroupTabs();
-  renderBoard();
-}
+function setGroup(g) { ACTIVE_GROUP = g; renderGroups(); renderBoard(); }
 
-function filteredStages() {
-  return ACTIVE_GROUP ? STAGES.filter(s => s.group_key === ACTIVE_GROUP) : STAGES;
-}
+function cols() { return ACTIVE_GROUP ? STAGES.filter(s => s.group_key === ACTIVE_GROUP) : STAGES; }
 
-function filteredCards(stageId) {
+function cards(stageId) {
   return CARDS.filter(c => {
     if (c.stage_id !== stageId) return false;
-    if (!SEARCH_Q)              return true;
-    return (c.client_name  || '').toLowerCase().includes(SEARCH_Q)
-        || (c.client_cpf   || '').includes(SEARCH_Q)
-        || (c.unit         || '').toLowerCase().includes(SEARCH_Q)
-        || (c.development  || '').toLowerCase().includes(SEARCH_Q);
+    if (!SEARCH) return true;
+    return (c.client_name||'').toLowerCase().includes(SEARCH)
+        || (c.client_cpf||'').includes(SEARCH)
+        || (c.unit||'').toLowerCase().includes(SEARCH)
+        || (c.development||'').toLowerCase().includes(SEARCH);
   });
 }
 
-function renderBoard() {
-  const board   = document.getElementById('kanban-board');
-  const stages  = filteredStages();
-  if (!stages.length) { board.innerHTML = '<div style="color:var(--muted)">Nenhuma etapa configurada.</div>'; return; }
+function evalChip(d) {
+  if (!d) return '';
+  const days = Math.ceil((new Date(d) - Date.now()) / 86400000);
+  const cls = days < 0 ? 'eval-dead' : days <= 7 ? 'eval-warn' : 'eval-ok';
+  const label = days < 0 ? 'Vencido' : `${days}d`;
+  return `<span class="eval-chip ${cls}">${label}</span>`;
+}
 
+function renderBoard() {
+  const board = document.getElementById('board');
+  const stages = cols();
   board.innerHTML = '';
-  stages.forEach(stage => {
-    const cards = filteredCards(stage.id);
-    const col   = document.createElement('div');
+
+  if (!stages.length) {
+    board.innerHTML = '<div style="color:var(--text3);padding:2rem;font-size:.875rem">Nenhuma etapa configurada para este módulo.</div>';
+    return;
+  }
+
+  stages.forEach(s => {
+    const cs = cards(s.id);
+    const col = document.createElement('div');
     col.className = 'kanban-col';
     col.innerHTML = `
       <div class="kanban-col-header">
-        <div class="kanban-col-dot" style="background:${stage.color}"></div>
-        <div class="kanban-col-title">${stage.name}</div>
-        <div class="kanban-col-count">${cards.length}</div>
+        <div class="col-dot" style="color:${s.color};background:${s.color}"></div>
+        <div class="col-title">${s.name}</div>
+        <div class="col-count">${cs.length}</div>
       </div>
-      <div class="kanban-col-body" id="col-${stage.id}">
-        ${cards.map(c => cardHTML(c)).join('') || '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:.75rem">Vazio</div>'}
+      <div class="kanban-col-body">
+        ${cs.length ? cs.map(c => {
+          const val = c.contract_value
+            ? `R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+            : '';
+          return `
+            <div class="k-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
+              <div class="k-card-name">${c.client_name}</div>
+              <div class="k-card-sub">${[c.development, c.unit].filter(Boolean).join(' · ') || '—'}</div>
+              ${val ? `<div class="k-card-val">${val}</div>` : ''}
+              <div class="k-card-footer">
+                ${c.partner_name ? `<span class="badge badge-purple">${c.partner_name}</span>` : ''}
+                ${evalChip(c.evaluation_expiry)}
+                ${c.is_new ? '<span class="badge badge-blue">Novo</span>' : ''}
+              </div>
+            </div>`;
+        }).join('') : '<div class="k-card-empty">Sem cards</div>'}
       </div>`;
     board.appendChild(col);
   });
 }
 
-function cardHTML(c) {
-  const val = c.contract_value
-    ? 'R$ ' + Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-    : '';
-  return `
-    <div class="kanban-card${c.is_new ? ' is-new' : ''}" onclick="openDetail('${c.id}')">
-      <div class="kanban-card-name">${c.client_name}</div>
-      <div class="kanban-card-sub">${[c.development, c.unit].filter(Boolean).join(' · ') || '—'}</div>
-      ${val ? `<div class="kanban-card-sub" style="margin-top:.2rem">${val}</div>` : ''}
-      <div class="kanban-card-meta">
-        ${c.partner_name ? `<span class="badge badge-indigo">${c.partner_name}</span>` : ''}
-        ${c.evaluation_expiry ? evalBadge(c.evaluation_expiry) : ''}
-      </div>
-    </div>`;
-}
-
-function evalBadge(dateStr) {
-  const days = Math.ceil((new Date(dateStr) - Date.now()) / 86400000);
-  if (days < 0)  return `<span class="badge badge-red">Vencido</span>`;
-  if (days <= 7) return `<span class="badge badge-yellow">${days}d</span>`;
-  return `<span class="badge badge-green">${days}d</span>`;
-}
-
-// ─── Detail panel ───────────────────────────────────────────────────────────
-async function openDetail(cardId) {
-  ACTIVE_CARD = CARDS.find(c => c.id === cardId);
+async function openDetail(id) {
+  ACTIVE_CARD = CARDS.find(c => c.id === id);
   if (!ACTIVE_CARD) return;
   const c = ACTIVE_CARD;
 
-  document.getElementById('dp-name').textContent          = c.client_name;
-  document.getElementById('dp-unit').textContent          = [c.development, c.block, c.unit].filter(Boolean).join(' / ');
-  document.getElementById('dp-client-name').textContent   = c.client_name || '—';
-  document.getElementById('dp-client-cpf').textContent    = c.client_cpf  || '—';
-  document.getElementById('dp-client-phone').textContent  = c.client_phone || '—';
-  document.getElementById('dp-client-email').textContent  = c.client_email || '—';
-  document.getElementById('dp-dev').textContent           = c.development  || '—';
-  document.getElementById('dp-block').textContent         = c.block        || '—';
-  document.getElementById('dp-unit2').textContent         = c.unit         || '—';
-  document.getElementById('dp-value').textContent         = c.contract_value
-    ? 'R$ ' + Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
-  document.getElementById('dp-eval').textContent          = c.evaluation_expiry
-    ? new Date(c.evaluation_expiry).toLocaleDateString('pt-BR') : '—';
-  document.getElementById('dp-partner').textContent       = c.partner_name     || '—';
-  document.getElementById('dp-realstate').textContent     = c.real_estate_name || '—';
-  document.getElementById('dp-broker').textContent        = c.broker_name      || '—';
-  document.getElementById('dp-broker-phone').textContent  = c.broker_phone     || '—';
-  document.getElementById('dp-obs').value                 = c.observations     || '';
+  document.getElementById('dp-name').textContent     = c.client_name;
+  document.getElementById('dp-subtitle').textContent = [c.development, c.block, c.unit].filter(Boolean).join(' / ') || 'Imóvel não informado';
+  document.getElementById('dp-cname').textContent    = c.client_name  || '—';
+  document.getElementById('dp-ccpf').textContent     = c.client_cpf   || '—';
+  document.getElementById('dp-cphone').textContent   = c.client_phone || '—';
+  document.getElementById('dp-cemail').textContent   = c.client_email || '—';
+  document.getElementById('dp-dev').textContent      = c.development  || '—';
+  document.getElementById('dp-block').textContent    = c.block        || '—';
+  document.getElementById('dp-unit').textContent     = c.unit         || '—';
+  document.getElementById('dp-partner').textContent  = c.partner_name     || '—';
+  document.getElementById('dp-realstate').textContent= c.real_estate_name || '—';
+  document.getElementById('dp-broker').textContent   = c.broker_name      || '—';
+  document.getElementById('dp-bphone').textContent   = c.broker_phone     || '—';
+  document.getElementById('dp-obs').value            = c.observations     || '';
 
-  // Stage select
+  const val = c.contract_value
+    ? `<span class="val-badge">R$ ${Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>`
+    : '—';
+  document.getElementById('dp-value').innerHTML = val;
+  document.getElementById('dp-eval').innerHTML  = c.evaluation_expiry
+    ? `${evalChip(c.evaluation_expiry)} <span style="font-size:.78rem;color:var(--text2)">${new Date(c.evaluation_expiry).toLocaleDateString('pt-BR')}</span>`
+    : '—';
+
   const sel = document.getElementById('dp-stage');
-  sel.innerHTML = STAGES.map(s =>
-    `<option value="${s.id}" ${s.id === c.stage_id ? 'selected' : ''}>${s.name}</option>`
-  ).join('');
+  sel.innerHTML = STAGES.map(s => `<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${s.name}</option>`).join('');
 
-  // Mark as read
   if (c.is_new) {
-    fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
-      method: 'PATCH', headers: A1.headers(),
-      body: JSON.stringify({ is_new: false })
-    });
+    fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, { method:'PATCH', headers: A1.headers(), body: JSON.stringify({is_new:false}) });
     c.is_new = false;
   }
 
-  loadEvents(cardId);
-  document.getElementById('detail-panel').classList.add('open');
+  loadTimeline(c.id);
+  document.getElementById('dp').classList.add('open');
 }
 
-function closeDetail() {
-  document.getElementById('detail-panel').classList.remove('open');
-  ACTIVE_CARD = null;
-}
+function closeDetail() { document.getElementById('dp').classList.remove('open'); ACTIVE_CARD = null; }
 
-async function loadEvents(cardId) {
-  const res = await fetch(
-    `${A1.rest('a1_events')}?case_id=eq.${cardId}&order=created_at.desc&limit=20`,
-    { headers: A1.headers() }
-  );
-  const events = await res.json();
-  const el     = document.getElementById('dp-events');
-  el.innerHTML = events.length
+async function loadTimeline(caseId) {
+  const events = await fetch(`${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=20`, { headers: A1.headers() }).then(r=>r.json());
+  document.getElementById('dp-timeline').innerHTML = events.length
     ? events.map(e => `
-        <div class="event-item">
-          <div class="event-time">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
-          <div class="event-desc">${e.description || e.type}</div>
+        <div class="timeline-item">
+          <div class="timeline-time">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
+          <div class="timeline-desc">${e.description || e.type}</div>
         </div>`).join('')
-    : '<div style="color:var(--muted);font-size:.8rem">Sem histórico.</div>';
+    : '<div style="color:var(--text3);font-size:.8rem">Sem eventos registrados.</div>';
 }
 
 async function changeStage() {
   if (!ACTIVE_CARD) return;
-  const newStageId   = document.getElementById('dp-stage').value;
-  const newStage     = STAGES.find(s => s.id === newStageId);
-  const oldStageName = ACTIVE_CARD.stage_name;
+  const sid   = document.getElementById('dp-stage').value;
+  const stage = STAGES.find(s => s.id === sid);
+  const user  = A1.user;
 
   await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method: 'PATCH',
-    headers: A1.headers(),
-    body: JSON.stringify({ stage_id: newStageId, stage_name: newStage?.name, stage_entered_at: new Date().toISOString() })
+    method:'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ stage_id: sid, stage_name: stage?.name, stage_entered_at: new Date().toISOString() })
   });
 
-  // Log event
-  const user = A1.user;
   await fetch(A1.rest('a1_events'), {
-    method: 'POST',
-    headers: A1.headers(),
-    body: JSON.stringify({
-      case_id:      ACTIVE_CARD.id,
-      type:         'stage_change',
-      description:  `${oldStageName} → ${newStage?.name}`,
-      actor_name:   user?.name
-    })
+    method:'POST', headers: A1.headers(),
+    body: JSON.stringify({ case_id: ACTIVE_CARD.id, type:'stage_change', description:`${ACTIVE_CARD.stage_name} → ${stage?.name}`, actor_name: user?.name })
   });
 
-  ACTIVE_CARD.stage_id   = newStageId;
-  ACTIVE_CARD.stage_name = newStage?.name;
-  await loadCards();
-  renderBoard();
-  toast('Etapa atualizada.', 'success');
-  loadEvents(ACTIVE_CARD.id);
+  ACTIVE_CARD.stage_id = sid; ACTIVE_CARD.stage_name = stage?.name;
+  await loadCards(); renderBoard(); loadTimeline(ACTIVE_CARD.id);
+  toast('Etapa atualizada', 'success');
 }
 
 async function saveObs() {
   if (!ACTIVE_CARD) return;
-  const obs = document.getElementById('dp-obs').value;
   await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method: 'PATCH',
-    headers: A1.headers(),
-    body: JSON.stringify({ observations: obs })
+    method:'PATCH', headers: A1.headers(), body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
   });
-  ACTIVE_CARD.observations = obs;
-  toast('Observações salvas.', 'success');
+  toast('Observações salvas', 'success');
 }
 
-// ─── New card ─────────────────────────────────────────────────────────────
-function openNewCard() {
-  const name = prompt('Nome do cliente:');
-  if (!name) return;
-  const initialStage = STAGES.find(s => s.is_initial) || STAGES[0];
-  fetch(A1.rest('a1_cases'), {
-    method: 'POST',
-    headers: A1.returnHeaders(),
+function openNewModal() { document.getElementById('new-modal').style.display = 'flex'; setTimeout(()=>document.getElementById('nc-name').focus(),50); }
+function closeNewModal() { document.getElementById('new-modal').style.display = 'none'; }
+
+async function createCard() {
+  const name = document.getElementById('nc-name').value.trim();
+  if (!name) { toast('Informe o nome do cliente', 'error'); return; }
+
+  const btn = document.getElementById('nc-btn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+
+  const initial = STAGES.find(s=>s.is_initial) || STAGES[0];
+  const [card]  = await fetch(A1.rest('a1_cases'), {
+    method:'POST', headers: A1.returnHeaders(),
     body: JSON.stringify({
-      module_key:  'repasse',
-      stage_id:    initialStage?.id,
-      stage_name:  initialStage?.name,
-      client_name: name
+      module_key:   'repasse',
+      stage_id:     initial?.id,
+      stage_name:   initial?.name,
+      client_name:  name,
+      client_cpf:   document.getElementById('nc-cpf').value.replace(/\D/g,''),
+      client_phone: document.getElementById('nc-phone').value,
+      development:  document.getElementById('nc-dev').value.trim(),
+      block:        document.getElementById('nc-block').value.trim(),
+      unit:         document.getElementById('nc-unit').value.trim()
     })
-  }).then(r => r.json()).then(async ([newCard]) => {
-    CARDS.unshift(newCard);
-    renderBoard();
-    openDetail(newCard.id);
-    toast('Card criado.', 'success');
-  });
+  }).then(r=>r.json());
+
+  CARDS.unshift(card); renderBoard();
+  ['nc-name','nc-cpf','nc-phone','nc-dev','nc-block','nc-unit'].forEach(id => document.getElementById(id).value='');
+  closeNewModal();
+  openDetail(card.id);
+  toast('Card criado', 'success');
+  btn.disabled = false; btn.textContent = 'Criar card';
 }
 
-// ─── PDF handling (stub — wire your parseProposta/parseFluxo here) ──────────
-async function handlePDFFile(e) {
+async function handlePDF(e) {
   const file = e.target.files[0];
   if (!file) return;
-  toast('PDF carregado. Implemente parseProposta() para extrair dados.', 'info');
+  const el = document.getElementById('pdf-parsed');
+  el.style.display = 'block';
+  el.className = 'pdf-parsed';
+  el.innerHTML = `<strong>Arquivo carregado:</strong> ${file.name}<br><span style="color:var(--text3)">Integre pdf.js + parseProposta() para extrair dados automaticamente.</span>`;
 }
 
-function handlePDFDrop(e) {
+function handleDrop(e) {
   e.preventDefault();
   document.getElementById('pdf-drop').classList.remove('drag');
   const file = e.dataTransfer.files[0];
-  if (file && file.type === 'application/pdf') {
-    document.getElementById('pdf-file').files = e.dataTransfer.files;
-    handlePDFFile({ target: { files: [file] } });
-  }
+  if (file) handlePDF({ target: { files: [file] } });
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-function toast(msg, type = 'info') {
-  const el   = document.getElementById('a1-toast');
-  const item = document.createElement('div');
-  item.className = `toast-item toast-${type}`;
-  item.textContent = msg;
-  el.appendChild(item);
-  setTimeout(() => item.remove(), 3500);
+async function renderPresence() {
+  const since = new Date(Date.now()-2*60*1000).toISOString();
+  const users = await fetch(`${A1.rest('a1_presence')}?last_seen=gte.${since}`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]);
+  const el = document.getElementById('presence-count');
+  el.innerHTML = users.length
+    ? `<span class="badge badge-green" style="gap:.3rem"><span style="display:inline-block;width:.4rem;height:.4rem;border-radius:50%;background:#10b981;box-shadow:0 0 4px #10b981"></span>${users.length} online</span>`
+    : '';
 }
 
-// ─── Keyboard shortcuts ──────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const el = document.getElementById('a1-toast');
+  const d  = document.createElement('div');
+  d.className = `toast-item toast-${type}`;
+  d.textContent = msg;
+  el.appendChild(d);
+  setTimeout(()=>d.remove(), 3500);
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeDetail();
+  if (e.key === 'Escape') { closeDetail(); closeNewModal(); }
 });
 
 init();

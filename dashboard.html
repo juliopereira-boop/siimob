@@ -4,68 +4,144 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard — ALPHA ONE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/alpha.css">
   <style>
-    .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; padding: 1.5rem; }
+    .dash-body { padding: 1.5rem; max-width: 900px; }
+
+    /* Hero greeting */
+    .greeting {
+      background: var(--grad-soft);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+      position: relative; overflow: hidden;
+    }
+    .greeting::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: var(--grad);
+    }
+    .greeting-content h2 {
+      font-size: 1.2rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: .25rem;
+    }
+    .greeting-content p { color: var(--text2); font-size: .85rem; }
+    .greeting-plan {
+      display: flex; flex-direction: column; align-items: flex-end; gap: .5rem;
+      flex-shrink: 0;
+    }
+
+    /* Modules */
+    .section-title {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--text3);
+      margin-bottom: .875rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+      gap: .875rem;
+      margin-bottom: 1.75rem;
+    }
+
     .module-card {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.5rem;
+      padding: 1.375rem;
       cursor: pointer;
-      transition: border-color .15s, transform .1s;
+      transition: all .2s;
       text-decoration: none;
       color: inherit;
-      display: block;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
     }
-    .module-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .module-card:hover:not(.locked) {
+      border-color: rgba(124,58,237,.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(124,58,237,.12);
+      transform: translateY(-2px);
+    }
+    .module-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: var(--grad); opacity: 0;
+      transition: opacity .2s;
+    }
+    .module-card:hover:not(.locked)::before { opacity: 1; }
+
     .module-card.locked { opacity: .45; cursor: not-allowed; }
-    .module-card.locked:hover { border-color: var(--border); transform: none; }
-    .module-icon  { font-size: 2rem; margin-bottom: .75rem; }
-    .module-name  { font-weight: 700; margin-bottom: .25rem; }
-    .module-desc  { font-size: .78rem; color: var(--muted); }
-    .module-badge { margin-top: .75rem; }
-    .plan-info {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1rem 1.5rem; margin: 1.5rem 1.5rem 0;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+
+    .module-icon-wrap {
+      width: 2.5rem; height: 2.5rem;
+      background: var(--bg3);
+      border-radius: .625rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; margin-bottom: 1rem;
     }
-    .plan-badge { font-weight: 700; text-transform: uppercase; font-size: .75rem; color: var(--accent); }
-    .trial-warn  { color: var(--warn); font-size: .8rem; }
-    .presence-bar {
-      background: var(--bg2); border-bottom: 1px solid var(--border);
-      padding: .5rem 1.5rem; display: flex; align-items: center; gap: .75rem;
-      font-size: .75rem; color: var(--muted);
+    .module-card:hover:not(.locked) .module-icon-wrap {
+      background: rgba(124,58,237,.2);
     }
-    .presence-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--success); }
-    .user-chip {
-      display: inline-flex; align-items: center; gap: .3rem;
-      background: var(--bg3); border-radius: 99px; padding: .15rem .6rem;
+
+    .module-name { font-size: .9rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .25rem; }
+    .module-desc { font-size: .75rem; color: var(--text2); line-height: 1.5; flex: 1; }
+    .module-footer { margin-top: .875rem; }
+
+    /* Online users */
+    .online-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.375rem;
+    }
+    .online-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .625rem; }
+    .online-chip {
+      display: flex; align-items: center; gap: .35rem;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 99px; padding: .25rem .75rem;
+      font-size: .75rem; font-weight: 600;
+    }
+    .online-dot {
+      width: .4rem; height: .4rem; border-radius: 50%;
+      background: var(--success); box-shadow: 0 0 4px var(--success);
     }
   </style>
 </head>
 <body>
 <div class="layout">
+
   <!-- Sidebar -->
   <nav class="sidebar">
-    <div class="sidebar-logo">ALPHA <span>ONE</span></div>
+    <div class="sidebar-logo">
+      <div class="logo-mark">A1</div>
+      <div class="logo-text">ALPHA <span>ONE</span></div>
+    </div>
     <div class="sidebar-nav">
+      <div class="nav-section-label">Menu</div>
       <a href="#" class="nav-item active">
-        <span class="nav-item-icon">⬡</span> Dashboard
+        <span class="nav-icon">⬡</span> Dashboard
       </a>
       <a href="" class="nav-item" id="nav-repasse">
-        <span class="nav-item-icon">🔁</span> Repasse
+        <span class="nav-icon">🔁</span> Repasse
       </a>
       <a href="" class="nav-item" id="nav-registro">
-        <span class="nav-item-icon">📋</span> Registro
+        <span class="nav-icon">📋</span> Registro
       </a>
     </div>
     <div class="sidebar-footer">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
-      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">
-        Sair
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="a1Logout()" style="margin-top:.5rem">
+        Sair da conta
       </button>
     </div>
   </nav>
@@ -75,83 +151,91 @@
     <div class="topbar">
       <div class="topbar-title" id="tenant-title">Carregando...</div>
       <div class="topbar-actions">
-        <span class="badge badge-indigo" id="plan-display"></span>
-        <a href="" class="btn btn-ghost" id="admin-link" style="display:none;font-size:.78rem">⚙ Admin</a>
+        <span class="badge badge-purple" id="plan-display">—</span>
+        <a href="" id="admin-link" class="btn btn-ghost btn-sm" style="display:none">⚙ Administração</a>
       </div>
     </div>
 
-    <!-- Online users -->
-    <div class="presence-bar" id="presence-bar"></div>
-
-    <!-- Plan info / trial warning -->
-    <div class="plan-info" id="plan-info" style="display:none">
-      <div>
-        <div class="plan-badge" id="plan-label"></div>
-        <div id="trial-msg" class="trial-warn" style="margin-top:.2rem"></div>
+    <div class="dash-body">
+      <!-- Greeting -->
+      <div class="greeting" id="greeting" style="display:none">
+        <div class="greeting-content">
+          <h2 id="greeting-text">Olá!</h2>
+          <p id="greeting-sub"></p>
+        </div>
+        <div class="greeting-plan">
+          <div id="trial-badge"></div>
+        </div>
       </div>
-      <a href="" id="upgrade-link" style="font-size:.78rem;color:var(--accent);text-decoration:none">
-        Ver planos →
-      </a>
-    </div>
 
-    <!-- Modules grid -->
-    <div class="modules-grid" id="modules-grid">
-      <div style="color:var(--muted);padding:1rem">Carregando módulos...</div>
+      <!-- Modules -->
+      <div class="section-title">Módulos disponíveis</div>
+      <div class="modules-grid" id="modules-grid">
+        <div style="color:var(--text2);padding:.5rem">Carregando...</div>
+      </div>
+
+      <!-- Online now -->
+      <div class="section-title">Online agora</div>
+      <div class="online-panel">
+        <div class="online-list" id="online-list">
+          <div style="color:var(--text2);font-size:.8rem">Verificando...</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="a1-toast"></div>
-
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
-const ALL_MODULES = [
-  { key: 'repasse',      icon: '🔁', name: 'Gestão de Repasse',  desc: 'Pipeline kanban com análise de propostas PDF e gestão de parceiros', path: 'repasse' },
-  { key: 'registro',     icon: '📋', name: 'Gestão de Registro', desc: 'Contratos, workflow visual e integração bancária', path: 'registro' },
-  { key: 'analytics',    icon: '📊', name: 'Analytics',          desc: 'Dashboards de performance e metas', path: null },
-  { key: 'pipeline_pro', icon: '⚡', name: 'Pipeline Pro',       desc: 'Etapas ilimitadas, automações e flags customizáveis', path: null },
-  { key: 'integrations', icon: '🔗', name: 'Integrações',        desc: 'Webhooks, API REST e sistemas externos', path: null },
-  { key: 'multi_region', icon: '🗺️', name: 'Multi-regional',     desc: 'Pipelines separados por regional', path: null }
+const MODULES = [
+  { key:'repasse',      icon:'🔁', name:'Gestão de Repasse',  desc:'Pipeline kanban com análise de propostas PDF e parceiros', path:'repasse' },
+  { key:'registro',     icon:'📋', name:'Gestão de Registro', desc:'Contratos, workflow visual e integração bancária', path:'registro' },
+  { key:'analytics',    icon:'📊', name:'Analytics',          desc:'Dashboards de performance, metas e relatórios', path:null },
+  { key:'pipeline_pro', icon:'⚡', name:'Pipeline Pro',       desc:'Etapas ilimitadas, automações e flags', path:null },
+  { key:'integrations', icon:'🔗', name:'Integrações',        desc:'Webhooks, API REST e sistemas externos', path:null },
+  { key:'multi_region', icon:'🗺', name:'Multi-regional',     desc:'Pipelines separados por regional', path:null }
 ];
 
 async function init() {
   let user;
   try { user = a1RequireAuth(); } catch { return; }
-
   const slug = A1.slug;
 
-  // Set up nav links
   document.getElementById('nav-repasse').href  = `/${slug}/repasse`;
   document.getElementById('nav-registro').href = `/${slug}/registro`;
   document.getElementById('tenant-title').textContent = user.tenant_name || slug;
-  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
-  document.getElementById('plan-display').textContent = (user.plan || 'starter').toUpperCase();
+  document.getElementById('plan-display').textContent = (user.plan||'starter').toUpperCase();
 
-  // Admin link
+  const initials = user.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-name').textContent   = user.name;
+  document.getElementById('user-role').textContent   = user.role;
+
   if (['owner','admin'].includes(user.role)) {
-    const lnk = document.getElementById('admin-link');
-    lnk.href = `/${slug}/admin`;
-    lnk.style.display = '';
+    const l = document.getElementById('admin-link');
+    l.href = `/${slug}/admin`; l.style.display = '';
   }
 
-  // Plan info
+  // Greeting
+  const hour = new Date().getHours();
+  const period = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+  document.getElementById('greeting').style.display = 'flex';
+  document.getElementById('greeting-text').textContent = `${period}, ${user.name.split(' ')[0]}!`;
+
   if (user.status === 'trial' && user.trial_ends_at) {
     const days = Math.ceil((new Date(user.trial_ends_at) - Date.now()) / 86400000);
-    document.getElementById('plan-info').style.display = 'flex';
-    document.getElementById('plan-label').textContent  = `Plano ${user.plan}`;
-    if (days > 0) {
-      document.getElementById('trial-msg').textContent = `Trial: ${days} dias restantes`;
-    } else {
-      document.getElementById('trial-msg').textContent = 'Trial expirado — contate o suporte';
-    }
+    document.getElementById('greeting-sub').textContent = `Plano ${user.plan} · Trial ${days > 0 ? `— ${days} dias restantes` : 'expirado'}`;
+    document.getElementById('trial-badge').innerHTML = days > 0
+      ? `<span class="badge badge-yellow">Trial: ${days}d</span>`
+      : `<span class="badge badge-red">Trial expirado</span>`;
+  } else {
+    document.getElementById('greeting-sub').textContent = `Plano ${user.plan} · ${user.max_users} usuários`;
   }
 
-  // Load enabled modules
   await renderModules(slug);
-
-  // Presence
-  await renderPresence();
+  await renderOnline();
   a1StartHeartbeat('dashboard');
 }
 
@@ -159,35 +243,34 @@ async function renderModules(slug) {
   const grid = document.getElementById('modules-grid');
   grid.innerHTML = '';
 
-  const checks = await Promise.all(
-    ALL_MODULES.map(m =>
+  const results = await Promise.all(
+    MODULES.map(m =>
       fetch(A1.rpc('a1_has_module'), {
-        method: 'POST',
-        headers: A1.headers(),
+        method:'POST', headers: A1.headers(),
         body: JSON.stringify({ p_module_key: m.key })
-      }).then(r => r.json()).catch(() => false)
+      }).then(r=>r.json()).catch(()=>false)
     )
   );
 
-  ALL_MODULES.forEach((m, i) => {
-    const unlocked = checks[i];
+  MODULES.forEach((m, i) => {
+    const on = results[i];
     const card = document.createElement('a');
-    card.className = 'module-card' + (unlocked ? '' : ' locked');
-    card.href = (unlocked && m.path) ? `/${slug}/${m.path}` : 'javascript:void(0)';
+    card.className = 'module-card' + (on?'':' locked');
+    card.href = (on && m.path) ? `/${slug}/${m.path}` : 'javascript:void(0)';
 
-    if (!unlocked || !m.path) {
-      card.onclick = e => {
-        if (!unlocked) { e.preventDefault(); toast('Módulo bloqueado. Contate o administrador.', 'error'); }
-        else if (!m.path) { e.preventDefault(); toast('Em breve.', 'info'); }
-      };
+    if (!on || !m.path) {
+      card.addEventListener('click', e => {
+        e.preventDefault();
+        toast(!on ? '🔒 Módulo bloqueado. Contate o suporte.' : '🚧 Em breve.', !on?'error':'info');
+      });
     }
 
     card.innerHTML = `
-      <div class="module-icon">${m.icon}</div>
+      <div class="module-icon-wrap">${m.icon}</div>
       <div class="module-name">${m.name}</div>
       <div class="module-desc">${m.desc}</div>
-      <div class="module-badge">
-        ${unlocked
+      <div class="module-footer">
+        ${on
           ? '<span class="badge badge-green">✓ Disponível</span>'
           : '<span class="badge badge-gray">🔒 Bloqueado</span>'}
       </div>`;
@@ -195,28 +278,31 @@ async function renderModules(slug) {
   });
 }
 
-async function renderPresence() {
-  const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+async function renderOnline() {
+  const since = new Date(Date.now() - 2*60*1000).toISOString();
   const users = await fetch(
     `${A1.rest('a1_presence')}?last_seen=gte.${since}`,
     { headers: A1.headers() }
-  ).then(r => r.json()).catch(() => []);
+  ).then(r=>r.json()).catch(()=>[]);
 
-  const bar = document.getElementById('presence-bar');
-  if (!users.length) { bar.innerHTML = '<span>Nenhum usuário online</span>'; return; }
-
-  bar.innerHTML = `<div class="presence-dot"></div>
-    <span style="margin-right:.5rem">${users.length} online:</span>
-    ${users.map(u => `<span class="user-chip">${u.name}</span>`).join('')}`;
+  const el = document.getElementById('online-list');
+  el.innerHTML = users.length
+    ? users.map(u => `
+        <div class="online-chip">
+          <div class="online-dot"></div>
+          ${u.name}
+          ${u.module ? `<span style="color:var(--text3);font-size:.67rem">· ${u.module}</span>` : ''}
+        </div>`).join('')
+    : '<span style="color:var(--text3);font-size:.8rem">Nenhum usuário ativo nos últimos 2 minutos</span>';
 }
 
-function toast(msg, type = 'info') {
+function toast(msg, type='info') {
   const el = document.getElementById('a1-toast');
-  const item = document.createElement('div');
-  item.className = `toast-item toast-${type}`;
-  item.textContent = msg;
-  el.appendChild(item);
-  setTimeout(() => item.remove(), 3500);
+  const d  = document.createElement('div');
+  d.className = `toast-item toast-${type}`;
+  d.textContent = msg;
+  el.appendChild(d);
+  setTimeout(()=>d.remove(), 3500);
 }
 
 init();

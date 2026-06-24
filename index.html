@@ -4,77 +4,158 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ALPHA ONE — CRM Imobiliário</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/alpha.css">
   <style>
-    .hero { max-width: 28rem; width: 100%; }
-    .logo { font-size: 2rem; font-weight: 800; letter-spacing: -.04em; margin-bottom: .25rem; }
-    .logo span { color: var(--accent); }
-    .tagline { color: var(--muted); margin-bottom: 2.5rem; font-size: 1rem; }
-    .slug-hint { font-size: .75rem; color: var(--muted); margin-top: .5rem; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
-    .features { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 2rem; }
-    .feature { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem; }
-    .feature-icon { font-size: 1.25rem; margin-bottom: .375rem; }
-    .feature-name { font-weight: 600; font-size: .8rem; color: var(--text); }
-    .feature-desc { color: var(--muted); font-size: .72rem; margin-top: .125rem; }
+    .hero-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      max-width: 30rem; width: 100%; text-align: center;
+    }
+
+    .hero-logo {
+      display: flex; align-items: center; gap: .75rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-logo-mark {
+      width: 3.5rem; height: 3.5rem;
+      background: var(--grad);
+      border-radius: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.2rem; color: #fff;
+      box-shadow: 0 16px 48px rgba(124,58,237,.5);
+    }
+    .hero-logo-text { text-align: left; }
+    .hero-logo-name { font-size: 1.6rem; font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+    .hero-logo-name span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-logo-sub { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text2); margin-top: .1rem; }
+
+    .hero-title {
+      font-size: 2rem; font-weight: 900; letter-spacing: -.04em;
+      line-height: 1.15; margin-bottom: .875rem;
+    }
+    .hero-title .hl { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-desc { color: var(--text2); font-size: .9rem; margin-bottom: 2.5rem; line-height: 1.7; }
+
+    .slug-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+    }
+    .slug-card label {
+      display: block;
+      font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text2); margin-bottom: .5rem;
+    }
+    .slug-input-row { display: flex; gap: .5rem; }
+    .slug-prefix {
+      background: var(--bg4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      padding: .625rem .875rem;
+      color: var(--text3); font-size: .8rem;
+      white-space: nowrap; align-self: stretch;
+      display: flex; align-items: center;
+      border-right: none;
+    }
+    .slug-input-row input {
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      flex: 1;
+    }
+
+    .features-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .75rem; margin-top: 2rem; width: 100%;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.125rem;
+      text-align: left;
+      transition: border-color .18s;
+    }
+    .feature-card:hover { border-color: rgba(124,58,237,.3); }
+    .feature-icon { font-size: 1.25rem; margin-bottom: .5rem; }
+    .feature-name { font-size: .8rem; font-weight: 700; margin-bottom: .2rem; }
+    .feature-desc { font-size: .72rem; color: var(--text2); line-height: 1.5; }
+
+    .hero-footer { margin-top: 2rem; font-size: .75rem; color: var(--text3); }
   </style>
 </head>
 <body>
 <div class="page-center">
-  <div class="hero">
-    <div class="logo">ALPHA <span>ONE</span></div>
-    <p class="tagline">CRM de Repasse &amp; Registro Imobiliário</p>
-
-    <div class="card">
-      <div class="form-group">
-        <label>Slug da sua empresa</label>
-        <input id="slug-input" type="text" placeholder="ex: construtora-abc" autocomplete="off" spellcheck="false">
-        <p class="slug-hint">Fornecido pelo administrador do sistema.</p>
+  <div class="hero-wrap">
+    <div class="hero-logo">
+      <div class="hero-logo-mark">A1</div>
+      <div class="hero-logo-text">
+        <div class="hero-logo-name">ALPHA <span>ONE</span></div>
+        <div class="hero-logo-sub">CRM Imobiliário</div>
       </div>
-      <button class="btn btn-primary btn-full" onclick="goToLogin()">
-        Acessar →
-      </button>
     </div>
 
-    <div class="features">
-      <div class="feature">
+    <h1 class="hero-title">
+      Gerencie repasse e registro<br>
+      <span class="hl">em um único lugar</span>
+    </h1>
+    <p class="hero-desc">
+      Pipeline, parceiros, documentos e histórico — tudo integrado.<br>
+      Multi-tenant, seguro e pronto para escalar.
+    </p>
+
+    <div class="slug-card">
+      <label>Identificador da sua empresa</label>
+      <div class="slug-input-row">
+        <div class="slug-prefix">alphaone.app/</div>
+        <input id="slug-input" type="text" placeholder="construtora-abc"
+               autocomplete="off" spellcheck="false" style="border-radius:0 var(--radius-sm) var(--radius-sm) 0">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="goToLogin()" style="margin-top:.875rem;padding:.75rem">
+        Acessar minha conta →
+      </button>
+      <p style="font-size:.72rem;color:var(--text3);margin-top:.625rem;text-align:center">
+        O identificador é fornecido pelo administrador do sistema
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
         <div class="feature-icon">🔁</div>
         <div class="feature-name">Gestão de Repasse</div>
-        <div class="feature-desc">Pipeline kanban com análise de propostas e PDF</div>
+        <div class="feature-desc">Kanban com leitura de PDF, parceiros e metas</div>
       </div>
-      <div class="feature">
+      <div class="feature-card">
         <div class="feature-icon">📋</div>
         <div class="feature-name">Gestão de Registro</div>
-        <div class="feature-desc">Contratos, workflow visual e integração bancária</div>
+        <div class="feature-desc">Contratos, workflow visual e importação bancária</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">🏢</div>
-        <div class="feature-name">Multi-tenant</div>
-        <div class="feature-desc">Isolamento total de dados por empresa</div>
-      </div>
-      <div class="feature">
+      <div class="feature-card">
         <div class="feature-icon">🔒</div>
         <div class="feature-name">Módulos por plano</div>
-        <div class="feature-desc">Acesso controlado pelo administrador</div>
+        <div class="feature-desc">Acesso controlado, liberado individualmente</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏢</div>
+        <div class="feature-name">Multi-empresa</div>
+        <div class="feature-desc">Cada cliente com seus dados totalmente isolados</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // If already logged in, redirect to dashboard
+  const saved = localStorage.getItem('a1_slug');
   const token = localStorage.getItem('a1_token');
-  const slug  = localStorage.getItem('a1_slug');
-  if (token && slug) window.location.href = `/${slug}/dashboard`;
+  if (saved && token) window.location.href = `/${saved}/dashboard`;
 
   document.getElementById('slug-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') goToLogin();
   });
 
   function goToLogin() {
-    const slug = document.getElementById('slug-input').value.trim().toLowerCase();
+    const slug = document.getElementById('slug-input').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
     if (!slug) { document.getElementById('slug-input').focus(); return; }
     window.location.href = `/${slug}/login`;
   }
