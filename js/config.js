@@ -1,8 +1,8 @@
 // ─── Supabase connection ─────────────────────────────────────────────────────
 // Replace these two values with your project's URL and anon key.
 // NEVER put the service role key here — that stays server-side only.
-const A1_URL = 'https://YOUR_PROJECT_REF.supabase.co';
-const A1_KEY = 'YOUR_ANON_KEY';
+const A1_URL = 'https://hmedoyrxcqgkkasivbsn.supabase.co';
+const A1_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWRveXJ4Y3Fna2thc2l2YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjQyMjUsImV4cCI6MjA5NzkwMDIyNX0.h3TspQHP6u9RN2inS8tUcpnkuVW3ymYNiWVJGJyQvaY';
 
 // ─── Slug extraction from URL ─────────────────────────────────────────────────
 // URL pattern: /slug/module  e.g. /construtora-abc/repasse
