@@ -1164,9 +1164,13 @@ function applyPartnerRestrictions() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.textContent.trim().startsWith('Configurac')) btn.style.display = 'none';
   });
-  // Ocultar link de workflow (configuração de fluxo)
-  const wfLinks = document.querySelectorAll('#link-wf, #link-wf-groups, .tab-group');
-  wfLinks.forEach(el => { if (el) el.style.display = 'none'; });
+  // Ocultar links de workflow (dentro de configurações)
+  ['link-wf','link-wf-groups'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  // Ocultar link de Registro (partner nao acessa registro)
+  const regLink = document.getElementById('tab-registro-link');
+  if (regLink) regLink.style.display = 'none';
 
   // Ocultar botão Nova Operação se sem permissão
   if (!hasPerm('criar_repasses')) {
@@ -1810,10 +1814,19 @@ async function openNewCase() {
   devSel.innerHTML='<option value="">Selecione o empreendimento...</option>'+
     G.empreendimentos.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');
 
+  const isCCA = G.user.role === 'partner' && G.user.type === 'cca';
+
   // correspondentes (empresas)
   if (!G.empresasLoaded) await loadEmpresas();
-  document.getElementById('n-partner').innerHTML='<option value="">Selecione...</option>'+
+  const partnerSel = document.getElementById('n-partner');
+  partnerSel.innerHTML='<option value="">Selecione...</option>'+
     G.empresas.filter(e=>e.is_active).map(e=>`<option value="${e.name}">${esc(e.name)}</option>`).join('');
+  if (isCCA && G.user.empresa_name) {
+    partnerSel.value = G.user.empresa_name;
+    partnerSel.disabled = true;
+  } else {
+    partnerSel.disabled = false;
+  }
 
   // imobiliárias — carrega de a1_partners type=imobiliaria
   const imobs = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
@@ -1822,8 +1835,15 @@ async function openNewCase() {
 
   // usuarios correspondentes — carrega de a1_partners type=cca
   const ccaUsers = await fetch(`${A1.rest('a1_partners')}?type=eq.cca&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
-  document.getElementById('n-manager').innerHTML='<option value="">Selecione...</option>'+
+  const managerSel = document.getElementById('n-manager');
+  managerSel.innerHTML='<option value="">Selecione...</option>'+
     ccaUsers.filter(u=>u.is_active!==false).map(u=>`<option value="${u.name}">${esc(u.name)}</option>`).join('');
+  if (isCCA) {
+    managerSel.value = G.user.name;
+    managerSel.disabled = true;
+  } else {
+    managerSel.disabled = false;
+  }
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
 }
