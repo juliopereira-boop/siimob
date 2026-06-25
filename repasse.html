@@ -900,7 +900,7 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
-            <div class="form-group"><label>Gerente *</label>
+            <div class="form-group"><label>Usuário Correspondente</label>
               <select id="n-manager">
                 <option value="">Selecione...</option>
               </select>
@@ -1567,7 +1567,7 @@ function renderModalDet() {
       <div class="form-group"><label>Imobiliaria</label><input id="e-re" value="${esc(c.real_estate_name||'')}"></div>
       <div class="form-group"><label>Corretor</label><input id="e-broker" value="${esc(c.broker_name||'')}"></div>
       <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
-      <div class="form-group"><label>Gerente</label><input id="e-manager" value="${esc(c.manager_name||'')}"></div>
+      <div class="form-group"><label>Usuário Correspondente</label><input id="e-manager" value="${esc(c.manager_name||'')}"></div>
     </div>
     <div class="form-section-title">Entrevista</div>
     <div class="form-grid">
@@ -1719,10 +1719,10 @@ async function openNewCase() {
   document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
     imobs.map(i=>`<option value="${i.name}">${esc(i.name)}</option>`).join('');
 
-  // gerentes — carrega de a1_users
-  const users = await fetch(`${A1.rest('a1_users')}?order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  // usuarios correspondentes — carrega de a1_partners type=cca
+  const ccaUsers = await fetch(`${A1.rest('a1_partners')}?type=eq.cca&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
   document.getElementById('n-manager').innerHTML='<option value="">Selecione...</option>'+
-    users.filter(u=>u.is_active).map(u=>`<option value="${u.name}">${esc(u.name)}</option>`).join('');
+    ccaUsers.filter(u=>u.is_active!==false).map(u=>`<option value="${u.name}">${esc(u.name)}</option>`).join('');
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
 }
