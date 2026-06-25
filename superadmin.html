@@ -648,20 +648,20 @@ async function createTenant() {
     maxUsers = parseInt(document.getElementById('n-custom-limit').value);
     if (!maxUsers || maxUsers < 1) { nErr('Informe o limite de usuários para o plano customizado.'); return; }
   }
-  const trialEndsAt = trialDays > 0
-    ? new Date(Date.now() + trialDays * 86400000).toISOString()
-    : null;
+  const tenantPayload = {
+    name, slug, email, cnpj, plan_key: plan,
+    tipo_cliente: tipo,
+    max_users: maxUsers,
+    status: trialDays > 0 ? 'trial' : 'active',
+  };
+  if (trialDays > 0) {
+    tenantPayload.trial_ends_at = new Date(Date.now() + trialDays * 86400000).toISOString();
+  }
 
   const tenantRes = await fetch(saRest('a1_tenants'), {
     method: 'POST',
     headers: saHeaders({ 'Prefer':'return=representation' }),
-    body: JSON.stringify({
-      name, slug, email, cnpj, plan_key: plan,
-      tipo_cliente: tipo,
-      max_users: maxUsers,
-      status: trialDays > 0 ? 'trial' : 'active',
-      trial_ends_at: trialEndsAt
-    })
+    body: JSON.stringify(tenantPayload)
   });
 
   if (!tenantRes.ok) {
