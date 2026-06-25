@@ -256,6 +256,23 @@
     .tag-rm{cursor:pointer;color:var(--t4);transition:color .15s;font-size:.65rem}
     .tag-rm:hover{color:var(--red)}
 
+    /* ── Config hub ── */
+    .cfg-hub{padding:.5rem 0 1.5rem}
+    .cfg-section-hdr{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1.5rem 0 .7rem;display:flex;align-items:center;gap:.5rem}
+    .cfg-section-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+    .cfg-section-hdr:first-child{margin-top:0}
+    .cfg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;max-width:780px;margin-bottom:.25rem}
+    .cfg-hub-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1rem 1.1rem;display:flex;flex-direction:column;align-items:flex-start;gap:.65rem;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+    .cfg-hub-card:hover{border-color:rgba(124,58,237,.3);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .cfg-hub-card.cfg-disabled{opacity:.5;cursor:default;pointer-events:none}
+    .cfg-hub-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .cfg-card-label{font-size:.8rem;font-weight:700;color:var(--t1);line-height:1.3}
+    .cfg-card-soon{font-size:.62rem;font-weight:700;color:var(--t3);background:#f1f5f9;border:1px solid var(--border);border-radius:3px;padding:.07rem .42rem;align-self:flex-start;margin-top:-.1rem}
+    .cfg-view-hdr{display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+    .cfg-back-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:.3rem .75rem;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;white-space:nowrap}
+    .cfg-back-btn:hover{color:var(--t1);background:var(--bg)}
+    .cfg-view-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+
     /* ── Partner table ── */
     .pt-table{width:100%;border-collapse:collapse;font-size:.78rem}
     .pt-table th{padding:.5rem .875rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
@@ -416,45 +433,130 @@
 
   <!-- ══════════ CONFIGURACOES ══════════ -->
   <div id="tab-config" style="display:none">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
-      <div>
-        <div class="sec-title">Workflow</div>
-        <div class="config-grid">
-          <a class="config-card" id="link-wf">
-            <div style="font-size:.8rem;font-weight:700;margin-bottom:.25rem">Editor de Workflow</div>
-            <div style="font-size:.72rem;color:var(--t2);line-height:1.5;flex:1">Edite etapas, conexões e regionais no editor visual.</div>
-            <div style="margin-top:.75rem"><span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:3px;padding:.12rem .45rem;font-size:.67rem;font-weight:700">Disponivel</span></div>
-          </a>
-          <a class="config-card" id="link-admin">
-            <div style="font-size:.8rem;font-weight:700;margin-bottom:.25rem">Usuarios e Parceiros</div>
-            <div style="font-size:.72rem;color:var(--t2);line-height:1.5;flex:1">Gerencie equipe, correspondentes e controle de acesso.</div>
-            <div style="margin-top:.75rem"><span style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;border-radius:3px;padding:.12rem .45rem;font-size:.67rem;font-weight:700">Admin</span></div>
-          </a>
+
+    <!-- ─── Hub ─────────────────────────────── -->
+    <div id="cfg-hub">
+
+      <div class="cfg-section-hdr">Workflow</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('wf')">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </div>
+          <div class="cfg-card-label">Editor de Workflow</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('flags')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <div class="cfg-card-label">Flags de Etapa</div>
         </div>
       </div>
-      <div>
-        <div class="sec-title">Flags de etapa</div>
-        <div class="panel" style="padding:1.1rem">
-          <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
-          <div style="display:flex;gap:.45rem">
-            <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem">
-            <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
+
+      <div class="cfg-section-hdr">Cadastros</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('regionais')">
+          <div class="cfg-hub-icon" style="background:#dcfce7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
+          <div class="cfg-card-label">Regionais</div>
+        </div>
+        <div class="cfg-hub-card cfg-disabled">
+          <div class="cfg-hub-icon" style="background:#f1f5f9">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          </div>
+          <div class="cfg-card-label">Empreendimentos</div>
+          <div class="cfg-card-soon">Em breve</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
+          <div class="cfg-hub-icon" style="background:#fef3c7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="cfg-card-label">Correspondentes / CCA</div>
+        </div>
+      </div>
+
+      <div class="cfg-section-hdr">Notificacoes</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card cfg-disabled">
+          <div class="cfg-hub-icon" style="background:#f0fdf4">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="cfg-card-label">E-mail · Novo processo</div>
+          <div class="cfg-card-soon">Em breve</div>
+        </div>
+        <div class="cfg-hub-card cfg-disabled">
+          <div class="cfg-hub-icon" style="background:#fefce8">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/><circle cx="18" cy="18" r="3"/><path d="M18 16v2l1 1"/></svg>
+          </div>
+          <div class="cfg-card-label">E-mail · Vencimento avaliacao</div>
+          <div class="cfg-card-soon">Em breve</div>
+        </div>
+      </div>
+
+      <div class="cfg-section-hdr">Integracoes</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card cfg-disabled">
+          <div class="cfg-hub-icon" style="background:#fef2f2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="cfg-card-label">Envio pelo Gmail</div>
+          <div class="cfg-card-soon">Em breve</div>
+        </div>
+      </div>
+
+    </div><!-- /#cfg-hub -->
+
+    <!-- ─── Sub-view: Editor de Workflow ─── -->
+    <div id="cfg-view-wf" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Editor de Workflow</div>
+      </div>
+      <p style="font-size:.8rem;color:var(--t2);margin-bottom:1.25rem;max-width:520px;line-height:1.6">
+        Edite as etapas, conexoes e grupos regionais do pipeline de repasse diretamente no editor visual de nos.
+      </p>
+      <a id="link-wf" class="btn btn-primary">Abrir editor de workflow</a>
+    </div>
+
+    <!-- ─── Sub-view: Flags de Etapa ─── -->
+    <div id="cfg-view-flags" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Flags de Etapa</div>
+      </div>
+      <div class="panel" style="padding:1.1rem;max-width:580px">
+        <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+        <div style="display:flex;gap:.45rem;align-items:center">
+          <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--t1);background:var(--card)">
+          <input id="new-flag-color" type="color" value="#7c3aed" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+          <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
         </div>
       </div>
     </div>
-    <div style="margin-top:1.1rem">
-      <div class="sec-title">Regionais cadastradas</div>
-      <div class="panel" style="padding:1.1rem">
-        <p style="font-size:.77rem;color:var(--t2);margin-bottom:.75rem">Regionais sao definidas pelo campo <code style="color:#7c3aed;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.</p>
+
+    <!-- ─── Sub-view: Regionais ─── -->
+    <div id="cfg-view-regionais" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Regionais</div>
+      </div>
+      <div class="panel" style="padding:1.1rem;max-width:620px">
+        <p style="font-size:.78rem;color:var(--t2);margin-bottom:.875rem;line-height:1.6">
+          Regionais sao definidas pelo campo <code style="color:#7c3aed;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.
+          Cada grupo de etapas com o mesmo group_key forma uma regional separada no kanban.
+        </p>
         <div class="tag-list" id="regionals-cfg-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
         <a class="btn btn-ghost btn-sm" id="link-wf-groups">Editar no Workflow</a>
       </div>
     </div>
 
-    <!-- Cadastros -->
-    <div style="margin-top:1.1rem">
-      <div class="sec-title">Cadastros — Parceiros e Correspondentes</div>
+    <!-- ─── Sub-view: Correspondentes / CCA ─── -->
+    <div id="cfg-view-correspondentes" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Correspondentes / CCA</div>
+      </div>
       <div class="panel">
         <div style="padding:1rem 1rem .25rem">
           <div class="pt-toolbar">
@@ -672,10 +774,9 @@ async function init() {
   try { a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
 
-  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
-  document.getElementById('link-wf').href        = `/${G.slug}/workflow?module=repasse`;
-  document.getElementById('link-admin').href     = `/${G.slug}/admin`;
-  document.getElementById('link-wf-groups').href = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
+  document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
 
   await loadData();
   renderDashboard();
@@ -724,11 +825,28 @@ function switchTab(tab, el) {
   );
   const prev = G.activeTab;
   G.activeTab = tab;
-  if (tab === 'config' && !G.partnersLoaded) loadPartners();
-  // Reload stage/case data when switching to dashboard or repasse from another tab
+  if (tab === 'config') closeCfgView(); // always return to hub when entering config
   if ((tab === 'dashboard' || tab === 'repasse') && prev === 'config') {
     loadData().then(() => { renderDashboard(); renderPipeline(); renderList(); });
   }
+}
+
+// ─── Config sub-views ─────────────────────────────────────────────────────────
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'correspondentes'];
+
+function openCfgView(name) {
+  document.getElementById('cfg-hub').style.display = 'none';
+  CFG_VIEWS.forEach(v =>
+    document.getElementById('cfg-view-'+v).style.display = v===name ? '' : 'none'
+  );
+  if (name === 'correspondentes' && !G.partnersLoaded) loadPartners();
+}
+
+function closeCfgView() {
+  document.getElementById('cfg-hub').style.display = '';
+  CFG_VIEWS.forEach(v =>
+    document.getElementById('cfg-view-'+v).style.display = 'none'
+  );
 }
 
 function switchView(view) {
