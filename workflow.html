@@ -331,15 +331,49 @@ let editingStage = null;
 let WF_USER  = null;    // current logged-in user (holds tenant_id)
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+const WF_MODULES = [
+  { key: 'repasse',  label: 'Repasse' },
+  { key: 'registro', label: 'Registro' },
+];
+
 async function init() {
   try { WF_USER = a1RequireAuth(); } catch { return; }
   const slug = A1.slug;
   document.getElementById('back-btn').href = `/${slug}/configuracoes`;
 
+  // carrega módulos ativos do tenant
+  const activeMods = await fetch(
+    `${A1.rest('a1_tenant_modules')}?select=module_key`,
+    { headers: A1.headers() }
+  ).then(r => r.json()).catch(() => []);
+  const activeKeys = new Set(activeMods.map(m => m.module_key));
+
+  // monta o select com lock nos módulos não habilitados
+  const sel = document.getElementById('module-sel');
+  sel.innerHTML = WF_MODULES.map(m => {
+    const enabled = activeKeys.has(m.key);
+    return `<option value="${m.key}"${enabled ? '' : ' disabled'} style="${enabled ? '' : 'color:#6b7280'}">
+      ${enabled ? '' : '🔒 '}${m.label}
+    </option>`;
+  }).join('');
+
   const params = new URLSearchParams(location.search);
-  MODULE = params.get('module') || 'repasse';
-  document.getElementById('module-sel').value = MODULE;
-  document.getElementById('wf-module-label').textContent = `— ${MODULE === 'repasse' ? 'Repasse' : 'Registro'}`;
+  const requested = params.get('module') || 'repasse';
+
+  // se o módulo solicitado não está ativo, usa o primeiro disponível
+  MODULE = activeKeys.has(requested) ? requested : (WF_MODULES.find(m => activeKeys.has(m.key))?.key || 'repasse');
+
+  // se o módulo solicitado estava bloqueado, avisa
+  if (requested !== MODULE) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:52px;left:0;right:0;background:#1e1b4b;border-bottom:1px solid #312e81;padding:.5rem 1.25rem;font-size:.75rem;color:#a5b4fc;z-index:100;text-align:center';
+    banner.textContent = `O módulo "${requested}" não está habilitado para esta conta. Exibindo o módulo disponível.`;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 5000);
+  }
+
+  sel.value = MODULE;
+  document.getElementById('wf-module-label').textContent = `— ${WF_MODULES.find(m=>m.key===MODULE)?.label || MODULE}`;
 
   buildColorRow();
   await load();
@@ -678,8 +712,14 @@ async function deleteStage() {
 
 // ─── Module switch ────────────────────────────────────────────────────────────
 async function changeModule(m) {
+  const opt = document.querySelector(`#module-sel option[value="${m}"]`);
+  if (opt?.disabled) {
+    document.getElementById('module-sel').value = MODULE; // reverte
+    toast('Módulo não habilitado para esta conta', 'error');
+    return;
+  }
   MODULE = m;
-  document.getElementById('wf-module-label').textContent = `— ${m === 'repasse' ? 'Repasse' : 'Registro'}`;
+  document.getElementById('wf-module-label').textContent = `— ${WF_MODULES.find(x=>x.key===m)?.label || m}`;
   history.replaceState(null,'', `?module=${m}`);
   await load();
 }
