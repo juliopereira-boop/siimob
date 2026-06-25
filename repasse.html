@@ -861,14 +861,53 @@
         <div class="form-group"><label>CPF</label><input id="n-cpf" type="text" placeholder="000.000.000-00"></div>
         <div class="form-group"><label>Telefone</label><input id="n-phone" type="text"></div>
         <div class="form-group"><label>E-mail</label><input id="n-email" type="email"></div>
-        <div class="form-group full"><label>Empreendimento</label><input id="n-development" type="text" list="dl-developments"></div>
-        <div class="form-group"><label>Bloco</label><input id="n-block" type="text"></div>
-        <div class="form-group"><label>Unidade</label><input id="n-unit" type="text"></div>
-        <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="number" step="0.01"></div>
-        <div class="form-group"><label>Correspondente</label><input id="n-partner" type="text" list="dl-partners"></div>
-        <div class="form-group"><label>Imobiliaria</label><input id="n-re" type="text"></div>
-        <div class="form-group"><label>Corretor</label><input id="n-broker" type="text"></div>
-        <div class="form-group"><label>Gerente</label><input id="n-manager" type="text"></div>
+
+        <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:.875rem;margin-top:.1rem">
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--emerald);margin-bottom:.65rem">Imóvel</div>
+          <div class="form-grid" style="margin:0">
+            <div class="form-group full"><label>Empreendimento *</label>
+              <select id="n-development" onchange="onEmprChange()">
+                <option value="">Selecione o empreendimento...</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Bloco *</label>
+              <select id="n-block" onchange="onBlocoChange()" disabled>
+                <option value="">Selecione primeiro o empreendimento</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Unidade *</label>
+              <select id="n-unit" disabled>
+                <option value="">Selecione primeiro o bloco</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="number" step="0.01" placeholder="0,00"></div>
+          </div>
+        </div>
+
+        <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:.875rem;margin-top:.1rem">
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--emerald);margin-bottom:.65rem">Envolvidos</div>
+          <div class="form-grid" style="margin:0">
+            <div class="form-group"><label>Correspondente *</label>
+              <select id="n-partner">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Imobiliária *</label>
+              <select id="n-re">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Gerente *</label>
+              <select id="n-manager">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Corretor <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
+              <input id="n-broker" type="text" placeholder="Nome do corretor">
+            </div>
+          </div>
+        </div>
+
         <div class="form-group"><label>Etapa inicial</label>
           <select id="n-stage"><option value="">Selecione</option></select>
         </div>
@@ -1641,19 +1680,92 @@ async function addComment() {
 }
 
 // ─── New case ─────────────────────────────────────────────────────────────────
-function openNewCase() {
-  const sel=document.getElementById('n-stage');
+async function openNewCase() {
+  // reset form
+  ['n-name','n-cpf','n-phone','n-email','n-value','n-broker','n-obs'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('n-eval').value='';
+  document.getElementById('n-block').innerHTML='<option value="">Selecione primeiro o empreendimento</option>';
+  document.getElementById('n-block').disabled=true;
+  document.getElementById('n-unit').innerHTML='<option value="">Selecione primeiro o bloco</option>';
+  document.getElementById('n-unit').disabled=true;
+
+  // stage select
+  const stageSel=document.getElementById('n-stage');
   const initials=G.stages.filter(s=>s.is_initial);
-  sel.innerHTML='<option value="">Selecione</option>'+(initials.length?initials:G.stages).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  stageSel.innerHTML='<option value="">Selecione</option>'+(initials.length?initials:G.stages).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+
+  // empreendimentos
+  if (!G.emprLoaded) await loadEmpreendimentos();
+  const devSel=document.getElementById('n-development');
+  devSel.innerHTML='<option value="">Selecione o empreendimento...</option>'+
+    G.empreendimentos.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');
+
+  // correspondentes (empresas)
+  if (!G.empresasLoaded) await loadEmpresas();
+  document.getElementById('n-partner').innerHTML='<option value="">Selecione...</option>'+
+    G.empresas.filter(e=>e.is_active).map(e=>`<option value="${e.name}">${esc(e.name)}</option>`).join('');
+
+  // imobiliárias — carrega de a1_partners type=imobiliaria
+  const imobs = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
+    imobs.map(i=>`<option value="${i.name}">${esc(i.name)}</option>`).join('');
+
+  // gerentes — carrega de a1_users
+  const users = await fetch(`${A1.rest('a1_users')}?order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  document.getElementById('n-manager').innerHTML='<option value="">Selecione...</option>'+
+    users.filter(u=>u.is_active).map(u=>`<option value="${u.name}">${esc(u.name)}</option>`).join('');
+
   document.getElementById('modal-new-bg').classList.remove('hidden');
+}
+
+function onEmprChange() {
+  const devId = document.getElementById('n-development').value;
+  const dev   = G.empreendimentos.find(d=>d.id===devId);
+  const blockSel = document.getElementById('n-block');
+  const unitSel  = document.getElementById('n-unit');
+
+  unitSel.innerHTML='<option value="">Selecione primeiro o bloco</option>';
+  unitSel.disabled=true;
+
+  if (!dev || !Array.isArray(dev.units) || !dev.units.length) {
+    blockSel.innerHTML='<option value="">Nenhum bloco cadastrado</option>';
+    blockSel.disabled=true;
+    return;
+  }
+  const blocks=[...new Set(dev.units.map(u=>u.split('-')[0]))].sort();
+  blockSel.innerHTML='<option value="">Selecione o bloco...</option>'+
+    blocks.map(b=>`<option value="${b}">${b}</option>`).join('');
+  blockSel.disabled=false;
+}
+
+function onBlocoChange() {
+  const devId = document.getElementById('n-development').value;
+  const block = document.getElementById('n-block').value;
+  const dev   = G.empreendimentos.find(d=>d.id===devId);
+  const unitSel = document.getElementById('n-unit');
+
+  if (!dev || !block) { unitSel.innerHTML='<option value="">Selecione primeiro o bloco</option>'; unitSel.disabled=true; return; }
+  const units = (dev.units||[]).filter(u=>u.startsWith(block+'-')).sort();
+  unitSel.innerHTML='<option value="">Selecione a unidade...</option>'+
+    units.map(u=>`<option value="${u}">${u}</option>`).join('');
+  unitSel.disabled=false;
 }
 
 async function createCase() {
   const name=v('n-name');
   if(!name){toast('Informe o nome do cliente','error');return;}
-  const stageId=document.getElementById('n-stage').value;
-  const stage=G.stages.find(s=>s.id===stageId);
-  const body={module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:v('n-development'),block:v('n-block'),unit:v('n-unit'),contract_value:parseFloat(v('n-value'))||null,partner_name:v('n-partner'),real_estate_name:v('n-re'),broker_name:v('n-broker'),manager_name:v('n-manager'),evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
+  const devSel  = document.getElementById('n-development');
+  const dev     = G.empreendimentos.find(d=>d.id===devSel.value);
+  const block   = document.getElementById('n-block').value;
+  const unit    = document.getElementById('n-unit').value;
+  const partner = document.getElementById('n-partner').value;
+  const re      = document.getElementById('n-re').value;
+  const manager = document.getElementById('n-manager').value;
+  const stageId = document.getElementById('n-stage').value;
+  const stage   = G.stages.find(s=>s.id===stageId);
+  const body={module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
   const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
   const [created]=await res.json().catch(()=>[null]);
   if(created?.id){
@@ -2104,7 +2216,7 @@ function emprPreview() {
     const units = [];
     for (let p=1; p<=pav; p++) {
       for (let u=1; u<=upf; u++) {
-        const seq = ((p-1)*upf + u).toString().padStart(3,'0');
+        const seq = `${p-1}${u.toString().padStart(2,'0')}`;
         units.push(`${prefix}${b}-${seq}`);
       }
     }
@@ -2131,7 +2243,7 @@ async function saveEmpreendimento() {
   for (let b=1; b<=qtd; b++) {
     for (let p=1; p<=pav; p++) {
       for (let u=1; u<=upf; u++) {
-        const seq = ((p-1)*upf + u).toString().padStart(3,'0');
+        const seq = `${p-1}${u.toString().padStart(2,'0')}`;
         units.push(`${prefix}${b}-${seq}`);
       }
     }
@@ -2237,8 +2349,10 @@ function importFromPdf(){
   setTimeout(()=>{
     if(G.pdfData.name)        document.getElementById('n-name').value=G.pdfData.name;
     if(G.pdfData.cpf)         document.getElementById('n-cpf').value=G.pdfData.cpf;
-    if(G.pdfData.development) document.getElementById('n-development').value=G.pdfData.development;
-    if(G.pdfData.partner)     document.getElementById('n-partner').value=G.pdfData.partner;
+    if(G.pdfData.development){
+      const devMatch=G.empreendimentos.find(d=>d.name.toLowerCase()===G.pdfData.development.toLowerCase());
+      if(devMatch){ document.getElementById('n-development').value=devMatch.id; onEmprChange(); }
+    }
   },80);
 }
 
