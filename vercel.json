@@ -4,10 +4,10 @@
     { "source": "/:slug/login",       "destination": "/login.html" },
     { "source": "/:slug/repasse",     "destination": "/repasse.html" },
     { "source": "/:slug/registro",    "destination": "/registro.html" },
-    { "source": "/:slug/dashboard",   "destination": "/dashboard.html" },
-    { "source": "/:slug/admin",         "destination": "/tenant-admin.html" },
+    { "source": "/:slug/dashboard",    "destination": "/repasse.html" },
+    { "source": "/:slug/admin",        "destination": "/tenant-admin.html" },
     { "source": "/:slug/workflow",     "destination": "/workflow.html" },
-    { "source": "/:slug/configuracoes","destination": "/configuracoes.html" },
+    { "source": "/:slug/configuracoes","destination": "/repasse.html" },
     { "source": "/superadmin",         "destination": "/superadmin.html" }
   ],
   "headers": [

@@ -256,6 +256,35 @@
     .tag-rm{cursor:pointer;color:var(--t4);transition:color .15s;font-size:.65rem}
     .tag-rm:hover{color:var(--red)}
 
+    /* ── Partner table ── */
+    .pt-table{width:100%;border-collapse:collapse;font-size:.78rem}
+    .pt-table th{padding:.5rem .875rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
+    .pt-table td{padding:.65rem .875rem;border-bottom:1px solid var(--border);vertical-align:middle}
+    .pt-table tr:last-child td{border-bottom:none}
+    .pt-table tr:hover td{background:#f8f9fc}
+    .pt-type{display:inline-block;padding:.12rem .45rem;border-radius:3px;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .pt-type-correspondente{background:#f5f3ff;color:#6d28d9}
+    .pt-type-imobiliaria{background:#f0fdf4;color:#166534}
+    .pt-type-corretor{background:#eff6ff;color:#1e40af}
+    .pt-type-cca{background:#fefce8;color:#854d0e}
+    .pt-type-despachante{background:#fff7ed;color:#9a3412}
+    .pt-status{display:inline-flex;align-items:center;gap:.3rem;font-size:.73rem;font-weight:600}
+    .pt-dot{width:.45rem;height:.45rem;border-radius:50%;flex-shrink:0}
+    .pt-dot-green{background:#22c55e}.pt-dot-yellow{background:#f59e0b}.pt-dot-red{background:#ef4444}
+    .pt-act{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.18rem .55rem;font-size:.68rem;font-weight:600;cursor:pointer;color:var(--t2);transition:all .12s}
+    .pt-act:hover{color:var(--t1);border-color:var(--border2)}
+    .pt-act.danger:hover{color:var(--red);border-color:#fca5a5}
+    .pt-empty{text-align:center;padding:2.5rem;color:var(--t3);font-size:.8rem}
+    .pt-toolbar{display:flex;align-items:center;gap:.6rem;margin-bottom:.875rem;flex-wrap:wrap}
+    .pt-toolbar input[type=search]{width:17rem;font-size:.78rem;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--t1)}
+    .pt-toolbar select{font-size:.78rem;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--t1)}
+    .pt-pg{display:flex;align-items:center;justify-content:space-between;padding:.6rem .875rem;border-top:1px solid var(--border);font-size:.75rem;color:var(--t3)}
+    .pt-pg-btns{display:flex;gap:.3rem}
+    .pt-pg-btn{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer;color:var(--t2);transition:all .12s}
+    .pt-pg-btn:hover:not([disabled]){color:var(--t1)}
+    .pt-pg-btn[disabled]{opacity:.4;cursor:default}
+    .pt-pg-btn.active{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe}
+
     /* ── Spinner ── */
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -282,7 +311,6 @@
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
       <button class="btn-hdr" onclick="openPdfModal()">Importar PDF</button>
-      <a class="btn-hdr" id="btn-back">Dashboard</a>
       <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
   </div>
@@ -423,6 +451,48 @@
         <a class="btn btn-ghost btn-sm" id="link-wf-groups">Editar no Workflow</a>
       </div>
     </div>
+
+    <!-- Cadastros -->
+    <div style="margin-top:1.1rem">
+      <div class="sec-title">Cadastros — Parceiros e Correspondentes</div>
+      <div class="panel">
+        <div style="padding:1rem 1rem .25rem">
+          <div class="pt-toolbar">
+            <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." oninput="ptFilter()">
+            <select id="pt-type" onchange="ptFilter()">
+              <option value="">Todos os tipos</option>
+              <option value="correspondente">Correspondente</option>
+              <option value="imobiliaria">Imobiliaria</option>
+              <option value="corretor">Corretor</option>
+              <option value="cca">CCA</option>
+              <option value="despachante">Despachante</option>
+            </select>
+            <select id="pt-status" onchange="ptFilter()">
+              <option value="">Todos</option>
+              <option value="active">Ativos</option>
+              <option value="pending">Pendentes</option>
+              <option value="inactive">Inativos</option>
+            </select>
+            <div style="flex:1"></div>
+            <button class="btn btn-primary btn-sm" onclick="openPartnerModal()">+ Novo cadastro</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pt-table">
+            <thead><tr>
+              <th>Nome</th><th>Tipo</th><th>CPF / CNPJ</th><th>E-mail</th>
+              <th>Telefone</th><th>Regional</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="pt-tbody"><tr><td colspan="8" class="pt-empty">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pt-pg">
+          <span id="pt-count">—</span>
+          <div class="pt-pg-btns" id="pt-pg-btns"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </div><!-- /.main -->
@@ -529,6 +599,50 @@
 
 <datalist id="dl-developments"></datalist>
 <datalist id="dl-partners"></datalist>
+
+<!-- ═══════ MODAL: Partner / Cadastro ═══════ -->
+<div class="modal-bg hidden" id="modal-partner-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="partner-modal-title">Novo cadastro</div>
+      <button class="modal-close" onclick="closeModal('modal-partner-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome *</label><input id="pt-f-name" type="text" placeholder="Nome completo ou razao social"></div>
+        <div class="form-group"><label>Tipo *</label>
+          <select id="pt-f-type">
+            <option value="correspondente">Correspondente</option>
+            <option value="imobiliaria">Imobiliaria</option>
+            <option value="corretor">Corretor</option>
+            <option value="cca">CCA</option>
+            <option value="despachante">Despachante</option>
+          </select>
+        </div>
+        <div class="form-group"><label>CPF / CNPJ</label><input id="pt-f-cpf" type="text" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>E-mail</label><input id="pt-f-email" type="email" placeholder="email@exemplo.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="pt-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Regional</label><input id="pt-f-region" type="text" placeholder="Ex.: SP - Interior"></div>
+        <div class="form-group full"><label>Senha de acesso</label>
+          <input id="pt-f-password" type="password" placeholder="Deixe em branco para manter a atual">
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Permite acesso ao portal do parceiro. Hash gerado no cliente.</div>
+        </div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="pt-f-active" checked> Ativo
+          </label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="pt-f-approved"> Aprovado
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-partner-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="pt-save-btn" onclick="savePartner()">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="fluxo-popup hidden" id="fluxo-popup"></div>
 <div id="toast-wrap"></div>
 
@@ -547,6 +661,9 @@ const G = {
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
+  // partners / cadastros
+  partners: [], ptFiltered: [], ptPage: 0, ptPerPage: 25,
+  editingPartnerId: null, partnersLoaded: false,
 };
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -556,7 +673,6 @@ async function init() {
   G.slug = A1.slug;
 
   document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
-  document.getElementById('btn-back').href       = `/${G.slug}/dashboard`;
   document.getElementById('link-wf').href        = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-admin').href     = `/${G.slug}/admin`;
   document.getElementById('link-wf-groups').href = `/${G.slug}/workflow?module=repasse`;
@@ -607,6 +723,7 @@ function switchTab(tab, el) {
     document.getElementById('tab-'+t).style.display = t===tab?'':'none'
   );
   G.activeTab = tab;
+  if (tab === 'config' && !G.partnersLoaded) loadPartners();
 }
 
 function switchView(view) {
@@ -1070,6 +1187,160 @@ async function addFlag(){
 async function removeFlag(id){
   await fetch(`${A1.rest('a1_stage_flags')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
   G.flags=G.flags.filter(f=>f.id!==id);renderFlags();toast('Flag removida','info');
+}
+
+// ─── Partners / Cadastros ─────────────────────────────────────────────────────
+async function loadPartners() {
+  G.partnersLoaded = true;
+  G.partners = await fetch(`${A1.rest('a1_partners')}?order=name.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  ptFilter();
+}
+
+function ptFilter() {
+  const q      = (document.getElementById('pt-search')?.value||'').toLowerCase();
+  const type   = document.getElementById('pt-type')?.value||'';
+  const status = document.getElementById('pt-status')?.value||'';
+  G.ptFiltered = G.partners.filter(p => {
+    if (type && p.type !== type) return false;
+    if (status === 'active'   && !(p.is_active && p.approved)) return false;
+    if (status === 'pending'  && !(p.is_active && !p.approved)) return false;
+    if (status === 'inactive' && p.is_active) return false;
+    if (q) { const hay=`${p.name} ${p.cpf||''} ${p.email||''}`.toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  G.ptPage = 0;
+  renderPartnerTable();
+}
+
+function renderPartnerTable() {
+  const tbody = document.getElementById('pt-tbody');
+  const total = G.ptFiltered.length;
+  const start = G.ptPage * G.ptPerPage;
+  const page  = G.ptFiltered.slice(start, start + G.ptPerPage);
+
+  document.getElementById('pt-count').textContent =
+    total === 0 ? 'Nenhum resultado' : `${start+1}–${Math.min(start+page.length, total)} de ${total}`;
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="pt-empty">Nenhum cadastro encontrado.</td></tr>`;
+    renderPtPagination(total); return;
+  }
+
+  tbody.innerHTML = page.map(p => {
+    const st = p.is_active && p.approved
+      ? `<span class="pt-status"><span class="pt-dot pt-dot-green"></span>Ativo</span>`
+      : p.is_active && !p.approved
+        ? `<span class="pt-status"><span class="pt-dot pt-dot-yellow"></span>Pendente</span>`
+        : `<span class="pt-status"><span class="pt-dot pt-dot-red"></span>Inativo</span>`;
+    return `<tr>
+      <td style="font-weight:600">${esc(p.name)}</td>
+      <td><span class="pt-type pt-type-${p.type||'correspondente'}">${esc(p.type||'—')}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:.73rem">${esc(p.cpf||'—')}</td>
+      <td>${esc(p.email||'—')}</td>
+      <td>${esc(p.phone||'—')}</td>
+      <td>${esc(p.region||'—')}</td>
+      <td>${st}</td>
+      <td><div style="display:flex;gap:.3rem">
+        <button class="pt-act" onclick="openPartnerModal('${p.id}')">Editar</button>
+        <button class="pt-act danger" onclick="deletePartner('${p.id}','${esc(p.name)}')">Excluir</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  renderPtPagination(total);
+}
+
+function renderPtPagination(total) {
+  const pages = Math.ceil(total / G.ptPerPage);
+  const el = document.getElementById('pt-pg-btns');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  let html = `<button class="pt-pg-btn" ${G.ptPage===0?'disabled':''} onclick="ptGo(${G.ptPage-1})">Anterior</button>`;
+  for (let i=0;i<pages;i++) {
+    if (pages>7 && Math.abs(i-G.ptPage)>2 && i!==0 && i!==pages-1) {
+      if(i===1||i===pages-2) html+=`<span style="padding:.2rem .3rem;color:var(--t3)">…</span>`;
+      continue;
+    }
+    html+=`<button class="pt-pg-btn ${i===G.ptPage?'active':''}" onclick="ptGo(${i})">${i+1}</button>`;
+  }
+  html+=`<button class="pt-pg-btn" ${G.ptPage===pages-1?'disabled':''} onclick="ptGo(${G.ptPage+1})">Proximo</button>`;
+  el.innerHTML = html;
+}
+
+function ptGo(n) { G.ptPage=n; renderPartnerTable(); }
+
+function openPartnerModal(id) {
+  const p = id ? G.partners.find(x=>x.id===id) : null;
+  G.editingPartnerId = p ? p.id : null;
+  document.getElementById('partner-modal-title').textContent = p ? 'Editar cadastro' : 'Novo cadastro';
+  document.getElementById('pt-f-name').value     = p?.name    || '';
+  document.getElementById('pt-f-type').value     = p?.type    || 'correspondente';
+  document.getElementById('pt-f-cpf').value      = p?.cpf     || '';
+  document.getElementById('pt-f-email').value    = p?.email   || '';
+  document.getElementById('pt-f-phone').value    = p?.phone   || '';
+  document.getElementById('pt-f-region').value   = p?.region  || '';
+  document.getElementById('pt-f-password').value = '';
+  document.getElementById('pt-f-active').checked   = p ? !!p.is_active : true;
+  document.getElementById('pt-f-approved').checked = p ? !!p.approved  : false;
+  document.getElementById('modal-partner-bg').classList.remove('hidden');
+}
+
+async function savePartner() {
+  const name   = document.getElementById('pt-f-name').value.trim();
+  if (!name) { toast('Nome e obrigatorio','error'); return; }
+  const payload = {
+    name,
+    type:      document.getElementById('pt-f-type').value,
+    cpf:       document.getElementById('pt-f-cpf').value.trim(),
+    email:     document.getElementById('pt-f-email').value.trim(),
+    phone:     document.getElementById('pt-f-phone').value.trim(),
+    region:    document.getElementById('pt-f-region').value.trim(),
+    is_active: document.getElementById('pt-f-active').checked,
+    approved:  document.getElementById('pt-f-approved').checked,
+  };
+  const pwd = document.getElementById('pt-f-password').value;
+  if (pwd) payload.password_hash = await sha256(pwd + '::a1');
+
+  const btn = document.getElementById('pt-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    if (G.editingPartnerId) {
+      const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.editingPartnerId}`, {
+        method:'PATCH', headers: A1.upsertHeaders(), body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      const idx = G.partners.findIndex(p=>p.id===G.editingPartnerId);
+      if (idx!==-1) G.partners[idx] = {...G.partners[idx], ...payload};
+      toast('Cadastro atualizado','success');
+    } else {
+      const [created] = await fetch(A1.rest('a1_partners'), {
+        method:'POST', headers: A1.returnHeaders(), body: JSON.stringify(payload)
+      }).then(r=>r.json());
+      if (!created) throw new Error('no data');
+      G.partners.push(created);
+      G.partners.sort((a,b)=>a.name.localeCompare(b.name));
+      toast('Cadastro criado','success');
+    }
+    ptFilter();
+    closeModal('modal-partner-bg');
+  } catch {
+    toast('Erro ao salvar. Verifique os dados.','error');
+  } finally {
+    btn.disabled=false; btn.textContent='Salvar';
+  }
+}
+
+async function deletePartner(id, name) {
+  if (!confirm(`Excluir o cadastro de "${name}"? Esta acao nao pode ser desfeita.`)) return;
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
+  if (res.ok || res.status===204) {
+    G.partners = G.partners.filter(p=>p.id!==id);
+    ptFilter(); toast('Cadastro removido','info');
+  } else toast('Erro ao remover','error');
+}
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────
