@@ -302,6 +302,54 @@
     .pt-pg-btn[disabled]{opacity:.4;cursor:default}
     .pt-pg-btn.active{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe}
 
+    /* ── Dashboard filter bar ── */
+    .dash-filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;padding:.6rem .875rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .dash-filter-bar select,.dash-filter-bar input{padding:.32rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--bg);color:var(--t1)}
+    .dash-filter-bar input{width:150px}
+    .dash-filter-bar select:focus,.dash-filter-bar input:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .dash-filter-label{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);white-space:nowrap}
+
+    /* ── KPI secondary ── */
+    .kpi2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:.75rem;margin-bottom:1.25rem}
+    .kpi2-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;box-shadow:var(--shadow)}
+    .kpi2-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.35rem}
+    .kpi2-value{font-size:1.25rem;font-weight:800;letter-spacing:-.025em;color:var(--t1);line-height:1.2}
+    .kpi2-sub{font-size:.68rem;color:var(--t3);margin-top:.2rem;line-height:1.3}
+
+    /* ── Donut chart ── */
+    .donut-wrap{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+    .donut-svg-wrap{position:relative;flex-shrink:0}
+    .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .donut-total-val{font-size:1.35rem;font-weight:800;letter-spacing:-.03em}
+    .donut-total-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
+    .donut-legend{display:flex;flex-direction:column;gap:.45rem;min-width:0;flex:1}
+    .donut-leg-row{display:flex;align-items:center;gap:.5rem;font-size:.75rem}
+    .donut-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .donut-leg-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--t2);min-width:0}
+    .donut-leg-val{font-weight:700;color:var(--t1);flex-shrink:0}
+    .donut-leg-pct{font-size:.68rem;color:var(--t3);min-width:2.4rem;text-align:right;flex-shrink:0}
+
+    /* ── Funil detail ── */
+    .funil-row2{display:grid;grid-template-columns:170px 1fr 48px 42px 100px;align-items:center;gap:.6rem;padding:.48rem 0;border-bottom:1px solid var(--border)}
+    .funil-row2:last-child{border-bottom:none}
+    .funil-name-cell{display:flex;align-items:center;gap:.4rem;min-width:0}
+    .funil-stage-dot2{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .funil-stage-name2{font-size:.76rem;font-weight:600;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .funil-count2{font-size:.76rem;font-weight:700;text-align:right}
+    .funil-pct2{font-size:.67rem;color:var(--t3);text-align:right}
+    .funil-time2{font-size:.67rem;color:var(--t3);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:.3rem;justify-content:flex-end;flex-wrap:wrap}
+    .badge-gargalo{display:inline-block;padding:.05rem .38rem;border-radius:3px;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;white-space:nowrap}
+    .badge-pendente2{display:inline-block;padding:.05rem .38rem;border-radius:3px;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;white-space:nowrap}
+
+    /* ── Distribution bars ── */
+    .dist-row{display:flex;align-items:center;gap:.6rem;padding:.42rem 0;border-bottom:1px solid var(--border)}
+    .dist-row:last-child{border-bottom:none}
+    .dist-num{width:16px;font-size:.65rem;font-weight:800;color:var(--t4);text-align:center;flex-shrink:0}
+    .dist-name{width:120px;font-size:.75rem;font-weight:600;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+    .dist-bar-wrap{flex:1;background:#f0f2f7;border-radius:99px;height:5px;overflow:hidden}
+    .dist-bar{height:100%;border-radius:99px;transition:width .4s}
+    .dist-val{font-size:.75rem;font-weight:700;color:var(--blue);min-width:18px;text-align:right;flex-shrink:0}
+
     /* ── Spinner ── */
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -353,29 +401,108 @@
 
   <!-- ══════════ DASHBOARD ══════════ -->
   <div id="tab-dashboard">
-    <div class="kpi-grid">
-      <div class="kpi-card kpi-blue"><div class="kpi-label">Total</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">repasses ativos</div></div>
-      <div class="kpi-card kpi-amber"><div class="kpi-label">Em análise</div><div class="kpi-value" id="kpi-pending">—</div><div class="kpi-sub">pendentes</div></div>
-      <div class="kpi-card kpi-green"><div class="kpi-label">Aprovados</div><div class="kpi-value" id="kpi-approved">—</div><div class="kpi-sub">etapas finais</div></div>
-      <div class="kpi-card kpi-red"><div class="kpi-label">Novos</div><div class="kpi-value" id="kpi-new">—</div><div class="kpi-sub">não visualizados</div></div>
-      <div class="kpi-card kpi-violet"><div class="kpi-label">Entrevistas</div><div class="kpi-value" id="kpi-interviews">—</div><div class="kpi-sub">agendadas</div></div>
+
+    <!-- Filter bar -->
+    <div class="dash-filter-bar">
+      <span class="dash-filter-label">Filtrar</span>
+      <select id="df-regional" onchange="applyDashFilter()"><option value="">Todas as regionais</option></select>
+      <select id="df-empr"     onchange="applyDashFilter()"><option value="">Empreendimento</option></select>
+      <select id="df-parceiro" onchange="applyDashFilter()"><option value="">Correspondente</option></select>
+      <select id="df-re"       onchange="applyDashFilter()"><option value="">Imobiliaria</option></select>
+      <input  id="df-search" type="text" placeholder="Buscar cliente..." oninput="applyDashFilter()">
+      <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:1rem">
+
+    <!-- Top 5 KPI cards -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-label">Total de Processos</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-sub">todos os repasses</div>
+      </div>
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-label">Em Andamento</div>
+        <div class="kpi-value" id="kpi-andamento">—</div>
+        <div class="kpi-sub">etapas intermediarias</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">Concluidos</div>
+        <div class="kpi-value" id="kpi-concluidos">—</div>
+        <div class="kpi-sub">etapas finais</div>
+      </div>
+      <div class="kpi-card kpi-red">
+        <div class="kpi-label">Atrasados</div>
+        <div class="kpi-value" id="kpi-atrasados">—</div>
+        <div class="kpi-sub">+30 dias na etapa</div>
+      </div>
+      <div class="kpi-card kpi-violet">
+        <div class="kpi-label">Sem Correspondente</div>
+        <div class="kpi-value" id="kpi-sem-parceiro">—</div>
+        <div class="kpi-sub">sem parceiro ativo</div>
+      </div>
+    </div>
+
+    <!-- Distribuicao + Secondary KPIs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
       <div class="panel" style="padding:1.15rem">
-        <div class="sec-title">Funil por etapa</div>
-        <div id="funnel-list"><div class="spinner"></div></div>
+        <div class="sec-title">Distribuicao dos Processos</div>
+        <div class="donut-wrap" id="donut-wrap"><div class="spinner"></div></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:.875rem">
-        <div class="panel" style="padding:1.15rem;flex:1">
-          <div class="sec-title">Top Correspondentes</div>
-          <div id="rank-list"><div class="spinner"></div></div>
+      <div style="display:flex;flex-direction:column;gap:.75rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          <div class="kpi2-card">
+            <div class="kpi2-label">Taxa de Conclusao</div>
+            <div class="kpi2-value" id="kpi2-taxa">—</div>
+            <div class="kpi2-sub">dos processos finalizados</div>
+          </div>
+          <div class="kpi2-card">
+            <div class="kpi2-label">Maior Gargalo</div>
+            <div class="kpi2-value" id="kpi2-gargalo">—</div>
+            <div class="kpi2-sub" id="kpi2-gargalo-sub">etapa com mais casos</div>
+          </div>
+          <div class="kpi2-card">
+            <div class="kpi2-label">Tempo Medio Total</div>
+            <div class="kpi2-value" id="kpi2-tempo">—</div>
+            <div class="kpi2-sub">media de dias em aberto</div>
+          </div>
+          <div class="kpi2-card">
+            <div class="kpi2-label">Mais Antigo Parado</div>
+            <div class="kpi2-value" id="kpi2-antigo" style="font-size:.95rem">—</div>
+            <div class="kpi2-sub" id="kpi2-antigo-sub">cliente · etapa · dias</div>
+          </div>
         </div>
-        <div class="panel" style="padding:1.15rem">
-          <div class="sec-title">Por Regional</div>
-          <div id="regional-rank-list"><div class="spinner"></div></div>
+        <div class="kpi2-card">
+          <div class="kpi2-label">Novos (48h)</div>
+          <div class="kpi2-value" id="kpi2-novos">—</div>
+          <div class="kpi2-sub">criados nas ultimas 48 horas</div>
         </div>
       </div>
     </div>
+
+    <!-- Funil & Empreendimentos -->
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:1rem;margin-bottom:1.25rem">
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Funil por Etapa</div>
+        <div id="funil-detail-list"><div class="spinner"></div></div>
+      </div>
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Repasses por Empreendimento</div>
+        <div id="empr-dist-list"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Distribuicao bottom -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Por Correspondente</div>
+        <div id="parceiro-dist-list"><div class="spinner"></div></div>
+      </div>
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Por Imobiliaria</div>
+        <div id="re-dist-list"><div class="spinner"></div></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ══════════ REPASSE ══════════ -->
@@ -763,6 +890,7 @@ const G = {
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
+  dashFilters: { regional:'', empr:'', parceiro:'', re:'', search:'' },
   // partners / cadastros
   partners: [], ptFiltered: [], ptPage: 0, ptPerPage: 25,
   editingPartnerId: null, partnersLoaded: false,
@@ -864,50 +992,215 @@ function switchView(view) {
   }
 }
 
+// ─── Dashboard filters ────────────────────────────────────────────────────────
+function dashCases() {
+  const { regional, empr, parceiro, re, search } = G.dashFilters;
+  const sm = stageMap();
+  return G.cases.filter(c => {
+    if (regional && sm[c.stage_id]?.group_key !== regional) return false;
+    if (empr     && c.development !== empr)       return false;
+    if (parceiro && c.partner_name !== parceiro)  return false;
+    if (re       && c.real_estate_name !== re)    return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function populateDashFilters() {
+  const emprs    = [...new Set(G.cases.map(c=>c.development).filter(Boolean))].sort();
+  const partners = [...new Set(G.cases.map(c=>c.partner_name).filter(Boolean))].sort();
+  const res      = [...new Set(G.cases.map(c=>c.real_estate_name).filter(Boolean))].sort();
+  const df = G.dashFilters;
+  const sel = (id, placeholder, opts, cur) => {
+    const el = document.getElementById(id); if(!el) return;
+    el.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('');
+  };
+  sel('df-regional', 'Todas as regionais', G.groups, df.regional);
+  sel('df-empr',     'Empreendimento',     emprs,    df.empr);
+  sel('df-parceiro', 'Correspondente',     partners, df.parceiro);
+  sel('df-re',       'Imobiliaria',        res,      df.re);
+  const srch = document.getElementById('df-search'); if(srch) srch.value = df.search;
+}
+
+function applyDashFilter() {
+  G.dashFilters.regional = document.getElementById('df-regional')?.value || '';
+  G.dashFilters.empr     = document.getElementById('df-empr')?.value     || '';
+  G.dashFilters.parceiro = document.getElementById('df-parceiro')?.value  || '';
+  G.dashFilters.re       = document.getElementById('df-re')?.value       || '';
+  G.dashFilters.search   = document.getElementById('df-search')?.value   || '';
+  renderDashboard();
+}
+
+function clearDashFilters() {
+  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', search:'' };
+  ['df-regional','df-empr','df-parceiro','df-re','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderDashboard();
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDashboard() {
+  populateDashFilters();
+  const cases = dashCases();
   const sm = stageMap();
-  setT('kpi-total',      G.cases.length);
-  setT('kpi-pending',    G.cases.filter(c=>sm[c.stage_id]?.is_pending).length);
-  setT('kpi-approved',   G.cases.filter(c=>sm[c.stage_id]?.is_final).length);
-  setT('kpi-new',        G.cases.filter(c=>c.is_new).length);
-  setT('kpi-interviews', G.cases.filter(c=>c.payload?.entrevista_status==='agendado').length);
 
-  // Funnel
-  const fEl = document.getElementById('funnel-list');
-  const total = G.cases.length;
-  if (!G.stages.length) {
-    fEl.innerHTML = `<span style="color:var(--t3);font-size:.77rem">Nenhuma etapa configurada. <a href="/${G.slug}/workflow?module=repasse" style="color:var(--violet)">Editar workflow</a></span>`;
+  // ── Top 5 KPIs ──
+  const nonFinal    = cases.filter(c => !sm[c.stage_id]?.is_final);
+  const final       = cases.filter(c =>  sm[c.stage_id]?.is_final);
+  const atrasados   = nonFinal.filter(c => daysSince(c.stage_entered_at) > 30);
+  const semParceiro = cases.filter(c => !c.partner_name && !sm[c.stage_id]?.is_final);
+
+  setT('kpi-total',        cases.length);
+  setT('kpi-andamento',    nonFinal.length);
+  setT('kpi-concluidos',   final.length);
+  setT('kpi-atrasados',    atrasados.length);
+  setT('kpi-sem-parceiro', semParceiro.length);
+
+  // ── Secondary KPIs ──
+  const taxa = cases.length ? Math.round(final.length / cases.length * 100) : 0;
+  setT('kpi2-taxa', taxa + '%');
+
+  const stageCounts = {};
+  for (const c of nonFinal) stageCounts[c.stage_id] = (stageCounts[c.stage_id]||0)+1;
+  const gargaloEntry = Object.entries(stageCounts).sort((a,b)=>b[1]-a[1])[0];
+  if (gargaloEntry) {
+    setT('kpi2-gargalo',     gargaloEntry[1]);
+    setT('kpi2-gargalo-sub', sm[gargaloEntry[0]]?.name || '—');
   } else {
-    const counts = {};
-    for (const c of G.cases) counts[c.stage_id] = (counts[c.stage_id]||0)+1;
-    const maxN = Math.max(1,...G.stages.map(s=>counts[s.id]||0));
-    fEl.innerHTML = G.stages.map(s=>{
-      const n=counts[s.id]||0, pct=total?Math.round(n/total*100):0;
-      return `<div class="funnel-row">
-        <div class="funnel-dot" style="background:${s.color}"></div>
-        <div class="funnel-name" title="${esc(s.name)}">${esc(s.name)}</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.round(n/maxN*100)}%;background:${s.color}"></div></div>
-        <div class="funnel-count">${n}</div>
-        <div class="funnel-pct">${pct}%</div>
-      </div>`;
-    }).join('');
+    setT('kpi2-gargalo','—'); setT('kpi2-gargalo-sub','sem dados');
   }
 
-  // Rankings
-  const pCounts={};
-  for (const c of G.cases) if(c.partner_name) pCounts[c.partner_name]=(pCounts[c.partner_name]||0)+1;
-  const pSorted=Object.entries(pCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  document.getElementById('rank-list').innerHTML = pSorted.length
-    ? pSorted.map(([n,c],i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(n)}</div><div class="rank-val">${c}</div></div>`).join('')
-    : '<span style="color:var(--t3);font-size:.77rem">Sem dados.</span>';
+  const avgDays = nonFinal.length
+    ? Math.round(nonFinal.reduce((s,c)=>s+daysSince(c.created_at),0)/nonFinal.length)
+    : 0;
+  setT('kpi2-tempo', avgDays + 'd');
 
-  const rCounts={};
-  for (const c of G.cases){ const g=stageMap()[c.stage_id]?.group_key||'Sem regional'; rCounts[g]=(rCounts[g]||0)+1; }
-  const rSorted=Object.entries(rCounts).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('regional-rank-list').innerHTML = rSorted.length
-    ? rSorted.map(([n,c],i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(n)}</div><div class="rank-val">${c}</div></div>`).join('')
-    : '<span style="color:var(--t3);font-size:.77rem">Sem dados.</span>';
+  const oldest = nonFinal.slice().sort((a,b)=>new Date(a.stage_entered_at)-new Date(b.stage_entered_at))[0];
+  if (oldest) {
+    setT('kpi2-antigo',     oldest.client_name.split(' ')[0]);
+    setT('kpi2-antigo-sub', `${sm[oldest.stage_id]?.name||'—'} · ${daysSince(oldest.stage_entered_at)}d`);
+  } else {
+    setT('kpi2-antigo','—'); setT('kpi2-antigo-sub','sem casos ativos');
+  }
+
+  const cutoff48 = Date.now() - 48*3600*1000;
+  setT('kpi2-novos', cases.filter(c => new Date(c.created_at).getTime() > cutoff48).length);
+
+  // ── Donut chart ──
+  renderDonutChart(cases, sm);
+
+  // ── Funil detail ──
+  renderFunilDetail(cases, sm);
+
+  // ── Distribution panels ──
+  renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#7c3aed');
+  renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#2563eb');
+  renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#059669');
+}
+
+function renderDonutChart(cases, sm) {
+  const el = document.getElementById('donut-wrap');
+  const total = cases.length;
+  if (!total || !G.stages.length) {
+    el.innerHTML = `<span style="color:var(--t3);font-size:.78rem">Sem dados para exibir</span>`;
+    return;
+  }
+  const counts = {};
+  for (const c of cases) counts[c.stage_id] = (counts[c.stage_id]||0)+1;
+  const R = 46, cx = 56, cy = 56, sw = 14;
+  const circ = 2 * Math.PI * R;
+  let cumLen = 0;
+  const segs = G.stages.filter(s=>counts[s.id]).map(s => {
+    const n = counts[s.id];
+    const arcLen = (n / total) * circ;
+    const seg = { s, n, arcLen, offset: circ - cumLen };
+    cumLen += arcLen;
+    return seg;
+  });
+  const svgArcs = segs.map(a =>
+    `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${a.s.color}" stroke-width="${sw}"
+      stroke-dasharray="${a.arcLen.toFixed(2)} ${(circ-a.arcLen).toFixed(2)}"
+      stroke-dashoffset="${a.offset.toFixed(2)}"
+      transform="rotate(-90 ${cx} ${cy})"/>`
+  ).join('');
+  const legendItems = segs.slice(0,9).map(a => {
+    const pct = Math.round(a.n/total*100);
+    return `<div class="donut-leg-row">
+      <div class="donut-leg-dot" style="background:${a.s.color}"></div>
+      <div class="donut-leg-name" title="${esc(a.s.name)}">${esc(a.s.name)}</div>
+      <div class="donut-leg-val">${a.n}</div>
+      <div class="donut-leg-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="donut-svg-wrap" style="width:112px;height:112px;flex-shrink:0">
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e8ebf2" stroke-width="${sw}"/>
+        ${svgArcs}
+      </svg>
+      <div class="donut-center">
+        <div class="donut-total-val">${total}</div>
+        <div class="donut-total-lbl">total</div>
+      </div>
+    </div>
+    <div class="donut-legend">${legendItems}</div>`;
+}
+
+function renderFunilDetail(cases, sm) {
+  const el = document.getElementById('funil-detail-list');
+  if (!G.stages.length) {
+    el.innerHTML = `<span style="color:var(--t3);font-size:.77rem">Nenhuma etapa configurada. <a href="/${G.slug}/workflow?module=repasse" style="color:var(--violet)">Editar workflow</a></span>`;
+    return;
+  }
+  const total = cases.length;
+  const counts = {}, sumDays = {};
+  for (const c of cases) {
+    counts[c.stage_id]  = (counts[c.stage_id]||0)+1;
+    sumDays[c.stage_id] = (sumDays[c.stage_id]||0)+daysSince(c.stage_entered_at);
+  }
+  const maxN = Math.max(1,...G.stages.map(s=>counts[s.id]||0));
+  const nonFinal = G.stages.filter(s=>!s.is_final);
+  const gargaloId = nonFinal.sort((a,b)=>(counts[b.id]||0)-(counts[a.id]||0))[0]?.id;
+  el.innerHTML = G.stages.map(s => {
+    const n = counts[s.id]||0;
+    const pct = total ? Math.round(n/total*100) : 0;
+    const avgD = n ? Math.round(sumDays[s.id]/n) : 0;
+    const isGargalo = !s.is_final && s.id === gargaloId && n > 0;
+    const isPendente = s.is_pending && n > 0 && !isGargalo;
+    return `<div class="funil-row2">
+      <div class="funil-name-cell">
+        <div class="funil-stage-dot2" style="background:${s.color}"></div>
+        <div class="funil-stage-name2" title="${esc(s.name)}">${esc(s.name)}</div>
+      </div>
+      <div class="funil-bar-wrap"><div class="funil-bar" style="width:${Math.round(n/maxN*100)}%;background:${s.color}"></div></div>
+      <div class="funil-count2">${n}</div>
+      <div class="funil-pct2">${pct}%</div>
+      <div class="funil-time2">
+        ${n ? `<span>${avgD}d</span>` : ''}
+        ${isGargalo  ? '<span class="badge-gargalo">Gargalo</span>' : ''}
+        ${isPendente ? '<span class="badge-pendente2">Pendente</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDistList(elId, items, color) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!items.length) { el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Sem dados</span>'; return; }
+  const counts = {};
+  for (const x of items) counts[x] = (counts[x]||0)+1;
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxN = sorted[0][1];
+  el.innerHTML = sorted.map(([name,n],i)=>`
+    <div class="dist-row">
+      <div class="dist-num">${i+1}</div>
+      <div class="dist-name" title="${esc(name)}">${esc(name)}</div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(n/maxN*100)}%;background:${color}"></div></div>
+      <div class="dist-val">${n}</div>
+    </div>`).join('');
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
