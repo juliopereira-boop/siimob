@@ -751,6 +751,7 @@
 
       <!-- ── Empresas Correspondentes ── -->
       <div id="corr-panel-empresas">
+        <div id="corr-empresa-limit-banner" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:.65rem 1rem;margin-bottom:.875rem;font-size:.78rem;color:#166534;font-weight:500"></div>
         <div class="panel">
           <div style="padding:1rem 1rem .25rem">
             <div class="pt-toolbar">
@@ -761,7 +762,7 @@
                 <option value="inactive">Inativas</option>
               </select>
               <div style="flex:1"></div>
-              <button class="btn btn-primary btn-sm" onclick="openEmpresaModal()">+ Nova empresa</button>
+              <button class="btn btn-primary btn-sm" id="btn-nova-empresa" onclick="openEmpresaModal()">+ Nova empresa</button>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -781,6 +782,7 @@
 
       <!-- ── Usuários Correspondentes ── -->
       <div id="corr-panel-usuarios" style="display:none">
+        <div id="corr-user-limit-banner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:.65rem 1rem;margin-bottom:.875rem;font-size:.78rem;color:#92400e;font-weight:500"></div>
         <div class="panel">
           <div style="padding:1rem 1rem .25rem">
             <div class="pt-toolbar">
@@ -795,7 +797,8 @@
                 <option value="inactive">Inativos</option>
               </select>
               <div style="flex:1"></div>
-              <button class="btn btn-primary btn-sm" onclick="openPartnerModal()">+ Novo usuário</button>
+              <span id="corr-user-counter" style="font-size:.72rem;color:var(--t3);font-weight:600;white-space:nowrap"></span>
+              <button class="btn btn-primary btn-sm" id="btn-novo-usuario" onclick="openPartnerModal()">+ Novo usuário</button>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -1038,7 +1041,7 @@
 'use strict';
 
 const G = {
-  user: null, slug: null,
+  user: null, slug: null, tenant: null,
   stages: [], cases: [], groups: [],
   currentGroup: '__all__',
   currentView: 'andamento',
@@ -1068,6 +1071,10 @@ async function init() {
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('tab-registro-link').href = `/${G.slug}/registro`;
+
+  // carrega info do tenant (tipo_cliente, max_users) para aplicar restrições de plano
+  G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
+    .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
 
   await loadData();
   renderDashboard();
@@ -1849,6 +1856,7 @@ async function loadPartners() {
   G.partners = await fetch(`${A1.rest('a1_partners')}?order=name.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
   ptFilter();
+  refreshCorrLimits();
 }
 
 function ptFilter() {
@@ -1980,6 +1988,7 @@ async function savePartner() {
       G.partners.push(created);
       G.partners.sort((a,b)=>a.name.localeCompare(b.name));
       toast('Cadastro criado','success');
+      refreshCorrLimits();
     }
     ptFilter();
     closeModal('modal-partner-bg');
@@ -1995,13 +2004,61 @@ async function deletePartner(id, name) {
   const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
   if (res.ok || res.status===204) {
     G.partners = G.partners.filter(p=>p.id!==id);
-    ptFilter(); toast('Cadastro removido','info');
+    ptFilter(); refreshCorrLimits(); toast('Cadastro removido','info');
   } else toast('Erro ao remover','error');
 }
 
 async function sha256(msg) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ─── Correspondentes – restrições de plano ────────────────────────────────────
+function refreshCorrLimits() {
+  const tipo     = G.tenant?.tipo_cliente || '';
+  const maxUsers = G.tenant?.max_users   || 999;
+
+  // ── Empresas: limite de 1 para correspondente_bancario
+  const EMPRESA_LIMIT = { correspondente_bancario: 1, imobiliaria: 1 };
+  const maxEmpresas = EMPRESA_LIMIT[tipo] ?? 999;
+  const qtdEmpresas = G.empresas.length;
+  const btnEmpresa  = document.getElementById('btn-nova-empresa');
+  const bannerEmpresa = document.getElementById('corr-empresa-limit-banner');
+
+  if (maxEmpresas < 999) {
+    if (qtdEmpresas >= maxEmpresas) {
+      if (btnEmpresa) btnEmpresa.style.display = 'none';
+      if (bannerEmpresa) {
+        bannerEmpresa.textContent = `Limite atingido: seu plano permite apenas ${maxEmpresas} empresa${maxEmpresas>1?'s':''} cadastrada${maxEmpresas>1?'s':''}.`;
+        bannerEmpresa.style.display = '';
+      }
+    } else {
+      if (btnEmpresa) btnEmpresa.style.display = '';
+      if (bannerEmpresa) bannerEmpresa.style.display = 'none';
+    }
+  } else {
+    if (btnEmpresa) btnEmpresa.style.display = '';
+    if (bannerEmpresa) bannerEmpresa.style.display = 'none';
+  }
+
+  // ── Usuários: limite pelo max_users do plano
+  const qtdUsers  = G.partners.length;
+  const btnUser   = document.getElementById('btn-novo-usuario');
+  const counter   = document.getElementById('corr-user-counter');
+  const bannerUser = document.getElementById('corr-user-limit-banner');
+
+  if (counter) counter.textContent = `${qtdUsers} / ${maxUsers} usuários`;
+
+  if (qtdUsers >= maxUsers) {
+    if (btnUser) btnUser.style.display = 'none';
+    if (bannerUser) {
+      bannerUser.textContent = `Limite de ${maxUsers} usuários atingido. Solicite ao administrador a ampliação do plano.`;
+      bannerUser.style.display = '';
+    }
+  } else {
+    if (btnUser) btnUser.style.display = '';
+    if (bannerUser) bannerUser.style.display = 'none';
+  }
 }
 
 // ─── Correspondentes – inner tab switcher ─────────────────────────────────────
@@ -2025,10 +2082,10 @@ async function loadEmpresas() {
   G.empresas = await fetch(`${A1.rest('a1_corr_empresas')}?order=name.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
   ceFilter();
-  // populate empresa selects in partner modal and filter
   const opts = G.empresas.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
   const sel  = document.getElementById('pt-empresa');
   if (sel) sel.innerHTML = '<option value="">Todas as empresas</option>' + opts;
+  refreshCorrLimits();
 }
 
 function ceFilter() {
@@ -2119,10 +2176,10 @@ async function saveEmpresa() {
       toast('Empresa criada','success');
     }
     ceFilter();
-    // refresh empresa selects
     const opts = G.empresas.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
     const sel = document.getElementById('pt-empresa');
     if (sel) sel.innerHTML = '<option value="">Todas as empresas</option>' + opts;
+    refreshCorrLimits();
     closeModal('modal-empresa-bg');
   } catch {
     toast('Erro ao salvar empresa.','error');
@@ -2136,7 +2193,7 @@ async function deleteEmpresa(id, name) {
   const res = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
   if (res.ok || res.status===204) {
     G.empresas = G.empresas.filter(e=>e.id!==id);
-    ceFilter(); toast('Empresa removida','info');
+    ceFilter(); refreshCorrLimits(); toast('Empresa removida','info');
   } else toast('Erro ao remover empresa','error');
 }
 
