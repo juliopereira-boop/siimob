@@ -1028,7 +1028,7 @@
           " onmouseover="this.style.borderColor='#10B981'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#10B981':'var(--border)'">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Habilitar visualização geral</div>
-              <div style="font-size:.72rem;color:var(--t3)">Usuário vê todos os processos da empresa correspondente, não só os seus</div>
+              <div style="font-size:.72rem;color:var(--t3)">Os processos deste usuário ficam visíveis para os outros usuários da empresa correspondente</div>
             </div>
             <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral"
               style="width:18px;height:18px;cursor:pointer;accent-color:#10B981;flex-shrink:0;margin-left:1rem"
@@ -1120,7 +1120,7 @@ async function init() {
   G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
     .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
 
-  // para usuario CCA: busca empresa e permissoes atualizadas do banco
+  // para usuario CCA: busca empresa, permissoes e lista de colegas com visibilidade compartilhada
   if (G.user.role === 'partner' && G.user.type === 'cca') {
     const pr = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id,permissions`, {headers:A1.headers()})
       .then(r=>r.json()).then(a=>a[0]||null).catch(()=>null);
@@ -1128,6 +1128,12 @@ async function init() {
       const emp = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${pr.empresa_id}&select=name`, {headers:A1.headers()})
         .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
       G.user.empresa_name = emp.name || '';
+      // busca colegas da mesma empresa que habilitaram visibilidade geral
+      const colegas = await fetch(`${A1.rest('a1_partners')}?empresa_id=eq.${pr.empresa_id}&type=eq.cca&select=name,permissions`, {headers:A1.headers()})
+        .then(r=>r.json()).catch(()=>[]);
+      G.user.shared_managers = colegas
+        .filter(c => c.name !== G.user.name && c.permissions?.ver_todos_repasses === true)
+        .map(c => c.name);
     }
     if (pr?.permissions) {
       G.user.permissions = pr.permissions;
@@ -1485,13 +1491,9 @@ function filteredCases() {
   const sm=stageMap(), isPartner=G.user.role==='partner';
   return G.cases.filter(c=>{
     if (isPartner) {
-      if (hasPerm('ver_todos_repasses') && G.user.empresa_name) {
-        // ve todos os processos da sua empresa correspondente
-        if (c.partner_name !== G.user.empresa_name) return false;
-      } else {
-        // ve apenas processos onde é o usuario correspondente responsavel
-        if (c.manager_name !== G.user.name) return false;
-      }
+      // ve os proprios processos + processos de colegas que habilitaram visibilidade geral
+      const shared = G.user.shared_managers || [];
+      if (c.manager_name !== G.user.name && !shared.includes(c.manager_name)) return false;
     }
     const stage=sm[c.stage_id];
     if(G.currentGroup!=='__all__' && stage?.group_key!==G.currentGroup) return false;
