@@ -211,12 +211,16 @@
             </select>
           </div>
           <div class="form-group"><label>Plano</label>
-            <select id="n-plan">
+            <select id="n-plan" onchange="toggleCustomLimit()">
               <option value="starter">Starter (3 usuários)</option>
               <option value="pro">Pro (10 usuários)</option>
               <option value="enterprise">Enterprise (30 usuários)</option>
               <option value="custom">Customizado</option>
             </select>
+          </div>
+          <div class="form-group" id="n-custom-limit-wrap" style="display:none">
+            <label>Limite de usuários *</label>
+            <input id="n-custom-limit" type="number" min="1" placeholder="Ex.: 15">
           </div>
           <div class="form-group"><label>Trial (dias, 0=sem trial)</label><input id="n-trial" type="number" value="14" min="0"></div>
         </div>
@@ -638,7 +642,12 @@ async function createTenant() {
   if (!ownerName || !ownerCpf || !ownerPw) { nErr('Preencha os dados do usuário owner.'); return; }
   if (ownerPw.length < 6)                  { nErr('Senha mínima: 6 caracteres.'); return; }
 
-  const maxMap = { starter:3, pro:10, enterprise:30, custom:999 };
+  const maxMap = { starter:3, pro:10, enterprise:30 };
+  let maxUsers = maxMap[plan];
+  if (plan === 'custom') {
+    maxUsers = parseInt(document.getElementById('n-custom-limit').value);
+    if (!maxUsers || maxUsers < 1) { nErr('Informe o limite de usuários para o plano customizado.'); return; }
+  }
   const trialEndsAt = trialDays > 0
     ? new Date(Date.now() + trialDays * 86400000).toISOString()
     : null;
@@ -649,7 +658,7 @@ async function createTenant() {
     body: JSON.stringify({
       name, slug, email, cnpj, plan_key: plan,
       tipo_cliente: tipo,
-      max_users: maxMap[plan] || 5,
+      max_users: maxUsers,
       status: trialDays > 0 ? 'trial' : 'active',
       trial_ends_at: trialEndsAt
     })
@@ -679,7 +688,16 @@ async function createTenant() {
     document.getElementById(id).value = '';
   });
   document.getElementById('n-tipo').value = 'construtora';
+  document.getElementById('n-plan').value = 'starter';
+  document.getElementById('n-custom-limit').value = '';
+  document.getElementById('n-custom-limit-wrap').style.display = 'none';
   await loadAll();
+}
+
+function toggleCustomLimit() {
+  const isCustom = document.getElementById('n-plan').value === 'custom';
+  document.getElementById('n-custom-limit-wrap').style.display = isCustom ? '' : 'none';
+  if (!isCustom) document.getElementById('n-custom-limit').value = '';
 }
 
 function nErr(msg) {
