@@ -3,356 +3,1278 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registro — ALPHA ONE</title>
+  <title>Registro — CORBAN OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/css/alpha.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body { overflow: hidden; }
-    .board-wrap { height: calc(100vh - 4rem); overflow: hidden; padding: 1rem; }
-    .detail-panel {
-      position: fixed; right: 0; top: 0; bottom: 0; width: 36rem; max-width: 100vw;
-      background: var(--bg2); border-left: 1px solid var(--border);
-      z-index: 50; overflow-y: auto; transform: translateX(100%);
-      transition: transform .2s ease;
+    :root {
+      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
+      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
+      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+      --shadow-lg:0 4px 16px rgba(0,0,0,.1),0 16px 48px rgba(0,0,0,.08);
+      --green:#059669; --blue:#2563eb; --violet:#7c3aed;
+      --amber:#d97706; --red:#dc2626; --teal:#0d9488; --indigo:#4f46e5;
+      --radius:8px;
     }
-    .detail-panel.open { transform: translateX(0); }
-    .detail-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .detail-body   { padding: 1.5rem; }
-    .detail-section { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.25rem 0 .5rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
-    .detail-field label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .25rem; }
-    .topbar-search input {
-      background: var(--bg3); border: 1px solid var(--border); border-radius: .4rem;
-      color: var(--text); padding: .4rem .75rem; font-size: .8rem; outline: none; width: 14rem;
-    }
-    .topbar-search input:focus { border-color: var(--accent); }
-    .xlsx-drop {
-      border: 2px dashed var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center;
-      color: var(--muted); cursor: pointer; font-size: .8rem; transition: border-color .15s;
-    }
-    .xlsx-drop:hover { border-color: var(--accent); color: var(--text); }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    input,select,textarea,button{font-family:inherit}
+    a{text-decoration:none;color:inherit}
+
+    /* ── Header ── */
+    .hdr{background:#0f1520;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
+    .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
+    .hdr-logo span{color:#7c3aed}
+    .hdr-right{display:flex;align-items:center;gap:.6rem}
+    .hdr-user{font-size:.75rem;color:rgba(255,255,255,.5)}
+    .hdr-user strong{color:rgba(255,255,255,.85)}
+    .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-hdr:hover{background:rgba(255,255,255,.12)}
+    .btn-hdr-primary{background:#7c3aed;border-color:#7c3aed;color:#fff}
+    .btn-hdr-primary:hover{background:#6d28d9}
+
+    /* ── Tab bar ── */
+    .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05);align-items:stretch}
+    .tab-btn{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
+    .tab-btn:hover{color:rgba(255,255,255,.7)}
+    .tab-btn.active{color:#fff;border-bottom-color:#7c3aed}
+    a.tab-btn{display:flex;align-items:center}
+
+    /* ── Layout ── */
+    .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-primary{background:#7c3aed;color:#fff}
+    .btn-primary:hover{background:#6d28d9}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
+    .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
+    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger:hover{background:#fecaca}
+    .btn-sm{padding:.28rem .65rem;font-size:.73rem}
+    .btn-xs{padding:.18rem .48rem;font-size:.7rem}
+
+    /* ── Panel ── */
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+    /* ── KPI ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.75rem;margin-bottom:1.25rem}
+    .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%}
+    .kpi-card.kpi-blue::before{background:var(--blue)}
+    .kpi-card.kpi-green::before{background:var(--green)}
+    .kpi-card.kpi-amber::before{background:var(--amber)}
+    .kpi-card.kpi-red::before{background:var(--red)}
+    .kpi-card.kpi-violet::before{background:var(--violet)}
+    .kpi-card.kpi-teal::before{background:var(--teal)}
+    .kpi-label{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.3rem}
+    .kpi-value{font-size:1.65rem;font-weight:800;letter-spacing:-.03em}
+    .kpi-sub{font-size:.7rem;color:var(--t3);margin-top:.15rem}
+
+    /* ── Filter bar ── */
+    .filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.875rem;align-items:center}
+    .filter-bar input,.filter-bar select{padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--card);color:var(--t1)}
+    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .filter-bar input{width:200px}
+    #rg-filter-count{font-size:.7rem;color:var(--t3)}
+
+    /* ── Kanban ── */
+    .kanban-wrap{display:flex;gap:.75rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+    .kanban-wrap::-webkit-scrollbar{height:4px}
+    .kanban-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+    .k-col{width:240px;flex-shrink:0;display:flex;flex-direction:column}
+    .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.01em}
+    .k-col-count{background:rgba(255,255,255,.22);border-radius:99px;padding:.08rem .42rem;font-size:.65rem;font-weight:800}
+    .k-col-body{background:#e8ebf2;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:80px;display:flex;flex-direction:column;gap:.4rem}
+    .k-col-body.drag-over{background:#dde1ea;outline:2px dashed rgba(124,58,237,.35);outline-offset:-2px}
+
+    /* ── Kanban Card ── */
+    .k-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.65rem .75rem;cursor:grab;box-shadow:var(--shadow);transition:all .18s;position:relative;border-left-width:4px;border-left-style:solid}
+    .k-card:active{cursor:grabbing}
+    .k-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .k-card.dragging{opacity:.4;transform:scale(.97)}
+    .kc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.35rem;margin-bottom:.25rem}
+    .kc-name{font-weight:700;font-size:.8rem;line-height:1.3;flex:1}
+    .kc-badges{display:flex;gap:.2rem;flex-wrap:wrap;flex-shrink:0}
+    .badge-novo{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem;letter-spacing:.04em}
+    .badge-days{background:#f0f2f7;color:var(--t3);border-radius:3px;font-size:.6rem;font-weight:700;padding:.08rem .35rem;font-family:'DM Mono',monospace}
+    .badge-days.warn{background:#fff7ed;color:#c2410c}
+    .badge-days.alert{background:#fef2f2;color:#dc2626}
+    .badge-exig{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
+    .kc-sub{font-size:.73rem;color:var(--t2);margin-bottom:.22rem}
+    .kc-sub .empr{font-weight:700;color:var(--t1)}
+    .kc-cpf{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--t3);cursor:pointer;margin-bottom:.22rem;transition:color .12s;display:inline-block}
+    .kc-cpf:hover{color:var(--blue)}
+    .kc-chips{display:flex;gap:.22rem;flex-wrap:wrap;margin-bottom:.28rem}
+    .chip{display:inline-flex;align-items:center;border-radius:3px;padding:.12rem .42rem;font-size:.65rem;font-weight:600;white-space:nowrap}
+    .chip-itbi-pend{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+    .chip-itbi-pago{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .chip-cartorio{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+    .chip-banco{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+    .chip-valor{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-family:'DM Mono',monospace}
+    .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.28rem;padding-top:.28rem;border-top:1px solid var(--border)}
+    .kc-date{font-size:.63rem;color:var(--t4);font-family:'DM Mono',monospace}
+    .kc-actions{display:flex;gap:.18rem}
+    .kc-action-btn{border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--t3);cursor:pointer;font-size:.68rem;font-weight:600;padding:.15rem .45rem;transition:all .15s}
+    .kc-action-btn:hover{background:var(--border);color:var(--t1)}
+
+    /* ── Table ── */
+    .tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow)}
+    table{width:100%;border-collapse:collapse;font-size:.77rem}
+    thead th{background:#f7f8fb;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:.6rem .875rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f9fafb}
+    tbody td{padding:.52rem .875rem;vertical-align:middle}
+    .tbl-name{font-weight:700}
+    .tbl-cpf{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--t3)}
+    .tbl-mono{font-family:'DM Mono',monospace;font-size:.72rem}
+    .stage-pill{display:inline-flex;align-items:center;gap:.3rem;border-radius:3px;padding:.15rem .55rem;font-size:.68rem;font-weight:700}
+    .itbi-pill-pend{background:#fef9c3;color:#854d0e}
+    .itbi-pill-pago{background:#dcfce7;color:#166534}
+    .itbi-pill-venc{background:#fee2e2;color:#991b1b}
+
+    /* ── Dashboard ── */
+    .dash-filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .875rem;box-shadow:var(--shadow)}
+    .dash-filter-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-right:.2rem}
+    .dash-filter-bar select{padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--card);color:var(--t1)}
+    .dash-filter-bar input{padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--card);color:var(--t1);width:140px}
+    .dash-filter-bar select:focus,.dash-filter-bar input:focus{outline:none;border-color:var(--violet)}
+
+    .kpi2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.65rem;margin-bottom:1.25rem}
+    .kpi2-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;box-shadow:var(--shadow)}
+    .kpi2-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.2rem}
+    .kpi2-value{font-size:1.35rem;font-weight:800;letter-spacing:-.03em}
+    .kpi2-sub{font-size:.68rem;color:var(--t3);margin-top:.1rem}
+
+    .donut-wrap{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+    .donut-svg-wrap{position:relative;flex-shrink:0}
+    .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .donut-total{font-size:1.4rem;font-weight:800;letter-spacing:-.04em}
+    .donut-total-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
+    .donut-legend{display:flex;flex-direction:column;gap:.4rem;flex:1;min-width:140px}
+    .donut-leg-row{display:flex;align-items:center;gap:.5rem;font-size:.75rem}
+    .donut-leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+    .donut-leg-name{flex:1;color:var(--t2)}
+    .donut-leg-count{font-weight:700;color:var(--t1)}
+    .donut-leg-pct{font-size:.68rem;color:var(--t3);min-width:2.5rem;text-align:right}
+
+    .funil-row2{display:grid;grid-template-columns:180px 1fr 48px 42px 90px;gap:.5rem;align-items:center;padding:.38rem 0;border-bottom:1px solid var(--border)}
+    .funil-row2:last-child{border-bottom:none}
+    .funil2-name{font-size:.75rem;font-weight:600;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .funil2-bar-wrap{background:#f0f2f7;border-radius:99px;height:6px;overflow:hidden}
+    .funil2-bar{height:100%;border-radius:99px}
+    .funil2-count{font-size:.73rem;font-weight:700;text-align:right}
+    .funil2-pct{font-size:.68rem;color:var(--t3);text-align:right}
+    .funil2-badges{display:flex;gap:.2rem;justify-content:flex-end}
+    .badge-gargalo{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
+    .badge-pendente2{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
+
+    .dist-row{display:flex;align-items:center;gap:.6rem;padding:.32rem 0;border-bottom:1px solid var(--border)}
+    .dist-row:last-child{border-bottom:none}
+    .dist-num{width:18px;font-size:.68rem;font-weight:800;color:var(--t3);text-align:center}
+    .dist-name{flex:1;font-size:.75rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dist-bar-wrap{width:80px;background:#f0f2f7;border-radius:99px;height:5px;overflow:hidden}
+    .dist-bar{height:100%;border-radius:99px}
+    .dist-val{font-size:.72rem;font-weight:700;min-width:24px;text-align:right;color:var(--t1)}
+
+    /* ── Modal ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .modal-bg.hidden{display:none}
+    .modal{background:var(--card);border-radius:12px;box-shadow:var(--shadow-lg);width:100%;max-width:820px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+    .modal-hdr{padding:.9rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+    .modal-sub{font-size:.75rem;color:var(--t3);margin-top:.1rem}
+    .modal-close{background:none;border:none;cursor:pointer;color:var(--t3);font-size:1.1rem;padding:.2rem .4rem;border-radius:5px;transition:all .12s}
+    .modal-close:hover{background:var(--bg);color:var(--t1)}
+    .modal-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 1.25rem;flex-shrink:0}
+    .modal-tab{padding:.55rem .875rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+    .modal-tab.active{color:var(--t1);border-bottom-color:var(--violet)}
+    .modal-tab:hover{color:var(--t2)}
+    .modal-body{padding:1.25rem;overflow-y:auto;flex:1}
+    .modal-tab-content{display:none}
+    .modal-tab-content.active{display:block}
+
+    /* Form */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+    .form-group{display:flex;flex-direction:column;gap:.28rem}
+    .form-group.full{grid-column:1/-1}
+    .form-group label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
+    .form-group input,.form-group select,.form-group textarea{padding:.5rem .7rem;border:1px solid var(--border);border-radius:7px;font-size:.83rem;color:var(--t1);background:var(--card);transition:border-color .15s}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .form-group textarea{resize:vertical;min-height:80px}
+
+    /* ITBI status radios */
+    .itbi-radio-group{display:flex;gap:.5rem}
+    .itbi-radio-btn{padding:.3rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;background:var(--card);color:var(--t2)}
+    .itbi-radio-btn.active-pend{background:#fef9c3;color:#854d0e;border-color:#fde68a}
+    .itbi-radio-btn.active-pago{background:#dcfce7;color:#166534;border-color:#86efac}
+    .itbi-radio-btn.active-venc{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+
+    /* Events */
+    .evt-item{background:#f7f8fb;border-radius:7px;padding:.55rem .75rem;font-size:.78rem}
+    .evt-date{font-size:.68rem;color:var(--t3);font-family:'DM Mono',monospace;margin-bottom:.1rem}
+
+    /* ── Spinner ── */
+    .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Toast */
+    #rg-toast{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem}
+    .toast-item{padding:.55rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .2s ease}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .toast-success{background:#0f1520;color:#fff}
+    .toast-error{background:#dc2626;color:#fff}
+    .toast-info{background:#2563eb;color:#fff}
   </style>
 </head>
 <body>
-<div class="layout">
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">A1</div>
-      <div class="logo-text">ALPHA <span>ONE</span></div>
-    </div>
-    <div class="sidebar-nav">
-      <div class="nav-section-label">Menu</div>
-      <a href="" class="nav-item" id="nav-home"><span class="nav-icon">⬡</span> Dashboard</a>
-      <a href="" class="nav-item" id="nav-repasse"><span class="nav-icon">🔁</span> Repasse</a>
-      <a href="#" class="nav-item active"><span class="nav-icon">📋</span> Registro</a>
-      <div class="nav-section-label" style="margin-top:.75rem">Ferramentas</div>
-      <a href="" class="nav-item" id="nav-workflow"><span class="nav-icon">⚙</span> Workflow</a>
-      <a href="" class="nav-item" id="nav-config"><span class="nav-icon">🔧</span> Configurações</a>
-    </div>
-    <div class="sidebar-footer">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
-      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
-    </div>
-  </nav>
 
-  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
-    <div class="topbar">
-      <div class="topbar-title">Gestão de Registro</div>
-      <div class="topbar-actions">
-        <div class="topbar-search"><input id="search-input" type="text" placeholder="Buscar contrato, CPF, unidade..."></div>
-        <button class="btn btn-ghost" onclick="openImport()">⬆ Importar</button>
-        <button class="btn btn-primary" onclick="openNew()">+ Novo</button>
-      </div>
+<!-- ═══════ HEADER ═══════ -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo">CORBAN <span>OS</span></div>
+    <div class="hdr-right">
+      <div class="hdr-user" id="hdr-user"></div>
+      <button class="btn-hdr btn-hdr-primary" onclick="openNewModal()">+ Novo Processo</button>
+      <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
-
-    <div class="board-wrap">
-      <div class="kanban-board" id="kanban-board">
-        <div style="color:var(--muted);padding:1rem">Carregando...</div>
-      </div>
-    </div>
+  </div>
+  <div class="tabs-bar">
+    <a class="tab-btn" id="link-repasse" href="">Repasse</a>
+    <div class="tab-btn active" onclick="switchTab('dashboard',this)">Dashboard</div>
+    <div class="tab-btn" onclick="switchTab('kanban',this)">Andamento</div>
+    <div class="tab-btn" onclick="switchTab('lista',this)">Listagem</div>
+    <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
   </div>
 </div>
 
-<!-- Detail Panel -->
-<div class="detail-panel" id="detail-panel">
-  <div class="detail-header">
-    <div>
-      <div style="font-weight:700;font-size:1rem" id="dp-name">—</div>
-      <div style="font-size:.75rem;color:var(--muted)" id="dp-sub">—</div>
+<div class="main">
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div id="tab-dashboard">
+
+    <div class="dash-filter-bar">
+      <span class="dash-filter-label">Filtrar</span>
+      <select id="dg-empr" onchange="applyDashFilter()"><option value="">Todos empreendimentos</option></select>
+      <select id="dg-banco" onchange="applyDashFilter()"><option value="">Todos os bancos</option></select>
+      <select id="dg-cartorio" onchange="applyDashFilter()"><option value="">Todos os cartórios</option></select>
+      <input id="dg-search" type="text" placeholder="Buscar cliente / CPF..." oninput="applyDashFilter()">
+      <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
-    <button class="btn btn-ghost" onclick="closeDetail()" style="padding:.4rem .75rem">✕</button>
+
+    <!-- Top KPIs -->
+    <div class="kpi-grid" id="dg-kpis">
+      <div class="kpi-card kpi-violet"><div class="kpi-label">Total de Processos</div><div class="kpi-value" id="dkpi-total">—</div><div class="kpi-sub">ativos</div></div>
+      <div class="kpi-card kpi-blue"><div class="kpi-label">Em Andamento</div><div class="kpi-value" id="dkpi-andamento">—</div><div class="kpi-sub">nas etapas</div></div>
+      <div class="kpi-card kpi-green"><div class="kpi-label">Finalizados</div><div class="kpi-value" id="dkpi-finalizados">—</div><div class="kpi-sub">mês atual</div></div>
+      <div class="kpi-card kpi-amber"><div class="kpi-label">ITBI Pendente</div><div class="kpi-value" id="dkpi-itbi-pend">—</div><div class="kpi-sub">aguardando pagamento</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-label">Com Exigências</div><div class="kpi-value" id="dkpi-exig">—</div><div class="kpi-sub">retorno cartório</div></div>
+    </div>
+
+    <!-- Donut + Pipeline -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:1.25rem">
+      <div class="panel" style="padding:1.1rem">
+        <div style="font-size:.77rem;font-weight:800;margin-bottom:.875rem;letter-spacing:-.01em">Distribuição por Etapa</div>
+        <div class="donut-wrap" id="dg-donut-wrap">
+          <svg width="112" height="112" viewBox="0 0 112 112" id="dg-donut-svg"></svg>
+          <div class="donut-legend" id="dg-donut-legend"></div>
+        </div>
+      </div>
+      <div class="panel" style="padding:1.1rem">
+        <div style="font-size:.77rem;font-weight:800;margin-bottom:.875rem;letter-spacing:-.01em">Pipeline de Etapas</div>
+        <div id="dg-funil-list"></div>
+      </div>
+    </div>
+
+    <!-- Distribution panels -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.875rem;margin-bottom:1.25rem">
+      <div class="panel" style="padding:1.1rem">
+        <div style="font-size:.77rem;font-weight:800;margin-bottom:.875rem">Por Empreendimento</div>
+        <div id="dg-empr-list"></div>
+      </div>
+      <div class="panel" style="padding:1.1rem">
+        <div style="font-size:.77rem;font-weight:800;margin-bottom:.875rem">Por Banco</div>
+        <div id="dg-banco-list"></div>
+      </div>
+      <div class="panel" style="padding:1.1rem">
+        <div style="font-size:.77rem;font-weight:800;margin-bottom:.875rem">Por Cartório</div>
+        <div id="dg-cartorio-list"></div>
+      </div>
+    </div>
+
+    <!-- Secondary KPIs -->
+    <div class="kpi2-grid">
+      <div class="kpi2-card"><div class="kpi2-label">VGV em Registro</div><div class="kpi2-value" id="dkpi-vgv">—</div><div class="kpi2-sub">valor total contratos</div></div>
+      <div class="kpi2-card"><div class="kpi2-label">Gargalo</div><div class="kpi2-value" id="dkpi-gargalo">—</div><div class="kpi2-sub" id="dkpi-gargalo-sub">etapa mais congestionada</div></div>
+      <div class="kpi2-card"><div class="kpi2-label">Tempo Médio</div><div class="kpi2-value" id="dkpi-tempo">—</div><div class="kpi2-sub">dias por processo</div></div>
+      <div class="kpi2-card"><div class="kpi2-label">ITBI Pago</div><div class="kpi2-value" id="dkpi-itbi-pago">—</div><div class="kpi2-sub">processo regularizado</div></div>
+      <div class="kpi2-card"><div class="kpi2-label">Novos (30d)</div><div class="kpi2-value" id="dkpi-novos">—</div><div class="kpi2-sub">processos abertos</div></div>
+    </div>
+
   </div>
-  <div class="detail-body">
-    <div class="detail-section">Etapa</div>
-    <select class="form-group" id="dp-stage" style="width:100%" onchange="changeStage()">
-      <option>Carregando...</option>
-    </select>
 
-    <div class="detail-section">Contrato</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-      <div class="detail-field"><label>Cliente</label><div id="dp-client">—</div></div>
-      <div class="detail-field"><label>CPF</label><div id="dp-cpf">—</div></div>
-      <div class="detail-field"><label>Empreendimento</label><div id="dp-dev">—</div></div>
-      <div class="detail-field"><label>Unidade</label><div id="dp-unit">—</div></div>
-      <div class="detail-field"><label>Valor</label><div id="dp-value">—</div></div>
-      <div class="detail-field"><label>Responsável</label><div id="dp-manager">—</div></div>
+  <!-- ══════════ KANBAN ══════════ -->
+  <div id="tab-kanban" style="display:none">
+    <div class="filter-bar">
+      <input id="rg-search" type="text" placeholder="Buscar cliente, CPF, unidade..." oninput="applyFilter()">
+      <select id="rg-filter-empr" onchange="applyFilter()"><option value="">Todos os empreendimentos</option></select>
+      <select id="rg-filter-banco" onchange="applyFilter()"><option value="">Todos os bancos</option></select>
+      <select id="rg-filter-itbi" onchange="applyFilter()">
+        <option value="">ITBI — Todos</option>
+        <option value="pendente">Pendente</option>
+        <option value="pago">Pago</option>
+        <option value="vencido">Vencido</option>
+      </select>
+      <span id="rg-filter-count"></span>
     </div>
+    <div class="kanban-wrap" id="rg-kanban"></div>
+  </div>
 
-    <!-- Extra data from xlsx (stored in payload) -->
-    <div class="detail-section">Dados bancários / extras</div>
-    <pre id="dp-payload" style="font-size:.72rem;color:var(--muted);background:var(--bg3);padding:.75rem;border-radius:.375rem;overflow-x:auto;white-space:pre-wrap"></pre>
-
-    <div class="detail-section">Observações</div>
-    <textarea id="dp-obs" style="width:100%;min-height:5rem;resize:vertical;background:var(--bg3);border:1px solid var(--border);border-radius:.4rem;color:var(--text);padding:.6rem;font-family:inherit;font-size:.85rem"></textarea>
-    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" onclick="saveObs()">Salvar</button>
-
-    <div class="detail-section">Histórico</div>
-    <div id="dp-events" style="display:flex;flex-direction:column;gap:.5rem">
-      <div style="color:var(--muted);font-size:.8rem">Carregando...</div>
+  <!-- ══════════ LISTAGEM ══════════ -->
+  <div id="tab-lista" style="display:none">
+    <div class="filter-bar" style="margin-bottom:.75rem">
+      <input id="rg-list-search" type="text" placeholder="Buscar cliente, CPF..." oninput="applyListFilter()">
+      <select id="rg-list-stage" onchange="applyListFilter()"><option value="">Todas as etapas</option></select>
+      <select id="rg-list-itbi" onchange="applyListFilter()">
+        <option value="">ITBI — Todos</option>
+        <option value="pendente">Pendente</option>
+        <option value="pago">Pago</option>
+        <option value="vencido">Vencido</option>
+      </select>
+      <span id="rg-list-count" style="font-size:.7rem;color:var(--t3)"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th><th>CPF</th><th>Empreendimento / Unidade</th>
+            <th>Etapa</th><th>Banco</th><th>Cartório</th>
+            <th>ITBI</th><th>Valor ITBI</th><th>Protocolo</th><th>Matrícula</th><th>Dias</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="rg-list-tbody"><tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
     </div>
   </div>
-</div>
 
-<!-- Import Modal -->
-<div id="import-modal" class="modal-backdrop" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Importar planilha bancária</div>
-      <button class="btn btn-ghost" onclick="closeImport()" style="padding:.4rem .75rem">✕</button>
+  <!-- ══════════ CONFIG ══════════ -->
+  <div id="tab-config" style="display:none">
+    <div style="max-width:640px">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:.85rem;font-weight:800;margin-bottom:.75rem">Etapas do Registro</div>
+        <div id="cfg-stages-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.875rem" onclick="openStageModal()">+ Adicionar Etapa</button>
+      </div>
+      <div class="panel" style="padding:1.25rem">
+        <div style="font-size:.85rem;font-weight:800;margin-bottom:.5rem">Workflow de Registro</div>
+        <p style="font-size:.78rem;color:var(--t3);margin-bottom:.875rem">Configure automações e pré-requisitos para cada etapa.</p>
+        <a class="btn btn-ghost btn-sm" id="link-wf-rg">Editor de Workflow</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<!-- ═══════ MODAL: Detalhe do processo ═══════ -->
+<div class="modal-bg hidden" id="modal-det-bg">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="md-title">Processo de Registro</div>
+        <div class="modal-sub" id="md-sub"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <select id="md-stage-sel" style="padding:.3rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;font-weight:600" onchange="changeStage()"></select>
+        <button class="modal-close" onclick="closeModal('modal-det-bg')">&#x2715;</button>
+      </div>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-mtab="dados" onclick="switchModalTab('dados',this)">Dados</div>
+      <div class="modal-tab" data-mtab="itbi" onclick="switchModalTab('itbi',this)">ITBI</div>
+      <div class="modal-tab" data-mtab="cartorio" onclick="switchModalTab('cartorio',this)">Cartório</div>
+      <div class="modal-tab" data-mtab="hist" onclick="switchModalTab('hist',this)">Histórico</div>
     </div>
     <div class="modal-body">
-      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">
-        Arraste ou selecione o arquivo .xlsx. O sistema detecta o formato automaticamente
-        (aba <strong>Banco_uau</strong> ou <strong>UNIDADES</strong>).
-      </p>
-      <div class="xlsx-drop" onclick="document.getElementById('xlsx-file').click()">
-        📊 Clique para selecionar o arquivo .xlsx
+
+      <!-- Tab: Dados -->
+      <div class="modal-tab-content active" id="mtab-dados">
+        <div class="form-grid">
+          <div class="form-group"><label>Cliente</label><input id="md-name" type="text"></div>
+          <div class="form-group"><label>CPF</label><input id="md-cpf" type="text" placeholder="000.000.000-00"></div>
+          <div class="form-group"><label>Empreendimento</label><input id="md-empr" type="text" list="dl-emprs"></div>
+          <div class="form-group"><label>Unidade</label><input id="md-unit" type="text"></div>
+          <div class="form-group"><label>Bloco</label><input id="md-block" type="text"></div>
+          <div class="form-group"><label>Valor do Contrato (R$)</label><input id="md-valor" type="number" step="0.01"></div>
+          <div class="form-group"><label>Banco Financiador</label><input id="md-banco" type="text" list="dl-bancos"></div>
+          <div class="form-group"><label>Gerente / Responsável</label><input id="md-manager" type="text"></div>
+          <div class="form-group full"><label>Observações</label><textarea id="md-obs" rows="3"></textarea></div>
+        </div>
+        <datalist id="dl-emprs"></datalist>
+        <datalist id="dl-bancos"></datalist>
       </div>
-      <input type="file" id="xlsx-file" accept=".xlsx,.xls" style="display:none" onchange="handleXLSX(event)">
-      <div id="import-result" style="margin-top:1rem;font-size:.85rem;color:var(--muted)"></div>
+
+      <!-- Tab: ITBI -->
+      <div class="modal-tab-content" id="mtab-itbi">
+        <div class="form-grid">
+          <div class="form-group"><label>Valor do ITBI (R$)</label><input id="md-itbi-valor" type="number" step="0.01"></div>
+          <div class="form-group"><label>Vencimento da Guia</label><input id="md-itbi-venc" type="date"></div>
+          <div class="form-group full">
+            <label>Status do ITBI</label>
+            <div class="itbi-radio-group" id="itbi-radio-group">
+              <button type="button" class="itbi-radio-btn" data-val="pendente" onclick="selectItbi(this)">Pendente</button>
+              <button type="button" class="itbi-radio-btn" data-val="pago" onclick="selectItbi(this)">Pago</button>
+              <button type="button" class="itbi-radio-btn" data-val="vencido" onclick="selectItbi(this)">Vencido</button>
+            </div>
+          </div>
+          <div class="form-group"><label>Data Pagamento</label><input id="md-itbi-pago-em" type="date"></div>
+          <div class="form-group"><label>URL da Guia</label><input id="md-itbi-url" type="url" placeholder="https://..."></div>
+        </div>
+      </div>
+
+      <!-- Tab: Cartório -->
+      <div class="modal-tab-content" id="mtab-cartorio">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nome do Cartório de RI</label><input id="md-cartorio" type="text" list="dl-cartorios"></div>
+          <div class="form-group"><label>Data de Protocolo</label><input id="md-protocolo-dt" type="date"></div>
+          <div class="form-group"><label>N° de Prenotação</label><input id="md-prenotacao" type="text" placeholder="000000"></div>
+          <div class="form-group"><label>Data Prazo Exigência</label><input id="md-exig-dt" type="date"></div>
+          <div class="form-group full"><label>Descrição da Exigência</label><textarea id="md-exig-desc" rows="2" placeholder="Descreva a exigência levantada pelo cartório..."></textarea></div>
+          <div class="form-group"><label>N° de Matrícula</label><input id="md-matricula" type="text" placeholder="000000"></div>
+          <div class="form-group"><label>Data Registro</label><input id="md-registro-dt" type="date"></div>
+          <div class="form-group"><label>Data Entrega ao Banco</label><input id="md-entrega-banco-dt" type="date"></div>
+        </div>
+        <datalist id="dl-cartorios"></datalist>
+      </div>
+
+      <!-- Tab: Histórico -->
+      <div class="modal-tab-content" id="mtab-hist">
+        <div id="md-events" style="display:flex;flex-direction:column;gap:.45rem">
+          <div style="color:var(--t3);font-size:.78rem">Carregando...</div>
+        </div>
+      </div>
+
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeImport()">Fechar</button>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <button class="btn btn-danger btn-sm" onclick="archiveCase()">Arquivar</button>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="closeModal('modal-det-bg')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCase()">Salvar</button>
+      </div>
     </div>
   </div>
 </div>
 
-<div id="a1-toast"></div>
+<!-- ═══════ MODAL: Novo processo ═══════ -->
+<div class="modal-bg hidden" id="modal-new-bg">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Processo de Registro</div>
+      <button class="modal-close" onclick="closeModal('modal-new-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Cliente *</label><input id="n-name" type="text" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF</label><input id="n-cpf" type="text" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>Telefone</label><input id="n-phone" type="text"></div>
+        <div class="form-group full"><label>Empreendimento</label><input id="n-empr" type="text" list="dl-emprs"></div>
+        <div class="form-group"><label>Bloco</label><input id="n-block" type="text"></div>
+        <div class="form-group"><label>Unidade</label><input id="n-unit" type="text"></div>
+        <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-valor" type="number" step="0.01"></div>
+        <div class="form-group"><label>Banco Financiador</label><input id="n-banco" type="text" list="dl-bancos"></div>
+        <div class="form-group"><label>Etapa inicial</label><select id="n-stage"><option value="">Selecione</option></select></div>
+        <div class="form-group full"><label>Observações</label><textarea id="n-obs" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createCase()">Criar Processo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Adicionar etapa ═══════ -->
+<div class="modal-bg hidden" id="modal-stage-bg">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr">
+      <div class="modal-title">Nova Etapa</div>
+      <button class="modal-close" onclick="closeModal('modal-stage-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome da Etapa *</label><input id="st-name" type="text" placeholder="Ex: Protocolo Cartório RI"></div>
+        <div class="form-group"><label>Cor (hex)</label><input id="st-color" type="color" value="#7c3aed" style="height:36px;padding:.2rem .4rem"></div>
+        <div class="form-group"><label>Posição</label><input id="st-pos" type="number" min="1" value="1"></div>
+        <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Inicial</label><input id="st-init" type="checkbox"></div>
+        <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Final</label><input id="st-final" type="checkbox"></div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-stage-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveStage()">Salvar Etapa</button>
+    </div>
+  </div>
+</div>
+
+<div id="rg-toast"></div>
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
-let STAGES = [];
-let CARDS  = [];
-let ACTIVE_CARD = null;
-let SEARCH_Q    = '';
+'use strict';
 
+const G = {
+  user: null, slug: '',
+  stages: [], cases: [],
+  filters: { search:'', empr:'', banco:'', itbi:'' },
+  dashFilters: { empr:'', banco:'', cartorio:'', search:'' },
+  activeCase: null,
+  itbiStatus: ''
+};
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  let user;
-  try {
-    user = a1RequireAuth();
-    await a1RequireModule('registro');
-  } catch { return; }
+  try { G.user = a1RequireAuth(); } catch { return; }
+  try { a1RequireModule('registro'); } catch { return; }
+  G.slug = A1.slug;
 
-  const slug = A1.slug;
-  document.getElementById('nav-home').href     = `/${slug}/dashboard`;
-  document.getElementById('nav-repasse').href  = `/${slug}/repasse`;
-  document.getElementById('nav-workflow').href = `/${slug}/workflow`;
-  document.getElementById('nav-config').href   = `/${slug}/configuracoes`;
-  document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
+  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
+  document.getElementById('link-repasse').href  = `/${G.slug}/repasse`;
+  document.getElementById('link-wf-rg').href    = `/${G.slug}/workflow?module=registro`;
 
-  await Promise.all([loadStages(), loadCards()]);
-  renderBoard();
+  await loadData();
+  renderDashboard();
+  renderKanban();
+  renderList();
+  renderConfigStages();
   a1StartHeartbeat('registro');
 
-  let debounce;
-  document.getElementById('search-input').addEventListener('input', e => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => { SEARCH_Q = e.target.value.toLowerCase(); renderBoard(); }, 250);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadData().then(() => {
+      renderDashboard(); renderKanban(); renderList();
+    });
   });
 }
 
-async function loadStages() {
-  STAGES = await fetch(
-    `${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`,
-    { headers: A1.headers() }
-  ).then(r => r.json());
+// ─── Data ──────────────────────────────────────────────────────────────────────
+async function loadData() {
+  const [stages, cases] = await Promise.all([
+    fetch(`${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`, { headers: A1.headers() })
+      .then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc`, { headers: A1.headers() })
+      .then(r => r.json()).catch(() => [])
+  ]);
+  G.stages = Array.isArray(stages) ? stages : [];
+  G.cases  = Array.isArray(cases)  ? cases  : [];
+
+  // Populate datalists
+  const emprs = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
+  const bancos = [...new Set(G.cases.map(c => c.payload?.banco_name).filter(Boolean))];
+  const cartorios = [...new Set(G.cases.map(c => c.payload?.cartorio_name).filter(Boolean))];
+  populateDL('dl-emprs', emprs);
+  populateDL('dl-bancos', bancos);
+  populateDL('dl-cartorios', cartorios);
 }
 
-async function loadCards() {
-  CARDS = await fetch(
-    `${A1.rest('a1_cases')}?module_key=eq.registro&order=updated_at.desc`,
-    { headers: A1.headers() }
-  ).then(r => r.json());
+function populateDL(id, items) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = items.map(v => `<option value="${esc(v)}">`).join('');
 }
 
-function filteredCards(stageId) {
-  return CARDS.filter(c => {
-    if (c.stage_id !== stageId) return false;
-    if (!SEARCH_Q) return true;
-    return (c.client_name || '').toLowerCase().includes(SEARCH_Q)
-        || (c.client_cpf  || '').includes(SEARCH_Q)
-        || (c.unit        || '').toLowerCase().includes(SEARCH_Q)
-        || (c.development || '').toLowerCase().includes(SEARCH_Q);
+// ─── Filtering ──────────────────────────────────────────────────────────────────
+function filteredCases() {
+  const { search, empr, banco, itbi } = G.filters;
+  return G.cases.filter(c => {
+    if (empr  && c.development !== empr) return false;
+    if (banco && (c.payload?.banco_name || '') !== banco) return false;
+    if (itbi  && (c.payload?.itbi_status || '') !== itbi) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (c.client_name || '').toLowerCase().includes(q)
+          || (c.client_cpf  || '').includes(q)
+          || (c.unit        || '').toLowerCase().includes(q)
+          || (c.development || '').toLowerCase().includes(q);
+    }
+    return true;
   });
 }
 
-function renderBoard() {
-  const board = document.getElementById('kanban-board');
-  board.innerHTML = '';
-  STAGES.forEach(stage => {
-    const cards = filteredCards(stage.id);
-    const col   = document.createElement('div');
-    col.className = 'kanban-col';
-    col.innerHTML = `
-      <div class="kanban-col-header">
-        <div class="kanban-col-dot" style="background:${stage.color}"></div>
-        <div class="kanban-col-title">${stage.name}</div>
-        <div class="kanban-col-count">${cards.length}</div>
+function dashCases() {
+  const { empr, banco, cartorio, search } = G.dashFilters;
+  return G.cases.filter(c => {
+    if (empr    && c.development !== empr) return false;
+    if (banco   && (c.payload?.banco_name    || '') !== banco)   return false;
+    if (cartorio && (c.payload?.cartorio_name || '') !== cartorio) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (c.client_name || '').toLowerCase().includes(q)
+          || (c.client_cpf  || '').includes(q);
+    }
+    return true;
+  });
+}
+
+function applyFilter() {
+  G.filters.search = document.getElementById('rg-search').value.toLowerCase();
+  G.filters.empr   = document.getElementById('rg-filter-empr').value;
+  G.filters.banco  = document.getElementById('rg-filter-banco').value;
+  G.filters.itbi   = document.getElementById('rg-filter-itbi').value;
+  renderKanban();
+}
+
+function applyDashFilter() {
+  G.dashFilters.empr     = document.getElementById('dg-empr').value;
+  G.dashFilters.banco    = document.getElementById('dg-banco').value;
+  G.dashFilters.cartorio = document.getElementById('dg-cartorio').value;
+  G.dashFilters.search   = document.getElementById('dg-search').value;
+  renderDashboard();
+}
+
+function clearDashFilters() {
+  G.dashFilters = { empr:'', banco:'', cartorio:'', search:'' };
+  ['dg-empr','dg-banco','dg-cartorio','dg-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderDashboard();
+}
+
+function applyListFilter() {
+  renderList();
+}
+
+// ─── Dashboard ──────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const cases = dashCases();
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);
+
+  // Populate dash filter selects
+  const allEmprs    = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
+  const allBancos   = [...new Set(G.cases.map(c => c.payload?.banco_name).filter(Boolean))];
+  const allCartorios = [...new Set(G.cases.map(c => c.payload?.cartorio_name).filter(Boolean))];
+  populateSelect('dg-empr',    allEmprs,    'Todos empreendimentos', G.dashFilters.empr);
+  populateSelect('dg-banco',   allBancos,   'Todos os bancos',       G.dashFilters.banco);
+  populateSelect('dg-cartorio',allCartorios,'Todos os cartórios',    G.dashFilters.cartorio);
+
+  // Also populate kanban filter selects
+  populateSelect('rg-filter-empr', allEmprs,  'Todos os empreendimentos', G.filters.empr);
+  populateSelect('rg-filter-banco',allBancos, 'Todos os bancos',          G.filters.banco);
+  populateSelect('rg-list-stage',  G.stages.map(s=>s.name), 'Todas as etapas', '');
+  G.stages.forEach(s => {
+    const opt = document.querySelector(`#rg-list-stage option[value="${s.name}"]`);
+    if (opt) opt.selected = false;
+  });
+
+  const finalStageIds = new Set(G.stages.filter(s => s.is_final).map(s => s.id));
+  const andamento  = cases.filter(c => !finalStageIds.has(c.stage_id));
+  const finalizados= cases.filter(c => finalStageIds.has(c.stage_id) && (c.updated_at||'').startsWith(thisMonth));
+  const itbiPend   = cases.filter(c => (c.payload?.itbi_status||'') === 'pendente');
+  const comExig    = cases.filter(c => !!(c.payload?.exig_desc));
+
+  setEl('dkpi-total',       cases.length);
+  setEl('dkpi-andamento',   andamento.length);
+  setEl('dkpi-finalizados', finalizados.length);
+  setEl('dkpi-itbi-pend',   itbiPend.length);
+  setEl('dkpi-exig',        comExig.length);
+
+  // VGV
+  const vgv = cases.reduce((s, c) => s + (Number(c.contract_value) || 0), 0);
+  setEl('dkpi-vgv', vgv ? 'R$ ' + fmtMoney(vgv) : '—');
+
+  // Avg days
+  const days = cases
+    .map(c => (now - new Date(c.created_at)) / 86400000)
+    .filter(d => d >= 0);
+  setEl('dkpi-tempo', days.length ? Math.round(days.reduce((a,b)=>a+b,0)/days.length) + 'd' : '—');
+
+  // ITBI pago count
+  setEl('dkpi-itbi-pago', cases.filter(c => (c.payload?.itbi_status||'') === 'pago').length);
+
+  // New (30 days)
+  const since30 = new Date(now - 30*86400000).toISOString();
+  setEl('dkpi-novos', cases.filter(c => c.created_at >= since30).length);
+
+  // Stage counts for donut + funil
+  const stageMap = {};
+  G.stages.forEach(s => { stageMap[s.id] = { stage: s, count: 0 }; });
+  cases.forEach(c => { if (stageMap[c.stage_id]) stageMap[c.stage_id].count++; });
+  const stageData = Object.values(stageMap).filter(x => x.count > 0);
+
+  renderDonutChart(stageData, document.getElementById('dg-donut-svg'), document.getElementById('dg-donut-legend'), cases.length);
+  renderFunil(stageData, cases.length);
+  renderDistList('dg-empr-list', groupBy(cases, c => c.development), '#2563eb');
+  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#7c3aed');
+  renderDistList('dg-cartorio-list', groupBy(cases, c => c.payload?.cartorio_name), '#0d9488');
+
+  // Gargalo = non-final stage with most cases
+  const nonFinal = stageData.filter(x => !x.stage.is_final);
+  const gargalo  = nonFinal.sort((a,b) => b.count - a.count)[0];
+  setEl('dkpi-gargalo',     gargalo ? gargalo.count : '—');
+  setEl('dkpi-gargalo-sub', gargalo ? gargalo.stage.name : '—');
+}
+
+const STAGE_COLORS = ['#7c3aed','#2563eb','#0d9488','#059669','#d97706','#dc2626','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
+
+function renderDonutChart(stageData, svgEl, legendEl, total) {
+  const R = 46, cx = 56, cy = 56, sw = 14;
+  const circ = 2 * Math.PI * R;
+  svgEl.innerHTML = stageData.length === 0
+    ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e2e6ef" stroke-width="${sw}"/>`
+    : '';
+
+  let cumLen = 0;
+  stageData.forEach((item, i) => {
+    const arcLen = (item.count / (total || 1)) * circ;
+    const color  = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', cx);
+    circle.setAttribute('cy', cy);
+    circle.setAttribute('r', R);
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', color);
+    circle.setAttribute('stroke-width', sw);
+    circle.setAttribute('stroke-dasharray', `${arcLen} ${circ - arcLen}`);
+    circle.setAttribute('stroke-dashoffset', circ - cumLen);
+    circle.setAttribute('transform', `rotate(-90 ${cx} ${cy})`);
+    circle.setAttribute('stroke-linecap', 'butt');
+    svgEl.appendChild(circle);
+    cumLen += arcLen;
+  });
+
+  // Center text
+  const wrap = svgEl.parentElement.querySelector('.donut-center');
+  if (wrap) { wrap.querySelector('.donut-total').textContent = total; }
+  else {
+    const div = document.createElement('div');
+    div.className = 'donut-center';
+    div.innerHTML = `<div class="donut-total">${total}</div><div class="donut-total-lbl">processos</div>`;
+    svgEl.parentElement.style.position = 'relative';
+    svgEl.parentElement.appendChild(div);
+  }
+
+  legendEl.innerHTML = stageData.map((item, i) => {
+    const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+    const pct   = total ? Math.round(item.count / total * 100) : 0;
+    return `<div class="donut-leg-row">
+      <div class="donut-leg-dot" style="background:${color}"></div>
+      <div class="donut-leg-name">${esc(item.stage.name)}</div>
+      <div class="donut-leg-count">${item.count}</div>
+      <div class="donut-leg-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderFunil(stageData, total) {
+  const maxCount = Math.max(...stageData.map(x => x.count), 1);
+  const nonFinalData = stageData.filter(x => !x.stage.is_final);
+  const gargaloIdx = nonFinalData.length
+    ? nonFinalData.indexOf(nonFinalData.reduce((a,b) => b.count > a.count ? b : a))
+    : -1;
+
+  document.getElementById('dg-funil-list').innerHTML = stageData.map((item, i) => {
+    const color   = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+    const pct     = maxCount ? Math.round(item.count / maxCount * 100) : 0;
+    const pctTot  = total ? Math.round(item.count / total * 100) : 0;
+    const isGarg  = !item.stage.is_final && item === nonFinalData[gargaloIdx];
+    return `<div class="funil-row2">
+      <div class="funil2-name" style="color:${color}">${esc(item.stage.name)}</div>
+      <div class="funil2-bar-wrap"><div class="funil2-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="funil2-count">${item.count}</div>
+      <div class="funil2-pct">${pctTot}%</div>
+      <div class="funil2-badges">${isGarg ? '<span class="badge-gargalo">GARGALO</span>' : ''}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhum processo.</div>';
+}
+
+function groupBy(cases, fn) {
+  const map = {};
+  cases.forEach(c => {
+    const key = fn(c) || '(sem informação)';
+    map[key] = (map[key] || 0) + 1;
+  });
+  return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8);
+}
+
+function renderDistList(elId, items, color) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const max = items.length ? items[0][1] : 1;
+  el.innerHTML = items.map(([name, count], i) => `
+    <div class="dist-row">
+      <div class="dist-num">${i+1}</div>
+      <div class="dist-name">${esc(name)}</div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(count/max*100)}%;background:${color}"></div></div>
+      <div class="dist-val">${count}</div>
+    </div>`).join('') || '<div style="color:var(--t3);font-size:.75rem">Sem dados.</div>';
+}
+
+// ─── Kanban ──────────────────────────────────────────────────────────────────────
+function renderKanban() {
+  const board = document.getElementById('rg-kanban');
+  const cases = filteredCases();
+  const now   = new Date();
+  let total = 0;
+
+  board.innerHTML = G.stages.map(stage => {
+    const stageCases = cases.filter(c => c.stage_id === stage.id);
+    total += stageCases.length;
+    const color = stage.color || '#7c3aed';
+    return `<div class="k-col">
+      <div class="k-col-header" style="background:${color}">
+        <span>${esc(stage.name)}</span>
+        <span class="k-col-count">${stageCases.length}</span>
       </div>
-      <div class="kanban-col-body">
-        ${cards.map(c => `
-          <div class="kanban-card${c.is_new?' is-new':''}" onclick="openDetail('${c.id}')">
-            <div class="kanban-card-name">${c.client_name}</div>
-            <div class="kanban-card-sub">${[c.development, c.unit].filter(Boolean).join(' · ') || '—'}</div>
-            <div class="kanban-card-meta">
-              ${c.manager_name ? `<span class="badge badge-gray">${c.manager_name}</span>` : ''}
-            </div>
-          </div>`).join('') || '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:.75rem">Vazio</div>'}
-      </div>`;
-    board.appendChild(col);
-  });
+      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${stage.id}')">
+        ${stageCases.map(c => renderCard(c, color, now)).join('') ||
+          '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  const fc = cases.length;
+  document.getElementById('rg-filter-count').textContent =
+    fc !== G.cases.length ? `${fc} de ${G.cases.length} processos` : '';
 }
 
-async function openDetail(cardId) {
-  ACTIVE_CARD = CARDS.find(c => c.id === cardId);
-  if (!ACTIVE_CARD) return;
-  const c = ACTIVE_CARD;
+function renderCard(c, color, now) {
+  const days = Math.floor((now - new Date(c.created_at)) / 86400000);
+  const dCls = days > 30 ? 'alert' : days > 15 ? 'warn' : '';
+  const p    = c.payload || {};
+  const itbi = p.itbi_status || '';
+  const exig = p.exig_desc;
 
-  document.getElementById('dp-name').textContent    = c.client_name;
-  document.getElementById('dp-sub').textContent     = [c.development, c.unit].filter(Boolean).join(' / ');
-  document.getElementById('dp-client').textContent  = c.client_name  || '—';
-  document.getElementById('dp-cpf').textContent     = c.client_cpf   || '—';
-  document.getElementById('dp-dev').textContent     = c.development   || '—';
-  document.getElementById('dp-unit').textContent    = c.unit          || '—';
-  document.getElementById('dp-value').textContent   = c.contract_value
-    ? 'R$ ' + Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
-  document.getElementById('dp-manager').textContent = c.manager_name  || '—';
-  document.getElementById('dp-obs').value           = c.observations   || '';
+  return `<div class="k-card" style="border-left-color:${color}"
+    draggable="true"
+    ondragstart="onDragStart(event,'${c.id}')"
+    ondragend="onDragEnd(event)"
+    onclick="openCase('${c.id}')">
+    <div class="kc-top">
+      <div class="kc-name">${esc(c.client_name)}</div>
+      <div class="kc-badges">
+        ${c.is_new ? '<span class="badge-novo">NOVO</span>' : ''}
+        ${exig ? '<span class="badge-exig">EXIG</span>' : ''}
+        <span class="badge-days ${dCls}">${days}d</span>
+      </div>
+    </div>
+    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${c.client_cpf}')">${c.client_cpf}</div>` : ''}
+    ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
+    <div class="kc-chips">
+      ${itbi === 'pago'    ? '<span class="chip chip-itbi-pago">ITBI Pago</span>'    : ''}
+      ${itbi === 'pendente'? '<span class="chip chip-itbi-pend">ITBI Pendente</span>': ''}
+      ${itbi === 'vencido' ? '<span class="chip" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5">ITBI Vencido</span>' : ''}
+      ${p.cartorio_name ? `<span class="chip chip-cartorio">${esc(p.cartorio_name)}</span>` : ''}
+      ${p.banco_name    ? `<span class="chip chip-banco">${esc(p.banco_name)}</span>` : ''}
+    </div>
+    <div class="kc-footer">
+      <span class="kc-date">${fmtDate(c.created_at)}</span>
+      <div class="kc-actions">
+        <button class="kc-action-btn" onclick="event.stopPropagation();openCase('${c.id}')">Abrir</button>
+      </div>
+    </div>
+  </div>`;
+}
 
-  // Payload (extra data from xlsx)
-  const payload = c.payload && Object.keys(c.payload).length
-    ? JSON.stringify(c.payload, null, 2)
-    : 'Nenhum dado extra.';
-  document.getElementById('dp-payload').textContent = payload;
+// ─── Drag & Drop ───────────────────────────────────────────────────────────────
+let dragId = null;
+function onDragStart(e, id) {
+  dragId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
+function onDragOver(e, col) { e.preventDefault(); col.classList.add('drag-over'); }
+function onDrop(e, stageId) {
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragId) return;
+  const c = G.cases.find(x => x.id === dragId);
+  if (!c || c.stage_id === stageId) { dragId = null; return; }
+  const stage = G.stages.find(s => s.id === stageId);
+  updateStage(c, stageId, stage?.name);
+  dragId = null;
+}
 
-  const sel = document.getElementById('dp-stage');
-  sel.innerHTML = STAGES.map(s =>
-    `<option value="${s.id}" ${s.id === c.stage_id ? 'selected' : ''}>${s.name}</option>`
+async function updateStage(c, stageId, stageName) {
+  const prev = c.stage_name;
+  c.stage_id   = stageId;
+  c.stage_name = stageName;
+  c.stage_entered_at = new Date().toISOString();
+  renderKanban();
+
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
+    method: 'PATCH', headers: A1.headers(),
+    body: JSON.stringify({ stage_id: stageId, stage_name: stageName, stage_entered_at: c.stage_entered_at })
+  });
+  await fetch(A1.rest('a1_events'), {
+    method: 'POST', headers: A1.headers(),
+    body: JSON.stringify({
+      tenant_id: G.user?.tenant_id,
+      case_id:   c.id,
+      type:      'stage_change',
+      description: `${prev} → ${stageName}`,
+      actor_name: G.user?.name
+    })
+  });
+  toast('Etapa atualizada.', 'success');
+}
+
+// ─── List View ─────────────────────────────────────────────────────────────────
+function renderList() {
+  const search   = (document.getElementById('rg-list-search')?.value || '').toLowerCase();
+  const stageFilter = document.getElementById('rg-list-stage')?.value || '';
+  const itbiFilter  = document.getElementById('rg-list-itbi')?.value  || '';
+
+  const cases = G.cases.filter(c => {
+    if (stageFilter && c.stage_name !== stageFilter) return false;
+    if (itbiFilter  && (c.payload?.itbi_status||'') !== itbiFilter) return false;
+    if (search) {
+      return (c.client_name||'').toLowerCase().includes(search)
+          || (c.client_cpf ||'').includes(search)
+          || (c.development||'').toLowerCase().includes(search);
+    }
+    return true;
+  });
+
+  document.getElementById('rg-list-count').textContent =
+    cases.length !== G.cases.length ? `${cases.length} de ${G.cases.length}` : '';
+
+  const now = new Date();
+  document.getElementById('rg-list-tbody').innerHTML = cases.length
+    ? cases.map(c => {
+        const p    = c.payload || {};
+        const days = Math.floor((now - new Date(c.created_at)) / 86400000);
+        const itbi = p.itbi_status || '—';
+        const itbiCls = itbi==='pago'?'itbi-pill-pago':itbi==='vencido'?'itbi-pill-venc':'itbi-pill-pend';
+        const st   = G.stages.find(s => s.id === c.stage_id);
+        const stClr= st?.color || '#8896a7';
+        return `<tr onclick="openCase('${c.id}')" style="cursor:pointer">
+          <td><span class="tbl-name">${esc(c.client_name)}</span></td>
+          <td><span class="tbl-cpf">${esc(c.client_cpf||'—')}</span></td>
+          <td>${esc(c.development||'—')}${c.unit?' · '+esc(c.unit):''}</td>
+          <td><span style="display:inline-flex;align-items:center;gap:.3rem">
+            <span style="width:7px;height:7px;border-radius:50%;background:${stClr};display:inline-block"></span>
+            ${esc(c.stage_name||'—')}</span></td>
+          <td>${esc(p.banco_name||'—')}</td>
+          <td>${esc(p.cartorio_name||'—')}</td>
+          <td><span class="stage-pill ${itbiCls}">${itbi}</span></td>
+          <td class="tbl-mono">${p.itbi_valor?'R$'+fmtMoney(p.itbi_valor):'—'}</td>
+          <td class="tbl-mono">${esc(p.num_prenotacao||'—')}</td>
+          <td class="tbl-mono">${esc(p.num_matricula||'—')}</td>
+          <td class="tbl-mono">${days}d</td>
+          <td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openCase('${c.id}')">Abrir</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum processo encontrado.</td></tr>';
+}
+
+// ─── Case Modal ───────────────────────────────────────────────────────────────
+function openCase(id) {
+  G.activeCase = G.cases.find(c => c.id === id);
+  if (!G.activeCase) return;
+  const c = G.activeCase;
+  const p = c.payload || {};
+
+  document.getElementById('md-title').textContent = c.client_name;
+  document.getElementById('md-sub').textContent   = [c.development, c.unit].filter(Boolean).join(' / ') || '—';
+
+  // Stage select
+  const sel = document.getElementById('md-stage-sel');
+  sel.innerHTML = G.stages.map(s =>
+    `<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${esc(s.name)}</option>`
   ).join('');
 
+  // Dados tab
+  setField('md-name',    c.client_name    || '');
+  setField('md-cpf',     c.client_cpf     || '');
+  setField('md-empr',    c.development    || '');
+  setField('md-unit',    c.unit           || '');
+  setField('md-block',   c.block          || '');
+  setField('md-valor',   c.contract_value || '');
+  setField('md-banco',   p.banco_name     || '');
+  setField('md-manager', c.manager_name   || '');
+  setField('md-obs',     c.observations   || '');
+
+  // ITBI tab
+  setField('md-itbi-valor',   p.itbi_valor   || '');
+  setField('md-itbi-venc',    p.itbi_venc    || '');
+  setField('md-itbi-pago-em', p.itbi_pago_em || '');
+  setField('md-itbi-url',     p.itbi_url     || '');
+  G.itbiStatus = p.itbi_status || '';
+  document.querySelectorAll('.itbi-radio-btn').forEach(btn => {
+    btn.className = 'itbi-radio-btn' + (btn.dataset.val === G.itbiStatus ? ` active-${G.itbiStatus}` : '');
+  });
+
+  // Cartório tab
+  setField('md-cartorio',       p.cartorio_name    || '');
+  setField('md-protocolo-dt',   p.data_protocolo   || '');
+  setField('md-prenotacao',     p.num_prenotacao   || '');
+  setField('md-exig-dt',        p.exig_dt          || '');
+  setField('md-exig-desc',      p.exig_desc        || '');
+  setField('md-matricula',      p.num_matricula    || '');
+  setField('md-registro-dt',    p.data_registro    || '');
+  setField('md-entrega-banco-dt', p.data_entrega_banco || '');
+
+  // Mark as seen
   if (c.is_new) {
     fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
-      method: 'PATCH', headers: A1.headers(), body: JSON.stringify({ is_new: false })
+      method:'PATCH', headers:A1.headers(), body:JSON.stringify({is_new:false})
     });
     c.is_new = false;
   }
 
-  loadEvents(cardId);
-  document.getElementById('detail-panel').classList.add('open');
+  loadEvents(id);
+  switchModalTab('dados', document.querySelector('.modal-tab'));
+  openModal('modal-det-bg');
 }
 
-function closeDetail() {
-  document.getElementById('detail-panel').classList.remove('open');
-  ACTIVE_CARD = null;
-}
+async function saveCase() {
+  const c = G.activeCase;
+  if (!c) return;
 
-async function loadEvents(cardId) {
-  const events = await fetch(
-    `${A1.rest('a1_events')}?case_id=eq.${cardId}&order=created_at.desc&limit=20`,
-    { headers: A1.headers() }
-  ).then(r => r.json());
+  const payload = {
+    ...(c.payload || {}),
+    banco_name:       val('md-banco'),
+    itbi_valor:       val('md-itbi-valor') || null,
+    itbi_venc:        val('md-itbi-venc')  || null,
+    itbi_status:      G.itbiStatus         || null,
+    itbi_pago_em:     val('md-itbi-pago-em') || null,
+    itbi_url:         val('md-itbi-url')     || null,
+    cartorio_name:    val('md-cartorio'),
+    data_protocolo:   val('md-protocolo-dt') || null,
+    num_prenotacao:   val('md-prenotacao')   || null,
+    exig_dt:          val('md-exig-dt')      || null,
+    exig_desc:        val('md-exig-desc')    || null,
+    num_matricula:    val('md-matricula')    || null,
+    data_registro:    val('md-registro-dt')  || null,
+    data_entrega_banco: val('md-entrega-banco-dt') || null
+  };
 
-  document.getElementById('dp-events').innerHTML = events.length
-    ? events.map(e => `
-        <div style="background:var(--bg3);border-radius:.375rem;padding:.6rem .875rem">
-          <div style="font-size:.7rem;color:var(--muted)">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
-          <div style="font-size:.8rem;margin-top:.1rem">${e.description || e.type}</div>
-        </div>`).join('')
-    : '<div style="color:var(--muted);font-size:.8rem">Sem histórico.</div>';
+  const body = {
+    client_name:    val('md-name'),
+    client_cpf:     val('md-cpf'),
+    development:    val('md-empr'),
+    unit:           val('md-unit'),
+    block:          val('md-block'),
+    contract_value: val('md-valor') || null,
+    manager_name:   val('md-manager'),
+    observations:   val('md-obs'),
+    payload
+  };
+
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify(body)
+  });
+
+  Object.assign(c, body);
+  toast('Salvo.', 'success');
+  closeModal('modal-det-bg');
+  renderKanban();
+  renderList();
+  renderDashboard();
 }
 
 async function changeStage() {
-  if (!ACTIVE_CARD) return;
-  const newStageId = document.getElementById('dp-stage').value;
-  const newStage   = STAGES.find(s => s.id === newStageId);
-  const user       = A1.user;
+  if (!G.activeCase) return;
+  const c = G.activeCase;
+  const stageId   = document.getElementById('md-stage-sel').value;
+  const stage     = G.stages.find(s => s.id === stageId);
+  await updateStage(c, stageId, stage?.name);
+  document.getElementById('md-sub').textContent = [c.development, c.unit].filter(Boolean).join(' / ') || '—';
+}
 
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method: 'PATCH', headers: A1.headers(),
-    body: JSON.stringify({ stage_id: newStageId, stage_name: newStage?.name, stage_entered_at: new Date().toISOString() })
+async function archiveCase() {
+  if (!G.activeCase) return;
+  if (!confirm('Arquivar este processo?')) return;
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${G.activeCase.id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify({archived:true})
   });
+  G.cases = G.cases.filter(c => c.id !== G.activeCase.id);
+  closeModal('modal-det-bg');
+  renderKanban();
+  renderList();
+  renderDashboard();
+  toast('Arquivado.', 'success');
+}
 
-  await fetch(A1.rest('a1_events'), {
-    method: 'POST', headers: A1.headers(),
-    body: JSON.stringify({
-      case_id:     ACTIVE_CARD.id,
-      type:        'stage_change',
-      description: `${ACTIVE_CARD.stage_name} → ${newStage?.name}`,
-      actor_name:  user?.name
-    })
+async function loadEvents(caseId) {
+  const events = await fetch(
+    `${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=30`,
+    { headers: A1.headers() }
+  ).then(r => r.json()).catch(() => []);
+
+  document.getElementById('md-events').innerHTML = events.length
+    ? events.map(e => `<div class="evt-item">
+        <div class="evt-date">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
+        <div>${esc(e.description || e.type)}</div>
+      </div>`).join('')
+    : '<div style="color:var(--t3);font-size:.78rem">Sem histórico.</div>';
+}
+
+function selectItbi(btn) {
+  G.itbiStatus = btn.dataset.val;
+  document.querySelectorAll('.itbi-radio-btn').forEach(b => {
+    b.className = 'itbi-radio-btn' + (b === btn ? ` active-${G.itbiStatus}` : '');
   });
-
-  ACTIVE_CARD.stage_id   = newStageId;
-  ACTIVE_CARD.stage_name = newStage?.name;
-  await loadCards();
-  renderBoard();
-  toast('Etapa atualizada.', 'success');
-  loadEvents(ACTIVE_CARD.id);
 }
 
-async function saveObs() {
-  if (!ACTIVE_CARD) return;
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${ACTIVE_CARD.id}`, {
-    method: 'PATCH', headers: A1.headers(),
-    body: JSON.stringify({ observations: document.getElementById('dp-obs').value })
+// ─── New Case Modal ────────────────────────────────────────────────────────────
+function openNewModal() {
+  ['n-name','n-cpf','n-phone','n-empr','n-block','n-unit','n-valor','n-banco','n-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
   });
-  toast('Salvo.', 'success');
+  const sel = document.getElementById('n-stage');
+  sel.innerHTML = G.stages.map(s =>
+    `<option value="${s.id}" ${s.is_initial?'selected':''}>${esc(s.name)}</option>`
+  ).join('');
+  openModal('modal-new-bg');
 }
 
-async function openNew() {
-  const name = prompt('Nome do cliente / contrato:');
-  if (!name) return;
-  const initial = STAGES.find(s => s.is_initial) || STAGES[0];
-  const [card]  = await fetch(A1.rest('a1_cases'), {
-    method: 'POST', headers: A1.returnHeaders(),
-    body: JSON.stringify({ module_key: 'registro', stage_id: initial?.id, stage_name: initial?.name, client_name: name })
-  }).then(r => r.json());
-  CARDS.unshift(card);
-  renderBoard();
-  openDetail(card.id);
-  toast('Contrato criado.', 'success');
+async function createCase() {
+  const name = val('n-name').trim();
+  if (!name) { toast('Informe o nome do cliente.', 'error'); return; }
+  const stageId = val('n-stage');
+  const stage   = G.stages.find(s => s.id === stageId) || G.stages[0];
+
+  const payload = {
+    banco_name: val('n-banco') || null
+  };
+
+  const body = {
+    tenant_id:      G.user?.tenant_id,
+    module_key:     'registro',
+    client_name:    name,
+    client_cpf:     val('n-cpf')   || null,
+    development:    val('n-empr')  || null,
+    block:          val('n-block') || null,
+    unit:           val('n-unit')  || null,
+    contract_value: val('n-valor') || null,
+    manager_name:   val('n-manager') || null,
+    observations:   val('n-obs')   || null,
+    stage_id:       stage?.id,
+    stage_name:     stage?.name,
+    stage_entered_at: new Date().toISOString(),
+    is_new:         true,
+    archived:       false,
+    payload
+  };
+
+  const res = await fetch(A1.rest('a1_cases'), {
+    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(body)
+  });
+  const created = await res.json();
+  const card = Array.isArray(created) ? created[0] : created;
+  if (!card?.id) { toast('Erro ao criar processo.', 'error'); return; }
+
+  G.cases.unshift(card);
+  closeModal('modal-new-bg');
+  renderKanban();
+  renderList();
+  renderDashboard();
+  toast('Processo criado.', 'success');
+  openCase(card.id);
 }
 
-// Import xlsx — plug in your SheetJS (xlsx) parser here
-function openImport()  { document.getElementById('import-modal').style.display = 'flex'; }
-function closeImport() { document.getElementById('import-modal').style.display = 'none'; }
-
-async function handleXLSX(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  document.getElementById('import-result').textContent =
-    'Arquivo selecionado: ' + file.name + '. Integre a biblioteca SheetJS (xlsx) para processar.';
-  // When integrating xlsx:
-  // 1. Read file as ArrayBuffer
-  // 2. Parse with XLSX.read()
-  // 3. Detect tab name: 'Banco_uau' (Ceará) or 'UNIDADES' (Piauí)
-  // 4. Map rows to a1_cases fields + payload JSONB for extra columns
-  // 5. POST to a1_cases with module_key = 'registro'
+// ─── Config / Stages ──────────────────────────────────────────────────────────
+function renderConfigStages() {
+  document.getElementById('cfg-stages-list').innerHTML = G.stages.map(s => `
+    <div style="display:flex;align-items:center;gap:.65rem;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.55rem .875rem">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color||'#ccc'};flex-shrink:0"></div>
+      <div style="flex:1;font-size:.8rem;font-weight:600">${esc(s.name)}</div>
+      <div style="font-size:.68rem;color:var(--t3)">#${s.position}</div>
+      ${s.is_initial?'<span style="background:#dcfce7;color:#166534;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">INICIAL</span>':''}
+      ${s.is_final  ?'<span style="background:#dbeafe;color:#1e40af;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">FINAL</span>':''}
+    </div>`).join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhuma etapa configurada.</div>';
 }
 
+function openStageModal() { openModal('modal-stage-bg'); }
+
+async function saveStage() {
+  const name = val('st-name').trim();
+  if (!name) { toast('Informe o nome da etapa.', 'error'); return; }
+  const body = {
+    tenant_id: G.user?.tenant_id,
+    module_key:'registro',
+    name,
+    color:     document.getElementById('st-color').value,
+    position:  parseInt(val('st-pos')) || 1,
+    is_initial:document.getElementById('st-init').checked,
+    is_final:  document.getElementById('st-final').checked
+  };
+  const res  = await fetch(A1.rest('a1_stages'), {
+    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(body)
+  });
+  const [s] = await res.json();
+  if (!s?.id) { toast('Erro ao salvar etapa.', 'error'); return; }
+  G.stages.push(s);
+  G.stages.sort((a,b) => a.position - b.position);
+  renderConfigStages();
+  closeModal('modal-stage-bg');
+  toast('Etapa adicionada.', 'success');
+}
+
+function populateSelect(id, items, placeholder, selected) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    items.map(v => `<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+const TABS = ['dashboard','kanban','lista','config'];
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  TABS.forEach(t => {
+    const el2 = document.getElementById(`tab-${t}`);
+    if (el2) el2.style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'kanban') renderKanban();
+  if (tab === 'lista')  renderList();
+  if (tab === 'config') renderConfigStages();
+}
+
+function switchModalTab(tab, el) {
+  document.querySelectorAll('.modal-tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else document.querySelector(`.modal-tab[data-mtab="${tab}"]`)?.classList.add('active');
+  document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+  const target = document.getElementById(`mtab-${tab}`);
+  if (target) target.classList.add('active');
+  if (tab === 'hist' && G.activeCase) loadEvents(G.activeCase.id);
+}
+
+function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+function setField(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.value = v;
+}
+function setEl(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = v;
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+function fmtMoney(v) {
+  return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+}
 function toast(msg, type = 'info') {
-  const el   = document.getElementById('a1-toast');
+  const el   = document.getElementById('rg-toast');
   const item = document.createElement('div');
   item.className = `toast-item toast-${type}`;
   item.textContent = msg;
@@ -360,7 +1282,11 @@ function toast(msg, type = 'info') {
   setTimeout(() => item.remove(), 3500);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeImport(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['modal-det-bg','modal-new-bg','modal-stage-bg'].forEach(closeModal);
+  }
+});
 
 init();
 </script>

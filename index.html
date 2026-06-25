@@ -3,152 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ALPHA ONE — CRM Imobiliário</title>
-  <link rel="stylesheet" href="/css/alpha.css">
+  <title>CORBAN OS — Sistema do Correspondente Bancário</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    .hero-wrap {
-      display: flex; flex-direction: column; align-items: center;
-      max-width: 30rem; width: 100%; text-align: center;
+    :root {
+      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
+      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
+      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+      --shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
+      --violet:#7c3aed; --radius:10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      font-size:14px;-webkit-font-smoothing:antialiased;padding:2rem 1.5rem;
+    }
+    input,button{font-family:inherit}
+    a{text-decoration:none;color:inherit}
+
+    .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:0}
+
+    /* Logo */
+    .logo{
+      font-size:1.5rem;font-weight:900;letter-spacing:-.04em;color:var(--t1);
+      margin-bottom:.25rem;text-align:center;
+    }
+    .logo span{color:var(--violet)}
+    .logo-sub{
+      font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+      color:var(--t3);margin-bottom:2.5rem;text-align:center;
     }
 
-    .hero-logo {
-      display: flex; align-items: center; gap: .75rem;
-      margin-bottom: 2.5rem;
+    /* Card */
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:2rem;width:100%;
+      box-shadow:var(--shadow-lg);
     }
-    .hero-logo-mark {
-      width: 3.5rem; height: 3.5rem;
-      background: var(--grad);
-      border-radius: 1rem;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 1.2rem; color: #fff;
-      box-shadow: 0 16px 48px rgba(124,58,237,.5);
+    .card-top{
+      height:3px;background:linear-gradient(90deg,#7c3aed,#6366f1,#3b82f6);
+      border-radius:16px 16px 0 0;margin:-2rem -2rem 1.75rem;
     }
-    .hero-logo-text { text-align: left; }
-    .hero-logo-name { font-size: 1.6rem; font-weight: 900; letter-spacing: -.04em; line-height: 1; }
-    .hero-logo-name span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .hero-logo-sub { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text2); margin-top: .1rem; }
+    .card-title{font-size:.92rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-.02em}
+    .card-desc{font-size:.78rem;color:var(--t3);margin-bottom:1.5rem;line-height:1.6}
 
-    .hero-title {
-      font-size: 2rem; font-weight: 900; letter-spacing: -.04em;
-      line-height: 1.15; margin-bottom: .875rem;
+    /* Input row */
+    label.field-label{
+      display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;
+      letter-spacing:.07em;color:var(--t3);margin-bottom:.3rem;
     }
-    .hero-title .hl { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .hero-desc { color: var(--text2); font-size: .9rem; margin-bottom: 2.5rem; line-height: 1.7; }
-
-    .slug-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.75rem;
-      width: 100%;
-      box-shadow: var(--shadow-lg);
+    .slug-row{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+    .slug-row:focus-within{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+    .slug-prefix{
+      padding:.6rem .75rem;background:#f7f8fb;font-size:.78rem;color:var(--t3);
+      border-right:1px solid var(--border);white-space:nowrap;font-family:'DM Mono',monospace;
     }
-    .slug-card label {
-      display: block;
-      font-size: .7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .08em;
-      color: var(--text2); margin-bottom: .5rem;
-    }
-    .slug-input-row { display: flex; gap: .5rem; }
-    .slug-prefix {
-      background: var(--bg4);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-      padding: .625rem .875rem;
-      color: var(--text3); font-size: .8rem;
-      white-space: nowrap; align-self: stretch;
-      display: flex; align-items: center;
-      border-right: none;
-    }
-    .slug-input-row input {
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      flex: 1;
+    .slug-row input{
+      flex:1;padding:.6rem .75rem;border:none;outline:none;font-size:.85rem;
+      color:var(--t1);background:transparent;font-family:'DM Mono',monospace;
     }
 
-    .features-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: .75rem; margin-top: 2rem; width: 100%;
+    .btn-access{
+      width:100%;margin-top:.875rem;padding:.72rem;border:none;border-radius:8px;
+      background:var(--violet);color:#fff;font-size:.85rem;font-weight:700;
+      cursor:pointer;transition:background .15s,transform .1s;
     }
-    .feature-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.125rem;
-      text-align: left;
-      transition: border-color .18s;
-    }
-    .feature-card:hover { border-color: rgba(124,58,237,.3); }
-    .feature-icon { font-size: 1.25rem; margin-bottom: .5rem; }
-    .feature-name { font-size: .8rem; font-weight: 700; margin-bottom: .2rem; }
-    .feature-desc { font-size: .72rem; color: var(--text2); line-height: 1.5; }
+    .btn-access:hover{background:#6d28d9}
+    .btn-access:active{transform:scale(.99)}
+    .hint{font-size:.72rem;color:var(--t3);margin-top:.5rem;text-align:center}
 
-    .hero-footer { margin-top: 2rem; font-size: .75rem; color: var(--text3); }
+    /* Feature grid */
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:1.5rem;width:100%}
+    .feat{
+      background:var(--card);border:1px solid var(--border);border-radius:10px;
+      padding:.875rem 1rem;transition:border-color .15s,box-shadow .15s;
+    }
+    .feat:hover{border-color:rgba(124,58,237,.3);box-shadow:var(--shadow)}
+    .feat-name{font-size:.78rem;font-weight:700;margin-bottom:.2rem;color:var(--t1)}
+    .feat-desc{font-size:.7rem;color:var(--t3);line-height:1.5}
+
+    .footer{margin-top:1.75rem;font-size:.72rem;color:var(--t4);text-align:center}
   </style>
 </head>
 <body>
-<div class="page-center">
-  <div class="hero-wrap">
-    <div class="hero-logo">
-      <div class="hero-logo-mark">A1</div>
-      <div class="hero-logo-text">
-        <div class="hero-logo-name">ALPHA <span>ONE</span></div>
-        <div class="hero-logo-sub">CRM Imobiliário</div>
-      </div>
+<div class="wrap">
+
+  <div class="logo">CORBAN <span>OS</span></div>
+  <div class="logo-sub">Sistema Operacional do Correspondente Bancário</div>
+
+  <div class="card">
+    <div class="card-top"></div>
+    <div class="card-title">Acesse sua conta</div>
+    <div class="card-desc">Informe o identificador da sua empresa para continuar.</div>
+
+    <label class="field-label">Identificador da empresa</label>
+    <div class="slug-row">
+      <div class="slug-prefix">corbanos.app/</div>
+      <input id="slug-input" type="text" placeholder="construtora-abc"
+             autocomplete="off" spellcheck="false">
     </div>
+    <button class="btn-access" onclick="goToLogin()">Acessar minha conta →</button>
+    <p class="hint">O identificador é fornecido pelo administrador do sistema</p>
+  </div>
 
-    <h1 class="hero-title">
-      Gerencie repasse e registro<br>
-      <span class="hl">em um único lugar</span>
-    </h1>
-    <p class="hero-desc">
-      Pipeline, parceiros, documentos e histórico — tudo integrado.<br>
-      Multi-tenant, seguro e pronto para escalar.
-    </p>
-
-    <div class="slug-card">
-      <label>Identificador da sua empresa</label>
-      <div class="slug-input-row">
-        <div class="slug-prefix">alphaone.app/</div>
-        <input id="slug-input" type="text" placeholder="construtora-abc"
-               autocomplete="off" spellcheck="false" style="border-radius:0 var(--radius-sm) var(--radius-sm) 0">
-      </div>
-      <button class="btn btn-primary btn-full" onclick="goToLogin()" style="margin-top:.875rem;padding:.75rem">
-        Acessar minha conta →
-      </button>
-      <p style="font-size:.72rem;color:var(--text3);margin-top:.625rem;text-align:center">
-        O identificador é fornecido pelo administrador do sistema
-      </p>
+  <div class="features">
+    <div class="feat">
+      <div class="feat-name">Repasse Imobiliário</div>
+      <div class="feat-desc">Pipeline completo da aprovação bancária ao repasse financeiro</div>
     </div>
-
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🔁</div>
-        <div class="feature-name">Gestão de Repasse</div>
-        <div class="feature-desc">Kanban com leitura de PDF, parceiros e metas</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <div class="feature-name">Gestão de Registro</div>
-        <div class="feature-desc">Contratos, workflow visual e importação bancária</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <div class="feature-name">Módulos por plano</div>
-        <div class="feature-desc">Acesso controlado, liberado individualmente</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🏢</div>
-        <div class="feature-name">Multi-empresa</div>
-        <div class="feature-desc">Cada cliente com seus dados totalmente isolados</div>
-      </div>
+    <div class="feat">
+      <div class="feat-name">Registro em Cartório</div>
+      <div class="feat-desc">Gestão de ITBI, protocolos, exigências e matrícula atualizada</div>
+    </div>
+    <div class="feat">
+      <div class="feat-name">Módulos por plano</div>
+      <div class="feat-desc">Acesso controlado, liberado individualmente por tenant</div>
+    </div>
+    <div class="feat">
+      <div class="feat-name">Multi-empresa</div>
+      <div class="feat-desc">Dados totalmente isolados com Row-Level Security</div>
     </div>
   </div>
+
+  <div class="footer">CORBAN OS &mdash; Todos os direitos reservados</div>
 </div>
 
 <script>
   const saved = localStorage.getItem('a1_slug');
   const token = localStorage.getItem('a1_token');
-  if (saved && token) window.location.href = `/${saved}/dashboard`;
+  if (saved && token) window.location.href = `/${saved}/repasse`;
 
   document.getElementById('slug-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') goToLogin();

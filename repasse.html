@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Repasse — ALPHA ONE</title>
+  <title>Repasse — CORBAN OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -367,7 +367,7 @@
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-logo">ALPHA <span>ONE</span></div>
+    <div class="hdr-logo">CORBAN <span>OS</span></div>
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
@@ -389,6 +389,7 @@
       </div>
     </div>
 
+    <a class="tab-btn" id="tab-registro-link" href="">Registro</a>
     <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
   </div>
 </div>
@@ -901,6 +902,7 @@ async function init() {
   document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('tab-registro-link').href = `/${G.slug}/registro`;
 
   await loadData();
   renderDashboard();
