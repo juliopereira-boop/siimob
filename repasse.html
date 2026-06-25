@@ -2089,6 +2089,7 @@ async function saveEmpresa() {
   const name = document.getElementById('ce-f-name').value.trim();
   if (!name) { toast('Nome da empresa e obrigatorio','error'); return; }
   const payload = {
+    tenant_id: G.user.tenant_id,
     name,
     cnpj:     document.getElementById('ce-f-cnpj').value.trim(),
     email:    document.getElementById('ce-f-email').value.trim(),
