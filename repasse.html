@@ -586,12 +586,11 @@
           </div>
           <div class="cfg-card-label">Regionais</div>
         </div>
-        <div class="cfg-hub-card cfg-disabled">
-          <div class="cfg-hub-icon" style="background:#f1f5f9">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        <div class="cfg-hub-card" onclick="openCfgView('empreendimentos')">
+          <div class="cfg-hub-icon" style="background:#e0f2fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg>
           </div>
           <div class="cfg-card-label">Empreendimentos</div>
-          <div class="cfg-card-soon">Em breve</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
           <div class="cfg-hub-icon" style="background:#fef3c7">
@@ -676,46 +675,141 @@
       </div>
     </div>
 
+    <!-- ─── Sub-view: Empreendimentos ─── -->
+    <div id="cfg-view-empreendimentos" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Empreendimentos</div>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openEmprModal()">+ Novo empreendimento</button>
+      </div>
+
+      <!-- Empreendimento list -->
+      <div id="empr-list-panel" class="panel" style="padding:1rem;margin-bottom:1rem">
+        <div id="empr-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+      </div>
+
+      <!-- Create / edit panel -->
+      <div id="empr-form-panel" class="panel" style="padding:1.25rem;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.875rem;border-bottom:1px solid var(--border)">
+          <div style="font-size:.88rem;font-weight:800" id="empr-form-title">Novo empreendimento</div>
+          <button class="cfg-back-btn" onclick="closeEmprForm()">Fechar</button>
+        </div>
+        <div class="form-grid" style="max-width:720px;margin-bottom:.875rem">
+          <div class="form-group full"><label>Nome do empreendimento *</label>
+            <input id="empr-f-name" type="text" placeholder="Residencial das Flores" oninput="emprPreview()">
+          </div>
+          <div class="form-group"><label>Regional</label>
+            <select id="empr-f-regional" onchange="emprPreview()">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Tipo</label>
+            <div style="display:flex;gap:.35rem;margin-top:.1rem">
+              <button type="button" id="empr-tipo-blocos" class="btn btn-primary btn-sm" onclick="setEmprTipo('blocos')" style="flex:1">Blocos</button>
+              <button type="button" id="empr-tipo-quadras" class="btn btn-ghost btn-sm" onclick="setEmprTipo('quadras')" style="flex:1">Quadras</button>
+            </div>
+          </div>
+          <div class="form-group"><label id="empr-qtd-label">Qtd. Blocos</label>
+            <input id="empr-f-qtd" type="number" min="1" max="99" value="1" oninput="emprPreview()">
+          </div>
+          <div class="form-group"><label>Pavimentos</label>
+            <input id="empr-f-pav" type="number" min="1" max="50" value="1" oninput="emprPreview()">
+          </div>
+          <div class="form-group"><label>Unidades / Pavimento</label>
+            <input id="empr-f-upf" type="number" min="1" max="99" value="4" oninput="emprPreview()">
+          </div>
+        </div>
+
+        <!-- Live preview -->
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Pré-visualização das unidades</div>
+          <div id="empr-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">
+            —
+          </div>
+          <div style="margin-top:.35rem;font-size:.68rem;color:var(--t3)" id="empr-total-label"></div>
+        </div>
+
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-primary" id="empr-save-btn" onclick="saveEmpreendimento()">Cadastrar Unidades</button>
+          <div id="empr-err" style="font-size:.78rem;color:#dc2626;display:none"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ─── Sub-view: Correspondentes / CCA ─── -->
     <div id="cfg-view-correspondentes" style="display:none">
       <div class="cfg-view-hdr">
         <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
         <div class="cfg-view-title">Correspondentes / CCA</div>
       </div>
-      <div class="panel">
-        <div style="padding:1rem 1rem .25rem">
-          <div class="pt-toolbar">
-            <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." oninput="ptFilter()">
-            <select id="pt-type" onchange="ptFilter()">
-              <option value="">Todos os tipos</option>
-              <option value="correspondente">Correspondente</option>
-              <option value="imobiliaria">Imobiliaria</option>
-              <option value="corretor">Corretor</option>
-              <option value="cca">CCA</option>
-              <option value="despachante">Despachante</option>
-            </select>
-            <select id="pt-status" onchange="ptFilter()">
-              <option value="">Todos</option>
-              <option value="active">Ativos</option>
-              <option value="pending">Pendentes</option>
-              <option value="inactive">Inativos</option>
-            </select>
-            <div style="flex:1"></div>
-            <button class="btn btn-primary btn-sm" onclick="openPartnerModal()">+ Novo cadastro</button>
+
+      <!-- Inner tab row -->
+      <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:420px">
+        <button id="corr-tab-empresas" class="btn" style="flex:1;background:#fff;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1);cursor:pointer" onclick="switchCorrTab('empresas')">Empresas Correspondentes</button>
+        <button id="corr-tab-usuarios" class="btn" style="flex:1;background:none;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer" onclick="switchCorrTab('usuarios')">Usuários Correspondentes</button>
+      </div>
+
+      <!-- ── Empresas Correspondentes ── -->
+      <div id="corr-panel-empresas">
+        <div class="panel">
+          <div style="padding:1rem 1rem .25rem">
+            <div class="pt-toolbar">
+              <input type="search" id="ce-search" placeholder="Buscar por nome ou CNPJ..." oninput="ceFilter()">
+              <select id="ce-status" onchange="ceFilter()">
+                <option value="">Todos</option>
+                <option value="active">Ativas</option>
+                <option value="inactive">Inativas</option>
+              </select>
+              <div style="flex:1"></div>
+              <button class="btn btn-primary btn-sm" onclick="openEmpresaModal()">+ Nova empresa</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="pt-table">
+              <thead><tr>
+                <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Regional</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="ce-tbody"><tr><td colspan="7" class="pt-empty">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pt-pg">
+            <span id="ce-count">—</span>
+            <div class="pt-pg-btns" id="ce-pg-btns"></div>
           </div>
         </div>
-        <div style="overflow-x:auto">
-          <table class="pt-table">
-            <thead><tr>
-              <th>Nome</th><th>Tipo</th><th>CPF / CNPJ</th><th>E-mail</th>
-              <th>Telefone</th><th>Regional</th><th>Status</th><th></th>
-            </tr></thead>
-            <tbody id="pt-tbody"><tr><td colspan="8" class="pt-empty">Carregando...</td></tr></tbody>
-          </table>
-        </div>
-        <div class="pt-pg">
-          <span id="pt-count">—</span>
-          <div class="pt-pg-btns" id="pt-pg-btns"></div>
+      </div>
+
+      <!-- ── Usuários Correspondentes ── -->
+      <div id="corr-panel-usuarios" style="display:none">
+        <div class="panel">
+          <div style="padding:1rem 1rem .25rem">
+            <div class="pt-toolbar">
+              <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." oninput="ptFilter()">
+              <select id="pt-empresa" onchange="ptFilter()">
+                <option value="">Todas as empresas</option>
+              </select>
+              <select id="pt-status" onchange="ptFilter()">
+                <option value="">Todos</option>
+                <option value="active">Ativos</option>
+                <option value="pending">Pendentes</option>
+                <option value="inactive">Inativos</option>
+              </select>
+              <div style="flex:1"></div>
+              <button class="btn btn-primary btn-sm" onclick="openPartnerModal()">+ Novo usuário</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="pt-table">
+              <thead><tr>
+                <th>Nome</th><th>CPF</th><th>E-mail</th><th>Telefone</th><th>Empresa</th><th>Regional</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="pt-tbody"><tr><td colspan="8" class="pt-empty">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pt-pg">
+            <span id="pt-count">—</span>
+            <div class="pt-pg-btns" id="pt-pg-btns"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -836,17 +930,13 @@
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>Nome *</label><input id="pt-f-name" type="text" placeholder="Nome completo ou razao social"></div>
-        <div class="form-group"><label>Tipo *</label>
-          <select id="pt-f-type">
-            <option value="correspondente">Correspondente</option>
-            <option value="imobiliaria">Imobiliaria</option>
-            <option value="corretor">Corretor</option>
-            <option value="cca">CCA</option>
-            <option value="despachante">Despachante</option>
+        <div class="form-group full"><label>Nome *</label><input id="pt-f-name" type="text" placeholder="Nome completo"></div>
+        <div class="form-group full"><label>Empresa correspondente *</label>
+          <select id="pt-f-empresa">
+            <option value="">Selecione a empresa...</option>
           </select>
         </div>
-        <div class="form-group"><label>CPF / CNPJ</label><input id="pt-f-cpf" type="text" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>CPF</label><input id="pt-f-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
         <div class="form-group"><label>E-mail</label><input id="pt-f-email" type="email" placeholder="email@exemplo.com"></div>
         <div class="form-group"><label>Telefone</label><input id="pt-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
         <div class="form-group"><label>Regional</label><input id="pt-f-region" type="text" placeholder="Ex.: SP - Interior"></div>
@@ -870,6 +960,35 @@
     </div>
   </div>
 </div>
+<!-- ═══════ MODAL: Empresa Correspondente ═══════ -->
+<div class="modal-bg hidden" id="modal-empresa-bg">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="empresa-modal-title">Nova empresa correspondente</div>
+      <button class="modal-close" onclick="closeModal('modal-empresa-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Razão Social *</label><input id="ce-f-name" type="text" placeholder="Correspondente Bancário Ltda"></div>
+        <div class="form-group"><label>CNPJ</label><input id="ce-f-cnpj" type="text" placeholder="00.000.000/0000-00"></div>
+        <div class="form-group"><label>E-mail</label><input id="ce-f-email" type="email" placeholder="contato@empresa.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="ce-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Regional</label><input id="ce-f-regional" type="text" placeholder="Ex.: SP - Capital"></div>
+        <div class="form-group full"><label>Endereço</label><input id="ce-f-address" type="text" placeholder="Rua, número, cidade - UF"></div>
+        <div class="form-group full" style="flex-direction:row;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="ce-f-active" checked> Ativa
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-empresa-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="ce-save-btn" onclick="saveEmpresa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="fluxo-popup hidden" id="fluxo-popup"></div>
 <div id="toast-wrap"></div>
 
@@ -889,9 +1008,15 @@ const G = {
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
   dashFilters: { regional:'', empr:'', parceiro:'', re:'', search:'' },
-  // partners / cadastros
+  // partners / usuários correspondentes
   partners: [], ptFiltered: [], ptPage: 0, ptPerPage: 25,
   editingPartnerId: null, partnersLoaded: false,
+  // empresas correspondentes
+  empresas: [], ceFiltered: [], cePage: 0, cePerPage: 25,
+  editingEmpresaId: null, empresasLoaded: false,
+  // empreendimentos
+  empreendimentos: [], emprLoaded: false, editingEmprId: null,
+  emprTipo: 'blocos',
 };
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -959,7 +1084,7 @@ function switchTab(tab, el) {
 }
 
 // ─── Config sub-views ─────────────────────────────────────────────────────────
-const CFG_VIEWS = ['wf', 'flags', 'regionais', 'correspondentes'];
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'correspondentes'];
 
 function openCfgView(name) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -967,6 +1092,8 @@ function openCfgView(name) {
     document.getElementById('cfg-view-'+v).style.display = v===name ? '' : 'none'
   );
   if (name === 'correspondentes' && !G.partnersLoaded) loadPartners();
+  if (name === 'correspondentes' && !G.empresasLoaded) loadEmpresas();
+  if (name === 'empreendimentos' && !G.emprLoaded) loadEmpreendimentos();
 }
 
 function closeCfgView() {
@@ -1613,11 +1740,11 @@ async function loadPartners() {
 }
 
 function ptFilter() {
-  const q      = (document.getElementById('pt-search')?.value||'').toLowerCase();
-  const type   = document.getElementById('pt-type')?.value||'';
-  const status = document.getElementById('pt-status')?.value||'';
+  const q        = (document.getElementById('pt-search')?.value||'').toLowerCase();
+  const empresaId= document.getElementById('pt-empresa')?.value||'';
+  const status   = document.getElementById('pt-status')?.value||'';
   G.ptFiltered = G.partners.filter(p => {
-    if (type && p.type !== type) return false;
+    if (empresaId && p.empresa_id !== empresaId) return false;
     if (status === 'active'   && !(p.is_active && p.approved)) return false;
     if (status === 'pending'  && !(p.is_active && !p.approved)) return false;
     if (status === 'inactive' && p.is_active) return false;
@@ -1648,12 +1775,13 @@ function renderPartnerTable() {
       : p.is_active && !p.approved
         ? `<span class="pt-status"><span class="pt-dot pt-dot-yellow"></span>Pendente</span>`
         : `<span class="pt-status"><span class="pt-dot pt-dot-red"></span>Inativo</span>`;
+    const empresa = G.empresas.find(e=>e.id===p.empresa_id);
     return `<tr>
       <td style="font-weight:600">${esc(p.name)}</td>
-      <td><span class="pt-type pt-type-${p.type||'correspondente'}">${esc(p.type||'—')}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${esc(p.cpf||'—')}</td>
       <td>${esc(p.email||'—')}</td>
       <td>${esc(p.phone||'—')}</td>
+      <td>${empresa ? esc(empresa.name) : '<span style="color:var(--t3)">—</span>'}</td>
       <td>${esc(p.region||'—')}</td>
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
@@ -1686,9 +1814,12 @@ function ptGo(n) { G.ptPage=n; renderPartnerTable(); }
 function openPartnerModal(id) {
   const p = id ? G.partners.find(x=>x.id===id) : null;
   G.editingPartnerId = p ? p.id : null;
-  document.getElementById('partner-modal-title').textContent = p ? 'Editar cadastro' : 'Novo cadastro';
+  document.getElementById('partner-modal-title').textContent = p ? 'Editar usuário' : 'Novo usuário correspondente';
+  // populate empresa select
+  const sel = document.getElementById('pt-f-empresa');
+  sel.innerHTML = '<option value="">Selecione a empresa...</option>' +
+    G.empresas.map(e=>`<option value="${e.id}"${p?.empresa_id===e.id?' selected':''}>${esc(e.name)}</option>`).join('');
   document.getElementById('pt-f-name').value     = p?.name    || '';
-  document.getElementById('pt-f-type').value     = p?.type    || 'correspondente';
   document.getElementById('pt-f-cpf').value      = p?.cpf     || '';
   document.getElementById('pt-f-email').value    = p?.email   || '';
   document.getElementById('pt-f-phone').value    = p?.phone   || '';
@@ -1700,17 +1831,20 @@ function openPartnerModal(id) {
 }
 
 async function savePartner() {
-  const name   = document.getElementById('pt-f-name').value.trim();
+  const name      = document.getElementById('pt-f-name').value.trim();
+  const empresaId = document.getElementById('pt-f-empresa').value;
   if (!name) { toast('Nome e obrigatorio','error'); return; }
+  if (!empresaId) { toast('Selecione a empresa correspondente','error'); return; }
   const payload = {
     name,
-    type:      document.getElementById('pt-f-type').value,
-    cpf:       document.getElementById('pt-f-cpf').value.trim(),
-    email:     document.getElementById('pt-f-email').value.trim(),
-    phone:     document.getElementById('pt-f-phone').value.trim(),
-    region:    document.getElementById('pt-f-region').value.trim(),
-    is_active: document.getElementById('pt-f-active').checked,
-    approved:  document.getElementById('pt-f-approved').checked,
+    type:       'cca',
+    empresa_id: empresaId,
+    cpf:        document.getElementById('pt-f-cpf').value.trim(),
+    email:      document.getElementById('pt-f-email').value.trim(),
+    phone:      document.getElementById('pt-f-phone').value.trim(),
+    region:     document.getElementById('pt-f-region').value.trim(),
+    is_active:  document.getElementById('pt-f-active').checked,
+    approved:   document.getElementById('pt-f-approved').checked,
   };
   const pwd = document.getElementById('pt-f-password').value;
   if (pwd) payload.password_hash = await sha256(pwd + '::a1');
@@ -1756,6 +1890,297 @@ async function deletePartner(id, name) {
 async function sha256(msg) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ─── Correspondentes – inner tab switcher ─────────────────────────────────────
+function switchCorrTab(tab) {
+  const isEmpresas = tab === 'empresas';
+  document.getElementById('corr-panel-empresas').style.display  = isEmpresas ? '' : 'none';
+  document.getElementById('corr-panel-usuarios').style.display  = isEmpresas ? 'none' : '';
+  const btnE = document.getElementById('corr-tab-empresas');
+  const btnU = document.getElementById('corr-tab-usuarios');
+  btnE.style.background   = isEmpresas ? '#fff' : 'none';
+  btnE.style.color        = isEmpresas ? 'var(--t1)' : 'var(--t3)';
+  btnE.style.boxShadow    = isEmpresas ? '0 1px 4px rgba(0,0,0,.1)' : 'none';
+  btnU.style.background   = !isEmpresas ? '#fff' : 'none';
+  btnU.style.color        = !isEmpresas ? 'var(--t1)' : 'var(--t3)';
+  btnU.style.boxShadow    = !isEmpresas ? '0 1px 4px rgba(0,0,0,.1)' : 'none';
+}
+
+// ─── Empresas Correspondentes ─────────────────────────────────────────────────
+async function loadEmpresas() {
+  G.empresasLoaded = true;
+  G.empresas = await fetch(`${A1.rest('a1_corr_empresas')}?order=name.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  ceFilter();
+  // populate empresa selects in partner modal and filter
+  const opts = G.empresas.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  const sel  = document.getElementById('pt-empresa');
+  if (sel) sel.innerHTML = '<option value="">Todas as empresas</option>' + opts;
+}
+
+function ceFilter() {
+  const q      = (document.getElementById('ce-search')?.value||'').toLowerCase();
+  const status = document.getElementById('ce-status')?.value||'';
+  G.ceFiltered = G.empresas.filter(e => {
+    if (status === 'active'   && !e.is_active) return false;
+    if (status === 'inactive' && e.is_active)  return false;
+    if (q) { const hay=`${e.name} ${e.cnpj||''}`.toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  G.cePage = 0;
+  renderEmpresaTable();
+}
+
+function renderEmpresaTable() {
+  const tbody = document.getElementById('ce-tbody');
+  const total = G.ceFiltered.length;
+  const start = G.cePage * G.cePerPage;
+  const page  = G.ceFiltered.slice(start, start + G.cePerPage);
+  document.getElementById('ce-count').textContent =
+    total === 0 ? 'Nenhum resultado' : `${start+1}–${Math.min(start+page.length, total)} de ${total}`;
+  if (!page.length) { tbody.innerHTML = `<tr><td colspan="7" class="pt-empty">Nenhuma empresa encontrada.</td></tr>`; return; }
+  tbody.innerHTML = page.map(e => {
+    const st = e.is_active
+      ? `<span class="pt-status"><span class="pt-dot pt-dot-green"></span>Ativa</span>`
+      : `<span class="pt-status"><span class="pt-dot pt-dot-red"></span>Inativa</span>`;
+    return `<tr>
+      <td style="font-weight:600">${esc(e.name)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:.73rem">${esc(e.cnpj||'—')}</td>
+      <td>${esc(e.email||'—')}</td>
+      <td>${esc(e.phone||'—')}</td>
+      <td>${esc(e.regional||'—')}</td>
+      <td>${st}</td>
+      <td><div style="display:flex;gap:.3rem">
+        <button class="pt-act" onclick="openEmpresaModal('${e.id}')">Editar</button>
+        <button class="pt-act danger" onclick="deleteEmpresa('${e.id}','${esc(e.name)}')">Excluir</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openEmpresaModal(id) {
+  const e = id ? G.empresas.find(x=>x.id===id) : null;
+  G.editingEmpresaId = e ? e.id : null;
+  document.getElementById('empresa-modal-title').textContent = e ? 'Editar empresa' : 'Nova empresa correspondente';
+  document.getElementById('ce-f-name').value     = e?.name     || '';
+  document.getElementById('ce-f-cnpj').value     = e?.cnpj     || '';
+  document.getElementById('ce-f-email').value    = e?.email    || '';
+  document.getElementById('ce-f-phone').value    = e?.phone    || '';
+  document.getElementById('ce-f-regional').value = e?.regional || '';
+  document.getElementById('ce-f-address').value  = e?.address  || '';
+  document.getElementById('ce-f-active').checked = e ? !!e.is_active : true;
+  document.getElementById('modal-empresa-bg').classList.remove('hidden');
+}
+
+async function saveEmpresa() {
+  const name = document.getElementById('ce-f-name').value.trim();
+  if (!name) { toast('Nome da empresa e obrigatorio','error'); return; }
+  const payload = {
+    name,
+    cnpj:     document.getElementById('ce-f-cnpj').value.trim(),
+    email:    document.getElementById('ce-f-email').value.trim(),
+    phone:    document.getElementById('ce-f-phone').value.trim(),
+    regional: document.getElementById('ce-f-regional').value.trim(),
+    address:  document.getElementById('ce-f-address').value.trim(),
+    is_active:document.getElementById('ce-f-active').checked,
+  };
+  const btn = document.getElementById('ce-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    if (G.editingEmpresaId) {
+      const res = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${G.editingEmpresaId}`, {
+        method:'PATCH', headers: A1.upsertHeaders(), body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      const idx = G.empresas.findIndex(e=>e.id===G.editingEmpresaId);
+      if (idx!==-1) G.empresas[idx] = {...G.empresas[idx], ...payload};
+      toast('Empresa atualizada','success');
+    } else {
+      const [created] = await fetch(A1.rest('a1_corr_empresas'), {
+        method:'POST', headers: A1.returnHeaders(), body: JSON.stringify(payload)
+      }).then(r=>r.json());
+      if (!created) throw new Error('no data');
+      G.empresas.push(created);
+      G.empresas.sort((a,b)=>a.name.localeCompare(b.name));
+      toast('Empresa criada','success');
+    }
+    ceFilter();
+    // refresh empresa selects
+    const opts = G.empresas.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+    const sel = document.getElementById('pt-empresa');
+    if (sel) sel.innerHTML = '<option value="">Todas as empresas</option>' + opts;
+    closeModal('modal-empresa-bg');
+  } catch {
+    toast('Erro ao salvar empresa.','error');
+  } finally {
+    btn.disabled=false; btn.textContent='Salvar';
+  }
+}
+
+async function deleteEmpresa(id, name) {
+  if (!confirm(`Excluir a empresa "${name}"? Todos os usuários vinculados perderão a associação.`)) return;
+  const res = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
+  if (res.ok || res.status===204) {
+    G.empresas = G.empresas.filter(e=>e.id!==id);
+    ceFilter(); toast('Empresa removida','info');
+  } else toast('Erro ao remover empresa','error');
+}
+
+// ─── Empreendimentos ──────────────────────────────────────────────────────────
+async function loadEmpreendimentos() {
+  G.emprLoaded = true;
+  G.empreendimentos = await fetch(`${A1.rest('a1_developments')}?order=name.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  renderEmprList();
+  // Populate regional dropdown in empreendimento form
+  const regs = [...new Set(G.stages.map(s=>s.group_key).filter(Boolean))];
+  const sel  = document.getElementById('empr-f-regional');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      regs.map(r=>`<option value="${r}">${r}</option>`).join('');
+  }
+}
+
+function renderEmprList() {
+  const el = document.getElementById('empr-list');
+  if (!G.empreendimentos.length) {
+    el.innerHTML = `<div style="color:var(--t3);font-size:.77rem;text-align:center;padding:1.5rem 0">Nenhum empreendimento cadastrado.</div>`;
+    return;
+  }
+  el.innerHTML = `<table class="pt-table">
+    <thead><tr><th>Nome</th><th>Regional</th><th>Tipo</th><th>Unidades</th><th></th></tr></thead>
+    <tbody>${G.empreendimentos.map(d => `<tr>
+      <td style="font-weight:600">${esc(d.name)}</td>
+      <td>${esc(d.regional||'—')}</td>
+      <td><span class="pt-type" style="background:#e0f2fe;color:#0284c7">${d.tipo||'blocos'}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count||0} unidades</td>
+      <td><button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${esc(d.name)}')">Excluir</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function openEmprModal() {
+  G.editingEmprId = null;
+  document.getElementById('empr-form-title').textContent = 'Novo empreendimento';
+  document.getElementById('empr-f-name').value = '';
+  document.getElementById('empr-f-qtd').value  = '1';
+  document.getElementById('empr-f-pav').value  = '1';
+  document.getElementById('empr-f-upf').value  = '4';
+  document.getElementById('empr-f-regional').value = '';
+  document.getElementById('empr-err').style.display = 'none';
+  G.emprTipo = 'blocos';
+  setEmprTipo('blocos');
+  document.getElementById('empr-list-panel').style.display = 'none';
+  document.getElementById('empr-form-panel').style.display = '';
+  emprPreview();
+}
+
+function closeEmprForm() {
+  document.getElementById('empr-list-panel').style.display = '';
+  document.getElementById('empr-form-panel').style.display = 'none';
+}
+
+function setEmprTipo(tipo) {
+  G.emprTipo = tipo;
+  const isBlocos = tipo === 'blocos';
+  document.getElementById('empr-tipo-blocos').className  = isBlocos ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  document.getElementById('empr-tipo-quadras').className = !isBlocos ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  document.getElementById('empr-qtd-label').textContent  = isBlocos ? 'Qtd. Blocos' : 'Qtd. Quadras';
+  emprPreview();
+}
+
+function emprPreview() {
+  const qtd  = Math.max(1, parseInt(document.getElementById('empr-f-qtd')?.value)||1);
+  const pav  = Math.max(1, parseInt(document.getElementById('empr-f-pav')?.value)||1);
+  const upf  = Math.max(1, parseInt(document.getElementById('empr-f-upf')?.value)||1);
+  const tipo = G.emprTipo;
+  const prefix = tipo === 'blocos' ? 'B' : 'Q';
+  const label  = tipo === 'blocos' ? 'BLOCO' : 'QUADRA';
+  const total  = qtd * pav * upf;
+
+  let html = '';
+  for (let b=1; b<=Math.min(qtd, 3); b++) {
+    const units = [];
+    for (let p=1; p<=pav; p++) {
+      for (let u=1; u<=upf; u++) {
+        const seq = ((p-1)*upf + u).toString().padStart(3,'0');
+        units.push(`${prefix}${b}-${seq}`);
+      }
+    }
+    const shown = units.slice(0,8).join('  ');
+    const more  = units.length > 8 ? ` <span style="color:var(--t3)">+${units.length-8} mais</span>` : '';
+    html += `<div style="margin-bottom:.5rem"><span style="font-weight:700;color:var(--t1)">${label} ${b}:</span>  ${shown}${more}</div>`;
+  }
+  if (qtd > 3) html += `<div style="color:var(--t3)">... e mais ${qtd-3} ${tipo === 'blocos' ? 'blocos' : 'quadras'}</div>`;
+
+  document.getElementById('empr-preview').innerHTML = html || '—';
+  const lbl = document.getElementById('empr-total-label');
+  if (lbl) lbl.textContent = `Total: ${total} unidades (${qtd} ${label.toLowerCase()}${qtd>1?'s':''} × ${pav} pav. × ${upf} un./pav.)`;
+}
+
+async function saveEmpreendimento() {
+  const name = document.getElementById('empr-f-name').value.trim();
+  if (!name) { showEmprErr('Informe o nome do empreendimento'); return; }
+  const qtd  = parseInt(document.getElementById('empr-f-qtd').value)||1;
+  const pav  = parseInt(document.getElementById('empr-f-pav').value)||1;
+  const upf  = parseInt(document.getElementById('empr-f-upf').value)||1;
+
+  const units = [];
+  const prefix = G.emprTipo === 'blocos' ? 'B' : 'Q';
+  for (let b=1; b<=qtd; b++) {
+    for (let p=1; p<=pav; p++) {
+      for (let u=1; u<=upf; u++) {
+        const seq = ((p-1)*upf + u).toString().padStart(3,'0');
+        units.push(`${prefix}${b}-${seq}`);
+      }
+    }
+  }
+
+  const payload = {
+    name,
+    tipo:       G.emprTipo,
+    regional:   document.getElementById('empr-f-regional').value,
+    qtd_blocos: qtd,
+    pavimentos: pav,
+    unidades_pav: upf,
+    unit_count: units.length,
+    units:      units,
+    tenant_id:  G.user.tenant_id,
+  };
+
+  const btn = document.getElementById('empr-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const [created] = await fetch(A1.rest('a1_developments'), {
+      method:'POST', headers: A1.returnHeaders(), body: JSON.stringify(payload)
+    }).then(r=>r.json());
+    if (!created) throw new Error('no data');
+    G.empreendimentos.push(created);
+    G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name));
+    renderEmprList();
+    closeEmprForm();
+    toast(`"${name}" cadastrado com ${units.length} unidades.`,'success');
+  } catch {
+    showEmprErr('Erro ao salvar. Verifique os dados e tente novamente.');
+  } finally {
+    btn.disabled=false; btn.textContent='Cadastrar Unidades';
+  }
+}
+
+function showEmprErr(msg) {
+  const el = document.getElementById('empr-err');
+  el.textContent = msg; el.style.display = '';
+  setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+
+async function deleteEmpreendimento(id, name) {
+  if (!confirm(`Excluir o empreendimento "${name}"? Esta acao nao pode ser desfeita.`)) return;
+  const res = await fetch(`${A1.rest('a1_developments')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
+  if (res.ok || res.status===204) {
+    G.empreendimentos = G.empreendimentos.filter(d=>d.id!==id);
+    renderEmprList(); toast('Empreendimento removido','info');
+  } else toast('Erro ao remover','error');
 }
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────

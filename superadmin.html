@@ -202,6 +202,14 @@
           <div class="form-group"><label>Slug (URL) *</label><input id="n-slug" placeholder="construtora-abc"></div>
           <div class="form-group"><label>E-mail *</label><input id="n-email" type="email" placeholder="contato@empresa.com"></div>
           <div class="form-group"><label>CNPJ</label><input id="n-cnpj" placeholder="00.000.000/0000-00"></div>
+          <div class="form-group"><label>Tipo de cliente *</label>
+            <select id="n-tipo">
+              <option value="construtora">Construtora</option>
+              <option value="imobiliaria">Imobiliária</option>
+              <option value="correspondente_bancario">Correspondente Bancário</option>
+              <option value="despachante">Despachante</option>
+            </select>
+          </div>
           <div class="form-group"><label>Plano</label>
             <select id="n-plan">
               <option value="starter">Starter (3 usuários)</option>
@@ -235,7 +243,7 @@
         <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
           <table>
             <thead><tr>
-              <th>Empresa</th><th>Slug</th><th>Plano</th><th>Usuários</th>
+              <th>Empresa</th><th>Slug</th><th>Tipo</th><th>Plano</th><th>Usuários</th>
               <th>Status</th><th>Trial expira</th><th>Módulos ativos</th><th>Ações</th>
             </tr></thead>
             <tbody id="tenant-tbody">
@@ -452,15 +460,18 @@ function renderTenantsTable(list) {
   _filtered = list;
   const tbody = document.getElementById('tenant-tbody');
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum cliente cadastrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum cliente cadastrado.</td></tr>';
     return;
   }
+  const TIPO_LABELS = { construtora:'Construtora', imobiliaria:'Imobiliária', correspondente_bancario:'Correspondente', despachante:'Despachante' };
   tbody.innerHTML = list.map(t => {
     const tenantMods = ALL_MODULES.filter(m => m.tenant_id === t.id);
     const statusCls  = t.status==='active'?'badge-green':t.status==='trial'?'badge-amber':'badge-red';
+    const tipoLabel  = TIPO_LABELS[t.tipo_cliente] || '—';
     return `<tr>
       <td><span style="font-weight:700">${esc(t.name)}</span></td>
       <td><span class="mono">${esc(t.slug)}</span></td>
+      <td><span style="font-size:.72rem;font-weight:600;color:var(--t2)">${tipoLabel}</span></td>
       <td><span class="badge badge-gray">${esc(t.plan_key)}</span></td>
       <td>
         <input type="number" value="${t.max_users}" min="1" style="width:4rem;border:1px solid var(--border);border-radius:4px;padding:.2rem .4rem;font-size:.75rem;text-align:center"
@@ -615,6 +626,7 @@ async function createTenant() {
   const email     = document.getElementById('n-email').value.trim();
   const plan      = document.getElementById('n-plan').value;
   const cnpj      = document.getElementById('n-cnpj').value.trim();
+  const tipo      = document.getElementById('n-tipo').value;
   const trialDays = parseInt(document.getElementById('n-trial').value) || 0;
   const ownerName = document.getElementById('n-owner-name').value.trim();
   const ownerCpf  = document.getElementById('n-owner-cpf').value.replace(/\D/g,'');
@@ -636,6 +648,7 @@ async function createTenant() {
     headers: saHeaders({ 'Prefer':'return=representation' }),
     body: JSON.stringify({
       name, slug, email, cnpj, plan_key: plan,
+      tipo_cliente: tipo,
       max_users: maxMap[plan] || 5,
       status: trialDays > 0 ? 'trial' : 'active',
       trial_ends_at: trialEndsAt
@@ -665,6 +678,7 @@ async function createTenant() {
   ['n-name','n-slug','n-email','n-cnpj','n-owner-name','n-owner-cpf','n-owner-pw'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('n-tipo').value = 'construtora';
   await loadAll();
 }
 
