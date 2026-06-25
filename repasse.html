@@ -722,8 +722,13 @@ function switchTab(tab, el) {
   ['dashboard','repasse','config'].forEach(t =>
     document.getElementById('tab-'+t).style.display = t===tab?'':'none'
   );
+  const prev = G.activeTab;
   G.activeTab = tab;
   if (tab === 'config' && !G.partnersLoaded) loadPartners();
+  // Reload stage/case data when switching to dashboard or repasse from another tab
+  if ((tab === 'dashboard' || tab === 'repasse') && prev === 'config') {
+    loadData().then(() => { renderDashboard(); renderPipeline(); renderList(); });
+  }
 }
 
 function switchView(view) {
@@ -1455,6 +1460,16 @@ pdfZone.addEventListener('drop',e=>{e.preventDefault();pdfZone.classList.remove(
 document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
 
 init();
+
+// Reload data when the browser tab regains focus (user returns from workflow, another tab, etc.)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && G.user) {
+    loadData().then(() => {
+      renderDashboard();
+      if (G.activeTab === 'repasse') { renderPipeline(); renderList(); }
+    });
+  }
+});
 </script>
 </body>
 </html>

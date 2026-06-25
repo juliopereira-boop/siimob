@@ -334,8 +334,7 @@ let WF_USER  = null;    // current logged-in user (holds tenant_id)
 async function init() {
   try { WF_USER = a1RequireAuth(); } catch { return; }
   const slug = A1.slug;
-  document.getElementById('back-btn').href    = `/${slug}/configuracoes`;
-  document.getElementById('back-btn').onclick = () => history.back();
+  document.getElementById('back-btn').href = `/${slug}/repasse`;
 
   const params = new URLSearchParams(location.search);
   MODULE = params.get('module') || 'repasse';
