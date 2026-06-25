@@ -1956,6 +1956,7 @@ async function savePartner() {
   if (!name) { toast('Nome e obrigatorio','error'); return; }
   if (!empresaId) { toast('Selecione a empresa correspondente','error'); return; }
   const payload = {
+    tenant_id:  G.user.tenant_id,
     name,
     type:       'cca',
     empresa_id: empresaId,
