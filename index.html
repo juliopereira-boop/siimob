@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CORBAN OS — Sistema do Correspondente Bancário</title>
+  <title>CORBAN — Sistema do Correspondente Bancário</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
+      --bg:#F8FAFC; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
       --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
       --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
       --shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
-      --violet:#7c3aed; --radius:10px;
+      --violet:#10B981; --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);
+      font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);
       min-height:100vh;display:flex;align-items:center;justify-content:center;
       font-size:14px;-webkit-font-smoothing:antialiased;padding:2rem 1.5rem;
     }
@@ -44,7 +44,7 @@
       box-shadow:var(--shadow-lg);
     }
     .card-top{
-      height:3px;background:linear-gradient(90deg,#7c3aed,#6366f1,#3b82f6);
+      height:3px;background:linear-gradient(90deg,#10B981,#6366f1,#3b82f6);
       border-radius:16px 16px 0 0;margin:-2rem -2rem 1.75rem;
     }
     .card-title{font-size:.92rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-.02em}
@@ -56,7 +56,7 @@
       letter-spacing:.07em;color:var(--t3);margin-bottom:.3rem;
     }
     .slug-row{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
-    .slug-row:focus-within{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+    .slug-row:focus-within{border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.1)}
     .slug-prefix{
       padding:.6rem .75rem;background:#f7f8fb;font-size:.78rem;color:var(--t3);
       border-right:1px solid var(--border);white-space:nowrap;font-family:'DM Mono',monospace;
@@ -71,7 +71,7 @@
       background:var(--violet);color:#fff;font-size:.85rem;font-weight:700;
       cursor:pointer;transition:background .15s,transform .1s;
     }
-    .btn-access:hover{background:#6d28d9}
+    .btn-access:hover{background:#065F46}
     .btn-access:active{transform:scale(.99)}
     .hint{font-size:.72rem;color:var(--t3);margin-top:.5rem;text-align:center}
 
@@ -81,7 +81,7 @@
       background:var(--card);border:1px solid var(--border);border-radius:10px;
       padding:.875rem 1rem;transition:border-color .15s,box-shadow .15s;
     }
-    .feat:hover{border-color:rgba(124,58,237,.3);box-shadow:var(--shadow)}
+    .feat:hover{border-color:rgba(16,185,129,.3);box-shadow:var(--shadow)}
     .feat-name{font-size:.78rem;font-weight:700;margin-bottom:.2rem;color:var(--t1)}
     .feat-desc{font-size:.7rem;color:var(--t3);line-height:1.5}
 
@@ -91,7 +91,7 @@
 <body>
 <div class="wrap">
 
-  <div class="logo">CORBAN <span>OS</span></div>
+  <div class="logo">CORBAN</div>
   <div class="logo-sub">Sistema Operacional do Correspondente Bancário</div>
 
   <div class="card">

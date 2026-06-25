@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registro — CORBAN OS</title>
+  <title>Registro — CORBAN</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
-      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
-      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
-      --shadow-lg:0 4px 16px rgba(0,0,0,.1),0 16px 48px rgba(0,0,0,.08);
-      --green:#059669; --blue:#2563eb; --violet:#7c3aed;
+      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
+      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+      --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.06);
+      --green:#059669; --blue:#2563eb; --violet:#10B981;
       --amber:#d97706; --red:#dc2626; --teal:#0d9488; --indigo:#4f46e5;
-      --radius:8px;
+      --emerald:#10B981; --emerald-d:#065F46;
+      --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
     input,select,textarea,button{font-family:inherit}
     a{text-decoration:none;color:inherit}
 
@@ -26,20 +27,20 @@
     .hdr{background:#0f1520;color:#fff;position:sticky;top:0;z-index:200}
     .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
     .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
-    .hdr-logo span{color:#7c3aed}
+    .hdr-logo span{color:#10B981}
     .hdr-right{display:flex;align-items:center;gap:.6rem}
     .hdr-user{font-size:.75rem;color:rgba(255,255,255,.5)}
     .hdr-user strong{color:rgba(255,255,255,.85)}
     .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
     .btn-hdr:hover{background:rgba(255,255,255,.12)}
-    .btn-hdr-primary{background:#7c3aed;border-color:#7c3aed;color:#fff}
-    .btn-hdr-primary:hover{background:#6d28d9}
+    .btn-hdr-primary{background:#10B981;border-color:#10B981;color:#fff}
+    .btn-hdr-primary:hover{background:#065F46}
 
     /* ── Tab bar ── */
     .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05);align-items:stretch}
     .tab-btn{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
     .tab-btn:hover{color:rgba(255,255,255,.7)}
-    .tab-btn.active{color:#fff;border-bottom-color:#7c3aed}
+    .tab-btn.active{color:#fff;border-bottom-color:#10B981}
     a.tab-btn{display:flex;align-items:center}
 
     /* ── Layout ── */
@@ -47,8 +48,8 @@
 
     /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-    .btn-primary{background:#7c3aed;color:#fff}
-    .btn-primary:hover{background:#6d28d9}
+    .btn-primary{background:#10B981;color:#fff}
+    .btn-primary:hover{background:#065F46}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
     .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
     .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
@@ -76,7 +77,7 @@
     /* ── Filter bar ── */
     .filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.875rem;align-items:center}
     .filter-bar input,.filter-bar select{padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--card);color:var(--t1)}
-    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
     .filter-bar input{width:200px}
     #rg-filter-count{font-size:.7rem;color:var(--t3)}
 
@@ -88,7 +89,7 @@
     .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.01em}
     .k-col-count{background:rgba(255,255,255,.22);border-radius:99px;padding:.08rem .42rem;font-size:.65rem;font-weight:800}
     .k-col-body{background:#e8ebf2;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:80px;display:flex;flex-direction:column;gap:.4rem}
-    .k-col-body.drag-over{background:#dde1ea;outline:2px dashed rgba(124,58,237,.35);outline-offset:-2px}
+    .k-col-body.drag-over{background:#dde1ea;outline:2px dashed rgba(16,185,129,.35);outline-offset:-2px}
 
     /* ── Kanban Card ── */
     .k-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.65rem .75rem;cursor:grab;box-shadow:var(--shadow);transition:all .18s;position:relative;border-left-width:4px;border-left-style:solid}
@@ -112,7 +113,7 @@
     .chip-itbi-pend{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
     .chip-itbi-pago{background:#dcfce7;color:#166534;border:1px solid #86efac}
     .chip-cartorio{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
-    .chip-banco{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+    .chip-banco{background:#f5f3ff;color:#065F46;border:1px solid #ddd6fe}
     .chip-valor{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-family:'DM Mono',monospace}
     .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.28rem;padding-top:.28rem;border-top:1px solid var(--border)}
     .kc-date{font-size:.63rem;color:var(--t4);font-family:'DM Mono',monospace}
@@ -203,7 +204,7 @@
     .form-group.full{grid-column:1/-1}
     .form-group label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
     .form-group input,.form-group select,.form-group textarea{padding:.5rem .7rem;border:1px solid var(--border);border-radius:7px;font-size:.83rem;color:var(--t1);background:var(--card);transition:border-color .15s}
-    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
     .form-group textarea{resize:vertical;min-height:80px}
 
     /* ITBI status radios */
@@ -235,7 +236,7 @@
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-logo">CORBAN <span>OS</span></div>
+    <div class="hdr-logo">CORBAN</div>
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewModal()">+ Novo Processo</button>
@@ -505,7 +506,7 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group full"><label>Nome da Etapa *</label><input id="st-name" type="text" placeholder="Ex: Protocolo Cartório RI"></div>
-        <div class="form-group"><label>Cor (hex)</label><input id="st-color" type="color" value="#7c3aed" style="height:36px;padding:.2rem .4rem"></div>
+        <div class="form-group"><label>Cor (hex)</label><input id="st-color" type="color" value="#10B981" style="height:36px;padding:.2rem .4rem"></div>
         <div class="form-group"><label>Posição</label><input id="st-pos" type="number" min="1" value="1"></div>
         <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Inicial</label><input id="st-init" type="checkbox"></div>
         <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Final</label><input id="st-final" type="checkbox"></div>
@@ -707,7 +708,7 @@ function renderDashboard() {
   renderDonutChart(stageData, document.getElementById('dg-donut-svg'), document.getElementById('dg-donut-legend'), cases.length);
   renderFunil(stageData, cases.length);
   renderDistList('dg-empr-list', groupBy(cases, c => c.development), '#2563eb');
-  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#7c3aed');
+  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#10B981');
   renderDistList('dg-cartorio-list', groupBy(cases, c => c.payload?.cartorio_name), '#0d9488');
 
   // Gargalo = non-final stage with most cases
@@ -717,7 +718,7 @@ function renderDashboard() {
   setEl('dkpi-gargalo-sub', gargalo ? gargalo.stage.name : '—');
 }
 
-const STAGE_COLORS = ['#7c3aed','#2563eb','#0d9488','#059669','#d97706','#dc2626','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
+const STAGE_COLORS = ['#10B981','#2563eb','#0d9488','#059669','#d97706','#dc2626','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
 
 function renderDonutChart(stageData, svgEl, legendEl, total) {
   const R = 46, cx = 56, cy = 56, sw = 14;
@@ -822,7 +823,7 @@ function renderKanban() {
   board.innerHTML = G.stages.map(stage => {
     const stageCases = cases.filter(c => c.stage_id === stage.id);
     total += stageCases.length;
-    const color = stage.color || '#7c3aed';
+    const color = stage.color || '#10B981';
     return `<div class="k-col">
       <div class="k-col-header" style="background:${color}">
         <span>${esc(stage.name)}</span>

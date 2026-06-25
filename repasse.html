@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Repasse — CORBAN OS</title>
+  <title>Repasse — CORBAN</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
-      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
-      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
-      --shadow-lg:0 4px 16px rgba(0,0,0,.1),0 16px 48px rgba(0,0,0,.08);
-      --green:#059669; --blue:#2563eb; --violet:#7c3aed;
+      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
+      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+      --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.06);
+      --green:#059669; --blue:#2563eb; --violet:#10B981;
       --amber:#d97706; --red:#dc2626; --teal:#0d9488;
-      --radius:8px;
+      --emerald:#10B981; --emerald-d:#065F46;
+      --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
     input,select,textarea,button{font-family:inherit}
     a{text-decoration:none;color:inherit}
 
@@ -26,20 +27,20 @@
     .hdr{background:#0f1520;color:#fff;position:sticky;top:0;z-index:200}
     .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
     .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
-    .hdr-logo span{color:#7c3aed}
+    .hdr-logo span{color:#10B981}
     .hdr-right{display:flex;align-items:center;gap:.6rem}
     .hdr-user{font-size:.75rem;color:rgba(255,255,255,.5)}
     .hdr-user strong{color:rgba(255,255,255,.85)}
     .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
     .btn-hdr:hover{background:rgba(255,255,255,.12)}
-    .btn-hdr-primary{background:#7c3aed;border-color:#7c3aed;color:#fff}
-    .btn-hdr-primary:hover{background:#6d28d9}
+    .btn-hdr-primary{background:#10B981;border-color:#10B981;color:#fff}
+    .btn-hdr-primary:hover{background:#065F46}
 
     /* ── Tab bar ── */
     .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05);align-items:stretch}
     .tab-btn{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
     .tab-btn:hover{color:rgba(255,255,255,.7)}
-    .tab-btn.active{color:#fff;border-bottom-color:#7c3aed}
+    .tab-btn.active{color:#fff;border-bottom-color:#10B981}
 
     /* Dropdown tab group */
     .tab-group{position:relative;display:flex;align-items:stretch}
@@ -53,16 +54,16 @@
     }
     .tab-group:hover .tab-dd{display:block}
     .dd-item{padding:.42rem .875rem;border-radius:5px;font-size:.77rem;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;transition:all .12s}
-    .dd-item:hover{background:rgba(124,58,237,.25);color:#fff}
-    .dd-item.active{background:rgba(124,58,237,.35);color:#fff}
+    .dd-item:hover{background:rgba(16,185,129,.25);color:#fff}
+    .dd-item.active{background:rgba(16,185,129,.35);color:#fff}
 
     /* ── Layout ── */
     .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
 
     /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-    .btn-primary{background:#7c3aed;color:#fff}
-    .btn-primary:hover{background:#6d28d9}
+    .btn-primary{background:#10B981;color:#fff}
+    .btn-primary:hover{background:#065F46}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
     .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
     .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
@@ -112,7 +113,7 @@
     /* ── Filter bar ── */
     .filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.875rem;align-items:center}
     .filter-bar input,.filter-bar select{padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--card);color:var(--t1)}
-    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
     .filter-bar input{width:190px}
     #filter-count{font-size:.7rem;color:var(--t3)}
 
@@ -124,8 +125,8 @@
     .k-col{width:260px;flex-shrink:0;display:flex;flex-direction:column}
     .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.01em}
     .k-col-count{background:rgba(255,255,255,.22);border-radius:99px;padding:.08rem .42rem;font-size:.65rem;font-weight:800}
-    .k-col-body{background:#e8ebf2;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s}
-    .k-col-body.drag-over{background:#dde1ea;outline:2px dashed rgba(124,58,237,.35);outline-offset:-2px}
+    .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s}
+    .k-col-body.drag-over{background:#E2E8F0;outline:2px dashed rgba(16,185,129,.35);outline-offset:-2px}
 
     /* ── Card ── */
     .k-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.7rem .75rem;cursor:grab;box-shadow:var(--shadow);transition:all .2s;position:relative;border-left-width:4px;border-left-style:solid}
@@ -150,7 +151,7 @@
 
     .kc-chips{display:flex;gap:.22rem;flex-wrap:wrap;margin-bottom:.32rem}
     .chip{display:inline-flex;align-items:center;border-radius:3px;padding:.12rem .42rem;font-size:.65rem;font-weight:600;white-space:nowrap}
-    .chip-partner{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+    .chip-partner{background:#f5f3ff;color:#065F46;border:1px solid #ddd6fe}
     .chip-manager{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
     .chip-re{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
     .chip-value{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-family:'DM Mono',monospace}
@@ -212,7 +213,7 @@
     .form-group.full{grid-column:1/-1}
     .form-group label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
     .form-group input,.form-group select,.form-group textarea{padding:.45rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.8rem;color:var(--t1);background:var(--card)}
-    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
     .form-group textarea{resize:vertical;min-height:75px;font-family:'DM Sans',sans-serif}
     .form-section-title{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1rem 0 .65rem;display:flex;align-items:center;gap:.5rem}
     .form-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -222,7 +223,7 @@
     .tl-item{display:flex;gap:.75rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
     .tl-item:last-child{border-bottom:none}
     .tl-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;font-weight:700}
-    .tl-dot.stage{background:#ede9fe;color:#6d28d9}
+    .tl-dot.stage{background:#ede9fe;color:#065F46}
     .tl-dot.comment{background:#dbeafe;color:#1e40af}
     .tl-dot.edit{background:#f0fdf4;color:#166534}
     .tl-content{flex:1}
@@ -246,7 +247,7 @@
 
     /* ── Config cards ── */
     .config-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;box-shadow:var(--shadow)}
-    .config-card:hover{border-color:rgba(124,58,237,.4);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+    .config-card:hover{border-color:rgba(16,185,129,.4);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
     .config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.75rem}
 
     /* ── Tags/flags ── */
@@ -262,7 +263,7 @@
     .cfg-section-hdr:first-child{margin-top:0}
     .cfg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;max-width:780px;margin-bottom:.25rem}
     .cfg-hub-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1rem 1.1rem;display:flex;flex-direction:column;align-items:flex-start;gap:.65rem;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
-    .cfg-hub-card:hover{border-color:rgba(124,58,237,.3);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .cfg-hub-card:hover{border-color:rgba(16,185,129,.3);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
     .cfg-hub-card.cfg-disabled{opacity:.5;cursor:default;pointer-events:none}
     .cfg-hub-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .cfg-card-label{font-size:.8rem;font-weight:700;color:var(--t1);line-height:1.3}
@@ -279,7 +280,7 @@
     .pt-table tr:last-child td{border-bottom:none}
     .pt-table tr:hover td{background:#f8f9fc}
     .pt-type{display:inline-block;padding:.12rem .45rem;border-radius:3px;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-    .pt-type-correspondente{background:#f5f3ff;color:#6d28d9}
+    .pt-type-correspondente{background:#f5f3ff;color:#065F46}
     .pt-type-imobiliaria{background:#f0fdf4;color:#166534}
     .pt-type-corretor{background:#eff6ff;color:#1e40af}
     .pt-type-cca{background:#fefce8;color:#854d0e}
@@ -299,13 +300,13 @@
     .pt-pg-btn{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer;color:var(--t2);transition:all .12s}
     .pt-pg-btn:hover:not([disabled]){color:var(--t1)}
     .pt-pg-btn[disabled]{opacity:.4;cursor:default}
-    .pt-pg-btn.active{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe}
+    .pt-pg-btn.active{background:#ede9fe;color:#065F46;border-color:#ddd6fe}
 
     /* ── Dashboard filter bar ── */
     .dash-filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;padding:.6rem .875rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
     .dash-filter-bar select,.dash-filter-bar input{padding:.32rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--bg);color:var(--t1)}
     .dash-filter-bar input{width:150px}
-    .dash-filter-bar select:focus,.dash-filter-bar input:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+    .dash-filter-bar select:focus,.dash-filter-bar input:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(16,185,129,.08)}
     .dash-filter-label{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);white-space:nowrap}
 
     /* ── KPI secondary ── */
@@ -367,7 +368,7 @@
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-logo">CORBAN <span>OS</span></div>
+    <div class="hdr-logo">CORBAN</div>
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
@@ -565,7 +566,7 @@
       <div class="cfg-cards">
         <div class="cfg-hub-card" onclick="openCfgView('wf')">
           <div class="cfg-hub-icon" style="background:#ede9fe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </div>
           <div class="cfg-card-label">Editor de Workflow</div>
         </div>
@@ -653,7 +654,7 @@
         <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
         <div style="display:flex;gap:.45rem;align-items:center">
           <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--t1);background:var(--card)">
-          <input id="new-flag-color" type="color" value="#7c3aed" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+          <input id="new-flag-color" type="color" value="#10B981" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
           <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
         </div>
       </div>
@@ -667,7 +668,7 @@
       </div>
       <div class="panel" style="padding:1.1rem;max-width:620px">
         <p style="font-size:.78rem;color:var(--t2);margin-bottom:.875rem;line-height:1.6">
-          Regionais sao definidas pelo campo <code style="color:#7c3aed;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.
+          Regionais sao definidas pelo campo <code style="color:#10B981;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.
           Cada grupo de etapas com o mesmo group_key forma uma regional separada no kanban.
         </p>
         <div class="tag-list" id="regionals-cfg-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
@@ -1093,7 +1094,7 @@ function renderDashboard() {
   renderFunilDetail(cases, sm);
 
   // ── Distribution panels ──
-  renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#7c3aed');
+  renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#10B981');
   renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#2563eb');
   renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#059669');
 }
@@ -1135,7 +1136,7 @@ function renderDonutChart(cases, sm) {
   el.innerHTML = `
     <div class="donut-svg-wrap" style="width:112px;height:112px;flex-shrink:0">
       <svg width="112" height="112" viewBox="0 0 112 112">
-        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e8ebf2" stroke-width="${sw}"/>
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#F1F5F9" stroke-width="${sw}"/>
         ${svgArcs}
       </svg>
       <div class="donut-center">
@@ -1586,14 +1587,14 @@ async function loadFlags() {
 function renderFlags(){
   const el=document.getElementById('flags-list');
   el.innerHTML=G.flags.length
-    ?G.flags.map(f=>`<div class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#7c3aed'};display:inline-block"></span>${esc(f.name)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
+    ?G.flags.map(f=>`<div class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#10B981'};display:inline-block"></span>${esc(f.name)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
     :'<span style="color:var(--t3);font-size:.77rem">Nenhuma flag cadastrada.</span>';
 }
 
 async function addFlag(){
   const input=document.getElementById('new-flag-input'),name=input.value.trim();
   if(!name){toast('Informe o nome','error');return;}
-  const [flag]=await fetch(A1.rest('a1_stage_flags'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({name,color:'#7c3aed'})}).then(r=>r.json()).catch(()=>[null]);
+  const [flag]=await fetch(A1.rest('a1_stage_flags'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({name,color:'#10B981'})}).then(r=>r.json()).catch(()=>[null]);
   if(flag){G.flags.push(flag);renderFlags();input.value='';toast('Flag criada','success');}
   else toast('Erro ao criar flag','error');
 }

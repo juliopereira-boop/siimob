@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Entrar — CORBAN OS</title>
+  <title>Entrar — CORBAN</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:#f0f2f7; --card:#fff; --border:#e2e6ef; --border2:#d1d7e3;
-      --t1:#0f1520; --t2:#4a5568; --t3:#8896a7; --t4:#b8c4d0;
-      --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
-      --shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
-      --violet:#7c3aed; --radius:10px;
+      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
+      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+      --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
+      --violet:#10B981; --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);
+      font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);
       min-height:100vh;display:flex;align-items:center;justify-content:center;
       font-size:14px;-webkit-font-smoothing:antialiased;
     }
@@ -38,10 +38,10 @@
     .tenant-pill{
       display:inline-flex;align-items:center;gap:.4rem;
       background:#ede9fe;border:1px solid #ddd6fe;border-radius:99px;
-      padding:.22rem .875rem;font-size:.73rem;color:#6d28d9;font-weight:600;
+      padding:.22rem .875rem;font-size:.73rem;color:#065F46;font-weight:600;
       margin-bottom:.875rem;
     }
-    .tenant-dot{width:6px;height:6px;border-radius:50%;background:#7c3aed;flex-shrink:0}
+    .tenant-dot{width:6px;height:6px;border-radius:50%;background:#10B981;flex-shrink:0}
 
     /* ── Card ── */
     .login-card{
@@ -50,7 +50,7 @@
       box-shadow:var(--shadow-lg);
     }
     .login-card-top{
-      height:3px;background:linear-gradient(90deg,#7c3aed,#6366f1,#3b82f6);
+      height:3px;background:linear-gradient(90deg,#10B981,#059669,#0d9488);
       border-radius:99px;margin-bottom:1.75rem;margin:-2rem -2rem 1.75rem;
       border-radius:16px 16px 0 0;
     }
@@ -84,7 +84,7 @@
     }
     .input-wrap input:focus{
       outline:none;border-color:var(--violet);
-      box-shadow:0 0 0 3px rgba(124,58,237,.1);
+      box-shadow:0 0 0 3px rgba(16,185,129,.1);
     }
     .input-wrap input.has-toggle{padding-right:2.5rem}
     .toggle-pw{
@@ -109,7 +109,7 @@
       display:flex;align-items:center;justify-content:center;gap:.5rem;
       margin-top:.5rem;
     }
-    .btn-login:hover{background:#6d28d9}
+    .btn-login:hover{background:#065F46}
     .btn-login:active{transform:scale(.99)}
     .btn-login:disabled{opacity:.6;cursor:default}
 
@@ -129,7 +129,7 @@
 <div class="login-wrap">
 
   <div style="text-align:center;margin-bottom:1.5rem">
-    <div class="login-logo">CORBAN <span>OS</span></div>
+    <div class="login-logo">CORBAN</div>
     <div class="tenant-pill">
       <div class="tenant-dot"></div>
       <span id="tenant-slug-display">—</span>
