@@ -229,15 +229,15 @@
 <!-- Toolbar -->
 <div class="wf-toolbar">
   <div class="wf-title">
-    ✏ Editor de Workflow
+    Editor de Workflow
     <span id="wf-module-label">— Repasse</span>
   </div>
   <select class="wf-module-sel" id="module-sel" onchange="changeModule(this.value)">
-    <option value="repasse">🔁 Repasse</option>
-    <option value="registro">📋 Registro</option>
+    <option value="repasse">Repasse</option>
+    <option value="registro">Registro</option>
   </select>
   <button class="btn btn-primary" onclick="openNewStage()">+ Nova Etapa</button>
-  <button class="btn btn-ghost" onclick="autoLayout()">⟳ Auto-organizar</button>
+  <button class="btn btn-ghost" onclick="autoLayout()">Auto-organizar</button>
   <button class="btn btn-ghost" id="back-btn">← Voltar</button>
 </div>
 
@@ -328,11 +328,11 @@ let conn     = null;    // { fromId } — connecting mode
 let mouseCanvas = { x: 0, y: 0 };
 let selected = null;    // stage id being edited
 let editingStage = null;
+let WF_USER  = null;    // current logged-in user (holds tenant_id)
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
-  let user;
-  try { user = a1RequireAuth(); } catch { return; }
+  try { WF_USER = a1RequireAuth(); } catch { return; }
   const slug = A1.slug;
   document.getElementById('back-btn').href    = `/${slug}/configuracoes`;
   document.getElementById('back-btn').onclick = () => history.back();
@@ -561,7 +561,7 @@ function bindEvents() {
       if (!exists) {
         const res = await fetch(A1.rest('a1_stage_edges'), {
           method: 'POST', headers: A1.returnHeaders(),
-          body: JSON.stringify({ tenant_id: A1.user.tenant_id, from_id: conn.fromId, to_id: nodeId })
+          body: JSON.stringify({ tenant_id: WF_USER.tenant_id, from_id: conn.fromId, to_id: nodeId })
         });
         const [newEdge] = await res.json();
         edges.push(newEdge);
@@ -653,10 +653,9 @@ async function saveStage() {
     Object.assign(editingStage, payload);
     toast('Etapa atualizada', 'success');
   } else {
-    const user = A1.user;
     const res = await fetch(A1.rest('a1_stages'), {
       method: 'POST', headers: A1.returnHeaders(),
-      body: JSON.stringify({ ...payload, module_key: MODULE, pos_x: 60 + (stages.length % 4) * 270, pos_y: 80 + Math.floor(stages.length / 4) * 200 })
+      body: JSON.stringify({ ...payload, module_key: MODULE, tenant_id: WF_USER.tenant_id, pos_x: 60 + (stages.length % 4) * 270, pos_y: 80 + Math.floor(stages.length / 4) * 200 })
     });
     const [s] = await res.json();
     stages.push(s);
