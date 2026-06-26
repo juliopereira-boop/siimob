@@ -740,6 +740,16 @@
               <option value="">Selecione...</option>
             </select>
           </div>
+          <div class="form-group full" style="margin-top:.1rem">
+            <label style="display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--t2);text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="empr-f-sem-unidades" onchange="toggleEmprSemUnidades()" style="width:15px;height:15px;accent-color:var(--emerald);cursor:pointer">
+              Sem preenchimento de unidades
+            </label>
+          </div>
+        </div>
+
+        <!-- Unidades config (hidden when "sem preenchimento") -->
+        <div id="empr-unidades-wrap" class="form-grid" style="max-width:720px;margin-bottom:.875rem">
           <div class="form-group"><label>Tipo</label>
             <div style="display:flex;gap:.35rem;margin-top:.1rem">
               <button type="button" id="empr-tipo-blocos" class="btn btn-primary btn-sm" onclick="setEmprTipo('blocos')" style="flex:1">Blocos</button>
@@ -755,15 +765,13 @@
           <div class="form-group"><label>Unidades / Pavimento</label>
             <input id="empr-f-upf" type="number" min="1" max="99" value="4" oninput="emprPreview()">
           </div>
-        </div>
 
-        <!-- Live preview -->
-        <div style="margin-bottom:1rem">
-          <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Pré-visualização das unidades</div>
-          <div id="empr-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">
-            —
+          <!-- Live preview -->
+          <div class="full" style="margin-top:.25rem">
+            <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Pré-visualização das unidades</div>
+            <div id="empr-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">—</div>
+            <div style="margin-top:.35rem;font-size:.68rem;color:var(--t3)" id="empr-total-label"></div>
           </div>
-          <div style="margin-top:.35rem;font-size:.68rem;color:var(--t3)" id="empr-total-label"></div>
         </div>
 
         <div style="display:flex;gap:.5rem;align-items:center">
@@ -2906,6 +2914,14 @@ function renderEmprList() {
   </table>`;
 }
 
+function toggleEmprSemUnidades() {
+  const checked = document.getElementById('empr-f-sem-unidades').checked;
+  document.getElementById('empr-unidades-wrap').style.display = checked ? 'none' : '';
+  document.getElementById('empr-save-btn').textContent =
+    checked ? (G.editingEmprId ? 'Salvar Alterações' : 'Cadastrar') :
+              (G.editingEmprId ? 'Salvar Alterações' : 'Cadastrar Unidades');
+}
+
 function openEmprModal() {
   G.editingEmprId = null;
   document.getElementById('empr-form-title').textContent = 'Novo empreendimento';
@@ -2915,6 +2931,8 @@ function openEmprModal() {
   document.getElementById('empr-f-pav').value  = '1';
   document.getElementById('empr-f-upf').value  = '4';
   document.getElementById('empr-f-regional').value = '';
+  document.getElementById('empr-f-sem-unidades').checked = false;
+  document.getElementById('empr-unidades-wrap').style.display = '';
   document.getElementById('empr-err').style.display = 'none';
   G.emprTipo = 'blocos';
   setEmprTipo('blocos');
@@ -2927,13 +2945,16 @@ function editEmpreendimento(id) {
   const d = G.empreendimentos.find(x => x.id === id);
   if (!d) return;
   G.editingEmprId = id;
+  const semUnidades = !d.unit_count || d.unit_count === 0;
   document.getElementById('empr-form-title').textContent = 'Editar empreendimento';
   document.getElementById('empr-save-btn').textContent = 'Salvar Alterações';
-  document.getElementById('empr-f-name').value    = d.name || '';
-  document.getElementById('empr-f-qtd').value     = d.qtd_blocos || 1;
-  document.getElementById('empr-f-pav').value     = d.pavimentos || 1;
-  document.getElementById('empr-f-upf').value     = d.unidades_pav || 4;
+  document.getElementById('empr-f-name').value     = d.name || '';
+  document.getElementById('empr-f-qtd').value      = d.qtd_blocos || 1;
+  document.getElementById('empr-f-pav').value      = d.pavimentos || 1;
+  document.getElementById('empr-f-upf').value      = d.unidades_pav || 4;
   document.getElementById('empr-f-regional').value = d.regional || '';
+  document.getElementById('empr-f-sem-unidades').checked = semUnidades;
+  document.getElementById('empr-unidades-wrap').style.display = semUnidades ? 'none' : '';
   document.getElementById('empr-err').style.display = 'none';
   setEmprTipo(d.tipo || 'blocos');
   document.getElementById('empr-list-panel').style.display = 'none';
@@ -2944,6 +2965,8 @@ function editEmpreendimento(id) {
 function closeEmprForm() {
   G.editingEmprId = null;
   document.getElementById('empr-save-btn').textContent = 'Cadastrar Unidades';
+  document.getElementById('empr-f-sem-unidades').checked = false;
+  document.getElementById('empr-unidades-wrap').style.display = '';
   document.getElementById('empr-list-panel').style.display = '';
   document.getElementById('empr-form-panel').style.display = 'none';
 }
@@ -2958,6 +2981,7 @@ function setEmprTipo(tipo) {
 }
 
 function emprPreview() {
+  if (document.getElementById('empr-f-sem-unidades')?.checked) return;
   const qtd  = Math.max(1, parseInt(document.getElementById('empr-f-qtd')?.value)||1);
   const pav  = Math.max(1, parseInt(document.getElementById('empr-f-pav')?.value)||1);
   const upf  = Math.max(1, parseInt(document.getElementById('empr-f-upf')?.value)||1);
@@ -2989,28 +3013,31 @@ function emprPreview() {
 async function saveEmpreendimento() {
   const name = document.getElementById('empr-f-name').value.trim();
   if (!name) { showEmprErr('Informe o nome do empreendimento'); return; }
-  const qtd  = parseInt(document.getElementById('empr-f-qtd').value)||1;
-  const pav  = parseInt(document.getElementById('empr-f-pav').value)||1;
-  const upf  = parseInt(document.getElementById('empr-f-upf').value)||1;
+  const semUnidades = document.getElementById('empr-f-sem-unidades').checked;
 
-  const units = [];
-  const prefix = G.emprTipo === 'blocos' ? 'B' : 'Q';
-  for (let b=1; b<=qtd; b++) {
-    for (let p=1; p<=pav; p++) {
-      for (let u=1; u<=upf; u++) {
-        const seq = `${p-1}${u.toString().padStart(2,'0')}`;
-        units.push(`${prefix}${b}-${seq}`);
+  let units = [], qtd = 1, pav = 1, upf = 1;
+  if (!semUnidades) {
+    qtd = parseInt(document.getElementById('empr-f-qtd').value)||1;
+    pav = parseInt(document.getElementById('empr-f-pav').value)||1;
+    upf = parseInt(document.getElementById('empr-f-upf').value)||1;
+    const prefix = G.emprTipo === 'blocos' ? 'B' : 'Q';
+    for (let b=1; b<=qtd; b++) {
+      for (let p=1; p<=pav; p++) {
+        for (let u=1; u<=upf; u++) {
+          const seq = `${p-1}${u.toString().padStart(2,'0')}`;
+          units.push(`${prefix}${b}-${seq}`);
+        }
       }
     }
   }
 
   const payload = {
     name,
-    tipo:        G.emprTipo,
+    tipo:        semUnidades ? null : G.emprTipo,
     regional:    document.getElementById('empr-f-regional').value,
-    qtd_blocos:  qtd,
-    pavimentos:  pav,
-    unidades_pav:upf,
+    qtd_blocos:  semUnidades ? 0 : qtd,
+    pavimentos:  semUnidades ? 0 : pav,
+    unidades_pav:semUnidades ? 0 : upf,
     unit_count:  units.length,
     units:       units,
   };
@@ -3029,7 +3056,7 @@ async function saveEmpreendimento() {
       G.empreendimentos.sort((a,b) => a.name.localeCompare(b.name));
       renderEmprList();
       closeEmprForm();
-      toast(`"${name}" atualizado com ${units.length} unidades.`, 'success');
+      toast(`"${name}" atualizado${units.length ? ` com ${units.length} unidades` : ''}.`, 'success');
     } else {
       const [created] = await fetch(A1.rest('a1_developments'), {
         method:'POST', headers: A1.returnHeaders(), body: JSON.stringify({ ...payload, tenant_id: G.user.tenant_id })
@@ -3039,7 +3066,7 @@ async function saveEmpreendimento() {
       G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name));
       renderEmprList();
       closeEmprForm();
-      toast(`"${name}" cadastrado com ${units.length} unidades.`,'success');
+      toast(`"${name}" cadastrado${units.length ? ` com ${units.length} unidades` : ''}.`,'success');
     }
   } catch {
     showEmprErr('Erro ao salvar. Verifique os dados e tente novamente.');
