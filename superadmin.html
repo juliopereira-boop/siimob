@@ -607,6 +607,7 @@ function renderTenantsTable(list) {
           ${t.status!=='suspended'
             ? `<button class="btn btn-danger btn-xs" onclick="suspendTenant('${t.id}')">Suspender</button>`
             : `<button class="btn btn-warn btn-xs" onclick="reactivateTenant('${t.id}')">Reativar</button>`}
+          <button class="btn btn-danger btn-xs" style="background:#7f1d1d;color:#fff;border-color:#991b1b" onclick="deleteTenant('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')">Excluir</button>
         </div>
       </td>
     </tr>`;
@@ -829,6 +830,31 @@ async function changePlan(tenantId) {
   toast('Plano atualizado.', 'success');
   await loadTenants();
   updateKPIs();
+}
+
+async function deleteTenant(tenantId, tenantName) {
+  const confirm1 = confirm(`Excluir o cliente "${tenantName}"?\n\nTodos os usuários, dados e módulos serão removidos permanentemente. Esta ação NÃO pode ser desfeita.`);
+  if (!confirm1) return;
+  const typed = prompt(`Para confirmar, digite exatamente o nome do cliente:\n\n${tenantName}`);
+  if (typed !== tenantName) { toast('Nome não confere. Exclusão cancelada.', 'error'); return; }
+
+  try {
+    // Remove dados dependentes antes do tenant (ordem importa por FK)
+    await Promise.all([
+      fetch(`${saRest('a1_users')}?tenant_id=eq.${tenantId}`, { method:'DELETE', headers:saHeaders() }),
+      fetch(`${saRest('a1_partners')}?tenant_id=eq.${tenantId}`, { method:'DELETE', headers:saHeaders() }),
+      fetch(`${saRest('a1_tenant_modules')}?tenant_id=eq.${tenantId}`, { method:'DELETE', headers:saHeaders() }),
+    ]);
+    const res = await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, { method:'DELETE', headers:saHeaders() });
+    if (res.ok || res.status === 204) {
+      toast(`Cliente "${tenantName}" excluído permanentemente.`, 'info');
+      await loadAll();
+    } else {
+      toast('Erro ao excluir cliente.', 'error');
+    }
+  } catch {
+    toast('Erro ao excluir cliente.', 'error');
+  }
 }
 
 async function suspendTenant(tenantId) {
