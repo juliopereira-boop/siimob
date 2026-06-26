@@ -2144,7 +2144,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
