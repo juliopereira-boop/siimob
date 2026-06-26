@@ -1393,6 +1393,16 @@ async function init() {
     }
   }
 
+  // Hide Registro tab if module not enabled for this tenant
+  fetch(A1.rpc('a1_has_module'), {
+    method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
+  }).then(r=>r.json()).then(ok=>{
+    if (!ok) {
+      const el = document.getElementById('tab-registro-link');
+      if (el) el.style.display = 'none';
+    }
+  }).catch(()=>{});
+
   await loadData();
   applyPartnerRestrictions();
   renderDashboard();
@@ -3166,15 +3176,17 @@ function openImob(i) {
 async function saveImob() {
   const name = document.getElementById('imob-f-name').value.trim();
   if (!name) { toast('Informe o nome da imobiliária','error'); return; }
+  const _cnpj  = document.getElementById('imob-f-cnpj').value.trim();
+  const _email = document.getElementById('imob-f-email').value.trim();
   const payload = {
     tenant_id: G.user.tenant_id,
     type:      'imobiliaria',
     name,
-    cpf:       document.getElementById('imob-f-cnpj').value.trim(),
-    email:     document.getElementById('imob-f-email').value.trim(),
-    phone:     document.getElementById('imob-f-phone').value.trim(),
-    region:    document.getElementById('imob-f-region').value.trim(),
-    website:   document.getElementById('imob-f-site').value.trim(),
+    cpf:       _cnpj  || null,
+    email:     _email || null,
+    phone:     document.getElementById('imob-f-phone').value.trim() || null,
+    region:    document.getElementById('imob-f-region').value.trim() || null,
+    website:   document.getElementById('imob-f-site').value.trim()  || null,
     is_active: document.getElementById('imob-f-active').checked,
   };
   const btn = document.getElementById('imob-save-btn');
