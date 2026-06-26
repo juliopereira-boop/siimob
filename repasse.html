@@ -629,6 +629,16 @@
         </div>
       </div>
 
+      <div class="cfg-section-hdr">Suporte</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openFeedbackModal()" style="border-color:#e0e7ff">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+          </div>
+          <div class="cfg-card-label">Sugerir melhoria</div>
+        </div>
+      </div>
+
     </div><!-- /#cfg-hub -->
 
     <!-- ─── Sub-view: Editor de Workflow ─── -->
@@ -921,6 +931,43 @@
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-bg')">Cancelar</button>
       <button class="btn btn-primary" onclick="createCase()">Criar Repasse</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Feedback / Melhoria ═══════ -->
+<div class="modal-bg hidden" id="modal-feedback-bg">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr">
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <div style="width:32px;height:32px;border-radius:8px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="modal-title">Sugerir melhoria</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-feedback-bg')">x</button>
+    </div>
+    <div id="feedback-form-wrap" class="modal-body">
+      <p style="font-size:.8rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">Tem uma ideia para melhorar o sistema? Compartilhe com a gente! Nossa equipe analisa todas as sugestões.</p>
+      <div class="form-group">
+        <label>Título da melhoria *</label>
+        <input id="fb-title" type="text" placeholder="Ex.: Exportar listagem em Excel">
+      </div>
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea id="fb-desc" rows="4" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;resize:vertical;color:var(--t1)" placeholder="Descreva como funcionaria, qual problema resolve..."></textarea>
+      </div>
+    </div>
+    <div id="feedback-success-wrap" class="modal-body hidden" style="text-align:center;padding:2.5rem 1.5rem">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ecfdf5;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">Obrigado pelo feedback!</div>
+      <div style="font-size:.82rem;color:var(--t2);line-height:1.5">Agradecemos sua sugestão. Sua proposta será analisada por nossos desenvolvedores.</div>
+    </div>
+    <div id="feedback-footer" style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-feedback-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="fb-save-btn" onclick="saveFeedback()" style="background:#7c3aed;border-color:#7c3aed">Enviar sugestão</button>
     </div>
   </div>
 </div>
@@ -2487,6 +2534,45 @@ async function deleteEmpreendimento(id, name) {
     G.empreendimentos = G.empreendimentos.filter(d=>d.id!==id);
     renderEmprList(); toast('Empreendimento removido','info');
   } else toast('Erro ao remover','error');
+}
+
+// ─── Feedback / Melhorias ─────────────────────────────────────────────────────
+function openFeedbackModal() {
+  document.getElementById('fb-title').value = '';
+  document.getElementById('fb-desc').value  = '';
+  document.getElementById('feedback-form-wrap').classList.remove('hidden');
+  document.getElementById('feedback-success-wrap').classList.add('hidden');
+  document.getElementById('feedback-footer').style.display = '';
+  const btn = document.getElementById('fb-save-btn');
+  btn.disabled = false; btn.textContent = 'Enviar sugestão';
+  document.getElementById('modal-feedback-bg').classList.remove('hidden');
+}
+
+async function saveFeedback() {
+  const title = document.getElementById('fb-title').value.trim();
+  if (!title) { toast('Informe o título da melhoria','error'); return; }
+  const btn = document.getElementById('fb-save-btn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const payload = {
+    tenant_id:    G.user.tenant_id,
+    tenant_name:  G.tenant?.slug || G.slug || '',
+    author_name:  G.user.name,
+    author_role:  G.user.role,
+    title,
+    description:  document.getElementById('fb-desc').value.trim(),
+    status:       'pending',
+  };
+  const res = await fetch(A1.rest('a1_feedback'), {
+    method:'POST', headers: A1.headers(), body: JSON.stringify(payload)
+  });
+  if (res.ok || res.status === 201) {
+    document.getElementById('feedback-form-wrap').classList.add('hidden');
+    document.getElementById('feedback-footer').style.display = 'none';
+    document.getElementById('feedback-success-wrap').classList.remove('hidden');
+  } else {
+    toast('Erro ao enviar. Tente novamente.','error');
+    btn.disabled = false; btn.textContent = 'Enviar sugestão';
+  }
 }
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────

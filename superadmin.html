@@ -118,6 +118,22 @@
     .section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem}
     .section-title{font-size:.82rem;font-weight:800;letter-spacing:-.01em}
 
+    /* ── Feedback cards ── */
+    .fb-card{padding:.875rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:1rem}
+    .fb-card:last-child{border-bottom:none}
+    .fb-card-body{flex:1;min-width:0}
+    .fb-card-title{font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.2rem}
+    .fb-card-desc{font-size:.75rem;color:var(--t2);line-height:1.5;margin-bottom:.4rem;white-space:pre-wrap}
+    .fb-card-meta{font-size:.68rem;color:var(--t3)}
+    .fb-badge{display:inline-flex;align-items:center;padding:.12rem .55rem;border-radius:99px;font-size:.65rem;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+    .fb-badge.pending{background:#fef3c7;color:#92400e}
+    .fb-badge.accepted{background:#d1fae5;color:#065f46}
+    .fb-badge.rejected{background:#fee2e2;color:#991b1b}
+    .fb-actions{display:flex;flex-direction:column;gap:.4rem;flex-shrink:0}
+    .fb-btn{border:none;border-radius:6px;font-size:.7rem;font-weight:700;cursor:pointer;padding:.3rem .65rem;transition:all .12s}
+    .fb-btn-accept{background:#d1fae5;color:#065f46}.fb-btn-accept:hover{background:#a7f3d0}
+    .fb-btn-reject{background:#fee2e2;color:#991b1b}.fb-btn-reject:hover{background:#fecaca}
+
     /* ── Modal ── */
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
     .modal-bg.hidden{display:none}
@@ -177,6 +193,10 @@
       <div class="sa-tab active" onclick="switchSaTab('clientes',this)">Clientes</div>
       <div class="sa-tab" onclick="switchSaTab('modulos',this)">Módulos</div>
       <div class="sa-tab" onclick="switchSaTab('planos',this)">Planos</div>
+      <div class="sa-tab" onclick="switchSaTab('melhorias',this)" id="tab-melhorias">
+        Melhorias
+        <span id="feedback-badge" style="display:none;margin-left:.4rem;background:#7c3aed;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
+      </div>
     </div>
   </div>
 
@@ -312,6 +332,29 @@
       </div>
     </div>
 
+    <!-- ══ TAB: Melhorias ══ -->
+    <div id="satab-melhorias" style="display:none">
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="section-title">Sugestões de melhoria</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviadas pelos usuários do sistema</div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <select id="fb-filter-status" onchange="loadFeedback()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+              <option value="">Todas</option>
+              <option value="pending">Pendentes</option>
+              <option value="accepted">Aceitas</option>
+              <option value="rejected">Rejeitadas</option>
+            </select>
+          </div>
+        </div>
+        <div id="feedback-list" style="padding:.5rem 0">
+          <div style="padding:2rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -413,10 +456,11 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos'].forEach(t => {
+  ['clientes','modulos','planos','melhorias'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
+  if (name === 'melhorias') loadFeedback();
 }
 
 // ─── Load all ─────────────────────────────────────────────────────────────────
@@ -835,6 +879,58 @@ function toast(msg, type = 'info') {
   item.textContent = msg;
   el.appendChild(item);
   setTimeout(() => item.remove(), 4500);
+}
+
+// ─── Feedback / Melhorias ─────────────────────────────────────────────────────
+const STATUS_LABELS = { pending:'Pendente', accepted:'Aceita', rejected:'Rejeitada' };
+
+async function loadFeedback() {
+  const statusFilter = document.getElementById('fb-filter-status')?.value || '';
+  const list = document.getElementById('feedback-list');
+  list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>';
+  let url = saRest('a1_feedback') + '?order=created_at.desc';
+  if (statusFilter) url += `&status=eq.${statusFilter}`;
+  const data = await fetch(url, { headers: saHeaders() }).then(r=>r.json()).catch(()=>[]);
+  if (!Array.isArray(data) || !data.length) {
+    list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--t3);font-size:.77rem">Nenhuma sugestão encontrada.</div>';
+    document.getElementById('feedback-badge').style.display = 'none';
+    return;
+  }
+  const pending = data.filter(f=>f.status==='pending').length;
+  const badge = document.getElementById('feedback-badge');
+  if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+  else badge.style.display = 'none';
+
+  list.innerHTML = data.map(f => `
+    <div class="fb-card" id="fb-card-${f.id}">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.25rem;flex-wrap:wrap">
+          <div class="fb-card-title">${esc(f.title)}</div>
+          <span class="fb-badge ${f.status}">${STATUS_LABELS[f.status]||f.status}</span>
+        </div>
+        ${f.description ? `<div class="fb-card-desc">${esc(f.description)}</div>` : ''}
+        <div class="fb-card-meta">
+          ${esc(f.author_name)} · ${esc(f.tenant_name||'')} · ${new Date(f.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+        </div>
+      </div>
+      <div class="fb-actions">
+        ${f.status !== 'accepted' ? `<button class="fb-btn fb-btn-accept" onclick="setFeedbackStatus('${f.id}','accepted')">✓ Aceitar</button>` : ''}
+        ${f.status !== 'rejected' ? `<button class="fb-btn fb-btn-reject" onclick="setFeedbackStatus('${f.id}','rejected')">✕ Rejeitar</button>` : ''}
+        ${f.status !== 'pending'  ? `<button class="fb-btn" style="background:#f1f5f9;color:var(--t2)" onclick="setFeedbackStatus('${f.id}','pending')">↺ Pendente</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function setFeedbackStatus(id, status) {
+  const res = await fetch(`${saRest('a1_feedback')}?id=eq.${id}`, {
+    method:'PATCH',
+    headers: { ...saHeaders(), 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+    body: JSON.stringify({ status })
+  });
+  if (res.ok || res.status===204) loadFeedback();
+  else alert('Erro ao atualizar status.');
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
