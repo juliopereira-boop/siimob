@@ -407,6 +407,7 @@
       <select id="df-empr"     onchange="applyDashFilter()"><option value="">Empreendimento</option></select>
       <select id="df-parceiro" onchange="applyDashFilter()"><option value="">Correspondente</option></select>
       <select id="df-re"       onchange="applyDashFilter()"><option value="">Imobiliaria</option></select>
+      <select id="df-analista" onchange="applyDashFilter()"><option value="">Analista</option></select>
       <input  id="df-search" type="text" placeholder="Buscar cliente..." oninput="applyDashFilter()">
       <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
@@ -604,6 +605,12 @@
           </div>
           <div class="cfg-card-label">Imobiliárias</div>
         </div>
+        <div class="cfg-hub-card" onclick="openCfgView('analistas')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+          </div>
+          <div class="cfg-card-label">Analistas de Crédito</div>
+        </div>
       </div>
 
       <div class="cfg-section-hdr">Notificacoes</div>
@@ -786,6 +793,28 @@
       </div>
     </div>
 
+    <!-- ─── Sub-view: Analistas de Crédito ─── -->
+    <div id="cfg-view-analistas" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+        <div class="cfg-view-title">Analistas de Crédito</div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="text" id="analista-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="analistaFilter()">
+          <select id="analista-status-filter" onchange="analistaFilter()" style="padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem">
+            <option value="">Todos</option><option value="true">Ativos</option><option value="false">Inativos</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openAnalista(null)">+ Novo analista</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="analista-tbody"><tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pt-pg-btns" id="analista-pg-btns"></div>
+    </div>
+
     <!-- ─── Sub-view: Correspondentes / CCA ─── -->
     <div id="cfg-view-correspondentes" style="display:none">
       <div class="cfg-view-hdr">
@@ -950,7 +979,7 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
-            <div class="form-group"><label>Usuário Correspondente</label>
+            <div class="form-group"><label>Analista Responsável</label>
               <select id="n-manager">
                 <option value="">Selecione...</option>
               </select>
@@ -1000,6 +1029,32 @@
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
       <button class="btn btn-ghost" onclick="closeModal('modal-imob-bg')">Cancelar</button>
       <button class="btn btn-primary" id="imob-save-btn" onclick="saveImob()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Analista de Crédito ═══════ -->
+<div class="modal-bg hidden" id="modal-analista-bg">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="analista-modal-title">Novo analista</div>
+      <button class="modal-close" onclick="closeModal('modal-analista-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome *</label><input id="analista-f-name" type="text" placeholder="Nome completo do analista"></div>
+        <div class="form-group"><label>E-mail</label><input id="analista-f-email" type="email" placeholder="analista@empresa.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="analista-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="analista-f-active" checked> Ativo
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-analista-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="analista-save-btn" onclick="saveAnalista()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1151,6 +1206,30 @@
               onchange="document.getElementById('pt-viz-geral-label').style.borderColor=this.checked?'#10B981':'var(--border)';document.getElementById('pt-viz-geral-label').style.background=this.checked?'#f0fdf4':'#f8fafc'">
           </label>
         </div>
+        <!-- Analistas visíveis -->
+        <div class="form-group full" style="margin-top:.25rem">
+          <label id="pt-analistas-label" style="
+            display:flex;align-items:center;justify-content:space-between;
+            padding:.75rem 1rem;border-radius:10px;cursor:pointer;
+            border:2px solid var(--border);background:#f8fafc;
+            transition:border-color .15s,background .15s;
+          " onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#2563eb':'var(--border)'">
+            <div>
+              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Ver todos os analistas</div>
+              <div style="font-size:.72rem;color:var(--t3)">Usuário pode ver operações de qualquer analista; desmarcado, apenas dos selecionados abaixo</div>
+            </div>
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas"
+              style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem"
+              onchange="toggleAnalistaChecklist(this.checked)">
+          </label>
+          <!-- Checklist de analistas (aparece quando ver_todos_analistas = false) -->
+          <div id="pt-analista-checklist" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;padding:.65rem .75rem;background:#f8fafc">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.5rem">Analistas visíveis para este usuário</div>
+            <div id="pt-analista-chk-list" style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem;font-size:.8rem;color:var(--t1)">
+              <span style="color:var(--t3);font-size:.75rem">Carregando analistas...</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
@@ -1206,7 +1285,9 @@ const G = {
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
-  dashFilters: { regional:'', empr:'', parceiro:'', re:'', search:'' },
+  dashFilters: { regional:'', empr:'', parceiro:'', re:'', analista:'', search:'' },
+  // analistas de crédito
+  analistas: [], analistaFiltered: [], analistaPage: 0, analistaPerPage: 25, editingAnalistaId: null, analistasLoaded: false,
   // partners / usuários correspondentes
   partners: [], ptFiltered: [], ptPage: 0, ptPerPage: 25,
   editingPartnerId: null, partnersLoaded: false,
@@ -1271,7 +1352,7 @@ async function init() {
 function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
-  const defaults = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false };
+  const defaults = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
   return key in p ? !!p[key] : (defaults[key] ?? false);
 }
 
@@ -1348,7 +1429,7 @@ function switchTab(tab, el) {
 }
 
 // ─── Config sub-views ─────────────────────────────────────────────────────────
-const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'correspondentes'];
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'analistas', 'correspondentes'];
 
 function openCfgView(name) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1359,6 +1440,7 @@ function openCfgView(name) {
   if (name === 'correspondentes' && !G.empresasLoaded) loadEmpresas();
   if (name === 'empreendimentos' && !G.emprLoaded) loadEmpreendimentos();
   if (name === 'imobiliarias' && !G.imobsLoaded) loadImobs();
+  if (name === 'analistas'    && !G.analistasLoaded) loadAnalistas();
 }
 
 function closeCfgView() {
@@ -1385,13 +1467,14 @@ function switchView(view) {
 
 // ─── Dashboard filters ────────────────────────────────────────────────────────
 function dashCases() {
-  const { regional, empr, parceiro, re, search } = G.dashFilters;
+  const { regional, empr, parceiro, re, analista, search } = G.dashFilters;
   const sm = stageMap();
   return G.cases.filter(c => {
     if (regional && sm[c.stage_id]?.group_key !== regional) return false;
     if (empr     && c.development !== empr)       return false;
     if (parceiro && c.partner_name !== parceiro)  return false;
     if (re       && c.real_estate_name !== re)    return false;
+    if (analista && c.manager_name !== analista)  return false;
     if (search) {
       const q = search.toLowerCase();
       if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
@@ -1409,25 +1492,28 @@ function populateDashFilters() {
     const el = document.getElementById(id); if(!el) return;
     el.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('');
   };
-  sel('df-regional', 'Todas as regionais', G.groups, df.regional);
-  sel('df-empr',     'Empreendimento',     emprs,    df.empr);
-  sel('df-parceiro', 'Correspondente',     partners, df.parceiro);
-  sel('df-re',       'Imobiliaria',        res,      df.re);
+  const analistas = G.analistas.filter(a=>a.is_active!==false).map(a=>a.name).sort();
+  sel('df-regional', 'Todas as regionais', G.groups,   df.regional);
+  sel('df-empr',     'Empreendimento',     emprs,      df.empr);
+  sel('df-parceiro', 'Correspondente',     partners,   df.parceiro);
+  sel('df-re',       'Imobiliaria',        res,        df.re);
+  sel('df-analista', 'Analista',           analistas,  df.analista);
   const srch = document.getElementById('df-search'); if(srch) srch.value = df.search;
 }
 
 function applyDashFilter() {
-  G.dashFilters.regional = document.getElementById('df-regional')?.value || '';
-  G.dashFilters.empr     = document.getElementById('df-empr')?.value     || '';
+  G.dashFilters.regional = document.getElementById('df-regional')?.value  || '';
+  G.dashFilters.empr     = document.getElementById('df-empr')?.value      || '';
   G.dashFilters.parceiro = document.getElementById('df-parceiro')?.value  || '';
-  G.dashFilters.re       = document.getElementById('df-re')?.value       || '';
-  G.dashFilters.search   = document.getElementById('df-search')?.value   || '';
+  G.dashFilters.re       = document.getElementById('df-re')?.value        || '';
+  G.dashFilters.analista = document.getElementById('df-analista')?.value  || '';
+  G.dashFilters.search   = document.getElementById('df-search')?.value    || '';
   renderDashboard();
 }
 
 function clearDashFilters() {
-  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', search:'' };
-  ['df-regional','df-empr','df-parceiro','df-re','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', search:'' };
+  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDashboard();
 }
 
@@ -1614,9 +1700,13 @@ function filteredCases() {
   const sm=stageMap(), isPartner=G.user.role==='partner';
   return G.cases.filter(c=>{
     if (isPartner) {
-      // ve os proprios processos + processos de colegas que habilitaram visibilidade geral
-      const shared = G.user.shared_managers || [];
-      if (c.manager_name !== G.user.name && !shared.includes(c.manager_name)) return false;
+      // filtra pelos processos da empresa da CCA
+      if (G.user.empresa_name && c.partner_name !== G.user.empresa_name) return false;
+      // filtra por analista permitido
+      if (!hasPerm('ver_todos_analistas')) {
+        const allowed = G.user.permissions?.analistas_permitidos || [];
+        if (!allowed.length || !allowed.includes(c.manager_name)) return false;
+      }
     }
     const stage=sm[c.stage_id];
     if(G.currentGroup!=='__all__' && stage?.group_key!==G.currentGroup) return false;
@@ -1952,17 +2042,12 @@ async function openNewCase() {
   document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
     imobs.map(i=>`<option value="${i.name}">${esc(i.name)}</option>`).join('');
 
-  // usuarios correspondentes — carrega de a1_partners type=cca
-  const ccaUsers = await fetch(`${A1.rest('a1_partners')}?type=eq.cca&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  // analistas responsáveis — carrega de a1_partners type=analista
+  if (!G.analistasLoaded) await loadAnalistas();
   const managerSel = document.getElementById('n-manager');
   managerSel.innerHTML='<option value="">Selecione...</option>'+
-    ccaUsers.filter(u=>u.is_active!==false).map(u=>`<option value="${u.name}">${esc(u.name)}</option>`).join('');
-  if (isCCA) {
-    managerSel.value = G.user.name;
-    managerSel.disabled = true;
-  } else {
-    managerSel.disabled = false;
-  }
+    G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${a.name}">${esc(a.name)}</option>`).join('');
+  managerSel.disabled = false;
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
 }
@@ -2171,6 +2256,25 @@ function renderPtPagination(total) {
 
 function ptGo(n) { G.ptPage=n; renderPartnerTable(); }
 
+function toggleAnalistaChecklist(verTodos, permitidos = []) {
+  const wrap = document.getElementById('pt-analista-checklist');
+  const lbl  = document.getElementById('pt-analistas-label');
+  if (!wrap) return;
+  wrap.style.display = verTodos ? 'none' : '';
+  if (lbl) { lbl.style.borderColor = verTodos ? '#2563eb' : 'var(--border)'; lbl.style.background = verTodos ? '#eff6ff' : '#f8fafc'; }
+  if (!verTodos) {
+    const list = document.getElementById('pt-analista-chk-list');
+    if (!list) return;
+    const src = G.analistas.length ? G.analistas : [];
+    if (!src.length) { list.innerHTML = '<span style="color:var(--t3);font-size:.75rem">Nenhum analista cadastrado.</span>'; return; }
+    list.innerHTML = src.map(a => `
+      <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+        <input type="checkbox" class="pt-analista-chk" value="${esc(a.name)}" ${permitidos.includes(a.name)?'checked':''}>
+        ${esc(a.name)}
+      </label>`).join('');
+  }
+}
+
 function openPartnerModal(id) {
   const p = id ? G.partners.find(x=>x.id===id) : null;
   G.editingPartnerId = p ? p.id : null;
@@ -2200,6 +2304,18 @@ function openPartnerModal(id) {
     vizLabel.style.borderColor = vizGeral.checked ? '#10B981' : 'var(--border)';
     vizLabel.style.background  = vizGeral.checked ? '#f0fdf4' : '#f8fafc';
   }
+  // atualiza visual e checklist de analistas
+  const verAnalistas = document.getElementById('pt-ver-analistas');
+  const analLabel    = document.getElementById('pt-analistas-label');
+  if (verAnalistas) {
+    verAnalistas.checked = 'ver_todos_analistas' in savedPerms ? !!savedPerms.ver_todos_analistas : true;
+    if (analLabel) {
+      analLabel.style.borderColor = verAnalistas.checked ? '#2563eb' : 'var(--border)';
+      analLabel.style.background  = verAnalistas.checked ? '#eff6ff' : '#f8fafc';
+    }
+    const permitidos = savedPerms.analistas_permitidos || [];
+    toggleAnalistaChecklist(verAnalistas.checked, permitidos);
+  }
   document.getElementById('modal-partner-bg').classList.remove('hidden');
 }
 
@@ -2219,7 +2335,17 @@ async function savePartner() {
     region:     document.getElementById('pt-f-region').value.trim(),
     is_active:  document.getElementById('pt-f-active').checked,
     approved:   document.getElementById('pt-f-approved').checked,
-    permissions: Object.fromEntries([...document.querySelectorAll('.pt-perm')].map(cb=>[cb.dataset.key,cb.checked])),
+    permissions: (() => {
+      const perms = Object.fromEntries([...document.querySelectorAll('.pt-perm')].map(cb=>[cb.dataset.key,cb.checked]));
+      const verTodos = document.getElementById('pt-ver-analistas')?.checked !== false;
+      perms.ver_todos_analistas = verTodos;
+      if (!verTodos) {
+        perms.analistas_permitidos = [...document.querySelectorAll('.pt-analista-chk:checked')].map(c=>c.value);
+      } else {
+        perms.analistas_permitidos = [];
+      }
+      return perms;
+    })(),
   };
   const pwd = document.getElementById('pt-f-password').value;
   if (pwd) payload.password_hash = await sha256(pwd + '::a1');
@@ -2733,6 +2859,106 @@ async function deleteImob(id, name) {
   if (res.ok || res.status===204) {
     G.imobs = G.imobs.filter(i=>i.id!==id);
     imobFilter(); toast('Imobiliária removida','info');
+  } else toast('Erro ao remover','error');
+}
+
+// ─── Analistas de Crédito ────────────────────────────────────────────────────
+async function loadAnalistas() {
+  G.analistasLoaded = true;
+  G.analistas = await fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  analistaFilter();
+}
+
+function analistaFilter() {
+  const q   = (document.getElementById('analista-search')?.value || '').toLowerCase();
+  const st  = document.getElementById('analista-status-filter')?.value;
+  G.analistaFiltered = G.analistas.filter(a => {
+    if (q  && !a.name.toLowerCase().includes(q)) return false;
+    if (st !== '' && st !== undefined) { if (String(a.is_active !== false) !== st) return false; }
+    return true;
+  });
+  G.analistaPage = 0;
+  renderAnalistaList();
+}
+
+function renderAnalistaList() {
+  const tbody = document.getElementById('analista-tbody');
+  if (!tbody) return;
+  const total = G.analistaFiltered.length;
+  const page  = G.analistaFiltered.slice(G.analistaPage * G.analistaPerPage, (G.analistaPage+1) * G.analistaPerPage);
+  if (!total) { tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum analista encontrado.</td></tr>'; return; }
+  tbody.innerHTML = page.map(a => `<tr>
+    <td style="font-weight:600">${esc(a.name)}</td>
+    <td style="color:var(--t2)">${esc(a.email||'—')}</td>
+    <td style="color:var(--t2)">${esc(a.phone||'—')}</td>
+    <td>${a.is_active!==false ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
+    <td><div style="display:flex;gap:.3rem">
+      <button class="btn btn-ghost btn-sm" onclick="openAnalista(${JSON.stringify(a).replace(/"/g,'&quot;')})">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${esc(a.name)}')">Excluir</button>
+    </div></td>
+  </tr>`).join('');
+  // pagination
+  const pages = Math.ceil(total / G.analistaPerPage);
+  const pgEl  = document.getElementById('analista-pg-btns');
+  if (pgEl) pgEl.innerHTML = pages <= 1 ? '' :
+    `<button class="pt-pg-btn" ${G.analistaPage===0?'disabled':''} onclick="G.analistaPage--;renderAnalistaList()">Anterior</button>` +
+    Array.from({length:pages},(_,i)=>`<button class="pt-pg-btn${G.analistaPage===i?' active':''}" onclick="G.analistaPage=${i};renderAnalistaList()">${i+1}</button>`).join('') +
+    `<button class="pt-pg-btn" ${G.analistaPage===pages-1?'disabled':''} onclick="G.analistaPage++;renderAnalistaList()">Próximo</button>`;
+}
+
+function openAnalista(a) {
+  G.editingAnalistaId = a?.id || null;
+  document.getElementById('analista-modal-title').textContent = a ? 'Editar analista' : 'Novo analista';
+  document.getElementById('analista-f-name').value  = a?.name  || '';
+  document.getElementById('analista-f-email').value = a?.email || '';
+  document.getElementById('analista-f-phone').value = a?.phone || '';
+  document.getElementById('analista-f-active').checked = a ? a.is_active !== false : true;
+  const btn = document.getElementById('analista-save-btn');
+  btn.disabled = false; btn.textContent = 'Salvar';
+  document.getElementById('modal-analista-bg').classList.remove('hidden');
+}
+
+async function saveAnalista() {
+  const name = document.getElementById('analista-f-name').value.trim();
+  if (!name) { toast('Informe o nome do analista','error'); return; }
+  const payload = {
+    tenant_id: G.user.tenant_id,
+    type:      'analista',
+    name,
+    email:     document.getElementById('analista-f-email').value.trim(),
+    phone:     document.getElementById('analista-f-phone').value.trim(),
+    is_active: document.getElementById('analista-f-active').checked,
+  };
+  const btn = document.getElementById('analista-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    if (G.editingAnalistaId) {
+      const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.editingAnalistaId}`, {method:'PATCH', headers:A1.upsertHeaders(), body:JSON.stringify(payload)});
+      if (!res.ok) throw new Error();
+      const idx = G.analistas.findIndex(a=>a.id===G.editingAnalistaId);
+      if (idx!==-1) G.analistas[idx] = {...G.analistas[idx], ...payload};
+      toast('Analista atualizado','success');
+    } else {
+      const res = await fetch(A1.rest('a1_partners'), {method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(payload)});
+      if (!res.ok) throw new Error();
+      const [created] = await res.json();
+      if (created) G.analistas.push(created);
+      G.analistas.sort((a,b)=>a.name.localeCompare(b.name));
+      toast('Analista criado','success');
+    }
+    closeModal('modal-analista-bg');
+    analistaFilter();
+  } catch { toast('Erro ao salvar analista','error'); }
+  finally { btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+async function deleteAnalista(id, name) {
+  if (!confirm(`Excluir o analista "${name}"? Esta ação não pode ser desfeita.`)) return;
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {method:'DELETE', headers:A1.headers()});
+  if (res.ok || res.status===204) {
+    G.analistas = G.analistas.filter(a=>a.id!==id);
+    analistaFilter(); toast('Analista removido','info');
   } else toast('Erro ao remover','error');
 }
 
