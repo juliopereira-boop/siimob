@@ -398,6 +398,69 @@
   </div>
 </div>
 
+<!-- ═══════ MODAL: Gerar Contrato ═══════ -->
+<div class="modal-bg hidden" id="modal-contrato-bg">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Gerar Contrato de Prestação de Serviços (SaaS)</div>
+        <div style="font-size:.71rem;color:var(--t3);margin-top:.1rem">Dados da Contratada são salvos automaticamente para o próximo contrato</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-contrato-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1.35rem">
+
+      <!-- CONTRATADA -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--emerald);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--emerald)">Contratada — Seus dados</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group" style="grid-column:1/-1"><label>Razão Social *</label><input id="ct-sa-razao_social" type="text" placeholder="Empresa Tecnologia Ltda"></div>
+          <div class="form-group"><label>CNPJ *</label><input id="ct-sa-cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"></div>
+          <div class="form-group"><label>E-mail</label><input id="ct-sa-email" type="email" placeholder="contato@empresa.com"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Endereço completo (Rua, Nº, Bairro) *</label><input id="ct-sa-endereco" type="text" placeholder="Rua das Flores, 100, Centro"></div>
+          <div class="form-group"><label>Cidade / UF *</label><input id="ct-sa-cidade_uf" type="text" placeholder="São Paulo / SP" oninput="autoForo()"></div>
+          <div class="form-group"><label>CEP</label><input id="ct-sa-cep" type="text" placeholder="00000-000" maxlength="9"></div>
+          <div class="form-group"><label>Nome do Representante Legal *</label><input id="ct-sa-rep_legal" type="text" placeholder="João da Silva"></div>
+          <div class="form-group"><label>CPF do Representante</label><input id="ct-sa-cpf_rep" type="text" placeholder="000.000.000-00" maxlength="14"></div>
+        </div>
+      </div>
+
+      <!-- CONTRATANTE -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--blue)">Contratante — Dados do cliente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group" style="grid-column:1/-1"><label>Razão Social *</label><input id="ct-cli-name" type="text"></div>
+          <div class="form-group"><label>CNPJ</label><input id="ct-cli-cnpj" type="text" placeholder="00.000.000/0000-00"></div>
+          <div class="form-group"><label>E-mail</label><input id="ct-cli-email" type="email"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Endereço completo</label><input id="ct-cli-endereco" type="text" placeholder="Rua, Nº, Bairro, Cidade - UF"></div>
+          <div class="form-group"><label>Nome do Representante Legal</label><input id="ct-cli-rep" type="text" placeholder="Maria Souza"></div>
+          <div class="form-group"><label>CPF do Representante</label><input id="ct-cli-cpf_rep" type="text" placeholder="000.000.000-00" maxlength="14"></div>
+        </div>
+      </div>
+
+      <!-- CONDIÇÕES -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--amber)">Condições do contrato</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group"><label>Plano</label><input id="ct-plan-display" type="text" readonly style="background:#f7f8fb;color:var(--t2);font-weight:600"></div>
+          <div class="form-group"><label>Dia de vencimento</label><input id="ct-billing-day" type="number" min="1" max="28" placeholder="Ex.: 10"></div>
+          <div class="form-group"><label>Valor mensal (R$) *</label><input id="ct-valor-plan" type="text" placeholder="Ex.: 299,00"></div>
+          <div class="form-group"><label>Data do contrato</label><input id="ct-data" type="date"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Foro (cidade para resolução de conflitos)</label><input id="ct-foro" type="text" placeholder="Ex.: São Paulo"></div>
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:.875rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-contrato-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="gerarContratoPDF()" style="background:#7c3aed">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Gerar Contrato PDF
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="sa-toast"></div>
 
 <script src="/js/config.js"></script>
@@ -408,6 +471,8 @@ let SA_URL  = '';
 let SA_KEY  = '';
 let TENANTS = [];
 let ALL_MODULES = [];
+let PLANS   = [];
+let CONTRACT_TENANT = null;
 
 const MODULES_DEF = [
   { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.' },
@@ -485,6 +550,7 @@ async function loadAllModules() {
 
 async function loadPlans() {
   const data = await fetch(saRest('a1_plans'), { headers: saHeaders() }).then(r => r.json()).catch(() => []);
+  PLANS = Array.isArray(data) ? data : [];
   document.getElementById('plans-tbody').innerHTML = Array.isArray(data) && data.length
     ? data.map(p => `<tr>
         <td><span class="mono">${esc(p.key)}</span></td>
@@ -536,6 +602,7 @@ function renderTenantsTable(list) {
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
+          <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
           ${t.status!=='suspended'
             ? `<button class="btn btn-danger btn-xs" onclick="suspendTenant('${t.id}')">Suspender</button>`
             : `<button class="btn btn-warn btn-xs" onclick="reactivateTenant('${t.id}')">Reativar</button>`}
@@ -931,6 +998,275 @@ async function setFeedbackStatus(id, status) {
   });
   if (res.ok || res.status===204) loadFeedback();
   else alert('Erro ao atualizar status.');
+}
+
+// ─── Contrato ─────────────────────────────────────────────────────────────────
+function openContrato(tenantId) {
+  CONTRACT_TENANT = TENANTS.find(t => t.id === tenantId);
+  if (!CONTRACT_TENANT) return;
+
+  // Contratante
+  document.getElementById('ct-cli-name').value  = CONTRACT_TENANT.name  || '';
+  document.getElementById('ct-cli-cnpj').value  = CONTRACT_TENANT.cnpj  || '';
+  document.getElementById('ct-cli-email').value = CONTRACT_TENANT.email || '';
+  document.getElementById('ct-cli-rep').value      = '';
+  document.getElementById('ct-cli-cpf_rep').value  = '';
+  document.getElementById('ct-cli-endereco').value  = '';
+
+  // Billing day from created_at
+  const billingDay = CONTRACT_TENANT.created_at ? new Date(CONTRACT_TENANT.created_at).getDate() : new Date().getDate();
+  document.getElementById('ct-billing-day').value = billingDay;
+
+  // Plan display
+  const PLAN_NAMES = { starter:'Starter', pro:'Pro', enterprise:'Enterprise', custom:'Customizado' };
+  document.getElementById('ct-plan-display').value =
+    `${PLAN_NAMES[CONTRACT_TENANT.plan_key] || CONTRACT_TENANT.plan_key} (${CONTRACT_TENANT.max_users} usuários)`;
+
+  // Plan value from loaded plans table
+  const plan = PLANS.find(p => p.key === CONTRACT_TENANT.plan_key);
+  document.getElementById('ct-valor-plan').value = (plan && plan.price_brl > 0)
+    ? Number(plan.price_brl).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})
+    : '';
+
+  // Default date = today
+  document.getElementById('ct-data').value = new Date().toISOString().slice(0, 10);
+
+  // Restore saved contratada data
+  const saved = JSON.parse(localStorage.getItem('sa_contratada') || '{}');
+  ['razao_social','cnpj','email','endereco','cidade_uf','cep','rep_legal','cpf_rep'].forEach(k => {
+    const el = document.getElementById(`ct-sa-${k}`);
+    if (el) el.value = saved[k] || '';
+  });
+  if (saved.cidade_uf) {
+    document.getElementById('ct-foro').value = saved.cidade_uf.split('/')[0].trim();
+  }
+
+  openModal('modal-contrato-bg');
+}
+
+function autoForo() {
+  const cid = document.getElementById('ct-sa-cidade_uf').value.split('/')[0].trim();
+  const foro = document.getElementById('ct-foro');
+  if (cid && !foro.value) foro.value = cid;
+}
+
+function gerarContratoPDF() {
+  const saRazao  = document.getElementById('ct-sa-razao_social').value.trim();
+  const saCnpj   = document.getElementById('ct-sa-cnpj').value.trim();
+  const saEnd    = document.getElementById('ct-sa-endereco').value.trim();
+  const saCid    = document.getElementById('ct-sa-cidade_uf').value.trim();
+  const saCep    = document.getElementById('ct-sa-cep').value.trim();
+  const saEmail  = document.getElementById('ct-sa-email').value.trim();
+  const saRep    = document.getElementById('ct-sa-rep_legal').value.trim();
+  const saCpfRep = document.getElementById('ct-sa-cpf_rep').value.trim();
+
+  if (!saRazao || !saCnpj || !saEnd || !saCid || !saRep) {
+    toast('Preencha os campos obrigatórios da Contratada (*).', 'error'); return;
+  }
+
+  const cliName   = document.getElementById('ct-cli-name').value.trim();
+  const cliCnpj   = document.getElementById('ct-cli-cnpj').value.trim();
+  const cliEmail  = document.getElementById('ct-cli-email').value.trim();
+  const cliEnd    = document.getElementById('ct-cli-endereco').value.trim();
+  const cliRep    = document.getElementById('ct-cli-rep').value.trim();
+  const cliCpfRep = document.getElementById('ct-cli-cpf_rep').value.trim();
+
+  const valorRaw = document.getElementById('ct-valor-plan').value.trim();
+  if (!valorRaw) { toast('Informe o valor mensal do plano.', 'error'); return; }
+
+  const billingDay = document.getElementById('ct-billing-day').value || new Date().getDate();
+  const foro = document.getElementById('ct-foro').value.trim() || saCid.split('/')[0].trim();
+
+  const dataVal = document.getElementById('ct-data').value;
+  const dateObj = dataVal ? new Date(dataVal + 'T12:00:00') : new Date();
+  const today = dateObj.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+
+  const valorNum = parseFloat(valorRaw.replace(/\./g,'').replace(',','.'));
+  const valorFormatted = 'R$ ' + (isNaN(valorNum) ? valorRaw : valorNum.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}));
+
+  // Persist contratada for next time
+  localStorage.setItem('sa_contratada', JSON.stringify({
+    razao_social:saRazao, cnpj:saCnpj, email:saEmail, endereco:saEnd, cidade_uf:saCid, cep:saCep, rep_legal:saRep, cpf_rep:saCpfRep
+  }));
+
+  const PLAN_NAMES = { starter:'Starter', pro:'Pro', enterprise:'Enterprise', custom:'Customizado' };
+  const planName = PLAN_NAMES[CONTRACT_TENANT?.plan_key] || CONTRACT_TENANT?.plan_key || '';
+
+  const html = geraHtmlContrato({
+    saRazao, saCnpj, saEnd, saCid, saCep, saEmail, saRep, saCpfRep,
+    cliName, cliCnpj, cliEmail, cliEnd, cliRep, cliCpfRep,
+    planName, valorFormatted, billingDay, today, foro
+  });
+
+  const w = window.open('', '_blank', 'width=900,height=1100');
+  if (!w) { toast('Permita pop-ups no navegador para gerar o PDF.', 'error'); return; }
+  w.document.write(html);
+  w.document.close();
+  toast('Contrato gerado! Use Ctrl+P → "Salvar como PDF".', 'success');
+}
+
+function geraHtmlContrato(d) {
+  const cliQualif = [
+    `<strong>${d.cliName}</strong>`,
+    d.cliCnpj ? `, inscrita no CNPJ/MF sob o nº <strong>${d.cliCnpj}</strong>` : '',
+    d.cliEnd  ? `, com sede na ${d.cliEnd}` : '',
+    d.cliEmail ? `, e-mail: <strong>${d.cliEmail}</strong>` : '',
+    d.cliRep  ? `, neste ato representada por <strong>${d.cliRep}</strong>${d.cliCpfRep ? ', CPF ' + d.cliCpfRep : ''}` : ''
+  ].join('');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Contrato — ${d.cliName}</title>
+<style>
+  @page{size:A4 portrait;margin:28mm 22mm}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11.5pt;line-height:1.65;color:#111;background:#fff}
+  h1{font-size:13pt;text-align:center;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.25em}
+  .subtitle{text-align:center;font-size:9.5pt;color:#555;margin-bottom:2em}
+  h2{font-size:11pt;font-weight:700;margin-top:1.6em;margin-bottom:.5em;text-transform:uppercase;letter-spacing:.03em}
+  p{margin-bottom:.8em;text-align:justify;hyphens:auto}
+  .parties-box{border:1px solid #bbb;border-radius:4px;padding:14px 18px;margin:1.5em 0;background:#f9f9f9}
+  .party-lbl{font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#444;margin-bottom:.3em;border-bottom:1px solid #ddd;padding-bottom:.2em}
+  .party-info{font-size:10.5pt;margin-bottom:1em}
+  .party-info:last-child{margin-bottom:0}
+  ul{padding-left:1.6em;margin-bottom:.8em}
+  li{margin-bottom:.35em}
+  .date-place{margin-top:3.5em;text-align:center;font-size:11pt}
+  .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:3.5em;margin-top:2.5em;page-break-inside:avoid}
+  .sig-block{text-align:center}
+  .sig-spacer{height:3em}
+  .sig-line{border-top:1px solid #111;margin-bottom:.4em}
+  .sig-name{font-weight:700;font-size:10.5pt}
+  .sig-role{font-size:9.5pt;color:#555}
+  .witness-hdr{text-align:center;font-size:10.5pt;font-weight:700;margin-top:3em;margin-bottom:1.5em}
+  .footer-note{margin-top:3em;font-size:8.5pt;color:#999;border-top:1px solid #ddd;padding-top:.6em;text-align:center;page-break-inside:avoid}
+  @media print{@page{margin:28mm 22mm}button{display:none!important}}
+</style>
+</head>
+<body>
+
+<h1>Contrato de Prestação de Serviços de Software (SaaS)</h1>
+<div class="subtitle">Plataforma CORBAN — Gestão Imobiliária e Financeira</div>
+
+<div class="parties-box">
+  <div class="party-lbl">Contratada</div>
+  <div class="party-info">
+    <strong>${d.saRazao}</strong>, pessoa jurídica de direito privado, inscrita no CNPJ/MF sob o nº <strong>${d.saCnpj}</strong>, com sede na ${d.saEnd}, ${d.saCid}${d.saCep ? ', CEP ' + d.saCep : ''}${d.saEmail ? ', e-mail: <strong>' + d.saEmail + '</strong>' : ''}, neste ato representada por <strong>${d.saRep}</strong>${d.saCpfRep ? ', CPF ' + d.saCpfRep : ''}.
+  </div>
+  <div class="party-lbl">Contratante</div>
+  <div class="party-info">${cliQualif}.</div>
+</div>
+
+<p>As partes acima qualificadas têm entre si justo e contratado o presente <strong>Contrato de Prestação de Serviços de Software como Serviço (SaaS)</strong>, que se regerá pelas cláusulas e condições a seguir:</p>
+
+<h2>Cláusula Primeira – Do Objeto</h2>
+<p>1.1. O presente contrato tem como objeto a prestação, pela <strong>Contratada</strong>, de serviços de acesso à plataforma <em>CORBAN</em> — sistema de gestão imobiliária e financeira em modelo de Software como Serviço (SaaS) —, disponibilizado via internet, conforme plano contratado.</p>
+<p>1.2. Os serviços incluem acesso aos módulos habilitados para o plano <strong>${d.planName}</strong>, suporte técnico nos limites deste plano, atualizações de sistema realizadas automaticamente pela Contratada e armazenamento seguro dos dados do Contratante.</p>
+<p>1.3. A Contratada reserva-se o direito de alterar, atualizar ou descontinuar funcionalidades, mediante notificação com antecedência mínima de 30 (trinta) dias.</p>
+
+<h2>Cláusula Segunda – Do Prazo</h2>
+<p>2.1. Este contrato é firmado por prazo <strong>indeterminado</strong>, com vigência iniciada na data de sua assinatura.</p>
+<p>2.2. A relação contratual renova-se automaticamente a cada mês, sem necessidade de nova formalização, salvo manifestação em contrário de qualquer das partes com antecedência mínima de 30 (trinta) dias.</p>
+
+<h2>Cláusula Terceira – Do Valor e Condições de Pagamento</h2>
+<p>3.1. Pela prestação dos serviços descritos na Cláusula Primeira, o Contratante pagará à Contratada o valor mensal de <strong>${d.valorFormatted}</strong>, referente ao plano <strong>${d.planName}</strong>.</p>
+<p>3.2. O vencimento ocorrerá todo dia <strong>${d.billingDay}</strong> de cada mês, renovando-se automaticamente.</p>
+<p>3.3. O atraso superior a 10 (dez) dias corridos poderá ensejar a suspensão temporária do acesso ao sistema, sem prejuízo da cobrança dos valores devidos e dos encargos previstos nesta cláusula.</p>
+<p>3.4. Os valores poderão ser reajustados anualmente com base na variação do IGPM/FGV ou índice que o substitua, mediante notificação prévia de 30 (trinta) dias.</p>
+<p>3.5. Em caso de inadimplência, incidirão: multa moratória de 2% (dois por cento), juros de mora de 1% (um por cento) ao mês e correção monetária pelo IGPM/FGV sobre o valor em atraso.</p>
+
+<h2>Cláusula Quarta – Das Obrigações da Contratada</h2>
+<p>4.1. São obrigações da Contratada:</p>
+<ul>
+  <li>Disponibilizar o acesso ao sistema de forma contínua, com disponibilidade mínima de 99% (noventa e nove por cento) ao mês, excluídas janelas de manutenção programadas;</li>
+  <li>Realizar backup dos dados do Contratante periodicamente;</li>
+  <li>Comunicar com antecedência mínima de 24 (vinte e quatro) horas as manutenções programadas que impliquem indisponibilidade;</li>
+  <li>Garantir a segurança dos dados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD);</li>
+  <li>Prestar suporte técnico nos canais e limites do plano contratado.</li>
+</ul>
+
+<h2>Cláusula Quinta – Das Obrigações do Contratante</h2>
+<p>5.1. São obrigações do Contratante:</p>
+<ul>
+  <li>Efetuar o pagamento nas datas e condições previstas neste contrato;</li>
+  <li>Utilizar o sistema exclusivamente para fins lícitos, em conformidade com este instrumento e com os Termos de Uso da plataforma;</li>
+  <li>Manter o sigilo de suas credenciais de acesso, sendo responsável por qualquer uso realizado com as mesmas;</li>
+  <li>Comunicar à Contratada imediatamente qualquer suspeita de acesso não autorizado;</li>
+  <li>Não sublicenciar, ceder ou compartilhar o acesso a terceiros sem anuência prévia e escrita da Contratada;</li>
+  <li>Fornecer dados verdadeiros e manter seu cadastro atualizado.</li>
+</ul>
+
+<h2>Cláusula Sexta – Da Propriedade Intelectual</h2>
+<p>6.1. Todos os direitos de propriedade intelectual relativos à plataforma CORBAN — incluindo software, marcas, logotipos, layouts, funcionalidades e documentação — são de titularidade exclusiva da Contratada.</p>
+<p>6.2. Este contrato concede ao Contratante apenas autorização de uso, pessoal e intransferível, pelo período de vigência, não implicando cessão ou transferência de qualquer direito de propriedade intelectual.</p>
+<p>6.3. Os dados inseridos pelo Contratante na plataforma são de sua exclusiva propriedade, e a Contratada se compromete a disponibilizá-los em formato exportável mediante solicitação formal.</p>
+
+<h2>Cláusula Sétima – Da Confidencialidade e Proteção de Dados (LGPD)</h2>
+<p>7.1. As partes obrigam-se a manter em sigilo todas as informações confidenciais trocadas em razão deste contrato, incluindo dados de clientes, processos internos e estratégias comerciais, durante a vigência e por 5 (cinco) anos após o encerramento.</p>
+<p>7.2. A Contratada atua como <strong>Operadora</strong> dos dados pessoais inseridos na plataforma, nos termos da Lei nº 13.709/2018 (LGPD). O Contratante atua como <strong>Controlador</strong> e é responsável pela legalidade e base legal dos dados coletados.</p>
+<p>7.3. Em caso de incidente de segurança envolvendo dados pessoais, a Contratada notificará o Contratante no prazo de 72 (setenta e duas) horas a partir da ciência do evento.</p>
+
+<h2>Cláusula Oitava – Da Limitação de Responsabilidade</h2>
+<p>8.1. A Contratada não se responsabiliza por danos indiretos, lucros cessantes ou perda de dados decorrentes do uso ou impossibilidade de uso do sistema, exceto em casos de dolo ou culpa grave comprovados.</p>
+<p>8.2. A responsabilidade máxima da Contratada ficará limitada ao valor total pago pelo Contratante nos 3 (três) meses anteriores ao evento danoso.</p>
+<p>8.3. O Contratante é o único responsável pela veracidade e integridade das informações inseridas no sistema.</p>
+
+<h2>Cláusula Nona – Da Rescisão</h2>
+<p>9.1. Este contrato poderá ser rescindido, sem ônus, por qualquer das partes, mediante notificação por escrito (inclusive por e-mail) com antecedência mínima de 30 (trinta) dias.</p>
+<p>9.2. A Contratada poderá rescindir imediatamente, sem aviso prévio, nos seguintes casos: (i) inadimplência superior a 30 (trinta) dias; (ii) uso do sistema para fins ilícitos; (iii) violação grave de qualquer cláusula deste contrato.</p>
+<p>9.3. Após o encerramento contratual, o Contratante terá 30 (trinta) dias para exportar seus dados. Transcorrido este prazo, a Contratada poderá removê-los definitivamente de seus servidores.</p>
+
+<h2>Cláusula Décima – Das Disposições Gerais</h2>
+<p>10.1. Este contrato constitui o acordo integral entre as partes e substitui quaisquer entendimentos anteriores sobre o mesmo objeto.</p>
+<p>10.2. Qualquer alteração das condições aqui estabelecidas somente terá validade se formalizada por escrito e assinada pelas partes.</p>
+<p>10.3. A tolerância de qualquer das partes quanto ao descumprimento de obrigações não importará em novação ou renúncia ao direito de exigir o fiel cumprimento.</p>
+<p>10.4. Este contrato é regido pela legislação brasileira, em especial pelo Código Civil (Lei nº 10.406/2002), Lei de Software (Lei nº 9.609/1998), Marco Civil da Internet (Lei nº 12.965/2014) e LGPD (Lei nº 13.709/2018).</p>
+<p>10.5. As partes elegem o foro da comarca de <strong>${d.foro}</strong> para dirimir quaisquer litígios decorrentes deste contrato, com expressa renúncia a qualquer outro, por mais privilegiado que seja.</p>
+
+<div class="date-place">${d.foro}, ${d.today}.</div>
+
+<div class="sig-grid">
+  <div class="sig-block">
+    <div class="sig-spacer"></div>
+    <div class="sig-line"></div>
+    <div class="sig-name">${d.saRep}</div>
+    <div class="sig-role">Contratada</div>
+    <div class="sig-role">${d.saRazao}</div>
+    ${d.saCpfRep ? `<div class="sig-role">CPF: ${d.saCpfRep}</div>` : ''}
+  </div>
+  <div class="sig-block">
+    <div class="sig-spacer"></div>
+    <div class="sig-line"></div>
+    <div class="sig-name">${d.cliRep || '_______________________________'}</div>
+    <div class="sig-role">Contratante</div>
+    <div class="sig-role">${d.cliName}</div>
+    ${d.cliCpfRep ? `<div class="sig-role">CPF: ${d.cliCpfRep}</div>` : ''}
+  </div>
+</div>
+
+<div class="witness-hdr">Testemunhas</div>
+<div class="sig-grid">
+  <div class="sig-block">
+    <div class="sig-spacer"></div>
+    <div class="sig-line"></div>
+    <div class="sig-role">Nome: ______________________________</div>
+    <div class="sig-role">CPF: _______________________________</div>
+  </div>
+  <div class="sig-block">
+    <div class="sig-spacer"></div>
+    <div class="sig-line"></div>
+    <div class="sig-role">Nome: ______________________________</div>
+    <div class="sig-role">CPF: _______________________________</div>
+  </div>
+</div>
+
+<div class="footer-note">Documento gerado em ${d.today} pela plataforma CORBAN. Este instrumento tem validade jurídica nos termos da legislação brasileira vigente.</div>
+
+<script>window.onload = () => { window.focus(); window.print(); }<\/script>
+</body>
+</html>`;
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
