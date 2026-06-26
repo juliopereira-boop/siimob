@@ -519,6 +519,7 @@
       <select id="f-empr"><option value="">Empreendimento</option></select>
       <select id="f-parceiro"><option value="">Correspondente</option></select>
       <select id="f-re"><option value="">Imobiliária</option></select>
+      <select id="f-analista"><option value="">Analista</option></select>
       <select id="f-entrevista">
         <option value="">Entrevista</option>
         <option value="pendente">Pendente</option>
@@ -1281,7 +1282,7 @@ const G = {
   stages: [], cases: [], groups: [],
   currentGroup: '__all__',
   currentView: 'andamento',
-  filters: { search:'', empr:'', parceiro:'', re:'', entrevista:'' },
+  filters: { search:'', empr:'', parceiro:'', re:'', analista:'', entrevista:'' },
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
@@ -1407,9 +1408,11 @@ function populateFilterOptions() {
   const res      = [...new Set(G.cases.map(c=>c.real_estate_name).filter(Boolean))].sort();
   document.getElementById('dl-developments').innerHTML = emprs.map(e=>`<option value="${esc(e)}">`).join('');
   document.getElementById('dl-partners').innerHTML     = partners.map(p=>`<option value="${esc(p)}">`).join('');
+  const analistaNomes = G.analistas.filter(a=>a.is_active!==false).map(a=>a.name).sort();
   document.getElementById('f-empr').innerHTML     = '<option value="">Empreendimento</option>' + emprs.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
   document.getElementById('f-parceiro').innerHTML = '<option value="">Correspondente</option>' + partners.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
-  document.getElementById('f-re').innerHTML       = '<option value="">Imobiliaria</option>'   + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  document.getElementById('f-re').innerHTML       = '<option value="">Imobiliária</option>'    + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  document.getElementById('f-analista').innerHTML = '<option value="">Analista</option>'       + analistaNomes.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
   document.getElementById('tbl-stage-filter').innerHTML = '<option value="">Todas as etapas</option>' + G.stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
 
@@ -1696,7 +1699,7 @@ function renderRegionalTabs() {
 function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
 
 function filteredCases() {
-  const { search, empr, parceiro, re, entrevista } = G.filters;
+  const { search, empr, parceiro, re, analista, entrevista } = G.filters;
   const sm=stageMap(), isPartner=G.user.role==='partner';
   return G.cases.filter(c=>{
     if (isPartner) {
@@ -1711,9 +1714,10 @@ function filteredCases() {
     const stage=sm[c.stage_id];
     if(G.currentGroup!=='__all__' && stage?.group_key!==G.currentGroup) return false;
     if(search){ const q=search.toLowerCase(),hay=`${c.client_name} ${c.client_cpf} ${c.development} ${c.partner_name}`.toLowerCase(); if(!hay.includes(q)) return false; }
-    if(empr    && c.development!==empr)         return false;
-    if(parceiro && c.partner_name!==parceiro)   return false;
-    if(re       && c.real_estate_name!==re)     return false;
+    if(empr     && c.development!==empr)                      return false;
+    if(parceiro && c.partner_name!==parceiro)                  return false;
+    if(re       && c.real_estate_name!==re)                    return false;
+    if(analista && c.manager_name!==analista)                  return false;
     if(entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
   });
@@ -3079,16 +3083,17 @@ document.addEventListener('input',e=>{
   if(e.target.id==='f-search'){G.filters.search=e.target.value;renderKanban();renderList();}
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='f-empr')       {G.filters.empr=e.target.value;renderKanban();}
-  if(e.target.id==='f-parceiro')   {G.filters.parceiro=e.target.value;renderKanban();}
-  if(e.target.id==='f-re')         {G.filters.re=e.target.value;renderKanban();}
-  if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();}
+  if(e.target.id==='f-empr')       {G.filters.empr=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-parceiro')   {G.filters.parceiro=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-re')         {G.filters.re=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-analista')   {G.filters.analista=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();renderList();}
   if(e.target.id==='tbl-stage-filter') renderList();
 });
 
 function clearFilters(){
-  G.filters={search:'',empr:'',parceiro:'',re:'',entrevista:''};
-  ['f-search','f-empr','f-parceiro','f-re','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',entrevista:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderKanban();renderList();
 }
 
