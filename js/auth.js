@@ -125,6 +125,7 @@ function a1RequireAuth(allowedRoles = null) {
 
 // Module guard — redirects or shows locked screen
 async function a1RequireModule(moduleKey) {
+  if (sessionStorage.getItem('a1_sa_mode')) return; // SA impersonation bypasses module check
   const res = await fetch(A1.rpc('a1_has_module'), {
     method: 'POST',
     headers: A1.headers(),

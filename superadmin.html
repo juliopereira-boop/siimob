@@ -601,6 +601,7 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+          <button class="btn btn-xs" style="background:#10B981;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -970,6 +971,45 @@ async function resetPw(userId) {
     method:'PATCH', headers:saHeaders(), body:JSON.stringify({password_hash:hash})
   });
   toast('Senha redefinida.', 'success');
+}
+
+// ─── Superadmin Impersonation ─────────────────────────────────────────────────
+async function accessTenant(tenantId, slug, tenantName) {
+  toast(`Acessando "${tenantName}"...`, 'info');
+  try {
+    // Fetch owner or first admin user for this tenant
+    const users = await fetch(
+      `${saRest('a1_users')}?tenant_id=eq.${tenantId}&order=created_at.asc&limit=5`,
+      { headers: saHeaders() }
+    ).then(r => r.json()).catch(() => []);
+
+    const owner = users.find(u => u.role === 'owner') || users.find(u => u.role === 'admin') || users[0];
+    if (!owner) { toast('Nenhum usuário encontrado neste cliente.', 'error'); return; }
+
+    // Store SA credentials in sessionStorage so config.js picks them up in the new tab
+    sessionStorage.setItem('a1_sa_mode',        '1');
+    sessionStorage.setItem('a1_sa_key',          SA_KEY);
+    sessionStorage.setItem('a1_sa_url',          SA_URL);
+    sessionStorage.setItem('a1_sa_tenant_name',  tenantName);
+
+    // Write a fake session to localStorage (new tab shares same origin storage)
+    localStorage.setItem('a1_token', SA_KEY);
+    localStorage.setItem('a1_slug',  slug);
+    localStorage.setItem('a1_user',  JSON.stringify({
+      id:          owner.id,
+      name:        owner.name + ' [SA]',
+      role:        'admin',
+      tenant_id:   tenantId,
+      tenant_name: tenantName,
+      plan:        'enterprise',
+      max_users:   9999,
+      status:      'active',
+    }));
+
+    window.open(`/${slug}/repasse`, '_blank');
+  } catch (e) {
+    toast('Erro ao acessar cliente: ' + e.message, 'error');
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

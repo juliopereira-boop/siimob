@@ -365,6 +365,12 @@
 </head>
 <body>
 
+<!-- SA impersonation banner (hidden unless superadmin accessed this tenant) -->
+<div id="sa-mode-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c3aed;color:#fff;padding:.35rem 1rem;font-size:.75rem;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;gap:.75rem">
+  <span>Superadmin: acessando como <span id="sa-mode-tenant-name" style="text-decoration:underline"></span></span>
+  <button onclick="exitSAMode()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:.18rem .6rem;cursor:pointer;font-size:.7rem;font-weight:700">Sair e voltar ao Superadmin</button>
+</div>
+
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
   <div class="hdr-top">
@@ -1346,8 +1352,27 @@ const G = {
   imobs: [], imobFiltered: [], imobPage: 0, imobPerPage: 25, editingImobId: null, imobsLoaded: false,
 };
 
+// ─── SA Impersonation ─────────────────────────────────────────────────────────
+function initSAMode() {
+  if (!sessionStorage.getItem('a1_sa_mode')) return;
+  const banner = document.getElementById('sa-mode-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+    document.body.style.paddingTop = '2rem';
+    const nameEl = document.getElementById('sa-mode-tenant-name');
+    if (nameEl) nameEl.textContent = sessionStorage.getItem('a1_sa_tenant_name') || 'Cliente';
+  }
+}
+
+function exitSAMode() {
+  ['a1_sa_mode','a1_sa_key','a1_sa_url','a1_sa_tenant_name'].forEach(k => sessionStorage.removeItem(k));
+  ['a1_token','a1_slug','a1_user'].forEach(k => localStorage.removeItem(k));
+  window.close();
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
+  initSAMode();
   try { G.user = a1RequireAuth(); } catch { return; }
   try { a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
@@ -2898,7 +2923,10 @@ function renderEmprList() {
       <td>${esc(d.regional||'—')}</td>
       <td><span class="pt-type" style="background:#e0f2fe;color:#0284c7">${d.tipo||'blocos'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count||0} unidades</td>
-      <td><button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${esc(d.name)}')">Excluir</button></td>
+      <td style="display:flex;gap:.35rem">
+        <button class="pt-act" onclick="editEmpreendimento('${d.id}')">Editar</button>
+        <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${esc(d.name)}')">Excluir</button>
+      </td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
@@ -2906,6 +2934,7 @@ function renderEmprList() {
 function openEmprModal() {
   G.editingEmprId = null;
   document.getElementById('empr-form-title').textContent = 'Novo empreendimento';
+  document.getElementById('empr-save-btn').textContent = 'Cadastrar Unidades';
   document.getElementById('empr-f-name').value = '';
   document.getElementById('empr-f-qtd').value  = '1';
   document.getElementById('empr-f-pav').value  = '1';
@@ -2919,7 +2948,27 @@ function openEmprModal() {
   emprPreview();
 }
 
+function editEmpreendimento(id) {
+  const d = G.empreendimentos.find(x => x.id === id);
+  if (!d) return;
+  G.editingEmprId = id;
+  document.getElementById('empr-form-title').textContent = 'Editar empreendimento';
+  document.getElementById('empr-save-btn').textContent = 'Salvar Alterações';
+  document.getElementById('empr-f-name').value    = d.name || '';
+  document.getElementById('empr-f-qtd').value     = d.qtd_blocos || 1;
+  document.getElementById('empr-f-pav').value     = d.pavimentos || 1;
+  document.getElementById('empr-f-upf').value     = d.unidades_pav || 4;
+  document.getElementById('empr-f-regional').value = d.regional || '';
+  document.getElementById('empr-err').style.display = 'none';
+  setEmprTipo(d.tipo || 'blocos');
+  document.getElementById('empr-list-panel').style.display = 'none';
+  document.getElementById('empr-form-panel').style.display = '';
+  emprPreview();
+}
+
 function closeEmprForm() {
+  G.editingEmprId = null;
+  document.getElementById('empr-save-btn').textContent = 'Cadastrar Unidades';
   document.getElementById('empr-list-panel').style.display = '';
   document.getElementById('empr-form-panel').style.display = 'none';
 }
@@ -2982,32 +3031,46 @@ async function saveEmpreendimento() {
 
   const payload = {
     name,
-    tipo:       G.emprTipo,
-    regional:   document.getElementById('empr-f-regional').value,
-    qtd_blocos: qtd,
-    pavimentos: pav,
-    unidades_pav: upf,
-    unit_count: units.length,
-    units:      units,
-    tenant_id:  G.user.tenant_id,
+    tipo:        G.emprTipo,
+    regional:    document.getElementById('empr-f-regional').value,
+    qtd_blocos:  qtd,
+    pavimentos:  pav,
+    unidades_pav:upf,
+    unit_count:  units.length,
+    units:       units,
   };
 
   const btn = document.getElementById('empr-save-btn');
+  const isEditing = !!G.editingEmprId;
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
-    const [created] = await fetch(A1.rest('a1_developments'), {
-      method:'POST', headers: A1.returnHeaders(), body: JSON.stringify(payload)
-    }).then(r=>r.json());
-    if (!created) throw new Error('no data');
-    G.empreendimentos.push(created);
-    G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name));
-    renderEmprList();
-    closeEmprForm();
-    toast(`"${name}" cadastrado com ${units.length} unidades.`,'success');
+    if (isEditing) {
+      const res = await fetch(`${A1.rest('a1_developments')}?id=eq.${G.editingEmprId}`, {
+        method:'PATCH', headers: A1.returnHeaders(), body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('patch failed');
+      const idx = G.empreendimentos.findIndex(d => d.id === G.editingEmprId);
+      if (idx >= 0) G.empreendimentos[idx] = { ...G.empreendimentos[idx], ...payload };
+      G.empreendimentos.sort((a,b) => a.name.localeCompare(b.name));
+      renderEmprList();
+      closeEmprForm();
+      toast(`"${name}" atualizado com ${units.length} unidades.`, 'success');
+    } else {
+      const [created] = await fetch(A1.rest('a1_developments'), {
+        method:'POST', headers: A1.returnHeaders(), body: JSON.stringify({ ...payload, tenant_id: G.user.tenant_id })
+      }).then(r=>r.json());
+      if (!created) throw new Error('no data');
+      G.empreendimentos.push(created);
+      G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name));
+      renderEmprList();
+      closeEmprForm();
+      toast(`"${name}" cadastrado com ${units.length} unidades.`,'success');
+    }
   } catch {
     showEmprErr('Erro ao salvar. Verifique os dados e tente novamente.');
   } finally {
-    btn.disabled=false; btn.textContent='Cadastrar Unidades';
+    btn.disabled = false;
+    btn.textContent = isEditing ? 'Salvar Alterações' : 'Cadastrar Unidades';
   }
 }
 
