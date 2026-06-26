@@ -1939,7 +1939,7 @@ function renderModalDet() {
           ${['pendente','agendado','aprovado','reprovado'].map(s=>`<option value="${s}" ${(p.entrevista_status||'pendente')===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Data/hora</label><input id="e-ent-date" type="datetime-local" value="${p.entrevista_data||''}"></div>
+      <div class="form-group"><label>Data/hora</label><input id="e-ent-date" type="datetime-local" value="${(p.agendamento_data||p.entrevista_data||'').slice(0,16)}"></div>
     </div>
     <div class="form-section-title">Observacoes</div>
     <div class="form-group full"><textarea id="e-obs" rows="4">${esc(c.observations||'')}</textarea></div>`;
@@ -2005,7 +2005,8 @@ async function saveCase() {
   const stageId=document.getElementById('mc-stage-sel').value;
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
-  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,entrevista_data:document.getElementById('e-ent-date')?.value||null};
+  const _entDate=document.getElementById('e-ent-date')?.value||null;
+  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate};
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
@@ -2275,82 +2276,123 @@ function renderAgendaCalendar() {
   if (!el) return;
   const label = document.getElementById('agenda-month-label');
   const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  if (label) label.textContent = `${months[_agendaMonth]} ${_agendaYear}`;
+  if (label) label.textContent = months[_agendaMonth] + ' ' + _agendaYear;
 
-  // gather all agendamentos for this month
+  // entrevistas agendadas no mês
   const agds = G.cases.filter(c => {
-    const d = c.payload?.agendamento_data;
+    const d = c.payload && c.payload.agendamento_data;
     if (!d) return false;
     const dt = new Date(d);
     return dt.getFullYear() === _agendaYear && dt.getMonth() === _agendaMonth;
   });
+  // vencimentos de avaliação no mês
+  const venctos = G.cases.filter(c => {
+    if (!c.evaluation_expiry) return false;
+    const dt = new Date(c.evaluation_expiry + 'T12:00:00');
+    return dt.getFullYear() === _agendaYear && dt.getMonth() === _agendaMonth;
+  });
 
-  // build calendar grid
   const firstDay = new Date(_agendaYear, _agendaMonth, 1).getDay();
   const daysInMonth = new Date(_agendaYear, _agendaMonth + 1, 0).getDate();
   const today = new Date();
 
-  // group by day
-  const byDay = {};
+  const byDay = {}, byDayVenc = {};
   for (const c of agds) {
     const day = new Date(c.payload.agendamento_data).getDate();
     if (!byDay[day]) byDay[day] = [];
     byDay[day].push(c);
   }
+  for (const c of venctos) {
+    const day = new Date(c.evaluation_expiry + 'T12:00:00').getDate();
+    if (!byDayVenc[day]) byDayVenc[day] = [];
+    byDayVenc[day].push(c);
+  }
 
   const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
-    ${dayLabels.map(d=>`<div style="text-align:center;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);padding:.25rem 0">${d}</div>`).join('')}
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+  let html = '<div style="display:flex;gap:1rem;margin-bottom:.65rem;align-items:center">'
+    + '<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;color:var(--t2)"><span style="width:10px;height:10px;background:#dbeafe;border:1px solid #93c5fd;border-radius:2px;display:inline-block"></span>Entrevista agendada</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;color:var(--t2)"><span style="width:10px;height:10px;background:#fef9c3;border:1px solid #fde047;border-radius:2px;display:inline-block"></span>Venc. avaliação</span>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">'
+    + dayLabels.map(function(d){ return '<div style="text-align:center;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);padding:.25rem 0">' + d + '</div>'; }).join('')
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
 
-  for (let i = 0; i < firstDay; i++) html += `<div style="min-height:52px"></div>`;
+  for (let i = 0; i < firstDay; i++) html += '<div style="min-height:60px"></div>';
 
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = today.getFullYear()===_agendaYear && today.getMonth()===_agendaMonth && today.getDate()===d;
     const items = byDay[d] || [];
-    const hasItems = items.length > 0;
-    html += `<div style="min-height:52px;border-radius:6px;border:1px solid ${isToday?'var(--violet)':hasItems?'var(--blue)':'var(--border)'};background:${isToday?'var(--violet)1a':hasItems?'#eff6ff':'var(--bg)'};padding:3px 4px;cursor:${hasItems?'pointer':'default'}" ${hasItems?`onclick="toggleAgdDay(this)"`:''}">
-      <div style="font-size:.68rem;font-weight:${isToday?'800':'600'};color:${isToday?'var(--violet)':hasItems?'var(--blue)':'var(--t2)'};margin-bottom:2px">${d}</div>
-      ${items.slice(0,2).map(c=>`<div style="font-size:.55rem;font-weight:600;color:#1e40af;background:#dbeafe;border-radius:2px;padding:.05rem .2rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(c.client_name)} — ${fmtDateHour(c.payload.agendamento_data)}">${esc(c.client_name.split(' ')[0])}</div>`).join('')}
-      ${items.length>2?`<div style="font-size:.5rem;color:var(--blue)">+${items.length-2} mais</div>`:''}
-    </div>
-    <div class="agd-day-detail hidden" style="display:none">
-      ${items.map(c=>`
-        <div onclick="openCard('${c.id}')" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;cursor:pointer;margin-bottom:.25rem">
-          <div style="font-size:.72rem;font-weight:700;color:var(--t1)">${esc(c.client_name)}</div>
-          <div style="font-size:.62rem;color:var(--blue)">${fmtDateHour(c.payload.agendamento_data)}</div>
-          ${c.payload.agendamento_obs?`<div style="font-size:.6rem;color:var(--t3)">${esc(c.payload.agendamento_obs)}</div>`:''}
-        </div>`).join('')}
-    </div>`;
+    const vencs = byDayVenc[d] || [];
+    const hasItems = items.length > 0 || vencs.length > 0;
+    const borderColor = isToday ? 'var(--violet)' : items.length ? '#93c5fd' : vencs.length ? '#fde047' : 'var(--border)';
+    const bgColor    = isToday ? '#f5f3ff'      : items.length ? '#eff6ff' : vencs.length ? '#fefce8' : 'var(--bg)';
+    const numColor   = isToday ? 'var(--violet)' : items.length ? 'var(--blue)' : vencs.length ? '#854d0e' : 'var(--t2)';
+    let cell = '<div style="min-height:60px;border-radius:6px;border:1px solid ' + borderColor + ';background:' + bgColor + ';padding:3px 4px;cursor:' + (hasItems?'pointer':'default') + '"' + (hasItems?' onclick="toggleAgdDay(this)"':'') + '>'
+      + '<div style="font-size:.68rem;font-weight:' + (isToday?'800':'600') + ';color:' + numColor + ';margin-bottom:2px">' + d + '</div>';
+    items.slice(0,1).forEach(function(c){
+      cell += '<div style="font-size:.55rem;font-weight:600;color:#1e40af;background:#dbeafe;border-radius:2px;padding:.05rem .2rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Entrevista: ' + esc(c.client_name) + '">📅 ' + esc(c.client_name.split(' ')[0]) + '</div>';
+    });
+    vencs.slice(0,1).forEach(function(c){
+      cell += '<div style="font-size:.55rem;font-weight:600;color:#854d0e;background:#fef9c3;border-radius:2px;padding:.05rem .2rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Venc: ' + esc(c.client_name) + '">⚠️ ' + esc(c.client_name.split(' ')[0]) + '</div>';
+    });
+    const extra = items.length + vencs.length - (items.length > 0 ? 1 : 0) - (vencs.length > 0 ? 1 : 0);
+    if (extra > 0) cell += '<div style="font-size:.5rem;color:var(--t3)">+' + extra + '</div>';
+    cell += '</div>';
+
+    // detail panel (shown on click)
+    let detail = '<div class="agd-day-detail" style="display:none">';
+    items.forEach(function(c){
+      detail += '<div onclick="openCard(\'' + c.id + '\')" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;cursor:pointer;margin-bottom:.25rem">'
+        + '<div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#3b82f6;margin-bottom:.1rem">📅 Entrevista</div>'
+        + '<div style="font-size:.72rem;font-weight:700;color:var(--t1)">' + esc(c.client_name) + '</div>'
+        + '<div style="font-size:.62rem;color:var(--blue)">' + fmtDateHour(c.payload.agendamento_data) + '</div>'
+        + (c.payload.agendamento_obs ? '<div style="font-size:.6rem;color:var(--t3)">' + esc(c.payload.agendamento_obs) + '</div>' : '')
+        + '</div>';
+    });
+    vencs.forEach(function(c){
+      detail += '<div onclick="openCard(\'' + c.id + '\')" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #fde047;background:#fefce8;cursor:pointer;margin-bottom:.25rem">'
+        + '<div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#854d0e;margin-bottom:.1rem">⚠️ Venc. Avaliação</div>'
+        + '<div style="font-size:.72rem;font-weight:700;color:var(--t1)">' + esc(c.client_name) + '</div>'
+        + '<div style="font-size:.62rem;color:#92400e">' + new Date(c.evaluation_expiry+'T12:00:00').toLocaleDateString('pt-BR') + '</div>'
+        + '</div>';
+    });
+    detail += '</div>';
+    html += cell + detail;
   }
 
-  html += `</div>`;
+  html += '</div>';
 
-  // upcoming list below calendar
-  const upcoming = agds
-    .filter(c => new Date(c.payload.agendamento_data) >= new Date(today.toDateString()))
-    .sort((a,b) => new Date(a.payload.agendamento_data) - new Date(b.payload.agendamento_data))
-    .slice(0,5);
+  // upcoming list: entrevistas + vencimentos ordenados
+  const todayStr = today.toDateString();
+  const upcomingEnt  = agds.filter(function(c){ return new Date(c.payload.agendamento_data) >= new Date(todayStr); }).map(function(c){ return {c:c, type:'ent', date:new Date(c.payload.agendamento_data)}; });
+  const upcomingVenc = venctos.filter(function(c){ return new Date(c.evaluation_expiry+'T12:00:00') >= new Date(todayStr); }).map(function(c){ return {c:c, type:'venc', date:new Date(c.evaluation_expiry+'T12:00:00')}; });
+  const upcoming = upcomingEnt.concat(upcomingVenc).sort(function(a,b){ return a.date - b.date; }).slice(0,8);
 
   if (upcoming.length) {
-    html += `<div style="margin-top:1rem">
-      <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Próximas entrevistas</div>
-      ${upcoming.map(c=>`
-        <div onclick="openCard('${c.id}')" style="display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;margin-bottom:.35rem;transition:all .15s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
-          <div style="width:36px;height:36px;border-radius:6px;background:#dbeafe;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
-            <span style="font-size:.68rem;font-weight:800;color:#1e40af;line-height:1">${new Date(c.payload.agendamento_data).getDate()}</span>
-            <span style="font-size:.5rem;font-weight:700;color:#3b82f6;text-transform:uppercase">${months[new Date(c.payload.agendamento_data).getMonth()].slice(0,3)}</span>
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:.75rem;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.client_name)}</div>
-            <div style="font-size:.62rem;color:var(--t3)">${fmtDateHour(c.payload.agendamento_data)}${c.payload.agendamento_obs?' · '+esc(c.payload.agendamento_obs):''}</div>
-          </div>
-          <div style="font-size:.6rem;font-weight:600;color:var(--t3);flex-shrink:0">${esc(c.partner_name||'')}</div>
-        </div>`).join('')}
-    </div>`;
-  } else if (!agds.length) {
-    html += `<div style="text-align:center;padding:1.5rem;color:var(--t3);font-size:.78rem">Nenhum agendamento neste mês</div>`;
+    html += '<div style="margin-top:1rem"><div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Próximos eventos</div>';
+    upcoming.forEach(function(item){
+      const c = item.c, type = item.type, date = item.date;
+      const isEnt = type === 'ent';
+      const tagBg  = isEnt ? '#dbeafe' : '#fef9c3';
+      const tagClr = isEnt ? '#1e40af' : '#854d0e';
+      const tagTxt = isEnt ? 'Entrevista' : 'Venc. Avaliação';
+      const sub    = isEnt ? fmtDateHour(c.payload.agendamento_data) : date.toLocaleDateString('pt-BR');
+      html += '<div onclick="openCard(\'' + c.id + '\')" style="display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;margin-bottom:.35rem;transition:border-color .15s" onmouseenter="this.style.borderColor=\'' + (isEnt?'#93c5fd':'#fde047') + '\'" onmouseleave="this.style.borderColor=\'var(--border)\'">'
+        + '<div style="width:36px;height:36px;border-radius:6px;background:' + tagBg + ';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<span style="font-size:.68rem;font-weight:800;color:' + tagClr + ';line-height:1">' + date.getDate() + '</span>'
+        + '<span style="font-size:.5rem;font-weight:700;color:' + tagClr + ';text-transform:uppercase">' + months[date.getMonth()].slice(0,3) + '</span>'
+        + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-size:.75rem;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.client_name) + '</div>'
+        + '<div style="font-size:.62rem;color:var(--t3)">' + sub + ' <span style="margin-left:.2rem;font-size:.55rem;background:' + tagBg + ';color:' + tagClr + ';padding:.05rem .25rem;border-radius:2px;font-weight:700">' + tagTxt + '</span></div>'
+        + '</div>'
+        + '<div style="font-size:.6rem;font-weight:600;color:var(--t3);flex-shrink:0">' + esc(c.partner_name||'') + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  } else if (!agds.length && !venctos.length) {
+    html += '<div style="text-align:center;padding:1.5rem;color:var(--t3);font-size:.78rem">Nenhum evento neste mês</div>';
   }
 
   el.innerHTML = html;
