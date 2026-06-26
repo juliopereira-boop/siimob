@@ -1622,6 +1622,7 @@ function renderDashboard() {
   renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#10B981');
   renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#2563eb');
   renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#059669');
+  renderAgendaCalendar();
 }
 
 function renderDonutChart(cases, sm) {
@@ -2024,6 +2025,7 @@ async function saveCase() {
   if(res.ok){
     const idx=G.cases.findIndex(c=>c.id===id);
     if(idx>-1) G.cases[idx]={...G.cases[idx],...patch};
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'edit',description:`Cadastro atualizado`,actor_name:G.user.name})}).catch(()=>{});
     toast('Salvo com sucesso','success');
     closeModal('modal-card-bg');
     renderKanban();renderList();renderDashboard();populateFilterOptions();
@@ -3350,6 +3352,7 @@ function clearFilters(){
 function stageMap(){return Object.fromEntries(G.stages.map(s=>[s.id,s]));}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDateHour(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function fmtCpf(cpf){const d=cpf.replace(/\D/g,'');return d.length===11?`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`:cpf;}
 function fmtBRL(val){return Number(val).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 function fmtDate(dt){return dt?new Date(dt).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';}
