@@ -971,7 +971,7 @@
           <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--emerald);margin-bottom:.65rem">Envolvidos</div>
           <div class="form-grid" style="margin:0">
             <div class="form-group"><label>Correspondente *</label>
-              <select id="n-partner">
+              <select id="n-partner" onchange="onNovoRepasseEmpresaChange()">
                 <option value="">Selecione...</option>
               </select>
             </div>
@@ -1043,6 +1043,7 @@
     </div>
     <div class="modal-body">
       <div class="form-grid">
+        <div class="form-group full"><label>Empresa Correspondente *</label><select id="analista-f-empresa"><option value="">Selecione...</option></select></div>
         <div class="form-group full"><label>Nome *</label><input id="analista-f-name" type="text" placeholder="Nome completo do analista"></div>
         <div class="form-group"><label>E-mail</label><input id="analista-f-email" type="email" placeholder="analista@empresa.com"></div>
         <div class="form-group"><label>Telefone</label><input id="analista-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
@@ -2046,14 +2047,47 @@ async function openNewCase() {
   document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
     imobs.map(i=>`<option value="${i.name}">${esc(i.name)}</option>`).join('');
 
-  // analistas responsáveis — carrega de a1_partners type=analista
+  // analistas e usuarios correspondentes — filtrados por empresa selecionada
   if (!G.analistasLoaded) await loadAnalistas();
-  const managerSel = document.getElementById('n-manager');
-  managerSel.innerHTML='<option value="">Selecione...</option>'+
-    G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${a.name}">${esc(a.name)}</option>`).join('');
-  managerSel.disabled = false;
+  // se CCA: empresa já fixada, filtra imediatamente; caso contrário deixa vazio até selecionar empresa
+  if (isCCA && G.user.empresa_name) {
+    await onNovoRepasseEmpresaChange();
+  } else {
+    // sem empresa selecionada: lista todos os analistas ativos (comportamento anterior)
+    const managerSel = document.getElementById('n-manager');
+    managerSel.innerHTML='<option value="">Selecione...</option>'+
+      G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${a.name}">${esc(a.name)}</option>`).join('');
+    managerSel.disabled = false;
+  }
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
+}
+
+async function onNovoRepasseEmpresaChange() {
+  const partnerSel = document.getElementById('n-partner');
+  const managerSel = document.getElementById('n-manager');
+  const selectedName = partnerSel.value;
+  const empresa = G.empresas.find(e => e.name === selectedName);
+
+  if (!empresa) {
+    // nenhuma empresa selecionada: limpa analistas
+    managerSel.innerHTML = '<option value="">Selecione primeiro o correspondente</option>';
+    managerSel.disabled = true;
+    return;
+  }
+
+  managerSel.innerHTML = '<option value="">Carregando...</option>';
+  managerSel.disabled = true;
+
+  // busca analistas daquela empresa
+  const analistas = await fetch(
+    `${A1.rest('a1_partners')}?type=eq.analista&empresa_id=eq.${empresa.id}&is_active=eq.true&order=name.asc`,
+    {headers: A1.headers()}
+  ).then(r => r.json()).catch(() => []);
+
+  managerSel.innerHTML = '<option value="">Selecione...</option>' +
+    analistas.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  managerSel.disabled = false;
 }
 
 function onEmprChange() {
@@ -2914,6 +2948,9 @@ function renderAnalistaList() {
 function openAnalista(a) {
   G.editingAnalistaId = a?.id || null;
   document.getElementById('analista-modal-title').textContent = a ? 'Editar analista' : 'Novo analista';
+  // populate empresa select
+  if (!G.empresasLoaded) loadEmpresas().then(() => _populateAnalistaEmpresa(a?.empresa_id));
+  else _populateAnalistaEmpresa(a?.empresa_id);
   document.getElementById('analista-f-name').value  = a?.name  || '';
   document.getElementById('analista-f-email').value = a?.email || '';
   document.getElementById('analista-f-phone').value = a?.phone || '';
@@ -2923,16 +2960,25 @@ function openAnalista(a) {
   document.getElementById('modal-analista-bg').classList.remove('hidden');
 }
 
+function _populateAnalistaEmpresa(selectedId) {
+  const sel = document.getElementById('analista-f-empresa');
+  sel.innerHTML = '<option value="">Selecione...</option>' +
+    G.empresas.filter(e => e.is_active !== false).map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (selectedId) sel.value = selectedId;
+}
+
 async function saveAnalista() {
   const name = document.getElementById('analista-f-name').value.trim();
   if (!name) { toast('Informe o nome do analista','error'); return; }
+  const empresaId = document.getElementById('analista-f-empresa').value || null;
   const payload = {
-    tenant_id: G.user.tenant_id,
-    type:      'analista',
+    tenant_id:  G.user.tenant_id,
+    type:       'analista',
     name,
-    email:     document.getElementById('analista-f-email').value.trim(),
-    phone:     document.getElementById('analista-f-phone').value.trim(),
-    is_active: document.getElementById('analista-f-active').checked,
+    email:      document.getElementById('analista-f-email').value.trim(),
+    phone:      document.getElementById('analista-f-phone').value.trim(),
+    is_active:  document.getElementById('analista-f-active').checked,
+    empresa_id: empresaId,
   };
   const btn = document.getElementById('analista-save-btn');
   btn.disabled = true; btn.textContent = 'Salvando...';
