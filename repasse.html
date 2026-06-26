@@ -2067,26 +2067,35 @@ async function onNovoRepasseEmpresaChange() {
   const partnerSel = document.getElementById('n-partner');
   const managerSel = document.getElementById('n-manager');
   const selectedName = partnerSel.value;
-  const empresa = G.empresas.find(e => e.name === selectedName);
+
+  // garante que G.empresas é um array (nunca deixa o select quebrado)
+  const empresas = Array.isArray(G.empresas) ? G.empresas : [];
+  const empresa = empresas.find(e => e.name === selectedName);
 
   if (!empresa) {
-    // nenhuma empresa selecionada: limpa analistas
-    managerSel.innerHTML = '<option value="">Selecione primeiro o correspondente</option>';
-    managerSel.disabled = true;
+    // sem empresa: mostra todos os analistas ativos
+    managerSel.innerHTML = '<option value="">Selecione...</option>' +
+      (G.analistas || []).filter(a => a.is_active !== false).map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+    managerSel.disabled = false;
     return;
   }
 
-  managerSel.innerHTML = '<option value="">Carregando...</option>';
-  managerSel.disabled = true;
-
-  // busca analistas daquela empresa
-  const analistas = await fetch(
-    `${A1.rest('a1_partners')}?type=eq.analista&empresa_id=eq.${empresa.id}&is_active=eq.true&order=name.asc`,
-    {headers: A1.headers()}
-  ).then(r => r.json()).catch(() => []);
-
-  managerSel.innerHTML = '<option value="">Selecione...</option>' +
-    analistas.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  try {
+    const res = await fetch(
+      `${A1.rest('a1_partners')}?type=eq.analista&empresa_id=eq.${empresa.id}&is_active=eq.true&order=name.asc`,
+      {headers: A1.headers()}
+    );
+    const analistas = res.ok ? await res.json().catch(() => []) : [];
+    const lista = Array.isArray(analistas) ? analistas : [];
+    // se nenhum analista vinculado à empresa ainda, exibe todos como fallback
+    const fallback = !lista.length ? (G.analistas || []).filter(a => a.is_active !== false) : lista;
+    managerSel.innerHTML = '<option value="">Selecione...</option>' +
+      fallback.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  } catch {
+    // qualquer erro: mantém lista completa
+    managerSel.innerHTML = '<option value="">Selecione...</option>' +
+      (G.analistas || []).filter(a => a.is_active !== false).map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  }
   managerSel.disabled = false;
 }
 
@@ -2136,15 +2145,22 @@ async function createCase() {
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
   const body={module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
-  const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
-  const [created]=await res.json().catch(()=>[null]);
-  if(created?.id){
-    G.cases.unshift(created);
-    if(stageId) fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()})});
-    toast('Repasse criado','success');
-    closeModal('modal-new-bg');
-    renderKanban();renderList();renderDashboard();populateFilterOptions();
-  } else toast('Erro ao criar','error');
+  try {
+    const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+    const data = await res.json().catch(()=>null);
+    const created = Array.isArray(data) ? data[0] : null;
+    if(created?.id){
+      G.cases.unshift(created);
+      if(stageId) fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()})});
+      toast('Repasse criado','success');
+      closeModal('modal-new-bg');
+      renderKanban();renderList();renderDashboard();populateFilterOptions();
+    } else {
+      toast('Erro ao criar repasse','error');
+    }
+  } catch(e) {
+    toast('Erro ao criar repasse','error');
+  }
 }
 
 // ─── Interview ────────────────────────────────────────────────────────────────
