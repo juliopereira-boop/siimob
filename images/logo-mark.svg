@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="cg" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38D9F5"/>
+      <stop offset="100%" stop-color="#4361EE"/>
+    </linearGradient>
+  </defs>
+  <!-- C-shaped left-half donut (gradient) -->
+  <path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#cg)"/>
+  <!-- Right inner half-circle (solid indigo) -->
+  <path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#4361EE"/>
+</svg>

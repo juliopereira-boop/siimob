@@ -13,7 +13,7 @@
       --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
-      --green:#059669; --emerald:#10B981; --emerald-d:#065F46;
+      --green:#2D4BD4; --emerald:#4361EE; --emerald-d:#1E3A8A;
       --blue:#2563eb; --amber:#d97706; --red:#dc2626;
       --radius:10px;
     }
@@ -28,14 +28,14 @@
     .auth-logo{font-size:1.25rem;font-weight:900;letter-spacing:-.03em;margin-bottom:.25rem}
     .auth-logo span{color:var(--emerald)}
     .auth-sub{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:1.75rem}
-    .auth-top-bar{height:3px;background:linear-gradient(90deg,#10B981,#059669,#0d9488);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
+    .auth-top-bar{height:3px;background:linear-gradient(135deg,#38D9F5,#4361EE);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
 
     /* ── Layout ── */
     .sa-hdr{background:#0F172A;color:#fff;position:sticky;top:0;z-index:200}
     .sa-hdr-inner{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.5rem;gap:1rem}
     .sa-logo{font-weight:900;font-size:.95rem;letter-spacing:-.02em}
     .sa-logo span{color:var(--emerald)}
-    .sa-badge{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34D399;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.04em}
+    .sa-badge{background:rgba(67,97,238,.15);border:1px solid rgba(67,97,238,.3);color:#818CF8;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.04em}
     .sa-warn-badge{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:#FCD34D;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700}
     .sa-tabs{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05)}
     .sa-tab{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
@@ -55,7 +55,7 @@
       font-size:.83rem;color:var(--t1);background:var(--card);transition:border-color .15s
     }
     .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
-      outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(16,185,129,.1)
+      outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(67,97,238,.1)
     }
     .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem}
     .form-grid.cols-2{grid-template-columns:1fr 1fr}
@@ -84,12 +84,12 @@
 
     /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;border-radius:3px;padding:.15rem .55rem;font-size:.65rem;font-weight:700;letter-spacing:.02em}
-    .badge-green{background:#dcfce7;color:#166534}
+    .badge-green{background:#E0E7FF;color:#3730A3}
     .badge-amber{background:#fef3c7;color:#92400e}
     .badge-red{background:#fee2e2;color:#991b1b}
     .badge-blue{background:#dbeafe;color:#1e40af}
     .badge-violet{background:#f5f3ff;color:#6d28d9}
-    .badge-emerald{background:#d1fae5;color:#065F46}
+    .badge-emerald{background:#E0E7FF;color:#1E3A8A}
     .badge-gray{background:#f1f5f9;color:#475569}
     .mono{font-family:'DM Mono',monospace;font-size:.72rem}
 
@@ -97,7 +97,7 @@
     .mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.65rem}
     .mod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;transition:all .15s}
     .mod-card:hover{border-color:var(--border2);box-shadow:var(--shadow)}
-    .mod-card.active-mod{border-color:var(--emerald);background:#f0fdf4}
+    .mod-card.active-mod{border-color:var(--emerald);background:#EEF2FF}
     .mod-name{font-size:.82rem;font-weight:700;margin-bottom:.2rem}
     .mod-key{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--t3);margin-bottom:.45rem}
     .mod-desc{font-size:.72rem;color:var(--t3);line-height:1.5;margin-bottom:.65rem}
@@ -127,11 +127,11 @@
     .fb-card-meta{font-size:.68rem;color:var(--t3)}
     .fb-badge{display:inline-flex;align-items:center;padding:.12rem .55rem;border-radius:99px;font-size:.65rem;font-weight:700;letter-spacing:.03em;white-space:nowrap}
     .fb-badge.pending{background:#fef3c7;color:#92400e}
-    .fb-badge.accepted{background:#d1fae5;color:#065f46}
+    .fb-badge.accepted{background:#E0E7FF;color:#1E3A8A}
     .fb-badge.rejected{background:#fee2e2;color:#991b1b}
     .fb-actions{display:flex;flex-direction:column;gap:.4rem;flex-shrink:0}
     .fb-btn{border:none;border-radius:6px;font-size:.7rem;font-weight:700;cursor:pointer;padding:.3rem .65rem;transition:all .12s}
-    .fb-btn-accept{background:#d1fae5;color:#065f46}.fb-btn-accept:hover{background:#a7f3d0}
+    .fb-btn-accept{background:#E0E7FF;color:#1E3A8A}.fb-btn-accept:hover{background:#A5B4FC}
     .fb-btn-reject{background:#fee2e2;color:#991b1b}.fb-btn-reject:hover{background:#fecaca}
 
     /* ── Modal ── */
@@ -160,7 +160,7 @@
 <div id="auth-gate" class="auth-wrap">
   <div class="auth-card">
     <div class="auth-top-bar"></div>
-    <div class="auth-logo">CORBAN <span>·</span> SA</div>
+    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa1" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#38D9F5"/><stop offset="100%" stop-color="#4361EE"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa1)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#4361EE"/></svg><span>CORBAN <span>CRM</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
     <div class="auth-sub">Superadmin</div>
     <div class="form-group" style="margin-bottom:.875rem">
       <label>Service Role Key</label>
@@ -182,7 +182,7 @@
 <div id="sa-panel" style="display:none">
   <div class="sa-hdr">
     <div class="sa-hdr-inner">
-      <div class="sa-logo">CORBAN <span>SA</span></div>
+      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa2" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#38D9F5"/><stop offset="100%" stop-color="#4361EE"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa2)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#4361EE"/></svg>CORBAN <span>CRM</span></div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <span class="sa-warn-badge">Service Role ativo</span>
         <span class="sa-badge" id="sa-tenant-count">— clientes</span>
@@ -601,7 +601,7 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <button class="btn btn-xs" style="background:#10B981;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
+          <button class="btn btn-xs" style="background:#4361EE;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -718,7 +718,7 @@ function renderAllModulesTable() {
           <td><span style="font-weight:600">${esc(t?.name || r.tenant_id?.slice(0,8) || '—')}</span></td>
           <td><span class="badge badge-emerald">${esc(r.module_key)}</span></td>
           <td class="mono" style="font-size:.72rem">${new Date(r.unlocked_at).toLocaleString('pt-BR')}</td>
-          <td style="color:${r.expires_at?'#d97706':'#059669'};font-size:.73rem;font-weight:600">
+          <td style="color:${r.expires_at?'#d97706':'#2D4BD4'};font-size:.73rem;font-weight:600">
             ${r.expires_at ? new Date(r.expires_at).toLocaleDateString('pt-BR') : 'Permanente'}
           </td>
           <td style="font-size:.72rem;color:var(--t3)">${esc(r.unlocked_by || '—')}</td>
