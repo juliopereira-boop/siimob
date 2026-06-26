@@ -598,6 +598,12 @@
           </div>
           <div class="cfg-card-label">Correspondentes / CCA</div>
         </div>
+        <div class="cfg-hub-card" onclick="openCfgView('imobiliarias')">
+          <div class="cfg-hub-icon" style="background:#ffe4e6">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="cfg-card-label">Imobiliárias</div>
+        </div>
       </div>
 
       <div class="cfg-section-hdr">Notificacoes</div>
@@ -742,6 +748,40 @@
         <div style="display:flex;gap:.5rem;align-items:center">
           <button class="btn btn-primary" id="empr-save-btn" onclick="saveEmpreendimento()">Cadastrar Unidades</button>
           <div id="empr-err" style="font-size:.78rem;color:#dc2626;display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Sub-view: Imobiliárias ─── -->
+    <div id="cfg-view-imobiliarias" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Imobiliárias</div>
+      </div>
+      <div class="panel">
+        <div style="padding:1rem 1rem .25rem">
+          <div class="pt-toolbar">
+            <input type="search" id="imob-search" placeholder="Buscar por nome, CNPJ ou e-mail..." oninput="imobFilter()">
+            <select id="imob-status" onchange="imobFilter()">
+              <option value="">Todos</option>
+              <option value="active">Ativas</option>
+              <option value="inactive">Inativas</option>
+            </select>
+            <div style="flex:1"></div>
+            <button class="btn btn-primary btn-sm" onclick="openImob(null)">+ Nova imobiliária</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pt-table">
+            <thead><tr>
+              <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Cidade / Regional</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="imob-tbody"><tr><td colspan="7" class="pt-empty">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pt-pg">
+          <span id="imob-count">—</span>
+          <div class="pt-pg-btns" id="imob-pg-btns"></div>
         </div>
       </div>
     </div>
@@ -931,6 +971,35 @@
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-bg')">Cancelar</button>
       <button class="btn btn-primary" onclick="createCase()">Criar Repasse</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Imobiliária ═══════ -->
+<div class="modal-bg hidden" id="modal-imob-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="imob-modal-title">Nova imobiliária</div>
+      <button class="modal-close" onclick="closeModal('modal-imob-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Razão Social *</label><input id="imob-f-name" type="text" placeholder="Nome da imobiliária"></div>
+        <div class="form-group"><label>CNPJ</label><input id="imob-f-cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"></div>
+        <div class="form-group"><label>E-mail</label><input id="imob-f-email" type="email" placeholder="contato@imobiliaria.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="imob-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Cidade / Regional</label><input id="imob-f-region" type="text" placeholder="Ex.: São Paulo - SP"></div>
+        <div class="form-group"><label>Site</label><input id="imob-f-site" type="url" placeholder="https://"></div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="imob-f-active" checked> Ativa
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-imob-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="imob-save-btn" onclick="saveImob()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1147,6 +1216,8 @@ const G = {
   // empreendimentos
   empreendimentos: [], emprLoaded: false, editingEmprId: null,
   emprTipo: 'blocos',
+  // imobiliarias
+  imobs: [], imobFiltered: [], imobPage: 0, imobPerPage: 25, editingImobId: null, imobsLoaded: false,
 };
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -1277,7 +1348,7 @@ function switchTab(tab, el) {
 }
 
 // ─── Config sub-views ─────────────────────────────────────────────────────────
-const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'correspondentes'];
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'correspondentes'];
 
 function openCfgView(name) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1287,6 +1358,7 @@ function openCfgView(name) {
   if (name === 'correspondentes' && !G.partnersLoaded) loadPartners();
   if (name === 'correspondentes' && !G.empresasLoaded) loadEmpresas();
   if (name === 'empreendimentos' && !G.emprLoaded) loadEmpreendimentos();
+  if (name === 'imobiliarias' && !G.imobsLoaded) loadImobs();
 }
 
 function closeCfgView() {
@@ -2533,6 +2605,127 @@ async function deleteEmpreendimento(id, name) {
   if (res.ok || res.status===204) {
     G.empreendimentos = G.empreendimentos.filter(d=>d.id!==id);
     renderEmprList(); toast('Empreendimento removido','info');
+  } else toast('Erro ao remover','error');
+}
+
+// ─── Imobiliárias ────────────────────────────────────────────────────────────
+async function loadImobs() {
+  G.imobsLoaded = true;
+  G.imobs = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  imobFilter();
+}
+
+function imobFilter() {
+  const q   = (document.getElementById('imob-search')?.value||'').toLowerCase();
+  const st  = document.getElementById('imob-status')?.value||'';
+  G.imobFiltered = G.imobs.filter(i => {
+    if (st === 'active'   && !i.is_active) return false;
+    if (st === 'inactive' && i.is_active)  return false;
+    if (q) {
+      const hay = `${i.name} ${i.cpf||''} ${i.email||''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  G.imobPage = 0;
+  renderImobList();
+}
+
+function renderImobList() {
+  const tbody = document.getElementById('imob-tbody');
+  const total = G.imobFiltered.length;
+  const pp    = G.imobPerPage;
+  const page  = G.imobPage;
+  const slice = G.imobFiltered.slice(page*pp, page*pp+pp);
+  if (!total) {
+    tbody.innerHTML = `<tr><td colspan="7" class="pt-empty">${G.imobs.length ? 'Nenhuma imobiliária encontrada.' : 'Nenhuma imobiliária cadastrada ainda.'}</td></tr>`;
+    document.getElementById('imob-count').textContent = '0 registros';
+    document.getElementById('imob-pg-btns').innerHTML = '';
+    return;
+  }
+  tbody.innerHTML = slice.map(i => `
+    <tr>
+      <td><strong>${esc(i.name)}</strong></td>
+      <td>${esc(i.cpf||'—')}</td>
+      <td>${esc(i.email||'—')}</td>
+      <td>${esc(i.phone||'—')}</td>
+      <td>${esc(i.region||'—')}</td>
+      <td><span class="status-dot ${i.is_active?'active':'inactive'}"></span>${i.is_active?'Ativa':'Inativa'}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openImob(${JSON.stringify(i).replace(/"/g,'&quot;')})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${esc(i.name)}')">Excluir</button>
+      </td>
+    </tr>`).join('');
+  document.getElementById('imob-count').textContent = `${total} imobiliária${total!==1?'s':''}`;
+  const pages = Math.ceil(total/pp);
+  document.getElementById('imob-pg-btns').innerHTML = pages<=1?'':
+    Array.from({length:pages},(_,k)=>`<button class="pg-btn${k===page?' active':''}" onclick="G.imobPage=${k};renderImobList()">${k+1}</button>`).join('');
+}
+
+function openImob(i) {
+  G.editingImobId = i?.id || null;
+  document.getElementById('imob-modal-title').textContent = i ? 'Editar imobiliária' : 'Nova imobiliária';
+  document.getElementById('imob-f-name').value   = i?.name   || '';
+  document.getElementById('imob-f-cnpj').value   = i?.cpf    || '';
+  document.getElementById('imob-f-email').value  = i?.email  || '';
+  document.getElementById('imob-f-phone').value  = i?.phone  || '';
+  document.getElementById('imob-f-region').value = i?.region || '';
+  document.getElementById('imob-f-site').value   = i?.website|| '';
+  document.getElementById('imob-f-active').checked = i ? !!i.is_active : true;
+  const btn = document.getElementById('imob-save-btn');
+  btn.disabled = false; btn.textContent = 'Salvar';
+  document.getElementById('modal-imob-bg').classList.remove('hidden');
+}
+
+async function saveImob() {
+  const name = document.getElementById('imob-f-name').value.trim();
+  if (!name) { toast('Informe o nome da imobiliária','error'); return; }
+  const payload = {
+    tenant_id: G.user.tenant_id,
+    type:      'imobiliaria',
+    name,
+    cpf:       document.getElementById('imob-f-cnpj').value.trim(),
+    email:     document.getElementById('imob-f-email').value.trim(),
+    phone:     document.getElementById('imob-f-phone').value.trim(),
+    region:    document.getElementById('imob-f-region').value.trim(),
+    website:   document.getElementById('imob-f-site').value.trim(),
+    is_active: document.getElementById('imob-f-active').checked,
+  };
+  const btn = document.getElementById('imob-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    if (G.editingImobId) {
+      const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.editingImobId}`, {
+        method:'PATCH', headers:A1.upsertHeaders(), body:JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      const idx = G.imobs.findIndex(i=>i.id===G.editingImobId);
+      if (idx!==-1) G.imobs[idx] = {...G.imobs[idx], ...payload};
+      toast('Imobiliária atualizada','success');
+    } else {
+      const res = await fetch(A1.rest('a1_partners'), {
+        method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      const [created] = await res.json();
+      if (created) G.imobs.push(created);
+      toast('Imobiliária cadastrada','success');
+    }
+    closeModal('modal-imob-bg');
+    imobFilter();
+  } catch(e) {
+    toast(`Erro ao salvar: ${e.message}`,'error');
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+async function deleteImob(id, name) {
+  if (!confirm(`Excluir a imobiliária "${name}"? Esta ação não pode ser desfeita.`)) return;
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {method:'DELETE', headers:A1.headers()});
+  if (res.ok || res.status===204) {
+    G.imobs = G.imobs.filter(i=>i.id!==id);
+    imobFilter(); toast('Imobiliária removida','info');
   } else toast('Erro ao remover','error');
 }
 
