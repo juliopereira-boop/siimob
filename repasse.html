@@ -2256,8 +2256,15 @@ async function savePartner() {
 
 async function deletePartner(id, name) {
   if (!confirm(`Excluir o cadastro de "${name}"? Esta acao nao pode ser desfeita.`)) return;
+  const partner = G.partners.find(p => p.id === id);
   const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {method:'DELETE',headers:A1.headers()});
   if (res.ok || res.status===204) {
+    // Remove também de a1_users caso exista entrada com o mesmo CPF no tenant
+    if (partner?.cpf) {
+      await fetch(`${A1.rest('a1_users')}?cpf=eq.${partner.cpf}&tenant_id=eq.${G.user.tenant_id}`, {
+        method:'DELETE', headers:A1.headers()
+      }).catch(()=>{});
+    }
     G.partners = G.partners.filter(p=>p.id!==id);
     ptFilter(); refreshCorrLimits(); toast('Cadastro removido','info');
   } else toast('Erro ao remover','error');

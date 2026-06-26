@@ -884,6 +884,7 @@ async function loadTenantUsers() {
         <td style="display:flex;gap:.3rem">
           <button class="btn btn-ghost btn-xs" onclick="toggleUser('${u.id}',${u.is_active})">${u.is_active?'Desativar':'Ativar'}</button>
           <button class="btn btn-ghost btn-xs" onclick="resetPw('${u.id}')">Senha</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${esc(u.name).replace(/'/g,"\\'")}')">Excluir</button>
         </td>
       </tr>`).join('')
     : '<tr><td colspan="5" style="padding:1.5rem;text-align:center;color:var(--t3)">Nenhum usuário. Crie o primeiro acima.</td></tr>';
@@ -920,6 +921,19 @@ async function toggleUser(userId, current) {
   });
   toast(current ? 'Usuário desativado.' : 'Usuário ativado.', 'success');
   loadTenantUsers();
+}
+
+async function deleteUser(userId, userName) {
+  if (!confirm(`Excluir permanentemente "${userName}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  const res = await fetch(`${saRest('a1_users')}?id=eq.${userId}`, {
+    method: 'DELETE', headers: saHeaders()
+  });
+  if (res.ok || res.status === 204) {
+    toast(`Usuário "${userName}" excluído.`, 'info');
+    loadTenantUsers();
+  } else {
+    toast('Erro ao excluir usuário.', 'error');
+  }
 }
 
 async function resetPw(userId) {
