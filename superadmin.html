@@ -975,40 +975,63 @@ async function resetPw(userId) {
 
 // ─── Superadmin Impersonation ─────────────────────────────────────────────────
 async function accessTenant(tenantId, slug, tenantName) {
-  toast(`Acessando "${tenantName}"...`, 'info');
+  toast(`Conectando a "${tenantName}"...`, 'info');
+
+  // Fetch active owner/admin user (needs CPF to login)
+  const users = await fetch(
+    `${saRest('a1_users')}?tenant_id=eq.${tenantId}&is_active=eq.true&order=created_at.asc&limit=10`,
+    { headers: saHeaders() }
+  ).then(r => r.json()).catch(() => []);
+
+  const owner = users.find(u => u.role === 'owner') ||
+                users.find(u => u.role === 'admin')  ||
+                users[0];
+  if (!owner || !owner.cpf) { toast('Nenhum usuário ativo com CPF encontrado.', 'error'); return; }
+
+  const originalHash = owner.password_hash;
+  const tempPw   = 'SAlogin_' + Date.now();
+  const tempHash = await saHash(tempPw);
+
   try {
-    // Fetch owner or first admin user for this tenant
-    const users = await fetch(
-      `${saRest('a1_users')}?tenant_id=eq.${tenantId}&order=created_at.asc&limit=5`,
-      { headers: saHeaders() }
-    ).then(r => r.json()).catch(() => []);
+    // Set a known temp password so we can call the real a1_login RPC
+    await fetch(`${saRest('a1_users')}?id=eq.${owner.id}`, {
+      method: 'PATCH', headers: saHeaders(),
+      body: JSON.stringify({ password_hash: tempHash })
+    });
 
-    const owner = users.find(u => u.role === 'owner') || users.find(u => u.role === 'admin') || users[0];
-    if (!owner) { toast('Nenhum usuário encontrado neste cliente.', 'error'); return; }
+    // Login with the ANON key — creates a real RLS-scoped session token
+    const loginRes = await fetch(`${SA_URL}/rest/v1/rpc/a1_login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': A1_KEY, 'Authorization': `Bearer ${A1_KEY}` },
+      body: JSON.stringify({ p_tenant_slug: slug, p_cpf: owner.cpf, p_password: tempPw })
+    });
+    const session = await loginRes.json();
+    if (!session.token) throw new Error(session.error || 'Login falhou');
 
-    // Store SA credentials in sessionStorage so config.js picks them up in the new tab
-    sessionStorage.setItem('a1_sa_mode',        '1');
-    sessionStorage.setItem('a1_sa_key',          SA_KEY);
-    sessionStorage.setItem('a1_sa_url',          SA_URL);
-    sessionStorage.setItem('a1_sa_tenant_name',  tenantName);
-
-    // Write a fake session to localStorage (new tab shares same origin storage)
-    localStorage.setItem('a1_token', SA_KEY);
+    // Session is now set — restore original hash before opening tab
+    localStorage.setItem('a1_token', session.token);
     localStorage.setItem('a1_slug',  slug);
     localStorage.setItem('a1_user',  JSON.stringify({
-      id:          owner.id,
-      name:        owner.name + ' [SA]',
-      role:        'admin',
+      id:          session.user_id,
+      name:        session.name,
+      role:        session.role,
       tenant_id:   tenantId,
       tenant_name: tenantName,
-      plan:        'enterprise',
-      max_users:   9999,
-      status:      'active',
+      plan:        session.plan        || 'enterprise',
+      max_users:   session.max_users   || 9999,
+      status:      session.status      || 'active',
+      trial_ends_at: session.trial_ends_at || null,
     }));
 
     window.open(`/${slug}/repasse`, '_blank');
-  } catch (e) {
-    toast('Erro ao acessar cliente: ' + e.message, 'error');
+    toast(`Sessão aberta como ${session.name} (${tenantName}).`, 'success');
+
+  } finally {
+    // Always restore original password hash — even if something failed above
+    await fetch(`${saRest('a1_users')}?id=eq.${owner.id}`, {
+      method: 'PATCH', headers: saHeaders(),
+      body: JSON.stringify({ password_hash: originalHash })
+    });
   }
 }
 
