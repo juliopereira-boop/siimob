@@ -1105,7 +1105,8 @@ function gerarContratoPDF() {
     saRazao, saCnpj, saEnd, saCid, saCep, saEmail, saRep, saCpfRep,
     cliName, cliCnpj, cliEmail, cliEnd, cliRep, cliCpfRep,
     planName, valorFormatted, billingDay, today, foro,
-    modulosList: CONTRACT_MODS
+    modulosList: CONTRACT_MODS,
+    maxUsers: CONTRACT_TENANT?.max_users || 0
   });
 
   const w = window.open('', '_blank', 'width=900,height=1100');
@@ -1113,6 +1114,15 @@ function gerarContratoPDF() {
   w.document.write(html);
   w.document.close();
   toast('Contrato gerado! Use Ctrl+P → "Salvar como PDF".', 'success');
+}
+
+function numExtenso(n) {
+  const u = ['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove',
+             'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const d2 = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  if (n < 20) return u[n];
+  if (n < 100) return d2[Math.floor(n/10)] + (n%10 ? ' e ' + u[n%10] : '');
+  return n.toString();
 }
 
 function geraHtmlContrato(d) {
@@ -1173,7 +1183,7 @@ function geraHtmlContrato(d) {
 
 <h2>Cláusula Primeira – Do Objeto</h2>
 <p>1.1. O presente contrato tem como objeto a prestação, pela <strong>Contratada</strong>, de serviços de acesso à plataforma <em>CORBAN</em> — sistema de gestão imobiliária e financeira em modelo de Software como Serviço (SaaS) —, disponibilizado via internet, conforme plano contratado.</p>
-<p>1.2. Os serviços incluem acesso aos módulos abaixo relacionados, contratados no plano <strong>${d.planName}</strong>, além de suporte técnico nos limites deste plano, atualizações de sistema realizadas automaticamente pela Contratada e armazenamento seguro dos dados do Contratante:</p>
+<p>1.2. Os serviços incluem acesso a até <strong>${d.maxUsers} (${numExtenso(d.maxUsers)}) usuário${d.maxUsers !== 1 ? 's' : ''}</strong> simultâneos, contratados no plano <strong>${d.planName}</strong>, com acesso aos módulos abaixo relacionados, além de suporte técnico nos limites deste plano, atualizações de sistema realizadas automaticamente pela Contratada e armazenamento seguro dos dados do Contratante:</p>
 ${d.modulosList && d.modulosList.length
   ? `<ul>${d.modulosList.map(m => `<li><strong>${m.name}</strong>${m.expires_at ? ` — vigência até ${new Date(m.expires_at).toLocaleDateString('pt-BR')}` : ''}</li>`).join('')}</ul>`
   : `<ul><li>Módulos conforme habilitação vigente na plataforma</li></ul>`
