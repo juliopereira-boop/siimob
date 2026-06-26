@@ -3033,13 +3033,15 @@ async function saveEmpreendimento() {
 
   const payload = {
     name,
-    tipo:        semUnidades ? null : G.emprTipo,
     regional:    document.getElementById('empr-f-regional').value,
-    qtd_blocos:  semUnidades ? 0 : qtd,
-    pavimentos:  semUnidades ? 0 : pav,
-    unidades_pav:semUnidades ? 0 : upf,
     unit_count:  units.length,
     units:       units,
+    ...(semUnidades ? {} : {
+      tipo:         G.emprTipo,
+      qtd_blocos:   qtd,
+      pavimentos:   pav,
+      unidades_pav: upf,
+    }),
   };
 
   const btn = document.getElementById('empr-save-btn');
