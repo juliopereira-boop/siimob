@@ -26,6 +26,9 @@ async function a1Login(slug, cpf, password) {
 
   const data = await res.json();
   if (data.error) {
+    if (data.error === 'max_concurrent') {
+      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
     const msgs = {
       tenant_not_found:   'Empresa não encontrada.',
       tenant_suspended:   'Conta suspensa. Contate o suporte.',
@@ -85,7 +88,12 @@ async function a1PartnerLogin(slug, cpf, password) {
   });
 
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  if (data.error) {
+    if (data.error === 'max_concurrent') {
+      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
+    throw new Error(data.error);
+  }
 
   localStorage.setItem('a1_token', data.token);
   localStorage.setItem('a1_slug',  slug);
