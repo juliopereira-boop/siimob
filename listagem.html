@@ -3145,18 +3145,10 @@ function refreshCorrLimits() {
   const counter   = document.getElementById('corr-user-counter');
   const bannerUser = document.getElementById('corr-user-limit-banner');
 
-  if (counter) counter.textContent = `${qtdUsers} / ${maxUsers} usuários`;
-
-  if (qtdUsers >= maxUsers) {
-    if (btnUser) btnUser.style.display = 'none';
-    if (bannerUser) {
-      bannerUser.textContent = `Limite de ${maxUsers} usuários atingido. Solicite ao administrador a ampliação do plano.`;
-      bannerUser.style.display = '';
-    }
-  } else {
-    if (btnUser) btnUser.style.display = '';
-    if (bannerUser) bannerUser.style.display = 'none';
-  }
+  // Cadastro de usuários é ILIMITADO; o plano limita apenas acessos simultâneos.
+  if (counter) counter.textContent = `${qtdUsers} cadastrado${qtdUsers!==1?'s':''} · ${maxUsers} acesso${maxUsers!==1?'s':''} simultâneo${maxUsers!==1?'s':''}`;
+  if (btnUser) btnUser.style.display = '';
+  if (bannerUser) bannerUser.style.display = 'none';
 }
 
 // ─── Correspondentes – inner tab switcher ─────────────────────────────────────
