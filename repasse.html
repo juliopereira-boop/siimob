@@ -1576,6 +1576,19 @@ async function init() {
   renderList();
   loadFlags();
   a1StartHeartbeat('repasse');
+
+  // Handle deep-link params from returning from registro.html (?view= / ?tab=)
+  const _params = new URLSearchParams(location.search);
+  const _view   = _params.get('view');
+  const _tab    = _params.get('tab');
+  if (_tab === 'config') {
+    const configBtn = document.querySelector('.tab-btn[onclick*="config"]');
+    if (configBtn) switchTab('config', configBtn);
+  } else if (_view === 'andamento' || _view === 'listagem') {
+    const repasseBtn = document.getElementById('tab-repasse-btn');
+    if (repasseBtn) switchTab('repasse', repasseBtn);
+    switchView(_view);
+  }
 }
 
 function hasPerm(key) {
