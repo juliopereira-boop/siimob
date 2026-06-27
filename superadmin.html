@@ -31,16 +31,16 @@
     .auth-top-bar{height:3px;background:linear-gradient(135deg,#60CFFF,#3D5CC8);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
 
     /* ── Layout ── */
-    .sa-hdr{background:#0F172A;color:#fff;position:sticky;top:0;z-index:200}
+    .sa-hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
     .sa-hdr-inner{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.5rem;gap:1rem}
     .sa-logo{font-weight:900;font-size:.95rem;letter-spacing:-.02em}
-    .sa-logo span{color:var(--emerald)}
+    .sa-logo span{color:#60CFFF}
     .sa-badge{background:rgba(67,97,238,.15);border:1px solid rgba(67,97,238,.3);color:#818CF8;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.04em}
     .sa-warn-badge{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:#FCD34D;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700}
     .sa-tabs{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05)}
     .sa-tab{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
     .sa-tab:hover{color:rgba(255,255,255,.7)}
-    .sa-tab.active{color:#fff;border-bottom-color:var(--emerald)}
+    .sa-tab.active{color:#fff;border-bottom-color:rgba(255,255,255,.9)}
 
     .sa-body{padding:1.25rem 1.5rem;max-width:1400px;margin:0 auto}
 
@@ -182,7 +182,7 @@
 <div id="sa-panel" style="display:none">
   <div class="sa-hdr">
     <div class="sa-hdr-inner">
-      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa2" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60CFFF"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa2)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#3D5CC8"/></svg>COREON <span>CRM</span></div>
+      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa2" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60CFFF"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lmgsa2)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lmgsa2)"/></svg>COREON <span>CRM</span></div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <span class="sa-warn-badge">Service Role ativo</span>
         <span class="sa-badge" id="sa-tenant-count">— clientes</span>
@@ -197,6 +197,7 @@
         Melhorias
         <span id="feedback-badge" style="display:none;margin-left:.4rem;background:#7c3aed;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
+      <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
     </div>
   </div>
 
@@ -355,6 +356,55 @@
       </div>
     </div>
 
+    <!-- ══ TAB: Plataforma ══ -->
+    <div id="satab-plataforma" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Logo da Plataforma</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">Exibida no cabeçalho de todas as páginas. A logo substitui o símbolo padrão.</div>
+          </div>
+        </div>
+
+        <input type="hidden" id="logo-pending-data">
+        <canvas id="logo-canvas" style="display:none"></canvas>
+
+        <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
+          <!-- Preview -->
+          <div style="flex:0 0 220px">
+            <div id="logo-preview-box" style="background:#3D5CC8;border-radius:10px;min-height:70px;display:flex;align-items:center;justify-content:center;padding:1rem 1.25rem">
+              <img id="logo-preview" src="" alt="" style="display:none;max-width:100%;max-height:52px;object-fit:contain">
+              <span id="logo-empty-msg" style="font-size:.72rem;color:rgba(255,255,255,.5)">Sem logo personalizada</span>
+            </div>
+            <div style="font-size:.67rem;color:var(--t3);margin-top:.4rem;text-align:center">Preview no fundo do header</div>
+          </div>
+
+          <!-- Controls -->
+          <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:.85rem">
+            <div>
+              <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.35rem">Arquivo de imagem</div>
+              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="handleLogoFile(event)">
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logo-file-input').click()">Selecionar arquivo</button>
+                <span id="logo-file-name" style="font-size:.72rem;color:var(--t3)">PNG, SVG, JPG ou WebP</span>
+              </div>
+            </div>
+
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;color:var(--t1)">
+              <input type="checkbox" id="logo-rm-white" checked style="accent-color:#3D5CC8;width:14px;height:14px;cursor:pointer">
+              Remover fundo branco automaticamente
+            </label>
+            <div style="font-size:.7rem;color:var(--t3);margin-top:-.5rem">Pixels brancos e quase-brancos ficam transparentes, isolando apenas o símbolo.</div>
+
+            <div style="display:flex;gap:.5rem;margin-top:.1rem">
+              <button id="logo-save-btn" class="btn btn-primary btn-sm" onclick="saveLogoUpload()" style="display:none">Salvar logo</button>
+              <button id="logo-clear-btn" class="btn btn-danger btn-sm" onclick="clearLogoUpload()" style="display:none">Remover logo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -502,6 +552,7 @@ async function saAuth() {
     if (!res.ok) throw new Error('Chave inválida ou URL incorreta.');
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('sa-panel').style.display  = 'block';
+    applyCustomLogo();
     await loadAll();
   } catch (e) { saErr(e.message || 'Erro de conexão.'); }
 }
@@ -522,14 +573,115 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos','melhorias'].forEach(t => {
+  ['clientes','modulos','planos','melhorias','plataforma'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
   if (name === 'melhorias') loadFeedback();
+  if (name === 'plataforma') initLogoUpload();
+}
+
+// ─── Logo Upload ──────────────────────────────────────────────────────────────
+function initLogoUpload() {
+  const saved = localStorage.getItem('a1_platform_logo');
+  const preview = document.getElementById('logo-preview');
+  const emptyMsg = document.getElementById('logo-empty-msg');
+  if (saved) {
+    preview.src = saved;
+    preview.style.display = 'block';
+    emptyMsg.style.display = 'none';
+    document.getElementById('logo-clear-btn').style.display = 'inline-flex';
+  } else {
+    preview.style.display = 'none';
+    emptyMsg.style.display = '';
+    document.getElementById('logo-clear-btn').style.display = 'none';
+  }
+  document.getElementById('logo-save-btn').style.display = 'none';
+  document.getElementById('logo-pending-data').value = '';
+}
+
+function handleLogoFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('logo-file-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => processLogoImage(ev.target.result);
+  reader.readAsDataURL(file);
+}
+
+function processLogoImage(dataURL) {
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.getElementById('logo-canvas');
+    const maxH = 200;
+    const scale = img.height > maxH ? maxH / img.height : 1;
+    canvas.width  = Math.round(img.width  * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (document.getElementById('logo-rm-white').checked) {
+      removeWhiteBg(ctx, canvas.width, canvas.height);
+    }
+    const processed = canvas.toDataURL('image/png');
+    const preview = document.getElementById('logo-preview');
+    preview.src = processed;
+    preview.style.display = 'block';
+    document.getElementById('logo-empty-msg').style.display = 'none';
+    document.getElementById('logo-pending-data').value = processed;
+    document.getElementById('logo-save-btn').style.display = 'inline-flex';
+  };
+  img.src = dataURL;
+}
+
+function removeWhiteBg(ctx, w, h) {
+  const id = ctx.getImageData(0, 0, w, h);
+  const d  = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    if (r > 200 && g > 200 && b > 200) {
+      // Gradual fade: the whiter the pixel the more transparent
+      const whiteness = Math.min(r, g, b);
+      d[i+3] = Math.round(Math.max(0, (255 - whiteness) * 3.5));
+    }
+  }
+  ctx.putImageData(id, 0, 0);
+}
+
+function saveLogoUpload() {
+  const data = document.getElementById('logo-pending-data').value;
+  if (!data) { toast('Selecione uma imagem primeiro.', 'error'); return; }
+  localStorage.setItem('a1_platform_logo', data);
+  document.getElementById('logo-clear-btn').style.display = 'inline-flex';
+  toast('Logo salva! Recarregue as outras páginas para ver.', 'success');
+}
+
+function clearLogoUpload() {
+  localStorage.removeItem('a1_platform_logo');
+  const preview = document.getElementById('logo-preview');
+  preview.src = '';
+  preview.style.display = 'none';
+  document.getElementById('logo-empty-msg').style.display = '';
+  document.getElementById('logo-save-btn').style.display = 'none';
+  document.getElementById('logo-clear-btn').style.display = 'none';
+  document.getElementById('logo-pending-data').value = '';
+  document.getElementById('logo-file-input').value = '';
+  document.getElementById('logo-file-name').textContent = 'PNG, SVG, JPG ou WebP';
+  toast('Logo removida. Padrão restaurado.', 'info');
 }
 
 // ─── Load all ─────────────────────────────────────────────────────────────────
+
+function applyCustomLogo() {
+  const logo = localStorage.getItem('a1_platform_logo');
+  if (!logo) return;
+  document.querySelectorAll('.hdr-logo svg, .left-logo svg, .auth-logo svg, .sa-logo svg').forEach(svg => {
+    const img = document.createElement('img');
+    img.src = logo;
+    img.style.cssText = 'height:26px;width:auto;object-fit:contain;flex-shrink:0';
+    svg.replaceWith(img);
+  });
+}
+
 async function loadAll() {
   await Promise.all([loadTenants(), loadAllModules(), loadPlans()]);
   updateKPIs();

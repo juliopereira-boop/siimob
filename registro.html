@@ -24,23 +24,23 @@
     a{text-decoration:none;color:inherit}
 
     /* ── Header ── */
-    .hdr{background:#0f1520;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
     .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
     .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
-    .hdr-logo span{color:#3D5CC8}
+    .hdr-logo span{color:rgba(255,255,255,.8)}
     .hdr-right{display:flex;align-items:center;gap:.6rem}
     .hdr-user{font-size:.75rem;color:rgba(255,255,255,.5)}
     .hdr-user strong{color:rgba(255,255,255,.85)}
     .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
     .btn-hdr:hover{background:rgba(255,255,255,.12)}
-    .btn-hdr-primary{background:#3D5CC8;border-color:#3D5CC8;color:#fff}
+    .btn-hdr-primary{background:#fff;border-color:#fff;color:#3D5CC8}
     .btn-hdr-primary:hover{background:#1E3A8A}
 
     /* ── Tab bar ── */
     .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05);align-items:stretch}
     .tab-btn{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
     .tab-btn:hover{color:rgba(255,255,255,.7)}
-    .tab-btn.active{color:#fff;border-bottom-color:#3D5CC8}
+    .tab-btn.active{color:#fff;border-bottom-color:rgba(255,255,255,.9)}
     a.tab-btn{display:flex;align-items:center}
 
     /* ── Layout ── */
@@ -536,7 +536,20 @@ const G = {
 };
 
 // ─── Init ──────────────────────────────────────────────────────────────────────
+
+function applyCustomLogo() {
+  const logo = localStorage.getItem('a1_platform_logo');
+  if (!logo) return;
+  document.querySelectorAll('.hdr-logo svg, .left-logo svg, .auth-logo svg, .sa-logo svg').forEach(svg => {
+    const img = document.createElement('img');
+    img.src = logo;
+    img.style.cssText = 'height:26px;width:auto;object-fit:contain;flex-shrink:0';
+    svg.replaceWith(img);
+  });
+}
+
 async function init() {
+  applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
   try { a1RequireModule('registro'); } catch { return; }
   G.slug = A1.slug;

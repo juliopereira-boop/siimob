@@ -243,6 +243,17 @@
 <script>
 'use strict';
 
+function applyCustomLogo() {
+  const logo = localStorage.getItem('a1_platform_logo');
+  if (!logo) return;
+  document.querySelectorAll('.hdr-logo svg, .left-logo svg, .auth-logo svg, .sa-logo svg').forEach(svg => {
+    const img = document.createElement('img');
+    img.src = logo;
+    img.style.cssText = 'height:26px;width:auto;object-fit:contain;flex-shrink:0';
+    svg.replaceWith(img);
+  });
+}
+
 const slug = getSlugFromURL();
 document.getElementById('tenant-slug-display').textContent = slug || '?';
 
@@ -414,6 +425,7 @@ async function doLogin(e) {
 
 // Init
 loadPanels();
+applyCustomLogo();
 </script>
 </body>
 </html>
