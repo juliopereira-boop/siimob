@@ -169,9 +169,15 @@
     .ent-reprovado.active{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
     .ent-btn:not(.active):hover{opacity:.75}
 
-    .obs-tooltip{position:absolute;bottom:calc(100% + 5px);left:0;right:0;background:#0f1520;color:#fff;border-radius:7px;padding:.55rem .7rem;font-size:.72rem;line-height:1.5;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.25);display:none;pointer-events:none}
-    .obs-tooltip::after{content:'';position:absolute;top:100%;left:1rem;border:5px solid transparent;border-top-color:#0f1520}
-    .k-card:hover .obs-tooltip{display:block}
+    .kc-obs{position:relative;display:inline-flex;align-items:center;color:var(--blue);cursor:help}
+    .obs-tooltip{position:absolute;top:calc(100% + 7px);right:0;left:auto;width:230px;background:#0f1520;color:#fff;border-radius:8px;padding:.6rem .7rem;font-size:.72rem;line-height:1.5;z-index:200;box-shadow:0 8px 26px rgba(0,0,0,.3);display:none;pointer-events:none;text-align:left;font-weight:500;white-space:normal}
+    .obs-tooltip b{font-size:.58rem;letter-spacing:.06em;opacity:.7;display:block;margin-bottom:.2rem}
+    .obs-tooltip::after{content:'';position:absolute;bottom:100%;right:.6rem;border:6px solid transparent;border-bottom-color:#0f1520}
+    .kc-obs:hover .obs-tooltip{display:block}
+    .kc-situacao{display:flex;align-items:center;gap:.45rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.35rem .5rem;margin-bottom:.4rem}
+    .kc-sit-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .kc-sit-name{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kc-sit-since{font-size:.62rem;color:var(--t3);font-family:'DM Mono',monospace}
 
     .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.3rem;padding-top:.3rem;border-top:1px solid var(--border)}
     .kc-date{font-size:.63rem;color:var(--t4);font-family:'DM Mono',monospace}
@@ -2077,31 +2083,44 @@ function renderKanban() {
   document.getElementById('filter-count').textContent=fc!==G.cases.length?`${fc} de ${G.cases.length} registros`:'';
 }
 
+function stageDays(c){
+  const dt=c.stage_entered_at||c.created_at; if(!dt) return 0;
+  const a=new Date(dt), b=new Date();
+  const d1=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  const d2=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.max(0,Math.round((d2-d1)/86400000));
+}
+
 function renderCard(c, stage) {
-  const days=daysSince(c.stage_entered_at), dc=days>14?'alert':days>7?'warn':'';
+  const days=stageDays(c), dc=days>14?'alert':days>7?'warn':'';
   const ent=c.payload?.entrevista_status||'pendente';
+  const since=c.stage_entered_at||c.created_at;
   return `<div class="k-card" style="border-left-color:${stage.color}"
     draggable="true" data-id="${c.id}"
     ondragstart="onDragStart(event,this)" ondragend="this.classList.remove('dragging')"
     onclick="openCard('${c.id}')">
-    ${c.observations?`<div class="obs-tooltip">${esc(c.observations)}</div>`:''}
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
+        ${c.observations?`<span class="kc-obs" onclick="event.stopPropagation()" title="Observação"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="obs-tooltip"><b>OBSERVAÇÃO</b>${esc(c.observations)}</span></span>`:''}
         ${c.is_new?'<span class="badge-novo">NOVO</span>':''}
-        <span class="badge-days ${dc}" title="${days} dia${days!==1?'s':''} nesta etapa">${days}d na etapa</span>
+        <span class="badge-days ${dc}" title="Desde ${fmtDT(since)}">${days}d na etapa</span>
       </div>
     </div>
     ${c.client_cpf?`<div class="kc-cpf" onclick="copyCpf(event,'${esc(c.client_cpf)}')">${fmtCpf(c.client_cpf)}</div>`:''}
     <div class="kc-prop">
       ${c.development?`<span class="empr">${esc(c.development)}</span>`:''}
-      ${c.unit?` <span style="color:var(--t3);font-size:.68rem">· Un ${esc(c.unit)}</span>`:''}
+      ${(c.block||c.unit)?` <span style="color:var(--t3);font-size:.68rem">· ${c.block?'Bl '+esc(c.block):''}${c.block&&c.unit?' ':''}${c.unit?'Un '+esc(c.unit):''}</span>`:''}
     </div>
     <div class="kc-chips">
       ${c.partner_name?`<span class="chip chip-partner">${esc(c.partner_name)}</span>`:''}
       ${c.manager_name?`<span class="chip chip-manager">${esc(c.manager_name)}</span>`:''}
       ${c.real_estate_name?`<span class="chip chip-re">${esc(c.real_estate_name)}</span>`:''}
       ${c.contract_value?`<span class="chip chip-value">${fmtBRL(c.contract_value)}</span>`:''}
+    </div>
+    <div class="kc-situacao">
+      <span class="kc-sit-dot" style="background:${stage.color}"></span>
+      <div style="flex:1;min-width:0"><div class="kc-sit-name">${esc(stage.name)}</div><div class="kc-sit-since">desde ${fmtDT(since)}</div></div>
     </div>
     <div class="kc-entrevista" onclick="event.stopPropagation()">
       <div style="font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);width:100%;margin-bottom:.15rem">Status da entrevista</div>
