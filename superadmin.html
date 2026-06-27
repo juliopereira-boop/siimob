@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Superadmin — CORBAN</title>
+  <title>Superadmin — COREON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
       --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
-      --green:#2D4BD4; --emerald:#4361EE; --emerald-d:#1E3A8A;
+      --green:#2945B0; --emerald:#3D5CC8; --emerald-d:#1E3A8A;
       --blue:#2563eb; --amber:#d97706; --red:#dc2626;
       --radius:10px;
     }
@@ -28,7 +28,7 @@
     .auth-logo{font-size:1.25rem;font-weight:900;letter-spacing:-.03em;margin-bottom:.25rem}
     .auth-logo span{color:var(--emerald)}
     .auth-sub{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:1.75rem}
-    .auth-top-bar{height:3px;background:linear-gradient(135deg,#38D9F5,#4361EE);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
+    .auth-top-bar{height:3px;background:linear-gradient(135deg,#60CFFF,#3D5CC8);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
 
     /* ── Layout ── */
     .sa-hdr{background:#0F172A;color:#fff;position:sticky;top:0;z-index:200}
@@ -160,7 +160,7 @@
 <div id="auth-gate" class="auth-wrap">
   <div class="auth-card">
     <div class="auth-top-bar"></div>
-    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa1" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#38D9F5"/><stop offset="100%" stop-color="#4361EE"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa1)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#4361EE"/></svg><span>CORBAN <span>CRM</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
+    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa1" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa1)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#0D1A5E"/></svg><span>CORE<span style="color:#60CFFF">ON</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
     <div class="auth-sub">Superadmin</div>
     <div class="form-group" style="margin-bottom:.875rem">
       <label>Service Role Key</label>
@@ -182,7 +182,7 @@
 <div id="sa-panel" style="display:none">
   <div class="sa-hdr">
     <div class="sa-hdr-inner">
-      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa2" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#38D9F5"/><stop offset="100%" stop-color="#4361EE"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa2)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#4361EE"/></svg>CORBAN <span>CRM</span></div>
+      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgsa2" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60CFFF"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#lmgsa2)"/><path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#3D5CC8"/></svg>COREON <span>CRM</span></div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <span class="sa-warn-badge">Service Role ativo</span>
         <span class="sa-badge" id="sa-tenant-count">— clientes</span>
@@ -601,7 +601,7 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <button class="btn btn-xs" style="background:#4361EE;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
+          <button class="btn btn-xs" style="background:#3D5CC8;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -718,7 +718,7 @@ function renderAllModulesTable() {
           <td><span style="font-weight:600">${esc(t?.name || r.tenant_id?.slice(0,8) || '—')}</span></td>
           <td><span class="badge badge-emerald">${esc(r.module_key)}</span></td>
           <td class="mono" style="font-size:.72rem">${new Date(r.unlocked_at).toLocaleString('pt-BR')}</td>
-          <td style="color:${r.expires_at?'#d97706':'#2D4BD4'};font-size:.73rem;font-weight:600">
+          <td style="color:${r.expires_at?'#d97706':'#2945B0'};font-size:.73rem;font-weight:600">
             ${r.expires_at ? new Date(r.expires_at).toLocaleDateString('pt-BR') : 'Permanente'}
           </td>
           <td style="font-size:.72rem;color:var(--t3)">${esc(r.unlocked_by || '—')}</td>
@@ -1271,7 +1271,7 @@ function geraHtmlContrato(d) {
 <body>
 
 <h1>Contrato de Prestação de Serviços de Software (SaaS)</h1>
-<div class="subtitle">Plataforma CORBAN — Gestão Imobiliária e Financeira</div>
+<div class="subtitle">Plataforma COREON — Gestão Imobiliária e Financeira</div>
 
 <div class="parties-box">
   <div class="party-lbl">Contratada</div>
@@ -1285,7 +1285,7 @@ function geraHtmlContrato(d) {
 <p>As partes acima qualificadas têm entre si justo e contratado o presente <strong>Contrato de Prestação de Serviços de Software como Serviço (SaaS)</strong>, que se regerá pelas cláusulas e condições a seguir:</p>
 
 <h2>Cláusula Primeira – Do Objeto</h2>
-<p>1.1. O presente contrato tem como objeto a prestação, pela <strong>Contratada</strong>, de serviços de acesso à plataforma <em>CORBAN</em> — sistema de gestão imobiliária e financeira em modelo de Software como Serviço (SaaS) —, disponibilizado via internet, conforme plano contratado.</p>
+<p>1.1. O presente contrato tem como objeto a prestação, pela <strong>Contratada</strong>, de serviços de acesso à plataforma <em>COREON</em> — sistema de gestão imobiliária e financeira em modelo de Software como Serviço (SaaS) —, disponibilizado via internet, conforme plano contratado.</p>
 <p>1.2. Os serviços incluem acesso a até <strong>${d.maxUsers} (${numExtenso(d.maxUsers)}) usuário${d.maxUsers !== 1 ? 's' : ''}</strong> simultâneos, contratados no plano <strong>${d.planName}</strong>, com acesso aos módulos abaixo relacionados, além de suporte técnico nos limites deste plano, atualizações de sistema realizadas automaticamente pela Contratada e armazenamento seguro dos dados do Contratante:</p>
 ${d.modulosList && d.modulosList.length
   ? `<ul>${d.modulosList.map(m => `<li><strong>${m.name}</strong>${m.expires_at ? ` — vigência até ${new Date(m.expires_at).toLocaleDateString('pt-BR')}` : ''}</li>`).join('')}</ul>`
@@ -1326,7 +1326,7 @@ ${d.modulosList && d.modulosList.length
 </ul>
 
 <h2>Cláusula Sexta – Da Propriedade Intelectual</h2>
-<p>6.1. Todos os direitos de propriedade intelectual relativos à plataforma CORBAN — incluindo software, marcas, logotipos, layouts, funcionalidades e documentação — são de titularidade exclusiva da Contratada.</p>
+<p>6.1. Todos os direitos de propriedade intelectual relativos à plataforma COREON — incluindo software, marcas, logotipos, layouts, funcionalidades e documentação — são de titularidade exclusiva da Contratada.</p>
 <p>6.2. Este contrato concede ao Contratante apenas autorização de uso, pessoal e intransferível, pelo período de vigência, não implicando cessão ou transferência de qualquer direito de propriedade intelectual.</p>
 <p>6.3. Os dados inseridos pelo Contratante na plataforma são de sua exclusiva propriedade, e a Contratada se compromete a disponibilizá-los em formato exportável mediante solicitação formal.</p>
 
@@ -1389,7 +1389,7 @@ ${d.modulosList && d.modulosList.length
   </div>
 </div>
 
-<div class="footer-note">Documento gerado em ${d.today} pela plataforma CORBAN. Este instrumento tem validade jurídica nos termos da legislação brasileira vigente.</div>
+<div class="footer-note">Documento gerado em ${d.today} pela plataforma COREON. Este instrumento tem validade jurídica nos termos da legislação brasileira vigente.</div>
 
 <script>window.onload = () => { window.focus(); window.print(); }<\/script>
 </body>
