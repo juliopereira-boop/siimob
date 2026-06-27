@@ -5,8 +5,10 @@
       <stop offset="100%" stop-color="#3D5CC8"/>
     </linearGradient>
   </defs>
-  <!-- C-shaped left-half donut (gradient) -->
-  <path d="M50 5 A45 45 0 0 0 50 95 L50 73 A23 23 0 0 1 50 27 Z" fill="url(#cg)"/>
-  <!-- Right inner half-circle (dark navy) -->
-  <path d="M50 27 A23 23 0 0 1 50 73 Z" fill="#0D1A5E"/>
+  <!-- Top arm (parallelogram) -->
+  <polygon points="10,8 84,4 81,29 7,33" fill="url(#cg)"/>
+  <!-- Dark navy inner-left block (C spine) -->
+  <polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/>
+  <!-- Bottom L-arm with right upward tab -->
+  <path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#cg)"/>
 </svg>
