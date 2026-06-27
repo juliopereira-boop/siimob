@@ -245,6 +245,11 @@
     /* ── PDF zone ── */
     .pdf-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s}
     .pdf-zone:hover,.pdf-zone.drag-over{border-color:var(--violet);background:#f5f3ff}
+    .pdf-type-card{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s;margin-bottom:.6rem}
+    .pdf-type-card:hover{border-color:var(--violet);background:#f5f3ff}
+    .pdf-type-ic{width:42px;height:42px;border-radius:9px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex-shrink:0}
+    .pdf-type-title{font-size:.83rem;font-weight:700;color:var(--t1)}
+    .pdf-type-sub{font-size:.7rem;color:var(--t3);margin-top:.12rem}
 
     /* ── Section title ── */
     .sec-title{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem}
@@ -1239,9 +1244,27 @@
       <button class="modal-close" onclick="closeModal('modal-pdf-bg')">x</button>
     </div>
     <div class="modal-body">
-      <div class="pdf-zone" id="pdf-zone" onclick="document.getElementById('pdf-input').click()">
+      <!-- Passo 1: escolher tipo de documento -->
+      <div id="pdf-typesel">
+        <div style="font-size:.73rem;font-weight:700;color:var(--t2);margin-bottom:.6rem">Selecione o tipo de documento:</div>
+        <div class="pdf-type-card" onclick="pickPdfType('cvcrm')">
+          <div class="pdf-type-ic">CV</div>
+          <div>
+            <div class="pdf-type-title">Ficha de Pré-cadastro CVCRM</div>
+            <div class="pdf-type-sub">Lê a ficha do CV e cadastra o cliente na etapa inicial automaticamente</div>
+          </div>
+        </div>
+        <div class="pdf-type-card" onclick="pickPdfType('generic')">
+          <div class="pdf-type-ic" style="background:#EEF2FF;color:#3730A3">PDF</div>
+          <div>
+            <div class="pdf-type-title">Outro documento</div>
+            <div class="pdf-type-sub">Proposta bancária, análise ou contrato — preenche o formulário</div>
+          </div>
+        </div>
+      </div>
+      <div class="pdf-zone" id="pdf-zone" style="display:none" onclick="document.getElementById('pdf-input').click()">
         <div style="font-size:.85rem;font-weight:700;color:var(--t2);margin-bottom:.3rem">Clique ou arraste um PDF aqui</div>
-        <div style="font-size:.72rem;color:var(--t4)">Proposta bancaria, analise ou contrato</div>
+        <div style="font-size:.72rem;color:var(--t4)" id="pdf-zone-sub">Proposta bancaria, analise ou contrato</div>
       </div>
       <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePdfFile(this.files[0])">
       <div id="pdf-processing" style="display:none;text-align:center;padding:2rem">
@@ -1255,7 +1278,12 @@
           <div class="form-group"><label>CPF</label><input id="pdf-cpf" type="text"></div>
           <div class="form-group"><label>Valor</label><input id="pdf-value" type="text"></div>
           <div class="form-group full"><label>Empreendimento</label><input id="pdf-development" type="text"></div>
-          <div class="form-group full"><label>Correspondente</label><input id="pdf-partner" type="text"></div>
+          <div class="form-group" id="pdf-re-wrap"><label>Imobiliária</label><input id="pdf-re" type="text"></div>
+          <div class="form-group" id="pdf-broker-wrap"><label>Corretor</label><input id="pdf-broker" type="text"></div>
+          <div class="form-group full" id="pdf-partner-wrap"><label>Correspondente</label><input id="pdf-partner" type="text"></div>
+        </div>
+        <div id="pdf-autonote" style="display:none;font-size:.7rem;color:var(--t3);margin-top:.6rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:.55rem .7rem">
+          Empreendimentos e imobiliárias não cadastrados serão criados automaticamente. O cliente será incluído na etapa inicial.
         </div>
       </div>
     </div>
@@ -3586,7 +3614,9 @@ async function saveFeedback() {
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 function openPdfModal(){
   G.pdfData=null;
-  document.getElementById('pdf-zone').style.display='';
+  G.pdfMode=null;
+  document.getElementById('pdf-typesel').style.display='';
+  document.getElementById('pdf-zone').style.display='none';
   document.getElementById('pdf-processing').style.display='none';
   document.getElementById('pdf-preview').style.display='none';
   document.getElementById('btn-pdf-import').style.display='none';
@@ -3594,8 +3624,24 @@ function openPdfModal(){
   document.getElementById('modal-pdf-bg').classList.remove('hidden');
 }
 
+function pickPdfType(type){
+  G.pdfMode=type;
+  document.getElementById('pdf-typesel').style.display='none';
+  document.getElementById('pdf-zone').style.display='';
+  const sub=document.getElementById('pdf-zone-sub');
+  const title=document.querySelector('#modal-pdf-bg .modal-title');
+  if(type==='cvcrm'){
+    if(sub) sub.textContent='Ficha de Pré-cadastro exportada do CVCRM';
+    if(title) title.textContent='Importar Ficha de Pré-cadastro CVCRM';
+  }else{
+    if(sub) sub.textContent='Proposta bancaria, analise ou contrato';
+    if(title) title.textContent='Importar Proposta PDF';
+  }
+}
+
 async function handlePdfFile(file){
   if(!file) return;
+  if(!G.pdfMode) G.pdfMode='generic';
   document.getElementById('pdf-zone').style.display='none';
   document.getElementById('pdf-processing').style.display='';
   try{
@@ -3605,15 +3651,24 @@ async function handlePdfFile(file){
     const pdf=await pdfjsLib.getDocument({data:ab}).promise;
     let txt='';
     for(let i=1;i<=Math.min(pdf.numPages,5);i++){const page=await pdf.getPage(i);const tc=await page.getTextContent();txt+=tc.items.map(x=>x.str).join(' ')+'\n';}
-    G.pdfData=parsePdf(txt);
+    const isCvcrm=G.pdfMode==='cvcrm';
+    G.pdfData=isCvcrm?parseCvcrm(txt):parsePdf(txt);
     document.getElementById('pdf-processing').style.display='none';
     document.getElementById('pdf-preview').style.display='';
     document.getElementById('btn-pdf-import').style.display='';
+    document.getElementById('btn-pdf-import').textContent=isCvcrm?'Cadastrar cliente':'Importar dados';
+    // mostra/oculta campos conforme o tipo
+    document.getElementById('pdf-re-wrap').style.display=isCvcrm?'':'none';
+    document.getElementById('pdf-broker-wrap').style.display=isCvcrm?'':'none';
+    document.getElementById('pdf-partner-wrap').style.display=isCvcrm?'none':'';
+    document.getElementById('pdf-autonote').style.display=isCvcrm?'':'none';
     document.getElementById('pdf-name').value=G.pdfData.name||'';
     document.getElementById('pdf-cpf').value=G.pdfData.cpf||'';
     document.getElementById('pdf-value').value=G.pdfData.value||'';
     document.getElementById('pdf-development').value=G.pdfData.development||'';
     document.getElementById('pdf-partner').value=G.pdfData.partner||'';
+    document.getElementById('pdf-re').value=G.pdfData.imobiliaria||'';
+    document.getElementById('pdf-broker').value=G.pdfData.broker||'';
   }catch(err){
     document.getElementById('pdf-processing').style.display='none';
     document.getElementById('pdf-zone').style.display='';
@@ -3630,8 +3685,37 @@ function parsePdf(text){
   return d;
 }
 
+// Parser da Ficha de Pré-cadastro do CVCRM
+function parseCvcrm(text){
+  const t=text.replace(/ /g,' ').replace(/\s+/g,' ').trim();
+  const m=(re)=>{const x=t.match(re);return x?x[1].trim():'';};
+  const money=(s)=>s?s.replace(/R\$\s*/,'').trim():'';
+  const d={};
+  d.name        = m(/NOME\s*:?\s*(.+?)\s*(?:CPF|CNPJ|ATENDIMENTO)/i);
+  d.cpf         = (t.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/)||t.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/)||[''])[0];
+  d.atendimento = m(/ATENDIMENTO[^:]*:?\s*(\d{2,})/i);
+  d.data_cadastro = m(/Data\s+Cadastro\s*:?\s*([0-9\/]+(?:\s*[àaÀ]s\s*[0-9hHmin:]+)?)/i);
+  d.development = m(/Empreendimento\s*:?\s*(.+?)\s*Corretor/i);
+  d.broker      = m(/Corretor\s*:?\s*(.+?)\s*Imobili[áa]ria/i);
+  d.imobiliaria = m(/Imobili[áa]ria\s*:?\s*(.+?)\s*Valor\s+Avalia/i);
+  d.valor_avaliacao = money(m(/Valor\s+Avalia[çc][ãa]o\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.valor_aprovado  = money(m(/Valor\s+Aprovado\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.valor_subsidio  = money(m(/Valor\s+Subs[íi]dio\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.prazo       = m(/Prazo\s+do\s+financiamento\s*:?\s*(\d+)/i);
+  d.prestacao   = money(m(/Valor\s+Presta[çc][ãa]o\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.carta       = m(/Carta\s+Cr[ée]dito\s*:?\s*([A-Za-zÀ-ÿ]+)/i);
+  d.vencimento  = m(/Vencimento\s+Aprova[çc][ãa]o\s*:?\s*([0-9\/]+)/i);
+  d.renda       = money(m(/Renda\s+Familiar[^:]*:?\s*(R\$\s*[\d.,]+)/i));
+  d.value       = d.valor_avaliacao || d.valor_aprovado || '';
+  return d;
+}
+
+function brToNum(s){if(!s)return null;const n=parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,''));return isNaN(n)?null:n;}
+function brDateToISO(s){if(!s)return null;const x=String(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);return x?`${x[3]}-${x[2]}-${x[1]}`:null;}
+
 function importFromPdf(){
   if(!G.pdfData) return;
+  if(G.pdfMode==='cvcrm'){ importCvcrmCase(); return; }
   closeModal('modal-pdf-bg');
   openNewCase();
   setTimeout(()=>{
@@ -3642,6 +3726,84 @@ function importFromPdf(){
       if(devMatch){ document.getElementById('n-development').value=devMatch.id; onEmprChange(); }
     }
   },80);
+}
+
+// Importa a ficha CVCRM: cria empreendimento/imobiliária se faltarem e cadastra o cliente na etapa inicial
+async function importCvcrmCase(){
+  const btn=document.getElementById('btn-pdf-import');
+  const name=document.getElementById('pdf-name').value.trim();
+  const cpf=document.getElementById('pdf-cpf').value.trim();
+  const devName=document.getElementById('pdf-development').value.trim();
+  const imobName=document.getElementById('pdf-re').value.trim();
+  const broker=document.getElementById('pdf-broker').value.trim();
+  const value=brToNum(document.getElementById('pdf-value').value);
+  if(!name){ toast('Nome do cliente não encontrado no PDF','error'); return; }
+  btn.disabled=true; btn.textContent='Importando...';
+  const norm=s=>String(s||'').toLowerCase().trim();
+  try{
+    // 1. Empreendimento — cadastra automaticamente se não existir
+    let devLabel=devName;
+    if(devName){
+      if(!G.emprLoaded) await loadEmpreendimentos();
+      let dev=G.empreendimentos.find(d=>norm(d.name)===norm(devName));
+      if(!dev){
+        const [created]=await fetch(A1.rest('a1_developments'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,name:devName,unit_count:0,units:[]})}).then(r=>r.json()).catch(()=>[null]);
+        if(created){ G.empreendimentos.push(created); G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name)); dev=created; toast(`Empreendimento "${devName}" cadastrado automaticamente`,'info'); }
+      }
+      devLabel=dev?dev.name:devName;
+    }
+    // 2. Imobiliária — cadastra automaticamente se não existir
+    if(imobName){
+      const imobs=await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+      const exists=Array.isArray(imobs)&&imobs.some(i=>norm(i.name)===norm(imobName));
+      if(!exists){
+        await fetch(A1.rest('a1_partners'),{method:'POST',headers:A1.headers(),body:JSON.stringify({tenant_id:G.user.tenant_id,type:'imobiliaria',name:imobName,is_active:true})}).catch(()=>{});
+        toast(`Imobiliária "${imobName}" cadastrada automaticamente`,'info');
+      }
+    }
+    // 3. Etapa inicial ("início")
+    const stage=G.stages.find(s=>/in[ií]cio/i.test(s.name)) || G.stages.find(s=>s.is_initial) || G.stages[0];
+    // 4. Observações com os demais dados da ficha
+    const p=G.pdfData, obs=[];
+    if(p.atendimento)    obs.push(`Atendimento Nº: ${p.atendimento}`);
+    if(p.data_cadastro)  obs.push(`Data cadastro (CVCRM): ${p.data_cadastro}`);
+    if(p.valor_aprovado) obs.push(`Valor aprovado: R$ ${p.valor_aprovado}`);
+    if(p.valor_subsidio) obs.push(`Valor subsídio: R$ ${p.valor_subsidio}`);
+    if(p.prazo)          obs.push(`Prazo financiamento: ${p.prazo}`);
+    if(p.prestacao)      obs.push(`Valor prestação: R$ ${p.prestacao}`);
+    if(p.carta)          obs.push(`Carta crédito: ${p.carta}`);
+    if(p.renda)          obs.push(`Renda familiar: R$ ${p.renda}`);
+    const body={
+      tenant_id:G.user.tenant_id, module_key:'repasse',
+      client_name:name, client_cpf:cpf,
+      development:devLabel, contract_value:value,
+      real_estate_name:imobName, broker_name:broker,
+      evaluation_expiry:brDateToISO(p.vencimento)||null,
+      observations:obs.join('\n'),
+      stage_id:stage?.id||null, stage_name:stage?.name||null,
+      is_new:true,
+      payload:{source:'cvcrm',atendimento:p.atendimento,valor_aprovado:p.valor_aprovado,valor_subsidio:p.valor_subsidio,prazo:p.prazo,prestacao:p.prestacao,carta:p.carta,renda:p.renda,data_cadastro_cvcrm:p.data_cadastro},
+    };
+    const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+    const data=await res.json().catch(()=>null);
+    const created=Array.isArray(data)?data[0]:null;
+    if(created?.id){
+      G.cases.unshift(created);
+      if(stage?.id){
+        fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stage.id,stage_name:stage.name,entered_at:new Date().toISOString()})});
+        fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,type:'edit',description:'Cliente importado da Ficha de Pré-cadastro CVCRM',actor_name:G.user.name})});
+      }
+      closeModal('modal-pdf-bg');
+      renderKanban();renderList();renderDashboard();populateFilterOptions();
+      toast(`Cliente "${name}" cadastrado na etapa ${stage?.name||'inicial'}`,'success');
+    }else{
+      toast('Erro ao cadastrar cliente','error');
+    }
+  }catch(e){
+    toast('Erro ao importar: '+(e.message||e),'error');
+  }finally{
+    btn.disabled=false; btn.textContent='Cadastrar cliente';
+  }
 }
 
 async function attachDoc(file){
