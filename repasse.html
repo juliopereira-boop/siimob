@@ -398,7 +398,7 @@
         <div class="dd-item" onclick="gotoRegistro('listagem')">Listagem</div>
       </div>
     </div>
-    <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
+    <a class="tab-btn" id="link-config" href="">Configuracoes</a>
   </div>
 </div>
 
@@ -1530,6 +1530,7 @@ async function init() {
   document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('link-config').href      = `/${G.slug}/configuracoes`;
   // Registro tab links are handled by gotoRegistro()
 
   // carrega info do tenant (tipo_cliente, max_users) para aplicar restrições de plano

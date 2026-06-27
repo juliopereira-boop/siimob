@@ -2,17 +2,1073 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Redirecionando...</title>
-  <script src="/js/config.js"></script>
-  <script>
-    // Configurações was merged into repasse.html — redirect there.
-    const slug = (function() {
-      const m = location.pathname.match(/^\/([^/]+)/);
-      return m ? m[1] : null;
-    })();
-    if (slug) location.replace('/' + slug + '/repasse');
-    else location.replace('/');
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuracoes — COREON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
+      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+      --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.06);
+      --green:#2945B0; --blue:#2563eb; --violet:#3D5CC8;
+      --amber:#d97706; --red:#dc2626; --teal:#60CFFF;
+      --emerald:#3D5CC8; --emerald-d:#1E3A8A;
+      --radius:10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    input,select,textarea,button{font-family:inherit}
+    a{text-decoration:none;color:inherit}
+
+    /* ── Header ── */
+    .hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
+    .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
+    .hdr-logo span{color:rgba(255,255,255,.8)}
+    .hdr-right{display:flex;align-items:center;gap:.6rem}
+    .hdr-user{font-size:.75rem;color:rgba(255,255,255,.55)}
+    .hdr-user strong{color:rgba(255,255,255,.9)}
+    .btn-hdr{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-hdr:hover{background:rgba(255,255,255,.2)}
+
+    /* ── Tab bar ── */
+    .tabs-bar{display:flex;padding:.35rem 1.1rem;border-top:1px solid rgba(255,255,255,.1);align-items:center;gap:.15rem}
+    .tab-btn{padding:.42rem 1.05rem;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;cursor:pointer;border-radius:7px;border-bottom:none;transition:all .15s;white-space:nowrap;user-select:none;background:transparent;display:inline-flex;align-items:center;gap:.3rem}
+    .tab-btn:hover{color:#fff;background:rgba(255,255,255,.13)}
+    .tab-btn.active{color:#3D5CC8;background:#fff;font-weight:700}
+
+    /* Dropdown tab group */
+    .tab-group{position:relative;display:flex;align-items:center}
+    .tab-caret{font-size:.58rem;opacity:.7}
+    .tab-dd{
+      position:absolute;top:calc(100% + 5px);left:0;
+      background:#1e3080;border:1px solid rgba(255,255,255,.15);
+      border-radius:10px;padding:.35rem;min-width:168px;
+      z-index:300;display:none;box-shadow:0 12px 36px rgba(0,0,0,.35);
+    }
+    .tab-group:hover .tab-dd{display:block}
+    .dd-item{padding:.52rem 1rem;border-radius:7px;font-size:.79rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;transition:all .12s;display:block}
+    .dd-item:hover{background:rgba(255,255,255,.12);color:#fff}
+    .dd-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:700}
+
+    /* ── Layout ── */
+    .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .btn-primary{background:#3D5CC8;color:#fff}
+    .btn-primary:hover{background:#1E3A8A}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
+    .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
+    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger:hover{background:#fecaca}
+    .btn-sm{padding:.28rem .65rem;font-size:.73rem}
+    .btn-xs{padding:.18rem .48rem;font-size:.7rem}
+
+    /* ── Panel ── */
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+    /* ── Table ── */
+    .tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow)}
+    table{width:100%;border-collapse:collapse;font-size:.77rem}
+    thead th{background:#f7f8fb;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:.6rem .875rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f9fafb}
+    tbody td{padding:.52rem .875rem;vertical-align:middle}
+
+    /* ── Modal ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .modal-bg.hidden{display:none}
+    .modal{background:var(--card);border-radius:12px;box-shadow:var(--shadow-lg);width:100%;max-width:780px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+    .modal-hdr{padding:.9rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+    .modal-sub{font-size:.72rem;color:var(--t3);margin-top:.1rem}
+    .modal-close{width:26px;height:26px;border:none;border-radius:6px;background:var(--bg);color:var(--t2);cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+    .modal-close:hover{background:var(--border)}
+    .modal-body{flex:1;overflow-y:auto;padding:1.1rem 1.25rem}
+
+    /* ── Form ── */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.55rem}
+    .form-group{display:flex;flex-direction:column;gap:.28rem}
+    .form-group.full{grid-column:1/-1}
+    .form-group label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
+    .form-group input,.form-group select,.form-group textarea{padding:.45rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.8rem;color:var(--t1);background:var(--card)}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(67,97,238,.08)}
+    .form-group textarea{resize:vertical;min-height:75px}
+    .form-section-title{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1rem 0 .65rem;display:flex;align-items:center;gap:.5rem}
+    .form-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* ── Tags/flags ── */
+    .tag-list{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.7rem}
+    .tag-item{display:inline-flex;align-items:center;gap:.28rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.18rem .6rem;font-size:.73rem;font-weight:600}
+    .tag-rm{cursor:pointer;color:var(--t4);transition:color .15s;font-size:.65rem}
+    .tag-rm:hover{color:var(--red)}
+
+    /* ── Config hub ── */
+    .cfg-hub{padding:.5rem 0 1.5rem}
+    .cfg-section-hdr{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1.5rem 0 .7rem;display:flex;align-items:center;gap:.5rem}
+    .cfg-section-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+    .cfg-section-hdr:first-child{margin-top:0}
+    .cfg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;max-width:780px;margin-bottom:.25rem}
+    .cfg-hub-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1rem 1.1rem;display:flex;flex-direction:column;align-items:flex-start;gap:.65rem;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+    .cfg-hub-card:hover{border-color:rgba(67,97,238,.3);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .cfg-hub-card.cfg-disabled{opacity:.5;cursor:default;pointer-events:none}
+    .cfg-hub-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .cfg-card-label{font-size:.8rem;font-weight:700;color:var(--t1);line-height:1.3}
+    .cfg-card-soon{font-size:.62rem;font-weight:700;color:var(--t3);background:#f1f5f9;border:1px solid var(--border);border-radius:3px;padding:.07rem .42rem;align-self:flex-start;margin-top:-.1rem}
+    .cfg-view-hdr{display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+    .cfg-back-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:.3rem .75rem;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;white-space:nowrap}
+    .cfg-back-btn:hover{color:var(--t1);background:var(--bg)}
+    .cfg-view-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+
+    /* ── Partner table ── */
+    .pt-table{width:100%;border-collapse:collapse;font-size:.78rem}
+    .pt-table th{padding:.5rem .875rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
+    .pt-table td{padding:.65rem .875rem;border-bottom:1px solid var(--border);vertical-align:middle}
+    .pt-table tr:last-child td{border-bottom:none}
+    .pt-table tr:hover td{background:#f8f9fc}
+    .pt-status{display:inline-flex;align-items:center;gap:.3rem;font-size:.73rem;font-weight:600}
+    .pt-dot{width:.45rem;height:.45rem;border-radius:50%;flex-shrink:0}
+    .pt-dot-green{background:#22c55e}.pt-dot-yellow{background:#f59e0b}.pt-dot-red{background:#ef4444}
+    .pt-act{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.18rem .55rem;font-size:.68rem;font-weight:600;cursor:pointer;color:var(--t2);transition:all .12s}
+    .pt-act:hover{color:var(--t1);border-color:var(--border2)}
+    .pt-act.danger:hover{color:var(--red);border-color:#fca5a5}
+    .pt-empty{text-align:center;padding:2.5rem;color:var(--t3);font-size:.8rem}
+    .pt-toolbar{display:flex;align-items:center;gap:.6rem;margin-bottom:.875rem;flex-wrap:wrap}
+    .pt-toolbar input[type=search]{width:17rem;font-size:.78rem;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--t1)}
+    .pt-toolbar select{font-size:.78rem;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--t1)}
+    .pt-pg{display:flex;align-items:center;justify-content:space-between;padding:.6rem .875rem;border-top:1px solid var(--border);font-size:.75rem;color:var(--t3)}
+    .pt-pg-btns{display:flex;gap:.3rem}
+    .pt-pg-btn{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer;color:var(--t2);transition:all .12s}
+    .pt-pg-btn:hover:not([disabled]){color:var(--t1)}
+    .pt-pg-btn[disabled]{opacity:.4;cursor:default}
+    .pt-pg-btn.active{background:#ede9fe;color:#1E3A8A;border-color:#ddd6fe}
+
+    /* ── Toast ── */
+    #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem}
+    .toast{padding:.55rem .9rem;border-radius:7px;font-size:.77rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .2s ease}
+    @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+    .toast-success{background:#E0E7FF;color:#3730A3;border:1px solid #86efac}
+    .toast-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+    .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+
+    /* ── Spinner ── */
+    .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
 </head>
-<body></body>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo"><svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgr" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lmgr)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lmgr)"/></svg><span style="color:#fff;font-weight:800;letter-spacing:-.02em;">CORE</span><span style="color:#60CFFF;font-weight:800;letter-spacing:-.02em;">ON</span></div>
+    <div class="hdr-right">
+      <div class="hdr-user" id="hdr-user"></div>
+      <button class="btn-hdr" onclick="a1Logout()">Sair</button>
+    </div>
+  </div>
+  <div class="tabs-bar">
+    <a class="tab-btn" id="link-dashboard">Dashboard</a>
+
+    <div class="tab-group">
+      <a class="tab-btn" id="link-repasse">Repasse <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-andamento">Andamento</a>
+        <a class="dd-item" id="link-listagem">Listagem</a>
+      </div>
+    </div>
+
+    <div class="tab-group" id="tab-registro-group" style="display:none">
+      <a class="tab-btn" id="link-registro">Registro <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-registro-andamento">Andamento</a>
+        <a class="dd-item" id="link-registro-listagem">Listagem</a>
+      </div>
+    </div>
+
+    <div class="tab-btn active">Configuracoes</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ─── Hub ─────────────────────────────── -->
+  <div id="cfg-hub">
+
+    <div class="cfg-section-hdr">Workflow</div>
+    <div class="cfg-cards">
+      <div class="cfg-hub-card" onclick="openCfgView('wf')">
+        <div class="cfg-hub-icon" style="background:#ede9fe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div class="cfg-card-label">Editor de Workflow</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('flags')">
+        <div class="cfg-hub-icon" style="background:#dbeafe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        </div>
+        <div class="cfg-card-label">Flags de Etapa</div>
+      </div>
+    </div>
+
+    <div class="cfg-section-hdr">Cadastros</div>
+    <div class="cfg-cards">
+      <div class="cfg-hub-card" onclick="openCfgView('regionais')">
+        <div class="cfg-hub-icon" style="background:#E0E7FF">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="cfg-card-label">Regionais</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('empreendimentos')">
+        <div class="cfg-hub-icon" style="background:#e0f2fe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg>
+        </div>
+        <div class="cfg-card-label">Empreendimentos</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
+        <div class="cfg-hub-icon" style="background:#fef3c7">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="cfg-card-label">Correspondentes / CCA</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('imobiliarias')">
+        <div class="cfg-hub-icon" style="background:#ffe4e6">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div class="cfg-card-label">Imobiliárias</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('analistas')">
+        <div class="cfg-hub-icon" style="background:#dbeafe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+        </div>
+        <div class="cfg-card-label">Analistas de Crédito</div>
+      </div>
+    </div>
+
+    <!-- Registro module section — shown only when module is active -->
+    <div id="cfg-section-registro" style="display:none">
+      <div class="cfg-section-hdr" style="color:#2945B0">Registro</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
+          <div class="cfg-hub-icon" style="background:#E0E7FF">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
+          </div>
+          <div class="cfg-card-label">Despachantes</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('bancos')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
+          </div>
+          <div class="cfg-card-label">Bancos</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('cartorios')">
+          <div class="cfg-hub-icon" style="background:#f0fdf4">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
+          </div>
+          <div class="cfg-card-label">Cartórios</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cfg-section-hdr">Notificacoes</div>
+    <div class="cfg-cards">
+      <div class="cfg-hub-card cfg-disabled">
+        <div class="cfg-hub-icon" style="background:#EEF2FF">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div class="cfg-card-label">E-mail · Novo processo</div>
+        <div class="cfg-card-soon">Em breve</div>
+      </div>
+      <div class="cfg-hub-card cfg-disabled">
+        <div class="cfg-hub-icon" style="background:#fefce8">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/><circle cx="18" cy="18" r="3"/><path d="M18 16v2l1 1"/></svg>
+        </div>
+        <div class="cfg-card-label">E-mail · Vencimento avaliacao</div>
+        <div class="cfg-card-soon">Em breve</div>
+      </div>
+    </div>
+
+    <div class="cfg-section-hdr">Integracoes</div>
+    <div class="cfg-cards">
+      <div class="cfg-hub-card cfg-disabled">
+        <div class="cfg-hub-icon" style="background:#fef2f2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div class="cfg-card-label">Envio pelo Gmail</div>
+        <div class="cfg-card-soon">Em breve</div>
+      </div>
+    </div>
+
+    <div class="cfg-section-hdr">Suporte</div>
+    <div class="cfg-cards">
+      <div class="cfg-hub-card" onclick="openFeedbackModal()" style="border-color:#e0e7ff">
+        <div class="cfg-hub-icon" style="background:#ede9fe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+        </div>
+        <div class="cfg-card-label">Sugerir melhoria</div>
+      </div>
+    </div>
+
+  </div><!-- /#cfg-hub -->
+
+  <!-- ─── Sub-view: Editor de Workflow ─── -->
+  <div id="cfg-view-wf" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Editor de Workflow</div>
+    </div>
+    <p style="font-size:.8rem;color:var(--t2);margin-bottom:1.25rem;max-width:520px;line-height:1.6">
+      Edite as etapas, conexoes e grupos regionais do pipeline de repasse diretamente no editor visual de nos.
+    </p>
+    <a id="link-wf" class="btn btn-primary">Abrir editor de workflow</a>
+  </div>
+
+  <!-- ─── Sub-view: Flags de Etapa ─── -->
+  <div id="cfg-view-flags" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Flags de Etapa</div>
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:580px">
+      <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+      <div style="display:flex;gap:.45rem;align-items:center">
+        <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--t1);background:var(--card)">
+        <input id="new-flag-color" type="color" value="#3D5CC8" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+        <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Regionais ─── -->
+  <div id="cfg-view-regionais" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Regionais</div>
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:620px">
+      <p style="font-size:.78rem;color:var(--t2);margin-bottom:.875rem;line-height:1.6">
+        Regionais sao definidas pelo campo <code style="color:#3D5CC8;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.
+        Cada grupo de etapas com o mesmo group_key forma uma regional separada no kanban.
+      </p>
+      <div class="tag-list" id="regionals-cfg-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+      <a class="btn btn-ghost btn-sm" id="link-wf-groups">Editar no Workflow</a>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Empreendimentos ─── -->
+  <div id="cfg-view-empreendimentos" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Empreendimentos</div>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openEmprModal()">+ Novo empreendimento</button>
+    </div>
+
+    <!-- Empreendimento list -->
+    <div id="empr-list-panel" class="panel" style="padding:1rem;margin-bottom:1rem">
+      <div id="empr-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+    </div>
+
+    <!-- Create / edit panel -->
+    <div id="empr-form-panel" class="panel" style="padding:1.25rem;display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.875rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:.88rem;font-weight:800" id="empr-form-title">Novo empreendimento</div>
+        <button class="cfg-back-btn" onclick="closeEmprForm()">Fechar</button>
+      </div>
+      <div class="form-grid" style="max-width:720px;margin-bottom:.875rem">
+        <div class="form-group full"><label>Nome do empreendimento *</label>
+          <input id="empr-f-name" type="text" placeholder="Residencial das Flores" oninput="emprPreview()">
+        </div>
+        <div class="form-group"><label>Regional</label>
+          <select id="empr-f-regional" onchange="emprPreview()">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div class="form-group full" style="margin-top:.1rem">
+          <label style="display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--t2);text-transform:none;letter-spacing:0">
+            <input type="checkbox" id="empr-f-sem-unidades" onchange="toggleEmprSemUnidades()" style="width:15px;height:15px;accent-color:var(--emerald);cursor:pointer">
+            Sem preenchimento de unidades
+          </label>
+        </div>
+      </div>
+
+      <!-- Unidades config (hidden when "sem preenchimento") -->
+      <div id="empr-unidades-wrap" class="form-grid" style="max-width:720px;margin-bottom:.875rem">
+        <div class="form-group"><label>Tipo</label>
+          <div style="display:flex;gap:.35rem;margin-top:.1rem">
+            <button type="button" id="empr-tipo-blocos" class="btn btn-primary btn-sm" onclick="setEmprTipo('blocos')" style="flex:1">Blocos</button>
+            <button type="button" id="empr-tipo-quadras" class="btn btn-ghost btn-sm" onclick="setEmprTipo('quadras')" style="flex:1">Quadras</button>
+          </div>
+        </div>
+        <div class="form-group"><label id="empr-qtd-label">Qtd. Blocos</label>
+          <input id="empr-f-qtd" type="number" min="1" max="99" value="1" oninput="emprPreview()">
+        </div>
+        <div class="form-group"><label>Pavimentos</label>
+          <input id="empr-f-pav" type="number" min="1" max="50" value="1" oninput="emprPreview()">
+        </div>
+        <div class="form-group"><label>Unidades / Pavimento</label>
+          <input id="empr-f-upf" type="number" min="1" max="99" value="4" oninput="emprPreview()">
+        </div>
+
+        <!-- Live preview -->
+        <div class="full" style="margin-top:.25rem">
+          <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Pré-visualização das unidades</div>
+          <div id="empr-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">—</div>
+          <div style="margin-top:.35rem;font-size:.68rem;color:var(--t3)" id="empr-total-label"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button class="btn btn-primary" id="empr-save-btn" onclick="saveEmpreendimento()">Cadastrar Unidades</button>
+        <div id="empr-err" style="font-size:.78rem;color:#dc2626;display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Imobiliárias ─── -->
+  <div id="cfg-view-imobiliarias" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Imobiliárias</div>
+    </div>
+    <div class="panel">
+      <div style="padding:1rem 1rem .25rem">
+        <div class="pt-toolbar">
+          <input type="search" id="imob-search" placeholder="Buscar por nome, CNPJ ou e-mail..." oninput="imobFilter()">
+          <select id="imob-status" onchange="imobFilter()">
+            <option value="">Todos</option>
+            <option value="active">Ativas</option>
+            <option value="inactive">Inativas</option>
+          </select>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="openImob(null)">+ Nova imobiliária</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pt-table">
+          <thead><tr>
+            <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Cidade / Regional</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="imob-tbody"><tr><td colspan="7" class="pt-empty">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pt-pg">
+        <span id="imob-count">—</span>
+        <div class="pt-pg-btns" id="imob-pg-btns"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Analistas de Crédito ─── -->
+  <div id="cfg-view-analistas" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Analistas de Crédito</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input type="text" id="analista-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="analistaFilter()">
+        <select id="analista-status-filter" onchange="analistaFilter()" style="padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem">
+          <option value="">Todos</option><option value="true">Ativos</option><option value="false">Inativos</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openAnalista(null)">+ Novo analista</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="analista-tbody"><tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="pt-pg-btns" id="analista-pg-btns"></div>
+  </div>
+
+  <!-- ─── Sub-view: Correspondentes / CCA ─── -->
+  <div id="cfg-view-correspondentes" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Correspondentes / CCA</div>
+    </div>
+
+    <!-- Inner tab row -->
+    <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:420px">
+      <button id="corr-tab-empresas" class="btn" style="flex:1;background:#fff;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1);cursor:pointer" onclick="switchCorrTab('empresas')">Empresas Correspondentes</button>
+      <button id="corr-tab-usuarios" class="btn" style="flex:1;background:none;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer" onclick="switchCorrTab('usuarios')">Usuários Correspondentes</button>
+    </div>
+
+    <!-- ── Empresas Correspondentes ── -->
+    <div id="corr-panel-empresas">
+      <div id="corr-empresa-limit-banner" style="display:none;background:#EEF2FF;border:1px solid #86efac;border-radius:8px;padding:.65rem 1rem;margin-bottom:.875rem;font-size:.78rem;color:#3730A3;font-weight:500"></div>
+      <div class="panel">
+        <div style="padding:1rem 1rem .25rem">
+          <div class="pt-toolbar">
+            <input type="search" id="ce-search" placeholder="Buscar por nome ou CNPJ..." oninput="ceFilter()">
+            <select id="ce-status" onchange="ceFilter()">
+              <option value="">Todos</option>
+              <option value="active">Ativas</option>
+              <option value="inactive">Inativas</option>
+            </select>
+            <div style="flex:1"></div>
+            <button class="btn btn-primary btn-sm" id="btn-nova-empresa" onclick="openEmpresaModal()">+ Nova empresa</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pt-table">
+            <thead><tr>
+              <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Regional</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="ce-tbody"><tr><td colspan="7" class="pt-empty">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pt-pg">
+          <span id="ce-count">—</span>
+          <div class="pt-pg-btns" id="ce-pg-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Usuários Correspondentes ── -->
+    <div id="corr-panel-usuarios" style="display:none">
+      <div id="corr-user-limit-banner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:.65rem 1rem;margin-bottom:.875rem;font-size:.78rem;color:#92400e;font-weight:500"></div>
+      <div class="panel">
+        <div style="padding:1rem 1rem .25rem">
+          <div class="pt-toolbar">
+            <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." oninput="ptFilter()">
+            <select id="pt-empresa" onchange="ptFilter()">
+              <option value="">Todas as empresas</option>
+            </select>
+            <select id="pt-status" onchange="ptFilter()">
+              <option value="">Todos</option>
+              <option value="active">Ativos</option>
+              <option value="pending">Pendentes</option>
+              <option value="inactive">Inativos</option>
+            </select>
+            <div style="flex:1"></div>
+            <span id="corr-user-counter" style="font-size:.72rem;color:var(--t3);font-weight:600;white-space:nowrap"></span>
+            <button class="btn btn-primary btn-sm" id="btn-novo-usuario" onclick="openPartnerModal()">+ Novo usuário</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pt-table">
+            <thead><tr>
+              <th>Nome</th><th>CPF</th><th>E-mail</th><th>Telefone</th><th>Empresa</th><th>Regional</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="pt-tbody"><tr><td colspan="8" class="pt-empty">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pt-pg">
+          <span id="pt-count">—</span>
+          <div class="pt-pg-btns" id="pt-pg-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Despachantes ─── -->
+  <div id="cfg-view-despachantes" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Despachantes</div>
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:720px">
+      <div class="pt-toolbar" style="margin-bottom:.875rem">
+        <input type="search" id="desp-search" placeholder="Buscar despachante..." oninput="filtrarDespachantes()">
+        <div style="flex:1"></div>
+        <button class="btn btn-primary btn-sm" onclick="openDespModal()">+ Novo despachante</button>
+      </div>
+      <div id="desp-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Bancos ─── -->
+  <div id="cfg-view-bancos" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Bancos</div>
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:720px">
+      <div class="pt-toolbar" style="margin-bottom:.875rem">
+        <input type="search" id="banco-search" placeholder="Buscar banco..." oninput="filtrarBancos()">
+        <div style="flex:1"></div>
+        <button class="btn btn-primary btn-sm" onclick="openBancoModal()">+ Novo banco</button>
+      </div>
+      <div id="banco-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Cartórios ─── -->
+  <div id="cfg-view-cartorios" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Cartórios</div>
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:720px">
+      <div class="pt-toolbar" style="margin-bottom:.875rem">
+        <input type="search" id="cart-search" placeholder="Buscar cartório..." oninput="filtrarCartorios()">
+        <div style="flex:1"></div>
+        <button class="btn btn-primary btn-sm" onclick="openCartorioModal()">+ Novo cartório</button>
+      </div>
+      <div id="cart-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<!-- ═══════ MODAL: Imobiliária ═══════ -->
+<div class="modal-bg hidden" id="modal-imob-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="imob-modal-title">Nova imobiliária</div>
+      <button class="modal-close" onclick="closeModal('modal-imob-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Razão Social *</label><input id="imob-f-name" type="text" placeholder="Nome da imobiliária"></div>
+        <div class="form-group"><label>CNPJ</label><input id="imob-f-cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"></div>
+        <div class="form-group"><label>E-mail</label><input id="imob-f-email" type="email" placeholder="contato@imobiliaria.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="imob-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Cidade / Regional</label><input id="imob-f-region" type="text" placeholder="Ex.: São Paulo - SP"></div>
+        <div class="form-group"><label>Site</label><input id="imob-f-site" type="url" placeholder="https://"></div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="imob-f-active" checked> Ativa
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-imob-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="imob-save-btn" onclick="saveImob()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Analista de Crédito ═══════ -->
+<div class="modal-bg hidden" id="modal-analista-bg">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="analista-modal-title">Novo analista</div>
+      <button class="modal-close" onclick="closeModal('modal-analista-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Empresa Correspondente *</label><select id="analista-f-empresa"><option value="">Selecione...</option></select></div>
+        <div class="form-group full"><label>Nome *</label><input id="analista-f-name" type="text" placeholder="Nome completo do analista"></div>
+        <div class="form-group"><label>E-mail</label><input id="analista-f-email" type="email" placeholder="analista@empresa.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="analista-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="analista-f-active" checked> Ativo
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-analista-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="analista-save-btn" onclick="saveAnalista()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Feedback / Melhoria ═══════ -->
+<div class="modal-bg hidden" id="modal-feedback-bg">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr">
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <div style="width:32px;height:32px;border-radius:8px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="modal-title">Sugerir melhoria</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-feedback-bg')">x</button>
+    </div>
+    <div id="feedback-form-wrap" class="modal-body">
+      <p style="font-size:.8rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">Tem uma ideia para melhorar o sistema? Compartilhe com a gente! Nossa equipe analisa todas as sugestões.</p>
+      <div class="form-group">
+        <label>Título da melhoria *</label>
+        <input id="fb-title" type="text" placeholder="Ex.: Exportar listagem em Excel">
+      </div>
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea id="fb-desc" rows="4" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;resize:vertical;color:var(--t1)" placeholder="Descreva como funcionaria, qual problema resolve..."></textarea>
+      </div>
+    </div>
+    <div id="feedback-success-wrap" class="modal-body hidden" style="text-align:center;padding:2.5rem 1.5rem">
+      <div style="width:52px;height:52px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">Obrigado pelo feedback!</div>
+      <div style="font-size:.82rem;color:var(--t2);line-height:1.5">Agradecemos sua sugestão. Sua proposta será analisada por nossos desenvolvedores.</div>
+    </div>
+    <div id="feedback-footer" style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-feedback-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="fb-save-btn" onclick="saveFeedback()" style="background:#7c3aed;border-color:#7c3aed">Enviar sugestão</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Partner / Usuário Correspondente ══ -->
+<div class="modal-bg hidden" id="modal-partner-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="partner-modal-title">Novo cadastro</div>
+      <button class="modal-close" onclick="closeModal('modal-partner-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome *</label><input id="pt-f-name" type="text" placeholder="Nome completo"></div>
+        <div class="form-group full"><label>Empresa correspondente *</label>
+          <select id="pt-f-empresa">
+            <option value="">Selecione a empresa...</option>
+          </select>
+        </div>
+        <div class="form-group"><label>CPF</label><input id="pt-f-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
+        <div class="form-group"><label>E-mail</label><input id="pt-f-email" type="email" placeholder="email@exemplo.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="pt-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Regional</label><input id="pt-f-region" type="text" placeholder="Ex.: SP - Interior"></div>
+        <div class="form-group full"><label>Senha de acesso</label>
+          <input id="pt-f-password" type="password" placeholder="Deixe em branco para manter a atual">
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Permite acesso ao portal do parceiro. Hash gerado no cliente.</div>
+        </div>
+        <div class="form-group full" style="flex-direction:row;gap:1.5rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="pt-f-active" checked> Ativo
+          </label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="pt-f-approved"> Aprovado
+          </label>
+        </div>
+        <div class="form-group full" style="margin-top:.25rem">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">Permissões do usuário</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem">
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="ver_repasses" checked> Ver operações</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="criar_repasses" checked> Criar operações</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="editar_repasses"> Editar operações</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="ver_dashboard"> Ver dashboard</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="baixar_documentos"> Baixar documentos</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="editar_perfil" checked> Editar perfil próprio</label>
+          </div>
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
+        </div>
+        <div class="form-group full" style="margin-top:.25rem">
+          <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#3D5CC8'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#3D5CC8':'var(--border)'">
+            <div>
+              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Habilitar visualização geral</div>
+              <div style="font-size:.72rem;color:var(--t3)">Os processos deste usuário ficam visíveis para os outros usuários da empresa correspondente</div>
+            </div>
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral" style="width:18px;height:18px;cursor:pointer;accent-color:#3D5CC8;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-viz-geral-label').style.borderColor=this.checked?'#3D5CC8':'var(--border)';document.getElementById('pt-viz-geral-label').style.background=this.checked?'#EEF2FF':'#f8fafc'">
+          </label>
+        </div>
+        <div class="form-group full" style="margin-top:.25rem">
+          <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#2563eb':'var(--border)'">
+            <div>
+              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Ver todos os analistas</div>
+              <div style="font-size:.72rem;color:var(--t3)">Usuário pode ver operações de qualquer analista; desmarcado, apenas dos selecionados abaixo</div>
+            </div>
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem" onchange="toggleAnalistaChecklist(this.checked)">
+          </label>
+          <div id="pt-analista-checklist" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;padding:.65rem .75rem;background:#f8fafc">
+            <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.5rem">Analistas visíveis para este usuário</div>
+            <div id="pt-analista-chk-list" style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem;font-size:.8rem;color:var(--t1)">
+              <span style="color:var(--t3);font-size:.75rem">Carregando analistas...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-partner-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="pt-save-btn" onclick="savePartner()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Empresa Correspondente ══ -->
+<div class="modal-bg hidden" id="modal-empresa-bg">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="empresa-modal-title">Nova empresa correspondente</div>
+      <button class="modal-close" onclick="closeModal('modal-empresa-bg')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Razão Social *</label><input id="ce-f-name" type="text" placeholder="Correspondente Bancário Ltda"></div>
+        <div class="form-group"><label>CNPJ</label><input id="ce-f-cnpj" type="text" placeholder="00.000.000/0000-00"></div>
+        <div class="form-group"><label>E-mail</label><input id="ce-f-email" type="email" placeholder="contato@empresa.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="ce-f-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label>Regional</label><input id="ce-f-regional" type="text" placeholder="Ex.: SP - Capital"></div>
+        <div class="form-group full"><label>Endereço</label><input id="ce-f-address" type="text" placeholder="Rua, número, cidade - UF"></div>
+        <div class="form-group full" style="flex-direction:row;align-items:center">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--t1);cursor:pointer">
+            <input type="checkbox" id="ce-f-active" checked> Ativa
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-empresa-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="ce-save-btn" onclick="saveEmpresa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Novo Despachante ══ -->
+<div class="modal-bg hidden" id="modal-desp-bg" onclick="if(event.target===this)closeModal('modal-desp-bg')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Despachante</div>
+      <button class="modal-close" onclick="closeModal('modal-desp-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nome *</label><input id="desp-nome" type="text" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF / CNPJ</label><input id="desp-cpf" type="text" placeholder="000.000.000-00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>E-mail</label><input id="desp-email" type="email" placeholder="email@exemplo.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="desp-tel" type="text" placeholder="(00) 00000-0000"></div>
+      </div>
+      <div id="desp-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-desp-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveDespachante()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Novo Banco ══ -->
+<div class="modal-bg hidden" id="modal-banco-bg" onclick="if(event.target===this)closeModal('modal-banco-bg')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Banco</div>
+      <button class="modal-close" onclick="closeModal('modal-banco-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nome do Banco *</label><input id="banco-nome" type="text" placeholder="Ex: Caixa Econômica Federal"></div>
+        <div class="form-group"><label>Código BACEN</label><input id="banco-codigo" type="text" placeholder="Ex: 104"></div>
+      </div>
+      <div id="banco-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-banco-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveBanco()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Novo Cartório ══ -->
+<div class="modal-bg hidden" id="modal-cartorio-bg" onclick="if(event.target===this)closeModal('modal-cartorio-bg')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Cartório</div>
+      <button class="modal-close" onclick="closeModal('modal-cartorio-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1"><label>Nome do Cartório *</label><input id="cart-nome" type="text" placeholder="Ex: 1º Ofício de Registro de Imóveis"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Município</label><input id="cart-mun" type="text" placeholder="Cidade"></div>
+        <div class="form-group"><label>UF</label><input id="cart-uf" type="text" maxlength="2" placeholder="SP"></div>
+      </div>
+      <div class="form-group" style="margin-top:.5rem"><label>CNS (Código Nacional de Serventias)</label><input id="cart-cns" type="text" placeholder="000000"></div>
+      <div id="cart-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-cartorio-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCartorio()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+'use strict';
+
+const G = {
+  user: null, slug: null, tenant: null,
+  stages: [], flags: [], edges: {},
+  // analistas de crédito
+  analistas: [], analistaFiltered: [], analistaPage: 0, analistaPerPage: 25, editingAnalistaId: null, analistasLoaded: false,
+  // partners / usuários correspondentes
+  partners: [], ptFiltered: [], ptPage: 0, ptPerPage: 25,
+  editingPartnerId: null, partnersLoaded: false,
+  // empresas correspondentes
+  empresas: [], ceFiltered: [], cePage: 0, cePerPage: 25,
+  editingEmpresaId: null, empresasLoaded: false,
+  // empreendimentos
+  empreendimentos: [], emprLoaded: false, editingEmprId: null,
+  emprTipo: 'blocos',
+  // imobiliarias
+  imobs: [], imobFiltered: [], imobPage: 0, imobPerPage: 25, editingImobId: null, imobsLoaded: false,
+};
+
+function applyCustomLogo() {
+  const logo = localStorage.getItem('a1_platform_logo');
+  if (!logo) return;
+  document.querySelectorAll('.hdr-logo svg').forEach(svg => {
+    const img = document.createElement('img');
+    img.src = logo;
+    img.style.cssText = 'height:26px;width:auto;object-fit:contain;flex-shrink:0';
+    svg.replaceWith(img);
+  });
+}
+
+async function init() {
+  applyCustomLogo();
+  try { G.user = a1RequireAuth(); } catch { return; }
+  G.slug = A1.slug;
+
+  const roleLabel = G.user.role === 'partner'
+    ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
+    : G.user.role;
+  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
+
+  // Set nav hrefs
+  document.getElementById('link-dashboard').href          = `/${G.slug}/repasse`;
+  document.getElementById('link-repasse').href            = `/${G.slug}/repasse`;
+  document.getElementById('link-andamento').href          = `/${G.slug}/repasse?view=andamento`;
+  document.getElementById('link-listagem').href           = `/${G.slug}/repasse?view=listagem`;
+  document.getElementById('link-registro').href           = `/${G.slug}/registro`;
+  document.getElementById('link-registro-andamento').href = `/${G.slug}/registro`;
+  document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro?view=listagem`;
+  document.getElementById('link-wf').href                 = `/${G.slug}/workflow?module=repasse`;
+  document.getElementById('link-wf-groups').href          = `/${G.slug}/workflow?module=repasse`;
+
+  // Load tenant info
+  G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
+    .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
+
+  // Check Registro module — show nav tab + config section if active
+  fetch(A1.rpc('a1_has_module'), {
+    method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
+  }).then(r=>r.json()).then(ok=>{
+    if (ok) {
+      const tabEl = document.getElementById('tab-registro-group');
+      if (tabEl) tabEl.style.display = '';
+      const cfgEl = document.getElementById('cfg-section-registro');
+      if (cfgEl) cfgEl.style.display = '';
+    }
+  }).catch(()=>{});
+
+  // Load stages (needed for regionais sub-view)
+  G.stages = await fetch(`${A1.rest('a1_stages')}?tenant_id=eq.${G.user.tenant_id}&module=eq.repasse&select=id,name,color,group_key&order=position.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+
+  loadFlags();
+  a1StartHeartbeat('configuracoes');
+}
+
+// ── Config hub / sub-view navigation ──────────────────────────────────────────
+
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','analistas','correspondentes','despachantes','bancos','cartorios'];
+
+function openCfgView(view) {
+  document.getElementById('cfg-hub').style.display = 'none';
+  CFG_VIEWS.forEach(v => {
+    const el = document.getElementById(`cfg-view-${v}`);
+    if (el) el.style.display = v === view ? '' : 'none';
+  });
+  if (view === 'flags') loadFlags();
+  if (view === 'regionais') loadRegionaisCfg();
+  if (view === 'empreendimentos') loadEmpreendimentos();
+  if (view === 'imobiliarias') loadImobs();
+  if (view === 'analistas') loadAnalistas();
+  if (view === 'correspondentes') { loadEmpresas(); loadPartners(); }
+  if (view === 'despachantes') loadDespachantes();
+  if (view === 'bancos') loadBancos();
+  if (view === 'cartorios') loadCartorios();
+}
+
+function closeCfgView() {
+  CFG_VIEWS.forEach(v => {
+    const el = document.getElementById(`cfg-view-${v}`);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('cfg-hub').style.display = '';
+}
+
+// ── Regionais (derived from stages) ───────────────────────────────────────────
+
+function loadRegionaisCfg() {
+  const keys = [...new Set(G.stages.map(s => s.group_key).filter(Boolean))];
+  const el = document.getElementById('regionals-cfg-list');
+  if (!el) return;
+  if (!keys.length) { el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Nenhuma regional definida no workflow.</span>'; return; }
+  el.innerHTML = keys.map(k => `<span class="tag-item">${esc(k)}</span>`).join('');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+
+function showToast(msg, type='success') {
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── Modal helpers ──────────────────────────────────────────────────────────────
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('hidden');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────────
+
+function openFeedbackModal() {
+  document.getElementById('feedback-form-wrap').classList.remove('hidden');
+  document.getElementById('feedback-success-wrap').classList.add('hidden');
+  document.getElementById('feedback-footer').style.display = '';
+  document.getElementById('fb-title').value = '';
+  document.getElementById('fb-desc').value = '';
+  openModal('modal-feedback-bg');
+}
+
+async function saveFeedback() {
+  const title = document.getElementById('fb-title').value.trim();
+  if (!title) { showToast('Informe o título da melhoria','error'); return; }
+  const btn = document.getElementById('fb-save-btn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    await fetch(A1.rest('a1_feedback'), {
+      method:'POST', headers:{...A1.headers(),'Content-Type':'application/json'},
+      body: JSON.stringify({ tenant_id: G.user.tenant_id, user_id: G.user.id, title, description: document.getElementById('fb-desc').value.trim() })
+    });
+    document.getElementById('feedback-form-wrap').classList.add('hidden');
+    document.getElementById('feedback-success-wrap').classList.remove('hidden');
+    document.getElementById('feedback-footer').style.display = 'none';
+  } catch(e) {
+    showToast('Erro ao enviar. Tente novamente.','error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar sugestão';
+  }
+}
+
+// Wire up modal backdrop close
+document.querySelectorAll('.modal-bg').forEach(bg => bg.addEventListener('click', e => { if (e.target === bg) closeModal(bg.id); }));
+
+init();
+</script>
+</body>
 </html>
