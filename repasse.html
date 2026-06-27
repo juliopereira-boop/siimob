@@ -37,25 +37,25 @@
     .btn-hdr-primary:hover{background:rgba(255,255,255,.92);border-color:rgba(255,255,255,.92)}
 
     /* ── Tab bar ── */
-    .tabs-bar{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05);align-items:stretch}
-    .tab-btn{padding:.5rem 1rem;color:rgba(255,255,255,.4);font-size:.77rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
-    .tab-btn:hover{color:rgba(255,255,255,.7)}
-    .tab-btn.active{color:#fff;border-bottom-color:rgba(255,255,255,.9)}
+    .tabs-bar{display:flex;padding:.35rem 1.1rem;border-top:1px solid rgba(255,255,255,.1);align-items:center;gap:.15rem}
+    .tab-btn{padding:.42rem 1.05rem;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;cursor:pointer;border-radius:7px;border-bottom:none;transition:all .15s;white-space:nowrap;user-select:none;background:transparent}
+    .tab-btn:hover{color:#fff;background:rgba(255,255,255,.13)}
+    .tab-btn.active{color:#3D5CC8;background:#fff;font-weight:700}
 
     /* Dropdown tab group */
-    .tab-group{position:relative;display:flex;align-items:stretch}
+    .tab-group{position:relative;display:flex;align-items:center}
     .tab-group .tab-btn{display:flex;align-items:center;gap:.3rem}
-    .tab-caret{font-size:.6rem;opacity:.6}
+    .tab-caret{font-size:.58rem;opacity:.7}
     .tab-dd{
-      position:absolute;top:100%;left:0;
-      background:#1a2035;border:1px solid rgba(255,255,255,.1);
-      border-radius:8px;padding:.3rem;min-width:160px;
-      z-index:300;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4);margin-top:1px;
+      position:absolute;top:calc(100% + 5px);left:0;
+      background:#1e3080;border:1px solid rgba(255,255,255,.15);
+      border-radius:10px;padding:.35rem;min-width:168px;
+      z-index:300;display:none;box-shadow:0 12px 36px rgba(0,0,0,.35);
     }
     .tab-group:hover .tab-dd{display:block}
-    .dd-item{padding:.42rem .875rem;border-radius:5px;font-size:.77rem;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;transition:all .12s}
-    .dd-item:hover{background:rgba(67,97,238,.25);color:#fff}
-    .dd-item.active{background:rgba(67,97,238,.35);color:#fff}
+    .dd-item{padding:.52rem 1rem;border-radius:7px;font-size:.79rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;transition:all .12s}
+    .dd-item:hover{background:rgba(255,255,255,.12);color:#fff}
+    .dd-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:700}
 
     /* ── Layout ── */
     .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
