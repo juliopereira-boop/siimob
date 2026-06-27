@@ -7,7 +7,7 @@
     { "source": "/:slug/dashboard",    "destination": "/repasse.html" },
     { "source": "/:slug/admin",        "destination": "/tenant-admin.html" },
     { "source": "/:slug/workflow",     "destination": "/workflow.html" },
-    { "source": "/:slug/configuracoes","destination": "/repasse.html" },
+    { "source": "/:slug/configuracoes","destination": "/configuracoes.html" },
     { "source": "/superadmin",         "destination": "/superadmin.html" }
   ],
   "headers": [
