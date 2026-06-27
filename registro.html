@@ -42,6 +42,19 @@
     .tab-btn:hover{color:#fff;background:rgba(255,255,255,.13)}
     .tab-btn.active{color:#3D5CC8;background:#fff;font-weight:700}
     a.tab-btn{display:flex;align-items:center;text-decoration:none}
+    .tab-group{position:relative;display:flex;align-items:center}
+    .tab-group .tab-btn{display:flex;align-items:center;gap:.3rem}
+    .tab-caret{font-size:.58rem;opacity:.7}
+    .tab-dd{
+      position:absolute;top:calc(100% + 5px);left:0;
+      background:#1e3080;border:1px solid rgba(255,255,255,.15);
+      border-radius:10px;padding:.35rem;min-width:168px;
+      z-index:300;display:none;box-shadow:0 12px 36px rgba(0,0,0,.35);
+    }
+    .tab-group:hover .tab-dd{display:block}
+    .dd-item{padding:.52rem 1rem;border-radius:7px;font-size:.79rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;transition:all .12s}
+    .dd-item:hover{background:rgba(255,255,255,.12);color:#fff}
+    .dd-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:700}
 
     /* ── Layout ── */
     .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
@@ -244,10 +257,20 @@
     </div>
   </div>
   <div class="tabs-bar">
-    <a class="tab-btn" id="link-repasse" href="">Repasse</a>
-    <div class="tab-btn active" onclick="switchTab('dashboard',this)">Dashboard</div>
-    <div class="tab-btn" onclick="switchTab('kanban',this)">Andamento</div>
-    <div class="tab-btn" onclick="switchTab('lista',this)">Listagem</div>
+    <div class="tab-group" id="tab-repasse-group">
+      <div class="tab-btn">Repasse <span class="tab-caret">▾</span></div>
+      <div class="tab-dd">
+        <div class="dd-item" id="link-repasse" onclick="gotoRepasse('andamento')">Andamento</div>
+        <div class="dd-item" onclick="gotoRepasse('listagem')">Listagem</div>
+      </div>
+    </div>
+    <div class="tab-group">
+      <div class="tab-btn active" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
+      <div class="tab-dd">
+        <div class="dd-item active" onclick="switchTab('kanban',this)">Andamento</div>
+        <div class="dd-item" onclick="switchTab('lista',this)">Listagem</div>
+      </div>
+    </div>
     <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
   </div>
 </div>
@@ -555,19 +578,19 @@ async function init() {
   G.slug = A1.slug;
 
   document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
-  document.getElementById('link-repasse').href  = `/${G.slug}/repasse`;
   document.getElementById('link-wf-rg').href    = `/${G.slug}/workflow?module=registro`;
 
   await loadData();
-  renderDashboard();
   renderKanban();
   renderList();
-  renderConfigStages();
+  // Hide dashboard tab panel; kanban is the default view
+  const tabDash = document.getElementById('tab-dashboard');
+  if (tabDash) tabDash.style.display = 'none';
   a1StartHeartbeat('registro');
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') loadData().then(() => {
-      renderDashboard(); renderKanban(); renderList();
+      renderKanban(); renderList();
     });
   });
 }
@@ -1239,9 +1262,20 @@ function populateSelect(id, items, placeholder, selected) {
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = ['dashboard','kanban','lista','config'];
-function switchTab(tab, el) {
+function switchTab(tab, clickedDdItem) {
+  // Update dropdown item active state
+  document.querySelectorAll('.dd-item').forEach(d => d.classList.remove('active'));
+  if (clickedDdItem && clickedDdItem.classList.contains('dd-item')) clickedDdItem.classList.add('active');
+  // Registro tab-btn stays white-pill (always active on this page)
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
+  document.getElementById('tab-registro-btn')?.classList.add('active');
+  if (tab === 'config') {
+    // Config tab-btn (plain, not in a group) should be active instead
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.textContent.trim() === 'Configuracoes') b.classList.add('active');
+    });
+    document.getElementById('tab-registro-btn')?.classList.remove('active');
+  }
   TABS.forEach(t => {
     const el2 = document.getElementById(`tab-${t}`);
     if (el2) el2.style.display = t === tab ? '' : 'none';
@@ -1249,6 +1283,10 @@ function switchTab(tab, el) {
   if (tab === 'kanban') renderKanban();
   if (tab === 'lista')  renderList();
   if (tab === 'config') renderConfigStages();
+}
+
+function gotoRepasse(view) {
+  window.location.href = `/${G.slug}/repasse?view=${view || 'andamento'}`;
 }
 
 function switchModalTab(tab, el) {

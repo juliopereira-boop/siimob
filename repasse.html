@@ -390,7 +390,13 @@
       </div>
     </div>
 
-    <a class="tab-btn" id="tab-registro-link" href="">Registro</a>
+    <div class="tab-group" id="tab-registro-group" style="display:none">
+      <div class="tab-btn" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
+      <div class="tab-dd">
+        <div class="dd-item" onclick="gotoRegistro('andamento')">Andamento</div>
+        <div class="dd-item" onclick="gotoRegistro('listagem')">Listagem</div>
+      </div>
+    </div>
     <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
   </div>
 </div>
@@ -624,6 +630,31 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Analistas de Crédito</div>
+        </div>
+      </div>
+
+      <!-- Registro module section — shown only when module is active -->
+      <div id="cfg-section-registro" style="display:none">
+        <div class="cfg-section-hdr" style="color:#2945B0">Registro</div>
+        <div class="cfg-cards">
+          <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
+            <div class="cfg-hub-icon" style="background:#E0E7FF">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
+            </div>
+            <div class="cfg-card-label">Despachantes</div>
+          </div>
+          <div class="cfg-hub-card" onclick="openCfgView('bancos')">
+            <div class="cfg-hub-icon" style="background:#dbeafe">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
+            </div>
+            <div class="cfg-card-label">Bancos</div>
+          </div>
+          <div class="cfg-hub-card" onclick="openCfgView('cartorios')">
+            <div class="cfg-hub-icon" style="background:#f0fdf4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
+            </div>
+            <div class="cfg-card-label">Cartórios</div>
+          </div>
         </div>
       </div>
 
@@ -915,6 +946,54 @@
             <div class="pt-pg-btns" id="pt-pg-btns"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ─── Sub-view: Despachantes ─── -->
+    <div id="cfg-view-despachantes" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Despachantes</div>
+      </div>
+      <div class="panel" style="padding:1.1rem;max-width:720px">
+        <div class="pt-toolbar" style="margin-bottom:.875rem">
+          <input type="search" id="desp-search" placeholder="Buscar despachante..." oninput="filtrarDespachantes()">
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="openDespModal()">+ Novo despachante</button>
+        </div>
+        <div id="desp-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ─── Sub-view: Bancos ─── -->
+    <div id="cfg-view-bancos" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Bancos</div>
+      </div>
+      <div class="panel" style="padding:1.1rem;max-width:720px">
+        <div class="pt-toolbar" style="margin-bottom:.875rem">
+          <input type="search" id="banco-search" placeholder="Buscar banco..." oninput="filtrarBancos()">
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="openBancoModal()">+ Novo banco</button>
+        </div>
+        <div id="banco-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ─── Sub-view: Cartórios ─── -->
+    <div id="cfg-view-cartorios" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Cartórios</div>
+      </div>
+      <div class="panel" style="padding:1.1rem;max-width:720px">
+        <div class="pt-toolbar" style="margin-bottom:.875rem">
+          <input type="search" id="cart-search" placeholder="Buscar cartório..." oninput="filtrarCartorios()">
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="openCartorioModal()">+ Novo cartório</button>
+        </div>
+        <div id="cart-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
       </div>
     </div>
 
@@ -1379,7 +1458,7 @@ async function init() {
   document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
-  document.getElementById('tab-registro-link').href = `/${G.slug}/registro`;
+  // Registro tab links are handled by gotoRegistro()
 
   // carrega info do tenant (tipo_cliente, max_users) para aplicar restrições de plano
   G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
@@ -1406,13 +1485,15 @@ async function init() {
     }
   }
 
-  // Hide Registro tab if module not enabled for this tenant
+  // Show Registro tab + config section only if module is enabled for this tenant
   fetch(A1.rpc('a1_has_module'), {
     method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
   }).then(r=>r.json()).then(ok=>{
-    if (!ok) {
-      const el = document.getElementById('tab-registro-link');
-      if (el) el.style.display = 'none';
+    if (ok) {
+      const tabEl = document.getElementById('tab-registro-group');
+      if (tabEl) tabEl.style.display = '';
+      const cfgEl = document.getElementById('cfg-section-registro');
+      if (cfgEl) cfgEl.style.display = '';
     }
   }).catch(()=>{});
 
@@ -1443,9 +1524,9 @@ function applyPartnerRestrictions() {
   ['link-wf','link-wf-groups'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
-  // Ocultar link de Registro (partner nao acessa registro)
-  const regLink = document.getElementById('tab-registro-link');
-  if (regLink) regLink.style.display = 'none';
+  // Ocultar tab de Registro (partner nao acessa registro)
+  const regGroup = document.getElementById('tab-registro-group');
+  if (regGroup) regGroup.style.display = 'none';
 
   // Ocultar botão Nova Operação se sem permissão
   if (!hasPerm('criar_repasses')) {
@@ -1492,6 +1573,10 @@ function populateFilterOptions() {
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
+function gotoRegistro(view) {
+  window.location.href = `/${G.slug}/registro?view=${view || 'andamento'}`;
+}
+
 function switchTab(tab, el) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
@@ -1507,7 +1592,7 @@ function switchTab(tab, el) {
 }
 
 // ─── Config sub-views ─────────────────────────────────────────────────────────
-const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'analistas', 'correspondentes'];
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'analistas', 'correspondentes', 'despachantes', 'bancos', 'cartorios'];
 
 function openCfgView(name) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1519,6 +1604,9 @@ function openCfgView(name) {
   if (name === 'empreendimentos' && !G.emprLoaded) loadEmpreendimentos();
   if (name === 'imobiliarias' && !G.imobsLoaded) loadImobs();
   if (name === 'analistas'    && !G.analistasLoaded) loadAnalistas();
+  if (name === 'despachantes' && !G.despLoaded) loadDespachantes();
+  if (name === 'bancos'       && !G.bancosLoaded) loadBancos();
+  if (name === 'cartorios'    && !G.cartoriosLoaded) loadCartorios();
 }
 
 function closeCfgView() {
@@ -3506,6 +3594,77 @@ pdfZone.addEventListener('drop',e=>{e.preventDefault();pdfZone.classList.remove(
 document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
 
 init();
+
+// ── Registro sub-module loaders ─────────────────────────────────────────────
+async function loadDespachantes() {
+  G.despLoaded = true;
+  const list = document.getElementById('desp-list');
+  if (!list) return;
+  list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
+  try {
+    const r = await fetch(A1.tbl('despachantes') + '?order=nome.asc', { headers: A1.headers() });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum despachante cadastrado.</p>'; return;
+    }
+    list.innerHTML = rows.map(d => `
+      <div class="cfg-list-row">
+        <div>
+          <div class="cfg-list-name">${d.nome||'—'}</div>
+          <div class="cfg-list-sub">${d.email||''} ${d.telefone ? '· '+d.telefone : ''}</div>
+        </div>
+        <button class="btn-icon" onclick="editDespachante('${d.id}')">✏️</button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar despachantes.</p>'; }
+}
+
+async function loadBancos() {
+  G.bancosLoaded = true;
+  const list = document.getElementById('bancos-list');
+  if (!list) return;
+  list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
+  try {
+    const r = await fetch(A1.tbl('bancos') + '?order=nome.asc', { headers: A1.headers() });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum banco cadastrado.</p>'; return;
+    }
+    list.innerHTML = rows.map(b => `
+      <div class="cfg-list-row">
+        <div>
+          <div class="cfg-list-name">${b.nome||'—'}</div>
+          <div class="cfg-list-sub">${b.codigo ? 'Cód. '+b.codigo : ''}</div>
+        </div>
+        <button class="btn-icon" onclick="editBanco('${b.id}')">✏️</button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar bancos.</p>'; }
+}
+
+async function loadCartorios() {
+  G.cartoriosLoaded = true;
+  const list = document.getElementById('cartorios-list');
+  if (!list) return;
+  list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
+  try {
+    const r = await fetch(A1.tbl('cartorios') + '?order=nome.asc', { headers: A1.headers() });
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum cartório cadastrado.</p>'; return;
+    }
+    list.innerHTML = rows.map(c => `
+      <div class="cfg-list-row">
+        <div>
+          <div class="cfg-list-name">${c.nome||'—'}</div>
+          <div class="cfg-list-sub">${c.municipio||''} ${c.uf ? '– '+c.uf : ''}</div>
+        </div>
+        <button class="btn-icon" onclick="editCartorio('${c.id}')">✏️</button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar cartórios.</p>'; }
+}
+
+function editDespachante(id) { toast('Em breve: editar despachante #'+id,'info'); }
+function editBanco(id)       { toast('Em breve: editar banco #'+id,'info'); }
+function editCartorio(id)    { toast('Em breve: editar cartório #'+id,'info'); }
 
 // Reload data when the browser tab regains focus (user returns from workflow, another tab, etc.)
 document.addEventListener('visibilitychange', () => {

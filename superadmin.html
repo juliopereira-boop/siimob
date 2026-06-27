@@ -408,6 +408,34 @@
   </div>
 </div>
 
+<!-- ═══════ MODAL: Limite de Despachantes ═══════ -->
+<div class="modal-bg hidden" id="modal-desp-limit" onclick="if(event.target===this)closeDespLimitModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Limite de Despachantes</div>
+        <div style="font-size:.73rem;color:var(--t3);margin-top:.1rem">Módulo Registro — Correspondente Bancário</div>
+      </div>
+      <button class="modal-close" onclick="closeDespLimitModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.83rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">
+        Quantos usuários do tipo <strong>Despachante</strong> este cliente poderá cadastrar?
+      </p>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Número máximo de despachantes</label>
+        <input id="desp-limit-input" type="number" min="1" max="999" placeholder="Ex: 2"
+          style="width:100%" onkeydown="if(event.key==='Enter')confirmDespLimit()">
+      </div>
+      <div id="desp-limit-err" style="color:#dc2626;font-size:.75rem;display:none;margin-bottom:.5rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="closeDespLimitModal()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmDespLimit()">Liberar módulo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ MODAL: Usuários do tenant ═══════ -->
 <div class="modal-bg hidden" id="modal-users">
   <div class="modal">
@@ -825,25 +853,16 @@ function loadTenantModulesFor() {
 }
 
 async function unlockModuleFor(tenantId, moduleKey) {
-  const expiresAt = document.getElementById('mod-expires').value || null;
-  const res = await fetch(saRest('a1_tenant_modules'), {
-    method: 'POST',
-    headers: saHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
-    body: JSON.stringify({
-      tenant_id:   tenantId,
-      module_key:  moduleKey,
-      unlocked_by: 'superadmin@corban.app',
-      expires_at:  expiresAt ? new Date(expiresAt).toISOString() : null
-    })
-  });
-  if (res.ok) {
-    toast(`Módulo "${moduleKey}" liberado.`, 'success');
-    await loadAllModules();
-    loadTenantModulesFor();
-    renderTenantsTable(TENANTS);
-  } else {
-    toast('Erro ao liberar módulo.', 'error');
+  // When enabling Registro for a Correspondente Bancário, ask for despachante limit first
+  if (moduleKey === 'registro') {
+    const tenant = TENANTS.find(t => t.id === tenantId);
+    if (tenant && tenant.tipo_cliente === 'correspondente_bancario') {
+      openDespLimitModal(tenantId, moduleKey);
+      return;
+    }
   }
+  await _doUnlockModule(tenantId, moduleKey);
+  toast(`Módulo "${moduleKey}" liberado.`, 'success');
 }
 
 async function lockModuleFor(tenantId, moduleKey) {
@@ -1548,10 +1567,71 @@ ${d.modulosList && d.modulosList.length
 </html>`;
 }
 
+// ─── Despachante limit popup ──────────────────────────────────────────────────
+let _pendingUnlock = null;
+
+function openDespLimitModal(tenantId, moduleKey) {
+  _pendingUnlock = { tenantId, moduleKey };
+  document.getElementById('desp-limit-input').value = '';
+  document.getElementById('desp-limit-err').style.display = 'none';
+  document.getElementById('modal-desp-limit').classList.remove('hidden');
+  setTimeout(() => document.getElementById('desp-limit-input').focus(), 80);
+}
+
+function closeDespLimitModal() {
+  document.getElementById('modal-desp-limit').classList.add('hidden');
+  _pendingUnlock = null;
+}
+
+async function confirmDespLimit() {
+  const val = parseInt(document.getElementById('desp-limit-input').value, 10);
+  const errEl = document.getElementById('desp-limit-err');
+  if (!val || val < 1) {
+    errEl.textContent = 'Informe um número válido (mínimo 1).';
+    errEl.style.display = '';
+    return;
+  }
+  if (!_pendingUnlock) { closeDespLimitModal(); return; }
+  const { tenantId, moduleKey } = _pendingUnlock;
+  closeDespLimitModal();
+
+  // Store limit locally (keyed by tenantId) — replace with DB column if schema allows
+  const limits = JSON.parse(localStorage.getItem('a1_desp_limits') || '{}');
+  limits[tenantId] = val;
+  localStorage.setItem('a1_desp_limits', JSON.stringify(limits));
+
+  // Proceed with actual unlock
+  await _doUnlockModule(tenantId, moduleKey);
+  toast(`Módulo Registro liberado · ${val} despachante${val>1?'s':''} permitido${val>1?'s':''}.`, 'success');
+}
+
+async function _doUnlockModule(tenantId, moduleKey) {
+  const expiresAt = document.getElementById('mod-expires')?.value || null;
+  const res = await fetch(saRest('a1_tenant_modules'), {
+    method: 'POST',
+    headers: saHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
+    body: JSON.stringify({
+      tenant_id:   tenantId,
+      module_key:  moduleKey,
+      unlocked_by: 'superadmin@corban.app',
+      expires_at:  expiresAt ? new Date(expiresAt).toISOString() : null
+    })
+  });
+  if (res.ok) {
+    await loadAllModules();
+    loadTenantModulesFor();
+    renderTenantsTable(TENANTS);
+  } else {
+    toast('Erro ao liberar módulo.', 'error');
+  }
+}
+
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 document.getElementById('sa-url-input').value = typeof A1_URL !== 'undefined' ? A1_URL : '';
 document.getElementById('sa-key-input').addEventListener('keydown', e => { if(e.key==='Enter') saAuth(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal('modal-users'); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal('modal-users'); closeDespLimitModal(); }
+});
 </script>
 </body>
 </html>
