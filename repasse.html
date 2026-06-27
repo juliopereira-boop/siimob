@@ -209,6 +209,7 @@
 
     /* ── Form ── */
     .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.55rem}
     .form-group{display:flex;flex-direction:column;gap:.28rem}
     .form-group.full{grid-column:1/-1}
     .form-group label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
@@ -391,7 +392,7 @@
     </div>
 
     <div class="tab-group" id="tab-registro-group" style="display:none">
-      <div class="tab-btn" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
+      <div class="tab-btn" id="tab-registro-btn" onclick="gotoRegistro('andamento')">Registro <span class="tab-caret">▾</span></div>
       <div class="tab-dd">
         <div class="dd-item" onclick="gotoRegistro('andamento')">Andamento</div>
         <div class="dd-item" onclick="gotoRegistro('listagem')">Listagem</div>
@@ -1401,6 +1402,77 @@
 
 <div class="fluxo-popup hidden" id="fluxo-popup"></div>
 <div id="toast-wrap"></div>
+
+<!-- ══ MODAL: Novo Despachante ══ -->
+<div class="modal-bg hidden" id="modal-desp-bg" onclick="if(event.target===this)closeModal('modal-desp-bg')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Despachante</div>
+      <button class="modal-close" onclick="closeModal('modal-desp-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nome *</label><input id="desp-nome" type="text" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF / CNPJ</label><input id="desp-cpf" type="text" placeholder="000.000.000-00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>E-mail</label><input id="desp-email" type="email" placeholder="email@exemplo.com"></div>
+        <div class="form-group"><label>Telefone</label><input id="desp-tel" type="text" placeholder="(00) 00000-0000"></div>
+      </div>
+      <div id="desp-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-desp-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveDespachante()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Novo Banco ══ -->
+<div class="modal-bg hidden" id="modal-banco-bg" onclick="if(event.target===this)closeModal('modal-banco-bg')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Banco</div>
+      <button class="modal-close" onclick="closeModal('modal-banco-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nome do Banco *</label><input id="banco-nome" type="text" placeholder="Ex: Caixa Econômica Federal"></div>
+        <div class="form-group"><label>Código BACEN</label><input id="banco-codigo" type="text" placeholder="Ex: 104"></div>
+      </div>
+      <div id="banco-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-banco-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveBanco()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Novo Cartório ══ -->
+<div class="modal-bg hidden" id="modal-cartorio-bg" onclick="if(event.target===this)closeModal('modal-cartorio-bg')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title">Novo Cartório</div>
+      <button class="modal-close" onclick="closeModal('modal-cartorio-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1"><label>Nome do Cartório *</label><input id="cart-nome" type="text" placeholder="Ex: 1º Ofício de Registro de Imóveis"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Município</label><input id="cart-mun" type="text" placeholder="Cidade"></div>
+        <div class="form-group"><label>UF</label><input id="cart-uf" type="text" maxlength="2" placeholder="SP"></div>
+      </div>
+      <div class="form-group" style="margin-top:.5rem"><label>CNS (Código Nacional de Serventias)</label><input id="cart-cns" type="text" placeholder="000000"></div>
+      <div id="cart-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-cartorio-bg')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCartorio()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
@@ -3662,9 +3734,105 @@ async function loadCartorios() {
   } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar cartórios.</p>'; }
 }
 
-function editDespachante(id) { toast('Em breve: editar despachante #'+id,'info'); }
-function editBanco(id)       { toast('Em breve: editar banco #'+id,'info'); }
-function editCartorio(id)    { toast('Em breve: editar cartório #'+id,'info'); }
+function editDespachante(id) { toast('Em breve: editar despachante','info'); }
+function editBanco(id)       { toast('Em breve: editar banco','info'); }
+function editCartorio(id)    { toast('Em breve: editar cartório','info'); }
+
+// ── Crud Modals: Despachante ──────────────────────────────────────────────────
+function openDespModal() {
+  ['desp-nome','desp-cpf','desp-email','desp-tel'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('desp-err').style.display='none';
+  document.getElementById('modal-desp-bg').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('desp-nome').focus(),60);
+}
+
+async function saveDespachante() {
+  const nome  = document.getElementById('desp-nome').value.trim();
+  const errEl = document.getElementById('desp-err');
+  if (!nome) { errEl.textContent='Nome é obrigatório.'; errEl.style.display=''; return; }
+  errEl.style.display='none';
+  const body = { nome,
+    cpf_cnpj: document.getElementById('desp-cpf').value.trim()||null,
+    email:    document.getElementById('desp-email').value.trim()||null,
+    telefone: document.getElementById('desp-tel').value.trim()||null,
+  };
+  const res = await fetch(A1.tbl('despachantes'), {
+    method:'POST', headers:{...A1.headers(),'Prefer':'return=minimal'},
+    body:JSON.stringify(body)
+  });
+  if (res.ok || res.status===201) {
+    toast('Despachante cadastrado.','success');
+    closeModal('modal-desp-bg');
+    G.despLoaded=false;
+    loadDespachantes();
+  } else {
+    const err = await res.json().catch(()=>({}));
+    errEl.textContent = err.message || 'Erro ao salvar.'; errEl.style.display='';
+  }
+}
+
+// ── Crud Modals: Banco ────────────────────────────────────────────────────────
+function openBancoModal() {
+  ['banco-nome','banco-codigo'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('banco-err').style.display='none';
+  document.getElementById('modal-banco-bg').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('banco-nome').focus(),60);
+}
+
+async function saveBanco() {
+  const nome  = document.getElementById('banco-nome').value.trim();
+  const errEl = document.getElementById('banco-err');
+  if (!nome) { errEl.textContent='Nome é obrigatório.'; errEl.style.display=''; return; }
+  errEl.style.display='none';
+  const body = { nome, codigo: document.getElementById('banco-codigo').value.trim()||null };
+  const res = await fetch(A1.tbl('bancos'), {
+    method:'POST', headers:{...A1.headers(),'Prefer':'return=minimal'},
+    body:JSON.stringify(body)
+  });
+  if (res.ok || res.status===201) {
+    toast('Banco cadastrado.','success');
+    closeModal('modal-banco-bg');
+    G.bancosLoaded=false;
+    loadBancos();
+  } else {
+    const err = await res.json().catch(()=>({}));
+    errEl.textContent = err.message || 'Erro ao salvar.'; errEl.style.display='';
+  }
+}
+
+// ── Crud Modals: Cartório ─────────────────────────────────────────────────────
+function openCartorioModal() {
+  ['cart-nome','cart-mun','cart-uf','cart-cns'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('cart-err').style.display='none';
+  document.getElementById('modal-cartorio-bg').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('cart-nome').focus(),60);
+}
+
+async function saveCartorio() {
+  const nome  = document.getElementById('cart-nome').value.trim();
+  const errEl = document.getElementById('cart-err');
+  if (!nome) { errEl.textContent='Nome é obrigatório.'; errEl.style.display=''; return; }
+  errEl.style.display='none';
+  const body = {
+    nome,
+    municipio: document.getElementById('cart-mun').value.trim()||null,
+    uf:        (document.getElementById('cart-uf').value.trim()||null)?.toUpperCase(),
+    cns:       document.getElementById('cart-cns').value.trim()||null,
+  };
+  const res = await fetch(A1.tbl('cartorios'), {
+    method:'POST', headers:{...A1.headers(),'Prefer':'return=minimal'},
+    body:JSON.stringify(body)
+  });
+  if (res.ok || res.status===201) {
+    toast('Cartório cadastrado.','success');
+    closeModal('modal-cartorio-bg');
+    G.cartoriosLoaded=false;
+    loadCartorios();
+  } else {
+    const err = await res.json().catch(()=>({}));
+    errEl.textContent = err.message || 'Erro ao salvar.'; errEl.style.display='';
+  }
+}
 
 // Reload data when the browser tab regains focus (user returns from workflow, another tab, etc.)
 document.addEventListener('visibilitychange', () => {

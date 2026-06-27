@@ -257,20 +257,24 @@
     </div>
   </div>
   <div class="tabs-bar">
-    <div class="tab-group" id="tab-repasse-group">
-      <div class="tab-btn">Repasse <span class="tab-caret">▾</span></div>
+    <div class="tab-btn" onclick="gotoRepasse('dashboard')">Dashboard</div>
+
+    <div class="tab-group">
+      <div class="tab-btn" onclick="gotoRepasse('andamento')">Repasse <span class="tab-caret">▾</span></div>
       <div class="tab-dd">
-        <div class="dd-item" id="link-repasse" onclick="gotoRepasse('andamento')">Andamento</div>
+        <div class="dd-item" onclick="gotoRepasse('andamento')">Andamento</div>
         <div class="dd-item" onclick="gotoRepasse('listagem')">Listagem</div>
       </div>
     </div>
+
     <div class="tab-group">
-      <div class="tab-btn active" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
+      <div class="tab-btn active" id="tab-registro-btn" onclick="switchTab('kanban',null)">Registro <span class="tab-caret">▾</span></div>
       <div class="tab-dd">
         <div class="dd-item active" onclick="switchTab('kanban',this)">Andamento</div>
         <div class="dd-item" onclick="switchTab('lista',this)">Listagem</div>
       </div>
     </div>
+
     <div class="tab-btn" onclick="switchTab('config',this)">Configuracoes</div>
   </div>
 </div>
@@ -583,9 +587,11 @@ async function init() {
   await loadData();
   renderKanban();
   renderList();
-  // Hide dashboard tab panel; kanban is the default view
+  // Kanban is the default view — hide dashboard, show kanban
   const tabDash = document.getElementById('tab-dashboard');
   if (tabDash) tabDash.style.display = 'none';
+  const tabKanban = document.getElementById('tab-kanban');
+  if (tabKanban) tabKanban.style.display = '';
   a1StartHeartbeat('registro');
 
   document.addEventListener('visibilitychange', () => {
@@ -855,6 +861,18 @@ function renderKanban() {
   const cases = filteredCases();
   const now   = new Date();
   let total = 0;
+
+  if (!G.stages || G.stages.length === 0) {
+    board.innerHTML = `
+      <div style="width:100%;padding:4rem 1rem;text-align:center;color:var(--t3)">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="margin:0 auto .875rem;display:block;opacity:.45">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+        </svg>
+        <div style="font-weight:700;font-size:.92rem;margin-bottom:.4rem;color:var(--t2)">Workflow ainda não configurado</div>
+        <div style="font-size:.8rem;line-height:1.55">Acesse <strong style="color:var(--violet);cursor:pointer" onclick="switchTab('config',null)">Configuracoes → Workflow</strong> para criar as etapas do processo de registro.</div>
+      </div>`;
+    return;
+  }
 
   board.innerHTML = G.stages.map(stage => {
     const stageCases = cases.filter(c => c.stage_id === stage.id);
@@ -1263,19 +1281,27 @@ function populateSelect(id, items, placeholder, selected) {
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = ['dashboard','kanban','lista','config'];
 function switchTab(tab, clickedDdItem) {
-  // Update dropdown item active state
-  document.querySelectorAll('.dd-item').forEach(d => d.classList.remove('active'));
-  if (clickedDdItem && clickedDdItem.classList.contains('dd-item')) clickedDdItem.classList.add('active');
-  // Registro tab-btn stays white-pill (always active on this page)
+  // Update tab-btn active state
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-registro-btn')?.classList.add('active');
   if (tab === 'config') {
-    // Config tab-btn (plain, not in a group) should be active instead
     document.querySelectorAll('.tab-btn').forEach(b => {
       if (b.textContent.trim() === 'Configuracoes') b.classList.add('active');
     });
-    document.getElementById('tab-registro-btn')?.classList.remove('active');
+  } else {
+    document.getElementById('tab-registro-btn')?.classList.add('active');
   }
+
+  // Update dropdown item active state inside Registro group
+  document.querySelectorAll('.dd-item').forEach(d => d.classList.remove('active'));
+  if (clickedDdItem?.classList.contains('dd-item')) {
+    clickedDdItem.classList.add('active');
+  } else if (tab === 'kanban') {
+    // Clicking the tab-btn directly → mark first Registro dd-item (Andamento) active
+    const regGroup = document.getElementById('tab-registro-btn')?.closest('.tab-group');
+    const firstItem = regGroup?.querySelector('.dd-item');
+    if (firstItem) firstItem.classList.add('active');
+  }
+
   TABS.forEach(t => {
     const el2 = document.getElementById(`tab-${t}`);
     if (el2) el2.style.display = t === tab ? '' : 'none';
@@ -1285,8 +1311,12 @@ function switchTab(tab, clickedDdItem) {
   if (tab === 'config') renderConfigStages();
 }
 
-function gotoRepasse(view) {
-  window.location.href = `/${G.slug}/repasse?view=${view || 'andamento'}`;
+function gotoRepasse(target) {
+  if (target === 'dashboard') {
+    window.location.href = `/${G.slug}/repasse`;
+  } else {
+    window.location.href = `/${G.slug}/repasse?view=${target || 'andamento'}`;
+  }
 }
 
 function switchModalTab(tab, el) {
