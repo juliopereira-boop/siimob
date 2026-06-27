@@ -230,6 +230,7 @@
     .tl-dot.stage{background:#ede9fe;color:#1E3A8A}
     .tl-dot.comment{background:#dbeafe;color:#1e40af}
     .tl-dot.edit{background:#EEF2FF;color:#3730A3}
+    .tl-dot.created{background:#dcfce7;color:#166534}
     .tl-content{flex:1}
     .tl-desc{font-size:.78rem;line-height:1.4}
     .tl-meta{font-size:.68rem;color:var(--t3);margin-top:.12rem}
@@ -2149,18 +2150,35 @@ function renderModalDet() {
 function renderModalHist() {
   const body=document.getElementById('mc-body');
   body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
-  fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${G.editingCaseId}&order=entered_at.desc`,{headers:A1.headers()})
-    .then(r=>r.json()).then(rows=>{
-      if(!rows.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico de etapas.</span>';return;}
-      body.innerHTML='<div class="timeline">'+rows.map(h=>`
+  const cid=G.editingCaseId;
+  Promise.all([
+    fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${cid}&order=entered_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_events')}?case_id=eq.${cid}&order=created_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]).then(([stages,evts])=>{
+    const items=[];
+    const c=G.editingCaseData||{};
+    // Cadastro do cliente (data e hora)
+    if(c.created_at) items.push({ts:c.created_at,cls:'created',icon:'+',desc:'<b>Cliente cadastrado no sistema</b>',meta:c.manager_name?`por ${esc(c.manager_name)}`:''});
+    // Movimentacoes de etapa
+    (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,cls:'stage',icon:'E',desc:`Entrou na etapa <b>${esc(h.stage_name||'')}</b>`,meta:h.exited_at?`saiu em ${fmtDT(h.exited_at)}`:'etapa atual'}));
+    // Demais eventos (status, comentarios, edicoes, documentos) — stage_change ja coberto acima
+    const evCls={comment:'comment',edit:'edit',document:'edit',interview:'created',agendamento:'created'};
+    const evIcon={comment:'C',edit:'E',document:'D',interview:'S',agendamento:'A'};
+    (Array.isArray(evts)?evts:[]).forEach(ev=>{
+      if(ev.type==='stage_change') return;
+      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')});
+    });
+    if(!items.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico.</span>';return;}
+    items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+    body.innerHTML='<div class="timeline">'+items.map(it=>`
         <div class="tl-item">
-          <div class="tl-dot stage">E</div>
+          <div class="tl-dot ${it.cls}">${it.icon}</div>
           <div class="tl-content">
-            <div class="tl-desc"><b>${esc(h.stage_name)}</b></div>
-            <div class="tl-meta">${fmtDT(h.entered_at)}${h.exited_at?` ate ${fmtDT(h.exited_at)}`:' · atual'}</div>
+            <div class="tl-desc">${it.desc}</div>
+            <div class="tl-meta">${fmtDT(it.ts)}${it.meta?' &middot; '+it.meta:''}</div>
           </div>
         </div>`).join('')+'</div>';
-    }).catch(()=>{body.innerHTML='<span style="color:var(--red);font-size:.78rem">Erro ao carregar.</span>';});
+  }).catch(()=>{body.innerHTML='<span style="color:var(--red);font-size:.78rem">Erro ao carregar.</span>';});
 }
 
 function renderModalEvts() {
@@ -2222,6 +2240,11 @@ async function saveCase() {
       fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()})}),
       fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'stage_change',description:`Movido para: ${stage?.name}`,actor_name:G.user.name})}),
     ]);
+  }
+  const _oldEnt=G.editingCaseData.payload?.entrevista_status||'pendente';
+  const _newEnt=document.getElementById('e-ent-status')?.value;
+  if(_newEnt && _newEnt!==_oldEnt){
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'interview',description:`Status entrevista: ${_newEnt}`,actor_name:G.user.name})}).catch(()=>{});
   }
   const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(patch)});
   if(res.ok){
