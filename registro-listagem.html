@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registro — COREON</title>
+  <title>Registro — Listagem — COREON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -270,8 +270,8 @@
     <div class="tab-group">
       <div class="tab-btn active" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
       <div class="tab-dd">
-        <div class="dd-item active">Andamento</div>
-        <a class="dd-item" id="link-registro-listagem" href="">Listagem</a>
+        <a class="dd-item" id="link-registro-andamento" href="">Andamento</a>
+        <div class="dd-item active">Listagem</div>
       </div>
     </div>
 
@@ -587,18 +587,20 @@ async function init() {
   document.getElementById('link-repasse-andamento').href  = `/${G.slug}/andamento`;
   document.getElementById('link-andamento').href          = `/${G.slug}/andamento`;
   document.getElementById('link-listagem').href           = `/${G.slug}/listagem`;
-  document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro-listagem`;
+  document.getElementById('link-registro-andamento').href = `/${G.slug}/registro`;
   document.getElementById('link-config').href             = `/${G.slug}/configuracoes`;
 
   await loadData();
   renderKanban();
   renderList();
-  // Kanban is the default view — hide dashboard, show kanban
+  // Lista is the default view for this page
   const tabDash = document.getElementById('tab-dashboard');
   if (tabDash) tabDash.style.display = 'none';
   const tabKanban = document.getElementById('tab-kanban');
-  if (tabKanban) tabKanban.style.display = '';
-  a1StartHeartbeat('registro');
+  if (tabKanban) tabKanban.style.display = 'none';
+  const tabLista = document.getElementById('tab-lista');
+  if (tabLista) tabLista.style.display = '';
+  a1StartHeartbeat('registro-listagem');
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') loadData().then(() => {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Repasse — COREON</title>
+  <title>Listagem — COREON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -378,14 +378,14 @@
     </div>
   </div>
   <div class="tabs-bar">
-    <div class="tab-btn active">Dashboard</div>
+    <a class="tab-btn" id="link-dashboard" href="">Dashboard</a>
 
     <!-- Repasse tab with view dropdown -->
     <div class="tab-group">
-      <a class="tab-btn" id="link-repasse-andamento" href="">Repasse <span class="tab-caret">▾</span></a>
+      <div class="tab-btn active">Repasse <span class="tab-caret">▾</span></div>
       <div class="tab-dd">
         <a class="dd-item" id="link-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-listagem" href="">Listagem</a>
+        <div class="dd-item active">Listagem</div>
       </div>
     </div>
 
@@ -1528,11 +1528,10 @@ async function init() {
   document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
-  document.getElementById('link-config').href      = `/${G.slug}/configuracoes`;
-  document.getElementById('link-repasse-andamento').href = `/${G.slug}/andamento`;
-  document.getElementById('link-andamento').href         = `/${G.slug}/andamento`;
-  document.getElementById('link-listagem').href          = `/${G.slug}/listagem`;
-  document.getElementById('link-registro').href          = `/${G.slug}/registro`;
+  document.getElementById('link-config').href             = `/${G.slug}/configuracoes`;
+  document.getElementById('link-dashboard').href          = `/${G.slug}/repasse`;
+  document.getElementById('link-andamento').href          = `/${G.slug}/andamento`;
+  document.getElementById('link-registro').href           = `/${G.slug}/registro`;
   document.getElementById('link-registro-andamento').href = `/${G.slug}/registro`;
   document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro-listagem`;
 
@@ -1575,23 +1574,15 @@ async function init() {
 
   await loadData();
   applyPartnerRestrictions();
-  renderDashboard();
   renderPipeline();
   renderList();
   loadFlags();
-  a1StartHeartbeat('repasse');
-
-  // Backward-compat: redirect old ?view= / ?tab= deep-links to new standalone pages
-  const _params = new URLSearchParams(location.search);
-  const _view   = _params.get('view');
-  const _tab    = _params.get('tab');
-  if (_tab === 'config') {
-    window.location.replace(`/${G.slug}/configuracoes`); return;
-  } else if (_view === 'andamento') {
-    window.location.replace(`/${G.slug}/andamento`); return;
-  } else if (_view === 'listagem') {
-    window.location.replace(`/${G.slug}/listagem`); return;
-  }
+  document.getElementById('tab-dashboard').style.display = 'none';
+  document.getElementById('tab-repasse').style.display   = '';
+  document.getElementById('tab-config').style.display    = 'none';
+  G.activeTab = 'repasse';
+  switchView('listagem');
+  a1StartHeartbeat('listagem');
 }
 
 function hasPerm(key) {
@@ -1605,9 +1596,8 @@ function applyPartnerRestrictions() {
   if (G.user.role !== 'partner') return;
 
   // Ocultar aba de configurações
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    if (btn.textContent.trim().startsWith('Configurac')) btn.style.display = 'none';
-  });
+  const cfgLink = document.getElementById('link-config');
+  if (cfgLink) cfgLink.style.display = 'none';
   // Ocultar links de workflow (dentro de configurações)
   ['link-wf','link-wf-groups'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
@@ -1623,8 +1613,8 @@ function applyPartnerRestrictions() {
 
   // Se sem permissão de ver: bloquear dashboard
   if (!hasPerm('ver_dashboard')) {
-    const dashBtn = document.querySelector('.tab-btn[onclick*="dashboard"]');
-    if (dashBtn) dashBtn.style.display = 'none';
+    const dashLink = document.getElementById('link-dashboard');
+    if (dashLink) dashLink.style.display = 'none';
   }
 }
 
@@ -3854,8 +3844,7 @@ async function saveCartorio() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && G.user) {
     loadData().then(() => {
-      renderDashboard();
-      if (G.activeTab === 'repasse') { renderPipeline(); renderList(); }
+      renderPipeline(); renderList();
     });
   }
 });
