@@ -989,6 +989,9 @@ async function init() {
   fetch(A1.rpc('a1_has_module'), {
     method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
   }).then(r=>r.json()).then(ok=>{
+    G.hasRegistro = !!ok;
+    const _dtReg = document.getElementById('dt-mod-registro');
+    if (_dtReg) _dtReg.style.display = ok ? '' : 'none';
     if (ok) {
       const tabEl = document.getElementById('tab-registro-group');
       if (tabEl) tabEl.style.display = '';
@@ -1048,7 +1051,12 @@ async function persistDocTypes(){
   await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify(body)});
 }
 async function initDocTypesView(){
-  if(!G.docTypeModule) G.docTypeModule='repasse';
+  const _dtReg=document.getElementById('dt-mod-registro');
+  if(_dtReg) _dtReg.style.display = G.hasRegistro ? '' : 'none';
+  if(!G.docTypeModule || (G.docTypeModule==='registro' && !G.hasRegistro)) G.docTypeModule='repasse';
+  document.querySelectorAll('#cfg-view-doctypes .dt-mod-btn').forEach(b=>b.classList.remove('active'));
+  const _act=document.getElementById('dt-mod-'+G.docTypeModule);
+  if(_act) _act.classList.add('active');
   await fetchDocTypes(true);
   renderDocTypesList();
 }
