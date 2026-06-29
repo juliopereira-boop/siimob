@@ -1,4 +1,4 @@
-# ALPHA ONE — Superadmin Guide
+# SIIMOB — Superadmin Guide
 
 You are the sole superadmin. All superadmin operations use the **Service Role Key**,
 which bypasses RLS entirely. Never expose this key to tenant users.
