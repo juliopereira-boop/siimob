@@ -254,6 +254,12 @@
         </div>
         <div class="cfg-card-label">Tipos de documento</div>
       </div>
+      <div class="cfg-hub-card" onclick="openCfgView('comissao')">
+        <div class="cfg-hub-icon" style="background:#d1fae5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="cfg-card-label">Configuração de Comissão</div>
+      </div>
       <div class="cfg-hub-card" onclick="openCfgView('analistas')">
         <div class="cfg-hub-icon" style="background:#dbeafe">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
@@ -472,6 +478,33 @@
         <span id="imob-count">—</span>
         <div class="pt-pg-btns" id="imob-pg-btns"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ─── Sub-view: Configuração de Comissão ─── -->
+  <div id="cfg-view-comissao" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Configuração de Comissão</div>
+    </div>
+    <div class="panel" style="padding:1.25rem;max-width:520px">
+      <p style="font-size:.8rem;color:var(--t3);margin-bottom:1.1rem">Defina como a comissão será calculada para a previsão financeira do dashboard.</p>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Tipo de comissão</label>
+        <select id="cm-type" onchange="toggleCommissionFields()" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
+          <option value="PERCENTAGE">Percentual</option>
+          <option value="FIXED">Valor Fixo</option>
+        </select>
+      </div>
+      <div class="form-group" id="cm-fixed-wrap" style="margin-bottom:1rem;display:none">
+        <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Valor fixo da comissão (R$)</label>
+        <input id="cm-fixed" type="text" placeholder="Ex: 5000,00" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
+      </div>
+      <div class="form-group" id="cm-pct-wrap" style="margin-bottom:1.2rem">
+        <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Percentual da comissão (%)</label>
+        <input id="cm-pct" type="text" placeholder="Ex: 2.5 (para 2,5%)" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
+      </div>
+      <button class="btn btn-primary" onclick="saveCommission()">Salvar Configuração</button>
     </div>
   </div>
 
@@ -1010,7 +1043,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','analistas','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','correspondentes','despachantes','bancos','cartorios'];
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1023,6 +1056,7 @@ function openCfgView(view) {
   if (view === 'empreendimentos') loadEmpreendimentos();
   if (view === 'imobiliarias') loadImobs();
   if (view === 'doctypes') initDocTypesView();
+  if (view === 'comissao') loadCommission();
   if (view === 'analistas') loadAnalistas();
   if (view === 'correspondentes') { loadEmpresas(); loadPartners(); }
   if (view === 'despachantes') loadDespachantes();
@@ -1099,6 +1133,37 @@ async function deleteDocType(id){
   if(!confirm('Excluir este tipo de documento?')) return;
   G.docTypes=(G.docTypes||[]).filter(x=>x.id!==id);
   await persistDocTypes(); renderDocTypesList(); showToast('Tipo removido','info');
+}
+
+// ── Configuração de Comissão ─────────────────────────────────────────────────
+async function loadCommission(){
+  const rows=await fetch(`${A1.rest('a1_config')}?key=eq.commission&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  let cm=null; try{ cm=JSON.parse(rows&&rows[0]&&rows[0].value||'null'); }catch{ cm=null; }
+  G.commission=cm; renderCommissionForm();
+}
+function renderCommissionForm(){
+  const cm=G.commission||{type:'PERCENTAGE',fixed_value:'',percentage_value:''};
+  const t=document.getElementById('cm-type'); if(!t) return;
+  t.value=cm.type||'PERCENTAGE';
+  document.getElementById('cm-fixed').value=cm.fixed_value!=null?cm.fixed_value:'';
+  document.getElementById('cm-pct').value=cm.percentage_value!=null?cm.percentage_value:'';
+  toggleCommissionFields();
+}
+function toggleCommissionFields(){
+  const t=document.getElementById('cm-type').value;
+  document.getElementById('cm-fixed-wrap').style.display=t==='FIXED'?'':'none';
+  document.getElementById('cm-pct-wrap').style.display=t==='PERCENTAGE'?'':'none';
+}
+async function saveCommission(){
+  const type=document.getElementById('cm-type').value;
+  const fixed=parseFloat(String(document.getElementById('cm-fixed').value||'').replace(/\./g,'').replace(',','.'))||null;
+  const pct=parseFloat(String(document.getElementById('cm-pct').value||'').replace(',','.'))||null;
+  if(type==='FIXED' && !(fixed>0)){ showToast('Informe um valor fixo válido','error'); return; }
+  if(type==='PERCENTAGE' && !(pct>0)){ showToast('Informe um percentual válido','error'); return; }
+  const cm={type, fixed_value:type==='FIXED'?fixed:null, percentage_value:type==='PERCENTAGE'?pct:null, is_active:true};
+  const res=await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,key:'commission',value:JSON.stringify(cm)})});
+  if(res.ok){ G.commission=cm; showToast('Configuração de comissão salva'); }
+  else showToast('Erro ao salvar','error');
 }
 
 // ── Regionais (derived from stages) ───────────────────────────────────────────
