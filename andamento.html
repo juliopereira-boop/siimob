@@ -1873,10 +1873,10 @@ function clearDashFilters() {
 
 // ─── Módulo Financeiro (helpers) ──────────────────────────────────────────────
 function brNum(x){ if(x==null||x==='') return 0; if(typeof x==='number') return x; const n=parseFloat(String(x).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')); return isNaN(n)?0:n; }
-function caseUnitValue(c){ const v=c.contract_value||brNum(c.payload&&c.payload.valores&&c.payload.valores.valor_contrato); return Number(v)||0; }
+function caseUnitValue(c){ const vr=c.payload&&c.payload.valores; return brNum(vr&&vr.valor_previsto) || Number(c.contract_value)||0 || brNum(vr&&vr.valor_contrato); }
 function caseRepasseValue(c){
   const vr=c.payload&&c.payload.valores;
-  if(vr){ const t=brNum(vr.valor_financiado)+brNum(vr.valor_subsidio)+brNum(vr.valor_fgts); if(t>0) return t; }
+  if(vr){ const t=brNum(vr.valor_divida)+brNum(vr.valor_subsidio)+brNum(vr.valor_fgts); if(t>0) return t; }
   return caseUnitValue(c);
 }
 function caseIsFinal(c){ return !!(stageMap()[c.stage_id]&&stageMap()[c.stage_id].is_final); }
@@ -2363,18 +2363,21 @@ function renderModalEvts() {
 }
 
 // ─── Valores de Repasse ───────────────────────────────────────────────────────
+function fmtNum(n){ return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
 function renderModalValores(){
   const vr=(G.editingCaseData?.payload?.valores)||{};
-  const f=(id,label,val)=>`<div class="form-group"><label>${label}</label><input id="${id}" value="${esc(val||'')}" placeholder="0,00"></div>`;
+  const f=(id,label,val,hint)=>`<div class="form-group"><label>${label}</label><input id="${id}" value="${esc(val||'')}" placeholder="0,00" oninput="recalcValores()">${hint?`<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>`:''}</div>`;
+  const ro=(id,label,hint)=>`<div class="form-group"><label>${label}</label><input id="${id}" value="" readonly style="background:var(--bg);font-weight:700;color:var(--t2)">${hint?`<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>`:''}</div>`;
   document.getElementById('mc-body').innerHTML=`
     <div class="form-section-title">Valores de Repasse</div>
     <div class="form-grid">
-      ${f('vr-previsto','Valor Previsto',vr.valor_previsto)}
-      ${f('vr-divida','Valor da Dívida',vr.valor_divida)}
-      ${f('vr-subsidio','Valor do Subsídio',vr.valor_subsidio)}
+      ${f('vr-previsto','Valor Previsto',vr.valor_previsto,'valor da venda')}
+      ${f('vr-divida','Valor da Dívida',vr.valor_divida,'financiado pelo banco')}
+      ${f('vr-subsidio','Valor do Subsídio',vr.valor_subsidio,'custeio do governo')}
       ${f('vr-fgts','Valor do FGTS',vr.valor_fgts)}
-      ${f('vr-financiado','Valor Financiado',vr.valor_financiado)}
-      ${f('vr-saldo','Saldo Devedor',vr.saldo_devedor)}
+      ${ro('vr-financiado','Valor Financiado','dívida + subsídio + FGTS (automático)')}
+      ${ro('vr-saldo','Saldo Devedor','venda − financiado (automático)')}
       ${f('vr-parcela-concl','Parcela de Conclusão',vr.parcela_conclusao)}
       <div class="form-group"><label>Parcela Baixada</label><select id="vr-parcela-baixada"><option value="Não" ${vr.parcela_baixada!=='Sim'?'selected':''}>Não</option><option value="Sim" ${vr.parcela_baixada==='Sim'?'selected':''}>Sim</option></select></div>
       ${f('vr-contrato','Valor Contrato',vr.valor_contrato)}
@@ -2382,24 +2385,35 @@ function renderModalValores(){
       <div class="form-group"><label>Previsão de repasse</label><input id="vr-data-previsao" type="date" value="${esc(vr.data_previsao_repasse||'')}"></div>
     </div>
     <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="saveValores()">Salvar valores</button></div>`;
+  recalcValores();
+}
+
+function recalcValores(){
+  const fin = brNum(v('vr-divida'))+brNum(v('vr-subsidio'))+brNum(v('vr-fgts'));
+  const saldo = brNum(v('vr-previsto')) - fin;
+  const fEl=document.getElementById('vr-financiado'); if(fEl) fEl.value=fmtNum(fin);
+  const sEl=document.getElementById('vr-saldo'); if(sEl) sEl.value=fmtNum(saldo);
 }
 
 async function saveValores(){
   if(!G.editingCaseId) return;
+  const fin = brNum(v('vr-divida'))+brNum(v('vr-subsidio'))+brNum(v('vr-fgts'));
+  const saldo = brNum(v('vr-previsto')) - fin;
   const valores={
     valor_previsto:v('vr-previsto'), valor_divida:v('vr-divida'), valor_subsidio:v('vr-subsidio'),
-    valor_fgts:v('vr-fgts'), valor_financiado:v('vr-financiado'), saldo_devedor:v('vr-saldo'),
+    valor_fgts:v('vr-fgts'), valor_financiado:fmtNum(fin), saldo_devedor:fmtNum(saldo),
     parcela_conclusao:v('vr-parcela-concl'), parcela_baixada:document.getElementById('vr-parcela-baixada')?.value||'Não',
     valor_contrato:v('vr-contrato'),
     data_assinatura:document.getElementById('vr-data-assinatura')?.value||'',
     data_previsao_repasse:document.getElementById('vr-data-previsao')?.value||'',
   };
   const payload={...(G.editingCaseData.payload||{}),valores};
-  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.returnHeaders(),body:JSON.stringify({payload})});
   if(res.ok){
     G.editingCaseData.payload=payload;
     const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
     fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'edit',description:'Valores de repasse atualizados',actor_name:G.user.name})}).catch(()=>{});
+    renderKanban();renderDashboard();
     toast('Valores salvos','success');
   } else toast('Erro ao salvar valores','error');
 }
@@ -2501,6 +2515,7 @@ async function renderModalDocs(){
 async function saveCase() {
   const id=G.editingCaseId;
   if(!id) return;
+  if(document.getElementById('vr-previsto')){ saveValores(); return; }
   if(!document.getElementById('e-name')){ toast('Abra a aba "Dados" para salvar o cadastro','info'); return; }
   if (!hasPerm('editar_repasses')) { toast('Sem permissão para editar operações', 'error'); return; }
   const stageId=document.getElementById('mc-stage-sel').value;
@@ -4031,7 +4046,7 @@ async function importCvcrmCase(){
       stage_id:stage?.id||null, stage_name:stage?.name||null,
       is_new:true,
       payload:{source:'cvcrm',atendimento:p.atendimento,valor_aprovado:p.valor_aprovado,valor_subsidio:p.valor_subsidio,prazo:p.prazo,prestacao:p.prestacao,carta:p.carta,renda:p.renda,data_cadastro_cvcrm:p.data_cadastro,
-        valores:{valor_contrato:p.valor_avaliacao||'',valor_financiado:p.valor_aprovado||'',valor_subsidio:p.valor_subsidio||'',valor_fgts:p.valor_fgts||'',saldo_devedor:p.saldo_devedor||''}},
+        valores:{valor_previsto:p.valor_avaliacao||'',valor_divida:p.valor_aprovado||'',valor_subsidio:p.valor_subsidio||'',valor_fgts:p.valor_fgts||'',valor_contrato:p.valor_avaliacao||''}},
     };
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data=await res.json().catch(()=>null);
