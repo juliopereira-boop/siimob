@@ -553,13 +553,14 @@ let PLANS   = [];
 let CONTRACT_TENANT = null;
 let CONTRACT_MODS   = [];
 
+// `types`: tipos de cliente para os quais o módulo é ofertável. Ausente = todos.
 const MODULES_DEF = [
-  { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.' },
-  { key: 'registro',         name: 'Registro em Cartório',     desc: 'Módulo despachante: ITBI, protocolos, exigências e matrícula atualizada.' },
-  { key: 'crm',              name: 'CRM Básico',               desc: 'Gestão de contatos, leads e clientes com histórico de interações.' },
-  { key: 'financeiro',       name: 'Módulo Financeiro',        desc: 'Controle de comissões, repasse financeiro e fluxo de caixa.' },
-  { key: 'simulador',        name: 'Simulador de Crédito',     desc: 'Simulação de financiamento consignado e habitacional integrada.' },
-  { key: 'portal_parceiro',  name: 'Portal Parceiro',          desc: 'Acesso externo para correspondentes parceiros acompanharem seus processos.' },
+  { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.', types:['correspondente_bancario','imobiliaria','construtora'] },
+  { key: 'registro',         name: 'Registro em Cartório',     desc: 'Módulo despachante: ITBI, protocolos, exigências e matrícula atualizada.', types:['correspondente_bancario','imobiliaria','construtora','despachante'] },
+  { key: 'crm',              name: 'CRM Básico',               desc: 'Gestão de contatos, leads e clientes com histórico de interações.', types:['imobiliaria','construtora'] },
+  { key: 'financeiro',       name: 'Módulo Financeiro',        desc: 'Controle de comissões, repasse financeiro e fluxo de caixa.', types:['correspondente_bancario','imobiliaria','construtora'] },
+  { key: 'simulador',        name: 'Simulador de Crédito',     desc: 'Simulação de financiamento consignado e habitacional integrada.', types:['correspondente_bancario','imobiliaria','construtora'] },
+  { key: 'portal_parceiro',  name: 'Portal Parceiro',          desc: 'Acesso externo para correspondentes parceiros acompanharem seus processos.', types:['correspondente_bancario'] },
   { key: 'ocr',              name: 'Leitor OCR',               desc: 'Extração automática de dados de documentos PDF via inteligência artificial.' },
   { key: 'workflow_avancado',name: 'Workflow Avançado',        desc: 'Motor de automação com pré-requisitos, ações e gatilhos personalizados.' },
   { key: 'multi_regional',   name: 'Multi-Regional',           desc: 'Segregação de dados e relatórios por região geográfica.' },
@@ -821,13 +822,16 @@ function loadTenantModulesFor() {
   }
   const tenant = TENANTS.find(t => t.id === tenantId);
   const activeKeys = new Set(ALL_MODULES.filter(m => m.tenant_id === tenantId).map(m => m.module_key));
+  const tipo = tenant?.tipo_cliente;
+  // Mostra apenas módulos ofertáveis para o tipo de cliente (ex.: CRM não aparece para Correspondente)
+  const mods = MODULES_DEF.filter(mod => !mod.types || !tipo || mod.types.includes(tipo));
 
   document.getElementById('mod-grid-wrap').innerHTML = `
     <div style="font-size:.78rem;font-weight:700;margin-bottom:.75rem">
       Módulos de <strong>${esc(tenant?.name || tenantId)}</strong>
     </div>
     <div class="mod-grid">
-      ${MODULES_DEF.map(mod => {
+      ${mods.map(mod => {
         const isActive = activeKeys.has(mod.key);
         const activeRow = ALL_MODULES.find(m => m.tenant_id === tenantId && m.module_key === mod.key);
         const expiryStr = activeRow?.expires_at

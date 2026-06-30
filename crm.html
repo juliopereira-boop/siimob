@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM — SIIMOB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F8FAFC;--card:#fff;--border:#e2e6ef;--t1:#0f1520;--t2:#4a5568;--t3:#8896a7;--t4:#b8c4d0;
+    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#3D5CC8;
+    --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);--shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
+  input,button,select,textarea{font-family:inherit}
+  a{text-decoration:none;color:inherit}
+
+  /* Header */
+  .hdr{background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
+  .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
+  .hdr-logo .sub{color:#60CFFF;font-weight:800}
+  .hdr-right{display:flex;align-items:center;gap:.8rem;font-size:.8rem}
+  .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .15s}
+  .btn-hdr:hover{background:rgba(255,255,255,.25)}
+  .btn-hdr-primary{background:#fff;color:var(--violet)}
+  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
+  .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent}
+  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+
+  .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+  .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* KPIs */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1.25rem}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;box-shadow:var(--shadow);border-left:3px solid var(--blue)}
+  .kpi-card.g{border-left-color:var(--green)}.kpi-card.a{border-left-color:var(--amber)}.kpi-card.v{border-left-color:var(--violet)}.kpi-card.r{border-left-color:var(--red)}
+  .kpi-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.3rem}
+  .kpi-value{font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
+  .kpi-sub{font-size:.7rem;color:var(--t3);margin-top:.15rem}
+
+  /* Kanban */
+  .toolbar{display:flex;gap:.5rem;align-items:center;margin-bottom:.9rem;flex-wrap:wrap}
+  .toolbar input,.toolbar select{padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:var(--card)}
+  .kanban{display:flex;gap:.7rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+  .k-col{width:270px;flex-shrink:0;display:flex;flex-direction:column}
+  .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.76rem;font-weight:700}
+  .k-col-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.08rem .45rem;font-size:.66rem;font-weight:800}
+  .k-col-fin{background:#E9EEF5;padding:.3rem .6rem;font-size:.64rem;color:var(--t3);font-weight:600;display:flex;justify-content:space-between}
+  .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:120px;display:flex;flex-direction:column;gap:.4rem}
+  .k-col-body.drag-over{background:#E2E8F0;outline:2px dashed rgba(67,97,238,.35);outline-offset:-2px}
+  .lead-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.7rem .75rem;cursor:grab;box-shadow:var(--shadow);transition:all .15s}
+  .lead-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .lead-card.dragging{opacity:.4}
+  .lead-name{font-weight:700;font-size:.82rem;margin-bottom:.2rem}
+  .lead-line{font-size:.72rem;color:var(--t2);margin-bottom:.15rem;display:flex;align-items:center;gap:.3rem}
+  .lead-chips{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.35rem}
+  .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
+  .chip.src{background:#ecfeff;color:#0e7490}
+  .chip.val{background:#dcfce7;color:#166534;font-family:'DM Mono',monospace}
+  .lead-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.45rem;padding-top:.4rem;border-top:1px solid var(--border)}
+  .lead-foot .date{font-size:.62rem;color:var(--t4);font-family:'DM Mono',monospace}
+  .mini-btn{border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--t2);font-size:.68rem;font-weight:700;padding:.18rem .5rem;cursor:pointer}
+  .mini-btn:hover{background:var(--border);color:var(--t1)}
+
+  /* Buttons */
+  .btn{border:none;border-radius:8px;padding:.5rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-primary{background:var(--violet);color:#fff}.btn-primary:hover{background:#2c4196}
+  .btn-ghost{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+  .btn-sm{padding:.35rem .65rem;font-size:.74rem}
+  .btn-danger{background:#fee2e2;color:#b91c1c}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(15,21,32,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:1.5rem}
+  .modal-bg.hidden{display:none}
+  .modal{background:var(--card);border-radius:14px;width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden}
+  .modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+  .modal-title{font-size:1rem;font-weight:800}
+  .modal-sub{font-size:.75rem;color:var(--t3);margin-top:.15rem}
+  .modal-close{background:var(--bg);border:1px solid var(--border);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--t3)}
+  .modal-tabs{display:flex;gap:.2rem;padding:0 1.25rem;border-bottom:1px solid var(--border)}
+  .modal-tab{padding:.65rem .9rem;font-size:.8rem;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent}
+  .modal-tab.active{color:var(--violet);border-bottom-color:var(--violet)}
+  .modal-body{padding:1.25rem;overflow-y:auto}
+  .modal-foot{padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .fg{display:flex;flex-direction:column}
+  .fg.full{grid-column:1/-1}
+  .fg label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:.25rem}
+  .fg input,.fg select,.fg textarea{padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--card)}
+  .sec-title{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:1rem 0 .6rem}
+
+  /* Timeline */
+  .timeline{display:flex;flex-direction:column}
+  .tl-item{display:flex;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+  .tl-item:last-child{border-bottom:none}
+  .tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;background:#eef2ff;color:#3730A3}
+  .tl-desc{font-size:.8rem;line-height:1.4}
+  .tl-meta{font-size:.68rem;color:var(--t3);margin-top:.1rem}
+
+  /* Toast */
+  #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
+  .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg)}
+  .toast-success{background:#16a34a}.toast-error{background:#dc2626}.toast-info{background:#334155}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-logo"><svg width="24" height="24" viewBox="0 0 100 100" fill="none"><defs><linearGradient id="lg" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lg)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lg)"/></svg><span>SIIMOB</span></div>
+  <div class="hdr-right">
+    <span id="hdr-user"></span>
+    <button class="btn-hdr btn-hdr-primary" onclick="openNewLead()">+ Novo Lead</button>
+    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
+  </div>
+</div>
+<div class="tabs-bar">
+  <div class="tab-btn active" data-tab="funil" onclick="switchTab('funil',this)">Funil de Leads</div>
+  <div class="tab-btn" data-tab="dash" onclick="switchTab('dash',this)">Dashboard</div>
+  <a class="tab-btn" id="link-config" href="">Configuracoes</a>
+</div>
+
+<div class="main">
+  <div id="tab-dash" style="display:none"></div>
+  <div id="tab-funil">
+    <div class="toolbar">
+      <input type="search" id="lead-search" placeholder="Buscar lead, telefone..." oninput="renderFunil()">
+      <select id="lead-src-filter" onchange="renderFunil()"><option value="">Todas as origens</option></select>
+      <div style="flex:1"></div>
+      <span id="lead-count" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="kanban" id="kanban"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+</div>
+
+<!-- New lead modal -->
+<div class="modal-bg hidden" id="modal-new">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hdr"><div><div class="modal-title">Novo Lead</div><div class="modal-sub">Cadastre um novo lead no funil</div></div><button class="modal-close" onclick="closeModal('modal-new')">×</button></div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fg full"><label>Nome *</label><input id="n-name" placeholder="Nome do lead"></div>
+        <div class="fg"><label>Telefone</label><input id="n-phone" placeholder="(00) 00000-0000"></div>
+        <div class="fg"><label>E-mail</label><input id="n-email" type="email"></div>
+        <div class="fg"><label>Origem / Fonte</label><input id="n-source" list="dl-sources" placeholder="Ex: Site, Indicação, Portal"></div>
+        <div class="fg"><label>Corretor responsável</label><input id="n-broker"></div>
+        <div class="fg full"><label>Interesse (empreendimento/imóvel)</label><input id="n-interest"></div>
+        <div class="fg"><label>Valor estimado (R$)</label><input id="n-value" type="number" step="0.01"></div>
+        <div class="fg"><label>Etapa inicial</label><select id="n-stage"></select></div>
+        <div class="fg full"><label>Observações</label><textarea id="n-obs" rows="3"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot"><span></span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createLead()">Criar lead</button></div></div>
+  </div>
+</div>
+
+<!-- Manage lead modal -->
+<div class="modal-bg hidden" id="modal-lead">
+  <div class="modal">
+    <div class="modal-hdr"><div><div class="modal-title" id="ml-title"></div><div class="modal-sub" id="ml-sub"></div></div>
+      <div style="display:flex;gap:.5rem;align-items:center"><select id="ml-stage" onchange="changeLeadStage()" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select><button class="modal-close" onclick="closeModal('modal-lead')">×</button></div>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-mt="dados" onclick="switchLeadTab('dados',this)">Dados</div>
+      <div class="modal-tab" data-mt="hist" onclick="switchLeadTab('hist',this)">Histórico de interações</div>
+    </div>
+    <div class="modal-body" id="ml-body"></div>
+    <div class="modal-foot"><button class="btn btn-danger btn-sm" onclick="archiveLead()">Arquivar</button><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-lead')">Fechar</button><button class="btn btn-primary" onclick="saveLead()">Salvar</button></div></div>
+  </div>
+</div>
+
+<datalist id="dl-sources"></datalist>
+<div id="toast-wrap"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+const G = { user:null, slug:null, stages:[], leads:[], editingId:null, editingData:null, activeMt:'dados' };
+
+const DEFAULT_STAGES = [
+  { name:'Novo Lead',       color:'#6366f1', is_initial:true  },
+  { name:'Em Contato',      color:'#0ea5e9' },
+  { name:'Visita Agendada', color:'#f59e0b' },
+  { name:'Proposta Enviada',color:'#8b5cf6' },
+  { name:'Negociação',      color:'#ec4899' },
+  { name:'Fechado — Ganho', color:'#22c55e', is_final:true },
+  { name:'Perdido',         color:'#ef4444', is_final:true },
+];
+
+const INTERACTIONS = { call:'Ligação', whatsapp:'WhatsApp', email:'E-mail', visit:'Visita', note:'Anotação' };
+
+async function init(){
+  try { G.user = a1RequireAuth(); } catch { return; }
+  try { await a1RequireModule('crm'); } catch { return; }
+  G.slug = A1.slug;
+  document.getElementById('hdr-user').textContent = `${G.user.name} · ${G.user.role}`;
+  document.getElementById('link-config').href = `/${G.slug}/configuracoes`;
+  a1StartHeartbeat('crm');
+  await loadData();
+}
+
+async function loadData(){
+  let stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.crm&order=position.asc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
+  if (!Array.isArray(stages) || !stages.length) stages = await seedStages();
+  G.stages = stages || [];
+  G.leads = await fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
+  if (!Array.isArray(G.leads)) G.leads = [];
+  populateSourceFilters();
+  renderFunil();
+}
+
+async function seedStages(){
+  const rows = DEFAULT_STAGES.map((s,i)=>({ tenant_id:G.user.tenant_id, module_key:'crm', name:s.name, color:s.color, position:i, is_initial:!!s.is_initial, is_final:!!s.is_final }));
+  const created = await fetch(A1.rest('a1_stages'), { method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(rows) }).then(r=>r.json()).catch(()=>[]);
+  return Array.isArray(created)? created.sort((a,b)=>a.position-b.position) : [];
+}
+
+function stageMap(){ return Object.fromEntries(G.stages.map(s=>[s.id,s])); }
+
+// ─── Funil (Kanban) ──────────────────────────────────────────────────────────
+function filteredLeads(){
+  const q=(document.getElementById('lead-search').value||'').toLowerCase();
+  const src=document.getElementById('lead-src-filter').value||'';
+  return G.leads.filter(l=>{
+    if(l.payload && l.payload.archived) return false;
+    if(src && (l.partner_name||'')!==src) return false;
+    if(q){ const hay=`${l.client_name||''} ${l.client_phone||''} ${l.client_email||''} ${l.development||''}`.toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+
+function renderFunil(){
+  const board=document.getElementById('kanban');
+  if(!G.stages.length){ board.innerHTML='<div style="color:var(--t3);padding:1rem">Nenhuma etapa de funil configurada.</div>'; return; }
+  const leads=filteredLeads();
+  const byStage={}; G.stages.forEach(s=>byStage[s.id]=[]);
+  leads.forEach(l=>{ if(byStage[l.stage_id]!==undefined) byStage[l.stage_id].push(l); });
+  board.innerHTML=G.stages.map(s=>{
+    const list=byStage[s.id]||[];
+    const val=list.reduce((a,l)=>a+(Number(l.contract_value)||0),0);
+    return `<div class="k-col">
+      <div class="k-col-header" style="background:${s.color}"><span>${esc(s.name)}</span><span class="k-col-count">${list.length}</span></div>
+      <div class="k-col-fin"><span>Valor</span><b>${fmtBRL(val)}</b></div>
+      <div class="k-col-body" data-stage="${s.id}" ondragover="dOver(event)" ondrop="dDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
+        ${list.map(leadCard).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('lead-count').textContent = `${leads.length} lead${leads.length!==1?'s':''}`;
+}
+
+function leadCard(l){
+  const sm=stageMap()[l.stage_id];
+  return `<div class="lead-card" draggable="true" data-id="${l.id}" style="border-left-color:${sm?sm.color:'#94a3b8'}"
+    ondragstart="dStart(event,this)" ondragend="this.classList.remove('dragging')" onclick="openLead('${l.id}')">
+    <div class="lead-name">${esc(l.client_name||'Sem nome')}</div>
+    ${l.client_phone?`<div class="lead-line">📞 ${esc(l.client_phone)}</div>`:''}
+    ${l.development?`<div class="lead-line">🏠 ${esc(l.development)}</div>`:''}
+    <div class="lead-chips">
+      ${l.partner_name?`<span class="chip src">${esc(l.partner_name)}</span>`:''}
+      ${l.broker_name?`<span class="chip">${esc(l.broker_name)}</span>`:''}
+      ${l.contract_value?`<span class="chip val">${fmtBRL(l.contract_value)}</span>`:''}
+    </div>
+    <div class="lead-foot"><span class="date">${fmtDate(l.created_at)}</span>
+      <button class="mini-btn" onclick="event.stopPropagation();openLead('${l.id}')">Gerenciar</button>
+    </div>
+  </div>`;
+}
+
+// ─── Drag & drop ───────────────────────────────────────────────────────────────
+let dragId=null;
+function dStart(e,el){ dragId=el.dataset.id; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function dOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dDrop(e,el){ e.preventDefault(); el.classList.remove('drag-over'); const sid=el.dataset.stage; if(dragId) moveLead(dragId,sid); }
+
+async function moveLead(id,stageId){
+  const l=G.leads.find(x=>x.id===id); const st=G.stages.find(s=>s.id===stageId);
+  if(!l||!st||l.stage_id===stageId) return;
+  const prev=stageMap()[l.stage_id];
+  l.stage_id=stageId; l.stage_name=st.name; l.stage_entered_at=new Date().toISOString();
+  renderFunil();
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:st.name,stage_entered_at:l.stage_entered_at})});
+  fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,stage_id:stageId,stage_name:st.name,entered_at:l.stage_entered_at})}).catch(()=>{});
+  fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'stage_change',description:`Movido de "${prev?prev.name:'—'}" para "${st.name}"`,actor_name:G.user.name})}).catch(()=>{});
+}
+
+// ─── New lead ────────────────────────────────────────────────────────────────
+function openNewLead(){
+  ['n-name','n-phone','n-email','n-source','n-broker','n-interest','n-value','n-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const initials=G.stages.filter(s=>s.is_initial);
+  document.getElementById('n-stage').innerHTML=(initials.length?initials:G.stages).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  document.getElementById('modal-new').classList.remove('hidden');
+}
+
+async function createLead(){
+  const name=val('n-name'); if(!name){ toast('Informe o nome do lead','error'); return; }
+  const stageId=document.getElementById('n-stage').value; const st=G.stages.find(s=>s.id===stageId);
+  const body={ tenant_id:G.user.tenant_id, module_key:'crm', client_name:name, client_phone:val('n-phone'), client_email:val('n-email'),
+    development:val('n-interest'), partner_name:val('n-source'), broker_name:val('n-broker'),
+    contract_value:parseFloat(val('n-value'))||null, observations:val('n-obs'),
+    stage_id:stageId||null, stage_name:st?st.name:null, is_new:true, payload:{} };
+  const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+  const data=await res.json().catch(()=>null); const created=Array.isArray(data)?data[0]:null;
+  if(created&&created.id){
+    G.leads.unshift(created);
+    if(stageId){ fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stageId,stage_name:st?st.name:null,entered_at:new Date().toISOString()})}).catch(()=>{}); }
+    closeModal('modal-new'); populateSourceFilters(); renderFunil(); toast('Lead criado','success');
+  } else toast('Erro ao criar lead','error');
+}
+
+// ─── Manage lead ───────────────────────────────────────────────────────────────
+function openLead(id){
+  const l=G.leads.find(x=>x.id===id); if(!l) return;
+  G.editingId=id; G.editingData={...l, payload:{...(l.payload||{})}};
+  document.getElementById('ml-title').textContent=l.client_name||'Lead';
+  document.getElementById('ml-sub').textContent=[l.development,l.partner_name].filter(Boolean).join(' · ');
+  document.getElementById('ml-stage').innerHTML=G.stages.map(s=>`<option value="${s.id}" ${s.id===l.stage_id?'selected':''}>${esc(s.name)}</option>`).join('');
+  document.querySelectorAll('#modal-lead .modal-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('#modal-lead .modal-tab[data-mt="dados"]').classList.add('active');
+  G.activeMt='dados'; renderLeadDados();
+  document.getElementById('modal-lead').classList.remove('hidden');
+}
+
+function switchLeadTab(t,el){ document.querySelectorAll('#modal-lead .modal-tab').forEach(x=>x.classList.remove('active')); el.classList.add('active'); G.activeMt=t; if(t==='dados') renderLeadDados(); else renderLeadHist(); }
+
+function renderLeadDados(){
+  const l=G.editingData||{};
+  document.getElementById('ml-body').innerHTML=`
+    <div class="fgrid">
+      <div class="fg full"><label>Nome</label><input id="e-name" value="${esc(l.client_name||'')}"></div>
+      <div class="fg"><label>Telefone</label><input id="e-phone" value="${esc(l.client_phone||'')}"></div>
+      <div class="fg"><label>E-mail</label><input id="e-email" value="${esc(l.client_email||'')}"></div>
+      <div class="fg"><label>Origem / Fonte</label><input id="e-source" value="${esc(l.partner_name||'')}" list="dl-sources"></div>
+      <div class="fg"><label>Corretor responsável</label><input id="e-broker" value="${esc(l.broker_name||'')}"></div>
+      <div class="fg full"><label>Interesse</label><input id="e-interest" value="${esc(l.development||'')}"></div>
+      <div class="fg"><label>Valor estimado (R$)</label><input id="e-value" type="number" step="0.01" value="${l.contract_value||''}"></div>
+      <div class="fg full"><label>Observações</label><textarea id="e-obs" rows="3">${esc(l.observations||'')}</textarea></div>
+    </div>`;
+}
+
+function renderLeadHist(){
+  const body=document.getElementById('ml-body');
+  body.innerHTML=`
+    <div style="display:flex;gap:.5rem;align-items:flex-end;margin-bottom:1rem;flex-wrap:wrap">
+      <div class="fg" style="flex:0 0 130px"><label>Tipo</label><select id="i-type">${Object.entries(INTERACTIONS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div class="fg" style="flex:1;min-width:180px"><label>Descrição da interação</label><input id="i-desc" placeholder="Ex: liguei, cliente pediu retorno na sexta"></div>
+      <button class="btn btn-primary btn-sm" onclick="addInteraction()">Registrar</button>
+    </div>
+    <div class="sec-title">Histórico</div>
+    <div id="i-list"><div class="spinner" style="margin:1rem auto"></div></div>`;
+  loadInteractions();
+}
+
+async function loadInteractions(){
+  const cid=G.editingId;
+  const [stages,evts]=await Promise.all([
+    fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${cid}&order=entered_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_events')}?case_id=eq.${cid}&order=created_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  const items=[];
+  const l=G.editingData||{};
+  if(l.created_at) items.push({ts:l.created_at,icon:'+',desc:'<b>Lead cadastrado</b>',meta:l.partner_name?`origem: ${esc(l.partner_name)}`:''});
+  (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,icon:'⇢',desc:`Entrou em <b>${esc(h.stage_name||'')}</b>`,meta:''}));
+  (Array.isArray(evts)?evts:[]).forEach(ev=>{ if(ev.type==='stage_change') return; items.push({ts:ev.created_at,icon:(ev.payload&&ev.payload.icon)||'•',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')}); });
+  if(!items.length){ document.getElementById('i-list').innerHTML='<div style="color:var(--t3);font-size:.78rem">Sem interações ainda.</div>'; return; }
+  items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  document.getElementById('i-list').innerHTML='<div class="timeline">'+items.map(it=>`
+    <div class="tl-item"><div class="tl-dot">${it.icon}</div><div><div class="tl-desc">${it.desc}</div><div class="tl-meta">${fmtDT(it.ts)}${it.meta?' · '+it.meta:''}</div></div></div>`).join('')+'</div>';
+}
+
+async function addInteraction(){
+  const type=document.getElementById('i-type').value; const desc=val('i-desc');
+  if(!desc){ toast('Descreva a interação','error'); return; }
+  await fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingId,type:'interaction',description:`[${INTERACTIONS[type]}] ${desc}`,actor_name:G.user.name})}).catch(()=>{});
+  document.getElementById('i-desc').value=''; loadInteractions(); toast('Interação registrada','success');
+}
+
+async function changeLeadStage(){
+  const stageId=document.getElementById('ml-stage').value;
+  await moveLead(G.editingId,stageId);
+  const l=G.leads.find(x=>x.id===G.editingId); if(l){ G.editingData.stage_id=l.stage_id; G.editingData.stage_name=l.stage_name; }
+  if(G.activeMt==='hist') loadInteractions();
+}
+
+async function saveLead(){
+  const id=G.editingId; if(!id) return;
+  if(!document.getElementById('e-name')){ toast('Abra a aba Dados para salvar','info'); return; }
+  const patch={ client_name:val('e-name'), client_phone:val('e-phone'), client_email:val('e-email'),
+    partner_name:val('e-source'), broker_name:val('e-broker'), development:val('e-interest'),
+    contract_value:parseFloat(val('e-value'))||null, observations:val('e-obs') };
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(patch)});
+  if(res.ok){
+    const idx=G.leads.findIndex(l=>l.id===id); if(idx>-1) G.leads[idx]={...G.leads[idx],...patch};
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'edit',description:'Cadastro do lead atualizado',actor_name:G.user.name})}).catch(()=>{});
+    closeModal('modal-lead'); populateSourceFilters(); renderFunil(); renderDash(); toast('Lead salvo','success');
+  } else toast('Erro ao salvar','error');
+}
+
+async function archiveLead(){
+  const id=G.editingId; if(!id||!confirm('Arquivar este lead?')) return;
+  const payload={...(G.editingData.payload||{}),archived:true};
+  await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  const idx=G.leads.findIndex(l=>l.id===id); if(idx>-1) G.leads[idx].payload=payload;
+  closeModal('modal-lead'); renderFunil(); renderDash(); toast('Lead arquivado','info');
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+function renderDash(){
+  const el=document.getElementById('tab-dash');
+  const leads=G.leads.filter(l=>!(l.payload&&l.payload.archived));
+  const sm=stageMap();
+  const fechados=leads.filter(l=>sm[l.stage_id]&&sm[l.stage_id].is_final&&/ganho/i.test(sm[l.stage_id].name));
+  const perdidos=leads.filter(l=>sm[l.stage_id]&&sm[l.stage_id].is_final&&/perdid/i.test(sm[l.stage_id].name));
+  const abertos=leads.filter(l=>!(sm[l.stage_id]&&sm[l.stage_id].is_final));
+  const valorAberto=abertos.reduce((a,l)=>a+(Number(l.contract_value)||0),0);
+  const conv= leads.length? Math.round(fechados.length/leads.length*100):0;
+  const bySource={}; leads.forEach(l=>{ const s=l.partner_name||'Sem origem'; bySource[s]=(bySource[s]||0)+1; });
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Total de Leads</div><div class="kpi-value">${leads.length}</div><div class="kpi-sub">ativos no funil</div></div>
+      <div class="kpi-card a"><div class="kpi-label">Em Aberto</div><div class="kpi-value">${abertos.length}</div><div class="kpi-sub">em negociação</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Fechados (Ganho)</div><div class="kpi-value">${fechados.length}</div><div class="kpi-sub">conversão ${conv}%</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Perdidos</div><div class="kpi-value">${perdidos.length}</div><div class="kpi-sub">leads descartados</div></div>
+      <div class="kpi-card v"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" style="font-size:1.15rem">${fmtBRL(valorAberto)}</div><div class="kpi-sub">potencial estimado</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.15rem;box-shadow:var(--shadow)">
+        <div class="sec-title" style="margin-top:0">Leads por etapa</div>
+        ${G.stages.map(s=>{const n=leads.filter(l=>l.stage_id===s.id).length;const pct=leads.length?Math.round(n/leads.length*100):0;return `<div style="margin-bottom:.55rem"><div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:.2rem"><span>${esc(s.name)}</span><b>${n}</b></div><div style="height:7px;background:var(--bg);border-radius:5px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${s.color}"></div></div></div>`;}).join('')}
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.15rem;box-shadow:var(--shadow)">
+        <div class="sec-title" style="margin-top:0">Leads por origem</div>
+        ${Object.entries(bySource).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:.35rem 0;border-bottom:1px solid var(--border)"><span>${esc(k)}</span><b>${n}</b></div>`).join('')||'<div style="color:var(--t3);font-size:.78rem">Sem dados</div>'}
+      </div>
+    </div>`;
+}
+
+function populateSourceFilters(){
+  const sources=[...new Set(G.leads.map(l=>l.partner_name).filter(Boolean))].sort();
+  document.getElementById('lead-src-filter').innerHTML='<option value="">Todas as origens</option>'+sources.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  document.getElementById('dl-sources').innerHTML=sources.map(s=>`<option value="${esc(s)}">`).join('');
+}
+
+// ─── Tabs / helpers ────────────────────────────────────────────────────────────
+function switchTab(tab,el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('tab-funil').style.display = tab==='funil'?'':'none';
+  document.getElementById('tab-dash').style.display  = tab==='dash'?'':'none';
+  if(tab==='dash') renderDash();
+}
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); if(id==='modal-lead'){G.editingId=null;G.editingData=null;} }
+function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtBRL(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtDate(d){ return d?new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—'; }
+function fmtDT(d){ return d?new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'; }
+function toast(msg,type='info'){ const w=document.getElementById('toast-wrap'); const d=document.createElement('div'); d.className=`toast toast-${type}`; d.textContent=msg; w.appendChild(d); setTimeout(()=>d.remove(),3200); }
+
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
+init();
+</script>
+</body>
+</html>
