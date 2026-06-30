@@ -118,10 +118,11 @@
 <div class="tabs-bar">
   <div class="tab-btn active" data-tab="funil" onclick="switchTab('funil',this)">Funil de Leads</div>
   <div class="tab-btn" data-tab="dash" onclick="switchTab('dash',this)">Dashboard</div>
-  <a class="tab-btn" id="link-config" href="">Configuracoes</a>
+  <div class="tab-btn" data-tab="config" onclick="switchTab('config',this)">Configurações</div>
 </div>
 
 <div class="main">
+  <div id="tab-config" style="display:none"></div>
   <div id="tab-dash" style="display:none"></div>
   <div id="tab-funil">
     <div class="toolbar">
@@ -195,7 +196,6 @@ async function init(){
   try { await a1RequireModule('crm'); } catch { return; }
   G.slug = A1.slug;
   document.getElementById('hdr-user').textContent = `${G.user.name} · ${G.user.role}`;
-  document.getElementById('link-config').href = `/${G.slug}/configuracoes`;
   a1StartHeartbeat('crm');
   await loadData();
 }
@@ -446,9 +446,80 @@ function populateSourceFilters(){
 function switchTab(tab,el){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
-  document.getElementById('tab-funil').style.display = tab==='funil'?'':'none';
-  document.getElementById('tab-dash').style.display  = tab==='dash'?'':'none';
+  document.getElementById('tab-funil').style.display  = tab==='funil'?'':'none';
+  document.getElementById('tab-dash').style.display   = tab==='dash'?'':'none';
+  document.getElementById('tab-config').style.display = tab==='config'?'':'none';
   if(tab==='dash') renderDash();
+  if(tab==='config') renderConfig();
+}
+
+// ─── Configurações do CRM (workflow próprio) ─────────────────────────────────
+function renderConfig(){
+  document.getElementById('tab-config').innerHTML=`
+    <div style="max-width:780px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div style="font-size:1.05rem;font-weight:800">Funil do CRM</div>
+          <div style="font-size:.78rem;color:var(--t3)">Defina as etapas do seu funil de leads — este é o workflow exclusivo do módulo CRM.</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addStage()">+ Nova etapa</button>
+      </div>
+      <div id="cfg-stages"></div>
+      <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem">Dica: marque <b>Inicial</b> na etapa onde novos leads entram e <b>Final</b> nas etapas de fechamento (ganho/perdido).</div>
+    </div>`;
+  renderStageList();
+}
+
+function renderStageList(){
+  const box=document.getElementById('cfg-stages'); if(!box) return;
+  if(!G.stages.length){ box.innerHTML='<div style="color:var(--t3);font-size:.8rem">Nenhuma etapa configurada.</div>'; return; }
+  box.innerHTML=G.stages.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:.55rem;background:var(--card);border:1px solid var(--border);border-left:4px solid ${s.color||'#64748b'};border-radius:10px;padding:.55rem .7rem;margin-bottom:.5rem">
+      <input type="color" value="${s.color||'#64748b'}" onchange="updateStage('${s.id}','color',this.value)" title="Cor" style="width:32px;height:32px;border:none;background:none;cursor:pointer;flex-shrink:0">
+      <input value="${esc(s.name)}" onblur="updateStage('${s.id}','name',this.value)" style="flex:1;min-width:120px;padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;font-weight:600">
+      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_initial?'checked':''} onchange="updateStage('${s.id}','is_initial',this.checked)">Inicial</label>
+      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_final?'checked':''} onchange="updateStage('${s.id}','is_final',this.checked)">Final</label>
+      <button class="mini-btn" onclick="moveStage(${i},-1)" ${i===0?'disabled':''}>↑</button>
+      <button class="mini-btn" onclick="moveStage(${i},1)" ${i===G.stages.length-1?'disabled':''}>↓</button>
+      <button class="mini-btn" style="color:var(--red)" onclick="deleteStage('${s.id}')" title="Excluir">✕</button>
+    </div>`).join('');
+}
+
+async function addStage(){
+  const row={tenant_id:G.user.tenant_id,module_key:'crm',name:'Nova etapa',color:'#64748b',position:G.stages.length,is_initial:false,is_final:false};
+  const [created]=await fetch(A1.rest('a1_stages'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(row)}).then(r=>r.json()).catch(()=>[null]);
+  if(created){ G.stages.push(created); renderStageList(); renderFunil(); toast('Etapa adicionada','success'); }
+  else toast('Erro ao adicionar etapa','error');
+}
+
+async function updateStage(id,field,value){
+  const s=G.stages.find(x=>x.id===id); if(!s) return;
+  if(s[field]===value) return;
+  s[field]=value;
+  const res=await fetch(`${A1.rest('a1_stages')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({[field]:value})});
+  if(res.ok){ renderFunil(); } else toast('Erro ao salvar etapa','error');
+}
+
+async function moveStage(idx,dir){
+  const j=idx+dir; if(j<0||j>=G.stages.length) return;
+  const a=G.stages[idx], b=G.stages[j];
+  const pa=a.position, pb=b.position;
+  a.position=pb; b.position=pa;
+  G.stages.sort((x,y)=>x.position-y.position);
+  renderStageList(); renderFunil();
+  await Promise.all([
+    fetch(`${A1.rest('a1_stages')}?id=eq.${a.id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({position:a.position})}),
+    fetch(`${A1.rest('a1_stages')}?id=eq.${b.id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({position:b.position})})
+  ]).catch(()=>{});
+}
+
+async function deleteStage(id){
+  const here=G.leads.filter(l=>l.stage_id===id && !(l.payload&&l.payload.archived)).length;
+  if(here>0){ toast(`Mova os ${here} lead(s) desta etapa antes de excluir`,'error'); return; }
+  if(!confirm('Excluir esta etapa do funil?')) return;
+  const res=await fetch(`${A1.rest('a1_stages')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok||res.status===204){ G.stages=G.stages.filter(s=>s.id!==id); renderStageList(); renderFunil(); toast('Etapa removida','info'); }
+  else toast('Erro ao remover etapa','error');
 }
 function closeModal(id){ document.getElementById(id).classList.add('hidden'); if(id==='modal-lead'){G.editingId=null;G.editingData=null;} }
 function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
