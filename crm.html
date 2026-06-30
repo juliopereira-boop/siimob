@@ -100,6 +100,31 @@
   .tl-desc{font-size:.8rem;line-height:1.4}
   .tl-meta{font-size:.68rem;color:var(--t3);margin-top:.1rem}
 
+  /* Config hub (mesma organização do tipo Correspondente) */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .cfg-hub{padding:.5rem 0 1.5rem}
+  .cfg-section-hdr{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1.5rem 0 .7rem;display:flex;align-items:center;gap:.5rem}
+  .cfg-section-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+  .cfg-section-hdr:first-child{margin-top:0}
+  .cfg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;max-width:800px}
+  .cfg-hub-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1rem;display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+  .cfg-hub-card:hover{border-color:rgba(67,97,238,.3);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .cfg-hub-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .cfg-card-label{font-size:.82rem;font-weight:700;color:var(--t1)}
+  .cfg-card-desc{font-size:.7rem;color:var(--t3);line-height:1.4}
+  .cfg-view-hdr{display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+  .cfg-back-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:.3rem .75rem;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--t2)}
+  .cfg-back-btn:hover{color:var(--t1);background:var(--bg)}
+  .cfg-view-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+  .pt-toolbar{display:flex;align-items:center;gap:.6rem;margin-bottom:.875rem;flex-wrap:wrap}
+  .pt-table{width:100%;border-collapse:collapse;font-size:.8rem}
+  .pt-table th{padding:.5rem .875rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc}
+  .pt-table td{padding:.6rem .875rem;border-bottom:1px solid var(--border)}
+  .pt-table tr:last-child td{border-bottom:none}
+  .pt-empty{text-align:center;padding:2rem;color:var(--t3);font-size:.8rem}
+  .pt-badge{font-size:.66rem;font-weight:700;padding:.15rem .5rem;border-radius:20px}
+  .pt-on{background:#dcfce7;color:#166534}.pt-off{background:#fee2e2;color:#b91c1c}
+
   /* Toast */
   #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
   .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg)}
@@ -145,7 +170,7 @@
         <div class="fg"><label>Telefone</label><input id="n-phone" placeholder="(00) 00000-0000"></div>
         <div class="fg"><label>E-mail</label><input id="n-email" type="email"></div>
         <div class="fg"><label>Origem / Fonte</label><input id="n-source" list="dl-sources" placeholder="Ex: Site, Indicação, Portal"></div>
-        <div class="fg"><label>Corretor responsável</label><input id="n-broker"></div>
+        <div class="fg"><label>Corretor responsável</label><input id="n-broker" list="dl-brokers"></div>
         <div class="fg full"><label>Interesse (empreendimento/imóvel)</label><input id="n-interest"></div>
         <div class="fg"><label>Valor estimado (R$)</label><input id="n-value" type="number" step="0.01"></div>
         <div class="fg"><label>Etapa inicial</label><select id="n-stage"></select></div>
@@ -172,6 +197,7 @@
 </div>
 
 <datalist id="dl-sources"></datalist>
+<datalist id="dl-brokers"></datalist>
 <div id="toast-wrap"></div>
 
 <script src="/js/config.js"></script>
@@ -206,6 +232,12 @@ async function loadData(){
   G.stages = stages || [];
   G.leads = await fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
   if (!Array.isArray(G.leads)) G.leads = [];
+  const [src,brk] = await Promise.all([
+    fetch(`${A1.rest('a1_config')}?key=eq.crm_sources&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_config')}?key=eq.crm_brokers&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  try{ G.crmSources=JSON.parse(src&&src[0]&&src[0].value||'[]'); }catch{ G.crmSources=[]; }
+  try{ G.crmBrokers=JSON.parse(brk&&brk[0]&&brk[0].value||'[]'); }catch{ G.crmBrokers=[]; }
   populateSourceFilters();
   renderFunil();
 }
@@ -332,7 +364,7 @@ function renderLeadDados(){
       <div class="fg"><label>Telefone</label><input id="e-phone" value="${esc(l.client_phone||'')}"></div>
       <div class="fg"><label>E-mail</label><input id="e-email" value="${esc(l.client_email||'')}"></div>
       <div class="fg"><label>Origem / Fonte</label><input id="e-source" value="${esc(l.partner_name||'')}" list="dl-sources"></div>
-      <div class="fg"><label>Corretor responsável</label><input id="e-broker" value="${esc(l.broker_name||'')}"></div>
+      <div class="fg"><label>Corretor responsável</label><input id="e-broker" value="${esc(l.broker_name||'')}" list="dl-brokers"></div>
       <div class="fg full"><label>Interesse</label><input id="e-interest" value="${esc(l.development||'')}"></div>
       <div class="fg"><label>Valor estimado (R$)</label><input id="e-value" type="number" step="0.01" value="${l.contract_value||''}"></div>
       <div class="fg full"><label>Observações</label><textarea id="e-obs" rows="3">${esc(l.observations||'')}</textarea></div>
@@ -437,9 +469,12 @@ function renderDash(){
 }
 
 function populateSourceFilters(){
-  const sources=[...new Set(G.leads.map(l=>l.partner_name).filter(Boolean))].sort();
+  const cfgSrc=(G.crmSources||[]).filter(x=>x.active!==false).map(x=>x.name);
+  const sources=[...new Set([...cfgSrc, ...G.leads.map(l=>l.partner_name).filter(Boolean)])].sort();
   document.getElementById('lead-src-filter').innerHTML='<option value="">Todas as origens</option>'+sources.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   document.getElementById('dl-sources').innerHTML=sources.map(s=>`<option value="${esc(s)}">`).join('');
+  const brokers=[...new Set([...(G.crmBrokers||[]).filter(x=>x.active!==false).map(x=>x.name), ...G.leads.map(l=>l.broker_name).filter(Boolean)])].sort();
+  const dlb=document.getElementById('dl-brokers'); if(dlb) dlb.innerHTML=brokers.map(b=>`<option value="${esc(b)}">`).join('');
 }
 
 // ─── Tabs / helpers ────────────────────────────────────────────────────────────
@@ -453,22 +488,96 @@ function switchTab(tab,el){
   if(tab==='config') renderConfig();
 }
 
-// ─── Configurações do CRM (workflow próprio) ─────────────────────────────────
+// ─── Configurações do CRM — mesmo formato (hub + sub-telas) do Correspondente ──
 function renderConfig(){
   document.getElementById('tab-config').innerHTML=`
-    <div style="max-width:780px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-        <div>
-          <div style="font-size:1.05rem;font-weight:800">Funil do CRM</div>
-          <div style="font-size:.78rem;color:var(--t3)">Defina as etapas do seu funil de leads — este é o workflow exclusivo do módulo CRM.</div>
+    <div class="cfg-hub" id="cfg-hub">
+      <div class="cfg-section-hdr">Configurações do CRM</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('funil')">
+          <div class="cfg-hub-icon" style="background:#ede9fe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div>
+          <div class="cfg-card-label">Funil do CRM</div>
+          <div class="cfg-card-desc">Etapas do funil de leads (workflow do módulo).</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="addStage()">+ Nova etapa</button>
+        <div class="cfg-hub-card" onclick="openCfgView('origens')">
+          <div class="cfg-hub-icon" style="background:#cffafe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <div class="cfg-card-label">Origens de Lead</div>
+          <div class="cfg-card-desc">Canais de captação (site, indicação, portais...).</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('corretores')">
+          <div class="cfg-hub-icon" style="background:#dbeafe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="cfg-card-label">Corretores / Equipe</div>
+          <div class="cfg-card-desc">Responsáveis pelo atendimento dos leads.</div>
+        </div>
       </div>
-      <div id="cfg-stages"></div>
-      <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem">Dica: marque <b>Inicial</b> na etapa onde novos leads entram e <b>Final</b> nas etapas de fechamento (ganho/perdido).</div>
-    </div>`;
-  renderStageList();
+    </div>
+    <div id="cfg-view" style="display:none"></div>`;
 }
+
+function openCfgView(view){
+  document.getElementById('cfg-hub').style.display='none';
+  const el=document.getElementById('cfg-view'); el.style.display='';
+  const hdr=(title)=>`<div class="cfg-view-hdr"><button class="cfg-back-btn" onclick="closeCfgView()">← Configurações</button><div class="cfg-view-title">${title}</div></div>`;
+  if(view==='funil'){
+    el.innerHTML=hdr('Funil do CRM')+`
+      <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem"><button class="btn btn-primary btn-sm" onclick="addStage()">+ Nova etapa</button></div>
+      <div id="cfg-stages"></div>
+      <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem">Marque <b>Inicial</b> na etapa onde novos leads entram e <b>Final</b> nas etapas de fechamento (ganho/perdido).</div>`;
+    renderStageList();
+  } else if(view==='origens'){
+    el.innerHTML=hdr('Origens de Lead')+`
+      <div class="panel" style="padding:1rem">
+        <div class="pt-toolbar"><input type="text" id="src-name" placeholder="Nome da origem (ex.: Portal ZAP, Indicação)" style="flex:1;padding:.45rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" onkeydown="if(event.key==='Enter')addCrmItem('sources')"><button class="btn btn-primary btn-sm" onclick="addCrmItem('sources')">+ Adicionar</button></div>
+        <table class="pt-table"><thead><tr><th>Origem</th><th>Status</th><th></th></tr></thead><tbody id="src-tbody"><tr><td colspan="3" class="pt-empty">Carregando...</td></tr></tbody></table>
+      </div>`;
+    loadCrmList('sources');
+  } else if(view==='corretores'){
+    el.innerHTML=hdr('Corretores / Equipe')+`
+      <div class="panel" style="padding:1rem">
+        <div class="pt-toolbar"><input type="text" id="brk-name" placeholder="Nome do corretor" style="flex:1;padding:.45rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" onkeydown="if(event.key==='Enter')addCrmItem('brokers')"><button class="btn btn-primary btn-sm" onclick="addCrmItem('brokers')">+ Adicionar</button></div>
+        <table class="pt-table"><thead><tr><th>Corretor</th><th>Status</th><th></th></tr></thead><tbody id="brk-tbody"><tr><td colspan="3" class="pt-empty">Carregando...</td></tr></tbody></table>
+      </div>`;
+    loadCrmList('brokers');
+  }
+}
+function closeCfgView(){ document.getElementById('cfg-view').style.display='none'; document.getElementById('cfg-hub').style.display=''; }
+
+// Listas simples (origens/corretores) persistidas em a1_config
+const CRM_CFG = { sources:{key:'crm_sources',cache:'crmSources',tbody:'src-tbody',input:'src-name',label:'Origem'}, brokers:{key:'crm_brokers',cache:'crmBrokers',tbody:'brk-tbody',input:'brk-name',label:'Corretor'} };
+async function loadCrmList(kind){
+  const c=CRM_CFG[kind];
+  const rows=await fetch(`${A1.rest('a1_config')}?key=eq.${c.key}&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  let list=[]; try{ list=JSON.parse(rows&&rows[0]&&rows[0].value||'[]'); }catch{ list=[]; }
+  G[c.cache]=Array.isArray(list)?list:[];
+  renderCrmList(kind);
+}
+function renderCrmList(kind){
+  const c=CRM_CFG[kind]; const tb=document.getElementById(c.tbody); if(!tb) return;
+  const list=G[c.cache]||[];
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="3" class="pt-empty">Nenhum item cadastrado.</td></tr>`; return; }
+  tb.innerHTML=list.map(it=>{const on=it.active!==false;return `<tr>
+    <td>${esc(it.name)}</td>
+    <td><span class="pt-badge ${on?'pt-on':'pt-off'}">${on?'Ativo':'Inativo'}</span></td>
+    <td style="text-align:right;white-space:nowrap">
+      <button class="mini-btn" onclick="toggleCrmItem('${kind}','${it.id}')">${on?'Desativar':'Ativar'}</button>
+      <button class="mini-btn" style="color:var(--red)" onclick="delCrmItem('${kind}','${it.id}')">Excluir</button>
+    </td></tr>`;}).join('');
+}
+async function persistCrmList(kind){
+  const c=CRM_CFG[kind];
+  await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,key:c.key,value:JSON.stringify(G[c.cache]||[])})});
+  populateSourceFilters();
+}
+async function addCrmItem(kind){
+  const c=CRM_CFG[kind]; const inp=document.getElementById(c.input); const name=(inp.value||'').trim();
+  if(!name){ toast(`Informe o nome`,'error'); return; }
+  if(!G[c.cache]) G[c.cache]=[];
+  if(G[c.cache].some(x=>(x.name||'').toLowerCase()===name.toLowerCase())){ toast('Já cadastrado','error'); return; }
+  G[c.cache].push({id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,active:true});
+  await persistCrmList(kind); inp.value=''; renderCrmList(kind); toast('Adicionado','success');
+}
+async function toggleCrmItem(kind,id){ const c=CRM_CFG[kind]; const it=(G[c.cache]||[]).find(x=>x.id===id); if(!it) return; it.active=it.active===false; await persistCrmList(kind); renderCrmList(kind); }
+async function delCrmItem(kind,id){ if(!confirm('Excluir este item?')) return; const c=CRM_CFG[kind]; G[c.cache]=(G[c.cache]||[]).filter(x=>x.id!==id); await persistCrmList(kind); renderCrmList(kind); toast('Removido','info'); }
 
 function renderStageList(){
   const box=document.getElementById('cfg-stages'); if(!box) return;
