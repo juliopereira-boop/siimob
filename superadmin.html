@@ -1198,7 +1198,12 @@ async function accessTenant(tenantId, slug, tenantName) {
       trial_ends_at: session.trial_ends_at || null,
     }));
 
-    window.open(`/${slug}/repasse`, '_blank');
+    // Abre o módulo que o cliente realmente possui (ex.: imobiliária → CRM)
+    const _mods = new Set(ALL_MODULES.filter(m => m.tenant_id === tenantId).map(m => m.module_key));
+    const _tipo = (TENANTS.find(t => t.id === tenantId) || {}).tipo_cliente;
+    const _order = (_tipo === 'imobiliaria' || _tipo === 'construtora') ? ['crm','repasse','registro'] : ['repasse','registro','crm'];
+    const _home = _order.find(m => _mods.has(m)) || (_mods.has('crm') ? 'crm' : 'repasse');
+    window.open(`/${slug}/${_home}`, '_blank');
     toast(`Sessão aberta como ${session.name} (${tenantName}).`, 'success');
 
   } finally {

@@ -169,31 +169,50 @@ function a1RequireAuth(allowedRoles = null) {
   return user;
 }
 
-// Module guard — redirects or shows locked screen
+// Verifica se o tenant possui um módulo (RPC a1_has_module)
+async function a1HasModule(moduleKey) {
+  try {
+    return await fetch(A1.rpc('a1_has_module'), {
+      method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
+    }).then(r => r.json());
+  } catch { return false; }
+}
+
+// Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
+// Ordem de preferência — CRM (início da jornada) antes de repasse/registro.
+async function a1ModuleHome() {
+  const slug = A1.slug || '';
+  const order = ['crm', 'repasse', 'registro'];
+  for (const m of order) {
+    if (await a1HasModule(m)) return `/${slug}/${m}`;
+  }
+  return `/${slug}/repasse`;
+}
+
+// Module guard — se o cliente não tem o módulo, redireciona para o módulo que ele
+// possui (ex.: imobiliária cai no /crm em vez de ver o repasse). Só mostra a tela
+// bloqueada quando o cliente não tem nenhum módulo.
 async function a1RequireModule(moduleKey) {
   if (sessionStorage.getItem('a1_sa_mode')) return; // SA impersonation bypasses module check
-  const res = await fetch(A1.rpc('a1_has_module'), {
-    method: 'POST',
-    headers: A1.headers(),
-    body: JSON.stringify({ p_module_key: moduleKey })
-  });
-  const ok = await res.json();
+  if (await a1HasModule(moduleKey)) return;
 
-  if (!ok) {
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui">
-        <div style="text-align:center">
-          <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
-          <h2 style="color:#f1f5f9;margin:0 0 .5rem">Módulo bloqueado</h2>
-          <p style="margin:0 0 1.5rem">Adquira este módulo para continuar.</p>
-          <a href="/${A1.slug}/dashboard"
-             style="color:#6366f1;text-decoration:none;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">
-            Voltar ao painel
-          </a>
-        </div>
-      </div>`;
-    throw new Error('module_locked');
+  const home = await a1ModuleHome();
+  const here = window.location.pathname.replace(/\/$/, '');
+  if (home && !here.endsWith(home)) {
+    window.location.href = home;
+    throw new Error('redirecting_to_home');
   }
+
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui">
+      <div style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+        <h2 style="color:#f1f5f9;margin:0 0 .5rem">Nenhum módulo liberado</h2>
+        <p style="margin:0 0 1.5rem">Contate o administrador para liberar um módulo.</p>
+        <button onclick="a1Logout()" style="color:#6366f1;background:none;cursor:pointer;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">Sair</button>
+      </div>
+    </div>`;
+  throw new Error('module_locked');
 }
 
 // Conta usuários ONLINE (heartbeat nos últimos 90s) do tenant, excluindo a própria chave.
