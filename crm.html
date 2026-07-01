@@ -625,18 +625,40 @@ function renderDash(){
 const CAD_KEYMAP={ origens:'crm_sources', corretores:'crm_brokers' };
 function cadConfigKey(k){ return CAD_KEYMAP[k]||('crm_cad_'+k); }
 const CAD=[
-  {key:'origens',      label:'Origens de Lead',            desc:'Canais de captação (site, portais, indicação).', bg:'#cffafe',st:'#0e7490', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'corretores',   label:'Corretores / Equipe',        desc:'Responsáveis pelo atendimento.',                 bg:'#dbeafe',st:'#2563eb', fields:[{k:'name',label:'Nome',req:true},{k:'creci',label:'CRECI'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'equipe',label:'Equipe'}]},
-  {key:'equipes',      label:'Equipes',                    desc:'Times/squads de corretores.',                    bg:'#ede9fe',st:'#7c3aed', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'tipos_imovel', label:'Tipos de Imóvel',            desc:'Apartamento, casa, sala, terreno...',            bg:'#e0f2fe',st:'#0284c7', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'finalidades',  label:'Finalidades',                desc:'Compra, locação, investimento.',                 bg:'#fef9c3',st:'#a16207', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'regioes',      label:'Regiões / Bairros',          desc:'Áreas de atuação.',                              bg:'#dcfce7',st:'#16a34a', fields:[{k:'name',label:'Bairro / Região',req:true},{k:'cidade',label:'Cidade'}]},
-  {key:'tags',         label:'Tags de Lead',               desc:'Etiquetas para segmentar leads.',                bg:'#fae8ff',st:'#a21caf', fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
-  {key:'motivos_perda',label:'Motivos de Perda',           desc:'Por que um lead foi perdido.',                   bg:'#fee2e2',st:'#dc2626', fields:[{k:'name',label:'Motivo',req:true}]},
-  {key:'garantias',    label:'Garantias Locatícias',       desc:'Fiador, caução, seguro-fiança...',               bg:'#ffedd5',st:'#c2410c', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'bancos',       label:'Bancos / Financiamento',     desc:'Instituições parceiras.',                        bg:'#e0e7ff',st:'#4338ca', fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'empreendimentos',label:'Empreendimentos / Condomínios',desc:'Cadastro-mestre de prédios/condomínios.',     bg:'#f0fdfa',st:'#0d9488', fields:[{k:'name',label:'Nome',req:true},{k:'endereco',label:'Endereço'},{k:'cidade',label:'Cidade'},{k:'tipo',label:'Tipo'},{k:'obs',label:'Observações',type:'textarea'}]},
-  {key:'modelos_msg',  label:'Modelos de Mensagem',        desc:'Templates de WhatsApp / e-mail.',                bg:'#ecfeff',st:'#0891b2', fields:[{k:'name',label:'Título',req:true},{k:'canal',label:'Canal',type:'select',options:['WhatsApp','E-mail']},{k:'corpo',label:'Mensagem',type:'textarea'}]},
+  // Leads & Comunicação
+  {key:'origens',sec:'Leads & Comunicação',label:'Origens de Lead',desc:'Canais de captação.',bg:'#cffafe',st:'#0e7490',fields:[{k:'name',label:'Nome',req:true},{k:'tipo',label:'Tipo',type:'select',options:['Digital','Indicação','Presencial','Parceria']},{k:'custo',label:'Custo por lead (R$)'}]},
+  {key:'portais',sec:'Leads & Comunicação',label:'Códigos de Portais',desc:'ZAP, VivaReal, OLX...',bg:'#e0f2fe',st:'#0284c7',fields:[{k:'name',label:'Portal',req:true},{k:'codigo',label:'Código de integração'}]},
+  {key:'modelos_msg',sec:'Leads & Comunicação',label:'Mensagens Padrão',desc:'Templates WhatsApp/e-mail.',bg:'#ecfeff',st:'#0891b2',fields:[{k:'name',label:'Título',req:true},{k:'canal',label:'Canal',type:'select',options:['WhatsApp','E-mail']},{k:'corpo',label:'Mensagem',type:'textarea'}]},
+  {key:'tags',sec:'Leads & Comunicação',label:'Tags de Lead',desc:'Etiquetas de leads.',bg:'#fae8ff',st:'#a21caf',fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
+  // Pessoas
+  {key:'pessoas',sec:'Pessoas',label:'Pessoas / Clientes',desc:'Cadastro unificado de clientes.',bg:'#dcfce7',st:'#16a34a',fields:[{k:'name',label:'Nome completo',req:true},{k:'cpf',label:'CPF'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'renda',label:'Renda mensal (R$)'},{k:'profissao',label:'Profissão'},{k:'obs',label:'Observações',type:'textarea'}]},
+  {key:'tags_pessoa',sec:'Pessoas',label:'Tags de Pessoas',desc:'Servidor, aposentado, VIP...',bg:'#fce7f3',st:'#be185d',fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
+  {key:'tipos_assoc',sec:'Pessoas',label:'Tipos de Associação',desc:'Cônjuge, fiador, procurador...',bg:'#ede9fe',st:'#7c3aed',fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'tipos_contato',sec:'Pessoas',label:'Tipos de Contato',desc:'WhatsApp, e-mail, telefone...',bg:'#e0e7ff',st:'#4338ca',fields:[{k:'name',label:'Nome',req:true}]},
+  // Corretores & Equipe
+  {key:'corretores',sec:'Corretores & Equipe',label:'Corretores',desc:'Força de vendas.',bg:'#dbeafe',st:'#2563eb',fields:[{k:'name',label:'Nome',req:true},{k:'cpf',label:'CPF'},{k:'creci',label:'CRECI'},{k:'imobiliaria',label:'Imobiliária',type:'ref',ref:'imobiliarias'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'}]},
+  {key:'cat_corretor',sec:'Corretores & Equipe',label:'Categorias de Corretor',desc:'Ouro, prata, bronze...',bg:'#fef9c3',st:'#a16207',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'}]},
+  {key:'niveis_corretor',sec:'Corretores & Equipe',label:'Níveis do Corretor',desc:'Hierarquia/permissões.',bg:'#ffedd5',st:'#c2410c',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'}]},
+  {key:'equipes',sec:'Corretores & Equipe',label:'Equipes',desc:'Times/squads.',bg:'#f3e8ff',st:'#9333ea',fields:[{k:'name',label:'Nome',req:true}]},
+  // Imobiliárias
+  {key:'imobiliarias',sec:'Imobiliárias',label:'Imobiliárias Parceiras',desc:'Parcerias corporativas.',bg:'#f0fdfa',st:'#0d9488',fields:[{k:'name',label:'Nome fantasia',req:true},{k:'razao',label:'Razão social'},{k:'cnpj',label:'CNPJ'},{k:'responsavel',label:'Responsável'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'}]},
+  // Empreendimentos
+  {key:'incorporadoras',sec:'Empreendimentos',label:'Incorporadoras',desc:'Empresas que constroem/vendem.',bg:'#e0e7ff',st:'#4f46e5',fields:[{k:'name',label:'Razão social',req:true},{k:'cnpj',label:'CNPJ'},{k:'contato',label:'Contato comercial'},{k:'phone',label:'Telefone'}]},
+  {key:'empreendimentos',sec:'Empreendimentos',label:'Empreendimentos',desc:'Prédios, loteamentos, condomínios.',bg:'#ccfbf1',st:'#0d9488',fields:[{k:'name',label:'Nome',req:true},{k:'incorporadora',label:'Incorporadora',type:'ref',ref:'incorporadoras'},{k:'localizacao',label:'Localização'},{k:'total',label:'Total de unidades'},{k:'status',label:'Status',type:'select',options:['Lançamento','Em Construção','Concluído']}]},
+  {key:'terceirizacao',sec:'Empreendimentos',label:'Empresas de Terceirização',desc:'Serviços terceirizados.',bg:'#fef2f2',st:'#b91c1c',fields:[{k:'name',label:'Nome',req:true},{k:'cnpj',label:'CNPJ'},{k:'servico',label:'Serviço'},{k:'phone',label:'Telefone'}]},
+  {key:'pdv',sec:'Empreendimentos',label:'Pontos de Venda',desc:'Plantões de vendas.',bg:'#fff7ed',st:'#ea580c',fields:[{k:'name',label:'Nome',req:true},{k:'endereco',label:'Endereço'},{k:'empreendimento',label:'Empreendimento',type:'ref',ref:'empreendimentos'}]},
+  {key:'segmentos',sec:'Empreendimentos',label:'Segmentos',desc:'MCMV, médio/alto padrão...',bg:'#f0f9ff',st:'#0369a1',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'}]},
+  {key:'preco_medio',sec:'Empreendimentos',label:'Preço Médio',desc:'Preço por tipo de unidade.',bg:'#ecfccb',st:'#4d7c0f',fields:[{k:'name',label:'Empreendimento',type:'ref',ref:'empreendimentos',req:true},{k:'tipo_unidade',label:'Tipo de unidade'},{k:'preco',label:'Preço médio (R$)'}]},
+  // Serviços & Outros
+  {key:'tipos_imovel',sec:'Serviços & Outros',label:'Tipos de Imóvel',desc:'Apartamento, casa, sala...',bg:'#e0f2fe',st:'#0284c7',fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'finalidades',sec:'Serviços & Outros',label:'Finalidades',desc:'Compra, locação, investimento.',bg:'#fef9c3',st:'#a16207',fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'regioes',sec:'Serviços & Outros',label:'Regiões / Bairros',desc:'Áreas de atuação.',bg:'#dcfce7',st:'#16a34a',fields:[{k:'name',label:'Bairro / Região',req:true},{k:'cidade',label:'Cidade'}]},
+  {key:'motivos_perda',sec:'Serviços & Outros',label:'Motivos de Perda',desc:'Por que um lead foi perdido.',bg:'#fee2e2',st:'#dc2626',fields:[{k:'name',label:'Motivo',req:true}]},
+  {key:'garantias',sec:'Serviços & Outros',label:'Garantias Locatícias',desc:'Fiador, caução, seguro...',bg:'#ffedd5',st:'#c2410c',fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'bancos',sec:'Serviços & Outros',label:'Bancos / Financiamento',desc:'Instituições parceiras.',bg:'#e0e7ff',st:'#4338ca',fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'sindicos',sec:'Serviços & Outros',label:'Síndicos',desc:'Acesso a condomínios.',bg:'#f5f3ff',st:'#6d28d9',fields:[{k:'name',label:'Nome',req:true},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'condominio',label:'Condomínio',type:'ref',ref:'empreendimentos'}]},
+  {key:'tipos_visita',sec:'Serviços & Outros',label:'Tipos de Visita',desc:'Visita técnica, avaliação...',bg:'#fae8ff',st:'#a21caf',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'},{k:'duracao',label:'Duração (min)'}]},
+  {key:'reservas_espaco',sec:'Serviços & Outros',label:'Reservas de Espaços',desc:'Salas de reunião, plantões.',bg:'#f0fdf4',st:'#15803d',fields:[{k:'name',label:'Espaço',req:true},{k:'localizacao',label:'Localização'},{k:'capacidade',label:'Capacidade'},{k:'regras',label:'Regras de uso',type:'textarea'}]},
 ];
 function cadDef(k){ return CAD.find(c=>c.key===k); }
 async function loadCad(k){
@@ -650,11 +672,12 @@ function getCad(k){ return G.cad[k]||[]; }
 function renderConfig(){
   const icon=(bg,st)=>`<div class="cfg-hub-icon" style="background:${bg}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${st}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></div>`;
   const funil=`<div class="cfg-hub-card" onclick="openCfgView('funil')"><div class="cfg-hub-icon" style="background:#ede9fe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div><div class="cfg-card-label">Funis / Pipelines</div><div class="cfg-card-desc">Etapas de cada funil (Vendas, Lançamentos, Locação).</div></div>`;
-  const cards=CAD.map(c=>`<div class="cfg-hub-card" onclick="openCfgView('${c.key}')">${icon(c.bg,c.st)}<div class="cfg-card-label">${c.label}</div><div class="cfg-card-desc">${c.desc}</div></div>`).join('');
+  const secs=[...new Set(CAD.map(c=>c.sec))];
+  const body=secs.map(s=>`<div class="cfg-section-hdr">${esc(s)}</div><div class="cfg-cards">${CAD.filter(c=>c.sec===s).map(c=>`<div class="cfg-hub-card" onclick="openCfgView('${c.key}')">${icon(c.bg,c.st)}<div class="cfg-card-label">${c.label}</div><div class="cfg-card-desc">${c.desc}</div></div>`).join('')}</div>`).join('');
   document.getElementById('tab-config').innerHTML=`
     <div class="cfg-hub" id="cfg-hub">
       <div class="cfg-section-hdr">Funil</div><div class="cfg-cards">${funil}</div>
-      <div class="cfg-section-hdr">Cadastros</div><div class="cfg-cards">${cards}</div>
+      ${body}
     </div>
     <div id="cfg-view" style="display:none"></div>`;
 }
@@ -690,12 +713,15 @@ function renderCadList(){
     <td><span class="pt-badge ${on?'pt-on':'pt-off'}">${on?'Ativo':'Inativo'}</span></td>
     <td style="text-align:right;white-space:nowrap"><button class="mini-btn" onclick="cadEdit('${it.id}')">Editar</button> <button class="mini-btn" onclick="cadToggle('${it.id}')">${on?'Desativar':'Ativar'}</button> <button class="mini-btn" style="color:var(--red)" onclick="cadDel('${it.id}')">Excluir</button></td></tr>`;}).join('');
 }
-function cadEdit(id){
-  const def=cadDef(G.cadCur); const it=id?getCad(G.cadCur).find(x=>x.id===id)||{}:{};
+async function cadEdit(id){
+  const def=cadDef(G.cadCur);
+  for(const f of def.fields){ if(f.type==='ref' && !G.cad[f.ref]) await loadCad(f.ref); } // carrega cadastros referenciados
+  const it=id?getCad(G.cadCur).find(x=>x.id===id)||{}:{};
   document.getElementById('cad-editor').innerHTML=`<div class="panel" style="padding:1rem;margin-bottom:.5rem"><div class="fgrid">${def.fields.map(f=>{
     const v=it[f.k]!=null?it[f.k]:'';
     if(f.type==='textarea') return `<div class="fg full"><label>${f.label}</label><textarea id="cad-f-${f.k}" rows="3">${esc(v)}</textarea></div>`;
-    if(f.type==='select') return `<div class="fg"><label>${f.label}</label><select id="cad-f-${f.k}">${(f.options||[]).map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    if(f.type==='select') return `<div class="fg"><label>${f.label}</label><select id="cad-f-${f.k}"><option value="">—</option>${(f.options||[]).map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    if(f.type==='ref'){ const opts=getCad(f.ref).filter(x=>x.active!==false).map(x=>x.name); return `<div class="fg"><label>${f.label}</label><select id="cad-f-${f.k}"><option value="">—</option>${opts.map(o=>`<option ${v===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`; }
     if(f.type==='color') return `<div class="fg"><label>${f.label}</label><input id="cad-f-${f.k}" type="color" value="${esc(v||'#7c3aed')}" style="height:38px;padding:.2rem"></div>`;
     return `<div class="fg"><label>${f.label}${f.req?' *':''}</label><input id="cad-f-${f.k}" value="${esc(v)}"></div>`;
   }).join('')}</div><div style="margin-top:.75rem;display:flex;gap:.45rem"><button class="btn btn-primary btn-sm" onclick="cadSave('${id||''}')">Salvar</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('cad-editor').innerHTML=''">Cancelar</button></div></div>`;
