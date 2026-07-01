@@ -13,7 +13,7 @@
 
 CREATE TABLE IF NOT EXISTS a1_emails (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id   uuid REFERENCES a1_tenants(id) ON DELETE CASCADE,
+  tenant_id   uuid,                            -- id do cliente (a1_tenants), sem FK p/ não depender do schema
   to_email    text NOT NULL,
   subject     text NOT NULL,
   body        text NOT NULL,
