@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Repasse — COREON</title>
+  <title>Repasse — SIIMOB</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -50,9 +50,12 @@
       position:absolute;top:calc(100% + 5px);left:0;
       background:#1e3080;border:1px solid rgba(255,255,255,.15);
       border-radius:10px;padding:.35rem;min-width:168px;
-      z-index:300;display:none;box-shadow:0 12px 36px rgba(0,0,0,.35);
+      z-index:300;box-shadow:0 12px 36px rgba(0,0,0,.35);
+      visibility:hidden;opacity:0;
+      transition:opacity .12s linear 1s, visibility 0s linear 1.12s;
     }
-    .tab-group:hover .tab-dd{display:block}
+    .tab-dd::before{content:"";position:absolute;left:0;right:0;top:-9px;height:9px}
+    .tab-group:hover .tab-dd{visibility:visible;opacity:1;transition:opacity .12s linear 0s, visibility 0s linear 0s}
     .dd-item{padding:.52rem 1rem;border-radius:7px;font-size:.79rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;transition:all .12s}
     .dd-item:hover{background:rgba(255,255,255,.12);color:#fff}
     .dd-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:700}
@@ -125,6 +128,8 @@
     .k-col{width:260px;flex-shrink:0;display:flex;flex-direction:column}
     .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.01em}
     .k-col-count{background:rgba(255,255,255,.22);border-radius:99px;padding:.08rem .42rem;font-size:.65rem;font-weight:800}
+    .k-col-fin{display:flex;flex-direction:column;gap:.08rem;background:#E9EEF5;padding:.3rem .6rem;font-size:.62rem;color:var(--t3);font-weight:600}
+    .k-col-fin b{font-weight:800}
     .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s}
     .k-col-body.drag-over{background:#E2E8F0;outline:2px dashed rgba(67,97,238,.35);outline-offset:-2px}
 
@@ -166,9 +171,15 @@
     .ent-reprovado.active{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
     .ent-btn:not(.active):hover{opacity:.75}
 
-    .obs-tooltip{position:absolute;bottom:calc(100% + 5px);left:0;right:0;background:#0f1520;color:#fff;border-radius:7px;padding:.55rem .7rem;font-size:.72rem;line-height:1.5;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.25);display:none;pointer-events:none}
-    .obs-tooltip::after{content:'';position:absolute;top:100%;left:1rem;border:5px solid transparent;border-top-color:#0f1520}
-    .k-card:hover .obs-tooltip{display:block}
+    .kc-obs{position:relative;display:inline-flex;align-items:center;color:var(--blue);cursor:help}
+    .obs-tooltip{position:absolute;top:calc(100% + 7px);right:0;left:auto;width:230px;background:#0f1520;color:#fff;border-radius:8px;padding:.6rem .7rem;font-size:.72rem;line-height:1.5;z-index:200;box-shadow:0 8px 26px rgba(0,0,0,.3);display:none;pointer-events:none;text-align:left;font-weight:500;white-space:normal}
+    .obs-tooltip b{font-size:.58rem;letter-spacing:.06em;opacity:.7;display:block;margin-bottom:.2rem}
+    .obs-tooltip::after{content:'';position:absolute;bottom:100%;right:.6rem;border:6px solid transparent;border-bottom-color:#0f1520}
+    .kc-obs:hover .obs-tooltip{display:block}
+    .kc-situacao{display:flex;align-items:center;gap:.45rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.35rem .5rem;margin-bottom:.4rem}
+    .kc-sit-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .kc-sit-name{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kc-sit-since{font-size:.62rem;color:var(--t3);font-family:'DM Mono',monospace}
 
     .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.3rem;padding-top:.3rem;border-top:1px solid var(--border)}
     .kc-date{font-size:.63rem;color:var(--t4);font-family:'DM Mono',monospace}
@@ -227,6 +238,7 @@
     .tl-dot.stage{background:#ede9fe;color:#1E3A8A}
     .tl-dot.comment{background:#dbeafe;color:#1e40af}
     .tl-dot.edit{background:#EEF2FF;color:#3730A3}
+    .tl-dot.created{background:#dcfce7;color:#166534}
     .tl-content{flex:1}
     .tl-desc{font-size:.78rem;line-height:1.4}
     .tl-meta{font-size:.68rem;color:var(--t3);margin-top:.12rem}
@@ -241,6 +253,16 @@
     /* ── PDF zone ── */
     .pdf-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s}
     .pdf-zone:hover,.pdf-zone.drag-over{border-color:var(--violet);background:#f5f3ff}
+    .pdf-type-card{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s;margin-bottom:.6rem}
+    .pdf-type-card:hover{border-color:var(--violet);background:#f5f3ff}
+    .pdf-type-ic{width:42px;height:42px;border-radius:9px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;flex-shrink:0}
+    .pdf-type-title{font-size:.83rem;font-weight:700;color:var(--t1)}
+    .pdf-type-sub{font-size:.7rem;color:var(--t3);margin-top:.12rem}
+    .doc-row{display:flex;align-items:center;gap:.6rem;padding:.6rem .7rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem}
+    .doc-name{font-size:.8rem;font-weight:700;color:var(--t1)}
+    .doc-type-lbl{font-size:.68rem;color:var(--t3);margin-top:.1rem}
+    .dt-mod-btn{background:transparent}
+    .dt-mod-btn.active{background:#fff;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 
     /* ── Section title ── */
     .sec-title{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem}
@@ -369,7 +391,7 @@
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-logo"><svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgr" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lmgr)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lmgr)"/></svg><span style="color:#fff;font-weight:800;letter-spacing:-.02em;">CORE</span><span style="color:#60CFFF;font-weight:800;letter-spacing:-.02em;">ON</span></div>
+    <div class="hdr-logo"><svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lmgr" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lmgr)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lmgr)"/></svg><span style="color:#fff;font-weight:800;letter-spacing:-.02em;">SIIMOB</span></div>
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
@@ -443,6 +465,30 @@
         <div class="kpi-label">Sem Correspondente</div>
         <div class="kpi-value" id="kpi-sem-parceiro">—</div>
         <div class="kpi-sub">sem parceiro ativo</div>
+      </div>
+    </div>
+
+    <!-- Métricas financeiras (mês atual) -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-label">VGV Assinado (mês)</div>
+        <div class="kpi-value" id="fin-vgv-assinado" style="font-size:1.2rem">—</div>
+        <div class="kpi-sub">contratos assinados no mês</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">VGV Não Assinado (mês)</div>
+        <div class="kpi-value" id="fin-vgv-nao" style="font-size:1.2rem">—</div>
+        <div class="kpi-sub">em pipeline no mês</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">Previsão de Repasse (mês)</div>
+        <div class="kpi-value" id="fin-repasse" style="font-size:1.2rem">—</div>
+        <div class="kpi-sub">financiamento + subsídio + FGTS</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">Previsão de Comissão (mês)</div>
+        <div class="kpi-value" id="fin-comissao" style="font-size:1.2rem">—</div>
+        <div class="kpi-sub">conforme regra cadastrada</div>
       </div>
     </div>
 
@@ -623,6 +669,12 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
           <div class="cfg-card-label">Imobiliárias</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('doctypes')">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          </div>
+          <div class="cfg-card-label">Tipos de documento</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('analistas')">
           <div class="cfg-hub-icon" style="background:#dbeafe">
@@ -845,6 +897,33 @@
       </div>
     </div>
 
+    <!-- ─── Sub-view: Tipos de documento ─── -->
+    <div id="cfg-view-doctypes" style="display:none">
+      <div class="cfg-view-hdr">
+        <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+        <div class="cfg-view-title">Tipos de documento</div>
+      </div>
+      <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:520px">
+        <button class="dt-mod-btn" disabled style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t3);cursor:not-allowed" title="Em desenvolvimento">Reserva (em breve)</button>
+        <button id="dt-mod-repasse" class="dt-mod-btn active" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t1);cursor:pointer" onclick="switchDocTypeModule('repasse',this)">Repasse</button>
+        <button id="dt-mod-registro" class="dt-mod-btn" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t1);cursor:pointer" onclick="switchDocTypeModule('registro',this)">Registro</button>
+      </div>
+      <div class="panel">
+        <div style="padding:1rem 1rem .25rem">
+          <div class="pt-toolbar">
+            <input type="text" id="dt-name" placeholder="Nome do tipo (ex.: Comprovante de residência)" style="flex:1" onkeydown="if(event.key==='Enter')saveDocType()">
+            <button class="btn btn-primary btn-sm" onclick="saveDocType()">+ Adicionar</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pt-table">
+            <thead><tr><th>Nome</th><th>Status</th><th></th></tr></thead>
+            <tbody id="dt-tbody"><tr><td colspan="3" class="pt-empty">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ─── Sub-view: Analistas de Crédito ─── -->
     <div id="cfg-view-analistas" style="display:none">
       <div class="cfg-view-hdr">
@@ -1017,6 +1096,7 @@
       <div class="modal-tab active" data-mtab="det" onclick="switchModalTab('det',this)">Dados</div>
       <div class="modal-tab" data-mtab="hist" onclick="switchModalTab('hist',this)">Historico</div>
       <div class="modal-tab" data-mtab="evts" onclick="switchModalTab('evts',this)">Eventos</div>
+      <div class="modal-tab" data-mtab="valores" onclick="switchModalTab('valores',this)">Valores de Repasse</div>
       <div class="modal-tab" data-mtab="docs" onclick="switchModalTab('docs',this)">Documentos</div>
     </div>
     <div class="modal-body" id="mc-body"></div>
@@ -1235,9 +1315,27 @@
       <button class="modal-close" onclick="closeModal('modal-pdf-bg')">x</button>
     </div>
     <div class="modal-body">
-      <div class="pdf-zone" id="pdf-zone" onclick="document.getElementById('pdf-input').click()">
+      <!-- Passo 1: escolher tipo de documento -->
+      <div id="pdf-typesel">
+        <div style="font-size:.73rem;font-weight:700;color:var(--t2);margin-bottom:.6rem">Selecione o tipo de documento:</div>
+        <div class="pdf-type-card" onclick="pickPdfType('cvcrm')">
+          <div class="pdf-type-ic">CV</div>
+          <div>
+            <div class="pdf-type-title">Ficha de Pré-cadastro CVCRM</div>
+            <div class="pdf-type-sub">Lê a ficha do CV e cadastra o cliente na etapa inicial automaticamente</div>
+          </div>
+        </div>
+        <div class="pdf-type-card" onclick="pickPdfType('generic')">
+          <div class="pdf-type-ic" style="background:#EEF2FF;color:#3730A3">PDF</div>
+          <div>
+            <div class="pdf-type-title">Outro documento</div>
+            <div class="pdf-type-sub">Proposta bancária, análise ou contrato — preenche o formulário</div>
+          </div>
+        </div>
+      </div>
+      <div class="pdf-zone" id="pdf-zone" style="display:none" onclick="document.getElementById('pdf-input').click()">
         <div style="font-size:.85rem;font-weight:700;color:var(--t2);margin-bottom:.3rem">Clique ou arraste um PDF aqui</div>
-        <div style="font-size:.72rem;color:var(--t4)">Proposta bancaria, analise ou contrato</div>
+        <div style="font-size:.72rem;color:var(--t4)" id="pdf-zone-sub">Proposta bancaria, analise ou contrato</div>
       </div>
       <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handlePdfFile(this.files[0])">
       <div id="pdf-processing" style="display:none;text-align:center;padding:2rem">
@@ -1251,7 +1349,12 @@
           <div class="form-group"><label>CPF</label><input id="pdf-cpf" type="text"></div>
           <div class="form-group"><label>Valor</label><input id="pdf-value" type="text"></div>
           <div class="form-group full"><label>Empreendimento</label><input id="pdf-development" type="text"></div>
-          <div class="form-group full"><label>Correspondente</label><input id="pdf-partner" type="text"></div>
+          <div class="form-group" id="pdf-re-wrap"><label>Imobiliária</label><input id="pdf-re" type="text"></div>
+          <div class="form-group" id="pdf-broker-wrap"><label>Corretor</label><input id="pdf-broker" type="text"></div>
+          <div class="form-group full" id="pdf-partner-wrap"><label>Correspondente</label><input id="pdf-partner" type="text"></div>
+        </div>
+        <div id="pdf-autonote" style="display:none;font-size:.7rem;color:var(--t3);margin-top:.6rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:.55rem .7rem">
+          Empreendimentos e imobiliárias não cadastrados serão criados automaticamente. O cliente será incluído na etapa inicial.
         </div>
       </div>
     </div>
@@ -1565,6 +1668,9 @@ async function init() {
   fetch(A1.rpc('a1_has_module'), {
     method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
   }).then(r=>r.json()).then(ok=>{
+    G.hasRegistro = !!ok;
+    const _dtReg = document.getElementById('dt-mod-registro');
+    if (_dtReg) _dtReg.style.display = ok ? '' : 'none';
     if (ok) {
       const tabEl = document.getElementById('tab-registro-group');
       if (tabEl) tabEl.style.display = '';
@@ -1643,6 +1749,8 @@ async function loadData() {
     G.edges[e.from_id].push(e.to_id);
   }
   G.groups = [...new Set(stages.map(s=>s.group_key).filter(Boolean))];
+  G.commission = await fetch(`${A1.rest('a1_config')}?key=eq.commission&select=value`, { headers: A1.headers() })
+    .then(r=>r.json()).then(a=>{ try { return JSON.parse(a&&a[0]&&a[0].value||'null'); } catch { return null; } }).catch(()=>null);
   populateFilterOptions();
 }
 
@@ -1680,7 +1788,7 @@ function switchTab(tab, el) {
 }
 
 // ─── Config sub-views ─────────────────────────────────────────────────────────
-const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'analistas', 'correspondentes', 'despachantes', 'bancos', 'cartorios'];
+const CFG_VIEWS = ['wf', 'flags', 'regionais', 'empreendimentos', 'imobiliarias', 'doctypes', 'analistas', 'correspondentes', 'despachantes', 'bancos', 'cartorios'];
 
 function openCfgView(name) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1691,6 +1799,7 @@ function openCfgView(name) {
   if (name === 'correspondentes' && !G.empresasLoaded) loadEmpresas();
   if (name === 'empreendimentos' && !G.emprLoaded) loadEmpreendimentos();
   if (name === 'imobiliarias' && !G.imobsLoaded) loadImobs();
+  if (name === 'doctypes'     && !G.docTypesLoaded) initDocTypesView();
   if (name === 'analistas'    && !G.analistasLoaded) loadAnalistas();
   if (name === 'despachantes' && !G.despLoaded) loadDespachantes();
   if (name === 'bancos'       && !G.bancosLoaded) loadBancos();
@@ -1771,6 +1880,26 @@ function clearDashFilters() {
   renderDashboard();
 }
 
+// ─── Módulo Financeiro (helpers) ──────────────────────────────────────────────
+function brNum(x){ if(x==null||x==='') return 0; if(typeof x==='number') return x; const n=parseFloat(String(x).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')); return isNaN(n)?0:n; }
+function caseUnitValue(c){ const vr=c.payload&&c.payload.valores; return brNum(vr&&vr.valor_previsto) || Number(c.contract_value)||0 || brNum(vr&&vr.valor_contrato); }
+function caseRepasseValue(c){
+  const vr=c.payload&&c.payload.valores;
+  if(vr){ const t=brNum(vr.valor_divida)+brNum(vr.valor_subsidio)+brNum(vr.valor_fgts); if(t>0) return t; }
+  return caseUnitValue(c);
+}
+function caseIsFinal(c){ return !!(stageMap()[c.stage_id]&&stageMap()[c.stage_id].is_final); }
+function caseIsSigned(c){ return !!(c.payload&&c.payload.valores&&c.payload.valores.data_assinatura) || caseIsFinal(c); }
+function caseSignDate(c){ return (c.payload&&c.payload.valores&&c.payload.valores.data_assinatura) || (caseIsFinal(c)?c.stage_entered_at:null); }
+function inThisMonth(d){ if(!d) return false; const x=new Date(d); if(isNaN(x)) return false; const n=new Date(); return x.getMonth()===n.getMonth()&&x.getFullYear()===n.getFullYear(); }
+function commissionFor(base){
+  const cm=G.commission; if(!cm) return 0;
+  if(cm.type==='FIXED') return Number(cm.fixed_value)||0;
+  if(cm.type==='PERCENTAGE') return (Number(base)||0)*((Number(cm.percentage_value)||0)/100);
+  return 0;
+}
+function fmtBRLShort(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}); }
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDashboard() {
   populateDashFilters();
@@ -1815,6 +1944,22 @@ function renderDashboard() {
   } else {
     setT('kpi2-antigo','—'); setT('kpi2-antigo-sub','sem casos ativos');
   }
+
+  // ── Métricas financeiras (mês atual) ──
+  const vgvAssinado = cases.filter(c=>caseIsSigned(c) && inThisMonth(caseSignDate(c))).reduce((s,c)=>s+caseUnitValue(c),0);
+  const vgvNao      = cases.filter(c=>!caseIsSigned(c) && inThisMonth(c.created_at)).reduce((s,c)=>s+caseUnitValue(c),0);
+  const prevRepasse = cases.filter(c=>inThisMonth(c.payload&&c.payload.valores&&c.payload.valores.data_previsao_repasse)).reduce((s,c)=>s+caseRepasseValue(c),0);
+  let comissao=0;
+  for(const c of cases){
+    const dPrev=c.payload&&c.payload.valores&&c.payload.valores.data_previsao_repasse;
+    const concluido = caseIsFinal(c) && inThisMonth(dPrev||c.stage_entered_at);
+    const previsto  = !caseIsFinal(c) && inThisMonth(dPrev);
+    if(concluido||previsto) comissao += commissionFor(caseRepasseValue(c));
+  }
+  setT('fin-vgv-assinado', fmtBRL(vgvAssinado));
+  setT('fin-vgv-nao',      fmtBRL(vgvNao));
+  setT('fin-repasse',      fmtBRL(prevRepasse));
+  setT('fin-comissao',     fmtBRL(comissao));
 
   const cutoff48 = Date.now() - 48*3600*1000;
   setT('kpi2-novos', cases.filter(c => new Date(c.created_at).getTime() > cutoff48).length);
@@ -1995,6 +2140,10 @@ function renderKanban() {
         <span>${esc(s.name)}</span>
         <span class="k-col-count">${(byStage[s.id]||[]).length}</span>
       </div>
+      <div class="k-col-fin">
+        <span>VGV <b style="color:var(--blue)">${fmtBRLShort((byStage[s.id]||[]).reduce((a,c)=>a+caseUnitValue(c),0))}</b></span>
+        <span>Repasse <b style="color:var(--green)">${fmtBRLShort((byStage[s.id]||[]).reduce((a,c)=>a+caseRepasseValue(c),0))}</b></span>
+      </div>
       <div class="k-col-body" data-stage-id="${s.id}"
            ondragover="onDragOver(event)" ondrop="onDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
         ${(byStage[s.id]||[]).map(c=>renderCard(c,s)).join('')}
@@ -2005,31 +2154,44 @@ function renderKanban() {
   document.getElementById('filter-count').textContent=fc!==G.cases.length?`${fc} de ${G.cases.length} registros`:'';
 }
 
+function stageDays(c){
+  const dt=c.stage_entered_at||c.created_at; if(!dt) return 0;
+  const a=new Date(dt), b=new Date();
+  const d1=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  const d2=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.max(0,Math.round((d2-d1)/86400000));
+}
+
 function renderCard(c, stage) {
-  const days=daysSince(c.stage_entered_at), dc=days>14?'alert':days>7?'warn':'';
+  const days=stageDays(c), dc=days>14?'alert':days>7?'warn':'';
   const ent=c.payload?.entrevista_status||'pendente';
+  const since=c.stage_entered_at||c.created_at;
   return `<div class="k-card" style="border-left-color:${stage.color}"
     draggable="true" data-id="${c.id}"
     ondragstart="onDragStart(event,this)" ondragend="this.classList.remove('dragging')"
     onclick="openCard('${c.id}')">
-    ${c.observations?`<div class="obs-tooltip">${esc(c.observations)}</div>`:''}
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
+        ${c.observations?`<span class="kc-obs" onclick="event.stopPropagation()" title="Observação"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="obs-tooltip"><b>OBSERVAÇÃO</b>${esc(c.observations)}</span></span>`:''}
         ${c.is_new?'<span class="badge-novo">NOVO</span>':''}
-        <span class="badge-days ${dc}" title="${days} dia${days!==1?'s':''} nesta etapa">${days}d na etapa</span>
+        <span class="badge-days ${dc}" title="Desde ${fmtDT(since)}">${days}d na etapa</span>
       </div>
     </div>
     ${c.client_cpf?`<div class="kc-cpf" onclick="copyCpf(event,'${esc(c.client_cpf)}')">${fmtCpf(c.client_cpf)}</div>`:''}
     <div class="kc-prop">
       ${c.development?`<span class="empr">${esc(c.development)}</span>`:''}
-      ${c.unit?` <span style="color:var(--t3);font-size:.68rem">· Un ${esc(c.unit)}</span>`:''}
+      ${(c.block||c.unit)?` <span style="color:var(--t3);font-size:.68rem">· ${c.block?'Bl '+esc(c.block):''}${c.block&&c.unit?' ':''}${c.unit?'Un '+esc(c.unit):''}</span>`:''}
     </div>
     <div class="kc-chips">
       ${c.partner_name?`<span class="chip chip-partner">${esc(c.partner_name)}</span>`:''}
       ${c.manager_name?`<span class="chip chip-manager">${esc(c.manager_name)}</span>`:''}
       ${c.real_estate_name?`<span class="chip chip-re">${esc(c.real_estate_name)}</span>`:''}
       ${c.contract_value?`<span class="chip chip-value">${fmtBRL(c.contract_value)}</span>`:''}
+    </div>
+    <div class="kc-situacao">
+      <span class="kc-sit-dot" style="background:${stage.color}"></span>
+      <div style="flex:1;min-width:0"><div class="kc-sit-name">${esc(stage.name)}</div><div class="kc-sit-since">desde ${fmtDT(since)}</div></div>
     </div>
     <div class="kc-entrevista" onclick="event.stopPropagation()">
       <div style="font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);width:100%;margin-bottom:.15rem">Status da entrevista</div>
@@ -2043,7 +2205,7 @@ function renderCard(c, stage) {
       <span class="kc-date">${fmtDate(c.created_at)}</span>
       <div class="kc-actions">
         <button class="kc-action-btn" title="Mover etapa" onclick="openFluxo(event,'${c.id}','${stage.id}')">Mover</button>
-        <button class="kc-action-btn" title="Editar" onclick="openCard('${c.id}')">Editar</button>
+        <button class="kc-action-btn" title="Gerenciar" onclick="openCard('${c.id}')">Gerenciar</button>
       </div>
     </div>
   </div>`;
@@ -2110,6 +2272,7 @@ function switchModalTab(tab,el){
   if(tab==='det') renderModalDet();
   else if(tab==='hist') renderModalHist();
   else if(tab==='evts') renderModalEvts();
+  else if(tab==='valores') renderModalValores();
   else if(tab==='docs') renderModalDocs();
 }
 
@@ -2155,18 +2318,35 @@ function renderModalDet() {
 function renderModalHist() {
   const body=document.getElementById('mc-body');
   body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
-  fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${G.editingCaseId}&order=entered_at.desc`,{headers:A1.headers()})
-    .then(r=>r.json()).then(rows=>{
-      if(!rows.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico de etapas.</span>';return;}
-      body.innerHTML='<div class="timeline">'+rows.map(h=>`
+  const cid=G.editingCaseId;
+  Promise.all([
+    fetch(`${A1.rest('a1_stage_history')}?case_id=eq.${cid}&order=entered_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_events')}?case_id=eq.${cid}&order=created_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]).then(([stages,evts])=>{
+    const items=[];
+    const c=G.editingCaseData||{};
+    // Cadastro do cliente (data e hora)
+    if(c.created_at) items.push({ts:c.created_at,cls:'created',icon:'+',desc:'<b>Cliente cadastrado no sistema</b>',meta:c.manager_name?`por ${esc(c.manager_name)}`:''});
+    // Movimentacoes de etapa
+    (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,cls:'stage',icon:'E',desc:`Entrou na etapa <b>${esc(h.stage_name||'')}</b>`,meta:h.exited_at?`saiu em ${fmtDT(h.exited_at)}`:'etapa atual'}));
+    // Demais eventos (status, comentarios, edicoes, documentos) — stage_change ja coberto acima
+    const evCls={comment:'comment',edit:'edit',document:'edit',interview:'created',agendamento:'created'};
+    const evIcon={comment:'C',edit:'E',document:'D',interview:'S',agendamento:'A'};
+    (Array.isArray(evts)?evts:[]).forEach(ev=>{
+      if(ev.type==='stage_change') return;
+      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')});
+    });
+    if(!items.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico.</span>';return;}
+    items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+    body.innerHTML='<div class="timeline">'+items.map(it=>`
         <div class="tl-item">
-          <div class="tl-dot stage">E</div>
+          <div class="tl-dot ${it.cls}">${it.icon}</div>
           <div class="tl-content">
-            <div class="tl-desc"><b>${esc(h.stage_name)}</b></div>
-            <div class="tl-meta">${fmtDT(h.entered_at)}${h.exited_at?` ate ${fmtDT(h.exited_at)}`:' · atual'}</div>
+            <div class="tl-desc">${it.desc}</div>
+            <div class="tl-meta">${fmtDT(it.ts)}${it.meta?' &middot; '+it.meta:''}</div>
           </div>
         </div>`).join('')+'</div>';
-    }).catch(()=>{body.innerHTML='<span style="color:var(--red);font-size:.78rem">Erro ao carregar.</span>';});
+  }).catch(()=>{body.innerHTML='<span style="color:var(--red);font-size:.78rem">Erro ao carregar.</span>';});
 }
 
 function renderModalEvts() {
@@ -2191,23 +2371,161 @@ function renderModalEvts() {
     }).catch(()=>{body.innerHTML='<span style="color:var(--red)">Erro.</span>'+commentBox;});
 }
 
-function renderModalDocs() {
-  const c=G.editingCaseData||{};
+// ─── Valores de Repasse ───────────────────────────────────────────────────────
+function fmtNum(n){ return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function renderModalValores(){
+  const vr=(G.editingCaseData?.payload?.valores)||{};
+  const f=(id,label,val,hint)=>`<div class="form-group"><label>${label}</label><input id="${id}" value="${esc(val||'')}" placeholder="0,00" oninput="recalcValores()">${hint?`<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>`:''}</div>`;
+  const ro=(id,label,hint)=>`<div class="form-group"><label>${label}</label><input id="${id}" value="" readonly style="background:var(--bg);font-weight:700;color:var(--t2)">${hint?`<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>`:''}</div>`;
   document.getElementById('mc-body').innerHTML=`
-    <div class="pdf-zone" onclick="document.getElementById('doc-attach').click()" style="margin-bottom:1rem">
-      <div style="font-size:.83rem;font-weight:700;color:var(--t2);margin-bottom:.25rem">Clique para anexar documento PDF</div>
+    <div class="form-section-title">Valores de Repasse</div>
+    <div class="form-grid">
+      ${f('vr-previsto','Valor Previsto',vr.valor_previsto,'valor da venda')}
+      ${f('vr-divida','Valor da Dívida',vr.valor_divida,'financiado pelo banco')}
+      ${f('vr-subsidio','Valor do Subsídio',vr.valor_subsidio,'custeio do governo')}
+      ${f('vr-fgts','Valor do FGTS',vr.valor_fgts)}
+      ${ro('vr-financiado','Valor Financiado','dívida + subsídio + FGTS (automático)')}
+      ${ro('vr-saldo','Saldo Devedor','venda − financiado (automático)')}
+      ${f('vr-parcela-concl','Parcela de Conclusão',vr.parcela_conclusao)}
+      <div class="form-group"><label>Parcela Baixada</label><select id="vr-parcela-baixada"><option value="Não" ${vr.parcela_baixada!=='Sim'?'selected':''}>Não</option><option value="Sim" ${vr.parcela_baixada==='Sim'?'selected':''}>Sim</option></select></div>
+      ${f('vr-contrato','Valor Contrato',vr.valor_contrato)}
+      <div class="form-group"><label>Data de assinatura</label><input id="vr-data-assinatura" type="date" value="${esc(vr.data_assinatura||'')}"></div>
+      <div class="form-group"><label>Previsão de repasse</label><input id="vr-data-previsao" type="date" value="${esc(vr.data_previsao_repasse||'')}"></div>
     </div>
-    <input type="file" id="doc-attach" accept=".pdf" style="display:none" onchange="attachDoc(this.files[0])">
-    ${c.attachment_pdf?`
-    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--bg);border-radius:7px;border:1px solid var(--border)">
-      <div style="flex:1"><div style="font-size:.8rem;font-weight:700">${esc(c.attachment_name||'Documento.pdf')}</div></div>
-      <a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
-    </div>`:'<div style="color:var(--t3);font-size:.77rem">Nenhum documento anexado.</div>'}`;
+    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="saveValores()">Salvar valores</button></div>`;
+  recalcValores();
+}
+
+function recalcValores(){
+  const fin = brNum(v('vr-divida'))+brNum(v('vr-subsidio'))+brNum(v('vr-fgts'));
+  const saldo = brNum(v('vr-previsto')) - fin;
+  const fEl=document.getElementById('vr-financiado'); if(fEl) fEl.value=fmtNum(fin);
+  const sEl=document.getElementById('vr-saldo'); if(sEl) sEl.value=fmtNum(saldo);
+}
+
+async function saveValores(){
+  if(!G.editingCaseId) return;
+  const fin = brNum(v('vr-divida'))+brNum(v('vr-subsidio'))+brNum(v('vr-fgts'));
+  const saldo = brNum(v('vr-previsto')) - fin;
+  const valores={
+    valor_previsto:v('vr-previsto'), valor_divida:v('vr-divida'), valor_subsidio:v('vr-subsidio'),
+    valor_fgts:v('vr-fgts'), valor_financiado:fmtNum(fin), saldo_devedor:fmtNum(saldo),
+    parcela_conclusao:v('vr-parcela-concl'), parcela_baixada:document.getElementById('vr-parcela-baixada')?.value||'Não',
+    valor_contrato:v('vr-contrato'),
+    data_assinatura:document.getElementById('vr-data-assinatura')?.value||'',
+    data_previsao_repasse:document.getElementById('vr-data-previsao')?.value||'',
+  };
+  const payload={...(G.editingCaseData.payload||{}),valores};
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.returnHeaders(),body:JSON.stringify({payload})});
+  if(res.ok){
+    G.editingCaseData.payload=payload;
+    const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'edit',description:'Valores de repasse atualizados',actor_name:G.user.name})}).catch(()=>{});
+    renderKanban();renderDashboard();
+    toast('Valores salvos','success');
+  } else toast('Erro ao salvar valores','error');
+}
+
+// ─── Documentos (organizados por tipo) ────────────────────────────────────────
+async function fetchDocTypes(force){
+  if(G.docTypes && !force) return G.docTypes;
+  const rows=await fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  let list=[]; try{ list=JSON.parse(rows&&rows[0]&&rows[0].value||'[]'); }catch{ list=[]; }
+  G.docTypes=Array.isArray(list)?list:[];
+  return G.docTypes;
+}
+
+async function persistDocTypes(){
+  const body={tenant_id:G.user.tenant_id,key:'doc_types',value:JSON.stringify(G.docTypes||[])};
+  await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify(body)});
+}
+async function initDocTypesView(){
+  G.docTypesLoaded=true;
+  const _dtReg=document.getElementById('dt-mod-registro');
+  if(_dtReg) _dtReg.style.display = G.hasRegistro ? '' : 'none';
+  if(!G.docTypeModule || (G.docTypeModule==='registro' && !G.hasRegistro)) G.docTypeModule='repasse';
+  document.querySelectorAll('#cfg-view-doctypes .dt-mod-btn').forEach(b=>b.classList.remove('active'));
+  const _act=document.getElementById('dt-mod-'+G.docTypeModule);
+  if(_act) _act.classList.add('active');
+  await fetchDocTypes(true);
+  renderDocTypesList();
+}
+function switchDocTypeModule(mod,el){
+  G.docTypeModule=mod;
+  document.querySelectorAll('#cfg-view-doctypes .dt-mod-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderDocTypesList();
+}
+function renderDocTypesList(){
+  const tb=document.getElementById('dt-tbody'); if(!tb) return;
+  const list=(G.docTypes||[]).filter(t=>t.module===(G.docTypeModule||'repasse'));
+  if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="pt-empty">Nenhum tipo cadastrado para este módulo.</td></tr>'; return; }
+  tb.innerHTML=list.map(t=>{
+    const on=t.active!==false;
+    return `<tr>
+      <td>${esc(t.name)}</td>
+      <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${on?'#dcfce7':'#fee2e2'};color:${on?'#166534':'#b91c1c'}">${on?'Ativo':'Inativo'}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="toggleDocType('${t.id}')">${on?'Desativar':'Ativar'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDocType('${t.id}')">Excluir</button>
+      </td></tr>`;
+  }).join('');
+}
+async function saveDocType(){
+  const inp=document.getElementById('dt-name'); const name=(inp.value||'').trim();
+  if(!name){ toast('Informe o nome do tipo','error'); return; }
+  await fetchDocTypes();
+  const mod=G.docTypeModule||'repasse';
+  if((G.docTypes||[]).some(t=>t.module===mod && (t.name||'').toLowerCase()===name.toLowerCase())){ toast('Tipo já cadastrado','error'); return; }
+  G.docTypes.push({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,module:mod,active:true});
+  await persistDocTypes(); inp.value=''; renderDocTypesList(); toast('Tipo cadastrado','success');
+}
+async function toggleDocType(id){
+  const t=(G.docTypes||[]).find(x=>x.id===id); if(!t) return;
+  t.active=t.active===false;
+  await persistDocTypes(); renderDocTypesList();
+}
+async function deleteDocType(id){
+  if(!confirm('Excluir este tipo de documento?')) return;
+  G.docTypes=(G.docTypes||[]).filter(x=>x.id!==id);
+  await persistDocTypes(); renderDocTypesList(); toast('Tipo removido','info');
+}
+
+function docRow(d){
+  return `<div class="doc-row">
+    <div style="flex:1"><div class="doc-name">${esc(d.name||'Documento')}</div><div class="doc-type-lbl">${esc(d.type||'Sem tipo')}${d.uploaded_at?' · '+fmtDT(d.uploaded_at):''}</div></div>
+    <a href="${d.data}" download="${esc(d.name||'documento')}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
+    <button class="btn btn-danger btn-sm" onclick="removeDoc('${d.id}')">Remover</button>
+  </div>`;
+}
+
+async function renderModalDocs(){
+  const c=G.editingCaseData||{};
+  const body=document.getElementById('mc-body');
+  body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
+  await fetchDocTypes();
+  const types=(G.docTypes||[]).filter(t=>t.active!==false && (t.module==='repasse'||!t.module));
+  const docs=Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[];
+  const opts=types.length?types.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join(''):'<option value="">Nenhum tipo cadastrado</option>';
+  const legacy=c.attachment_pdf?`<div class="doc-row"><div style="flex:1"><div class="doc-name">${esc(c.attachment_name||'Documento.pdf')}</div><div class="doc-type-lbl">Anexo antigo</div></div><a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a></div>`:'';
+  body.innerHTML=`
+    <div class="form-section-title">Anexar documento</div>
+    <div style="display:flex;gap:.5rem;align-items:flex-end;margin-bottom:.5rem;flex-wrap:wrap">
+      <div class="form-group" style="flex:1;min-width:180px"><label>Tipo de documento</label><select id="doc-type-sel">${opts}</select></div>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-attach').click()" ${types.length?'':'disabled'}>Selecionar arquivo</button>
+      <input type="file" id="doc-attach" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="attachDoc(this.files[0])">
+    </div>
+    ${types.length?'':'<div style="font-size:.72rem;color:#b45309;margin-bottom:.75rem">Cadastre os tipos em Configurações → Tipos de documento.</div>'}
+    <div class="form-section-title" style="margin-top:1rem">Documentos anexados</div>
+    <div id="doc-list">${(docs.length||legacy)?docs.map(docRow).join('')+legacy:'<div style="color:var(--t3);font-size:.77rem">Nenhum documento anexado.</div>'}</div>`;
 }
 
 async function saveCase() {
   const id=G.editingCaseId;
   if(!id) return;
+  if(document.getElementById('vr-previsto')){ saveValores(); return; }
+  if(!document.getElementById('e-name')){ toast('Abra a aba "Dados" para salvar o cadastro','info'); return; }
   if (!hasPerm('editar_repasses')) { toast('Sem permissão para editar operações', 'error'); return; }
   const stageId=document.getElementById('mc-stage-sel').value;
   const stage=G.stages.find(s=>s.id===stageId);
@@ -2228,6 +2546,11 @@ async function saveCase() {
       fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,stage_id:stageId,stage_name:stage?.name,entered_at:new Date().toISOString()})}),
       fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'stage_change',description:`Movido para: ${stage?.name}`,actor_name:G.user.name})}),
     ]);
+  }
+  const _oldEnt=G.editingCaseData.payload?.entrevista_status||'pendente';
+  const _newEnt=document.getElementById('e-ent-status')?.value;
+  if(_newEnt && _newEnt!==_oldEnt){
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:id,type:'interview',description:`Status entrevista: ${_newEnt}`,actor_name:G.user.name})}).catch(()=>{});
   }
   const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(patch)});
   if(res.ok){
@@ -2927,18 +3250,10 @@ function refreshCorrLimits() {
   const counter   = document.getElementById('corr-user-counter');
   const bannerUser = document.getElementById('corr-user-limit-banner');
 
-  if (counter) counter.textContent = `${qtdUsers} / ${maxUsers} usuários`;
-
-  if (qtdUsers >= maxUsers) {
-    if (btnUser) btnUser.style.display = 'none';
-    if (bannerUser) {
-      bannerUser.textContent = `Limite de ${maxUsers} usuários atingido. Solicite ao administrador a ampliação do plano.`;
-      bannerUser.style.display = '';
-    }
-  } else {
-    if (btnUser) btnUser.style.display = '';
-    if (bannerUser) bannerUser.style.display = 'none';
-  }
+  // Cadastro de usuários é ILIMITADO; o plano limita apenas acessos simultâneos.
+  if (counter) counter.textContent = `${qtdUsers} cadastrado${qtdUsers!==1?'s':''} · ${maxUsers} acesso${maxUsers!==1?'s':''} simultâneo${maxUsers!==1?'s':''}`;
+  if (btnUser) btnUser.style.display = '';
+  if (bannerUser) bannerUser.style.display = 'none';
 }
 
 // ─── Correspondentes – inner tab switcher ─────────────────────────────────────
@@ -3569,7 +3884,9 @@ async function saveFeedback() {
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 function openPdfModal(){
   G.pdfData=null;
-  document.getElementById('pdf-zone').style.display='';
+  G.pdfMode=null;
+  document.getElementById('pdf-typesel').style.display='';
+  document.getElementById('pdf-zone').style.display='none';
   document.getElementById('pdf-processing').style.display='none';
   document.getElementById('pdf-preview').style.display='none';
   document.getElementById('btn-pdf-import').style.display='none';
@@ -3577,8 +3894,24 @@ function openPdfModal(){
   document.getElementById('modal-pdf-bg').classList.remove('hidden');
 }
 
+function pickPdfType(type){
+  G.pdfMode=type;
+  document.getElementById('pdf-typesel').style.display='none';
+  document.getElementById('pdf-zone').style.display='';
+  const sub=document.getElementById('pdf-zone-sub');
+  const title=document.querySelector('#modal-pdf-bg .modal-title');
+  if(type==='cvcrm'){
+    if(sub) sub.textContent='Ficha de Pré-cadastro exportada do CVCRM';
+    if(title) title.textContent='Importar Ficha de Pré-cadastro CVCRM';
+  }else{
+    if(sub) sub.textContent='Proposta bancaria, analise ou contrato';
+    if(title) title.textContent='Importar Proposta PDF';
+  }
+}
+
 async function handlePdfFile(file){
   if(!file) return;
+  if(!G.pdfMode) G.pdfMode='generic';
   document.getElementById('pdf-zone').style.display='none';
   document.getElementById('pdf-processing').style.display='';
   try{
@@ -3588,15 +3921,24 @@ async function handlePdfFile(file){
     const pdf=await pdfjsLib.getDocument({data:ab}).promise;
     let txt='';
     for(let i=1;i<=Math.min(pdf.numPages,5);i++){const page=await pdf.getPage(i);const tc=await page.getTextContent();txt+=tc.items.map(x=>x.str).join(' ')+'\n';}
-    G.pdfData=parsePdf(txt);
+    const isCvcrm=G.pdfMode==='cvcrm';
+    G.pdfData=isCvcrm?parseCvcrm(txt):parsePdf(txt);
     document.getElementById('pdf-processing').style.display='none';
     document.getElementById('pdf-preview').style.display='';
     document.getElementById('btn-pdf-import').style.display='';
+    document.getElementById('btn-pdf-import').textContent=isCvcrm?'Cadastrar cliente':'Importar dados';
+    // mostra/oculta campos conforme o tipo
+    document.getElementById('pdf-re-wrap').style.display=isCvcrm?'':'none';
+    document.getElementById('pdf-broker-wrap').style.display=isCvcrm?'':'none';
+    document.getElementById('pdf-partner-wrap').style.display=isCvcrm?'none':'';
+    document.getElementById('pdf-autonote').style.display=isCvcrm?'':'none';
     document.getElementById('pdf-name').value=G.pdfData.name||'';
     document.getElementById('pdf-cpf').value=G.pdfData.cpf||'';
     document.getElementById('pdf-value').value=G.pdfData.value||'';
     document.getElementById('pdf-development').value=G.pdfData.development||'';
     document.getElementById('pdf-partner').value=G.pdfData.partner||'';
+    document.getElementById('pdf-re').value=G.pdfData.imobiliaria||'';
+    document.getElementById('pdf-broker').value=G.pdfData.broker||'';
   }catch(err){
     document.getElementById('pdf-processing').style.display='none';
     document.getElementById('pdf-zone').style.display='';
@@ -3613,8 +3955,39 @@ function parsePdf(text){
   return d;
 }
 
+// Parser da Ficha de Pré-cadastro do CVCRM
+function parseCvcrm(text){
+  const t=text.replace(/ /g,' ').replace(/\s+/g,' ').trim();
+  const m=(re)=>{const x=t.match(re);return x?x[1].trim():'';};
+  const money=(s)=>s?s.replace(/R\$\s*/,'').trim():'';
+  const d={};
+  d.name        = m(/NOME\s*:?\s*(.+?)\s*(?:CPF|CNPJ|ATENDIMENTO)/i);
+  d.cpf         = (t.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/)||t.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/)||[''])[0];
+  d.atendimento = m(/ATENDIMENTO[^:]*:?\s*(\d{2,})/i);
+  d.data_cadastro = m(/Data\s+Cadastro\s*:?\s*([0-9\/]+(?:\s*[àaÀ]s\s*[0-9hHmin:]+)?)/i);
+  d.development = m(/Empreendimento\s*:?\s*(.+?)\s*Corretor/i);
+  d.broker      = m(/Corretor\s*:?\s*(.+?)\s*Imobili[áa]ria/i);
+  d.imobiliaria = m(/Imobili[áa]ria\s*:?\s*(.+?)\s*Valor\s+Avalia/i);
+  d.valor_avaliacao = money(m(/Valor\s+Avalia[çc][ãa]o\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.valor_aprovado  = money(m(/Valor\s+Aprovado\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.valor_subsidio  = money(m(/Valor\s+Subs[íi]dio\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.valor_fgts      = money(m(/Valor\s+do\s+FGTS\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.saldo_devedor   = money(m(/Saldo\s+devedor\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.prazo       = m(/Prazo\s+do\s+financiamento\s*:?\s*(\d+)/i);
+  d.prestacao   = money(m(/Valor\s+Presta[çc][ãa]o\s*:?\s*(R\$\s*[\d.,]+)/i));
+  d.carta       = m(/Carta\s+Cr[ée]dito\s*:?\s*([A-Za-zÀ-ÿ]+)/i);
+  d.vencimento  = m(/Vencimento\s+Aprova[çc][ãa]o\s*:?\s*([0-9\/]+)/i);
+  d.renda       = money(m(/Renda\s+Familiar[^:]*:?\s*(R\$\s*[\d.,]+)/i));
+  d.value       = d.valor_avaliacao || d.valor_aprovado || '';
+  return d;
+}
+
+function brToNum(s){if(!s)return null;const n=parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,''));return isNaN(n)?null:n;}
+function brDateToISO(s){if(!s)return null;const x=String(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);return x?`${x[3]}-${x[2]}-${x[1]}`:null;}
+
 function importFromPdf(){
   if(!G.pdfData) return;
+  if(G.pdfMode==='cvcrm'){ importCvcrmCase(); return; }
   closeModal('modal-pdf-bg');
   openNewCase();
   setTimeout(()=>{
@@ -3627,16 +4000,116 @@ function importFromPdf(){
   },80);
 }
 
+// Importa a ficha CVCRM: cria empreendimento/imobiliária se faltarem e cadastra o cliente na etapa inicial
+async function importCvcrmCase(){
+  const btn=document.getElementById('btn-pdf-import');
+  const name=document.getElementById('pdf-name').value.trim();
+  const cpf=document.getElementById('pdf-cpf').value.trim();
+  const devName=document.getElementById('pdf-development').value.trim();
+  const imobName=document.getElementById('pdf-re').value.trim();
+  const broker=document.getElementById('pdf-broker').value.trim();
+  const value=brToNum(document.getElementById('pdf-value').value);
+  if(!name){ toast('Nome do cliente não encontrado no PDF','error'); return; }
+  btn.disabled=true; btn.textContent='Importando...';
+  const norm=s=>String(s||'').toLowerCase().trim();
+  try{
+    // 1. Empreendimento — cadastra automaticamente se não existir
+    let devLabel=devName;
+    if(devName){
+      if(!G.emprLoaded) await loadEmpreendimentos();
+      let dev=G.empreendimentos.find(d=>norm(d.name)===norm(devName));
+      if(!dev){
+        const [created]=await fetch(A1.rest('a1_developments'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,name:devName,unit_count:0,units:[]})}).then(r=>r.json()).catch(()=>[null]);
+        if(created){ G.empreendimentos.push(created); G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name)); dev=created; toast(`Empreendimento "${devName}" cadastrado automaticamente`,'info'); }
+      }
+      devLabel=dev?dev.name:devName;
+    }
+    // 2. Imobiliária — cadastra automaticamente se não existir
+    if(imobName){
+      const imobs=await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+      const exists=Array.isArray(imobs)&&imobs.some(i=>norm(i.name)===norm(imobName));
+      if(!exists){
+        await fetch(A1.rest('a1_partners'),{method:'POST',headers:A1.headers(),body:JSON.stringify({tenant_id:G.user.tenant_id,type:'imobiliaria',name:imobName,is_active:true})}).catch(()=>{});
+        toast(`Imobiliária "${imobName}" cadastrada automaticamente`,'info');
+      }
+    }
+    // 3. Etapa inicial ("início")
+    const stage=G.stages.find(s=>/in[ií]cio/i.test(s.name)) || G.stages.find(s=>s.is_initial) || G.stages[0];
+    // 4. Observações com os demais dados da ficha
+    const p=G.pdfData, obs=[];
+    if(p.atendimento)    obs.push(`Atendimento Nº: ${p.atendimento}`);
+    if(p.data_cadastro)  obs.push(`Data cadastro (CVCRM): ${p.data_cadastro}`);
+    if(p.valor_aprovado) obs.push(`Valor aprovado: R$ ${p.valor_aprovado}`);
+    if(p.valor_subsidio) obs.push(`Valor subsídio: R$ ${p.valor_subsidio}`);
+    if(p.prazo)          obs.push(`Prazo financiamento: ${p.prazo}`);
+    if(p.prestacao)      obs.push(`Valor prestação: R$ ${p.prestacao}`);
+    if(p.carta)          obs.push(`Carta crédito: ${p.carta}`);
+    if(p.renda)          obs.push(`Renda familiar: R$ ${p.renda}`);
+    const body={
+      tenant_id:G.user.tenant_id, module_key:'repasse',
+      client_name:name, client_cpf:cpf,
+      development:devLabel, contract_value:value,
+      real_estate_name:imobName, broker_name:broker,
+      evaluation_expiry:brDateToISO(p.vencimento)||null,
+      observations:obs.join('\n'),
+      stage_id:stage?.id||null, stage_name:stage?.name||null,
+      is_new:true,
+      payload:{source:'cvcrm',atendimento:p.atendimento,valor_aprovado:p.valor_aprovado,valor_subsidio:p.valor_subsidio,prazo:p.prazo,prestacao:p.prestacao,carta:p.carta,renda:p.renda,data_cadastro_cvcrm:p.data_cadastro,
+        valores:{valor_previsto:p.valor_avaliacao||'',valor_divida:p.valor_aprovado||'',valor_subsidio:p.valor_subsidio||'',valor_fgts:p.valor_fgts||'',valor_contrato:p.valor_avaliacao||''}},
+    };
+    const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+    const data=await res.json().catch(()=>null);
+    const created=Array.isArray(data)?data[0]:null;
+    if(created?.id){
+      G.cases.unshift(created);
+      if(stage?.id){
+        fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,stage_id:stage.id,stage_name:stage.name,entered_at:new Date().toISOString()})});
+        fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:created.id,type:'edit',description:'Cliente importado da Ficha de Pré-cadastro CVCRM',actor_name:G.user.name})});
+      }
+      closeModal('modal-pdf-bg');
+      renderKanban();renderList();renderDashboard();populateFilterOptions();
+      toast(`Cliente "${name}" cadastrado na etapa ${stage?.name||'inicial'}`,'success');
+    }else{
+      toast('Erro ao cadastrar cliente','error');
+    }
+  }catch(e){
+    toast('Erro ao importar: '+(e.message||e),'error');
+  }finally{
+    btn.disabled=false; btn.textContent='Cadastrar cliente';
+  }
+}
+
 async function attachDoc(file){
   if(!file||!G.editingCaseId) return;
+  const type=document.getElementById('doc-type-sel')?.value||'';
   const reader=new FileReader();
   reader.onload=async(e)=>{
-    await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({attachment_pdf:e.target.result,attachment_name:file.name})});
-    const idx=G.cases.findIndex(c=>c.id===G.editingCaseId);
-    if(idx>-1){G.cases[idx].attachment_pdf=e.target.result;G.cases[idx].attachment_name=file.name;}
-    G.editingCaseData=G.cases[idx];renderModalDocs();toast('Documento anexado','success');
+    const doc={id:'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,name:file.name,data:e.target.result,uploaded_at:new Date().toISOString(),by:(G.user&&G.user.name)||''};
+    const docs=Array.isArray(G.editingCaseData.payload&&G.editingCaseData.payload.documents)?[...G.editingCaseData.payload.documents]:[];
+    docs.push(doc);
+    const payload={...(G.editingCaseData.payload||{}),documents:docs};
+    const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+    if(res.ok){
+      G.editingCaseData.payload=payload;
+      const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
+      fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'document',description:`Documento anexado: ${type||'sem tipo'} — ${file.name}`,actor_name:G.user.name})}).catch(()=>{});
+      renderModalDocs();toast('Documento anexado','success');
+    } else toast('Erro ao anexar documento','error');
   };
   reader.readAsDataURL(file);
+}
+
+async function removeDoc(docId){
+  if(!G.editingCaseId) return;
+  if(!confirm('Remover este documento?')) return;
+  const docs=((G.editingCaseData.payload&&G.editingCaseData.payload.documents)||[]).filter(d=>d.id!==docId);
+  const payload={...(G.editingCaseData.payload||{}),documents:docs};
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  if(res.ok){
+    G.editingCaseData.payload=payload;
+    const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
+    renderModalDocs();toast('Documento removido','info');
+  } else toast('Erro ao remover','error');
 }
 
 // ─── Filter events ────────────────────────────────────────────────────────────

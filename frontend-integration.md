@@ -1,4 +1,4 @@
-# ALPHA ONE — Frontend Integration Guide
+# SIIMOB — Frontend Integration Guide
 
 ## 1. Constants (replace hardcoded values)
 

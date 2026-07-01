@@ -26,6 +26,9 @@ async function a1Login(slug, cpf, password) {
 
   const data = await res.json();
   if (data.error) {
+    if (data.error === 'max_concurrent') {
+      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
     const msgs = {
       tenant_not_found:   'Empresa não encontrada.',
       tenant_suspended:   'Conta suspensa. Contate o suporte.',
@@ -37,6 +40,21 @@ async function a1Login(slug, cpf, password) {
 
   localStorage.setItem('a1_token', data.token);
   localStorage.setItem('a1_slug',  slug);
+
+  // ── Limite de ACESSOS SIMULTÂNEOS (max_users do tenant) ──
+  // O cadastro de usuários é ilimitado; o que o plano limita é quantos
+  // podem estar online ao mesmo tempo. Conta a presença (heartbeat) ativa.
+  const _max = parseInt(data.max_users) || 0;
+  if (_max > 0) {
+    const _key = `${data.tenant_id}::${data.user_id}`;
+    const _active = await a1ActiveCount(data.tenant_id, _key);
+    if (_active >= _max) {
+      await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
+      localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
+      throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
+  }
+
   localStorage.setItem('a1_user',  JSON.stringify({
     id:    data.user_id,
     name:  data.name,
@@ -49,6 +67,7 @@ async function a1Login(slug, cpf, password) {
     tenant_name: data.tenant_name
   }));
 
+  a1Heartbeat(null); // reserva o slot imediatamente
   return data;
 }
 
@@ -69,10 +88,29 @@ async function a1PartnerLogin(slug, cpf, password) {
   });
 
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  if (data.error) {
+    if (data.error === 'max_concurrent') {
+      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
+    throw new Error(data.error);
+  }
 
   localStorage.setItem('a1_token', data.token);
   localStorage.setItem('a1_slug',  slug);
+
+  // ── Limite de ACESSOS SIMULTÂNEOS (max_users do tenant) ──
+  const _trow = await fetch(`${A1.rest('a1_tenants')}?id=eq.${data.tenant_id}&select=max_users`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]);
+  const _max  = (Array.isArray(_trow) && _trow[0] && parseInt(_trow[0].max_users)) || 0;
+  if (_max > 0) {
+    const _key = `${data.tenant_id}::${data.partner_id}`;
+    const _active = await a1ActiveCount(data.tenant_id, _key);
+    if (_active >= _max) {
+      await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
+      localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
+      throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+    }
+  }
+
   localStorage.setItem('a1_user',  JSON.stringify({
     id:          data.partner_id,
     name:        data.name,
@@ -84,11 +122,19 @@ async function a1PartnerLogin(slug, cpf, password) {
     tenant_id:   data.tenant_id
   }));
 
+  a1Heartbeat(null); // reserva o slot imediatamente
   return data;
 }
 
 async function a1Logout() {
   try {
+    // libera o slot de acesso simultâneo imediatamente
+    const u = A1.user;
+    if (u && u.tenant_id && u.id) {
+      await fetch(`${A1.rest('a1_presence')}?user_key=eq.${encodeURIComponent(`${u.tenant_id}::${u.id}`)}`, {
+        method: 'DELETE', headers: A1.headers()
+      }).catch(() => {});
+    }
     await fetch(A1.rpc('a1_logout'), {
       method: 'POST',
       headers: A1.headers(),
@@ -123,31 +169,61 @@ function a1RequireAuth(allowedRoles = null) {
   return user;
 }
 
-// Module guard — redirects or shows locked screen
+// Verifica se o tenant possui um módulo (RPC a1_has_module)
+async function a1HasModule(moduleKey) {
+  try {
+    return await fetch(A1.rpc('a1_has_module'), {
+      method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
+    }).then(r => r.json());
+  } catch { return false; }
+}
+
+// Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
+// Ordem de preferência — CRM (início da jornada) antes de repasse/registro.
+async function a1ModuleHome() {
+  const slug = A1.slug || '';
+  const order = ['crm', 'repasse', 'registro'];
+  for (const m of order) {
+    if (await a1HasModule(m)) return `/${slug}/${m}`;
+  }
+  return `/${slug}/repasse`;
+}
+
+// Module guard — se o cliente não tem o módulo, redireciona para o módulo que ele
+// possui (ex.: imobiliária cai no /crm em vez de ver o repasse). Só mostra a tela
+// bloqueada quando o cliente não tem nenhum módulo.
 async function a1RequireModule(moduleKey) {
   if (sessionStorage.getItem('a1_sa_mode')) return; // SA impersonation bypasses module check
-  const res = await fetch(A1.rpc('a1_has_module'), {
-    method: 'POST',
-    headers: A1.headers(),
-    body: JSON.stringify({ p_module_key: moduleKey })
-  });
-  const ok = await res.json();
+  if (await a1HasModule(moduleKey)) return;
 
-  if (!ok) {
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui">
-        <div style="text-align:center">
-          <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
-          <h2 style="color:#f1f5f9;margin:0 0 .5rem">Módulo bloqueado</h2>
-          <p style="margin:0 0 1.5rem">Adquira este módulo para continuar.</p>
-          <a href="/${A1.slug}/dashboard"
-             style="color:#6366f1;text-decoration:none;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">
-            Voltar ao painel
-          </a>
-        </div>
-      </div>`;
-    throw new Error('module_locked');
+  const home = await a1ModuleHome();
+  const here = window.location.pathname.replace(/\/$/, '');
+  if (home && !here.endsWith(home)) {
+    window.location.href = home;
+    throw new Error('redirecting_to_home');
   }
+
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui">
+      <div style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+        <h2 style="color:#f1f5f9;margin:0 0 .5rem">Nenhum módulo liberado</h2>
+        <p style="margin:0 0 1.5rem">Contate o administrador para liberar um módulo.</p>
+        <button onclick="a1Logout()" style="color:#6366f1;background:none;cursor:pointer;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">Sair</button>
+      </div>
+    </div>`;
+  throw new Error('module_locked');
+}
+
+// Conta usuários ONLINE (heartbeat nos últimos 90s) do tenant, excluindo a própria chave.
+// Usado para impor o limite de acessos simultâneos no login.
+async function a1ActiveCount(tenantId, excludeKey) {
+  const since = new Date(Date.now() - 90_000).toISOString();
+  const url = `${A1.rest('a1_presence')}?tenant_id=eq.${tenantId}&last_seen=gte.${encodeURIComponent(since)}&select=user_key`;
+  const rows = await fetch(url, { headers: A1.headers() }).then(r => r.json()).catch(() => []);
+  if (!Array.isArray(rows)) return 0;
+  const keys = new Set(rows.map(r => r.user_key).filter(k => k && k !== excludeKey));
+  return keys.size;
 }
 
 // Presence heartbeat

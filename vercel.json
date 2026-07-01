@@ -7,6 +7,7 @@
     { "source": "/:slug/listagem",           "destination": "/listagem.html" },
     { "source": "/:slug/registro",           "destination": "/registro.html" },
     { "source": "/:slug/registro-listagem",  "destination": "/registro-listagem.html" },
+    { "source": "/:slug/crm",                "destination": "/crm.html" },
     { "source": "/:slug/dashboard",    "destination": "/repasse.html" },
     { "source": "/:slug/admin",        "destination": "/tenant-admin.html" },
     { "source": "/:slug/workflow",     "destination": "/workflow.html" },
