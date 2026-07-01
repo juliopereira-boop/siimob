@@ -219,7 +219,7 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
-const G = { user:null, slug:null, stages:[], leads:[], editingId:null, editingData:null, activeMt:'dados', pipe:null, crmSources:[], crmBrokers:[] };
+const G = { user:null, slug:null, stages:[], leads:[], editingId:null, editingData:null, activeMt:'dados', pipe:null, cad:{}, cadCur:null };
 
 const DEFAULT_PIPELINES = {
   vendas: { label:'Vendas — Imóveis Prontos', stages:[
@@ -257,12 +257,7 @@ async function loadData(){
   G.stages = stages || [];
   G.leads = await fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
   if (!Array.isArray(G.leads)) G.leads = [];
-  const [src,brk] = await Promise.all([
-    fetch(`${A1.rest('a1_config')}?key=eq.crm_sources&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_config')}?key=eq.crm_brokers&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
-  ]);
-  try{ G.crmSources=JSON.parse(src&&src[0]&&src[0].value||'[]'); }catch{ G.crmSources=[]; }
-  try{ G.crmBrokers=JSON.parse(brk&&brk[0]&&brk[0].value||'[]'); }catch{ G.crmBrokers=[]; }
+  await Promise.all([loadCad('origens'), loadCad('corretores')]);
   if(!G.pipe) G.pipe = pipeKeys()[0] || 'vendas';
   populateFilters(); populatePipeSelector(); renderFunil(); refreshTaskBadge();
 }
@@ -624,16 +619,42 @@ function renderDash(){
     </div>`;
 }
 
-// ─── Configurações (hub) ────────────────────────────────────────────────────
+// ─── Configurações (hub + motor genérico de cadastros) ───────────────────────
+// Cada cadastro é uma lista de objetos em a1_config. origens/corretores mantêm
+// as chaves antigas (crm_sources/crm_brokers) para não perder dados existentes.
+const CAD_KEYMAP={ origens:'crm_sources', corretores:'crm_brokers' };
+function cadConfigKey(k){ return CAD_KEYMAP[k]||('crm_cad_'+k); }
+const CAD=[
+  {key:'origens',      label:'Origens de Lead',            desc:'Canais de captação (site, portais, indicação).', bg:'#cffafe',st:'#0e7490', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'corretores',   label:'Corretores / Equipe',        desc:'Responsáveis pelo atendimento.',                 bg:'#dbeafe',st:'#2563eb', fields:[{k:'name',label:'Nome',req:true},{k:'creci',label:'CRECI'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'equipe',label:'Equipe'}]},
+  {key:'equipes',      label:'Equipes',                    desc:'Times/squads de corretores.',                    bg:'#ede9fe',st:'#7c3aed', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'tipos_imovel', label:'Tipos de Imóvel',            desc:'Apartamento, casa, sala, terreno...',            bg:'#e0f2fe',st:'#0284c7', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'finalidades',  label:'Finalidades',                desc:'Compra, locação, investimento.',                 bg:'#fef9c3',st:'#a16207', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'regioes',      label:'Regiões / Bairros',          desc:'Áreas de atuação.',                              bg:'#dcfce7',st:'#16a34a', fields:[{k:'name',label:'Bairro / Região',req:true},{k:'cidade',label:'Cidade'}]},
+  {key:'tags',         label:'Tags de Lead',               desc:'Etiquetas para segmentar leads.',                bg:'#fae8ff',st:'#a21caf', fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
+  {key:'motivos_perda',label:'Motivos de Perda',           desc:'Por que um lead foi perdido.',                   bg:'#fee2e2',st:'#dc2626', fields:[{k:'name',label:'Motivo',req:true}]},
+  {key:'garantias',    label:'Garantias Locatícias',       desc:'Fiador, caução, seguro-fiança...',               bg:'#ffedd5',st:'#c2410c', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'bancos',       label:'Bancos / Financiamento',     desc:'Instituições parceiras.',                        bg:'#e0e7ff',st:'#4338ca', fields:[{k:'name',label:'Nome',req:true}]},
+  {key:'empreendimentos',label:'Empreendimentos / Condomínios',desc:'Cadastro-mestre de prédios/condomínios.',     bg:'#f0fdfa',st:'#0d9488', fields:[{k:'name',label:'Nome',req:true},{k:'endereco',label:'Endereço'},{k:'cidade',label:'Cidade'},{k:'tipo',label:'Tipo'},{k:'obs',label:'Observações',type:'textarea'}]},
+  {key:'modelos_msg',  label:'Modelos de Mensagem',        desc:'Templates de WhatsApp / e-mail.',                bg:'#ecfeff',st:'#0891b2', fields:[{k:'name',label:'Título',req:true},{k:'canal',label:'Canal',type:'select',options:['WhatsApp','E-mail']},{k:'corpo',label:'Mensagem',type:'textarea'}]},
+];
+function cadDef(k){ return CAD.find(c=>c.key===k); }
+async function loadCad(k){
+  const rows=await fetch(`${A1.rest('a1_config')}?key=eq.${cadConfigKey(k)}&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  let list=[]; try{ list=JSON.parse(rows&&rows[0]&&rows[0].value||'[]'); }catch{ list=[]; }
+  G.cad[k]=Array.isArray(list)?list:[]; return G.cad[k];
+}
+async function saveCad(k){ await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,key:cadConfigKey(k),value:JSON.stringify(G.cad[k]||[])})}); populateFilters(); }
+function getCad(k){ return G.cad[k]||[]; }
+
 function renderConfig(){
+  const icon=(bg,st)=>`<div class="cfg-hub-icon" style="background:${bg}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${st}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></div>`;
+  const funil=`<div class="cfg-hub-card" onclick="openCfgView('funil')"><div class="cfg-hub-icon" style="background:#ede9fe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div><div class="cfg-card-label">Funis / Pipelines</div><div class="cfg-card-desc">Etapas de cada funil (Vendas, Lançamentos, Locação).</div></div>`;
+  const cards=CAD.map(c=>`<div class="cfg-hub-card" onclick="openCfgView('${c.key}')">${icon(c.bg,c.st)}<div class="cfg-card-label">${c.label}</div><div class="cfg-card-desc">${c.desc}</div></div>`).join('');
   document.getElementById('tab-config').innerHTML=`
     <div class="cfg-hub" id="cfg-hub">
-      <div class="cfg-section-hdr">Configurações do CRM</div>
-      <div class="cfg-cards">
-        <div class="cfg-hub-card" onclick="openCfgView('funil')"><div class="cfg-hub-icon" style="background:#ede9fe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div><div class="cfg-card-label">Funis / Pipelines</div><div class="cfg-card-desc">Etapas de cada funil (Vendas, Lançamentos, Locação).</div></div>
-        <div class="cfg-hub-card" onclick="openCfgView('origens')"><div class="cfg-hub-icon" style="background:#cffafe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="cfg-card-label">Origens de Lead</div><div class="cfg-card-desc">Canais de captação (site, portais, indicação).</div></div>
-        <div class="cfg-hub-card" onclick="openCfgView('corretores')"><div class="cfg-hub-icon" style="background:#dbeafe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="cfg-card-label">Corretores / Equipe</div><div class="cfg-card-desc">Responsáveis pelo atendimento dos leads.</div></div>
-      </div>
+      <div class="cfg-section-hdr">Funil</div><div class="cfg-cards">${funil}</div>
+      <div class="cfg-section-hdr">Cadastros</div><div class="cfg-cards">${cards}</div>
     </div>
     <div id="cfg-view" style="display:none"></div>`;
 }
@@ -646,12 +667,51 @@ function openCfgView(view){
       <div class="pt-toolbar"><label style="font-size:.72rem;font-weight:700;color:var(--t3)">Pipeline</label><select id="cfg-pipe" onchange="renderStageList()">${pipeKeys().map(k=>`<option value="${k}" ${k===G.pipe?'selected':''}>${esc(pipeLabel(k))}</option>`).join('')}</select><div style="flex:1"></div><button class="btn btn-primary btn-sm" onclick="addStage()">+ Nova etapa</button></div>
       <div id="cfg-stages"></div>
       <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem">Marque <b>Inicial</b> onde os leads entram e <b>Final</b> nas etapas de fechamento (ganho/perdido).</div>`;
-    renderStageList();
-  } else if(view==='origens'){ el.innerHTML=hdr('Origens de Lead')+listPanel('sources','src','Origem (ex.: Portal ZAP, Indicação)'); loadCrmList('sources'); }
-  else if(view==='corretores'){ el.innerHTML=hdr('Corretores / Equipe')+listPanel('brokers','brk','Nome do corretor'); loadCrmList('brokers'); }
+    renderStageList(); return;
+  }
+  const def=cadDef(view); if(!def){ closeCfgView(); return; }
+  G.cadCur=view;
+  el.innerHTML=hdr(def.label)+`
+    <div class="pt-toolbar"><div style="flex:1;font-size:.78rem;color:var(--t3)">${def.desc}</div><button class="btn btn-primary btn-sm" onclick="cadEdit(null)">+ Novo</button></div>
+    <div id="cad-editor"></div>
+    <div class="panel" style="overflow:hidden;margin-top:.6rem"><table class="pt-table"><thead><tr>${def.fields.slice(0,3).map(f=>`<th>${f.label}</th>`).join('')}<th>Status</th><th></th></tr></thead><tbody id="cad-tbody"><tr><td colspan="9" class="pt-empty">Carregando...</td></tr></tbody></table></div>`;
+  loadCad(view).then(renderCadList);
 }
 function closeCfgView(){ document.getElementById('cfg-view').style.display='none'; document.getElementById('cfg-hub').style.display=''; }
-function listPanel(kind,pfx,ph){ return `<div class="panel" style="padding:1rem"><div class="pt-toolbar"><input type="text" id="${pfx}-name" placeholder="${ph}" style="flex:1;padding:.45rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" onkeydown="if(event.key==='Enter')addCrmItem('${kind}')"><button class="btn btn-primary btn-sm" onclick="addCrmItem('${kind}')">+ Adicionar</button></div><table class="pt-table"><thead><tr><th>Nome</th><th>Status</th><th></th></tr></thead><tbody id="${pfx}-tbody"><tr><td colspan="3" class="pt-empty">Carregando...</td></tr></tbody></table></div>`; }
+
+function renderCadList(){
+  const def=cadDef(G.cadCur); const tb=document.getElementById('cad-tbody'); if(!tb) return;
+  const list=getCad(G.cadCur); const cols=def.fields.slice(0,3);
+  if(!list.length){ tb.innerHTML='<tr><td colspan="9" class="pt-empty">Nenhum item cadastrado.</td></tr>'; return; }
+  tb.innerHTML=list.map(it=>{ const on=it.active!==false; return `<tr>
+    ${cols.map(f=> f.type==='color'
+      ? `<td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${esc(it.color||'#ccc')};vertical-align:middle;margin-right:.35rem"></span>${esc(it.name||'')}</td>`
+      : `<td>${esc(it[f.k]||'')||'—'}</td>`).join('')}
+    <td><span class="pt-badge ${on?'pt-on':'pt-off'}">${on?'Ativo':'Inativo'}</span></td>
+    <td style="text-align:right;white-space:nowrap"><button class="mini-btn" onclick="cadEdit('${it.id}')">Editar</button> <button class="mini-btn" onclick="cadToggle('${it.id}')">${on?'Desativar':'Ativar'}</button> <button class="mini-btn" style="color:var(--red)" onclick="cadDel('${it.id}')">Excluir</button></td></tr>`;}).join('');
+}
+function cadEdit(id){
+  const def=cadDef(G.cadCur); const it=id?getCad(G.cadCur).find(x=>x.id===id)||{}:{};
+  document.getElementById('cad-editor').innerHTML=`<div class="panel" style="padding:1rem;margin-bottom:.5rem"><div class="fgrid">${def.fields.map(f=>{
+    const v=it[f.k]!=null?it[f.k]:'';
+    if(f.type==='textarea') return `<div class="fg full"><label>${f.label}</label><textarea id="cad-f-${f.k}" rows="3">${esc(v)}</textarea></div>`;
+    if(f.type==='select') return `<div class="fg"><label>${f.label}</label><select id="cad-f-${f.k}">${(f.options||[]).map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    if(f.type==='color') return `<div class="fg"><label>${f.label}</label><input id="cad-f-${f.k}" type="color" value="${esc(v||'#7c3aed')}" style="height:38px;padding:.2rem"></div>`;
+    return `<div class="fg"><label>${f.label}${f.req?' *':''}</label><input id="cad-f-${f.k}" value="${esc(v)}"></div>`;
+  }).join('')}</div><div style="margin-top:.75rem;display:flex;gap:.45rem"><button class="btn btn-primary btn-sm" onclick="cadSave('${id||''}')">Salvar</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('cad-editor').innerHTML=''">Cancelar</button></div></div>`;
+}
+async function cadSave(id){
+  const def=cadDef(G.cadCur); const obj={};
+  for(const f of def.fields){ const el=document.getElementById('cad-f-'+f.k); obj[f.k]=el?String(el.value).trim():''; }
+  const pk=def.fields[0].k;
+  if(def.fields[0].req && !obj[pk]){ toast('Preencha os campos obrigatórios','error'); return; }
+  if(!G.cad[G.cadCur]) G.cad[G.cadCur]=[];
+  if(id){ const it=G.cad[G.cadCur].find(x=>x.id===id); if(it) Object.assign(it,obj); }
+  else { obj.id='i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); obj.active=true; G.cad[G.cadCur].push(obj); }
+  await saveCad(G.cadCur); document.getElementById('cad-editor').innerHTML=''; renderCadList(); toast('Salvo','success');
+}
+async function cadToggle(id){ const it=getCad(G.cadCur).find(x=>x.id===id); if(!it) return; it.active=it.active===false; await saveCad(G.cadCur); renderCadList(); }
+async function cadDel(id){ if(!confirm('Excluir este item?')) return; G.cad[G.cadCur]=getCad(G.cadCur).filter(x=>x.id!==id); await saveCad(G.cadCur); renderCadList(); toast('Removido','info'); }
 
 function renderStageList(){
   const pk=document.getElementById('cfg-pipe')?document.getElementById('cfg-pipe').value:G.pipe;
@@ -700,31 +760,6 @@ async function deleteStage(id){
   else toast('Erro ao remover','error');
 }
 
-// listas simples (a1_config)
-const CRM_CFG={ sources:{key:'crm_sources',cache:'crmSources',tbody:'src-tbody',input:'src-name'}, brokers:{key:'crm_brokers',cache:'crmBrokers',tbody:'brk-tbody',input:'brk-name'} };
-async function loadCrmList(kind){
-  const c=CRM_CFG[kind];
-  const rows=await fetch(`${A1.rest('a1_config')}?key=eq.${c.key}&select=value`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
-  let list=[]; try{ list=JSON.parse(rows&&rows[0]&&rows[0].value||'[]'); }catch{ list=[]; }
-  G[c.cache]=Array.isArray(list)?list:[]; renderCrmList(kind);
-}
-function renderCrmList(kind){
-  const c=CRM_CFG[kind]; const tb=document.getElementById(c.tbody); if(!tb) return; const list=G[c.cache]||[];
-  if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="pt-empty">Nenhum item cadastrado.</td></tr>'; return; }
-  tb.innerHTML=list.map(it=>{const on=it.active!==false;return `<tr><td>${esc(it.name)}</td><td><span class="pt-badge ${on?'pt-on':'pt-off'}">${on?'Ativo':'Inativo'}</span></td><td style="text-align:right;white-space:nowrap"><button class="mini-btn" onclick="toggleCrmItem('${kind}','${it.id}')">${on?'Desativar':'Ativar'}</button> <button class="mini-btn" style="color:var(--red)" onclick="delCrmItem('${kind}','${it.id}')">Excluir</button></td></tr>`;}).join('');
-}
-async function persistCrmList(kind){ const c=CRM_CFG[kind]; await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify({tenant_id:G.user.tenant_id,key:c.key,value:JSON.stringify(G[c.cache]||[])})}); populateFilters(); }
-async function addCrmItem(kind){
-  const c=CRM_CFG[kind]; const inp=document.getElementById(c.input); const name=(inp.value||'').trim();
-  if(!name){ toast('Informe o nome','error'); return; }
-  if(!G[c.cache]) G[c.cache]=[];
-  if(G[c.cache].some(x=>(x.name||'').toLowerCase()===name.toLowerCase())){ toast('Já cadastrado','error'); return; }
-  G[c.cache].push({id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,active:true});
-  await persistCrmList(kind); inp.value=''; renderCrmList(kind); toast('Adicionado','success');
-}
-async function toggleCrmItem(kind,id){ const c=CRM_CFG[kind]; const it=(G[c.cache]||[]).find(x=>x.id===id); if(!it)return; it.active=it.active===false; await persistCrmList(kind); renderCrmList(kind); }
-async function delCrmItem(kind,id){ if(!confirm('Excluir este item?'))return; const c=CRM_CFG[kind]; G[c.cache]=(G[c.cache]||[]).filter(x=>x.id!==id); await persistCrmList(kind); renderCrmList(kind); toast('Removido','info'); }
-
 // ─── Tabs / helpers ────────────────────────────────────────────────────────────
 function switchTab(tab,el){
   document.querySelectorAll('.tabs-bar .tab-btn').forEach(b=>b.classList.remove('active'));
@@ -733,11 +768,11 @@ function switchTab(tab,el){
   if(tab==='dash') renderDash(); else if(tab==='config') renderConfig(); else if(tab==='tarefas') renderTarefas();
 }
 function populateFilters(){
-  const cfgSrc=(G.crmSources||[]).filter(x=>x.active!==false).map(x=>x.name);
+  const cfgSrc=getCad('origens').filter(x=>x.active!==false).map(x=>x.name);
   const sources=[...new Set([...cfgSrc, ...G.leads.map(l=>l.partner_name).filter(Boolean)])].sort();
   const f=document.getElementById('lead-src-filter'); if(f) f.innerHTML='<option value="">Todas as origens</option>'+sources.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   const ds=document.getElementById('dl-sources'); if(ds) ds.innerHTML=sources.map(s=>`<option value="${esc(s)}">`).join('');
-  const brokers=[...new Set([...(G.crmBrokers||[]).filter(x=>x.active!==false).map(x=>x.name), ...G.leads.map(l=>l.broker_name).filter(Boolean)])].sort();
+  const brokers=[...new Set([...getCad('corretores').filter(x=>x.active!==false).map(x=>x.name), ...G.leads.map(l=>l.broker_name).filter(Boolean)])].sort();
   const db=document.getElementById('dl-brokers'); if(db) db.innerHTML=brokers.map(b=>`<option value="${esc(b)}">`).join('');
 }
 function closeModal(id){ document.getElementById(id).classList.add('hidden'); if(id==='modal-lead'){G.editingId=null;G.editingData=null;} }
