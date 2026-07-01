@@ -476,6 +476,39 @@
   </div>
 </div>
 
+<!-- ═══════ MODAL: Cobrança ═══════ -->
+<div class="modal-bg hidden" id="modal-cobranca">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Cobrança — <span id="cob-name"></span></div><div style="font-size:.73rem;color:var(--t3);margin-top:.1rem" id="cob-email"></div></div>
+      <button class="modal-close" onclick="closeModal('modal-cobranca')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2" style="margin-bottom:1rem">
+        <div class="form-group"><label>Dia de vencimento</label><input id="cob-day" type="number" min="1" max="28" placeholder="Ex.: 10" onchange="cobPersistMeta()"></div>
+        <div class="form-group"><label>Valor mensal (R$)</label><input id="cob-valor" type="text" placeholder="Ex.: 199,00" onchange="cobPersistMeta()"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
+        <button class="btn btn-ghost btn-xs" onclick="cobYear(-1)">◀</button>
+        <b id="cob-year" style="font-size:.9rem"></b>
+        <button class="btn btn-ghost btn-xs" onclick="cobYear(1)">▶</button>
+        <div style="flex:1"></div>
+        <span id="cob-status" style="font-size:.75rem;font-weight:700"></span>
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:.5rem">Clique no mês para alternar entre <b>Pago</b> e <b>Pendente</b>.</div>
+      <div id="cob-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem"></div>
+      <div id="cob-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
+    </div>
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cobranca')">Fechar</button>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="mailtoCobranca()">Abrir no e-mail</button>
+        <button class="btn btn-primary" onclick="sendCobranca()">Enviar cobrança</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ MODAL: Gerar Contrato ═══════ -->
 <div class="modal-bg hidden" id="modal-contrato-bg">
   <div class="modal" style="max-width:780px">
@@ -722,6 +755,7 @@ async function loadTenants() {
   TENANTS = Array.isArray(data) ? data : [];
   renderTenantsTable(TENANTS);
   document.getElementById('sa-tenant-count').textContent = `${TENANTS.length} clientes`;
+  autoCobrancaCheck();
 }
 
 async function loadAllModules() {
@@ -786,6 +820,7 @@ function renderTenantsTable(list) {
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
+          <button class="btn btn-ghost btn-xs" style="color:#0d9488;border-color:#ccfbf1" onclick="openCobranca('${t.id}','${esc(t.name).replace(/'/g,"\\'")}','${esc(t.email||'')}')">Cobrança<span id="cob-hint-${t.id}" style="margin-left:.3rem;font-size:.62rem;font-weight:700"></span></button>
           ${t.status!=='suspended'
             ? `<button class="btn btn-danger btn-xs" onclick="suspendTenant('${t.id}')">Suspender</button>`
             : `<button class="btn btn-warn btn-xs" onclick="reactivateTenant('${t.id}')">Reativar</button>`}
@@ -1220,6 +1255,237 @@ function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function setEl(id, v) { const el = document.getElementById(id); if(el) el.textContent = v; }
+
+// ─── Cobrança (billing) ────────────────────────────────────────────────────────
+// Dados por tenant ficam em a1_config key='billing':
+//   { due_day, valor, paid:{'YYYY-MM':{paid:true,date:iso}}, notified:{'YYYY-MM':iso} }
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let COB = { tenantId:null, name:'', email:'', year:2026, data:null };
+
+function cobKey(y, mIdx) { return `${y}-${String(mIdx+1).padStart(2,'0')}`; }
+
+// true se o mês (ano/mês) já passou do dia de vencimento e não está pago
+function isOverdue(y, mIdx, dueDay, paidMap) {
+  if (!dueDay) return false;
+  if (paidMap && paidMap[cobKey(y, mIdx)] && paidMap[cobKey(y, mIdx)].paid) return false;
+  const now = new Date();
+  const due = new Date(y, mIdx, dueDay, 23, 59, 59);
+  return now > due;
+}
+
+async function loadBilling(tenantId) {
+  const rows = await fetch(`${saRest('a1_config')}?tenant_id=eq.${tenantId}&key=eq.billing&select=value`, { headers: saHeaders() })
+    .then(r => r.json()).catch(() => []);
+  let d = {};
+  try { d = JSON.parse(rows && rows[0] && rows[0].value || '{}'); } catch { d = {}; }
+  if (!d.paid)     d.paid = {};
+  if (!d.notified) d.notified = {};
+  return d;
+}
+
+async function saveBilling(tenantId, data) {
+  const body = { tenant_id: tenantId, key: 'billing', value: JSON.stringify(data) };
+  const res = await fetch(saRest('a1_config'), {
+    method: 'POST',
+    headers: saHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+async function openCobranca(tenantId, name, email) {
+  COB = { tenantId, name, email, year: 2026, data: await loadBilling(tenantId) };
+  setEl('cob-name', name);
+  const em = document.getElementById('cob-email');
+  if (em) em.textContent = email ? email : '⚠ sem e-mail cadastrado';
+  document.getElementById('cob-day').value   = COB.data.due_day || '';
+  document.getElementById('cob-valor').value = COB.data.valor   || '';
+  cobErr('');
+  renderCobranca();
+  openModal('modal-cobranca');
+}
+
+function cobYear(delta) { COB.year += delta; renderCobranca(); }
+
+function renderCobranca() {
+  setEl('cob-year', COB.year);
+  const grid = document.getElementById('cob-grid');
+  if (!grid) return;
+  const paid = COB.data.paid || {};
+  const dueDay = parseInt(COB.data.due_day) || 0;
+  grid.innerHTML = MESES.map((m, i) => {
+    const k = cobKey(COB.year, i);
+    const isPaid = paid[k] && paid[k].paid;
+    const overdue = !isPaid && isOverdue(COB.year, i, dueDay, paid);
+    const bg  = isPaid ? '#dcfce7' : overdue ? '#fee2e2' : '#f1f5f9';
+    const col = isPaid ? '#15803d' : overdue ? '#b91c1c' : '#64748b';
+    const lbl = isPaid ? 'Pago' : overdue ? 'Vencido' : 'Pendente';
+    const sub = isPaid && paid[k].date ? new Date(paid[k].date).toLocaleDateString('pt-BR') : '';
+    return `<button onclick="cobToggle(${i})" style="text-align:left;border:1px solid ${col}33;background:${bg};color:${col};border-radius:.5rem;padding:.5rem .6rem;cursor:pointer;font-family:inherit">
+      <div style="font-size:.8rem;font-weight:700">${m}</div>
+      <div style="font-size:.68rem;font-weight:600">${lbl}</div>
+      ${sub ? `<div style="font-size:.6rem;opacity:.8">${sub}</div>` : ''}
+    </button>`;
+  }).join('');
+
+  // Resumo do status do mês corrente
+  const now = new Date();
+  const curK = cobKey(now.getFullYear(), now.getMonth());
+  const st = document.getElementById('cob-status');
+  if (st) {
+    const cp = paid[curK] && paid[curK].paid;
+    const cur = new Date();
+    const curOver = !cp && dueDay && cur.getFullYear() === now.getFullYear() && isOverdue(now.getFullYear(), now.getMonth(), dueDay, paid);
+    st.textContent = cp ? '● Mês atual pago' : curOver ? '● Mês atual VENCIDO' : '● Mês atual pendente';
+    st.style.color = cp ? '#15803d' : curOver ? '#b91c1c' : '#64748b';
+  }
+}
+
+async function cobToggle(mIdx) {
+  const k = cobKey(COB.year, mIdx);
+  if (!COB.data.paid) COB.data.paid = {};
+  if (COB.data.paid[k] && COB.data.paid[k].paid) {
+    delete COB.data.paid[k];
+  } else {
+    COB.data.paid[k] = { paid: true, date: new Date().toISOString() };
+    // ao marcar como pago, limpa a marca de notificação do mês
+    if (COB.data.notified) delete COB.data.notified[k];
+  }
+  renderCobranca();
+  const ok = await saveBilling(COB.tenantId, COB.data);
+  if (!ok) cobErr('Não foi possível salvar. Verifique a conexão.');
+  updateCobHint(COB.tenantId, COB.data);
+}
+
+async function cobPersistMeta() {
+  COB.data.due_day = parseInt(document.getElementById('cob-day').value) || null;
+  COB.data.valor   = document.getElementById('cob-valor').value.trim() || null;
+  renderCobranca();
+  const ok = await saveBilling(COB.tenantId, COB.data);
+  if (!ok) cobErr('Não foi possível salvar. Verifique a conexão.');
+  updateCobHint(COB.tenantId, COB.data);
+}
+
+function cobErr(msg) {
+  const el = document.getElementById('cob-err');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// Modelo padrão da mensagem de cobrança
+function cobrancaBody(name, valor, dueDay, refMonthLabel) {
+  const v = valor ? `no valor de R$ ${valor} ` : '';
+  const venc = dueDay ? ` (vencimento todo dia ${dueDay})` : '';
+  return `Prezado(a) responsável pela ${name},
+
+Identificamos que a mensalidade da sua assinatura SIIMOB referente a ${refMonthLabel} ${v}consta como EM ABERTO em nosso sistema${venc}.
+
+Caso o pagamento já tenha sido efetuado, por favor desconsidere este aviso e nos encaminhe o comprovante para regularização.
+
+Para evitar a SUSPENSÃO automática do acesso à plataforma, solicitamos a regularização o quanto antes.
+
+Em caso de dúvidas sobre valores, boletos ou datas, estamos à disposição.
+
+Atenciosamente,
+Equipe SIIMOB`;
+}
+
+function cobCurrentRef() {
+  const now = new Date();
+  return { key: cobKey(now.getFullYear(), now.getMonth()), label: `${MESES[now.getMonth()]}/${now.getFullYear()}` };
+}
+
+async function sendCobranca() {
+  cobErr('');
+  if (!COB.email) { cobErr('Este cliente não possui e-mail cadastrado. Edite o cadastro do cliente para incluir um e-mail.'); return; }
+  const ref = cobCurrentRef();
+  const subject = `SIIMOB · Aviso de pagamento em aberto — ${ref.label}`;
+  const body = cobrancaBody(COB.name, COB.data.valor, COB.data.due_day, ref.label);
+  const res = await fetch(saRest('a1_emails'), {
+    method: 'POST',
+    headers: saHeaders({ 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({
+      tenant_id: COB.tenantId,
+      to_email:  COB.email,
+      subject, body,
+      status:    'pending',
+      kind:      'cobranca'
+    })
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    cobErr('Falha ao enfileirar o e-mail. Verifique se a tabela a1_emails existe (rode a migração SQL). ' + (t ? '· ' + t.slice(0,120) : ''));
+    return;
+  }
+  if (!COB.data.notified) COB.data.notified = {};
+  COB.data.notified[ref.key] = new Date().toISOString();
+  await saveBilling(COB.tenantId, COB.data);
+  toast(`Cobrança de ${ref.label} enfileirada para ${COB.email}.`, 'success');
+}
+
+// Fallback: abre o cliente de e-mail do superadmin já preenchido
+function mailtoCobranca() {
+  if (!COB.email) { cobErr('Este cliente não possui e-mail cadastrado.'); return; }
+  const ref = cobCurrentRef();
+  const subject = `SIIMOB · Aviso de pagamento em aberto — ${ref.label}`;
+  const body = cobrancaBody(COB.name, COB.data.valor, COB.data.due_day, ref.label);
+  window.location.href = `mailto:${encodeURIComponent(COB.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+// Pinta a linha do cliente com um aviso quando há mês vencido em aberto
+function updateCobHint(tenantId, data) {
+  const el = document.getElementById(`cob-hint-${tenantId}`);
+  if (!el) return;
+  const dueDay = parseInt(data && data.due_day) || 0;
+  if (!dueDay) { el.textContent = ''; return; }
+  const now = new Date();
+  const over = isOverdue(now.getFullYear(), now.getMonth(), dueDay, data.paid || {});
+  el.textContent = over ? '● vencido' : '';
+  el.style.color = '#dc2626';
+}
+
+// Auto-envio: ao abrir a aba Clientes, para cada tenant com dia de vencimento
+// configurado cujo mês atual está em aberto e já passou do vencimento e ainda
+// não foi notificado neste mês, enfileira o e-mail de cobrança. Guarda 1x/mês.
+async function autoCobrancaCheck() {
+  let rows = [];
+  try {
+    rows = await fetch(`${saRest('a1_config')}?key=eq.billing&select=tenant_id,value`, { headers: saHeaders() }).then(r => r.json());
+  } catch { return; }
+  if (!Array.isArray(rows)) return;
+  const now = new Date();
+  const ref = cobCurrentRef();
+  let queued = 0;
+  for (const row of rows) {
+    let d = {};
+    try { d = JSON.parse(row.value || '{}'); } catch { continue; }
+    updateCobHint(row.tenant_id, d);
+    const dueDay = parseInt(d.due_day) || 0;
+    if (!dueDay) continue;
+    const paid = d.paid || {};
+    if (paid[ref.key] && paid[ref.key].paid) continue;               // mês atual já pago
+    if (!isOverdue(now.getFullYear(), now.getMonth(), dueDay, paid)) continue; // ainda não venceu
+    if (d.notified && d.notified[ref.key]) continue;                 // já notificado neste mês
+    const t = TENANTS.find(x => x.id === row.tenant_id);
+    if (!t || !t.email) continue;                                    // precisa de e-mail
+    const subject = `SIIMOB · Aviso de pagamento em aberto — ${ref.label}`;
+    const body = cobrancaBody(t.name, d.valor, dueDay, ref.label);
+    const res = await fetch(saRest('a1_emails'), {
+      method: 'POST',
+      headers: saHeaders({ 'Prefer': 'return=minimal' }),
+      body: JSON.stringify({ tenant_id: row.tenant_id, to_email: t.email, subject, body, status: 'pending', kind: 'cobranca_auto' })
+    }).catch(() => null);
+    if (res && res.ok) {
+      if (!d.notified) d.notified = {};
+      d.notified[ref.key] = new Date().toISOString();
+      await saveBilling(row.tenant_id, d);
+      queued++;
+    }
+  }
+  if (queued > 0) toast(`${queued} cobrança(s) automática(s) enfileirada(s) para clientes vencidos.`, 'info');
+}
+
 function openModal(id)  { document.getElementById(id)?.classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
