@@ -17,12 +17,24 @@ CREATE TABLE IF NOT EXISTS a1_emails (
   to_email    text NOT NULL,
   subject     text NOT NULL,
   body        text NOT NULL,
-  kind        text DEFAULT 'cobranca',        -- cobranca | cobranca_auto | ...
   status      text DEFAULT 'pending',          -- pending | sent | failed
   error       text,
   created_at  timestamptz DEFAULT now(),
   sent_at     timestamptz
 );
+
+-- Cura uma a1_emails que já exista de uma tentativa anterior sem todas as colunas
+-- (CREATE TABLE IF NOT EXISTS não adiciona colunas a uma tabela já existente).
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS tenant_id  uuid;
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS status     text DEFAULT 'pending';
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS error      text;
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS sent_at    timestamptz;
+-- Opcional: rótulo para o worker distinguir origem (o app não depende dele).
+ALTER TABLE a1_emails ADD COLUMN IF NOT EXISTS kind       text DEFAULT 'cobranca';
+
+-- Recarrega o schema cache do PostgREST (evita erros PGRST204 de coluna não encontrada).
+NOTIFY pgrst, 'reload schema';
 
 CREATE INDEX IF NOT EXISTS a1_emails_status_idx ON a1_emails (status, created_at);
 CREATE INDEX IF NOT EXISTS a1_emails_tenant_idx ON a1_emails (tenant_id);

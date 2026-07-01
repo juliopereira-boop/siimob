@@ -1409,8 +1409,7 @@ async function sendCobranca() {
       tenant_id: COB.tenantId,
       to_email:  COB.email,
       subject, body,
-      status:    'pending',
-      kind:      'cobranca'
+      status:    'pending'
     })
   });
   if (!res.ok) {
@@ -1474,7 +1473,7 @@ async function autoCobrancaCheck() {
     const res = await fetch(saRest('a1_emails'), {
       method: 'POST',
       headers: saHeaders({ 'Prefer': 'return=minimal' }),
-      body: JSON.stringify({ tenant_id: row.tenant_id, to_email: t.email, subject, body, status: 'pending', kind: 'cobranca_auto' })
+      body: JSON.stringify({ tenant_id: row.tenant_id, to_email: t.email, subject, body, status: 'pending' })
     }).catch(() => null);
     if (res && res.ok) {
       if (!d.notified) d.notified = {};
