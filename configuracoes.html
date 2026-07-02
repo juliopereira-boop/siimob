@@ -2437,7 +2437,7 @@ async function removeFlag(id){
 
 async function loadPartners() {
   G.partnersLoaded = true;
-  G.partners = await fetch(`${A1.rest('a1_partners')}?order=name.asc`, {headers:A1.headers()})
+  G.partners = await fetch(`${A1.rest('a1_partners')}?type=eq.cca&order=name.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
   ptFilter();
   refreshCorrLimits();
