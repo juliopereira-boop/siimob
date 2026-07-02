@@ -1663,6 +1663,12 @@ async function init() {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     const _bp = document.getElementById('btn-profile'); if (_bp) _bp.style.display = '';
+    // Dashboard só aparece se o gestor liberou (ver_dashboard) — reflete o cadastro de permissões.
+    if (!hasPerm('ver_dashboard')) {
+      const _dl = document.getElementById('link-dashboard'); if (_dl) _dl.style.display = 'none';
+      // Se está na própria tela de Dashboard, manda para o Andamento ANTES de renderizar (sem flash).
+      if (/\/(repasse|dashboard)\/?$/.test(location.pathname)) { window.location.replace(`/${G.slug}/andamento`); return; }
+    }
   }
   document.getElementById('link-wf').href          = `/${G.slug}/workflow?module=repasse`;
   document.getElementById('link-wf-groups').href   = `/${G.slug}/workflow?module=repasse`;
@@ -1755,7 +1761,7 @@ async function openProfile() {
   document.getElementById('prof-cpf').value      = p.cpf   || '';
   document.getElementById('prof-phone').value    = p.phone || '';
   document.getElementById('prof-password').value = '';
-  openModal('modal-profile-bg');
+  document.getElementById('modal-profile-bg').classList.remove('hidden');
 }
 function profErr(m){ const e=document.getElementById('prof-err'); if(e){ e.textContent=m||''; e.style.display=m?'block':'none'; } }
 async function saveProfile() {
