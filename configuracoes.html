@@ -370,12 +370,18 @@
     </div>
     <div class="panel" style="padding:1.1rem;max-width:620px">
       <p style="font-size:.78rem;color:var(--t2);margin-bottom:.875rem;line-height:1.6">
-        Regionais sao definidas pelo campo <code style="color:#3D5CC8;font-family:'DM Mono',monospace">group_key</code> nas etapas do workflow.
-        Cada grupo de etapas com o mesmo group_key forma uma regional separada no kanban.
+        Cadastre as regionais da sua operação. Ao criar um novo repasse você escolhe a regional,
+        e o quadro (kanban) agrupa os processos por regional — as regionais aparecem no topo, como antes.
       </p>
-      <div class="tag-list" id="regionals-cfg-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
-      <a class="btn btn-ghost btn-sm" id="link-wf-groups">Editar no Workflow</a>
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        <input type="text" id="reg-new" placeholder="Nome da regional (ex.: Zona Sul)" style="flex:1;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" onkeydown="if(event.key==='Enter')addRegional()">
+        <button class="btn btn-primary btn-sm" onclick="addRegional()">+ Adicionar</button>
+      </div>
+      <div id="regionais-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
+      <div id="reg-err" style="display:none;color:#dc2626;font-size:.76rem;margin-top:.5rem;font-weight:500"></div>
     </div>
+    <!-- id oculto p/ compatibilidade com hide de gestor (link-wf-groups) -->
+    <a id="link-wf-groups" style="display:none"></a>
   </div>
 
   <!-- ─── Sub-view: Empreendimentos ─── -->
@@ -1166,14 +1172,48 @@ async function saveCommission(){
   else showToast('Erro ao salvar','error');
 }
 
-// ── Regionais (derived from stages) ───────────────────────────────────────────
+// ── Regionais (cadastro em a1_config key='regionais') ─────────────────────────
 
-function loadRegionaisCfg() {
-  const keys = [...new Set(G.stages.map(s => s.group_key).filter(Boolean))];
-  const el = document.getElementById('regionals-cfg-list');
+async function loadRegionaisCfg() {
+  try {
+    const rows = await fetch(`${A1.rest('a1_config')}?tenant_id=eq.${G.user.tenant_id}&key=eq.regionais&select=value`, {headers:A1.headers()}).then(r=>r.json());
+    let list=[]; try{ list=JSON.parse(rows&&rows[0]&&rows[0].value||'[]'); }catch{ list=[]; }
+    G.regionais = Array.isArray(list)?list:[];
+  } catch { G.regionais = []; }
+  renderRegionaisList();
+}
+function renderRegionaisList() {
+  const el = document.getElementById('regionais-list');
   if (!el) return;
-  if (!keys.length) { el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Nenhuma regional definida no workflow.</span>'; return; }
-  el.innerHTML = keys.map(k => `<span class="tag-item">${esc(k)}</span>`).join('');
+  const list = G.regionais||[];
+  if (!list.length) { el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Nenhuma regional cadastrada ainda.</span>'; return; }
+  el.innerHTML = list.map((r,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.4rem">
+      <span style="font-size:.82rem;font-weight:600;color:var(--t1)">${esc(r)}</span>
+      <button class="btn-icon" title="Remover" onclick="removeRegional(${i})">🗑️</button>
+    </div>`).join('');
+}
+function regErr(m){ const e=document.getElementById('reg-err'); if(e){ e.textContent=m||''; e.style.display=m?'block':'none'; } }
+async function persistRegionais() {
+  const body={tenant_id:G.user.tenant_id,key:'regionais',value:JSON.stringify(G.regionais||[])};
+  const res=await fetch(A1.rest('a1_config'),{method:'POST',headers:A1.upsertHeaders(),body:JSON.stringify(body)});
+  return res.ok;
+}
+async function addRegional() {
+  regErr('');
+  const inp=document.getElementById('reg-new'); const name=(inp.value||'').trim();
+  if(!name){ regErr('Digite o nome da regional.'); return; }
+  if(!Array.isArray(G.regionais)) G.regionais=[];
+  if(G.regionais.some(r=>r.toLowerCase()===name.toLowerCase())){ regErr('Essa regional já existe.'); return; }
+  G.regionais.push(name); inp.value='';
+  renderRegionaisList();
+  if(!await persistRegionais()){ regErr('Erro ao salvar. Tente novamente.'); }
+}
+async function removeRegional(i) {
+  if(!Array.isArray(G.regionais)) return;
+  G.regionais.splice(i,1);
+  renderRegionaisList();
+  if(!await persistRegionais()){ regErr('Erro ao salvar. Tente novamente.'); }
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────────
@@ -2409,10 +2449,6 @@ function renderList() {
 async function loadFlags() {
   G.flags=await fetch(`${A1.rest('a1_stage_flags')}?order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
   renderFlags();
-  const el=document.getElementById('regionals-cfg-list');
-  el.innerHTML=G.groups.length
-    ?G.groups.map(g=>`<div class="tag-item">${esc(g)}</div>`).join('')
-    :'<span style="color:var(--t3);font-size:.77rem">Nenhuma regional. Defina group_key no Workflow.</span>';
 }
 
 function renderFlags(){

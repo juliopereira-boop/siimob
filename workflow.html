@@ -281,8 +281,10 @@
   <label>Cor</label>
   <div class="color-row" id="color-row"></div>
 
-  <label>Grupo / Regional (opcional)</label>
-  <input type="text" id="ep-group" placeholder="Ex: FORTALEZA, TERESINA">
+  <!-- Regional saiu do workflow: agora é um cadastro em Configurações › Regionais,
+       e cada processo escolhe a regional no novo repasse. O campo fica oculto para
+       preservar o group_key já existente das etapas (retrocompatibilidade). -->
+  <input type="hidden" id="ep-group">
 
   <label>Posição na ordem</label>
   <input type="number" id="ep-position" min="0" placeholder="0">
