@@ -1174,6 +1174,9 @@
         <div class="form-group"><label>Etapa inicial</label>
           <select id="n-stage"><option value="">Selecione</option></select>
         </div>
+        <div class="form-group"><label>Regional</label>
+          <select id="n-regional"><option value="">— Sem regional —</option></select>
+        </div>
         <div class="form-group"><label>Venc. Avaliacao</label><input id="n-eval" type="date"></div>
         <div class="form-group full"><label>Observacoes</label><textarea id="n-obs" rows="3"></textarea></div>
       </div>
@@ -1828,7 +1831,14 @@ async function loadData() {
     if (!G.edges[e.from_id]) G.edges[e.from_id] = [];
     G.edges[e.from_id].push(e.to_id);
   }
-  G.groups = [...new Set(stages.map(s=>s.group_key).filter(Boolean))];
+  // Regionais são um cadastro (a1_config key='regionais'); cada processo guarda a sua em payload.regional.
+  // Retrocompatível: processo sem payload.regional cai no group_key da etapa (comportamento antigo).
+  G.regionais = await fetch(`${A1.rest('a1_config')}?key=eq.regionais&select=value`, { headers: A1.headers() })
+    .then(r=>r.json()).then(a=>{ try{ const v=JSON.parse(a&&a[0]&&a[0].value||'[]'); return Array.isArray(v)?v:[]; }catch{ return []; } }).catch(()=>[]);
+  { const _sm={}; for(const s of stages) _sm[s.id]=s;
+    const _extra=new Set();
+    for(const c of cases){ const r=(c.payload&&c.payload.regional)||_sm[c.stage_id]?.group_key; if(r&&!G.regionais.includes(r)) _extra.add(r); }
+    G.groups=[...G.regionais, ..._extra]; }
   G.commission = await fetch(`${A1.rest('a1_config')}?key=eq.commission&select=value`, { headers: A1.headers() })
     .then(r=>r.json()).then(a=>{ try { return JSON.parse(a&&a[0]&&a[0].value||'null'); } catch { return null; } }).catch(()=>null);
   populateFilterOptions();
@@ -1913,7 +1923,7 @@ function dashCases() {
   const { regional, empr, parceiro, re, analista, search } = G.dashFilters;
   const sm = stageMap();
   return G.cases.filter(c => {
-    if (regional && sm[c.stage_id]?.group_key !== regional) return false;
+    if (regional) { const _r=(c.payload&&c.payload.regional)||sm[c.stage_id]?.group_key||''; if(_r!==regional) return false; }
     if (empr     && c.development !== empr)       return false;
     if (parceiro && c.partner_name !== parceiro)  return false;
     if (re       && c.real_estate_name !== re)    return false;
@@ -2189,7 +2199,8 @@ function filteredCases() {
       }
     }
     const stage=sm[c.stage_id];
-    if(G.currentGroup!=='__all__' && stage?.group_key!==G.currentGroup) return false;
+    const _reg=(c.payload&&c.payload.regional)||stage?.group_key||'';
+    if(G.currentGroup!=='__all__' && _reg!==G.currentGroup) return false;
     if(search){ const q=search.toLowerCase(),hay=`${c.client_name} ${c.client_cpf} ${c.development} ${c.partner_name}`.toLowerCase(); if(!hay.includes(q)) return false; }
     if(empr     && c.development!==empr)                      return false;
     if(parceiro && c.partner_name!==parceiro)                  return false;
@@ -2203,8 +2214,8 @@ function filteredCases() {
 function renderKanban() {
   const board=document.getElementById('kanban-board');
   const filtered=filteredCases();
-  let vis=G.stages;
-  if(G.currentGroup!=='__all__') vis=G.stages.filter(s=>s.group_key===G.currentGroup||!s.group_key);
+  // Regional agora é atributo do processo: todas as etapas aparecem; só os cartões são filtrados por regional.
+  const vis=G.stages;
 
   if(!vis.length){
     board.innerHTML=`<div style="color:var(--t3);font-size:.8rem;padding:1rem">Nenhuma etapa configurada. <a href="/${G.slug}/workflow?module=repasse" style="color:var(--violet)">Editar workflow</a></div>`;
@@ -2678,6 +2689,8 @@ async function openNewCase() {
   const stageSel=document.getElementById('n-stage');
   const initials=G.stages.filter(s=>s.is_initial);
   stageSel.innerHTML='<option value="">Selecione</option>'+(initials.length?initials:G.stages).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  const regSel=document.getElementById('n-regional');
+  if(regSel) regSel.innerHTML='<option value="">— Sem regional —</option>'+G.groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
 
   // empreendimentos
   if (!G.emprLoaded) await loadEmpreendimentos();
@@ -2801,7 +2814,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
