@@ -585,6 +585,7 @@
       <select id="f-parceiro"><option value="">Correspondente</option></select>
       <select id="f-re"><option value="">Imobiliária</option></select>
       <select id="f-analista"><option value="">Analista</option></select>
+      <select id="f-usuario"><option value="">Usuário Correspondente</option></select>
       <select id="f-entrevista">
         <option value="">Entrevista</option>
         <option value="pendente">Pendente</option>
@@ -1155,6 +1156,11 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
+            <div class="form-group"><label>Usuário Correspondente</label>
+              <select id="n-usuario">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
             <div class="form-group"><label>Imobiliária *</label>
               <select id="n-re">
                 <option value="">Selecione...</option>
@@ -1613,7 +1619,7 @@ const G = {
   stages: [], cases: [], groups: [],
   currentGroup: '__all__',
   currentView: 'andamento',
-  filters: { search:'', empr:'', parceiro:'', re:'', analista:'', entrevista:'' },
+  filters: { search:'', empr:'', parceiro:'', re:'', analista:'', entrevista:'', usuario:'' },
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
@@ -1861,6 +1867,8 @@ function populateFilterOptions() {
   document.getElementById('f-parceiro').innerHTML = '<option value="">Correspondente</option>' + partners.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
   document.getElementById('f-re').innerHTML       = '<option value="">Imobiliária</option>'    + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   document.getElementById('f-analista').innerHTML = '<option value="">Analista</option>'       + analistaNomes.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  const usuariosCorr = [...new Set(G.cases.map(c=>c.payload&&c.payload.usuario_correspondente).filter(Boolean))].sort();
+  const _fu=document.getElementById('f-usuario'); if(_fu) _fu.innerHTML = '<option value="">Usuário Correspondente</option>' + usuariosCorr.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
   document.getElementById('tbl-stage-filter').innerHTML = '<option value="">Todas as etapas</option>' + G.stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
 
@@ -2192,7 +2200,7 @@ function renderRegionalTabs() {
 function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
 
 function filteredCases() {
-  const { search, empr, parceiro, re, analista, entrevista } = G.filters;
+  const { search, empr, parceiro, re, analista, entrevista, usuario } = G.filters;
   const sm=stageMap(), isPartner=G.user.role==='partner';
   return G.cases.filter(c=>{
     if (isPartner) {
@@ -2212,6 +2220,7 @@ function filteredCases() {
     if(parceiro && c.partner_name!==parceiro)                  return false;
     if(re       && c.real_estate_name!==re)                    return false;
     if(analista && c.manager_name!==analista)                  return false;
+    if(usuario && (c.payload?.usuario_correspondente||'')!==usuario) return false;
     if(entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
   });
@@ -2359,6 +2368,10 @@ async function openCard(id) {
   document.getElementById('mc-stage-sel').innerHTML=G.stages.map(s=>`<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${esc(s.name)}</option>`).join('');
   document.querySelectorAll('#modal-card-bg .modal-tab').forEach(t=>t.classList.remove('active'));
   document.querySelector('#modal-card-bg .modal-tab[data-mtab="det"]').classList.add('active');
+  if (!G.empresasLoaded) { try { await loadEmpresas(); } catch{} }
+  if (!G.imobsLoaded)    { try { await loadImobs(); } catch{} }
+  if (!G.partnersLoaded) { try { await loadPartners(); } catch{} }
+  if (!G.analistasLoaded){ try { await loadAnalistas(); } catch{} }
   renderModalDet();
   document.getElementById('modal-card-bg').classList.remove('hidden');
 }
@@ -2372,6 +2385,20 @@ function switchModalTab(tab,el){
   else if(tab==='valores') renderModalValores();
   else if(tab==='docs') renderModalDocs();
 }
+
+function selOpts(items, cur){
+  cur = cur || '';
+  items = Array.isArray(items) ? items : [];
+  const has = items.some(x => x === cur);
+  let html = '<option value="">— Selecione —</option>';
+  if (cur && !has) html += `<option value="${esc(cur)}" selected>${esc(cur)} (não cadastrado)</option>`;
+  html += items.map(x => `<option value="${esc(x)}"${x===cur?' selected':''}>${esc(x)}</option>`).join('');
+  return html;
+}
+function _empresaNames(){ return (Array.isArray(G.empresas)?G.empresas:[]).filter(e=>e.is_active!==false).map(e=>e.name); }
+function _imobNames(){ return (Array.isArray(G.imobs)?G.imobs:[]).map(i=>i.name); }
+function _ccaNames(){ return (Array.isArray(G.partners)?G.partners:[]).map(p=>p.name); }
+function _analistaNames(){ return (Array.isArray(G.analistas)?G.analistas:[]).filter(a=>a.is_active!==false).map(a=>a.name); }
 
 function renderModalDet() {
   const c=G.editingCaseData||{}, p=c.payload||{};
@@ -2393,11 +2420,12 @@ function renderModalDet() {
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
     <div class="form-grid">
-      <div class="form-group"><label>Correspondente</label><input id="e-partner" value="${esc(c.partner_name||'')}" list="dl-partners"></div>
-      <div class="form-group"><label>Imobiliaria</label><input id="e-re" value="${esc(c.real_estate_name||'')}"></div>
+      <div class="form-group"><label>Correspondente</label><select id="e-partner">${selOpts(_empresaNames(), c.partner_name)}</select></div>
+      <div class="form-group"><label>Imobiliaria</label><select id="e-re">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
+      <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
+      <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
       <div class="form-group"><label>Corretor</label><input id="e-broker" value="${esc(c.broker_name||'')}"></div>
       <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
-      <div class="form-group"><label>Usuário Correspondente</label><input id="e-manager" value="${esc(c.manager_name||'')}"></div>
     </div>
     <div class="form-section-title">Entrevista</div>
     <div class="form-grid">
@@ -2628,7 +2656,7 @@ async function saveCase() {
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
   const _entDate=document.getElementById('e-ent-date')?.value||null;
-  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate};
+  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||'')};
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
@@ -2725,6 +2753,8 @@ async function openNewCase() {
 
   // analistas e usuarios correspondentes — filtrados por empresa selecionada
   if (!G.analistasLoaded) await loadAnalistas();
+  if (!G.partnersLoaded) await loadPartners();
+  { const us=document.getElementById('n-usuario'); if(us) us.innerHTML='<option value="">Selecione...</option>'+(Array.isArray(G.partners)?G.partners:[]).map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join(''); }
   // se CCA: empresa já fixada, filtra imediatamente; caso contrário deixa vazio até selecionar empresa
   if (isCCA && G.user.empresa_name) {
     await onNovoRepasseEmpresaChange();
@@ -2820,7 +2850,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -4220,13 +4250,14 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-parceiro')   {G.filters.parceiro=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-re')         {G.filters.re=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-analista')   {G.filters.analista=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-usuario')    {G.filters.usuario=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();renderList();}
   if(e.target.id==='tbl-stage-filter') renderList();
 });
 
 function clearFilters(){
-  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',entrevista:''};
-  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',entrevista:'',usuario:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderKanban();renderList();
 }
 
