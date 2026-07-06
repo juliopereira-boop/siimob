@@ -1144,7 +1144,7 @@
                 <option value="">Selecione primeiro o bloco</option>
               </select>
             </div>
-            <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="number" step="0.01" placeholder="0,00"></div>
+            <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" placeholder="Ex.: 178000 → 178.000,00"></div>
           </div>
         </div>
 
@@ -2442,7 +2442,7 @@ function renderModalDet() {
       <div class="form-group full"><label>Empreendimento</label><input id="e-development" value="${esc(c.development||'')}" list="dl-developments"></div>
       <div class="form-group"><label>Bloco</label><input id="e-block" value="${esc(c.block||'')}"></div>
       <div class="form-group"><label>Unidade</label><input id="e-unit" value="${esc(c.unit||'')}"></div>
-      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="number" step="0.01" value="${c.contract_value||''}"></div>
+      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" value="${c.contract_value!=null&&c.contract_value!==''?Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}"></div>
       <div class="form-group"><label>Venc. Avaliacao</label><input id="e-eval" type="date" value="${c.evaluation_expiry||''}"></div>
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
@@ -2687,7 +2687,7 @@ async function saveCase() {
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
-    contract_value:parseFloat(v('e-value'))||null,evaluation_expiry:v('e-eval')||null,
+    contract_value:brToNum(v('e-value')),evaluation_expiry:v('e-eval')||null,
     partner_name:(G.isCorrTenant?(G.fixedCorr||''):v('e-partner')),real_estate_name:v('e-re'),broker_name:v('e-broker'),
     broker_phone:v('e-broker-phone'),manager_name:v('e-manager'),observations:v('e-obs'),
     stage_id:stageId,stage_name:stage?.name||G.editingCaseData.stage_name,payload,
@@ -2877,7 +2877,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -4294,6 +4294,17 @@ function v(id){const el=document.getElementById(id);return el?el.value.trim():''
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDateHour(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function fmtCpf(cpf){const d=cpf.replace(/\D/g,'');return d.length===11?`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`:cpf;}
+function maskValor(el){
+  const parts=String(el.value).replace(/[^\d,]/g,'').split(',');
+  let intp=parts[0].replace(/\D/g,'').replace(/^0+(?=\d)/,'');
+  let out=intp.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  if(parts.length>1) out += ',' + parts.slice(1).join('').replace(/\D/g,'').slice(0,2);
+  el.value=out;
+}
+function blurValor(el){
+  const n=brToNum(el.value);
+  el.value = (n==null) ? '' : n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 function fmtBRL(val){return Number(val).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 function fmtDate(dt){return dt?new Date(dt).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';}
 function fmtDT(dt){return dt?new Date(dt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';}

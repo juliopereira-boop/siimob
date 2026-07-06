@@ -606,9 +606,12 @@
     <div id="view-listagem" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <span id="tbl-count" style="font-size:.73rem;color:var(--t3)"></span>
-        <select id="tbl-stage-filter" style="padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem">
-          <option value="">Todas as etapas</option>
-        </select>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-ghost btn-sm" id="btn-dup" onclick="toggleDupView()">CPFs duplicados</button>
+          <select id="tbl-stage-filter" style="padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem">
+            <option value="">Todas as etapas</option>
+          </select>
+        </div>
       </div>
       <div id="bulk-bar" style="display:none;align-items:center;gap:.5rem;flex-wrap:wrap;background:#EEF2FF;border:1px solid #c7d2fe;border-radius:8px;padding:.55rem .8rem;margin-bottom:.6rem">
         <span id="bulk-count" style="font-size:.78rem;font-weight:700;color:#3730A3"></span>
@@ -619,6 +622,7 @@
           <select id="bulk-corr" style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem"><option value="">Vincular correspondente...</option></select>
           <button class="btn btn-primary btn-sm" onclick="bulkVincCorr()">Vincular</button>
         </span>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca" onclick="bulkDelete()">Excluir selecionados</button>
         <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Limpar seleção</button>
       </div>
       <div class="tbl-wrap">
@@ -1156,7 +1160,7 @@
                 <option value="">Selecione primeiro o bloco</option>
               </select>
             </div>
-            <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="number" step="0.01" placeholder="0,00"></div>
+            <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" placeholder="Ex.: 178000 → 178.000,00"></div>
           </div>
         </div>
 
@@ -2454,7 +2458,7 @@ function renderModalDet() {
       <div class="form-group full"><label>Empreendimento</label><input id="e-development" value="${esc(c.development||'')}" list="dl-developments"></div>
       <div class="form-group"><label>Bloco</label><input id="e-block" value="${esc(c.block||'')}"></div>
       <div class="form-group"><label>Unidade</label><input id="e-unit" value="${esc(c.unit||'')}"></div>
-      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="number" step="0.01" value="${c.contract_value||''}"></div>
+      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" value="${c.contract_value!=null&&c.contract_value!==''?Number(c.contract_value).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}"></div>
       <div class="form-group"><label>Venc. Avaliacao</label><input id="e-eval" type="date" value="${c.evaluation_expiry||''}"></div>
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
@@ -2699,7 +2703,7 @@ async function saveCase() {
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
-    contract_value:parseFloat(v('e-value'))||null,evaluation_expiry:v('e-eval')||null,
+    contract_value:brToNum(v('e-value')),evaluation_expiry:v('e-eval')||null,
     partner_name:(G.isCorrTenant?(G.fixedCorr||''):v('e-partner')),real_estate_name:v('e-re'),broker_name:v('e-broker'),
     broker_phone:v('e-broker-phone'),manager_name:v('e-manager'),observations:v('e-obs'),
     stage_id:stageId,stage_name:stage?.name||G.editingCaseData.stage_name,payload,
@@ -2889,7 +2893,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:parseFloat(v('n-value'))||null,partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -3129,11 +3133,27 @@ async function bulkPatch(patch){
 }
 async function bulkVincEmpr(){ const v=document.getElementById('bulk-empr').value; if(!v){toast('Escolha um empreendimento','error');return;} await bulkPatch({development:v}); toast('Empreendimento vinculado','success'); }
 async function bulkVincCorr(){ const v=document.getElementById('bulk-corr').value; if(!v){toast('Escolha um correspondente','error');return;} await bulkPatch({partner_name:v}); toast('Correspondente vinculado','success'); }
+function toggleDupView(){ G.dupOnly=!G.dupOnly; const b=document.getElementById('btn-dup'); if(b){ b.classList.toggle('btn-primary',G.dupOnly); b.classList.toggle('btn-ghost',!G.dupOnly); b.textContent=G.dupOnly?'Ver todos':'CPFs duplicados'; } clearSelection(); renderList(); }
+async function bulkDelete(){
+  const ids=[...(G.selCases||[])]; if(!ids.length){toast('Selecione ao menos um processo','error');return;}
+  if(!confirm(`Excluir ${ids.length} processo(s)? Esta ação não pode ser desfeita.`)) return;
+  const res=await fetch(`${A1.rest('a1_cases')}?id=in.(${ids.join(',')})`,{method:'DELETE',headers:A1.headers()}).catch(()=>null);
+  if(res&&!res.ok){ toast('Erro ao excluir. Tente novamente.','error'); return; }
+  G.cases=G.cases.filter(c=>!G.selCases.has(c.id));
+  clearSelection(); renderList(); renderKanban(); renderDashboard(); populateFilterOptions();
+  toast('Processos excluídos','success');
+}
 
 function renderList() {
   const stageF=document.getElementById('tbl-stage-filter')?.value||'';
   const sm=stageMap();
-  const filtered=filteredCases().filter(c=>!stageF||c.stage_id===stageF);
+  let filtered=filteredCases().filter(c=>!stageF||c.stage_id===stageF);
+  if (G.dupOnly) {
+    const _n=x=>String(x||'').replace(/\D/g,'');
+    const _cnt={}; for(const c of G.cases){ const k=_n(c.client_cpf); if(k) _cnt[k]=(_cnt[k]||0)+1; }
+    filtered=filtered.filter(c=>{ const k=_n(c.client_cpf); return k && _cnt[k]>1; })
+                     .sort((a,b)=>_n(a.client_cpf).localeCompare(_n(b.client_cpf)));
+  }
   document.getElementById('tbl-count').textContent=`${filtered.length} repasse${filtered.length!==1?'s':''}`;
   document.getElementById('cases-tbody').innerHTML=filtered.map(c=>{
     const stage=sm[c.stage_id],days=daysSince(c.stage_entered_at);
@@ -4333,6 +4353,17 @@ function v(id){const el=document.getElementById(id);return el?el.value.trim():''
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDateHour(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function fmtCpf(cpf){const d=cpf.replace(/\D/g,'');return d.length===11?`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`:cpf;}
+function maskValor(el){
+  const parts=String(el.value).replace(/[^\d,]/g,'').split(',');
+  let intp=parts[0].replace(/\D/g,'').replace(/^0+(?=\d)/,'');
+  let out=intp.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  if(parts.length>1) out += ',' + parts.slice(1).join('').replace(/\D/g,'').slice(0,2);
+  el.value=out;
+}
+function blurValor(el){
+  const n=brToNum(el.value);
+  el.value = (n==null) ? '' : n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 function fmtBRL(val){return Number(val).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 function fmtDate(dt){return dt?new Date(dt).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';}
 function fmtDT(dt){return dt?new Date(dt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';}
