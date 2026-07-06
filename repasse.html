@@ -1838,6 +1838,24 @@ async function loadData() {
   ]);
   G.stages = stages;
   G.cases  = cases;
+  // Garante que TODO processo apareça no pipeline: processos com etapa inválida
+  // (stage_id nulo ou apontando para etapa inexistente) são movidos para a etapa
+  // inicial. Não-destrutivo: só afeta quem não estava em nenhuma etapa válida.
+  {
+    const _sm={}; for(const s of stages) _sm[s.id]=s;
+    const _init = stages.find(s=>s.is_initial) || stages[0];
+    if (_init) {
+      const _orphans = cases.filter(c => !_sm[c.stage_id]);
+      for (const c of _orphans) { c.stage_id=_init.id; c.stage_name=_init.name; }
+      if (_orphans.length) {
+        const _ids=_orphans.map(c=>c.id).filter(Boolean);
+        if (_ids.length) fetch(`${A1.rest('a1_cases')}?id=in.(${_ids.join(',')})`, {
+          method:'PATCH', headers:A1.headers(),
+          body: JSON.stringify({ stage_id:_init.id, stage_name:_init.name })
+        }).catch(()=>{});
+      }
+    }
+  }
   G.edges  = {};
   for (const e of edgeRows) {
     if (!G.edges[e.from_id]) G.edges[e.from_id] = [];
