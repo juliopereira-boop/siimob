@@ -1151,7 +1151,7 @@
         <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:.875rem;margin-top:.1rem">
           <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--emerald);margin-bottom:.65rem">Envolvidos</div>
           <div class="form-grid" style="margin:0">
-            <div class="form-group"><label>Correspondente *</label>
+            <div class="form-group" id="n-partner-group"><label>Correspondente *</label>
               <select id="n-partner" onchange="onNovoRepasseEmpresaChange()">
                 <option value="">Selecione...</option>
               </select>
@@ -1689,6 +1689,16 @@ async function init() {
   G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
     .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
 
+  // Cliente do tipo Correspondente: existe UMA única correspondente (limite=1). Todo
+  // processo é vinculado a ela e o seletor de correspondente é ocultado no sistema.
+  G.isCorrTenant = (G.tenant && G.tenant.tipo_cliente === 'correspondente_bancario');
+  if (G.isCorrTenant) {
+    if (!G.empresasLoaded) { try { await loadEmpresas(); } catch{} }
+    G.fixedCorr = (Array.isArray(G.empresas) && G.empresas[0] && G.empresas[0].name) || G.user.tenant_name || '';
+    const _fp = document.getElementById('f-parceiro');     if (_fp)  _fp.style.display  = 'none';
+    const _np = document.getElementById('n-partner-group'); if (_np)  _np.style.display  = 'none';
+  }
+
   // para usuario CCA: busca empresa, permissoes e lista de colegas com visibilidade compartilhada
   if (G.user.role === 'partner' && G.user.type === 'cca') {
     const pr = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id,permissions`, {headers:A1.headers()})
@@ -1726,6 +1736,14 @@ async function init() {
   }).catch(()=>{});
 
   await loadData();
+  if (G.isCorrTenant && G.fixedCorr) {
+    const _un = G.cases.filter(c => !c.partner_name);
+    for (const c of _un) c.partner_name = G.fixedCorr;
+    if (_un.length) {
+      const _ids=_un.map(c=>c.id).filter(Boolean);
+      if (_ids.length) fetch(`${A1.rest('a1_cases')}?id=in.(${_ids.join(',')})`, {method:'PATCH',headers:A1.headers(),body:JSON.stringify({partner_name:G.fixedCorr})}).catch(()=>{});
+    }
+  }
   applyPartnerRestrictions();
   renderPipeline();
   renderList();
@@ -2429,7 +2447,7 @@ function renderModalDet() {
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
     <div class="form-grid">
-      <div class="form-group"><label>Correspondente</label><select id="e-partner">${selOpts(_empresaNames(), c.partner_name)}</select></div>
+      ${G.isCorrTenant ? `<div class="form-group"><label>Correspondente</label><input value="${esc(G.fixedCorr||c.partner_name||'')}" disabled></div>` : `<div class="form-group"><label>Correspondente</label><select id="e-partner">${selOpts(_empresaNames(), c.partner_name)}</select></div>`}
       <div class="form-group"><label>Imobiliaria</label><select id="e-re">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
       <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
       <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
@@ -2670,7 +2688,7 @@ async function saveCase() {
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
     contract_value:parseFloat(v('e-value'))||null,evaluation_expiry:v('e-eval')||null,
-    partner_name:v('e-partner'),real_estate_name:v('e-re'),broker_name:v('e-broker'),
+    partner_name:(G.isCorrTenant?(G.fixedCorr||''):v('e-partner')),real_estate_name:v('e-re'),broker_name:v('e-broker'),
     broker_phone:v('e-broker-phone'),manager_name:v('e-manager'),observations:v('e-obs'),
     stage_id:stageId,stage_name:stage?.name||G.editingCaseData.stage_name,payload,
   };
@@ -2854,7 +2872,7 @@ async function createCase() {
   const dev     = G.empreendimentos.find(d=>d.id===devSel.value);
   const block   = document.getElementById('n-block').value;
   const unit    = document.getElementById('n-unit').value;
-  const partner = document.getElementById('n-partner').value;
+  const partner = G.isCorrTenant ? (G.fixedCorr||'') : document.getElementById('n-partner').value;
   const re      = document.getElementById('n-re').value;
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
