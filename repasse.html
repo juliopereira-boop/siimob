@@ -1655,7 +1655,7 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
-  try { a1RequireModule('repasse'); } catch { return; }
+  try { await a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
 
   const roleLabel = G.user.role === 'partner'
