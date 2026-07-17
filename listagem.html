@@ -1859,7 +1859,7 @@ function applyPartnerRestrictions() {
 async function loadData() {
   const [stages, cases, edgeRows, cfgRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,attachment_pdf,attachment_name,attachment_doc2,attachment_doc2_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
@@ -2673,8 +2673,14 @@ async function renderModalDocs(){
   const body=document.getElementById('mc-body');
   body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
   await fetchDocTypes();
+  // documentos ficam em coluna própria (fora do payload) — carrega sob demanda só nesta aba
+  if (c.documents === undefined && G.editingCaseId) {
+    const _d = await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}&select=documents`, {headers:A1.headers()})
+      .then(r=>r.json()).then(a=>(a&&a[0])?a[0].documents:null).catch(()=>null);
+    c.documents = Array.isArray(_d) ? _d : (Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[]);
+  }
   const types=(G.docTypes||[]).filter(t=>t.active!==false && (t.module==='repasse'||!t.module));
-  const docs=Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[];
+  const docs=Array.isArray(c.documents)?c.documents:[];
   const opts=types.length?types.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join(''):'<option value="">Nenhum tipo cadastrado</option>';
   const legacy=c.attachment_pdf?`<div class="doc-row"><div style="flex:1"><div class="doc-name">${esc(c.attachment_name||'Documento.pdf')}</div><div class="doc-type-lbl">Anexo antigo</div></div><a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a></div>`:'';
   body.innerHTML=`
@@ -4300,13 +4306,11 @@ async function attachDoc(file){
   const reader=new FileReader();
   reader.onload=async(e)=>{
     const doc={id:'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,name:file.name,data:e.target.result,uploaded_at:new Date().toISOString(),by:(G.user&&G.user.name)||''};
-    const docs=Array.isArray(G.editingCaseData.payload&&G.editingCaseData.payload.documents)?[...G.editingCaseData.payload.documents]:[];
+    const docs=Array.isArray(G.editingCaseData.documents)?[...G.editingCaseData.documents]:[];
     docs.push(doc);
-    const payload={...(G.editingCaseData.payload||{}),documents:docs};
-    const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+    const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
     if(res.ok){
-      G.editingCaseData.payload=payload;
-      const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
+      G.editingCaseData.documents=docs;
       fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'document',description:`Documento anexado: ${type||'sem tipo'} — ${file.name}`,actor_name:G.user.name})}).catch(()=>{});
       renderModalDocs();toast('Documento anexado','success');
     } else toast('Erro ao anexar documento','error');
@@ -4317,12 +4321,10 @@ async function attachDoc(file){
 async function removeDoc(docId){
   if(!G.editingCaseId) return;
   if(!confirm('Remover este documento?')) return;
-  const docs=((G.editingCaseData.payload&&G.editingCaseData.payload.documents)||[]).filter(d=>d.id!==docId);
-  const payload={...(G.editingCaseData.payload||{}),documents:docs};
-  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  const docs=(Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[]).filter(d=>d.id!==docId);
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
   if(res.ok){
-    G.editingCaseData.payload=payload;
-    const idx=G.cases.findIndex(c=>c.id===G.editingCaseId); if(idx>-1) G.cases[idx].payload=payload;
+    G.editingCaseData.documents=docs;
     renderModalDocs();toast('Documento removido','info');
   } else toast('Erro ao remover','error');
 }
