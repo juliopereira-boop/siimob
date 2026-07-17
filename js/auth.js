@@ -10,6 +10,7 @@ async function hashPassword(plain) {
 
 // Login: returns session object or throws
 async function a1Login(slug, cpf, password) {
+  a1ClearModuleCache();
   const res = await fetch(A1.rpc('a1_login'), {
     method: 'POST',
     headers: {
@@ -73,6 +74,7 @@ async function a1Login(slug, cpf, password) {
 
 // Partner login (external brokers/dispatchers)
 async function a1PartnerLogin(slug, cpf, password) {
+  a1ClearModuleCache();
   const res = await fetch(A1.rpc('a1_partner_login'), {
     method: 'POST',
     headers: {
@@ -99,16 +101,17 @@ async function a1PartnerLogin(slug, cpf, password) {
   localStorage.setItem('a1_slug',  slug);
 
   // ── Limite de ACESSOS SIMULTÂNEOS (max_users do tenant) ──
-  const _trow = await fetch(`${A1.rest('a1_tenants')}?id=eq.${data.tenant_id}&select=max_users`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]);
-  const _max  = (Array.isArray(_trow) && _trow[0] && parseInt(_trow[0].max_users)) || 0;
-  if (_max > 0) {
-    const _key = `${data.tenant_id}::${data.partner_id}`;
-    const _active = await a1ActiveCount(data.tenant_id, _key);
-    if (_active >= _max) {
-      await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
-      localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
-      throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
-    }
+  // tenant (max_users) e contagem de presença em paralelo — economiza 1 round-trip no login
+  const _key = `${data.tenant_id}::${data.partner_id}`;
+  const [_trow, _active] = await Promise.all([
+    fetch(`${A1.rest('a1_tenants')}?id=eq.${data.tenant_id}&select=max_users`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    a1ActiveCount(data.tenant_id, _key)
+  ]);
+  const _max = (Array.isArray(_trow) && _trow[0] && parseInt(_trow[0].max_users)) || 0;
+  if (_max > 0 && _active >= _max) {
+    await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
+    localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
+    throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
   }
 
   localStorage.setItem('a1_user',  JSON.stringify({
@@ -141,6 +144,7 @@ async function a1Logout() {
       body: JSON.stringify({})
     });
   } finally {
+    a1ClearModuleCache();
     localStorage.removeItem('a1_token');
     localStorage.removeItem('a1_slug');
     localStorage.removeItem('a1_user');
@@ -169,24 +173,47 @@ function a1RequireAuth(allowedRoles = null) {
   return user;
 }
 
-// Verifica se o tenant possui um módulo (RPC a1_has_module)
-async function a1HasModule(moduleKey) {
+// Cache de módulos por sessão — evita 1 round-trip a cada página/navegação.
+// É limpo no login/logout para refletir mudanças de plano/liberação.
+const _a1ModMemo = {};
+function a1ClearModuleCache() {
+  for (const k in _a1ModMemo) delete _a1ModMemo[k];
   try {
-    return await fetch(A1.rpc('a1_has_module'), {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key && key.indexOf('a1_mod_') === 0) sessionStorage.removeItem(key);
+    }
+  } catch {}
+}
+
+// Verifica se o tenant possui um módulo (RPC a1_has_module) — memoizado.
+async function a1HasModule(moduleKey) {
+  const ck = `${A1.slug || ''}:${moduleKey}`;
+  if (ck in _a1ModMemo) return _a1ModMemo[ck];
+  try {
+    const ss = sessionStorage.getItem('a1_mod_' + ck);
+    if (ss !== null) { const v = ss === '1'; _a1ModMemo[ck] = v; return v; }
+  } catch {}
+  try {
+    const raw = await fetch(A1.rpc('a1_has_module'), {
       method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
     }).then(r => r.json());
+    const v = !!raw;
+    _a1ModMemo[ck] = v;
+    try { sessionStorage.setItem('a1_mod_' + ck, v ? '1' : '0'); } catch {}
+    return v;
   } catch { return false; }
 }
 
 // Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
 // Ordem de preferência — CRM (início da jornada) antes de repasse/registro.
+// As sondagens rodam em paralelo (memoizadas) para não empilhar round-trips.
 async function a1ModuleHome() {
   const slug = A1.slug || '';
   const order = ['crm', 'repasse', 'registro'];
-  for (const m of order) {
-    if (await a1HasModule(m)) return `/${slug}/${m}`;
-  }
-  return `/${slug}/repasse`;
+  const have = await Promise.all(order.map(m => a1HasModule(m)));
+  const idx = have.findIndex(Boolean);
+  return idx >= 0 ? `/${slug}/${order[idx]}` : `/${slug}/repasse`;
 }
 
 // Module guard — se o cliente não tem o módulo, redireciona para o módulo que ele
@@ -245,7 +272,7 @@ async function a1Heartbeat(moduleName) {
 
 function a1StartHeartbeat(moduleName) {
   a1Heartbeat(moduleName);
-  return setInterval(() => a1Heartbeat(moduleName), 30_000);
+  return setInterval(() => a1Heartbeat(moduleName), 50_000);
 }
 
 // User creation with limit check

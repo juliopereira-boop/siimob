@@ -1671,6 +1671,9 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
+  // inicia o fetch do tenant em paralelo ao check de módulo (economiza 1 round-trip)
+  const _tenantP = fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
+    .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
   try { await a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
 
@@ -1701,9 +1704,8 @@ async function init() {
   document.getElementById('link-registro-andamento').href = `/${G.slug}/registro`;
   document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro-listagem`;
 
-  // carrega info do tenant (tipo_cliente, max_users) para aplicar restrições de plano
-  G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
-    .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
+  // tenant já iniciado em paralelo lá em cima
+  G.tenant = await _tenantP;
 
   // Cliente do tipo Correspondente: existe UMA única correspondente (limite=1). Todo
   // processo é vinculado a ela e o seletor de correspondente é ocultado no sistema.
@@ -1761,7 +1763,6 @@ async function init() {
     }
   }
   applyPartnerRestrictions();
-  ensureVincLists();
   renderPipeline();
   renderList();
   loadFlags();
@@ -1856,10 +1857,11 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows] = await Promise.all([
+  const [stages, cases, edgeRows, cfgRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
   G.cases  = cases;
@@ -1886,16 +1888,14 @@ async function loadData() {
     if (!G.edges[e.from_id]) G.edges[e.from_id] = [];
     G.edges[e.from_id].push(e.to_id);
   }
-  // Regionais são um cadastro (a1_config key='regionais'); cada processo guarda a sua em payload.regional.
-  // Retrocompatível: processo sem payload.regional cai no group_key da etapa (comportamento antigo).
-  G.regionais = await fetch(`${A1.rest('a1_config')}?key=eq.regionais&select=value`, { headers: A1.headers() })
-    .then(r=>r.json()).then(a=>{ try{ const v=JSON.parse(a&&a[0]&&a[0].value||'[]'); return Array.isArray(v)?v:[]; }catch{ return []; } }).catch(()=>[]);
+  // Regionais + comissão vêm juntas de a1_config (uma única request no Promise.all acima).
+  const _cfg = {}; if (Array.isArray(cfgRows)) for (const r of cfgRows) _cfg[r.key] = r.value;
+  try { const v = JSON.parse(_cfg.regionais || '[]'); G.regionais = Array.isArray(v) ? v : []; } catch { G.regionais = []; }
   { const _sm={}; for(const s of stages) _sm[s.id]=s;
     const _extra=new Set();
     for(const c of cases){ const r=(c.payload&&c.payload.regional)||_sm[c.stage_id]?.group_key; if(r&&!G.regionais.includes(r)) _extra.add(r); }
     G.groups=[...G.regionais, ..._extra]; }
-  G.commission = await fetch(`${A1.rest('a1_config')}?key=eq.commission&select=value`, { headers: A1.headers() })
-    .then(r=>r.json()).then(a=>{ try { return JSON.parse(a&&a[0]&&a[0].value||'null'); } catch { return null; } }).catch(()=>null);
+  try { G.commission = JSON.parse(_cfg.commission || 'null'); } catch { G.commission = null; }
   populateFilterOptions();
 }
 
@@ -3109,8 +3109,8 @@ function toggleAgdDay(dayEl) {
 
 // ─── List view ────────────────────────────────────────────────────────────────
 // ── Seleção e vinculação em lote (listagem) ──────────────────────────────────
-function toggleRowSel(id,el){ if(!G.selCases)G.selCases=new Set(); if(el.checked)G.selCases.add(id); else G.selCases.delete(id); updateBulkBar(); }
-function toggleSelectAll(el){ if(!G.selCases)G.selCases=new Set(); document.querySelectorAll('#cases-tbody .row-chk').forEach(cb=>{cb.checked=el.checked; if(el.checked)G.selCases.add(cb.value); else G.selCases.delete(cb.value);}); updateBulkBar(); }
+function toggleRowSel(id,el){ ensureVincLists(); if(!G.selCases)G.selCases=new Set(); if(el.checked)G.selCases.add(id); else G.selCases.delete(id); updateBulkBar(); }
+function toggleSelectAll(el){ ensureVincLists(); if(!G.selCases)G.selCases=new Set(); document.querySelectorAll('#cases-tbody .row-chk').forEach(cb=>{cb.checked=el.checked; if(el.checked)G.selCases.add(cb.value); else G.selCases.delete(cb.value);}); updateBulkBar(); }
 function clearSelection(){ G.selCases=new Set(); document.querySelectorAll('#cases-tbody .row-chk').forEach(cb=>cb.checked=false); const ca=document.getElementById('chk-all'); if(ca)ca.checked=false; updateBulkBar(); }
 function updateBulkBar(){ const n=G.selCases?G.selCases.size:0; const bar=document.getElementById('bulk-bar'); if(bar)bar.style.display=n?'flex':'none'; const bc=document.getElementById('bulk-count'); if(bc)bc.textContent=`${n} selecionado${n!==1?'s':''}`; }
 function populateBulkSelects(){

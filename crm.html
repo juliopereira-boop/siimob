@@ -252,12 +252,17 @@ async function init(){
 }
 
 async function loadData(){
-  let stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.crm&order=position.asc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
+  // stages, leads e cadastros (origens/corretores) são independentes — busca tudo em paralelo
+  const [stagesRaw, leads] = await Promise.all([
+    fetch(`${A1.rest('a1_stages')}?module_key=eq.crm&order=position.asc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    loadCad('origens'),
+    loadCad('corretores')
+  ]);
+  let stages = stagesRaw;
   if (!Array.isArray(stages) || !stages.length) stages = await seedPipelines();
   G.stages = stages || [];
-  G.leads = await fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]);
-  if (!Array.isArray(G.leads)) G.leads = [];
-  await Promise.all([loadCad('origens'), loadCad('corretores')]);
+  G.leads = Array.isArray(leads) ? leads : [];
   if(!G.pipe) G.pipe = pipeKeys()[0] || 'vendas';
   populateFilters(); populatePipeSelector(); renderFunil(); refreshTaskBadge();
 }
