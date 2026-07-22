@@ -2668,14 +2668,19 @@ async function renderModalDocs(){
   const body=document.getElementById('mc-body');
   body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
   await fetchDocTypes();
-  // documentos ficam em coluna própria (fora do payload) — carrega sob demanda só nesta aba
+  // documentos NOVOS ficam em coluna própria (fora do payload) — carrega sob demanda só nesta aba.
+  // IMPORTANTE: nunca fazer fallback/merge do payload.documents (base64 antigo) para dentro de
+  // c.documents — isso faria attachDoc/removeDoc regravar o arquivo antigo inteiro no banco a
+  // cada anexo novo, recriando o mesmo problema de peso que esta migração resolve.
   if (c.documents === undefined && G.editingCaseId) {
     const _d = await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}&select=documents`, {headers:A1.headers()})
       .then(r=>r.json()).then(a=>(a&&a[0])?a[0].documents:null).catch(()=>null);
-    c.documents = Array.isArray(_d) ? _d : (Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[]);
+    c.documents = Array.isArray(_d) ? _d : [];
   }
   const types=(G.docTypes||[]).filter(t=>t.active!==false && (t.module==='repasse'||!t.module));
   const docs=Array.isArray(c.documents)?c.documents:[];
+  // Documentos ANTIGOS (base64 dentro do payload) só para exibir/abrir — nunca regravados junto.
+  const legacyDocs=Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[];
   const opts=types.length?types.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join(''):'<option value="">Nenhum tipo cadastrado</option>';
   const legacy=c.attachment_pdf?`<div class="doc-row"><div style="flex:1"><div class="doc-name">${esc(c.attachment_name||'Documento.pdf')}</div><div class="doc-type-lbl">Anexo antigo</div></div><a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a></div>`:'';
   body.innerHTML=`
@@ -2687,7 +2692,7 @@ async function renderModalDocs(){
     </div>
     ${types.length?'':'<div style="font-size:.72rem;color:#b45309;margin-bottom:.75rem">Cadastre os tipos em Configurações → Tipos de documento.</div>'}
     <div class="form-section-title" style="margin-top:1rem">Documentos anexados</div>
-    <div id="doc-list">${(docs.length||legacy)?docs.map(docRow).join('')+legacy:'<div style="color:var(--t3);font-size:.77rem">Nenhum documento anexado.</div>'}</div>`;
+    <div id="doc-list">${(docs.length||legacyDocs.length||legacy)?docs.map(docRow).join('')+legacyDocs.map(docRow).join('')+legacy:'<div style="color:var(--t3);font-size:.77rem">Nenhum documento anexado.</div>'}</div>`;
 }
 
 async function saveCase() {
@@ -4279,12 +4284,25 @@ async function removeDoc(docId){
   if(!G.editingCaseId) return;
   if(!confirm('Remover este documento?')) return;
   const list=Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[];
-  const target=list.find(d=>d.id===docId);
-  const docs=list.filter(d=>d.id!==docId);
-  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
+  if (list.some(d=>d.id===docId)) {
+    // documento novo (Storage) — vive na coluna documents
+    const target=list.find(d=>d.id===docId);
+    const docs=list.filter(d=>d.id!==docId);
+    const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
+    if(res.ok){
+      G.editingCaseData.documents=docs;
+      if(target&&target.path) A1.storageRemove('case-documents',target.path).catch(()=>{});
+      renderModalDocs();toast('Documento removido','info');
+    } else toast('Erro ao remover','error');
+    return;
+  }
+  // documento antigo (base64, ainda dentro do payload) — remoção pontual, não mexe na coluna documents
+  const legacyList=Array.isArray(G.editingCaseData.payload&&G.editingCaseData.payload.documents)?G.editingCaseData.payload.documents:[];
+  const legacyDocs=legacyList.filter(d=>d.id!==docId);
+  const payload={...(G.editingCaseData.payload||{}),documents:legacyDocs};
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
   if(res.ok){
-    G.editingCaseData.documents=docs;
-    if(target&&target.path) A1.storageRemove('case-documents',target.path).catch(()=>{});
+    G.editingCaseData.payload=payload;
     renderModalDocs();toast('Documento removido','info');
   } else toast('Erro ao remover','error');
 }
