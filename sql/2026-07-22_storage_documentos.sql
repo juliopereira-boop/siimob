@@ -28,6 +28,11 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- storage.objects pertence à role interna "supabase_storage_admin", não à
+-- role usada pelo SQL Editor — por isso ALTER/CREATE POLICY nela exigem
+-- assumir essa role temporariamente (padrão documentado do Supabase).
+set role supabase_storage_admin;
+
 alter table storage.objects enable row level security;
 
 -- Garante que o app (chave anon) possa operar no storage; o isolamento real
@@ -55,7 +60,17 @@ for delete using (
   and (storage.foldername(name))[1] = a1_tenant()::text
 );
 
+reset role;
+
 -- =============================================================================
+-- NOTA — erro "must be owner of table objects"
+-- -----------------------------------------------------------------------------
+-- Se aparecer esse erro, é porque a versão do SQL rodada não tinha o
+-- "set role supabase_storage_admin" acima. Cole o arquivo INTEIRO novamente
+-- (com o set role/reset role) — é o jeito documentado pelo Supabase de
+-- gerenciar políticas em storage.objects (tabela pertence a essa role
+-- interna, não à role padrão do SQL Editor).
+--
 -- NOTA IMPORTANTE — verificação após rodar este SQL
 -- -----------------------------------------------------------------------------
 -- Este SQL cria o bucket e o isolamento por tenant. Peço para testar 1x, assim
