@@ -2655,11 +2655,21 @@ async function deleteDocType(id){
 }
 
 function docRow(d){
+  // d.path = novo (Storage, signed URL sob demanda); d.data = legado (base64 antigo, ainda funciona)
+  const openBtn = d.path
+    ? `<button class="btn btn-ghost btn-sm" onclick="openDoc('${d.path}')">Abrir</button>`
+    : `<a href="${d.data}" download="${esc(d.name||'documento')}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>`;
   return `<div class="doc-row">
     <div style="flex:1"><div class="doc-name">${esc(d.name||'Documento')}</div><div class="doc-type-lbl">${esc(d.type||'Sem tipo')}${d.uploaded_at?' · '+fmtDT(d.uploaded_at):''}</div></div>
-    <a href="${d.data}" download="${esc(d.name||'documento')}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
+    ${openBtn}
     <button class="btn btn-danger btn-sm" onclick="removeDoc('${d.id}')">Remover</button>
   </div>`;
+}
+
+async function openDoc(path){
+  const url = await A1.storageSignedUrl('case-documents', path, 60);
+  if (!url) { toast('Erro ao abrir documento. Tente novamente.','error'); return; }
+  window.open(url, '_blank');
 }
 
 async function renderModalDocs(){
@@ -4254,28 +4264,36 @@ async function importCvcrmCase(){
 async function attachDoc(file){
   if(!file||!G.editingCaseId) return;
   const type=document.getElementById('doc-type-sel')?.value||'';
-  const reader=new FileReader();
-  reader.onload=async(e)=>{
-    const doc={id:'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,name:file.name,data:e.target.result,uploaded_at:new Date().toISOString(),by:(G.user&&G.user.name)||''};
-    const docs=Array.isArray(G.editingCaseData.documents)?[...G.editingCaseData.documents]:[];
-    docs.push(doc);
-    const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
-    if(res.ok){
-      G.editingCaseData.documents=docs;
-      fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'document',description:`Documento anexado: ${type||'sem tipo'} — ${file.name}`,actor_name:G.user.name})}).catch(()=>{});
-      renderModalDocs();toast('Documento anexado','success');
-    } else toast('Erro ao anexar documento','error');
-  };
-  reader.readAsDataURL(file);
+  const docId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const safeName=(file.name||'documento').replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path=`${G.user.tenant_id}/${G.editingCaseId}/${docId}_${safeName}`;
+  toast('Enviando arquivo...','info');
+  const ok=await A1.storageUpload('case-documents',path,file);
+  if(!ok){ toast('Erro ao enviar arquivo','error'); return; }
+  const doc={id:docId,type,name:file.name,path,uploaded_at:new Date().toISOString(),by:(G.user&&G.user.name)||''};
+  const docs=Array.isArray(G.editingCaseData.documents)?[...G.editingCaseData.documents]:[];
+  docs.push(doc);
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
+  if(res.ok){
+    G.editingCaseData.documents=docs;
+    fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'document',description:`Documento anexado: ${type||'sem tipo'} — ${file.name}`,actor_name:G.user.name})}).catch(()=>{});
+    renderModalDocs();toast('Documento anexado','success');
+  } else {
+    A1.storageRemove('case-documents',path).catch(()=>{});
+    toast('Erro ao anexar documento','error');
+  }
 }
 
 async function removeDoc(docId){
   if(!G.editingCaseId) return;
   if(!confirm('Remover este documento?')) return;
-  const docs=(Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[]).filter(d=>d.id!==docId);
+  const list=Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[];
+  const target=list.find(d=>d.id===docId);
+  const docs=list.filter(d=>d.id!==docId);
   const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
   if(res.ok){
     G.editingCaseData.documents=docs;
+    if(target&&target.path) A1.storageRemove('case-documents',target.path).catch(()=>{});
     renderModalDocs();toast('Documento removido','info');
   } else toast('Erro ao remover','error');
 }

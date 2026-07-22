@@ -47,5 +47,57 @@ const A1 = {
 
   rpc(fn) {
     return `${A1_URL}/rest/v1/rpc/${fn}`;
+  },
+
+  // ─── Storage (arquivos) — separado das tabelas do banco ─────────────────────
+  // Uploads (documentos anexados, etc.) vão para o Storage do Supabase, não
+  // para colunas de tabela. Cada objeto vive em '{bucket}/{tenant_id}/...';
+  // as políticas do bucket isolam por tenant usando o mesmo token de sessão.
+  async storageUpload(bucket, path, file) {
+    const res = await fetch(`${A1_URL}/storage/v1/object/${bucket}/${path}`, {
+      method: 'POST',
+      headers: {
+        'apikey': A1_KEY,
+        'Authorization': `Bearer ${A1_KEY}`,
+        'x-session-token': this.token,
+        'x-upsert': 'true',
+        'Content-Type': (file && file.type) || 'application/octet-stream'
+      },
+      body: file
+    });
+    return res.ok;
+  },
+
+  async storageSignedUrl(bucket, path, expiresIn = 60) {
+    try {
+      const res = await fetch(`${A1_URL}/storage/v1/object/sign/${bucket}/${path}`, {
+        method: 'POST',
+        headers: {
+          'apikey': A1_KEY,
+          'Authorization': `Bearer ${A1_KEY}`,
+          'x-session-token': this.token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ expiresIn })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data && data.signedURL ? `${A1_URL}/storage/v1${data.signedURL}` : null;
+    } catch { return null; }
+  },
+
+  async storageRemove(bucket, path) {
+    try {
+      await fetch(`${A1_URL}/storage/v1/object/${bucket}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': A1_KEY,
+          'Authorization': `Bearer ${A1_KEY}`,
+          'x-session-token': this.token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prefixes: [path] })
+      });
+    } catch {}
   }
 };
