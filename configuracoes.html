@@ -831,6 +831,15 @@
           <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
+          <label id="pt-gerente-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor=document.getElementById('pt-gerente').checked?'#0d9488':'var(--border)'">
+            <div>
+              <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Gerente (acesso total)</div>
+              <div style="font-size:.72rem;color:var(--t3)">Vê e gerencia TODOS os processos, como o gestor — ignora restrições de empresa/analista e pode editar tudo</div>
+            </div>
+            <input type="checkbox" class="pt-perm" data-key="gerente" id="pt-gerente" style="width:18px;height:18px;cursor:pointer;accent-color:#0d9488;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-gerente-label').style.borderColor=this.checked?'#0d9488':'var(--border)';document.getElementById('pt-gerente-label').style.background=this.checked?'#ccfbf1':'#f8fafc'">
+          </label>
+        </div>
+        <div class="form-group full" style="margin-top:.25rem">
           <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#3D5CC8'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#3D5CC8':'var(--border)'">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Habilitar visualização geral</div>
@@ -1287,6 +1296,7 @@ let _agendaYear = new Date().getFullYear(), _agendaMonth = new Date().getMonth()
 function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
+  if (p.gerente) return true; // Gerente = acesso total, como o gestor
   const defaults = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
   return key in p ? !!p[key] : (defaults[key] ?? false);
 }
@@ -1657,7 +1667,7 @@ function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban();
 
 function filteredCases() {
   const { search, empr, parceiro, re, analista, entrevista } = G.filters;
-  const sm=stageMap(), isPartner=G.user.role==='partner';
+  const sm=stageMap(), isPartner=G.user.role==='partner' && !(G.user.permissions&&G.user.permissions.gerente);
   return G.cases.filter(c=>{
     if (isPartner) {
       // filtra pelos processos da empresa da CCA
@@ -2620,6 +2630,12 @@ function openPartnerModal(id) {
     vizLabel.style.borderColor = vizGeral.checked ? '#3D5CC8' : 'var(--border)';
     vizLabel.style.background  = vizGeral.checked ? '#EEF2FF' : '#f8fafc';
   }
+  const gerChk = document.getElementById('pt-gerente');
+  const gerLabel = document.getElementById('pt-gerente-label');
+  if (gerChk && gerLabel) {
+    gerLabel.style.borderColor = gerChk.checked ? '#0d9488' : 'var(--border)';
+    gerLabel.style.background  = gerChk.checked ? '#ccfbf1' : '#f8fafc';
+  }
   // atualiza visual e checklist de analistas
   const verAnalistas = document.getElementById('pt-ver-analistas');
   const analLabel    = document.getElementById('pt-analistas-label');
@@ -3535,6 +3551,7 @@ async function importCvcrmCase(){
 
 async function attachDoc(file){
   if(!file||!G.editingCaseId) return;
+  if(!hasPerm('editar_repasses')){ toast('Sem permissão para anexar documentos. Peça ao gestor a permissão "Editar operações" ou "Gerente".','error'); return; }
   const type=document.getElementById('doc-type-sel')?.value||'';
   const docId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   const safeName=(file.name||'documento').replace(/[^a-zA-Z0-9._-]/g,'_');
@@ -3558,6 +3575,7 @@ async function attachDoc(file){
 
 async function removeDoc(docId){
   if(!G.editingCaseId) return;
+  if(!hasPerm('editar_repasses')){ toast('Sem permissão para remover documentos.','error'); return; }
   if(!confirm('Remover este documento?')) return;
   const list=Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[];
   if (list.some(d=>d.id===docId)) {
