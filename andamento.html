@@ -4397,11 +4397,13 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e
   if(!board) return;
   let panning=false, sx=0, sy=0, sl=0, sty=0;
   board.addEventListener('mousedown', e=>{
-    if(e.button!==0) return;
-    if(e.target.closest('.k-card')) return; // deixa o drag nativo do cartão funcionar
+    const isRight = e.button===2;                 // botão direito: arrasta SEMPRE (até sobre o cartão)
+    if(!isRight && e.button!==0) return;
+    if(!isRight && e.target.closest('.k-card')) return; // esquerdo sobre cartão = arrasta o cartão
     panning=true; sx=e.pageX; sy=e.pageY; sl=board.scrollLeft; sty=window.scrollY;
     board.classList.add('panning'); e.preventDefault();
   });
+  board.addEventListener('contextmenu', e=>e.preventDefault()); // evita o menu do botão direito ao arrastar
   window.addEventListener('mousemove', e=>{
     if(!panning) return;
     board.scrollLeft = sl-(e.pageX-sx);
