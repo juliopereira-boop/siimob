@@ -253,26 +253,40 @@ async function a1ActiveCount(tenantId, excludeKey) {
   return keys.size;
 }
 
-// Presence heartbeat
+// Presence heartbeat. Retorna true/false (sucesso) — usado por a1StartHeartbeat
+// para parar de tentar quando a sessão está claramente inválida/expirada.
 async function a1Heartbeat(moduleName) {
   const user = A1.user;
-  if (!user || !A1.token) return;
-  await fetch(A1.rest('a1_presence'), {
-    method: 'POST',
-    headers: A1.upsertHeaders(),
-    body: JSON.stringify({
-      user_key:  `${user.tenant_id}::${user.id}`,
-      name:      user.name,
-      role:      user.role,
-      module:    moduleName,
-      last_seen: new Date().toISOString()
-    })
-  }).catch(() => {});
+  if (!user || !A1.token) return true; // nada a fazer, não é falha
+  try {
+    const res = await fetch(A1.rest('a1_presence'), {
+      method: 'POST',
+      headers: A1.upsertHeaders(),
+      body: JSON.stringify({
+        user_key:  `${user.tenant_id}::${user.id}`,
+        name:      user.name,
+        role:      user.role,
+        module:    moduleName,
+        last_seen: new Date().toISOString()
+      })
+    });
+    return res.ok;
+  } catch { return false; }
 }
 
+// Sessão expirada (7 dias) = toda tentativa de heartbeat falha por RLS. Sem este
+// limite, o setInterval martelava o banco a cada 50s PARA SEMPRE em qualquer aba
+// esquecida aberta com sessão vencida — carga contínua e crescente, sem retorno
+// nenhum. Após 3 falhas seguidas (~2.5min), para de tentar.
 function a1StartHeartbeat(moduleName) {
+  let fails = 0;
+  const id = setInterval(async () => {
+    const ok = await a1Heartbeat(moduleName);
+    if (ok) { fails = 0; return; }
+    if (++fails >= 3) clearInterval(id);
+  }, 50_000);
   a1Heartbeat(moduleName);
-  return setInterval(() => a1Heartbeat(moduleName), 50_000);
+  return id;
 }
 
 // User creation with limit check
