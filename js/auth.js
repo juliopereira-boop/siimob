@@ -176,38 +176,44 @@ function a1RequireAuth(allowedRoles = null) {
 // Cache de módulos por sessão — evita 1 round-trip a cada página/navegação.
 // É limpo no login/logout para refletir mudanças de plano/liberação.
 const _a1ModMemo = {};
+// Prefixo v2: invalida de uma vez as entradas "não liberado" que ficaram
+// gravadas por engano nos navegadores (ver a1HasModule). Sem isso, quem já
+// tinha o cache envenenado continuaria trancado até limpar o navegador.
+const _A1_MOD_PREFIX = 'a1_mod2_';
 function a1ClearModuleCache() {
   for (const k in _a1ModMemo) delete _a1ModMemo[k];
   try {
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const key = sessionStorage.key(i);
-      if (key && key.indexOf('a1_mod_') === 0) sessionStorage.removeItem(key);
+      if (key && (key.indexOf(_A1_MOD_PREFIX) === 0 || key.indexOf('a1_mod_') === 0)) {
+        sessionStorage.removeItem(key);
+      }
     }
   } catch {}
 }
 
-// Verifica se o tenant possui um módulo (RPC a1_has_module) — memoizado.
-// IMPORTANTE: só grava no cache (memória/sessionStorage) uma resposta que o
-// servidor de fato confirmou. Uma falha de rede/instabilidade passageira NUNCA
-// deve ser gravada como "módulo não liberado" — isso trancava o usuário fora
-// do módulo até deslogar/logar de novo, mesmo com o acesso liberado no banco.
+// Verifica se o tenant possui um módulo (RPC a1_has_module).
+// Retorna true | false | null — null = o servidor NÃO respondeu (rede/instabilidade).
+// Distinguir "o servidor disse que não" de "não consegui perguntar" é essencial:
+// tratar os dois como false trancava o cliente fora do sistema por uma falha
+// passageira. Só resultado POSITIVO é persistido; negativo fica só em memória
+// (revalidado no próximo carregamento, que é barato).
 async function a1HasModule(moduleKey) {
   const ck = `${A1.slug || ''}:${moduleKey}`;
   if (ck in _a1ModMemo) return _a1ModMemo[ck];
   try {
-    const ss = sessionStorage.getItem('a1_mod_' + ck);
-    if (ss !== null) { const v = ss === '1'; _a1ModMemo[ck] = v; return v; }
+    if (sessionStorage.getItem(_A1_MOD_PREFIX + ck) === '1') { _a1ModMemo[ck] = true; return true; }
   } catch {}
   try {
     const res = await fetch(A1.rpc('a1_has_module'), {
       method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
     });
-    if (!res.ok) return false; // falha do servidor — não cacheia, revalida na próxima chamada
+    if (!res.ok) return null; // servidor indisponível — indeterminado, não cacheia
     const v = (await res.json()) === true;
     _a1ModMemo[ck] = v;
-    try { sessionStorage.setItem('a1_mod_' + ck, v ? '1' : '0'); } catch {}
+    if (v) { try { sessionStorage.setItem(_A1_MOD_PREFIX + ck, '1'); } catch {} }
     return v;
-  } catch { return false; } // erro de rede — idem, não cacheia
+  } catch { return null; } // erro de rede — indeterminado, não cacheia
 }
 
 // Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
@@ -217,7 +223,7 @@ async function a1ModuleHome() {
   const slug = A1.slug || '';
   const order = ['crm', 'repasse', 'registro'];
   const have = await Promise.all(order.map(m => a1HasModule(m)));
-  const idx = have.findIndex(Boolean);
+  const idx = have.findIndex(v => v === true);
   return idx >= 0 ? `/${slug}/${order[idx]}` : `/${slug}/repasse`;
 }
 
@@ -226,7 +232,11 @@ async function a1ModuleHome() {
 // bloqueada quando o cliente não tem nenhum módulo.
 async function a1RequireModule(moduleKey) {
   if (sessionStorage.getItem('a1_sa_mode')) return; // SA impersonation bypasses module check
-  if (await a1HasModule(moduleKey)) return;
+  const has = await a1HasModule(moduleKey);
+  if (has === true) return;
+  // Indeterminado (servidor fora do ar): libera a passagem em vez de trancar o
+  // cliente fora. O acesso real aos dados continua protegido por RLS no banco.
+  if (has === null) return;
 
   const home = await a1ModuleHome();
   const here = window.location.pathname.replace(/\/$/, '');
