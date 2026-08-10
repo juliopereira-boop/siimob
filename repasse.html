@@ -1673,6 +1673,10 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
+  // Permissões vêm do banco a cada carregamento (o localStorage guarda só o
+  // retrato do login). Sem isso, mudança de permissão feita pelo gestor só
+  // valia depois do usuário deslogar e logar de novo.
+  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   // inicia o fetch do tenant em paralelo ao check de módulo (economiza 1 round-trip)
   const _tenantP = fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
     .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
