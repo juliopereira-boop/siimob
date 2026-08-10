@@ -1229,6 +1229,19 @@ async function accessTenant(tenantId, slug, tenantName) {
       trial_ends_at: null,
     }));
 
+    // Marca a aba como sessão de suporte. auth.js já tinha o bypass do guard de
+    // módulo ("a1_sa_mode"), mas NADA no sistema definia essa chave — o bypass
+    // nascera morto, e o superadmin era barrado como um usuário comum. A aba
+    // aberta por window.open herda uma cópia deste sessionStorage.
+    try {
+      sessionStorage.setItem('a1_sa_mode', '1');
+      // limpa cache de módulo herdado (evita levar estado velho para a nova aba)
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k && (k.indexOf('a1_mod2_') === 0 || k.indexOf('a1_mod_') === 0)) sessionStorage.removeItem(k);
+      }
+    } catch {}
+
     // Abre o módulo que o cliente realmente possui (ex.: imobiliária → CRM)
     const _mods = new Set(ALL_MODULES.filter(m => m.tenant_id === tenantId).map(m => m.module_key));
     const _tipo = (TENANTS.find(t => t.id === tenantId) || {}).tipo_cliente;
