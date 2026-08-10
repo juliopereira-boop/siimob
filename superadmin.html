@@ -1184,53 +1184,49 @@ async function resetPw(userId) {
 }
 
 // ─── Superadmin Impersonation ─────────────────────────────────────────────────
+// Cria a sessão diretamente com a Service Role Key (ignora RLS por natureza) em
+// vez de fingir um login real via a1_login. Isso evita dois problemas do método
+// antigo: (1) a1_login aplica o limite de acessos simultâneos do PLANO do
+// cliente — suporte nunca deveria ficar bloqueado pela própria licença do
+// cliente; (2) a troca temporária de senha do usuário, que se algo falhasse no
+// meio do caminho arriscava deixar a senha do cliente trocada.
 async function accessTenant(tenantId, slug, tenantName) {
   toast(`Conectando a "${tenantName}"...`, 'info');
-
-  // Fetch active owner/admin user (needs CPF to login)
-  const users = await fetch(
-    `${saRest('a1_users')}?tenant_id=eq.${tenantId}&is_active=eq.true&order=created_at.asc&limit=10`,
-    { headers: saHeaders() }
-  ).then(r => r.json()).catch(() => []);
-
-  const owner = users.find(u => u.role === 'owner') ||
-                users.find(u => u.role === 'admin')  ||
-                users[0];
-  if (!owner || !owner.cpf) { toast('Nenhum usuário ativo com CPF encontrado.', 'error'); return; }
-
-  const originalHash = owner.password_hash;
-  const tempPw   = 'SAlogin_' + Date.now();
-  const tempHash = await saHash(tempPw);
-
   try {
-    // Set a known temp password so we can call the real a1_login RPC
-    await fetch(`${saRest('a1_users')}?id=eq.${owner.id}`, {
-      method: 'PATCH', headers: saHeaders(),
-      body: JSON.stringify({ password_hash: tempHash })
-    });
+    const users = await fetch(
+      `${saRest('a1_users')}?tenant_id=eq.${tenantId}&is_active=eq.true&order=created_at.asc&limit=10`,
+      { headers: saHeaders() }
+    ).then(r => r.json()).catch(() => []);
 
-    // Login with the ANON key — creates a real RLS-scoped session token
-    const loginRes = await fetch(`${SA_URL}/rest/v1/rpc/a1_login`, {
+    const owner = users.find(u => u.role === 'owner') ||
+                  users.find(u => u.role === 'admin')  ||
+                  users[0];
+    if (!owner) { toast('Nenhum usuário ativo encontrado neste cliente.', 'error'); return; }
+
+    const res = await fetch(saRest('a1_sessions'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': A1_KEY, 'Authorization': `Bearer ${A1_KEY}` },
-      body: JSON.stringify({ p_tenant_slug: slug, p_cpf: owner.cpf, p_password: tempPw })
+      headers: { ...saHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ tenant_id: tenantId, user_id: owner.id, role: owner.role })
     });
-    const session = await loginRes.json();
-    if (!session.token) throw new Error(session.error || 'Login falhou');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Falha ao criar sessão (HTTP ${res.status})`);
+    }
+    const [session] = await res.json();
+    if (!session || !session.token) throw new Error('Sessão criada sem token.');
 
-    // Session is now set — restore original hash before opening tab
     localStorage.setItem('a1_token', session.token);
     localStorage.setItem('a1_slug',  slug);
     localStorage.setItem('a1_user',  JSON.stringify({
-      id:          session.user_id,
-      name:        session.name,
-      role:        session.role,
+      id:          owner.id,
+      name:        owner.name,
+      role:        owner.role,
       tenant_id:   tenantId,
       tenant_name: tenantName,
-      plan:        session.plan        || 'enterprise',
-      max_users:   session.max_users   || 9999,
-      status:      session.status      || 'active',
-      trial_ends_at: session.trial_ends_at || null,
+      plan:        'enterprise',
+      max_users:   9999,
+      status:      'active',
+      trial_ends_at: null,
     }));
 
     // Abre o módulo que o cliente realmente possui (ex.: imobiliária → CRM)
@@ -1239,14 +1235,9 @@ async function accessTenant(tenantId, slug, tenantName) {
     const _order = (_tipo === 'imobiliaria' || _tipo === 'construtora') ? ['crm','repasse','registro'] : ['repasse','registro','crm'];
     const _home = _order.find(m => _mods.has(m)) || (_mods.has('crm') ? 'crm' : 'repasse');
     window.open(`/${slug}/${_home}`, '_blank');
-    toast(`Sessão aberta como ${session.name} (${tenantName}).`, 'success');
-
-  } finally {
-    // Always restore original password hash — even if something failed above
-    await fetch(`${saRest('a1_users')}?id=eq.${owner.id}`, {
-      method: 'PATCH', headers: saHeaders(),
-      body: JSON.stringify({ password_hash: originalHash })
-    });
+    toast(`Sessão aberta como ${owner.name} (${tenantName}).`, 'success');
+  } catch (e) {
+    toast('Erro ao acessar cliente: ' + (e.message || 'desconhecido'), 'error');
   }
 }
 
