@@ -187,6 +187,10 @@ function a1ClearModuleCache() {
 }
 
 // Verifica se o tenant possui um módulo (RPC a1_has_module) — memoizado.
+// IMPORTANTE: só grava no cache (memória/sessionStorage) uma resposta que o
+// servidor de fato confirmou. Uma falha de rede/instabilidade passageira NUNCA
+// deve ser gravada como "módulo não liberado" — isso trancava o usuário fora
+// do módulo até deslogar/logar de novo, mesmo com o acesso liberado no banco.
 async function a1HasModule(moduleKey) {
   const ck = `${A1.slug || ''}:${moduleKey}`;
   if (ck in _a1ModMemo) return _a1ModMemo[ck];
@@ -195,14 +199,15 @@ async function a1HasModule(moduleKey) {
     if (ss !== null) { const v = ss === '1'; _a1ModMemo[ck] = v; return v; }
   } catch {}
   try {
-    const raw = await fetch(A1.rpc('a1_has_module'), {
+    const res = await fetch(A1.rpc('a1_has_module'), {
       method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
-    }).then(r => r.json());
-    const v = !!raw;
+    });
+    if (!res.ok) return false; // falha do servidor — não cacheia, revalida na próxima chamada
+    const v = (await res.json()) === true;
     _a1ModMemo[ck] = v;
     try { sessionStorage.setItem('a1_mod_' + ck, v ? '1' : '0'); } catch {}
     return v;
-  } catch { return false; }
+  } catch { return false; } // erro de rede — idem, não cacheia
 }
 
 // Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
