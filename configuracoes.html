@@ -1011,6 +1011,10 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
+  // Permissões vêm do banco a cada carregamento (o localStorage guarda só o
+  // retrato do login). Sem isso, mudança de permissão feita pelo gestor só
+  // valia depois do usuário deslogar e logar de novo.
+  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   G.slug = A1.slug;
 
   const roleLabel = G.user.role === 'partner'

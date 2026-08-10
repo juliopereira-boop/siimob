@@ -173,6 +173,31 @@ function a1RequireAuth(allowedRoles = null) {
   return user;
 }
 
+// Recarrega as permissões do parceiro direto do banco.
+// As permissões guardadas em localStorage são um RETRATO DO MOMENTO DO LOGIN.
+// Se o gestor alterar as permissões (ex.: marcar "Gerente") enquanto o usuário
+// está logado, ele continuava com as permissões antigas até deslogar e logar de
+// novo — na prática, o gestor liberava o acesso e o usuário seguia bloqueado.
+// Chamado no boot de cada página: agora basta atualizar a página (F5).
+// Vale para QUALQUER parceiro; a versão anterior só atualizava type==='cca'.
+async function a1RefreshPartnerPerms() {
+  const u = A1.user;
+  if (!u || u.role !== 'partner' || !u.id) return null;
+  try {
+    const res = await fetch(
+      `${A1.rest('a1_partners')}?id=eq.${u.id}&select=permissions,type`,
+      { headers: A1.headers() }
+    );
+    if (!res.ok) return null;                     // servidor fora: mantém o que já tem
+    const row = (await res.json())[0];
+    if (!row || !row.permissions) return null;
+    u.permissions = row.permissions;
+    if (row.type) u.type = row.type;
+    try { localStorage.setItem('a1_user', JSON.stringify(u)); } catch {}
+    return u.permissions;
+  } catch { return null; }                        // erro de rede: mantém o que já tem
+}
+
 // Cache de módulos por sessão — evita 1 round-trip a cada página/navegação.
 // É limpo no login/logout para refletir mudanças de plano/liberação.
 const _a1ModMemo = {};
