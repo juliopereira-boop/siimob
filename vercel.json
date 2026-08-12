@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/",                  "destination": "/index.html" },
+    { "source": "/conheca",           "destination": "/lp.html" },
+    { "source": "/siimob",            "destination": "/lp.html" },
     { "source": "/:slug/login",       "destination": "/login.html" },
     { "source": "/:slug/repasse",            "destination": "/repasse.html" },
     { "source": "/:slug/andamento",          "destination": "/andamento.html" },
