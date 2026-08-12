@@ -197,6 +197,10 @@
         Melhorias
         <span id="feedback-badge" style="display:none;margin-left:.4rem;background:#7c3aed;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
+      <div class="sa-tab" onclick="switchSaTab('interessados',this)" id="tab-interessados">
+        Interessados
+        <span id="leads-badge" style="display:none;margin-left:.4rem;background:#12B981;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
+      </div>
       <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
     </div>
   </div>
@@ -353,6 +357,36 @@
         <div id="feedback-list" style="padding:.5rem 0">
           <div style="padding:2rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Interessados (leads da landing page) ══ -->
+    <div id="satab-interessados" style="display:none">
+      <div class="kpi-row" style="margin-bottom:1.25rem">
+        <div class="kpi-c k-em"><div class="kpi-lbl">Total</div><div class="kpi-val" id="lead-k-total">—</div></div>
+        <div class="kpi-c k-blue"><div class="kpi-lbl">Novos</div><div class="kpi-val" id="lead-k-novo">—</div></div>
+        <div class="kpi-c k-amber"><div class="kpi-lbl">Em negociação</div><div class="kpi-val" id="lead-k-nego">—</div></div>
+        <div class="kpi-c k-red"><div class="kpi-lbl">Ganhos</div><div class="kpi-val" id="lead-k-ganho">—</div></div>
+      </div>
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+          <div>
+            <div class="section-title">Interessados na plataforma</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviados pelo formulário da página <a href="/conheca" target="_blank" style="color:#3D5CC8">/conheca</a></div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <select id="lead-filter" onchange="renderLeads()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+              <option value="">Todos</option>
+              <option value="novo">Novos</option>
+              <option value="contatado">Contatados</option>
+              <option value="negociando">Negociando</option>
+              <option value="ganho">Ganhos</option>
+              <option value="perdido">Perdidos</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadLeads()">Atualizar</button>
+          </div>
+        </div>
+        <div id="leads-list" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
       </div>
     </div>
 
@@ -635,12 +669,111 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos','melhorias','plataforma'].forEach(t => {
+  ['clientes','modulos','planos','melhorias','interessados','plataforma'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
-  if (name === 'melhorias') loadFeedback();
-  if (name === 'plataforma') initLogoUpload();
+  if (name === 'melhorias')    loadFeedback();
+  if (name === 'interessados') loadLeads();
+  if (name === 'plataforma')   initLogoUpload();
+}
+
+// ─── Interessados (leads da landing page) ─────────────────────────────────────
+// A tabela a1_leads é gravável pelo formulário público, mas SÓ legível pela
+// service role — por isso a lista vive aqui e não vaza para nenhum cliente.
+let LEADS = [];
+const LEAD_STATUS = ['novo','contatado','negociando','ganho','perdido'];
+const LEAD_CORES  = { novo:'#3D5CC8', contatado:'#0891b2', negociando:'#F5A524', ganho:'#12B981', perdido:'#94a3b8' };
+
+async function loadLeads() {
+  const box = document.getElementById('leads-list');
+  box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>';
+  try {
+    const res = await fetch(`${saRest('a1_leads')}?order=created_at.desc`, { headers: saHeaders() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    LEADS = await res.json();
+  } catch (e) {
+    box.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#dc2626;font-size:.8rem">Não foi possível carregar os interessados (${esc(e.message)}).</div>`;
+    return;
+  }
+  const n = k => LEADS.filter(l => l.status === k).length;
+  setEl('lead-k-total', LEADS.length);
+  setEl('lead-k-novo',  n('novo'));
+  setEl('lead-k-nego',  n('negociando'));
+  setEl('lead-k-ganho', n('ganho'));
+  const badge = document.getElementById('leads-badge');
+  if (badge) { badge.textContent = n('novo'); badge.style.display = n('novo') ? '' : 'none'; }
+  renderLeads();
+}
+
+function renderLeads() {
+  const box = document.getElementById('leads-list');
+  const filtro = document.getElementById('lead-filter').value;
+  const lista = filtro ? LEADS.filter(l => l.status === filtro) : LEADS;
+  if (!lista.length) {
+    box.innerHTML = '<div style="padding:2.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhum interessado por aqui ainda. Divulgue a página <b>/conheca</b> para começar a receber contatos.</div>';
+    return;
+  }
+  box.style.padding = '0';
+  box.innerHTML = `<div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
+    <thead><tr style="background:#f8fafc;color:var(--t3);text-align:left">
+      <th style="padding:.6rem .8rem;font-weight:700">Quando</th>
+      <th style="padding:.6rem .8rem;font-weight:700">Contato</th>
+      <th style="padding:.6rem .8rem;font-weight:700">Empresa</th>
+      <th style="padding:.6rem .8rem;font-weight:700">Perfil</th>
+      <th style="padding:.6rem .8rem;font-weight:700">Situação</th>
+      <th style="padding:.6rem .8rem;font-weight:700"></th>
+    </tr></thead><tbody>
+    ${lista.map(l => {
+      const d = new Date(l.created_at);
+      const quando = isNaN(d) ? '—' : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const zap = (l.phone||'').replace(/\D/g,'');
+      return `<tr style="border-top:1px solid var(--border);vertical-align:top">
+        <td style="padding:.7rem .8rem;color:var(--t3);white-space:nowrap">${quando}</td>
+        <td style="padding:.7rem .8rem">
+          <div style="font-weight:700;color:var(--t1)">${esc(l.name)}</div>
+          <div style="color:var(--t3);font-size:.74rem;margin-top:.1rem">
+            <a href="mailto:${esc(l.email)}" style="color:#3D5CC8">${esc(l.email)}</a>
+            ${l.phone ? ` · <a href="https://wa.me/55${zap}" target="_blank" rel="noopener" style="color:#12B981">${esc(l.phone)}</a>` : ''}
+          </div>
+          ${l.message ? `<div style="color:var(--t2);font-size:.74rem;margin-top:.35rem;max-width:34ch;line-height:1.45">"${esc(l.message)}"</div>` : ''}
+        </td>
+        <td style="padding:.7rem .8rem;color:var(--t2)">${esc(l.company||'—')}</td>
+        <td style="padding:.7rem .8rem;color:var(--t2)">${esc(l.segment||'—')}${l.volume ? `<div style="color:var(--t3);font-size:.72rem">${esc(l.volume)}/mês</div>` : ''}</td>
+        <td style="padding:.7rem .8rem">
+          <select onchange="setLeadStatus('${l.id}',this.value)" style="font-size:.72rem;padding:.25rem .45rem;border-radius:6px;border:1px solid var(--border);font-weight:700;color:${LEAD_CORES[l.status]||'var(--t1)'}">
+            ${LEAD_STATUS.map(s => `<option value="${s}"${s===l.status?' selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}
+          </select>
+        </td>
+        <td style="padding:.7rem .8rem;text-align:right">
+          <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteLead('${l.id}','${esc(l.name).replace(/'/g,"\\'")}')">Excluir</button>
+        </td>
+      </tr>`;
+    }).join('')}
+  </tbody></table></div>`;
+}
+
+async function setLeadStatus(id, status) {
+  try {
+    const res = await fetch(`${saRest('a1_leads')}?id=eq.${id}`, {
+      method:'PATCH', headers: saHeaders(),
+      body: JSON.stringify({ status, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const l = LEADS.find(x => x.id === id); if (l) l.status = status;
+    toast('Situação atualizada.', 'success');
+    loadLeads();
+  } catch (e) { toast('Não foi possível atualizar: ' + e.message, 'error'); }
+}
+
+async function deleteLead(id, nome) {
+  if (!confirm(`Excluir o contato de ${nome}? Isso não pode ser desfeito.`)) return;
+  try {
+    const res = await fetch(`${saRest('a1_leads')}?id=eq.${id}`, { method:'DELETE', headers: saHeaders() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    toast('Contato excluído.', 'info');
+    loadLeads();
+  } catch (e) { toast('Não foi possível excluir: ' + e.message, 'error'); }
 }
 
 // ─── Logo Upload ──────────────────────────────────────────────────────────────
@@ -745,7 +878,7 @@ function applyCustomLogo() {
 }
 
 async function loadAll() {
-  await Promise.all([loadTenants(), loadAllModules(), loadPlans()]);
+  await Promise.all([loadTenants(), loadAllModules(), loadPlans(), loadLeads().catch(()=>{})]);
   updateKPIs();
   populateTenantSelect();
 }
