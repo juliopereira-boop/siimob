@@ -437,6 +437,7 @@
       <select id="df-parceiro" onchange="applyDashFilter()"><option value="">Correspondente</option></select>
       <select id="df-re"       onchange="applyDashFilter()"><option value="">Imobiliaria</option></select>
       <select id="df-analista" onchange="applyDashFilter()"><option value="">Analista</option></select>
+      <select id="df-corretor" onchange="applyDashFilter()"><option value="">Corretor</option></select>
       <input  id="df-search" type="text" placeholder="Buscar cliente..." oninput="applyDashFilter()">
       <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
@@ -464,9 +465,9 @@
         <div class="kpi-sub">+30 dias na etapa</div>
       </div>
       <div class="kpi-card kpi-violet">
-        <div class="kpi-label">Sem Correspondente</div>
+        <div class="kpi-label" id="kpi-sem-parceiro-lbl">Sem Correspondente</div>
         <div class="kpi-value" id="kpi-sem-parceiro">—</div>
-        <div class="kpi-sub">sem parceiro ativo</div>
+        <div class="kpi-sub" id="kpi-sem-parceiro-sub">sem parceiro ativo</div>
       </div>
     </div>
 
@@ -586,6 +587,7 @@
       <select id="f-parceiro"><option value="">Correspondente</option></select>
       <select id="f-re"><option value="">Imobiliária</option></select>
       <select id="f-analista"><option value="">Analista</option></select>
+      <select id="f-corretor"><option value="">Corretor</option></select>
       <select id="f-usuario"><option value="">Usuário Correspondente</option></select>
       <select id="f-entrevista">
         <option value="">Entrevista</option>
@@ -1930,6 +1932,8 @@ function populateFilterOptions() {
   document.getElementById('f-parceiro').innerHTML = '<option value="">Correspondente</option>' + partners.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
   document.getElementById('f-re').innerHTML       = '<option value="">Imobiliária</option>'    + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   document.getElementById('f-analista').innerHTML = '<option value="">Analista</option>'       + analistaNomes.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  const corretores = [...new Set(G.cases.map(c=>c.broker_name).filter(Boolean))].sort();
+  const _fc=document.getElementById('f-corretor'); if(_fc) _fc.innerHTML = '<option value="">Corretor</option>' + corretores.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
   const usuariosCorr = [...new Set(G.cases.map(c=>c.payload&&c.payload.usuario_correspondente).filter(Boolean))].sort();
   const _fu=document.getElementById('f-usuario'); if(_fu) _fu.innerHTML = '<option value="">Usuário Correspondente</option>' + usuariosCorr.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
   document.getElementById('tbl-stage-filter').innerHTML = '<option value="">Todas as etapas</option>' + G.stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
@@ -1997,7 +2001,7 @@ function switchView(view) {
 
 // ─── Dashboard filters ────────────────────────────────────────────────────────
 function dashCases() {
-  const { regional, empr, parceiro, re, analista, search } = G.dashFilters;
+  const { regional, empr, parceiro, re, analista, corretor, search } = G.dashFilters;
   const sm = stageMap();
   return G.cases.filter(c => {
     if (regional) { const _r=(c.payload&&c.payload.regional)||sm[c.stage_id]?.group_key||''; if(_r!==regional) return false; }
@@ -2005,6 +2009,7 @@ function dashCases() {
     if (parceiro && c.partner_name !== parceiro)  return false;
     if (re       && c.real_estate_name !== re)    return false;
     if (analista && c.manager_name !== analista)  return false;
+    if (corretor && c.broker_name  !== corretor)  return false;
     if (search) {
       const q = search.toLowerCase();
       if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
@@ -2028,6 +2033,7 @@ function populateDashFilters() {
   sel('df-parceiro', 'Correspondente',     partners,   df.parceiro);
   sel('df-re',       'Imobiliaria',        res,        df.re);
   sel('df-analista', 'Analista',           analistas,  df.analista);
+  sel('df-corretor', 'Corretor',           [...new Set(G.cases.map(c=>c.broker_name).filter(Boolean))].sort(), df.corretor);
   const srch = document.getElementById('df-search'); if(srch) srch.value = df.search;
 }
 
@@ -2037,13 +2043,14 @@ function applyDashFilter() {
   G.dashFilters.parceiro = document.getElementById('df-parceiro')?.value  || '';
   G.dashFilters.re       = document.getElementById('df-re')?.value        || '';
   G.dashFilters.analista = document.getElementById('df-analista')?.value  || '';
+  G.dashFilters.corretor = document.getElementById('df-corretor')?.value  || '';
   G.dashFilters.search   = document.getElementById('df-search')?.value    || '';
   renderDashboard();
 }
 
 function clearDashFilters() {
-  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', search:'' };
-  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', corretor:'', search:'' };
+  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-corretor','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDashboard();
 }
 
@@ -2083,7 +2090,17 @@ function renderDashboard() {
   setT('kpi-andamento',    nonFinal.length);
   setT('kpi-concluidos',   final.length);
   setT('kpi-atrasados',    atrasados.length);
-  setT('kpi-sem-parceiro', semParceiro.length);
+  // Cliente do tipo correspondente é ele mesmo o correspondente de todo processo,
+  // então "sem correspondente" nunca acusaria nada. Nesse caso o KPI passa a
+  // medir o que de fato falta vincular: o corretor.
+  if (G.isCorrTenant) {
+    const semCorretor = cases.filter(c => !c.broker_name && !sm[c.stage_id]?.is_final);
+    setT('kpi-sem-parceiro', semCorretor.length);
+    setT('kpi-sem-parceiro-lbl', 'Sem Corretor');
+    setT('kpi-sem-parceiro-sub', 'sem corretor vinculado');
+  } else {
+    setT('kpi-sem-parceiro', semParceiro.length);
+  }
 
   // ── Secondary KPIs ──
   const taxa = cases.length ? Math.round(final.length / cases.length * 100) : 0;
@@ -2284,7 +2301,7 @@ function renderRegionalTabs() {
 function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
 
 function filteredCases() {
-  const { search, empr, parceiro, re, analista, entrevista, usuario } = G.filters;
+  const { search, empr, parceiro, re, analista, corretor, entrevista, usuario } = G.filters;
   const sm=stageMap(), isPartner=G.user.role==='partner' && !(G.user.permissions&&G.user.permissions.gerente);
   return G.cases.filter(c=>{
     if (isPartner) {
@@ -2304,6 +2321,7 @@ function filteredCases() {
     if(parceiro && c.partner_name!==parceiro)                  return false;
     if(re       && c.real_estate_name!==re)                    return false;
     if(analista && c.manager_name!==analista)                  return false;
+    if(corretor && c.broker_name!==corretor)                   return false;
     if(usuario && (c.payload?.usuario_correspondente||'')!==usuario) return false;
     if(entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
@@ -4422,14 +4440,15 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-parceiro')   {G.filters.parceiro=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-re')         {G.filters.re=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-analista')   {G.filters.analista=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-corretor')   {G.filters.corretor=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-usuario')    {G.filters.usuario=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();renderList();}
   if(e.target.id==='tbl-stage-filter') renderList();
 });
 
 function clearFilters(){
-  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',entrevista:'',usuario:''};
-  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',corretor:'',entrevista:'',usuario:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-corretor','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderKanban();renderList();
 }
 
