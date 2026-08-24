@@ -1807,11 +1807,22 @@ function isMeuProcesso(c){
     .some(v => (v || '').trim().toLowerCase() === eu);
 }
 
-// Corretor restrito: conjunto de etapas em que ele atua (null = sem restrição).
+// Acesso por etapa do corretor: mapa etapa -> 'ver' | 'editar'.
+// null = sem restrição por etapa (gestor, gerente, correspondente comum).
 function etapasDoUsuario(){
   const p = (G.user && G.user.permissions) || {};
-  if (!p.ver_somente_etapas) return null;
-  return new Set(Array.isArray(p.etapas_permitidas) ? p.etapas_permitidas : []);
+  if (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) return p.etapas;
+  // Compatibilidade: cadastro antigo guardava só a lista, que valia como editar.
+  if (p.ver_somente_etapas && Array.isArray(p.etapas_permitidas)) {
+    const m = {}; p.etapas_permitidas.forEach(id => { m[id] = 'editar'; }); return m;
+  }
+  return null;
+}
+// Nível do usuário naquela etapa: 'editar', 'ver' ou null (não enxerga).
+function nivelNaEtapa(stageId){
+  const m = etapasDoUsuario();
+  if (!m) return 'editar';
+  return m[stageId] || null;
 }
 
 // Cartões que o usuário liberou manualmente para editar nesta sessão.
@@ -1825,6 +1836,8 @@ function podeEditarProcesso(c){
   if (!hasPerm('editar_repasses')) return false;
   if (souGestorUser()) return true;
   if (((G.user && G.user.permissions) || {}).gerente) return true;
+  // Etapa marcada apenas como "ver" é somente leitura, mesmo sendo processo dele.
+  if (nivelNaEtapa(c && c.stage_id) !== 'editar') return false;
   return isMeuProcesso(c) || (c && _destravados.has(c.id));
 }
 
@@ -2047,7 +2060,7 @@ function dashCases() {
       if (G.user.empresa_name && c.partner_name !== G.user.empresa_name) return false;
     }
     if (!temVisaoCompleta() && !isMeuProcesso(c)) return false;
-    if (_etDash && !_etDash.has(c.stage_id)) return false;
+    if (_etDash && !nivelNaEtapa(c.stage_id)) return false;
     if (regional) { const _r=(c.payload&&c.payload.regional)||sm[c.stage_id]?.group_key||''; if(_r!==regional) return false; }
     if (empr     && c.development !== empr)       return false;
     if (parceiro && c.partner_name !== parceiro)  return false;
@@ -2358,9 +2371,8 @@ function filteredCases() {
       }
       // Sem visão completa, só as próprias operações.
       if (!temVisaoCompleta() && !isMeuProcesso(c)) return false;
-      // Corretor restrito a etapas: só enxerga o que está nelas.
-      const _et = etapasDoUsuario();
-      if (_et && !_et.has(c.stage_id)) return false;
+      // Corretor restrito a etapas: só enxerga onde tem ao menos "ver".
+      if (!nivelNaEtapa(c.stage_id)) return false;
     }
     const stage=sm[c.stage_id];
     const _reg=(c.payload&&c.payload.regional)||stage?.group_key||'';
@@ -2502,9 +2514,8 @@ async function moveCard(caseId, stageId) {
   if(souCorretor() && !hasPerm('alterar_etapa')){
     toast('Você não tem permissão para alterar a etapa.','error'); return;
   }
-  const _etMov=etapasDoUsuario();
-  if(_etMov && !_etMov.has(stageId)){
-    toast('Você não atua na etapa de destino.','error'); return;
+  if(nivelNaEtapa(_atual) !== 'editar'){
+    toast('Nesta etapa você só pode visualizar. Peça ao gestor a permissão de editar aqui.','error'); return;
   }
   await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:stage.name,stage_entered_at:new Date().toISOString()})});
   await Promise.all([
