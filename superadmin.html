@@ -519,6 +519,11 @@
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2" style="margin-bottom:1rem">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>E-mail do financeiro (para onde a cobrança é enviada)</label>
+          <input id="cob-email-input" type="email" placeholder="financeiro@empresa.com.br" onchange="cobPersistMeta()">
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Deixe em branco para usar o e-mail do cadastro do cliente.</div>
+        </div>
         <div class="form-group"><label>Dia de vencimento</label><input id="cob-day" type="number" min="1" max="28" placeholder="Ex.: 10" onchange="cobPersistMeta()"></div>
         <div class="form-group"><label>Valor mensal (R$)</label><input id="cob-valor" type="text" placeholder="Ex.: 199,00" onchange="cobPersistMeta()"></div>
       </div>
@@ -1430,11 +1435,19 @@ async function saveBilling(tenantId, data) {
   return res.ok;
 }
 
+// E-mail efetivo da cobrança: o do financeiro, se cadastrado; senão o do
+// cadastro do cliente. Empresas grandes costumam ter um e-mail só do financeiro.
+function cobTo() { return (COB.data && COB.data.email) || COB.email || ''; }
+
 async function openCobranca(tenantId, name, email) {
   COB = { tenantId, name, email, year: 2026, data: await loadBilling(tenantId) };
   setEl('cob-name', name);
+  document.getElementById('cob-email-input').value = COB.data.email || '';
   const em = document.getElementById('cob-email');
-  if (em) em.textContent = email ? email : '⚠ sem e-mail cadastrado';
+  const alvo = cobTo();
+  if (em) em.textContent = alvo
+    ? (COB.data.email ? 'Financeiro: ' + alvo : alvo)
+    : '⚠ sem e-mail cadastrado';
   document.getElementById('cob-day').value   = COB.data.due_day || '';
   document.getElementById('cob-valor').value = COB.data.valor   || '';
   cobErr('');
@@ -1497,6 +1510,14 @@ async function cobToggle(mIdx) {
 async function cobPersistMeta() {
   COB.data.due_day = parseInt(document.getElementById('cob-day').value) || null;
   COB.data.valor   = document.getElementById('cob-valor').value.trim() || null;
+  const mailIn = document.getElementById('cob-email-input');
+  const mail = (mailIn ? mailIn.value : '').trim();
+  if (mail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) {
+    cobErr('E-mail do financeiro parece inválido. Confira antes de enviar a cobrança.');
+  } else { cobErr(''); }
+  COB.data.email = mail || null;
+  const em = document.getElementById('cob-email');
+  if (em) { const alvo = cobTo(); em.textContent = alvo ? (COB.data.email ? 'Financeiro: ' + alvo : alvo) : '⚠ sem e-mail cadastrado'; }
   renderCobranca();
   const ok = await saveBilling(COB.tenantId, COB.data);
   if (!ok) cobErr('Não foi possível salvar. Verifique a conexão.');
@@ -1535,7 +1556,7 @@ function cobCurrentRef() {
 
 async function sendCobranca() {
   cobErr('');
-  if (!COB.email) { cobErr('Este cliente não possui e-mail cadastrado. Edite o cadastro do cliente para incluir um e-mail.'); return; }
+  if (!cobTo()) { cobErr('Sem e-mail para enviar. Informe o e-mail do financeiro acima ou cadastre um e-mail no cliente.'); return; }
   const ref = cobCurrentRef();
   const subject = `SIIMOB · Aviso de pagamento em aberto — ${ref.label}`;
   const body = cobrancaBody(COB.name, COB.data.valor, COB.data.due_day, ref.label);
@@ -1544,7 +1565,7 @@ async function sendCobranca() {
     headers: saHeaders({ 'Prefer': 'return=minimal' }),
     body: JSON.stringify({
       tenant_id: COB.tenantId,
-      to_email:  COB.email,
+      to_email:  cobTo(),
       subject, body,
       status:    'pending'
     })
@@ -1557,16 +1578,16 @@ async function sendCobranca() {
   if (!COB.data.notified) COB.data.notified = {};
   COB.data.notified[ref.key] = new Date().toISOString();
   await saveBilling(COB.tenantId, COB.data);
-  toast(`Cobrança de ${ref.label} enfileirada para ${COB.email}.`, 'success');
+  toast(`Cobrança de ${ref.label} enfileirada para ${cobTo()}.`, 'success');
 }
 
 // Fallback: abre o cliente de e-mail do superadmin já preenchido
 function mailtoCobranca() {
-  if (!COB.email) { cobErr('Este cliente não possui e-mail cadastrado.'); return; }
+  if (!cobTo()) { cobErr('Sem e-mail para enviar. Informe o e-mail do financeiro acima.'); return; }
   const ref = cobCurrentRef();
   const subject = `SIIMOB · Aviso de pagamento em aberto — ${ref.label}`;
   const body = cobrancaBody(COB.name, COB.data.valor, COB.data.due_day, ref.label);
-  window.location.href = `mailto:${encodeURIComponent(COB.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = `mailto:${encodeURIComponent(cobTo())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // Pinta a linha do cliente com um aviso quando há mês vencido em aberto

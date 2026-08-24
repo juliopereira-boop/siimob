@@ -3241,7 +3241,23 @@ function renderFlags(){
 async function addFlag(){
   const input=document.getElementById('new-flag-input'),name=input.value.trim();
   if(!name){toast('Informe o nome','error');return;}
-  const [flag]=await fetch(A1.rest('a1_stage_flags'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify({name,color:'#3D5CC8'})}).then(r=>r.json()).catch(()=>[null]);
+  if(G.flags.some(f=>(f.name||'').toLowerCase()===name.toLowerCase())){
+    toast('Já existe uma flag com esse nome','error'); return;
+  }
+  // tenant_id é obrigatório na tabela (NOT NULL) e exigido pela RLS — sem ele o
+  // insert falhava e a flag nunca era criada. A cor vem do seletor ao lado, que
+  // antes era ignorado (a cor ia fixa no código).
+  const color=document.getElementById('new-flag-color')?.value||'#3D5CC8';
+  const res=await fetch(A1.rest('a1_stage_flags'),{
+    method:'POST',headers:A1.returnHeaders(),
+    body:JSON.stringify({tenant_id:G.user.tenant_id,name,color})
+  });
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    toast('Erro ao criar flag: '+(err.message||('HTTP '+res.status)),'error');
+    return;
+  }
+  const [flag]=await res.json().catch(()=>[null]);
   if(flag){G.flags.push(flag);renderFlags();input.value='';toast('Flag criada','success');}
   else toast('Erro ao criar flag','error');
 }
