@@ -262,6 +262,19 @@ if (A1.token && A1.slug === slug && A1.user) {
   redirectAfterLogin(A1.user);
 }
 
+// Chegou aqui derrubado? Explica o motivo em vez de deixar a pessoa achando
+// que o sistema caiu. Um login vale para um dispositivo por vez.
+(function () {
+  const motivo = new URLSearchParams(location.search).get('motivo');
+  if (!motivo) return;
+  const box = document.getElementById('error-box');
+  if (!box) return;
+  box.textContent = motivo === 'outro_acesso'
+    ? 'Sua sessão foi encerrada porque esta conta entrou em outro dispositivo. Cada login só pode estar ativo em um lugar por vez.'
+    : 'Sua sessão foi encerrada. Entre novamente para continuar.';
+  box.classList.remove('hidden');
+})();
+
 let activeRole = null; // 'gestor' | 'cca' | 'despachante'
 
 const PANELS_DEF = [

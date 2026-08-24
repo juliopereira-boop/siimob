@@ -42,19 +42,10 @@ async function a1Login(slug, cpf, password) {
   localStorage.setItem('a1_token', data.token);
   localStorage.setItem('a1_slug',  slug);
 
-  // ── Limite de ACESSOS SIMULTÂNEOS (max_users do tenant) ──
-  // O cadastro de usuários é ilimitado; o que o plano limita é quantos
-  // podem estar online ao mesmo tempo. Conta a presença (heartbeat) ativa.
-  const _max = parseInt(data.max_users) || 0;
-  if (_max > 0) {
-    const _key = `${data.tenant_id}::${data.user_id}`;
-    const _active = await a1ActiveCount(data.tenant_id, _key);
-    if (_active >= _max) {
-      await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
-      localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
-      throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
-    }
-  }
+  // O limite de acessos simultâneos é decidido pelo servidor, dentro de
+  // a1_login (erro 'max_concurrent', tratado acima). A conferência que existia
+  // aqui contava a tabela de presença — escrita pelo próprio navegador — e por
+  // isso não segurava nada; além de poder barrar quem tinha direito à vaga.
 
   localStorage.setItem('a1_user',  JSON.stringify({
     id:    data.user_id,
@@ -100,19 +91,8 @@ async function a1PartnerLogin(slug, cpf, password) {
   localStorage.setItem('a1_token', data.token);
   localStorage.setItem('a1_slug',  slug);
 
-  // ── Limite de ACESSOS SIMULTÂNEOS (max_users do tenant) ──
-  // tenant (max_users) e contagem de presença em paralelo — economiza 1 round-trip no login
-  const _key = `${data.tenant_id}::${data.partner_id}`;
-  const [_trow, _active] = await Promise.all([
-    fetch(`${A1.rest('a1_tenants')}?id=eq.${data.tenant_id}&select=max_users`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    a1ActiveCount(data.tenant_id, _key)
-  ]);
-  const _max = (Array.isArray(_trow) && _trow[0] && parseInt(_trow[0].max_users)) || 0;
-  if (_max > 0 && _active >= _max) {
-    await fetch(A1.rpc('a1_logout'), { method:'POST', headers:A1.headers(), body:JSON.stringify({}) }).catch(()=>{});
-    localStorage.removeItem('a1_token'); localStorage.removeItem('a1_slug');
-    throw new Error(`Limite de ${_max} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
-  }
+  // Idem: o teto de acessos simultâneos é imposto pelo servidor em
+  // a1_partner_login, que devolve 'max_concurrent' quando não há vaga.
 
   localStorage.setItem('a1_user',  JSON.stringify({
     id:          data.partner_id,
@@ -282,8 +262,11 @@ async function a1RequireModule(moduleKey) {
   throw new Error('module_locked');
 }
 
-// Conta usuários ONLINE (heartbeat nos últimos 90s) do tenant, excluindo a própria chave.
-// Usado para impor o limite de acessos simultâneos no login.
+// OBSOLETA para controle de cota. O limite de acessos simultâneos passou a ser
+// imposto DENTRO de a1_login/a1_partner_login, sobre a tabela de sessões — que o
+// navegador não alcança. Contar por a1_presence era furável: essa tabela é
+// escrita pelo próprio cliente, então bastava não bater (ou apagar a linha) para
+// sumir da contagem. Mantida apenas para exibição de "quem está online".
 async function a1ActiveCount(tenantId, excludeKey) {
   const since = new Date(Date.now() - 90_000).toISOString();
   const url = `${A1.rest('a1_presence')}?tenant_id=eq.${tenantId}&last_seen=gte.${encodeURIComponent(since)}&select=user_key`;
@@ -291,6 +274,29 @@ async function a1ActiveCount(tenantId, excludeKey) {
   if (!Array.isArray(rows)) return 0;
   const keys = new Set(rows.map(r => r.user_key).filter(k => k && k !== excludeKey));
   return keys.size;
+}
+
+// Confirma no servidor que esta sessão ainda é a sessão válida daquele login.
+// FALSE = a conta entrou em outro aparelho (sessão única) ou a vaga foi perdida:
+// o servidor já encerrou a sessão e o usuário precisa entrar de novo.
+// Falha de rede NÃO derruba ninguém — só a recusa explícita do servidor.
+async function a1TouchSession() {
+  if (!A1.token) return true;
+  try {
+    const res = await fetch(A1.rpc('a1_touch_session'), {
+      method: 'POST', headers: A1.headers(), body: JSON.stringify({})
+    });
+    if (!res.ok) return true;
+    return (await res.json()) !== false;
+  } catch { return true; }
+}
+
+// Encerra a sessão local e manda para o login explicando o motivo.
+function a1SessionEnded(motivo) {
+  const slug = A1.slug || '';
+  a1ClearModuleCache();
+  ['a1_token','a1_user','a1_slug'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+  window.location.href = (slug ? `/${slug}/login` : '/') + '?motivo=' + encodeURIComponent(motivo || 'encerrada');
 }
 
 // Presence heartbeat. Retorna true/false (sucesso) — usado por a1StartHeartbeat
@@ -319,13 +325,21 @@ async function a1Heartbeat(moduleName) {
 // esquecida aberta com sessão vencida — carga contínua e crescente, sem retorno
 // nenhum. Após 3 falhas seguidas (~2.5min), para de tentar.
 function a1StartHeartbeat(moduleName) {
-  let fails = 0;
-  const id = setInterval(async () => {
+  let fails = 0, id = null;
+  const bater = async () => {
+    // Se outra pessoa entrou com este mesmo login, o servidor já encerrou esta
+    // sessão: quem estava logado cai aqui, em até um ciclo (~50s).
+    if (!(await a1TouchSession())) {
+      if (id) clearInterval(id);
+      a1SessionEnded('outro_acesso');
+      return;
+    }
     const ok = await a1Heartbeat(moduleName);
     if (ok) { fails = 0; return; }
-    if (++fails >= 3) clearInterval(id);
-  }, 50_000);
-  a1Heartbeat(moduleName);
+    if (++fails >= 3 && id) clearInterval(id);
+  };
+  id = setInterval(bater, 50_000);
+  bater();
   return id;
 }
 
