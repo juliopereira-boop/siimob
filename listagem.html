@@ -134,7 +134,11 @@
     .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s;
       /* Cada etapa rola sozinha: a página deixa de crescer com o volume de
          processos e só os cartões visíveis são criados (ver renderKanban). */
-      max-height:var(--kcol-h,62vh);overflow-y:auto;overscroll-behavior:contain}
+      max-height:var(--kcol-h,62vh);overflow-y:auto;
+      /* Só o eixo vertical fica contido (rolar a coluna não rola a página).
+         No horizontal precisa vazar para o quadro, senão o gesto de dois dedos
+         para o lado morre dentro da coluna quando o cursor está sobre um cartão. */
+      overscroll-behavior-y:contain;overscroll-behavior-x:auto}
     .k-col-body::-webkit-scrollbar{width:9px}
     .k-col-body::-webkit-scrollbar-track{background:transparent}
     .k-col-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px;border:2px solid #F1F5F9}
