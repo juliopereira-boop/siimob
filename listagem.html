@@ -131,7 +131,15 @@
     .k-col-count{background:rgba(255,255,255,.22);border-radius:99px;padding:.08rem .42rem;font-size:.65rem;font-weight:800}
     .k-col-fin{display:flex;flex-direction:column;gap:.08rem;background:#E9EEF5;padding:.3rem .6rem;font-size:.62rem;color:var(--t3);font-weight:600}
     .k-col-fin b{font-weight:800}
-    .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s}
+    .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:100px;display:flex;flex-direction:column;gap:.4rem;transition:background .15s;
+      /* Cada etapa rola sozinha: a página deixa de crescer com o volume de
+         processos e só os cartões visíveis são criados (ver renderKanban). */
+      max-height:var(--kcol-h,62vh);overflow-y:auto;overscroll-behavior:contain}
+    .k-col-body::-webkit-scrollbar{width:9px}
+    .k-col-body::-webkit-scrollbar-track{background:transparent}
+    .k-col-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px;border:2px solid #F1F5F9}
+    .k-col-body::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+    .k-col-more{font-size:.68rem;color:var(--t3);text-align:center;padding:.45rem 0 .2rem}
     .k-col-body.drag-over{background:#E2E8F0;outline:2px dashed rgba(67,97,238,.35);outline-offset:-2px}
 
     /* ── Card ── */
@@ -2418,21 +2426,30 @@ function renderKanban() {
   for(const s of vis) byStage[s.id]=[];
   for(const c of filtered) if(byStage[c.stage_id]!==undefined) byStage[c.stage_id].push(c);
 
-  board.innerHTML=vis.map(s=>`
+  // Guarda a lista completa por etapa e desenha só o primeiro lote. O resto
+  // entra conforme a pessoa rola aquela coluna — antes, uma etapa com centenas
+  // de processos criava todos os cartões de uma vez e travava a página.
+  G._kanban = byStage;
+  board.innerHTML=vis.map(s=>{
+    const lista=byStage[s.id]||[];
+    const primeiros=lista.slice(0,K_LOTE);
+    return `
     <div class="k-col">
       <div class="k-col-header" style="background:${s.color}">
         <span>${esc(s.name)}</span>
-        <span class="k-col-count">${(byStage[s.id]||[]).length}</span>
+        <span class="k-col-count">${lista.length}</span>
       </div>
       <div class="k-col-fin">
-        <span>VGV <b style="color:var(--blue)">${fmtBRLShort((byStage[s.id]||[]).reduce((a,c)=>a+caseUnitValue(c),0))}</b></span>
-        <span>Repasse <b style="color:var(--green)">${fmtBRLShort((byStage[s.id]||[]).reduce((a,c)=>a+caseRepasseValue(c),0))}</b></span>
+        <span>VGV <b style="color:var(--blue)">${fmtBRLShort(lista.reduce((a,c)=>a+caseUnitValue(c),0))}</b></span>
+        <span>Repasse <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a,c)=>a+caseRepasseValue(c),0))}</b></span>
       </div>
-      <div class="k-col-body" data-stage-id="${s.id}"
+      <div class="k-col-body" data-stage-id="${s.id}" data-render="${primeiros.length}"
+           onscroll="onColScroll(this)"
            ondragover="onDragOver(event)" ondrop="onDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
-        ${(byStage[s.id]||[]).map(c=>renderCard(c,s)).join('')}
+        ${primeiros.map(c=>renderCard(c,s)).join('')}
+        ${lista.length>primeiros.length?`<div class="k-col-more">role para ver mais ${lista.length-primeiros.length}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 
   const fc=filtered.length;
   document.getElementById('filter-count').textContent=fc!==G.cases.length?`${fc} de ${G.cases.length} registros`:'';
@@ -2493,6 +2510,31 @@ function renderCard(c, stage) {
       </div>
     </div>
   </div>`;
+}
+
+// Quantos cartões por vez em cada coluna.
+const K_LOTE = 15;
+
+// Chega perto do fim da coluna? Desenha o próximo lote daquela etapa.
+function onColScroll(el){
+  const sid = el.dataset.stageId;
+  const lista = (G._kanban && G._kanban[sid]) || [];
+  const jaFeitos = parseInt(el.dataset.render || '0', 10);
+  if (jaFeitos >= lista.length) return;
+  if (el.scrollTop + el.clientHeight < el.scrollHeight - 120) return;
+
+  const stage = G.stages.find(s => s.id === sid);
+  if (!stage) return;
+  const proximos = lista.slice(jaFeitos, jaFeitos + K_LOTE);
+  const aviso = el.querySelector('.k-col-more');
+  if (aviso) aviso.remove();
+  el.insertAdjacentHTML('beforeend', proximos.map(c => renderCard(c, stage)).join(''));
+  const total = jaFeitos + proximos.length;
+  el.dataset.render = String(total);
+  if (total < lista.length) {
+    el.insertAdjacentHTML('beforeend',
+      `<div class="k-col-more">role para ver mais ${lista.length - total}</div>`);
+  }
 }
 
 // ─── Drag & Drop ──────────────────────────────────────────────────────────────
@@ -4638,6 +4680,9 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e
     const isRight = e.button===2;                 // botão direito: arrasta SEMPRE (até sobre o cartão)
     if(!isRight && e.button!==0) return;
     if(!isRight && e.target.closest('.k-card')) return; // esquerdo sobre cartão = arrasta o cartão
+    // Clique na barra de rolagem da coluna: deixa o navegador rolar, não pana.
+    const _cb = e.target.closest('.k-col-body');
+    if(_cb && e.offsetX > _cb.clientWidth) return;
     panning=true; sx=e.pageX; sy=e.pageY; sl=board.scrollLeft; sty=window.scrollY;
     board.classList.add('panning'); e.preventDefault();
   });
