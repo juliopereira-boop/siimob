@@ -515,7 +515,7 @@
           <div class="kpi2-card">
             <div class="kpi2-label">Tempo Medio Total</div>
             <div class="kpi2-value" id="kpi2-tempo">—</div>
-            <div class="kpi2-sub">media de dias em aberto</div>
+            <div class="kpi2-sub" id="kpi2-tempo-sub">da etapa inicial a conclusao</div>
           </div>
           <div class="kpi2-card">
             <div class="kpi2-label">Mais Antigo Parado</div>
@@ -524,9 +524,9 @@
           </div>
         </div>
         <div class="kpi2-card">
-          <div class="kpi2-label">Novos (48h)</div>
+          <div class="kpi2-label">Novos</div>
           <div class="kpi2-value" id="kpi2-novos">—</div>
-          <div class="kpi2-sub">criados nas ultimas 48 horas</div>
+          <div class="kpi2-sub" id="kpi2-novos-sub">na etapa inicial</div>
         </div>
       </div>
     </div>
@@ -1884,7 +1884,7 @@ async function loadData() {
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,attachment_pdf,attachment_name,attachment_doc2,attachment_doc2_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
@@ -1916,6 +1916,7 @@ async function loadData() {
   // Regionais + comissão vêm juntas de a1_config (uma única request no Promise.all acima).
   const _cfg = {}; if (Array.isArray(cfgRows)) for (const r of cfgRows) _cfg[r.key] = r.value;
   try { const v = JSON.parse(_cfg.regionais || '[]'); G.regionais = Array.isArray(v) ? v : []; } catch { G.regionais = []; }
+  G.wfLock = String(_cfg.wf_lock_repasse) === 'true';
   { const _sm={}; for(const s of stages) _sm[s.id]=s;
     const _extra=new Set();
     for(const c of cases){ const r=(c.payload&&c.payload.regional)||_sm[c.stage_id]?.group_key; if(r&&!G.regionais.includes(r)) _extra.add(r); }
@@ -2104,10 +2105,21 @@ function renderDashboard() {
     setT('kpi2-gargalo','—'); setT('kpi2-gargalo-sub','sem dados');
   }
 
-  const avgDays = nonFinal.length
-    ? Math.round(nonFinal.reduce((s,c)=>s+daysSince(c.created_at),0)/nonFinal.length)
-    : 0;
-  setT('kpi2-tempo', avgDays + 'd');
+  // Tempo médio = do início à conclusão, medido sobre os processos que chegaram
+  // a uma etapa marcada como FINAL no workflow (stage_entered_at é o momento em
+  // que entraram nela). Sem nenhum concluído ainda, não há o que medir.
+  const _dur = final.map(c => {
+    const ini = new Date(c.created_at).getTime();
+    const fim = new Date(c.stage_entered_at || c.created_at).getTime();
+    return (fim > ini) ? (fim - ini) / 86400000 : 0;
+  });
+  if (_dur.length) {
+    setT('kpi2-tempo', Math.round(_dur.reduce((a,b)=>a+b,0)/_dur.length) + 'd');
+    setT('kpi2-tempo-sub', `media de ${_dur.length} processo(s) concluido(s)`);
+  } else {
+    setT('kpi2-tempo', '—');
+    setT('kpi2-tempo-sub', 'nenhum processo concluido ainda');
+  }
 
   const oldest = nonFinal.slice().sort((a,b)=>new Date(a.stage_entered_at)-new Date(b.stage_entered_at))[0];
   if (oldest) {
@@ -2134,7 +2146,17 @@ function renderDashboard() {
   setT('fin-comissao',     fmtBRL(comissao));
 
   const cutoff48 = Date.now() - 48*3600*1000;
-  setT('kpi2-novos', cases.filter(c => new Date(c.created_at).getTime() > cutoff48).length);
+  // "Novos" = processos parados na etapa marcada como INICIAL no workflow.
+  // Se nenhuma etapa estiver marcada, cai para os criados nas ultimas 48h e o
+  // rotulo avisa, para o gestor perceber que falta marcar a etapa inicial.
+  const _iniIds = new Set(G.stages.filter(s => s.is_initial).map(s => s.id));
+  if (_iniIds.size) {
+    setT('kpi2-novos', cases.filter(c => _iniIds.has(c.stage_id)).length);
+    setT('kpi2-novos-sub', 'na etapa inicial');
+  } else {
+    setT('kpi2-novos', cases.filter(c => new Date(c.created_at).getTime() > cutoff48).length);
+    setT('kpi2-novos-sub', 'ultimas 48h — marque a etapa inicial no workflow');
+  }
 
   // ── Donut chart ──
   renderDonutChart(cases, sm);
@@ -2390,9 +2412,28 @@ function onDragStart(e,el){ el.classList.add('dragging'); G.dragCard=el.dataset.
 function onDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drag-over'); }
 function onDrop(e,col){ e.preventDefault(); col.classList.remove('drag-over'); if(G.dragCard){moveCard(G.dragCard,col.dataset.stageId);G.dragCard=null;} }
 
+// Bloqueio do workflow: com a trava ligada, o processo só anda para uma etapa
+// ligada por uma seta saindo da etapa atual. Se o workflow tiver 1>2>3, não dá
+// para pular do 1 ao 3; mas se existir a ligação 1>3 desenhada, pode.
+function wfLocked(){ return G.wfLock === true; }
+function podeMover(fromId, toId){
+  if (!wfLocked()) return true;
+  if (!fromId || fromId === toId) return true;
+  return (G.edges[fromId] || []).includes(toId);
+}
+function avisoBloqueio(fromId){
+  const nomes = (G.edges[fromId] || [])
+    .map(id => (G.stages.find(s => s.id === id) || {}).name).filter(Boolean);
+  toast(nomes.length
+    ? 'Workflow bloqueado. Desta etapa só é possível ir para: ' + nomes.join(', ') + '.'
+    : 'Workflow bloqueado e esta etapa não tem saída desenhada. Ajuste o workflow.', 'error');
+}
+
 async function moveCard(caseId, stageId) {
   const stage=G.stages.find(s=>s.id===stageId);
   if(!stage) return;
+  const _atual=(G.cases.find(c=>c.id===caseId)||{}).stage_id;
+  if(!podeMover(_atual, stageId)){ avisoBloqueio(_atual); return; }
   await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:stage.name,stage_entered_at:new Date().toISOString()})});
   await Promise.all([
     fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:caseId,type:'stage_change',description:`Movido para: ${stage.name}`,actor_name:G.user.name})}),
@@ -2408,8 +2449,14 @@ async function moveCard(caseId, stageId) {
 function openFluxo(e, caseId, stageId) {
   e.stopPropagation();
   const targets=(G.edges[stageId]||[]).map(id=>G.stages.find(s=>s.id===id)).filter(Boolean);
-  const list=targets.length?targets:G.stages.filter(s=>s.id!==stageId);
-  if(!list.length){toast('Sem proximas etapas.','info');return;}
+  // Com a trava ligada só aparecem as etapas ligadas — nada de listar todas.
+  const list=wfLocked() ? targets : (targets.length?targets:G.stages.filter(s=>s.id!==stageId));
+  if(!list.length){
+    toast(wfLocked()
+      ? 'Workflow bloqueado e esta etapa não tem saída desenhada. Ajuste o workflow.'
+      : 'Sem proximas etapas.','info');
+    return;
+  }
   const popup=document.getElementById('fluxo-popup');
   popup.innerHTML='<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.45rem">Mover para:</div>'
     +list.map(s=>`<div class="fluxo-stage-opt" onclick="moveCard('${caseId}','${s.id}');closeFluxo()"><div class="fluxo-dot" style="background:${s.color}"></div>${esc(s.name)}</div>`).join('');
@@ -2744,6 +2791,7 @@ async function saveCase() {
   const stageId=document.getElementById('mc-stage-sel').value;
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
+  if(stageId!==oldStage && !podeMover(oldStage, stageId)){ avisoBloqueio(oldStage); return; }
   const _entDate=document.getElementById('e-ent-date')?.value||null;
   const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||'')};
   const patch={
