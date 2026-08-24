@@ -799,22 +799,19 @@
         </div>
 
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="co-etapas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc">
-            <div>
-              <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Restringir às etapas selecionadas</div>
-              <div style="font-size:.72rem;color:var(--t3)">Ligado, o corretor só enxerga e só mexe nos processos que estiverem nas etapas marcadas abaixo</div>
-            </div>
-            <input type="checkbox" class="co-perm" data-key="ver_somente_etapas" id="co-somente-etapas" style="width:18px;height:18px;cursor:pointer;accent-color:#12B981;flex-shrink:0;margin-left:1rem" onchange="paintCoEtapas()">
-          </label>
-        </div>
-
-        <div class="form-group full">
-          <label>Etapas em que este corretor atua</label>
-          <div style="display:flex;gap:.5rem;margin:.15rem 0 .5rem">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(true)">Marcar todas</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(false)">Desmarcar todas</button>
+          <label>Acesso por etapa</label>
+          <div style="font-size:.72rem;color:var(--t3);margin:-.15rem 0 .5rem">
+            Em cada etapa escolha o que o corretor pode fazer. <b>Ver</b> deixa só acompanhar;
+            <b>Editar</b> libera alterar e mover (e liga o Ver junto). Etapa sem nada marcado
+            fica invisível para ele.
           </div>
-          <div id="co-etapas-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.35rem;max-height:210px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+          <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('ver')">Todas: só ver</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('editar')">Todas: editar</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(null)">Limpar</button>
+          </div>
+          <div id="co-etapas-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+          <div id="co-etapas-resumo" style="font-size:.72rem;color:var(--t3);margin-top:.45rem"></div>
         </div>
       </div>
     </div>
@@ -2914,13 +2911,16 @@ function renderCorretores(){
   if(!lista.length){ tb.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum corretor cadastrado.</td></tr>'; return; }
   tb.innerHTML=lista.map(c=>{
     const p=c.permissions||{};
-    const ids=Array.isArray(p.etapas_permitidas)?p.etapas_permitidas:[];
-    const nomes=ids.map(nomeEtapa).filter(Boolean);
-    const etapasTxt = !p.ver_somente_etapas
-      ? '<span style="color:var(--t3)">Todas as etapas</span>'
-      : (nomes.length
-          ? nomes.slice(0,3).map(n=>`<span class="tag-item" style="font-size:.68rem">${esc(n)}</span>`).join(' ') + (nomes.length>3?` <span style="color:var(--t3);font-size:.7rem">+${nomes.length-3}</span>`:'')
-          : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>');
+    let mapa = (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : null;
+    if (!mapa) { mapa = {}; (Array.isArray(p.etapas_permitidas)?p.etapas_permitidas:[]).forEach(id => mapa[id]='editar'); }
+    const ed  = Object.keys(mapa).filter(k => mapa[k]==='editar');
+    const vr  = Object.keys(mapa).filter(k => mapa[k]==='ver');
+    const chip = (nome,cor,bg)=>`<span style="display:inline-block;font-size:.68rem;font-weight:700;padding:.1rem .45rem;border-radius:5px;background:${bg};color:${cor};margin-right:.25rem">${nome}</span>`;
+    const etapasTxt = (ed.length+vr.length)
+      ? (ed.length ? chip(ed.length+' editar','#047857','#ecfdf5') : '') +
+        (vr.length ? chip(vr.length+' ver','#1e40af','#eff6ff') : '') +
+        `<div style="color:var(--t3);font-size:.7rem;margin-top:.15rem">${esc([...ed,...vr].map(nomeEtapa).filter(Boolean).slice(0,3).join(', '))}${(ed.length+vr.length)>3?'…':''}</div>`
+      : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>';
     return `<tr>
       <td><b>${esc(c.name)}</b></td>
       <td style="color:var(--t2)">${esc(c.cpf||'—')}</td>
@@ -2934,14 +2934,62 @@ function renderCorretores(){
   }).join('');
 }
 
-function paintCoEtapas(){
-  const on=document.getElementById('co-somente-etapas')?.checked;
-  const lbl=document.getElementById('co-etapas-label');
-  if(lbl){ lbl.style.borderColor = on?'#12B981':'var(--border)'; lbl.style.background = on?'#ecfdf5':'#f8fafc'; }
-  const box=document.getElementById('co-etapas-list');
-  if(box){ box.style.opacity = on?'1':'.5'; }
+// Nível de acesso do corretor por etapa: ausente = não vê; 'ver' = só acompanha;
+// 'editar' = pode alterar e mover. Editar implica ver, por definição.
+let CO_ETAPAS = {};
+
+function setEtapaNivel(stageId, alvo){
+  const atual = CO_ETAPAS[stageId] || null;
+  if (alvo === 'ver') {
+    // Em "editar", clicar em Ver rebaixa para somente leitura — é o caminho
+    // natural de "quero que ele só acompanhe esta etapa". Clicar de novo tira
+    // o acesso por completo.
+    if (atual === 'ver') delete CO_ETAPAS[stageId]; else CO_ETAPAS[stageId] = 'ver';
+  } else {
+    if (atual === 'editar') CO_ETAPAS[stageId] = 'ver';   // desce um degrau
+    else CO_ETAPAS[stageId] = 'editar';                   // editar liga o ver junto
+  }
+  pintarEtapasCorretor();
 }
-function coEtapasTodas(v){ document.querySelectorAll('.co-etapa').forEach(c=>c.checked=v); }
+
+function coEtapasTodas(nivel){
+  CO_ETAPAS = {};
+  if (nivel) (G.stages||[]).forEach(st => { CO_ETAPAS[st.id] = nivel; });
+  pintarEtapasCorretor();
+}
+
+function pintarEtapasCorretor(){
+  const box = document.getElementById('co-etapas-list');
+  const etapas = (G.stages||[]);
+  if (!box) return;
+  if (!etapas.length){
+    box.innerHTML = '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
+    return;
+  }
+  const btn = (id, lvl, ativo, label) => {
+    const cor = ativo ? '#12B981' : 'var(--border)';
+    const bg  = ativo ? '#ecfdf5' : '#fff';
+    const tx  = ativo ? '#047857' : 'var(--t3)';
+    return `<button type="button" onclick="setEtapaNivel('${id}','${lvl}')"
+      style="font-size:.7rem;font-weight:700;padding:.22rem .6rem;border-radius:6px;cursor:pointer;
+             border:1.5px solid ${cor};background:${bg};color:${tx};min-width:56px">${label}</button>`;
+  };
+  box.innerHTML = etapas.map(st => {
+    const n = CO_ETAPAS[st.id] || null;
+    return `<div style="display:flex;align-items:center;gap:.55rem;padding:.3rem .1rem">
+      <span style="width:9px;height:9px;border-radius:50%;background:${st.color||'#94a3b8'};flex-shrink:0"></span>
+      <span style="flex:1;font-size:.8rem;color:${n?'var(--t1)':'var(--t3)'};font-weight:${n?'600':'400'}">${esc(st.name)}</span>
+      ${btn(st.id,'ver',    n==='ver'||n==='editar', 'Ver')}
+      ${btn(st.id,'editar', n==='editar',            'Editar')}
+    </div>`;
+  }).join('');
+  const nVer = Object.values(CO_ETAPAS).filter(v=>v==='ver').length;
+  const nEd  = Object.values(CO_ETAPAS).filter(v=>v==='editar').length;
+  const res  = document.getElementById('co-etapas-resumo');
+  if (res) res.textContent = (nVer+nEd)
+    ? `${nEd} etapa(s) com edição · ${nVer} apenas leitura · ${etapas.length-nVer-nEd} sem acesso`
+    : 'Nenhuma etapa marcada — o corretor entrará e não verá processo nenhum.';
+}
 
 let EDIT_CORRETOR_ID=null;
 function openCorretor(id){
@@ -2957,21 +3005,21 @@ function openCorretor(id){
   document.getElementById('co-active').checked = c ? c.is_active!==false : true;
 
   const p = c?.permissions || {};
-  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_somente_etapas:true, ver_todos_analistas:false };
+  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_todos_analistas:false };
   document.querySelectorAll('.co-perm').forEach(cb=>{
     const k=cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
   });
 
-  const marcadas = new Set(Array.isArray(p.etapas_permitidas)?p.etapas_permitidas:[]);
-  const box=document.getElementById('co-etapas-list');
-  const etapas=(G.stages||[]);
-  box.innerHTML = etapas.length
-    ? etapas.map(st=>`<label style="display:flex;align-items:center;gap:.4rem;font-size:.78rem;cursor:pointer">
-        <input type="checkbox" class="co-etapa" value="${st.id}"${marcadas.has(st.id)?' checked':''}>
-        <span style="width:8px;height:8px;border-radius:50%;background:${st.color||'#94a3b8'};flex-shrink:0"></span>${esc(st.name)}</label>`).join('')
-    : '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
-  paintCoEtapas();
+  // Compatibilidade: cadastros antigos guardavam só a lista de etapas liberadas,
+  // sem nível. Viram "editar", que era o que valia antes.
+  CO_ETAPAS = {};
+  if (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) {
+    Object.entries(p.etapas).forEach(([k,v]) => { if (v === 'ver' || v === 'editar') CO_ETAPAS[k] = v; });
+  } else if (Array.isArray(p.etapas_permitidas)) {
+    p.etapas_permitidas.forEach(id => { CO_ETAPAS[id] = 'editar'; });
+  }
+  pintarEtapasCorretor();
   openModal('modal-corretor-bg');
 }
 
@@ -2985,10 +3033,11 @@ async function saveCorretor(){
   if(pw && pw.length<6){ toast('A senha deve ter ao menos 6 caracteres','error'); return; }
 
   const perms=Object.fromEntries([...document.querySelectorAll('.co-perm')].map(cb=>[cb.dataset.key,cb.checked]));
-  perms.etapas_permitidas=[...document.querySelectorAll('.co-etapa:checked')].map(c=>c.value);
-  if(perms.ver_somente_etapas && !perms.etapas_permitidas.length){
-    toast('Marque ao menos uma etapa, ou desligue a restrição por etapas','error'); return;
-  }
+  perms.etapas = {...CO_ETAPAS};
+  // Lista simples mantida junto para não quebrar leitura antiga do campo.
+  perms.etapas_permitidas = Object.keys(CO_ETAPAS);
+  if(!perms.etapas_permitidas.length &&
+     !confirm('Nenhuma etapa foi marcada. O corretor vai entrar no sistema e não verá processo nenhum. Salvar assim mesmo?')) return;
 
   const payload={
     tenant_id:G.user.tenant_id, type:'corretor', name, cpf,
