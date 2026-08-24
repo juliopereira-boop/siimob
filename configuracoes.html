@@ -260,6 +260,18 @@
         </div>
         <div class="cfg-card-label">Configuração de Comissão</div>
       </div>
+      <div class="cfg-hub-card" onclick="openCfgView('corretores')">
+        <div class="cfg-hub-icon" style="background:#dcfce7">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+        </div>
+        <div class="cfg-card-label">Corretores</div>
+      </div>
+      <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
+        <div class="cfg-hub-icon" style="background:#ede9fe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
+        </div>
+        <div class="cfg-card-label">Usuários Gestores</div>
+      </div>
       <div class="cfg-hub-card" onclick="openCfgView('analistas')">
         <div class="cfg-hub-icon" style="background:#dbeafe">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
@@ -542,6 +554,38 @@
   </div>
 
   <!-- ─── Sub-view: Analistas de Crédito ─── -->
+  <div id="cfg-view-corretores" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Corretores</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input type="text" id="corretor-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="renderCorretores()">
+        <button class="btn btn-primary btn-sm" onclick="openCorretor(null)">+ Novo corretor</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Contato</th><th>Etapas liberadas</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="corretor-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="cfg-view-gestores" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Usuários Gestores</div>
+      <button class="btn btn-primary btn-sm" onclick="openGestor(null)">+ Novo gestor</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Somente um gestor pode cadastrar outro gestor. O gestor tem acesso completo ao painel.</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="gestor-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <div id="cfg-view-analistas" style="display:none">
     <div class="cfg-view-hdr">
       <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
@@ -724,6 +768,88 @@
 </div>
 
 <!-- ═══════ MODAL: Analista de Crédito ═══════ -->
+<div class="modal-bg hidden" id="modal-corretor-bg">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="corretor-modal-title">Novo corretor</div>
+      <button class="modal-close" onclick="closeModal('modal-corretor-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2">
+        <div class="form-group"><label>Nome *</label><input id="co-name"></div>
+        <div class="form-group"><label>CPF (login) *</label><input id="co-cpf" placeholder="somente números"></div>
+        <div class="form-group"><label>E-mail</label><input id="co-email" type="email"></div>
+        <div class="form-group"><label>Telefone</label><input id="co-phone"></div>
+        <div class="form-group"><label>Senha <span id="co-pw-hint" style="font-weight:400;color:var(--t3)"></span></label><input id="co-password" type="password" placeholder="mínimo 6 caracteres"></div>
+        <div class="form-group"><label>Situação</label>
+          <label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem;padding-top:.45rem"><input type="checkbox" id="co-active" checked> Ativo (pode entrar no sistema)</label>
+        </div>
+
+        <div class="form-group full" style="margin-top:.35rem">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">O que o corretor pode fazer</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem">
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="ver_repasses" checked> Ver processos</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="criar_repasses"> Criar processos</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="editar_repasses"> Editar processos</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="alterar_etapa"> Alterar etapa</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="baixar_documentos"> Baixar documentos</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="ver_dashboard"> Ver dashboard</label>
+          </div>
+        </div>
+
+        <div class="form-group full" style="margin-top:.25rem">
+          <label id="co-etapas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc">
+            <div>
+              <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Restringir às etapas selecionadas</div>
+              <div style="font-size:.72rem;color:var(--t3)">Ligado, o corretor só enxerga e só mexe nos processos que estiverem nas etapas marcadas abaixo</div>
+            </div>
+            <input type="checkbox" class="co-perm" data-key="ver_somente_etapas" id="co-somente-etapas" style="width:18px;height:18px;cursor:pointer;accent-color:#12B981;flex-shrink:0;margin-left:1rem" onchange="paintCoEtapas()">
+          </label>
+        </div>
+
+        <div class="form-group full">
+          <label>Etapas em que este corretor atua</label>
+          <div style="display:flex;gap:.5rem;margin:.15rem 0 .5rem">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(true)">Marcar todas</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(false)">Desmarcar todas</button>
+          </div>
+          <div id="co-etapas-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.35rem;max-height:210px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-corretor-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="co-save-btn" onclick="saveCorretor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modal-gestor-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="gestor-modal-title">Novo gestor</div>
+      <button class="modal-close" onclick="closeModal('modal-gestor-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2">
+        <div class="form-group"><label>Nome *</label><input id="ge-name"></div>
+        <div class="form-group"><label>CPF (login) *</label><input id="ge-cpf" placeholder="somente números"></div>
+        <div class="form-group full"><label>E-mail</label><input id="ge-email" type="email"></div>
+        <div class="form-group"><label>Senha <span id="ge-pw-hint" style="font-weight:400;color:var(--t3)"></span></label><input id="ge-password" type="password" placeholder="mínimo 6 caracteres"></div>
+        <div class="form-group"><label>Perfil</label>
+          <select id="ge-role"><option value="admin">Gestor</option><option value="owner">Gestor (proprietário)</option></select>
+        </div>
+        <div class="form-group full"><label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem"><input type="checkbox" id="ge-active" checked> Ativo</label></div>
+      </div>
+      <div style="font-size:.73rem;color:var(--t3);margin-top:.6rem">O gestor tem acesso completo ao painel, incluindo configurações e cadastro de outros gestores.</div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-gestor-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="ge-save-btn" onclick="saveGestor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg hidden" id="modal-analista-bg">
   <div class="modal" style="max-width:480px">
     <div class="modal-hdr">
@@ -1017,6 +1143,13 @@ async function init() {
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   G.slug = A1.slug;
 
+  // Cadastro de gestor só aparece para gestor. A proteção real é do banco: a
+  // política de a1_users só aceita escrita de quem tem papel owner/admin.
+  if (!(G.user.role === 'owner' || G.user.role === 'admin')) {
+    const _cg = document.getElementById('cfg-card-gestores');
+    if (_cg) _cg.style.display = 'none';
+  }
+
   const roleLabel = G.user.role === 'partner'
     ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
     : G.user.role;
@@ -1062,7 +1195,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','gestores','correspondentes','despachantes','bancos','cartorios'];
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1077,6 +1210,8 @@ function openCfgView(view) {
   if (view === 'doctypes') initDocTypesView();
   if (view === 'comissao') loadCommission();
   if (view === 'analistas') loadAnalistas();
+  if (view === 'corretores') loadCorretores();
+  if (view === 'gestores')   loadGestores();
   if (view === 'correspondentes') { loadEmpresas(); loadPartners(); }
   if (view === 'despachantes') loadDespachantes();
   if (view === 'bancos') loadBancos();
@@ -2746,6 +2881,244 @@ async function deletePartner(id, name) {
     G.partners = G.partners.filter(p=>p.id!==id);
     ptFilter(); refreshCorrLimits(); toast('Cadastro removido','info');
   } else toast('Erro ao remover','error');
+}
+
+// ═══ Corretores ═══════════════════════════════════════════════════════════════
+// Corretor é um parceiro de type='corretor' — reaproveita o login de parceiro
+// (a1_partner_login) já existente, então ganha acesso sem função nova no banco.
+// O diferencial é o conjunto de etapas em que ele atua: as permissões abaixo
+// valem SOBRE essas etapas.
+let CORRETORES = [];
+
+async function loadCorretores(){
+  // As etapas normalmente já vieram no carregamento da página; se ainda não,
+  // busca aqui — sem elas a lista de seleção de etapas ficaria vazia.
+  if(!G.stages || !G.stages.length){
+    G.stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`,{headers:A1.headers()})
+      .then(r=>r.json()).catch(()=>[]);
+    if(!Array.isArray(G.stages)) G.stages=[];
+  }
+  CORRETORES = await fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  if(!Array.isArray(CORRETORES)) CORRETORES=[];
+  renderCorretores();
+}
+
+function nomeEtapa(id){ const st=(G.stages||[]).find(x=>x.id===id); return st?st.name:null; }
+
+function renderCorretores(){
+  const tb=document.getElementById('corretor-tbody'); if(!tb) return;
+  const q=(document.getElementById('corretor-search')?.value||'').toLowerCase();
+  const lista=CORRETORES.filter(c=>!q || `${c.name} ${c.cpf||''} ${c.email||''}`.toLowerCase().includes(q));
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum corretor cadastrado.</td></tr>'; return; }
+  tb.innerHTML=lista.map(c=>{
+    const p=c.permissions||{};
+    const ids=Array.isArray(p.etapas_permitidas)?p.etapas_permitidas:[];
+    const nomes=ids.map(nomeEtapa).filter(Boolean);
+    const etapasTxt = !p.ver_somente_etapas
+      ? '<span style="color:var(--t3)">Todas as etapas</span>'
+      : (nomes.length
+          ? nomes.slice(0,3).map(n=>`<span class="tag-item" style="font-size:.68rem">${esc(n)}</span>`).join(' ') + (nomes.length>3?` <span style="color:var(--t3);font-size:.7rem">+${nomes.length-3}</span>`:'')
+          : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>');
+    return `<tr>
+      <td><b>${esc(c.name)}</b></td>
+      <td style="color:var(--t2)">${esc(c.cpf||'—')}</td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(c.email||'—')}${c.phone?`<div style="color:var(--t3)">${esc(c.phone)}</div>`:''}</td>
+      <td>${etapasTxt}</td>
+      <td>${c.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openCorretor('${c.id}')">Editar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteCorretor('${c.id}')">Excluir</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function paintCoEtapas(){
+  const on=document.getElementById('co-somente-etapas')?.checked;
+  const lbl=document.getElementById('co-etapas-label');
+  if(lbl){ lbl.style.borderColor = on?'#12B981':'var(--border)'; lbl.style.background = on?'#ecfdf5':'#f8fafc'; }
+  const box=document.getElementById('co-etapas-list');
+  if(box){ box.style.opacity = on?'1':'.5'; }
+}
+function coEtapasTodas(v){ document.querySelectorAll('.co-etapa').forEach(c=>c.checked=v); }
+
+let EDIT_CORRETOR_ID=null;
+function openCorretor(id){
+  const c = id ? CORRETORES.find(x=>x.id===id) : null;
+  EDIT_CORRETOR_ID = c ? c.id : null;
+  document.getElementById('corretor-modal-title').textContent = c ? 'Editar corretor' : 'Novo corretor';
+  document.getElementById('co-name').value  = c?.name  || '';
+  document.getElementById('co-cpf').value   = c?.cpf   || '';
+  document.getElementById('co-email').value = c?.email || '';
+  document.getElementById('co-phone').value = c?.phone || '';
+  document.getElementById('co-password').value = '';
+  document.getElementById('co-pw-hint').textContent = c ? '(deixe vazio para manter a atual)' : '*';
+  document.getElementById('co-active').checked = c ? c.is_active!==false : true;
+
+  const p = c?.permissions || {};
+  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_somente_etapas:true };
+  document.querySelectorAll('.co-perm').forEach(cb=>{
+    const k=cb.dataset.key;
+    cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
+  });
+
+  const marcadas = new Set(Array.isArray(p.etapas_permitidas)?p.etapas_permitidas:[]);
+  const box=document.getElementById('co-etapas-list');
+  const etapas=(G.stages||[]);
+  box.innerHTML = etapas.length
+    ? etapas.map(st=>`<label style="display:flex;align-items:center;gap:.4rem;font-size:.78rem;cursor:pointer">
+        <input type="checkbox" class="co-etapa" value="${st.id}"${marcadas.has(st.id)?' checked':''}>
+        <span style="width:8px;height:8px;border-radius:50%;background:${st.color||'#94a3b8'};flex-shrink:0"></span>${esc(st.name)}</label>`).join('')
+    : '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
+  paintCoEtapas();
+  openModal('modal-corretor-bg');
+}
+
+async function saveCorretor(){
+  const name=document.getElementById('co-name').value.trim();
+  const cpf=document.getElementById('co-cpf').value.replace(/\D/g,'');
+  const pw=document.getElementById('co-password').value;
+  if(!name){ toast('Informe o nome do corretor','error'); return; }
+  if(cpf.length!==11){ toast('O CPF deve ter 11 dígitos — é o login do corretor','error'); return; }
+  if(!EDIT_CORRETOR_ID && pw.length<6){ toast('Defina uma senha de ao menos 6 caracteres','error'); return; }
+  if(pw && pw.length<6){ toast('A senha deve ter ao menos 6 caracteres','error'); return; }
+
+  const perms=Object.fromEntries([...document.querySelectorAll('.co-perm')].map(cb=>[cb.dataset.key,cb.checked]));
+  perms.etapas_permitidas=[...document.querySelectorAll('.co-etapa:checked')].map(c=>c.value);
+  if(perms.ver_somente_etapas && !perms.etapas_permitidas.length){
+    toast('Marque ao menos uma etapa, ou desligue a restrição por etapas','error'); return;
+  }
+
+  const payload={
+    tenant_id:G.user.tenant_id, type:'corretor', name, cpf,
+    email:document.getElementById('co-email').value.trim(),
+    phone:document.getElementById('co-phone').value.trim(),
+    is_active:document.getElementById('co-active').checked,
+    approved:true, permissions:perms
+  };
+  if(pw) payload.password_hash=await sha256(pw+'::a1');
+
+  const btn=document.getElementById('co-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    let res;
+    if(EDIT_CORRETOR_ID){
+      res=await fetch(`${A1.rest('a1_partners')}?id=eq.${EDIT_CORRETOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(payload)});
+    } else {
+      res=await fetch(A1.rest('a1_partners'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(payload)});
+    }
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||('HTTP '+res.status)); }
+    toast(EDIT_CORRETOR_ID?'Corretor atualizado':'Corretor cadastrado','success');
+    closeModal('modal-corretor-bg');
+    loadCorretores();
+  }catch(e){ toast('Erro ao salvar: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+async function deleteCorretor(id){
+  const c=CORRETORES.find(x=>x.id===id);
+  if(!confirm(`Excluir o corretor ${c?c.name:''}? Ele perde o acesso ao sistema.`)) return;
+  const res=await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok){ toast('Corretor excluído','info'); loadCorretores(); }
+  else toast('Não foi possível excluir','error');
+}
+
+// ═══ Usuários gestores ════════════════════════════════════════════════════════
+// Gestor vive em a1_users (role owner/admin) e entra pelo login de Gestor.
+// Só gestor cadastra gestor — a regra vale na tela E no banco: a política de
+// a1_users só aceita escrita de quem tem papel owner/admin na sessão.
+let GESTORES = [];
+function souGestor(){ return G.user && (G.user.role === 'owner' || G.user.role === 'admin'); }
+
+async function loadGestores(){
+  if(!souGestor()){
+    document.getElementById('gestor-tbody').innerHTML =
+      '<tr><td colspan="6" style="padding:2rem;text-align:center;color:#b45309">Somente um gestor pode ver e cadastrar outros gestores.</td></tr>';
+    return;
+  }
+  GESTORES = await fetch(`${A1.rest('a1_users')}?role=in.(owner,admin)&order=created_at.asc&select=id,name,cpf,email,role,is_active,created_at`,{headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  if(!Array.isArray(GESTORES)) GESTORES=[];
+  renderGestores();
+}
+
+function renderGestores(){
+  const tb=document.getElementById('gestor-tbody'); if(!tb) return;
+  if(!GESTORES.length){ tb.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum gestor cadastrado.</td></tr>'; return; }
+  tb.innerHTML=GESTORES.map(u=>`<tr>
+    <td><b>${esc(u.name)}</b></td>
+    <td style="color:var(--t2)">${esc(u.cpf||'—')}</td>
+    <td style="color:var(--t2);font-size:.78rem">${esc(u.email||'—')}</td>
+    <td>${u.role==='owner'?'<span style="color:#7c3aed;font-weight:700;font-size:.75rem">Proprietário</span>':'<span style="font-size:.75rem">Gestor</span>'}</td>
+    <td>${u.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button>
+      ${u.id===G.user.id?'<span style="font-size:.7rem;color:var(--t3);margin-left:.3rem">você</span>'
+        :`<button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteGestor('${u.id}')">Excluir</button>`}
+    </td></tr>`).join('');
+}
+
+let EDIT_GESTOR_ID=null;
+function openGestor(id){
+  if(!souGestor()){ toast('Somente um gestor pode cadastrar outro gestor.','error'); return; }
+  const u = id ? GESTORES.find(x=>x.id===id) : null;
+  EDIT_GESTOR_ID = u ? u.id : null;
+  document.getElementById('gestor-modal-title').textContent = u ? 'Editar gestor' : 'Novo gestor';
+  document.getElementById('ge-name').value  = u?.name  || '';
+  document.getElementById('ge-cpf').value   = u?.cpf   || '';
+  document.getElementById('ge-email').value = u?.email || '';
+  document.getElementById('ge-password').value='';
+  document.getElementById('ge-pw-hint').textContent = u ? '(deixe vazio para manter a atual)' : '*';
+  document.getElementById('ge-role').value  = u?.role  || 'admin';
+  document.getElementById('ge-active').checked = u ? u.is_active!==false : true;
+  openModal('modal-gestor-bg');
+}
+
+async function saveGestor(){
+  if(!souGestor()){ toast('Somente um gestor pode cadastrar outro gestor.','error'); return; }
+  const name=document.getElementById('ge-name').value.trim();
+  const cpf=document.getElementById('ge-cpf').value.replace(/\D/g,'');
+  const pw=document.getElementById('ge-password').value;
+  if(!name){ toast('Informe o nome','error'); return; }
+  if(cpf.length!==11){ toast('O CPF deve ter 11 dígitos — é o login do gestor','error'); return; }
+  if(!EDIT_GESTOR_ID && pw.length<6){ toast('Defina uma senha de ao menos 6 caracteres','error'); return; }
+  if(pw && pw.length<6){ toast('A senha deve ter ao menos 6 caracteres','error'); return; }
+
+  const payload={
+    tenant_id:G.user.tenant_id, name, cpf,
+    email:document.getElementById('ge-email').value.trim(),
+    role:document.getElementById('ge-role').value,
+    is_active:document.getElementById('ge-active').checked
+  };
+  if(pw) payload.password_hash=await sha256(pw+'::a1');
+
+  const btn=document.getElementById('ge-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    let res;
+    if(EDIT_GESTOR_ID){
+      res=await fetch(`${A1.rest('a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(payload)});
+    } else {
+      res=await fetch(A1.rest('a1_users'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(payload)});
+    }
+    if(!res.ok){
+      const e=await res.json().catch(()=>({}));
+      const msg=(e.message||'').includes('unique') ? 'Já existe um usuário com este CPF.' : (e.message||('HTTP '+res.status));
+      throw new Error(msg);
+    }
+    toast(EDIT_GESTOR_ID?'Gestor atualizado':'Gestor cadastrado','success');
+    closeModal('modal-gestor-bg');
+    loadGestores();
+  }catch(e){ toast('Erro ao salvar: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+async function deleteGestor(id){
+  if(!souGestor()){ toast('Somente um gestor pode remover outro gestor.','error'); return; }
+  if(id===G.user.id){ toast('Você não pode excluir o próprio usuário.','error'); return; }
+  const u=GESTORES.find(x=>x.id===id);
+  if(!confirm(`Excluir o gestor ${u?u.name:''}? Ele perde o acesso ao sistema.`)) return;
+  const res=await fetch(`${A1.rest('a1_users')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok){ toast('Gestor excluído','info'); loadGestores(); }
+  else toast('Não foi possível excluir','error');
 }
 
 async function sha256(msg) {
