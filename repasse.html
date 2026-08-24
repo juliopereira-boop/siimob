@@ -1091,6 +1091,7 @@
       <div>
         <div class="modal-title" id="mc-title">Repasse</div>
         <div class="modal-sub" id="mc-sub"></div>
+        <div id="mc-lock" style="display:none;margin-top:.4rem;font-size:.74rem;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:7px;padding:.4rem .6rem"></div>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">
         <select id="mc-stage-sel" style="padding:.3rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;font-weight:600"></select>
@@ -1502,8 +1503,8 @@
             transition:border-color .15s,background .15s;
           " onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#2563eb':'var(--border)'">
             <div>
-              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Ver todos os analistas</div>
-              <div style="font-size:.72rem;color:var(--t3)">Usuário pode ver operações de qualquer analista; desmarcado, apenas dos selecionados abaixo</div>
+              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Visão completa</div>
+              <div style="font-size:.72rem;color:var(--t3)">Vê os processos de todos os usuários. Editar continua restrito aos processos dele — nos demais, precisa liberar a edição no próprio cartão. Desmarcado, vê apenas os próprios processos.</div>
             </div>
             <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas"
               style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem"
@@ -1791,6 +1792,50 @@ async function init() {
   }
 }
 
+// ─── Escopo por usuário ───────────────────────────────────────────────────────
+// Cada usuário enxerga as próprias operações. "Visão completa" libera ver as dos
+// outros; editar continua restrito ao que é dele, salvo liberação no cartão.
+function souGestorUser(){ return !!G.user && G.user.role !== 'partner'; }
+function souCorretor(){ return !!G.user && G.user.role === 'partner' && G.user.type === 'corretor'; }
+function meuNome(){ return ((G.user && G.user.name) || '').trim().toLowerCase(); }
+
+function temVisaoCompleta(){
+  if (souGestorUser()) return true;
+  const p = (G.user && G.user.permissions) || {};
+  if (p.gerente) return true;
+  // Ausente = true para não mudar o que já valia para quem já estava cadastrado;
+  // corretores novos nascem com a chave em false (marcada no cadastro).
+  return ('ver_todos_analistas' in p) ? !!p.ver_todos_analistas : true;
+}
+
+function isMeuProcesso(c){
+  if (souGestorUser()) return true;
+  const eu = meuNome(); if (!eu || !c) return false;
+  return [c.broker_name, c.manager_name, c.payload && c.payload.usuario_correspondente]
+    .some(v => (v || '').trim().toLowerCase() === eu);
+}
+
+// Corretor restrito: conjunto de etapas em que ele atua (null = sem restrição).
+function etapasDoUsuario(){
+  const p = (G.user && G.user.permissions) || {};
+  if (!p.ver_somente_etapas) return null;
+  return new Set(Array.isArray(p.etapas_permitidas) ? p.etapas_permitidas : []);
+}
+
+// Cartões que o usuário liberou manualmente para editar nesta sessão.
+const _destravados = new Set();
+function liberarEdicao(id){
+  _destravados.add(id);
+  toast('Edição liberada para este processo.','info');
+  openCard(id);
+}
+function podeEditarProcesso(c){
+  if (!hasPerm('editar_repasses')) return false;
+  if (souGestorUser()) return true;
+  if (((G.user && G.user.permissions) || {}).gerente) return true;
+  return isMeuProcesso(c) || (c && _destravados.has(c.id));
+}
+
 function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
@@ -2003,7 +2048,15 @@ function switchView(view) {
 function dashCases() {
   const { regional, empr, parceiro, re, analista, corretor, search } = G.dashFilters;
   const sm = stageMap();
+  const _etDash = etapasDoUsuario();
   return G.cases.filter(c => {
+    // O painel segue o mesmo recorte do quadro: parceiro vê a própria empresa,
+    // e sem visão completa vê apenas as próprias operações.
+    if (G.user.role === 'partner') {
+      if (G.user.empresa_name && c.partner_name !== G.user.empresa_name) return false;
+    }
+    if (!temVisaoCompleta() && !isMeuProcesso(c)) return false;
+    if (_etDash && !_etDash.has(c.stage_id)) return false;
     if (regional) { const _r=(c.payload&&c.payload.regional)||sm[c.stage_id]?.group_key||''; if(_r!==regional) return false; }
     if (empr     && c.development !== empr)       return false;
     if (parceiro && c.partner_name !== parceiro)  return false;
@@ -2312,6 +2365,11 @@ function filteredCases() {
         const allowed = G.user.permissions?.analistas_permitidos || [];
         if (!allowed.length || !allowed.includes(c.manager_name)) return false;
       }
+      // Sem visão completa, só as próprias operações.
+      if (!temVisaoCompleta() && !isMeuProcesso(c)) return false;
+      // Corretor restrito a etapas: só enxerga o que está nelas.
+      const _et = etapasDoUsuario();
+      if (_et && !_et.has(c.stage_id)) return false;
     }
     const stage=sm[c.stage_id];
     const _reg=(c.payload&&c.payload.regional)||stage?.group_key||'';
@@ -2444,8 +2502,19 @@ function avisoBloqueio(fromId){
 async function moveCard(caseId, stageId) {
   const stage=G.stages.find(s=>s.id===stageId);
   if(!stage) return;
-  const _atual=(G.cases.find(c=>c.id===caseId)||{}).stage_id;
+  const _caso=G.cases.find(c=>c.id===caseId)||{};
+  const _atual=_caso.stage_id;
   if(!podeMover(_atual, stageId)){ avisoBloqueio(_atual); return; }
+  if(!podeEditarProcesso(_caso)){
+    toast('Este processo não é seu. Abra o cartão e libere a edição para movê-lo.','error'); return;
+  }
+  if(souCorretor() && !hasPerm('alterar_etapa')){
+    toast('Você não tem permissão para alterar a etapa.','error'); return;
+  }
+  const _etMov=etapasDoUsuario();
+  if(_etMov && !_etMov.has(stageId)){
+    toast('Você não atua na etapa de destino.','error'); return;
+  }
   await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:stage.name,stage_entered_at:new Date().toISOString()})});
   await Promise.all([
     fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:caseId,type:'stage_change',description:`Movido para: ${stage.name}`,actor_name:G.user.name})}),
@@ -2489,6 +2558,16 @@ async function openCard(id) {
   if(c.is_new){
     fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({is_new:false})});
     c.is_new=false;
+  }
+  const _lock=document.getElementById('mc-lock');
+  if(_lock){
+    if(podeEditarProcesso(c)){ _lock.style.display='none'; _lock.innerHTML=''; }
+    else{
+      const dono=[c.broker_name,c.manager_name,c.payload&&c.payload.usuario_correspondente].find(Boolean)||'outro usuário';
+      _lock.style.display='';
+      _lock.innerHTML=`Processo de <b>${esc(dono)}</b> — você está apenas visualizando. `+
+        `<button class="btn btn-ghost btn-sm" style="margin-left:.4rem" onclick="liberarEdicao('${c.id}')">Liberar edição</button>`;
+    }
   }
   document.getElementById('mc-title').textContent=c.client_name;
   document.getElementById('mc-sub').textContent=[c.development,c.block&&`Bl ${c.block}`,c.unit&&`Un ${c.unit}`].filter(Boolean).join(' · ');
@@ -2800,6 +2879,7 @@ async function saveCase() {
   if(document.getElementById('vr-previsto')){ saveValores(); return; }
   if(!document.getElementById('e-name')){ toast('Abra a aba "Dados" para salvar o cadastro','info'); return; }
   if (!hasPerm('editar_repasses')) { toast('Sem permissão para editar operações', 'error'); return; }
+  if (!podeEditarProcesso(G.editingCaseData)) { toast('Este processo não é seu. Use "Liberar edição" no topo do cartão.', 'error'); return; }
   const stageId=document.getElementById('mc-stage-sel').value;
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
@@ -4382,6 +4462,7 @@ async function importCvcrmCase(){
 async function attachDoc(file){
   if(!file||!G.editingCaseId) return;
   if(!hasPerm('editar_repasses')){ toast('Sem permissão para anexar documentos. Peça ao gestor a permissão "Editar operações" ou "Gerente".','error'); return; }
+  if(!podeEditarProcesso(G.editingCaseData)){ toast('Este processo não é seu. Use "Liberar edição" no topo do cartão.','error'); return; }
   const type=document.getElementById('doc-type-sel')?.value||'';
   const docId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   const safeName=(file.name||'documento').replace(/[^a-zA-Z0-9._-]/g,'_');
@@ -4406,6 +4487,7 @@ async function attachDoc(file){
 async function removeDoc(docId){
   if(!G.editingCaseId) return;
   if(!hasPerm('editar_repasses')){ toast('Sem permissão para remover documentos.','error'); return; }
+  if(!podeEditarProcesso(G.editingCaseData)){ toast('Este processo não é seu. Use "Liberar edição" no topo do cartão.','error'); return; }
   if(!confirm('Remover este documento?')) return;
   const list=Array.isArray(G.editingCaseData.documents)?G.editingCaseData.documents:[];
   if (list.some(d=>d.id===docId)) {

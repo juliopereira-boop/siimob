@@ -794,6 +794,7 @@
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="alterar_etapa"> Alterar etapa</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="baixar_documentos"> Baixar documentos</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="ver_dashboard"> Ver dashboard</label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer" title="Sem isto, o corretor vê apenas os processos em que ele é o corretor"><input type="checkbox" class="co-perm" data-key="ver_todos_analistas"> Visão completa (ver de todos)</label>
           </div>
         </div>
 
@@ -977,8 +978,8 @@
         <div class="form-group full" style="margin-top:.25rem">
           <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#2563eb':'var(--border)'">
             <div>
-              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Ver todos os analistas</div>
-              <div style="font-size:.72rem;color:var(--t3)">Usuário pode ver operações de qualquer analista; desmarcado, apenas dos selecionados abaixo</div>
+              <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Visão completa</div>
+              <div style="font-size:.72rem;color:var(--t3)">Vê os processos de todos os usuários. Editar continua restrito aos processos dele — nos demais, precisa liberar a edição no próprio cartão. Desmarcado, vê apenas os próprios processos.</div>
             </div>
             <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem" onchange="toggleAnalistaChecklist(this.checked)">
           </label>
@@ -2956,7 +2957,7 @@ function openCorretor(id){
   document.getElementById('co-active').checked = c ? c.is_active!==false : true;
 
   const p = c?.permissions || {};
-  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_somente_etapas:true };
+  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_somente_etapas:true, ver_todos_analistas:false };
   document.querySelectorAll('.co-perm').forEach(cb=>{
     const k=cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
