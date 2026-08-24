@@ -238,6 +238,7 @@
   </select>
   <button class="btn btn-primary" onclick="openNewStage()">+ Nova Etapa</button>
   <button class="btn btn-ghost" onclick="autoLayout()">Auto-organizar</button>
+  <button class="btn btn-ghost" id="wf-lock-btn" onclick="toggleWfLock()" title="Quando bloqueado, o processo só anda para uma etapa ligada por seta">Workflow: —</button>
   <a class="btn btn-ghost" id="back-btn" href="">← Voltar</a>
 </div>
 
@@ -404,11 +405,47 @@ function getSelectedColor() {
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
+let WF_LOCK = false;
+
+// Bloqueio do workflow: quando ligado, o processo só pode ir para uma etapa
+// ligada por uma seta saindo da etapa atual. Fica em a1_config, uma chave por
+// módulo, para não haver disputa de escrita entre módulos.
+function wfLockKey() { return 'wf_lock_' + MODULE; }
+
+async function loadWfLock() {
+  const rows = await fetch(`${A1.rest('a1_config')}?key=eq.${wfLockKey()}&select=value`, { headers: A1.headers() })
+    .then(r => r.json()).catch(() => []);
+  WF_LOCK = !!(rows && rows[0] && String(rows[0].value) === 'true');
+  paintWfLock();
+}
+
+function paintWfLock() {
+  const b = document.getElementById('wf-lock-btn');
+  if (!b) return;
+  b.textContent = WF_LOCK ? '🔒 Workflow bloqueado' : '🔓 Workflow livre';
+  b.style.color       = WF_LOCK ? '#fca5a5' : '#8892a4';
+  b.style.borderColor = WF_LOCK ? 'rgba(239,68,68,.35)' : 'rgba(255,255,255,.1)';
+}
+
+async function toggleWfLock() {
+  const novo = !WF_LOCK;
+  const res = await fetch(A1.rest('a1_config'), {
+    method: 'POST', headers: A1.upsertHeaders(),
+    body: JSON.stringify({ tenant_id: A1.user.tenant_id, key: wfLockKey(), value: String(novo) })
+  });
+  if (!res.ok) { toast('Não foi possível salvar o bloqueio do workflow', 'error'); return; }
+  WF_LOCK = novo; paintWfLock();
+  toast(novo
+    ? 'Workflow bloqueado: o processo só anda pelas ligações desenhadas.'
+    : 'Workflow livre: o processo pode ir para qualquer etapa.', 'success');
+}
+
 async function load() {
   [stages, edges] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.${MODULE}&order=position.asc`, { headers: A1.headers() }).then(r => r.json()),
     fetch(`${A1.rest('a1_stage_edges')}?order=id`, { headers: A1.headers() }).then(r => r.json())
   ]);
+  loadWfLock();
 
   // Card counts
   const casesRes = await fetch(`${A1.rest('a1_cases')}?module_key=eq.${MODULE}&select=stage_id`, { headers: A1.headers() }).then(r => r.json());
