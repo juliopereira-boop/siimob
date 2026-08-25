@@ -1188,7 +1188,7 @@
               </select>
             </div>
             <div class="form-group"><label>Corretor <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
-              <input id="n-broker" type="text" placeholder="Nome do corretor">
+              <select id="n-broker"><option value="">Selecione...</option></select>
             </div>
           </div>
         </div>
@@ -1952,16 +1952,18 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows, cfgRows, analistasRows] = await Promise.all([
+  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,attachment_pdf,attachment_name,attachment_doc2,attachment_doc2_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
   G.cases  = cases;
   if (Array.isArray(analistasRows) && analistasRows.length) G.analistas = analistasRows; // popula o filtro de Analista
+  G.corretores = Array.isArray(corretoresRows) ? corretoresRows : [];
   // Garante que TODO processo apareça no pipeline: processos com etapa inválida
   // (stage_id nulo ou apontando para etapa inexistente) são movidos para a etapa
   // inicial. Não-destrutivo: só afeta quem não estava em nenhuma etapa válida.
@@ -2671,6 +2673,11 @@ function _empresaNames(){ return (Array.isArray(G.empresas)?G.empresas:[]).filte
 function _imobNames(){ return (Array.isArray(G.imobs)?G.imobs:[]).map(i=>i.name); }
 function _ccaNames(){ return (Array.isArray(G.partners)?G.partners:[]).map(p=>p.name); }
 function _analistaNames(){ return (Array.isArray(G.analistas)?G.analistas:[]).filter(a=>a.is_active!==false).map(a=>a.name); }
+// Corretores cadastrados em Configurações > Corretores. selOpts preserva o nome
+// que já estiver gravado no processo mesmo que não esteja na lista (marcando
+// "não cadastrado"), para não apagar o corretor de processos antigos nem o nome
+// que veio da importação de PDF.
+function _corretorNames(){ return (Array.isArray(G.corretores)?G.corretores:[]).filter(c=>c.is_active!==false).map(c=>c.name); }
 
 function renderModalDet() {
   const c=G.editingCaseData||{}, p=c.payload||{};
@@ -2696,7 +2703,7 @@ function renderModalDet() {
       <div class="form-group"><label>Imobiliaria</label><select id="e-re">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
       <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
       <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
-      <div class="form-group"><label>Corretor</label><input id="e-broker" value="${esc(c.broker_name||'')}"></div>
+      <div class="form-group"><label>Corretor</label><select id="e-broker">${selOpts(_corretorNames(), c.broker_name)}</select></div>
       <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
     </div>
     <div class="form-section-title">Entrevista</div>
@@ -3060,6 +3067,9 @@ async function openNewCase() {
       G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${a.name}">${esc(a.name)}</option>`).join('');
     managerSel.disabled = false;
   }
+
+  const brokerSel = document.getElementById('n-broker');
+  if (brokerSel) brokerSel.innerHTML = selOpts(_corretorNames(), '');
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
 }
