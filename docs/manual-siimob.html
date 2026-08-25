@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SIIMOB — Manual de Uso</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+@page :first { margin: 0; }
+:root{
+  --brand:#3D5CC8; --brand-d:#2945B0; --ink:#0B1220; --t2:#3F4A61; --t3:#7A8598;
+  --line:#DCE2EE; --soft:#F4F7FC; --go:#0F9D74; --warn:#B4740D; --stop:#C4322F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);
+     font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ── Capa ───────────────────────────────────────────── */
+.capa{height:297mm;background:linear-gradient(160deg,#0B1220 0%,#1B2A55 55%,#2945B0 100%);
+      color:#fff;padding:34mm 22mm;display:flex;flex-direction:column;page-break-after:always;position:relative}
+.capa .logo{font-size:30pt;font-weight:800;letter-spacing:-1.2px}
+.capa .logo i{font-style:normal;color:#8FA9FF}
+.capa .tag{font-size:8.5pt;letter-spacing:3px;text-transform:uppercase;color:#9FB2E8;margin-top:3mm}
+.capa h1{font-size:36pt;line-height:1.05;font-weight:800;margin-top:auto;letter-spacing:-1.5px}
+.capa .sub{font-size:12pt;color:#C3D0F0;margin-top:6mm;max-width:120mm;line-height:1.5}
+.capa .rod{margin-top:auto;font-size:9pt;color:#8FA0C8;border-top:1px solid rgba(255,255,255,.18);padding-top:5mm}
+
+/* ── Estrutura ──────────────────────────────────────── */
+h2{font-size:16pt;color:var(--brand-d);font-weight:800;margin:0 0 4mm;padding-bottom:2.5mm;
+   border-bottom:2.5px solid var(--brand);letter-spacing:-.4px;page-break-after:avoid}
+h3{font-size:11.5pt;color:var(--ink);font-weight:700;margin:6mm 0 2mm;page-break-after:avoid}
+h4{font-size:10pt;color:var(--brand-d);font-weight:700;margin:4mm 0 1.5mm;page-break-after:avoid}
+p{margin:0 0 2.5mm;text-align:justify}
+.sec{page-break-before:always}
+ul,ol{margin:0 0 3mm 5mm}
+li{margin-bottom:1.4mm}
+b,strong{font-weight:700}
+code{background:var(--soft);border:1px solid var(--line);border-radius:3px;padding:.3mm 1.3mm;
+     font-family:Consolas,monospace;font-size:9pt}
+
+/* ── Componentes ────────────────────────────────────── */
+.num{counter-reset:passo;margin:0 0 3mm;padding:0;list-style:none}
+.num li{counter-increment:passo;position:relative;padding-left:9mm;margin-bottom:2.4mm}
+.num li::before{content:counter(passo);position:absolute;left:0;top:.2mm;width:6mm;height:6mm;
+  background:var(--brand);color:#fff;border-radius:50%;font-size:8pt;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+
+table{width:100%;border-collapse:collapse;margin:0 0 4mm;font-size:9.3pt;page-break-inside:avoid}
+th{background:var(--brand);color:#fff;text-align:left;padding:2mm 2.5mm;font-weight:700;font-size:9pt}
+td{border:1px solid var(--line);padding:2mm 2.5mm;vertical-align:top}
+tr:nth-child(even) td{background:#FAFCFF}
+
+.box{border-left:4px solid var(--brand);background:var(--soft);padding:3mm 4mm;margin:0 0 4mm;
+     border-radius:0 5px 5px 0;page-break-inside:avoid}
+.box.aten{border-left-color:var(--warn);background:#FFF9EC}
+.box.perigo{border-left-color:var(--stop);background:#FEF2F2}
+.box.ok{border-left-color:var(--go);background:#EFFBF6}
+.box p:last-child{margin-bottom:0}
+.box .tit{font-weight:700;font-size:9.5pt;margin-bottom:1mm;display:block}
+
+.pill{display:inline-block;padding:.5mm 2mm;border-radius:3px;font-size:8.4pt;font-weight:700}
+.p-b{background:#E4EAFB;color:var(--brand-d)}
+.p-g{background:#DFF5EC;color:var(--go)}
+.p-a{background:#FDF0D8;color:var(--warn)}
+.p-r{background:#FBE3E3;color:var(--stop)}
+
+.sumario{list-style:none;margin:0}
+.sumario li{padding:2mm 0;border-bottom:1px dotted var(--line);font-size:10.5pt}
+.sumario .n{display:inline-block;width:9mm;color:var(--brand);font-weight:800}
+.sumario small{color:var(--t3);display:block;margin-left:9mm;font-size:8.8pt}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ CAPA ══════════════ -->
+<div class="capa">
+  <div>
+    <div class="logo">SI<i>I</i>MOB</div>
+    <div class="tag">Gestão de Repasse Habitacional</div>
+  </div>
+  <h1>Manual<br>de Uso</h1>
+  <div class="sub">Guia completo do sistema: do primeiro acesso à conclusão do repasse, passo a passo.</div>
+  <div class="rod">Documento de apoio ao usuário · Versão 1.0</div>
+</div>
+
+<!-- ══════════════ SUMÁRIO ══════════════ -->
+<h2>Sumário</h2>
+<ul class="sumario">
+  <li><span class="n">1</span> Primeiro acesso<small>Endereço, perfis de login e regras de sessão</small></li>
+  <li><span class="n">2</span> Conhecendo as telas<small>Dashboard, Andamento, Listagem e Configurações</small></li>
+  <li><span class="n">3</span> Dashboard<small>O que cada indicador mostra</small></li>
+  <li><span class="n">4</span> Andamento (pipeline)<small>Acompanhar e mover processos</small></li>
+  <li><span class="n">5</span> O cartão do processo<small>Dados, Histórico, Eventos, Valores e Documentos</small></li>
+  <li><span class="n">6</span> Cadastrar um processo<small>Manualmente ou importando um PDF</small></li>
+  <li><span class="n">7</span> Documentos<small>Anexar, abrir e remover</small></li>
+  <li><span class="n">8</span> Listagem<small>Visão em tabela e ações em lote</small></li>
+  <li><span class="n">9</span> Configurações<small>Cadastros que alimentam o sistema</small></li>
+  <li><span class="n">10</span> Workflow<small>Desenhar as etapas e travar o caminho</small></li>
+  <li><span class="n">11</span> Usuários e permissões<small>Quem entra e o que cada um pode fazer</small></li>
+  <li><span class="n">12</span> Dúvidas frequentes<small>O que fazer quando algo não sai como esperado</small></li>
+</ul>
+
+<!-- ══════════════ 1 ══════════════ -->
+<div class="sec">
+<h2>1. Primeiro acesso</h2>
+
+<h3>1.1 Endereço do sistema</h3>
+<p>Cada empresa tem seu próprio endereço, formado pelo nome dela no sistema. O formato é
+<code>seusistema.com.br/<b>suaempresa</b>/login</code>. Use sempre o endereço enviado pela equipe de
+implantação e salve-o nos favoritos do navegador.</p>
+
+<div class="box aten">
+  <span class="tit">Use apenas o endereço oficial</span>
+  <p>Se você tiver algum endereço antigo salvo, apague-o. Entrar por um endereço desatualizado
+  pode mostrar informações defasadas e derrubar sua sessão sem explicação.</p>
+</div>
+
+<h3>1.2 Escolha o seu perfil</h3>
+<p>Na tela de entrada aparecem os perfis disponíveis. Clique no seu:</p>
+<table>
+  <tr><th style="width:38mm">Perfil</th><th>Para quem é</th></tr>
+  <tr><td><b>Gestor</b></td><td>Responsável pela operação. Acesso completo, incluindo Configurações e cadastro de outros usuários.</td></tr>
+  <tr><td><b>Usuário Correspondente</b></td><td>Equipe da empresa correspondente que acompanha e trabalha os processos.</td></tr>
+  <tr><td><b>Corretor</b></td><td>Corretor de imóveis. Enxerga e trabalha apenas nas etapas liberadas para ele.</td></tr>
+  <tr><td><b>Despachante</b></td><td>Acesso ao módulo de Registro (cartórios e despachantes).</td></tr>
+</table>
+
+<h3>1.3 Entrando</h3>
+<ol class="num">
+  <li>Clique no perfil correspondente ao seu acesso.</li>
+  <li>Informe o <b>CPF</b> (somente números) e a <b>senha</b> que você recebeu.</li>
+  <li>Clique em <b>Entrar</b>.</li>
+</ol>
+
+<h3>1.4 Regras de acesso — leia com atenção</h3>
+<div class="box perigo">
+  <span class="tit">Cada login vale para uma pessoa e um dispositivo</span>
+  <p>Se a mesma conta entrar em outro computador ou celular, <b>a sessão anterior é encerrada
+  automaticamente</b> e a pessoa é levada de volta à tela de entrada. Não empreste seu login:
+  vocês vão ficar se derrubando o tempo todo.</p>
+</div>
+<div class="box aten">
+  <span class="tit">Limite de pessoas ao mesmo tempo</span>
+  <p>O plano contratado define quantas pessoas podem usar o sistema simultaneamente. Ao atingir
+  o limite, quem tentar entrar recebe o aviso <i>"Limite de acessos simultâneos atingido"</i>.
+  Basta alguém sair (ou ficar cerca de dois minutos sem uso) para liberar uma vaga.</p>
+  <p>Ao terminar o trabalho, use o botão <b>Sair</b> — fechar a aba direto mantém a vaga ocupada
+  por alguns minutos.</p>
+</div>
+</div>
+
+<!-- ══════════════ 2 ══════════════ -->
+<div class="sec">
+<h2>2. Conhecendo as telas</h2>
+<p>O menu superior dá acesso às áreas do sistema. O que aparece para você depende do seu perfil
+e das permissões concedidas pelo gestor.</p>
+<table>
+  <tr><th style="width:38mm">Área</th><th>Para que serve</th></tr>
+  <tr><td><b>Dashboard</b></td><td>Visão gerencial: quantidades, valores previstos, gargalos e prazos.</td></tr>
+  <tr><td><b>Repasse › Andamento</b></td><td>O quadro (pipeline) com os processos organizados por etapa. É a tela do dia a dia.</td></tr>
+  <tr><td><b>Repasse › Listagem</b></td><td>Os mesmos processos em formato de tabela, para buscar e agir em lote.</td></tr>
+  <tr><td><b>Registro</b></td><td>Acompanhamento da etapa de cartório, quando o módulo está contratado.</td></tr>
+  <tr><td><b>Configurações</b></td><td>Cadastros que alimentam o sistema. Disponível para o gestor.</td></tr>
+</table>
+<p>No canto superior direito ficam os botões <b>+ Novo Repasse</b>, <b>Importar PDF</b> e <b>Sair</b>.</p>
+</div>
+
+<!-- ══════════════ 3 ══════════════ -->
+<div class="sec">
+<h2>3. Dashboard</h2>
+<p>O painel resume a operação. Os filtros no topo (regional, empreendimento, correspondente,
+imobiliária, analista, corretor e busca por cliente) valem para <b>todos</b> os indicadores ao
+mesmo tempo. Use <b>Limpar</b> para voltar à visão completa.</p>
+
+<h3>3.1 Indicadores principais</h3>
+<table>
+  <tr><th style="width:46mm">Indicador</th><th>O que mostra</th></tr>
+  <tr><td><b>Total de processos</b></td><td>Todos os processos que você tem permissão de ver.</td></tr>
+  <tr><td><b>Em andamento</b></td><td>Processos que ainda não chegaram a uma etapa de conclusão.</td></tr>
+  <tr><td><b>Concluídos</b></td><td>Processos que chegaram a uma etapa marcada como <b>Fim</b> no workflow.</td></tr>
+  <tr><td><b>Atrasados</b></td><td>Processos parados há mais de 30 dias na mesma etapa. <b>Comece o dia por aqui.</b></td></tr>
+  <tr><td><b>Sem Correspondente</b><br><b>Sem Corretor</b></td><td>Processos sem vínculo definido. Em empresas do tipo correspondente, o cartão mostra os processos sem corretor vinculado.</td></tr>
+</table>
+
+<h3>3.2 Indicadores financeiros</h3>
+<table>
+  <tr><th style="width:46mm">Indicador</th><th>O que mostra</th></tr>
+  <tr><td><b>VGV Assinado (mês)</b></td><td>Soma dos contratos com assinatura registrada no mês corrente.</td></tr>
+  <tr><td><b>VGV Não Assinado (mês)</b></td><td>Soma do que está em andamento no mês e ainda não assinou.</td></tr>
+  <tr><td><b>Previsão de Repasse (mês)</b></td><td>Financiamento + subsídio + FGTS previstos para o mês.</td></tr>
+  <tr><td><b>Previsão de Comissão (mês)</b></td><td>Calculada pela regra cadastrada em Configurações › Comissão.</td></tr>
+</table>
+<div class="box">
+  <p>Estes números vêm da aba <b>Valores de Repasse</b> de cada processo. Se um cartão aparecer
+  zerado, é sinal de que os valores daquele processo ainda não foram preenchidos.</p>
+</div>
+
+<h3>3.3 Indicadores de produtividade</h3>
+<table>
+  <tr><th style="width:46mm">Indicador</th><th>O que mostra</th></tr>
+  <tr><td><b>Taxa de conclusão</b></td><td>Percentual de processos já finalizados.</td></tr>
+  <tr><td><b>Maior gargalo</b></td><td>A etapa com mais processos acumulados no momento.</td></tr>
+  <tr><td><b>Tempo médio total</b></td><td>Quanto tempo, em média, um processo leva da etapa inicial até a conclusão.</td></tr>
+  <tr><td><b>Mais antigo parado</b></td><td>O processo há mais tempo sem sair do lugar.</td></tr>
+  <tr><td><b>Novos</b></td><td>Processos que estão na etapa marcada como <b>Início</b> no workflow.</td></tr>
+</table>
+<div class="box aten">
+  <p>Para <b>Tempo médio</b> e <b>Novos</b> funcionarem corretamente, é preciso marcar no workflow
+  qual é a etapa de <b>Início</b> e qual é a de <b>Fim</b> (seção 10).</p>
+</div>
+</div>
+
+<!-- ══════════════ 4 ══════════════ -->
+<div class="sec">
+<h2>4. Andamento (pipeline)</h2>
+<p>É a tela mais usada. Cada coluna é uma etapa do processo e cada cartão é um cliente.</p>
+
+<h3>4.1 Lendo um cartão</h3>
+<ul>
+  <li><b>Nome e CPF</b> do cliente, empreendimento, bloco e unidade.</li>
+  <li><b>Valor</b> do contrato e o correspondente/imobiliária vinculados.</li>
+  <li><b>Tempo na etapa</b> — a informação mais importante do cartão. Quanto mais dias, mais atenção o processo pede.</li>
+  <li><b>Status da entrevista</b> — Pendente, Agendado, Aprovado ou Reprovado.</li>
+</ul>
+<p>O topo de cada coluna mostra a <b>quantidade</b> de processos e os totais de <b>VGV</b> e
+<b>Repasse</b> daquela etapa.</p>
+
+<h3>4.2 Navegando pelo quadro</h3>
+<table>
+  <tr><th style="width:52mm">Para</th><th>Faça assim</th></tr>
+  <tr><td>Ver etapas à direita</td><td>Deslize dois dedos no touchpad, ou clique com o <b>botão direito</b> e arraste, ou clique no fundo do quadro e arraste.</td></tr>
+  <tr><td>Ver mais processos de uma etapa</td><td>Role dentro da própria coluna. Ela carrega mais cartões conforme você desce.</td></tr>
+  <tr><td>Abrir um processo</td><td>Clique no cartão, ou no botão <b>Gerenciar</b>.</td></tr>
+  <tr><td>Mudar de etapa</td><td>Arraste o cartão para outra coluna, ou use o botão <b>Mover</b>.</td></tr>
+</table>
+<div class="box">
+  <p>Por desempenho, cada coluna começa mostrando os primeiros processos e traz o restante à
+  medida que você rola. O número no topo da coluna é sempre o <b>total real</b>.</p>
+</div>
+
+<h3>4.3 Filtros</h3>
+<p>Acima do quadro estão os filtros: busca por cliente, empreendimento, correspondente,
+imobiliária, analista, corretor, usuário correspondente e status da entrevista. Eles se somam —
+combine-os para chegar exatamente ao recorte desejado e use <b>Limpar</b> para recomeçar.</p>
+</div>
+
+<!-- ══════════════ 5 ══════════════ -->
+<div class="sec">
+<h2>5. O cartão do processo</h2>
+<p>Ao abrir um processo você encontra cinco abas. No topo há também o seletor de etapa, que
+permite mudar o processo de fase sem sair da tela.</p>
+
+<h3>5.1 Dados</h3>
+<p>Cadastro do cliente e do imóvel: nome, CPF, telefone, e-mail, empreendimento, bloco, unidade,
+valor, correspondente, imobiliária, corretor, analista e status da entrevista. Após alterar,
+clique em <b>Salvar</b>.</p>
+
+<h3>5.2 Histórico</h3>
+<p>Todas as passagens do processo pelas etapas, com data e hora. Serve para responder
+"desde quando isso está parado?" sem depender da memória de ninguém.</p>
+
+<h3>5.3 Eventos</h3>
+<p>Registro do que aconteceu no processo: mudanças de etapa, documentos anexados e demais ações,
+com o nome de quem fez.</p>
+
+<h3>5.4 Valores de Repasse</h3>
+<p>É aqui que nascem os números do Dashboard. Preencha:</p>
+<ul>
+  <li><b>Valor previsto</b> e <b>valor do contrato</b>;</li>
+  <li><b>Dívida (financiamento)</b>, <b>subsídio</b> e <b>FGTS</b>;</li>
+  <li><b>Data de assinatura</b> e <b>data prevista para o repasse</b>.</li>
+</ul>
+<div class="box ok">
+  <p><b>Dica:</b> a <i>data de assinatura</i> alimenta o VGV Assinado e a <i>data prevista de
+  repasse</i> alimenta a Previsão de Repasse. Preencher essas duas datas é o que faz o painel
+  financeiro refletir a realidade.</p>
+</div>
+
+<h3>5.5 Documentos</h3>
+<p>Arquivos do processo, organizados por tipo. Ver seção 7.</p>
+</div>
+
+<!-- ══════════════ 6 ══════════════ -->
+<div class="sec">
+<h2>6. Cadastrar um processo</h2>
+
+<h3>6.1 Cadastro manual</h3>
+<ol class="num">
+  <li>Clique em <b>+ Novo Repasse</b>, no topo da tela.</li>
+  <li>Preencha os dados do cliente: nome, CPF, telefone e e-mail.</li>
+  <li>Informe o imóvel: empreendimento, bloco, unidade e valor.</li>
+  <li>Vincule os responsáveis: correspondente, imobiliária, corretor e analista.</li>
+  <li>Clique em <b>Salvar</b>. O processo entra no quadro, na etapa inicial.</li>
+</ol>
+<div class="box aten">
+  <p>Se o CPF já existir em outro processo, o sistema avisa. Confira antes de continuar para não
+  duplicar o mesmo cliente.</p>
+</div>
+
+<h3>6.2 Importando um PDF</h3>
+<p>Para propostas em PDF, o sistema lê os dados e preenche o cadastro para você.</p>
+<ol class="num">
+  <li>Clique em <b>Importar PDF</b>.</li>
+  <li>Selecione o arquivo. O sistema lê e mostra o que encontrou.</li>
+  <li><b>Confira os dados na tela</b> — nome, CPF, valor e empreendimento.</li>
+  <li>Ajuste o que estiver diferente e complete o que faltou.</li>
+  <li>Clique em <b>Cadastrar cliente</b> ou <b>Importar dados</b>.</li>
+</ol>
+<div class="box aten">
+  <span class="tit">Sempre confira antes de confirmar</span>
+  <p>A leitura automática depende do layout do PDF. Ela poupa digitação, mas a conferência é sua.</p>
+</div>
+</div>
+
+<!-- ══════════════ 7 ══════════════ -->
+<div class="sec">
+<h2>7. Documentos</h2>
+
+<h3>7.1 Anexar</h3>
+<ol class="num">
+  <li>Abra o processo e vá até a aba <b>Documentos</b>.</li>
+  <li>Escolha o <b>tipo de documento</b> (laudo, contrato, matrícula, etc.).</li>
+  <li>Clique em <b>Selecionar arquivo</b> e escolha o arquivo no computador.</li>
+  <li>Aguarde a mensagem de confirmação. O documento aparece na lista abaixo.</li>
+</ol>
+<p>São aceitos arquivos <b>PDF, PNG e JPG</b>, de até <b>15 MB</b> cada.</p>
+
+<div class="box">
+  <p>A lista de tipos vem de <b>Configurações › Tipos de documento</b>. Se o botão estiver
+  desabilitado, é porque nenhum tipo foi cadastrado ainda.</p>
+</div>
+
+<h3>7.2 Abrir e remover</h3>
+<p>Clique em <b>Abrir</b> para visualizar ou baixar. Em <b>Remover</b>, o sistema pede confirmação —
+a exclusão não pode ser desfeita.</p>
+
+<div class="box ok">
+  <span class="tit">Segurança dos arquivos</span>
+  <p>Os documentos ficam guardados em área privada, separada por empresa, e são abertos por link
+  temporário. Não existe endereço público: ninguém de fora acessa, e nenhuma empresa enxerga os
+  arquivos de outra.</p>
+</div>
+</div>
+
+<!-- ══════════════ 8 ══════════════ -->
+<div class="sec">
+<h2>8. Listagem</h2>
+<p>Mesma informação do quadro, em formato de tabela — melhor para procurar, conferir em volume e
+agir sobre vários processos de uma vez.</p>
+<ul>
+  <li><b>Busca e filtros</b> iguais aos do Andamento.</li>
+  <li><b>Filtro por etapa</b> para isolar uma fase específica.</li>
+  <li><b>Seleção em lote</b>: marque vários processos e aplique a mesma ação a todos.</li>
+  <li><b>CPF duplicado</b>: o sistema aponta quando o mesmo CPF aparece mais de uma vez.</li>
+</ul>
+</div>
+
+<!-- ══════════════ 9 ══════════════ -->
+<div class="sec">
+<h2>9. Configurações</h2>
+<p>Área do gestor. Cada cartão abre um cadastro; use <b>← Voltar</b> para retornar.</p>
+<table>
+  <tr><th style="width:44mm">Cadastro</th><th>Para que serve</th></tr>
+  <tr><td><b>Workflow</b></td><td>Desenhar as etapas do processo e o caminho entre elas (seção 10).</td></tr>
+  <tr><td><b>Flags</b></td><td>Marcadores coloridos para sinalizar situações nas etapas.</td></tr>
+  <tr><td><b>Regionais</b></td><td>Agrupamento por região, usado nos filtros.</td></tr>
+  <tr><td><b>Empreendimentos</b></td><td>Empreendimentos, blocos e unidades.</td></tr>
+  <tr><td><b>Correspondentes</b></td><td>Empresas correspondentes e seus usuários.</td></tr>
+  <tr><td><b>Imobiliárias</b></td><td>Imobiliárias parceiras.</td></tr>
+  <tr><td><b>Corretores</b></td><td>Corretores com acesso ao sistema e permissão por etapa (seção 11).</td></tr>
+  <tr><td><b>Usuários Gestores</b></td><td>Outros gestores. Visível apenas para gestores.</td></tr>
+  <tr><td><b>Analistas de Crédito</b></td><td>Analistas que acompanham os processos.</td></tr>
+  <tr><td><b>Tipos de documento</b></td><td>Lista de tipos que aparece ao anexar arquivos.</td></tr>
+  <tr><td><b>Comissão</b></td><td>Regra de cálculo (valor fixo ou percentual) da previsão de comissão.</td></tr>
+</table>
+<p>Com o módulo de Registro contratado, aparecem também <b>Despachantes</b>, <b>Bancos</b> e
+<b>Cartórios</b>.</p>
+</div>
+
+<!-- ══════════════ 10 ══════════════ -->
+<div class="sec">
+<h2>10. Workflow</h2>
+<p>O workflow é a planta do seu processo. As etapas criadas aqui viram as colunas do quadro.</p>
+
+<h3>10.1 Criando etapas</h3>
+<ol class="num">
+  <li>Clique em <b>+ Nova Etapa</b>.</li>
+  <li>Dê um <b>nome</b> e escolha uma <b>cor</b> — é a cor que aparece no quadro.</li>
+  <li>Marque, quando for o caso, <b>Início</b>, <b>Fim</b> ou <b>Pendência</b>.</li>
+  <li>Clique em <b>Salvar</b>.</li>
+</ol>
+
+<div class="box aten">
+  <span class="tit">Marque a etapa de Início e a de Fim</span>
+  <p>São elas que fazem o Dashboard calcular <b>Novos</b>, <b>Concluídos</b> e <b>Tempo médio</b>.
+  Sem essa marcação, esses indicadores não refletem a realidade.</p>
+</div>
+
+<h3>10.2 Ligando as etapas</h3>
+<p>Arraste do ponto à direita de uma etapa até o ponto à esquerda da etapa seguinte. A seta
+representa um caminho válido. Use <b>Auto-organizar</b> para arrumar o desenho na tela.</p>
+
+<h3>10.3 Bloquear workflow</h3>
+<p>O botão <b>Workflow livre / Workflow bloqueado</b>, na barra superior, define o rigor do processo:</p>
+<table>
+  <tr><th style="width:38mm">Situação</th><th>Comportamento</th></tr>
+  <tr><td><span class="pill p-b">Workflow livre</span></td><td>O processo pode ir para qualquer etapa, sem restrição.</td></tr>
+  <tr><td><span class="pill p-r">Workflow bloqueado</span></td><td>O processo só vai para uma etapa <b>ligada por seta</b> à etapa atual.</td></tr>
+</table>
+<div class="box">
+  <span class="tit">Exemplo</span>
+  <p>Com o desenho <b>1 → 2 → 3</b> e o workflow bloqueado, um processo na etapa 1 <b>não</b> pode
+  pular para a 3: precisa passar pela 2. Se você desenhar também a ligação <b>1 → 3</b>, o salto
+  passa a ser permitido — porque agora existe caminho.</p>
+</div>
+<p>Ao barrar um movimento, o sistema informa para quais etapas é possível ir a partir dali.</p>
+</div>
+
+<!-- ══════════════ 11 ══════════════ -->
+<div class="sec">
+<h2>11. Usuários e permissões</h2>
+
+<h3>11.1 Cadastrando um usuário</h3>
+<p>Em <b>Configurações</b>, escolha o cadastro conforme o tipo: <b>Correspondentes</b> (usuário
+correspondente), <b>Corretores</b> ou <b>Usuários Gestores</b>. Em todos, o <b>CPF é o login</b> e a
+senha deve ter no mínimo 6 caracteres.</p>
+<div class="box aten">
+  <p>Somente um <b>gestor</b> pode cadastrar outro gestor.</p>
+</div>
+
+<h3>11.2 Permissões gerais</h3>
+<table>
+  <tr><th style="width:44mm">Permissão</th><th>O que libera</th></tr>
+  <tr><td><b>Ver processos</b></td><td>Acessar o quadro e a listagem.</td></tr>
+  <tr><td><b>Criar processos</b></td><td>Usar o botão + Novo Repasse.</td></tr>
+  <tr><td><b>Editar processos</b></td><td>Alterar dados, anexar e remover documentos.</td></tr>
+  <tr><td><b>Ver dashboard</b></td><td>Acessar o painel gerencial.</td></tr>
+  <tr><td><b>Baixar documentos</b></td><td>Abrir e baixar os arquivos anexados.</td></tr>
+  <tr><td><b>Visão completa</b></td><td>Ver os processos de <b>todos</b> os usuários (ver 11.3).</td></tr>
+  <tr><td><b>Gerente</b></td><td>Acesso total, equivalente ao gestor.</td></tr>
+</table>
+
+<h3>11.3 Cada um vê o que é seu</h3>
+<p>Por padrão, o usuário enxerga apenas <b>os próprios processos</b> — aqueles em que ele é o
+corretor, o analista ou o usuário correspondente. Isso vale tanto no quadro quanto no Dashboard.</p>
+<p>Com <b>Visão completa</b> ligada, ele passa a ver os processos de todos, mas continua podendo
+<b>editar somente os seus</b>. Ao abrir um processo de outra pessoa, o cartão avisa de quem é e
+oferece o botão <b>Liberar edição</b>, para quando for realmente necessário intervir.</p>
+
+<h3>11.4 Permissão por etapa do corretor</h3>
+<p>No cadastro do corretor, cada etapa do workflow tem dois botões. O que estiver <b>verde</b>
+está ativo:</p>
+<table>
+  <tr><th style="width:38mm">Marcação</th><th>O que o corretor pode fazer naquela etapa</th></tr>
+  <tr><td><span class="pill p-g">Editar</span></td><td>Alterar o processo, anexar documentos e mover de etapa. Liga o <b>Ver</b> junto.</td></tr>
+  <tr><td><span class="pill p-b">Ver</span></td><td>Apenas acompanhar. Não altera, não anexa e não move.</td></tr>
+  <tr><td>Nenhum dos dois</td><td>A etapa fica <b>invisível</b> para ele.</td></tr>
+</table>
+<div class="box">
+  <span class="tit">Como funciona na prática</span>
+  <p>Se o corretor tem <b>Editar</b> nas etapas iniciais e nada nas seguintes, ele trabalha os
+  processos dele e, ao passar para a etapa da outra equipe, o processo sai da tela dele. É assim
+  que a entrega acontece sem que ele mexa no que não é da sua alçada.</p>
+</div>
+</div>
+
+<!-- ══════════════ 12 ══════════════ -->
+<div class="sec">
+<h2>12. Dúvidas frequentes</h2>
+
+<h4>Fui desconectado do nada. O que houve?</h4>
+<p>Alguém entrou com o seu login em outro dispositivo. Cada login vale para uma pessoa por vez.
+Entre novamente e, se não foi você, avise o gestor para trocar a senha.</p>
+
+<h4>Aparece "Limite de acessos simultâneos atingido".</h4>
+<p>O número de pessoas usando o sistema chegou ao limite do plano. Aguarde alguém sair — a vaga
+libera em cerca de dois minutos — ou fale com o gestor sobre ampliar o plano.</p>
+
+<h4>Não consigo mover um processo de etapa.</h4>
+<p>Três possibilidades: o <b>workflow está bloqueado</b> e não existe seta ligando as duas etapas;
+você tem apenas <b>Ver</b> naquela etapa; ou o processo <b>não é seu</b> — nesse caso use
+<b>Liberar edição</b> dentro do cartão.</p>
+
+<h4>Não consigo anexar documento.</h4>
+<p>É preciso ter a permissão <b>Editar processos</b> (ou ser Gerente/Gestor) e ter nível
+<b>Editar</b> na etapa em que o processo está. Fale com o gestor.</p>
+
+<h4>Um processo sumiu do meu quadro.</h4>
+<p>Provavelmente ele avançou para uma etapa à qual você não tem acesso, ou algum filtro está
+ativo. Clique em <b>Limpar</b> nos filtros para conferir.</p>
+
+<h4>O Dashboard está com valores zerados.</h4>
+<p>Os valores vêm da aba <b>Valores de Repasse</b> de cada processo. Sem a data de assinatura e a
+data prevista de repasse preenchidas, os indicadores do mês não têm o que somar.</p>
+
+<h4>Cadastrei uma etapa e ela não apareceu no quadro.</h4>
+<p>Atualize a página (F5). O quadro carrega as etapas na abertura.</p>
+
+<h4>Mudei a permissão de alguém e não surtiu efeito.</h4>
+<p>Peça para a pessoa atualizar a página (F5). As permissões são recarregadas a cada abertura.</p>
+
+<div class="box ok" style="margin-top:8mm">
+  <span class="tit">Rotina sugerida para o dia a dia</span>
+  <p><b>1.</b> Abra o Dashboard e olhe <b>Atrasados</b> e <b>Mais antigo parado</b>.
+  <b>2.</b> Vá ao Andamento e resolva os processos com mais dias na etapa.
+  <b>3.</b> Ao movimentar um processo, atualize os <b>Valores de Repasse</b> e anexe os documentos.
+  <b>4.</b> Ao terminar, clique em <b>Sair</b> para liberar a vaga de acesso.</p>
+</div>
+</div>
+
+</body>
+</html>
