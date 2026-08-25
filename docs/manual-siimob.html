@@ -95,7 +95,7 @@ tr:nth-child(even) td{background:#FAFCFF}
   <li><span class="n">8</span> Listagem<small>Visão em tabela e ações em lote</small></li>
   <li><span class="n">9</span> Configurações<small>Cadastros que alimentam o sistema</small></li>
   <li><span class="n">10</span> Workflow<small>Desenhar as etapas e travar o caminho</small></li>
-  <li><span class="n">11</span> Usuários e permissões<small>Quem entra e o que cada um pode fazer</small></li>
+  <li><span class="n">11</span> Usuários e permissões<small>Perfis, visão por usuário, corretor e analista</small></li>
   <li><span class="n">12</span> Dúvidas frequentes<small>O que fazer quando algo não sai como esperado</small></li>
 </ul>
 
@@ -121,6 +121,7 @@ implantação e salve-o nos favoritos do navegador.</p>
   <tr><td><b>Gestor</b></td><td>Responsável pela operação. Acesso completo, incluindo Configurações e cadastro de outros usuários.</td></tr>
   <tr><td><b>Usuário Correspondente</b></td><td>Equipe da empresa correspondente que acompanha e trabalha os processos.</td></tr>
   <tr><td><b>Corretor</b></td><td>Corretor de imóveis. Enxerga e trabalha apenas nas etapas liberadas para ele.</td></tr>
+  <tr><td><b>Analista</b></td><td>Analista de crédito responsável pela análise. Tem painel próprio e enxerga os processos sob sua responsabilidade.</td></tr>
   <tr><td><b>Despachante</b></td><td>Acesso ao módulo de Registro (cartórios e despachantes).</td></tr>
 </table>
 
@@ -145,6 +146,9 @@ implantação e salve-o nos favoritos do navegador.</p>
   Basta alguém sair (ou ficar cerca de dois minutos sem uso) para liberar uma vaga.</p>
   <p>Ao terminar o trabalho, use o botão <b>Sair</b> — fechar a aba direto mantém a vaga ocupada
   por alguns minutos.</p>
+  <p><b>Vale para todos os perfis.</b> Gestores, usuários correspondentes, corretores, analistas e
+  despachantes disputam as mesmas vagas. Ao dar acesso a corretores e analistas, considere quantas
+  pessoas ficarão on-line ao mesmo tempo — pode ser necessário ampliar o plano.</p>
 </div>
 </div>
 
@@ -368,7 +372,7 @@ agir sobre vários processos de uma vez.</p>
   <tr><td><b>Imobiliárias</b></td><td>Imobiliárias parceiras.</td></tr>
   <tr><td><b>Corretores</b></td><td>Corretores com acesso ao sistema e permissão por etapa (seção 11).</td></tr>
   <tr><td><b>Usuários Gestores</b></td><td>Outros gestores. Visível apenas para gestores.</td></tr>
-  <tr><td><b>Analistas de Crédito</b></td><td>Analistas que acompanham os processos.</td></tr>
+  <tr><td><b>Analistas de Crédito</b></td><td>Analistas com acesso ao sistema e permissão por etapa (seção 11).</td></tr>
   <tr><td><b>Tipos de documento</b></td><td>Lista de tipos que aparece ao anexar arquivos.</td></tr>
   <tr><td><b>Comissão</b></td><td>Regra de cálculo (valor fixo ou percentual) da previsão de comissão.</td></tr>
 </table>
@@ -421,8 +425,8 @@ representa um caminho válido. Use <b>Auto-organizar</b> para arrumar o desenho 
 
 <h3>11.1 Cadastrando um usuário</h3>
 <p>Em <b>Configurações</b>, escolha o cadastro conforme o tipo: <b>Correspondentes</b> (usuário
-correspondente), <b>Corretores</b> ou <b>Usuários Gestores</b>. Em todos, o <b>CPF é o login</b> e a
-senha deve ter no mínimo 6 caracteres.</p>
+correspondente), <b>Corretores</b>, <b>Analistas de Crédito</b> ou <b>Usuários Gestores</b>. Em todos,
+o <b>CPF é o login</b> e a senha deve ter no mínimo 6 caracteres.</p>
 <div class="box aten">
   <p>Somente um <b>gestor</b> pode cadastrar outro gestor.</p>
 </div>
@@ -461,6 +465,47 @@ está ativo:</p>
   processos dele e, ao passar para a etapa da outra equipe, o processo sai da tela dele. É assim
   que a entrega acontece sem que ele mexa no que não é da sua alçada.</p>
 </div>
+
+<h3>11.5 O analista de crédito</h3>
+<p>O analista tem acesso próprio ao sistema, com <b>painel e quadro próprios</b>. O cadastro fica
+em <b>Configurações › Analistas de Crédito</b> e segue o mesmo modelo do corretor.</p>
+
+<h4>Dados de acesso</h4>
+<p>Empresa correspondente, nome, <b>CPF (login)</b>, <b>senha</b>, e-mail, telefone e situação
+(ativo/inativo). Ao editar, deixe a senha em branco para mantê-la como está.</p>
+
+<h4>Permissões</h4>
+<table>
+  <tr><th style="width:44mm">Permissão</th><th>Situação inicial no cadastro</th></tr>
+  <tr><td>Ver processos</td><td>Ligada</td></tr>
+  <tr><td>Criar processos</td><td>Desligada</td></tr>
+  <tr><td>Editar processos</td><td>Ligada</td></tr>
+  <tr><td>Alterar etapa</td><td>Ligada</td></tr>
+  <tr><td>Baixar documentos</td><td>Ligada</td></tr>
+  <tr><td>Ver dashboard</td><td>Ligada</td></tr>
+  <tr><td>Ver todos os processos</td><td>Desligada</td></tr>
+</table>
+<p>Você pode alterar qualquer uma delas antes de salvar.</p>
+
+<h4>Ver todos os processos</h4>
+<p>Com a chave <b>desligada</b>, o analista enxerga somente os processos em que ele é o
+<b>analista responsável</b> — é assim que cada um passa a ter o seu próprio painel, com números
+que refletem apenas a sua carteira.</p>
+<p>Com a chave <b>ligada</b>, ele vê os processos de todos os analistas, mas continua podendo
+<b>editar apenas os seus</b>. Nos demais, o cartão avisa de quem é o processo e oferece
+<b>Liberar edição</b> quando for realmente necessário intervir.</p>
+
+<h4>Acesso por etapa</h4>
+<p>Igual ao do corretor: cada etapa do workflow tem os botões <b>Ver</b> e <b>Editar</b> (tabela do
+item 11.4). Um analista novo já vem com <b>Editar em todas as etapas</b> — restrinja depois, se
+a sua operação exigir.</p>
+
+<div class="box aten">
+  <span class="tit">Analistas cadastrados antes desta atualização</span>
+  <p>Eles continuam funcionando normalmente como responsáveis vinculados aos processos, porém
+  <b>sem login</b> — a listagem marca esses casos com o aviso <i>"sem login"</i>. Para dar acesso,
+  edite o cadastro e informe CPF e senha.</p>
+</div>
 </div>
 
 <!-- ══════════════ 12 ══════════════ -->
@@ -494,6 +539,11 @@ data prevista de repasse preenchidas, os indicadores do mês não têm o que som
 
 <h4>Cadastrei uma etapa e ela não apareceu no quadro.</h4>
 <p>Atualize a página (F5). O quadro carrega as etapas na abertura.</p>
+
+<h4>O analista não consegue entrar.</h4>
+<p>Confira em <b>Configurações › Analistas de Crédito</b> se o cadastro dele tem <b>CPF e senha</b>
+e está <b>Ativo</b>. Cadastros antigos aparecem com o aviso <i>"sem login"</i> — basta editar e
+preencher esses campos.</p>
 
 <h4>Mudei a permissão de alguém e não surtiu efeito.</h4>
 <p>Peça para a pessoa atualizar a página (F5). As permissões são recarregadas a cada abertura.</p>
