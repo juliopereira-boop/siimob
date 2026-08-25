@@ -1809,6 +1809,12 @@ async function init() {
 // outros; editar continua restrito ao que é dele, salvo liberação no cartão.
 function souGestorUser(){ return !!G.user && G.user.role !== 'partner'; }
 function souCorretor(){ return !!G.user && G.user.role === 'partner' && G.user.type === 'corretor'; }
+// Cadastros novos (corretor, analista) gravam a chave alterar_etapa; os antigos
+// não têm, e por isso não são submetidos a essa exigência.
+function usaPermissaoPorEtapa(){
+  const p = (G.user && G.user.permissions) || {};
+  return 'alterar_etapa' in p;
+}
 function meuNome(){ return ((G.user && G.user.name) || '').trim().toLowerCase(); }
 
 function temVisaoCompleta(){
@@ -2566,7 +2572,10 @@ async function moveCard(caseId, stageId) {
   if(!podeEditarProcesso(_caso)){
     toast('Este processo não é seu. Abra o cartão e libere a edição para movê-lo.','error'); return;
   }
-  if(souCorretor() && !hasPerm('alterar_etapa')){
+  // Vale para todo cadastro feito com o modelo de permissão por etapa
+  // (corretor e analista). Quem foi cadastrado antes não tem a chave e segue
+  // como antes, sem essa exigência.
+  if(usaPermissaoPorEtapa() && !hasPerm('alterar_etapa')){
     toast('Você não tem permissão para alterar a etapa.','error'); return;
   }
   if(nivelNaEtapa(_atual) !== 'editar'){
