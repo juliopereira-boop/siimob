@@ -1224,8 +1224,12 @@ async function init() {
   }).catch(()=>{});
 
   // Load stages (needed for regionais sub-view)
-  G.stages = await fetch(`${A1.rest('a1_stages')}?tenant_id=eq.${G.user.tenant_id}&module=eq.repasse&select=id,name,color,group_key&order=position.asc`, {headers:A1.headers()})
+  // A coluna chama-se module_key. Com "module" o PostgREST devolvia um objeto
+  // de erro, que era gravado em G.stages — verdadeiro, mas sem .map/.forEach,
+  // derrubando quem dependesse da lista de etapas.
+  G.stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&select=id,name,color,group_key,is_initial,is_final&order=position.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
+  if (!Array.isArray(G.stages)) G.stages = [];
 
   loadFlags();
   a1StartHeartbeat('configuracoes');
@@ -2931,7 +2935,7 @@ let CORRETORES = [];
 async function loadCorretores(){
   // As etapas normalmente já vieram no carregamento da página; se ainda não,
   // busca aqui — sem elas a lista de seleção de etapas ficaria vazia.
-  if(!G.stages || !G.stages.length){
+  if(!Array.isArray(G.stages) || !G.stages.length){
     G.stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`,{headers:A1.headers()})
       .then(r=>r.json()).catch(()=>[]);
     if(!Array.isArray(G.stages)) G.stages=[];
@@ -2942,7 +2946,8 @@ async function loadCorretores(){
   renderCorretores();
 }
 
-function nomeEtapa(id){ const st=(G.stages||[]).find(x=>x.id===id); return st?st.name:null; }
+function etapasLista(){ return Array.isArray(G.stages) ? G.stages : []; }
+function nomeEtapa(id){ const st=etapasLista().find(x=>x.id===id); return st?st.name:null; }
 
 function renderCorretores(){
   const tb=document.getElementById('corretor-tbody'); if(!tb) return;
@@ -2997,13 +3002,13 @@ function setEtapaNivel(stageId, alvo){
 
 function coEtapasTodas(nivel){
   CO_ETAPAS = {};
-  if (nivel) (G.stages||[]).forEach(st => { CO_ETAPAS[st.id] = nivel; });
+  if (nivel) etapasLista().forEach(st => { CO_ETAPAS[st.id] = nivel; });
   pintarEtapasCorretor();
 }
 
 function pintarEtapasCorretor(){
   const box = document.getElementById(ETAPAS_PREFIXO + '-etapas-list');
-  const etapas = (G.stages||[]);
+  const etapas = etapasLista();
   if (!box) return;
   if (!etapas.length){
     box.innerHTML = '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
@@ -3412,9 +3417,10 @@ async function garantirRegionais() {
 // campo abria vazio e a regional era apagada no primeiro Salvar.
 function preencherSelectRegional(sel, atual) {
   if (!sel) return;
-  const usadas   = (G.empreendimentos || []).map(e => e.regional).filter(Boolean);
-  const antigas  = (G.stages || []).map(s => s.group_key).filter(Boolean); // modelo antigo
-  const lista = [...new Set([...(G.regionais || []), ...usadas, ...antigas, ...(atual ? [atual] : [])])]
+  const usadas   = (Array.isArray(G.empreendimentos) ? G.empreendimentos : []).map(e => e.regional).filter(Boolean);
+  const antigas  = etapasLista().map(s => s.group_key).filter(Boolean); // modelo antigo
+  const cadastradas = Array.isArray(G.regionais) ? G.regionais : [];
+  const lista = [...new Set([...cadastradas, ...usadas, ...antigas, ...(atual ? [atual] : [])])].filter(x => typeof x === 'string')
     .sort((x, y) => x.localeCompare(y));
   sel.innerHTML = '<option value="">Selecione...</option>' +
     lista.map(r => `<option value="${esc(r)}"${r === atual ? ' selected' : ''}>${esc(r)}</option>`).join('');
@@ -3876,7 +3882,7 @@ async function openAnalista(a) {
   paintAnVisao();
 
   // Etapas já cadastradas; sem elas o seletor abriria vazio.
-  if (!G.stages || !G.stages.length) {
+  if (!Array.isArray(G.stages) || !G.stages.length) {
     G.stages = await fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, {headers:A1.headers()})
       .then(r=>r.json()).catch(()=>[]);
     if (!Array.isArray(G.stages)) G.stages = [];
@@ -3887,7 +3893,7 @@ async function openAnalista(a) {
   } else if (!a) {
     // Analista novo nasce podendo editar em todas as etapas — o gestor restringe
     // depois se quiser. Analista existente sem configuração segue sem restrição.
-    (G.stages||[]).forEach(st => { CO_ETAPAS[st.id] = 'editar'; });
+    etapasLista().forEach(st => { CO_ETAPAS[st.id] = 'editar'; });
   }
   pintarEtapasCorretor();
 
