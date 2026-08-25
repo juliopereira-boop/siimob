@@ -3550,6 +3550,7 @@ function emprPreview() {
 }
 
 async function saveEmpreendimento() {
+  limparEmprErr();
   const name = document.getElementById('empr-f-name').value.trim();
   if (!name) { showEmprErr('Informe o nome do empreendimento'); return; }
   const semUnidades = document.getElementById('empr-f-sem-unidades').checked;
@@ -3588,10 +3589,8 @@ async function saveEmpreendimento() {
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
     if (isEditing) {
-      const res = await fetch(`${A1.rest('a1_developments')}?id=eq.${G.editingEmprId}`, {
-        method:'PATCH', headers: A1.returnHeaders(), body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('patch failed');
+      const r = await enviarEmpr(`${A1.rest('a1_developments')}?id=eq.${G.editingEmprId}`, 'PATCH', payload);
+      if (!r.ok) throw new Error(r.msg);
       const idx = G.empreendimentos.findIndex(d => d.id === G.editingEmprId);
       if (idx >= 0) G.empreendimentos[idx] = { ...G.empreendimentos[idx], ...payload };
       G.empreendimentos.sort((a,b) => a.name.localeCompare(b.name));
@@ -3599,28 +3598,64 @@ async function saveEmpreendimento() {
       closeEmprForm();
       toast(`"${name}" atualizado${units.length ? ` com ${units.length} unidades` : ''}.`, 'success');
     } else {
-      const [created] = await fetch(A1.rest('a1_developments'), {
-        method:'POST', headers: A1.returnHeaders(), body: JSON.stringify({ ...payload, tenant_id: G.user.tenant_id })
-      }).then(r=>r.json());
-      if (!created) throw new Error('no data');
+      const r = await enviarEmpr(A1.rest('a1_developments'), 'POST',
+        { ...payload, tenant_id: G.user.tenant_id });
+      if (!r.ok) throw new Error(r.msg);
+      const [created] = Array.isArray(r.dados) ? r.dados : [];
+      if (!created) throw new Error('O servidor aceitou mas não devolveu o registro criado.');
       G.empreendimentos.push(created);
       G.empreendimentos.sort((a,b)=>a.name.localeCompare(b.name));
       renderEmprList();
       closeEmprForm();
       toast(`"${name}" cadastrado${units.length ? ` com ${units.length} unidades` : ''}.`,'success');
     }
-  } catch {
-    showEmprErr('Erro ao salvar. Verifique os dados e tente novamente.');
+  } catch (e) {
+    showEmprErr('Não foi possível salvar: ' + (e.message || 'erro desconhecido'));
   } finally {
     btn.disabled = false;
     btn.textContent = isEditing ? 'Salvar Alterações' : 'Cadastrar Unidades';
   }
 }
 
+// O aviso sumia sozinho em 4 segundos — quem desviava o olhar via só o botão
+// "não fazer nada". Agora fica até a próxima tentativa de salvar.
 function showEmprErr(msg) {
   const el = document.getElementById('empr-err');
   el.textContent = msg; el.style.display = '';
-  setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+function limparEmprErr() {
+  const el = document.getElementById('empr-err');
+  if (el) el.style.display = 'none';
+}
+
+// PostgREST recusa a requisição INTEIRA quando o corpo traz uma coluna que a
+// tabela não possui (PGRST204) — já aconteceu antes neste sistema. Em vez de
+// falhar por completo, remove a coluna apontada e tenta de novo, avisando o
+// que foi descartado.
+async function enviarEmpr(url, metodo, corpo) {
+  let payload = { ...corpo };
+  const removidas = [];
+  for (let tentativa = 0; tentativa < 6; tentativa++) {
+    const res = await fetch(url, {
+      method: metodo, headers: A1.returnHeaders(), body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      if (removidas.length) {
+        toast('Salvo, mas estes campos não existem na tabela e foram ignorados: ' + removidas.join(', '), 'info');
+      }
+      const dados = await res.json().catch(() => null);
+      return { ok: true, dados, removidas };
+    }
+    const err = await res.json().catch(() => ({}));
+    const msg = err.message || err.hint || `HTTP ${res.status}`;
+    const m = /'([^']+)' column|column "([^"]+)"|Could not find the '([^']+)'/i.exec(msg);
+    const col = m && (m[1] || m[2] || m[3]);
+    if (col && Object.prototype.hasOwnProperty.call(payload, col)) {
+      delete payload[col]; removidas.push(col); continue;
+    }
+    return { ok: false, msg };
+  }
+  return { ok: false, msg: 'Não foi possível salvar mesmo após ajustar os campos.' };
 }
 
 async function deleteEmpreendimento(id, name) {
