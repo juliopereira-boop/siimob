@@ -260,6 +260,24 @@
         </div>
         <div class="cfg-card-label">Configuração de Comissão</div>
       </div>
+      <div class="cfg-hub-card" onclick="openCfgView('convenios')">
+        <div class="cfg-hub-icon" style="background:#e0f2fe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+        </div>
+        <div class="cfg-card-label">Convênios</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('coordenadores')">
+        <div class="cfg-hub-icon" style="background:#fae8ff">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a21caf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="cfg-card-label">Coordenadores</div>
+      </div>
+      <div class="cfg-hub-card" onclick="openCfgView('agencias')">
+        <div class="cfg-hub-icon" style="background:#fef3c7">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
+        </div>
+        <div class="cfg-card-label">Agências</div>
+      </div>
       <div class="cfg-hub-card" onclick="openCfgView('corretores')">
         <div class="cfg-hub-icon" style="background:#dcfce7">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
@@ -554,6 +572,44 @@
   </div>
 
   <!-- ─── Sub-view: Analistas de Crédito ─── -->
+  <div id="cfg-view-convenios" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Convênios</div>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openSimples('convenio',null)">+ Novo convênio</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Aparecem no filtro dos quadros e no cadastro de novo repasse.</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nome</th><th style="width:32%">ID</th><th style="width:120px">Ações</th></tr></thead>
+      <tbody id="convenio-tbody"><tr><td colspan="3" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div id="cfg-view-agencias" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Agências</div>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openSimples('agencia',null)">+ Nova agência</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th style="width:120px">Número</th><th>Nome</th><th style="width:30%">ID</th><th style="width:120px">Ações</th></tr></thead>
+      <tbody id="agencia-tbody"><tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div id="cfg-view-coordenadores" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Coordenadores</div>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openCoordenador(null)">+ Novo coordenador</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Coordenador é o gestor de uma equipe de corretores. Não tem acesso ao sistema — serve para organizar a equipe.</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nome</th><th>Contato</th><th>Corretores</th><th style="width:26%">ID</th><th style="width:120px">Ações</th></tr></thead>
+      <tbody id="coordenador-tbody"><tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
   <div id="cfg-view-corretores" style="display:none">
     <div class="cfg-view-hdr">
       <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
@@ -565,8 +621,8 @@
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>Contato</th><th>Etapas liberadas</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody id="corretor-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Coordenador</th><th>Etapas liberadas</th><th>Status</th><th>ID</th><th>Ações</th></tr></thead>
+        <tbody id="corretor-tbody"><tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -600,8 +656,8 @@
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>Contato</th><th>Acesso por etapa</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody id="analista-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Contato</th><th>Acesso por etapa</th><th>Status</th><th>ID</th><th>Ações</th></tr></thead>
+        <tbody id="analista-tbody"><tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
       </table>
     </div>
     <div class="pt-pg-btns" id="analista-pg-btns"></div>
@@ -768,6 +824,64 @@
 </div>
 
 <!-- ═══════ MODAL: Analista de Crédito ═══════ -->
+<div class="modal-bg hidden" id="modal-simples-bg">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="simples-title">Novo</div>
+      <button class="modal-close" onclick="closeModal('modal-simples-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full" id="simples-numero-wrap" style="display:none">
+          <label>Número da agência *</label><input id="simples-numero" placeholder="Ex.: 1234">
+        </div>
+        <div class="form-group full"><label id="simples-nome-lbl">Nome *</label><input id="simples-nome"></div>
+        <div class="form-group full" id="simples-id-wrap" style="display:none">
+          <label>ID do registro</label>
+          <input id="simples-id" readonly style="background:var(--bg);font-family:Consolas,monospace;font-size:.78rem;color:var(--t2)">
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Use este identificador em importações.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-simples-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="simples-save-btn" onclick="saveSimples()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modal-coordenador-bg">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="coord-title">Novo coordenador</div>
+      <button class="modal-close" onclick="closeModal('modal-coordenador-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2">
+        <div class="form-group full"><label>Nome *</label><input id="coord-nome"></div>
+        <div class="form-group"><label>E-mail</label><input id="coord-email" type="email"></div>
+        <div class="form-group"><label>Telefone</label><input id="coord-phone"></div>
+        <div class="form-group full" id="coord-id-wrap" style="display:none">
+          <label>ID do registro</label>
+          <input id="coord-id" readonly style="background:var(--bg);font-family:Consolas,monospace;font-size:.78rem;color:var(--t2)">
+        </div>
+        <div class="form-group full">
+          <label>Corretores desta equipe</label>
+          <div style="font-size:.72rem;color:var(--t3);margin:-.15rem 0 .5rem">
+            Marque os corretores que respondem a este coordenador. O vínculo também pode ser
+            definido pelo cadastro do próprio corretor — é o mesmo dado.
+          </div>
+          <div id="coord-corretores" style="display:flex;flex-direction:column;gap:.3rem;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-coordenador-bg')">Cancelar</button>
+      <button class="btn btn-primary" id="coord-save-btn" onclick="saveCoordenador()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg hidden" id="modal-corretor-bg">
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
@@ -783,6 +897,12 @@
         <div class="form-group"><label>Senha <span id="co-pw-hint" style="font-weight:400;color:var(--t3)"></span></label><input id="co-password" type="password" placeholder="mínimo 6 caracteres"></div>
         <div class="form-group"><label>Situação</label>
           <label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem;padding-top:.45rem"><input type="checkbox" id="co-active" checked> Ativo (pode entrar no sistema)</label>
+        </div>
+        <div class="form-group"><label>Coordenador</label>
+          <select id="co-coordenador"><option value="">Sem coordenador</option></select>
+        </div>
+        <div class="form-group" id="co-id-wrap" style="display:none"><label>ID do registro</label>
+          <input id="co-id" readonly style="background:var(--bg);font-family:Consolas,monospace;font-size:.78rem;color:var(--t2)">
         </div>
 
         <div class="form-group full" style="margin-top:.35rem">
@@ -1237,7 +1357,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','gestores','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','gestores','convenios','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1253,6 +1373,9 @@ function openCfgView(view) {
   if (view === 'comissao') loadCommission();
   if (view === 'analistas') loadAnalistas();
   if (view === 'corretores') loadCorretores();
+  if (view === 'convenios')     loadSimples('convenio');
+  if (view === 'agencias')      loadSimples('agencia');
+  if (view === 'coordenadores') loadCoordenadores();
   if (view === 'gestores')   loadGestores();
   if (view === 'correspondentes') { loadEmpresas(); loadPartners(); }
   if (view === 'despachantes') loadDespachantes();
@@ -2925,6 +3048,221 @@ async function deletePartner(id, name) {
   } else toast('Erro ao remover','error');
 }
 
+// ═══ Cadastros auxiliares (Convênio, Agência, Coordenador) ════════════════════
+// Todos vivem em a1_partners, distinguidos por "type", usando o campo extra
+// (JSONB) para o que é específico de cada um. Assim não foi preciso criar
+// tabela nova nem migração.
+const SIMPLES = {
+  convenio: { titulo:'convênio', tbody:'convenio-tbody', colunas:3, temNumero:false },
+  agencia:  { titulo:'agência',  tbody:'agencia-tbody',  colunas:4, temNumero:true  },
+};
+const CAD = { convenio:[], agencia:[], coordenador:[] };
+
+// Identificador visível em todos os cadastros — serve para importações.
+// Mostra um trecho e copia o valor inteiro no clique.
+function idChip(id){
+  if(!id) return '<span style="color:var(--t3)">—</span>';
+  return `<code onclick="copiarId('${id}')" title="Clique para copiar: ${id}"
+    style="cursor:pointer;font-size:.7rem;background:var(--bg);border:1px solid var(--border);
+           border-radius:4px;padding:.1rem .35rem;color:var(--t2)">${esc(String(id).slice(0,8))}…</code>`;
+}
+function copiarId(id){
+  navigator.clipboard.writeText(id).then(
+    ()=>toast('ID copiado: '+id,'success'),
+    ()=>toast('Não foi possível copiar. O ID é: '+id,'info')
+  );
+}
+
+async function loadSimples(tipo){
+  CAD[tipo] = await fetch(`${A1.rest('a1_partners')}?type=eq.${tipo}&order=name.asc`,{headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>[]);
+  if(!Array.isArray(CAD[tipo])) CAD[tipo]=[];
+  renderSimples(tipo);
+}
+
+function renderSimples(tipo){
+  const cfg = SIMPLES[tipo];
+  const tb = document.getElementById(cfg.tbody); if(!tb) return;
+  const lista = CAD[tipo];
+  if(!lista.length){
+    tb.innerHTML = `<tr><td colspan="${cfg.colunas}" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum registro cadastrado.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = lista.map(r=>`<tr>
+    ${cfg.temNumero?`<td style="font-family:Consolas,monospace">${esc((r.extra&&r.extra.numero)||'—')}</td>`:''}
+    <td style="font-weight:600">${esc(r.name)}</td>
+    <td>${idChip(r.id)}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="openSimples('${tipo}','${r.id}')">Editar</button>
+      <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteSimples('${tipo}','${r.id}')">Excluir</button>
+    </td></tr>`).join('');
+}
+
+let SIMPLES_TIPO=null, SIMPLES_ID=null;
+function openSimples(tipo, id){
+  SIMPLES_TIPO = tipo; SIMPLES_ID = id || null;
+  const cfg = SIMPLES[tipo];
+  const r = id ? CAD[tipo].find(x=>x.id===id) : null;
+  document.getElementById('simples-title').textContent =
+    (r?'Editar ':'Novo ') + cfg.titulo;
+  document.getElementById('simples-nome').value = r?.name || '';
+  document.getElementById('simples-numero-wrap').style.display = cfg.temNumero ? '' : 'none';
+  document.getElementById('simples-numero').value = (r && r.extra && r.extra.numero) || '';
+  document.getElementById('simples-id-wrap').style.display = r ? '' : 'none';
+  document.getElementById('simples-id').value = r?.id || '';
+  openModal('modal-simples-bg');
+}
+
+async function saveSimples(){
+  const tipo = SIMPLES_TIPO, cfg = SIMPLES[tipo];
+  const nome = document.getElementById('simples-nome').value.trim();
+  const numero = document.getElementById('simples-numero').value.trim();
+  if(!nome){ toast('Informe o nome','error'); return; }
+  if(cfg.temNumero && !numero){ toast('Informe o número da agência','error'); return; }
+  const dup = CAD[tipo].some(x => x.id!==SIMPLES_ID && (x.name||'').toLowerCase()===nome.toLowerCase());
+  if(dup && !confirm(`Já existe um registro com o nome "${nome}". Cadastrar assim mesmo?`)) return;
+
+  const payload = { tenant_id:G.user.tenant_id, type:tipo, name:nome, is_active:true, approved:true,
+                    extra: cfg.temNumero ? { numero } : {} };
+  const btn = document.getElementById('simples-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    const url = SIMPLES_ID ? `${A1.rest('a1_partners')}?id=eq.${SIMPLES_ID}` : A1.rest('a1_partners');
+    const res = await fetch(url, {method: SIMPLES_ID?'PATCH':'POST', headers:A1.returnHeaders(), body:JSON.stringify(payload)});
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||('HTTP '+res.status)); }
+    toast(SIMPLES_ID?'Registro atualizado':'Registro cadastrado','success');
+    closeModal('modal-simples-bg');
+    loadSimples(tipo);
+  }catch(e){ toast('Erro ao salvar: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+async function deleteSimples(tipo, id){
+  const r = CAD[tipo].find(x=>x.id===id);
+  if(!confirm(`Excluir "${r?r.name:''}"?`)) return;
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok||res.status===204){ toast('Registro excluído','info'); loadSimples(tipo); }
+  else toast('Não foi possível excluir','error');
+}
+
+// ── Coordenadores ────────────────────────────────────────────────────────────
+// O vínculo mora no corretor (extra.coordenador_id). Editar pelo coordenador
+// ou pelo corretor altera o mesmo dado — não existem duas verdades.
+async function loadCoordenadores(){
+  const [coords, corrs] = await Promise.all([
+    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  CAD.coordenador = Array.isArray(coords)?coords:[];
+  CORRETORES = Array.isArray(corrs)?corrs:[];
+  renderCoordenadores();
+}
+
+function corretoresDoCoordenador(coordId){
+  return CORRETORES.filter(c => c.extra && c.extra.coordenador_id === coordId);
+}
+
+function renderCoordenadores(){
+  const tb=document.getElementById('coordenador-tbody'); if(!tb) return;
+  if(!CAD.coordenador.length){
+    tb.innerHTML='<tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum coordenador cadastrado.</td></tr>';
+    return;
+  }
+  tb.innerHTML = CAD.coordenador.map(c=>{
+    const eq = corretoresDoCoordenador(c.id);
+    return `<tr>
+      <td style="font-weight:600">${esc(c.name)}</td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(c.email||'—')}${c.phone?`<div style="color:var(--t3)">${esc(c.phone)}</div>`:''}</td>
+      <td>${eq.length
+        ? `<span style="font-weight:700;color:#a21caf">${eq.length}</span> <span style="color:var(--t3);font-size:.75rem">${esc(eq.slice(0,2).map(x=>x.name).join(', '))}${eq.length>2?'…':''}</span>`
+        : '<span style="color:var(--t3);font-size:.75rem">nenhum vinculado</span>'}</td>
+      <td>${idChip(c.id)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openCoordenador('${c.id}')">Editar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteCoordenador('${c.id}')">Excluir</button>
+      </td></tr>`;
+  }).join('');
+}
+
+let COORD_ID=null;
+function openCoordenador(id){
+  COORD_ID = id || null;
+  const c = id ? CAD.coordenador.find(x=>x.id===id) : null;
+  document.getElementById('coord-title').textContent = c ? 'Editar coordenador' : 'Novo coordenador';
+  document.getElementById('coord-nome').value  = c?.name  || '';
+  document.getElementById('coord-email').value = c?.email || '';
+  document.getElementById('coord-phone').value = c?.phone || '';
+  document.getElementById('coord-id-wrap').style.display = c ? '' : 'none';
+  document.getElementById('coord-id').value = c?.id || '';
+
+  const box = document.getElementById('coord-corretores');
+  box.innerHTML = CORRETORES.length
+    ? CORRETORES.map(co=>{
+        const vinc = co.extra && co.extra.coordenador_id;
+        const meu  = c && vinc === c.id;
+        const outro = vinc && (!c || vinc !== c.id)
+          ? (CAD.coordenador.find(x=>x.id===vinc)||{}).name : null;
+        return `<label style="display:flex;align-items:center;gap:.5rem;font-size:.8rem;cursor:pointer">
+          <input type="checkbox" class="coord-corretor" value="${co.id}"${meu?' checked':''}>
+          <span style="flex:1">${esc(co.name)}</span>
+          ${outro?`<span style="font-size:.68rem;color:#b45309">equipe de ${esc(outro)}</span>`:''}
+        </label>`;
+      }).join('')
+    : '<div style="color:var(--t3);font-size:.75rem">Nenhum corretor cadastrado ainda.</div>';
+  openModal('modal-coordenador-bg');
+}
+
+async function saveCoordenador(){
+  const nome = document.getElementById('coord-nome').value.trim();
+  if(!nome){ toast('Informe o nome do coordenador','error'); return; }
+  const payload = { tenant_id:G.user.tenant_id, type:'coordenador', name:nome,
+    email:document.getElementById('coord-email').value.trim(),
+    phone:document.getElementById('coord-phone').value.trim(),
+    is_active:true, approved:true };
+  const btn=document.getElementById('coord-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    let id = COORD_ID;
+    const url = id ? `${A1.rest('a1_partners')}?id=eq.${id}` : A1.rest('a1_partners');
+    const res = await fetch(url,{method:id?'PATCH':'POST',headers:A1.returnHeaders(),body:JSON.stringify(payload)});
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||('HTTP '+res.status)); }
+    if(!id){ const [criado] = await res.json().catch(()=>[]); id = criado && criado.id; }
+    if(!id) throw new Error('O servidor não devolveu o registro criado.');
+
+    // Aplica o vínculo: marcados passam a apontar para este coordenador;
+    // desmarcados que apontavam para ele são desvinculados.
+    const marcados = new Set([...document.querySelectorAll('.coord-corretor:checked')].map(i=>i.value));
+    const mudancas = [];
+    CORRETORES.forEach(co=>{
+      const atual = (co.extra && co.extra.coordenador_id) || null;
+      const novo  = marcados.has(co.id) ? id : (atual === id ? null : atual);
+      if(novo !== atual){
+        mudancas.push(fetch(`${A1.rest('a1_partners')}?id=eq.${co.id}`,{
+          method:'PATCH', headers:A1.headers(),
+          body: JSON.stringify({ extra: { ...(co.extra||{}), coordenador_id: novo } })
+        }));
+      }
+    });
+    if(mudancas.length) await Promise.all(mudancas);
+
+    toast(COORD_ID?'Coordenador atualizado':'Coordenador cadastrado','success');
+    closeModal('modal-coordenador-bg');
+    loadCoordenadores();
+  }catch(e){ toast('Erro ao salvar: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+async function deleteCoordenador(id){
+  const c = CAD.coordenador.find(x=>x.id===id);
+  const eq = corretoresDoCoordenador(id);
+  if(!confirm(`Excluir o coordenador "${c?c.name:''}"?` + (eq.length?`\n\n${eq.length} corretor(es) ficarão sem coordenador.`:''))) return;
+  await Promise.all(eq.map(co => fetch(`${A1.rest('a1_partners')}?id=eq.${co.id}`,{
+    method:'PATCH', headers:A1.headers(),
+    body: JSON.stringify({ extra: { ...(co.extra||{}), coordenador_id: null } })
+  })));
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok||res.status===204){ toast('Coordenador excluído','info'); loadCoordenadores(); }
+  else toast('Não foi possível excluir','error');
+}
+
 // ═══ Corretores ═══════════════════════════════════════════════════════════════
 // Corretor é um parceiro de type='corretor' — reaproveita o login de parceiro
 // (a1_partner_login) já existente, então ganha acesso sem função nova no banco.
@@ -2940,9 +3278,12 @@ async function loadCorretores(){
       .then(r=>r.json()).catch(()=>[]);
     if(!Array.isArray(G.stages)) G.stages=[];
   }
-  CORRETORES = await fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()})
-    .then(r=>r.json()).catch(()=>[]);
-  if(!Array.isArray(CORRETORES)) CORRETORES=[];
+  const [corrs, coords] = await Promise.all([
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  CORRETORES = Array.isArray(corrs)?corrs:[];
+  CAD.coordenador = Array.isArray(coords)?coords:[];
   renderCorretores();
 }
 
@@ -2968,10 +3309,11 @@ function renderCorretores(){
       : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>';
     return `<tr>
       <td><b>${esc(c.name)}</b></td>
-      <td style="color:var(--t2)">${esc(c.cpf||'—')}</td>
-      <td style="color:var(--t2);font-size:.78rem">${esc(c.email||'—')}${c.phone?`<div style="color:var(--t3)">${esc(c.phone)}</div>`:''}</td>
+      <td style="color:var(--t2)">${esc(c.cpf||'—')}<div style="color:var(--t3);font-size:.72rem">${esc(c.email||'')}</div></td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(((CAD.coordenador||[]).find(k=>k.id===(c.extra&&c.extra.coordenador_id))||{}).name||'—')}</td>
       <td>${etapasTxt}</td>
       <td>${c.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
+      <td>${idChip(c.id)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openCorretor('${c.id}')">Editar</button>
         <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteCorretor('${c.id}')">Excluir</button>
@@ -3052,6 +3394,12 @@ function openCorretor(id){
   document.getElementById('co-password').value = '';
   document.getElementById('co-pw-hint').textContent = c ? '(deixe vazio para manter a atual)' : '*';
   document.getElementById('co-active').checked = c ? c.is_active!==false : true;
+  const coordSel = document.getElementById('co-coordenador');
+  const coordAtual = (c && c.extra && c.extra.coordenador_id) || '';
+  coordSel.innerHTML = '<option value="">Sem coordenador</option>' +
+    (CAD.coordenador||[]).map(k=>`<option value="${k.id}"${k.id===coordAtual?' selected':''}>${esc(k.name)}</option>`).join('');
+  document.getElementById('co-id-wrap').style.display = c ? '' : 'none';
+  document.getElementById('co-id').value = c?.id || '';
 
   const p = c?.permissions || {};
   const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_todos_analistas:false };
@@ -3088,12 +3436,15 @@ async function saveCorretor(){
   if(!perms.etapas_permitidas.length &&
      !confirm('Nenhuma etapa foi marcada. O corretor vai entrar no sistema e não verá processo nenhum. Salvar assim mesmo?')) return;
 
+  const atual = EDIT_CORRETOR_ID ? (CORRETORES.find(x=>x.id===EDIT_CORRETOR_ID)||{}) : {};
   const payload={
     tenant_id:G.user.tenant_id, type:'corretor', name, cpf,
     email:document.getElementById('co-email').value.trim(),
     phone:document.getElementById('co-phone').value.trim(),
     is_active:document.getElementById('co-active').checked,
-    approved:true, permissions:perms
+    approved:true, permissions:perms,
+    // O vínculo com o coordenador é o mesmo dado editado na tela do coordenador.
+    extra:{ ...(atual.extra||{}), coordenador_id: document.getElementById('co-coordenador').value || null }
   };
   if(pw) payload.password_hash=await sha256(pw+'::a1');
 
@@ -3819,7 +4170,7 @@ function renderAnalistaList() {
   if (!tbody) return;
   const total = G.analistaFiltered.length;
   const page  = G.analistaFiltered.slice(G.analistaPage * G.analistaPerPage, (G.analistaPage+1) * G.analistaPerPage);
-  if (!total) { tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum analista encontrado.</td></tr>'; return; }
+  if (!total) { tbody.innerHTML = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum analista encontrado.</td></tr>'; return; }
   tbody.innerHTML = page.map(a => {
     const p = a.permissions || {};
     const mapa = (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : null;
@@ -3838,6 +4189,7 @@ function renderAnalistaList() {
     <td style="color:var(--t2);font-size:.78rem">${esc(a.email||'—')}${a.phone?`<div style="color:var(--t3)">${esc(a.phone)}</div>`:''}</td>
     <td>${acesso}</td>
     <td>${a.is_active!==false ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
+    <td>${idChip(a.id)}</td>
     <td><div style="display:flex;gap:.3rem">
       <button class="btn btn-ghost btn-sm" onclick="openAnalista(${JSON.stringify(a).replace(/"/g,'&quot;')})">Editar</button>
       <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${esc(a.name)}')">Excluir</button>
