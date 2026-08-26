@@ -284,6 +284,13 @@
         </div>
         <div class="cfg-card-label">Corretores</div>
       </div>
+      <div class="cfg-hub-card" onclick="openCfgView('precad')" style="position:relative">
+        <div class="cfg-hub-icon" style="background:#ffedd5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+        </div>
+        <div class="cfg-card-label">Validação de corretores</div>
+        <span id="precad-badge" style="display:none;position:absolute;top:.5rem;right:.6rem;background:#ea580c;color:#fff;font-size:.68rem;font-weight:800;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 .3rem"></span>
+      </div>
       <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
         <div class="cfg-hub-icon" style="background:#ede9fe">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
@@ -616,13 +623,42 @@
       <div class="cfg-view-title">Corretores</div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <input type="text" id="corretor-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="renderCorretores()">
+        <button class="btn btn-ghost btn-sm" onclick="openPrecadLink()">Gerar link de cadastro</button>
         <button class="btn btn-primary btn-sm" onclick="openCorretor(null)">+ Novo corretor</button>
       </div>
     </div>
+    <div id="corretor-pendentes-aviso" style="display:none;font-size:.75rem;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:.5rem .7rem;margin:-.2rem 0 .7rem"></div>
     <div class="tbl-wrap">
       <table>
         <thead><tr><th>Nome</th><th>CPF</th><th>Coordenador</th><th>Etapas liberadas</th><th>Status</th><th>ID</th><th>Ações</th></tr></thead>
         <tbody id="corretor-tbody"><tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="cfg-view-precad" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Validação de corretores</div>
+      <button class="btn btn-primary btn-sm" onclick="openPrecadLink()">Gerar link de cadastro</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">
+      Quem se cadastra pelo link cai aqui e <b>ainda não consegue entrar no sistema</b>.
+      Ao validar, o corretor passa a poder fazer login — em seguida defina as etapas dele em Corretores.
+      Ao recusar, o registro é apagado.
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Contato</th><th>Imobiliária</th><th>Enviado em</th><th style="width:190px">Ações</th></tr></thead>
+        <tbody id="precad-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="cfg-view-title" style="font-size:.9rem;margin:1.6rem 0 .5rem">Links gerados</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Imobiliária</th><th>Validade</th><th>Cadastros</th><th>Situação</th><th style="width:190px">Ações</th></tr></thead>
+        <tbody id="precad-links-tbody"><tr><td colspan="5" style="padding:1.4rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -938,6 +974,49 @@
     <div class="modal-ftr">
       <button class="btn btn-ghost" onclick="closeModal('modal-corretor-bg')">Cancelar</button>
       <button class="btn btn-primary" id="co-save-btn" onclick="saveCorretor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modal-precad-bg">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title">Link de cadastro de corretor</div>
+      <button class="modal-close" onclick="closeModal('modal-precad-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.75rem;color:var(--t3);margin-bottom:.8rem">
+        Quem abrir o link preenche apenas os dados de login. Permissões e etapas continuam
+        sendo definidas aqui pelo gestor, depois de validar o cadastro.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Validade do link</label>
+          <select id="pl-validade">
+            <option value="1">1 dia</option>
+            <option value="7" selected>7 dias</option>
+            <option value="15">15 dias</option>
+            <option value="30">30 dias</option>
+            <option value="90">90 dias</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Imobiliária</label>
+          <select id="pl-imob"><option value="">Sem imobiliária</option></select>
+        </div>
+      </div>
+      <div id="pl-result" style="display:none;margin-top:.9rem">
+        <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Link gerado</label>
+        <div style="display:flex;gap:.4rem">
+          <input type="text" id="pl-url" readonly onclick="this.select()" style="flex:1;font-size:.78rem;background:var(--bg)">
+          <button class="btn btn-primary btn-sm" onclick="copiarPrecadLink()">Copiar</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--t3);margin-top:.4rem" id="pl-hint"></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-precad-bg')">Fechar</button>
+      <button class="btn btn-primary" id="pl-gerar-btn" onclick="gerarPrecadLink()">Gerar link</button>
     </div>
   </div>
 </div>
@@ -1351,13 +1430,19 @@ async function init() {
     .then(r=>r.json()).catch(()=>[]);
   if (!Array.isArray(G.stages)) G.stages = [];
 
+  // Aviso de cadastros esperando validação já na entrada — senão o corretor
+  // fica parado na fila sem ninguém saber.
+  fetch(`${A1.rest('a1_partners')}?type=eq.corretor&approved=eq.false&select=id`, {headers:A1.headers()})
+    .then(r=>r.json()).then(list=>{ if(Array.isArray(list)){ PRECAD_PEND = list; pintarPrecadBadge(); } })
+    .catch(()=>{});
+
   loadFlags();
   a1StartHeartbeat('configuracoes');
 }
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','gestores','convenios','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','precad','gestores','convenios','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1373,6 +1458,7 @@ function openCfgView(view) {
   if (view === 'comissao') loadCommission();
   if (view === 'analistas') loadAnalistas();
   if (view === 'corretores') loadCorretores();
+  if (view === 'precad') loadPrecad();
   if (view === 'convenios')     loadSimples('convenio');
   if (view === 'agencias')      loadSimples('agencia');
   if (view === 'coordenadores') loadCoordenadores();
@@ -3282,8 +3368,20 @@ async function loadCorretores(){
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
   ]);
-  CORRETORES = Array.isArray(corrs)?corrs:[];
+  const todos = Array.isArray(corrs)?corrs:[];
+  // Quem veio pelo link entra com approved = false e não aparece aqui: o lugar
+  // dele é a fila de Validação, senão o gestor acharia que já tem acesso.
+  CORRETORES  = todos.filter(c => c.approved !== false);
+  PRECAD_PEND = todos.filter(c => c.approved === false);
   CAD.coordenador = Array.isArray(coords)?coords:[];
+  pintarPrecadBadge();
+  const aviso = document.getElementById('corretor-pendentes-aviso');
+  if(aviso){
+    aviso.style.display = PRECAD_PEND.length ? '' : 'none';
+    aviso.innerHTML = PRECAD_PEND.length
+      ? `${PRECAD_PEND.length} cadastro(s) aguardando validação. <a href="#" onclick="openCfgView('precad');return false" style="color:#9a3412;font-weight:700">Abrir Validação de corretores</a>`
+      : '';
+  }
   renderCorretores();
 }
 
@@ -3470,6 +3568,199 @@ async function deleteCorretor(id){
   const res=await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
   if(res.ok){ toast('Corretor excluído','info'); loadCorretores(); }
   else toast('Não foi possível excluir','error');
+}
+
+// ═══ Pré-cadastro de corretores por link ══════════════════════════════════════
+// O gestor gera um link com prazo de validade; o corretor preenche só os dados
+// de login numa página pública e o registro nasce SEM acesso (approved=false).
+// A liberação é um ato do gestor, aqui na fila de validação — o link sozinho
+// nunca dá entrada no sistema.
+let PRECAD_PEND  = [];
+let PRECAD_LINKS = [];
+
+function pintarPrecadBadge(){
+  const b = document.getElementById('precad-badge');
+  if(!b) return;
+  b.style.display = PRECAD_PEND.length ? '' : 'none';
+  b.textContent   = PRECAD_PEND.length > 99 ? '99+' : String(PRECAD_PEND.length);
+}
+
+async function loadPrecad(){
+  const [pend, links, imobs] = await Promise.all([
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&approved=eq.false&order=created_at.desc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_precad_links')}?order=created_at.desc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    G.imobsLoaded ? Promise.resolve(G.imobs)
+                  : fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  PRECAD_PEND  = Array.isArray(pend)  ? pend  : [];
+  PRECAD_LINKS = Array.isArray(links) ? links : [];
+  if(!G.imobsLoaded && Array.isArray(imobs)){ G.imobs = imobs; G.imobsLoaded = true; }
+  pintarPrecadBadge();
+  renderPrecadPendentes();
+  renderPrecadLinks(Array.isArray(links));
+}
+
+function dataHoraBR(v){
+  if(!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? '—' : d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderPrecadPendentes(){
+  const tb = document.getElementById('precad-tbody'); if(!tb) return;
+  if(!PRECAD_PEND.length){
+    tb.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum cadastro aguardando validação.</td></tr>';
+    return;
+  }
+  tb.innerHTML = PRECAD_PEND.map(c=>{
+    const ex = c.extra || {};
+    return `<tr>
+      <td><b>${esc(c.name)}</b><div style="color:var(--t3);font-size:.7rem">${idChip(c.id)}</div></td>
+      <td style="color:var(--t2)">${esc(c.cpf||'—')}</td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(c.email||'—')}<div style="color:var(--t3)">${esc(c.phone||'')}</div></td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(ex.imobiliaria_nome||'—')}</td>
+      <td style="color:var(--t3);font-size:.75rem">${esc(dataHoraBR(ex.enviado_em || c.created_at))}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-primary btn-sm" onclick="validarPrecad('${c.id}')">Validar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="recusarPrecad('${c.id}')">Recusar</button>
+      </td></tr>`;
+  }).join('');
+}
+
+async function validarPrecad(id){
+  const c = PRECAD_PEND.find(x=>x.id===id); if(!c) return;
+  if(!confirm(`Validar o cadastro de ${c.name}?\n\nEle passa a conseguir entrar no sistema. As etapas que ele pode ver e editar são definidas em Corretores.`)) return;
+
+  // Permissão inicial mínima: entra e acompanha. Etapa nenhuma marcada ainda —
+  // é o gestor quem decide onde ele atua.
+  const corpo = { approved:true, is_active:true };
+  const p = c.permissions;
+  if(!p || typeof p !== 'object' || !Object.keys(p).length){
+    corpo.permissions = { ver_repasses:true, criar_repasses:false, editar_repasses:false,
+                          alterar_etapa:false, baixar_documentos:false, ver_dashboard:false,
+                          ver_todos_analistas:false, etapas:{}, etapas_permitidas:[] };
+  }
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(corpo)});
+  if(!res.ok){ const e=await res.json().catch(()=>({})); toast('Não foi possível validar: '+(e.message||('HTTP '+res.status)),'error'); return; }
+  toast(`${c.name} validado. Agora defina as etapas dele em Corretores.`,'success');
+  loadPrecad();
+}
+
+async function recusarPrecad(id){
+  const c = PRECAD_PEND.find(x=>x.id===id); if(!c) return;
+  if(!confirm(`Recusar o cadastro de ${c.name}?\n\nO registro é apagado e ele não terá acesso. Se for engano, ele pode se cadastrar de novo pelo link.`)) return;
+  const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(res.ok){ toast('Cadastro recusado e removido','info'); loadPrecad(); }
+  else toast('Não foi possível recusar','error');
+}
+
+// ── Links ────────────────────────────────────────────────────────────────────
+function precadUrl(token){ return `${location.origin}/cadastro-corretor?t=${token}`; }
+
+function renderPrecadLinks(ok){
+  const tb = document.getElementById('precad-links-tbody'); if(!tb) return;
+  if(!ok){
+    tb.innerHTML = '<tr><td colspan="5" style="padding:1.4rem;text-align:center;color:#b45309;font-size:.78rem">Os links de cadastro ainda não foram habilitados no banco. Rode o arquivo <code>sql/2026-08-26_precadastro_corretores.sql</code> no Supabase.</td></tr>';
+    return;
+  }
+  if(!PRECAD_LINKS.length){
+    tb.innerHTML = '<tr><td colspan="5" style="padding:1.4rem;text-align:center;color:var(--t3)">Nenhum link gerado ainda.</td></tr>';
+    return;
+  }
+  tb.innerHTML = PRECAD_LINKS.map(l=>{
+    const venceu = new Date(l.expires_at) < new Date();
+    const sit = l.revoked ? '<span style="color:var(--t3);font-size:.75rem">Desativado</span>'
+              : venceu   ? '<span style="color:#b45309;font-weight:700;font-size:.75rem">Vencido</span>'
+                         : '<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>';
+    return `<tr>
+      <td style="color:var(--t2);font-size:.8rem">${esc(l.imobiliaria_nome||'—')}</td>
+      <td style="color:var(--t3);font-size:.75rem">até ${esc(dataHoraBR(l.expires_at))}</td>
+      <td style="color:var(--t2);font-size:.8rem">${l.usos||0}</td>
+      <td>${sit}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="copiarPrecadUrl('${l.token}')">Copiar link</button>
+        ${l.revoked ? '' : `<button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="revogarPrecadLink('${l.token}')">Desativar</button>`}
+      </td></tr>`;
+  }).join('');
+}
+
+function openPrecadLink(){
+  const sel = document.getElementById('pl-imob');
+  const imobs = Array.isArray(G.imobs) ? G.imobs : [];
+  sel.innerHTML = '<option value="">Sem imobiliária</option>' +
+    imobs.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');
+  if(!imobs.length && !G.imobsLoaded){
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()})
+      .then(r=>r.json()).then(list=>{
+        if(!Array.isArray(list)) return;
+        G.imobs = list; G.imobsLoaded = true;
+        sel.innerHTML = '<option value="">Sem imobiliária</option>' +
+          list.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');
+      }).catch(()=>{});
+  }
+  document.getElementById('pl-validade').value = '7';
+  document.getElementById('pl-result').style.display = 'none';
+  document.getElementById('pl-url').value = '';
+  openModal('modal-precad-bg');
+}
+
+async function gerarPrecadLink(){
+  const dias = parseInt(document.getElementById('pl-validade').value,10) || 7;
+  const sel  = document.getElementById('pl-imob');
+  const imobId   = sel.value || null;
+  const imobNome = imobId ? (sel.options[sel.selectedIndex].textContent || null) : null;
+  const expira = new Date(Date.now() + dias*24*60*60*1000);
+
+  const btn = document.getElementById('pl-gerar-btn'); btn.disabled = true; btn.textContent = 'Gerando...';
+  try{
+    const res = await fetch(A1.rest('a1_precad_links'),{
+      method:'POST', headers:A1.returnHeaders(),
+      body:JSON.stringify({
+        tenant_id: G.user.tenant_id,
+        imobiliaria_id: imobId,
+        imobiliaria_nome: imobNome,
+        criado_por: G.user.name || null,
+        expires_at: expira.toISOString()
+      })
+    });
+    if(!res.ok){
+      const e = await res.json().catch(()=>({}));
+      const msg = /a1_precad_links/.test(e.message||'') || res.status === 404
+        ? 'Os links de cadastro ainda não foram habilitados no banco. Rode sql/2026-08-26_precadastro_corretores.sql no Supabase.'
+        : (e.message || ('HTTP '+res.status));
+      throw new Error(msg);
+    }
+    const rows = await res.json().catch(()=>[]);
+    const token = rows && rows[0] && rows[0].token;
+    if(!token) throw new Error('O banco não devolveu o link gerado.');
+
+    document.getElementById('pl-url').value = precadUrl(token);
+    document.getElementById('pl-hint').textContent =
+      `Válido até ${dataHoraBR(expira)}. Pode ser usado por vários corretores — cada cadastro cai na fila de validação.`;
+    document.getElementById('pl-result').style.display = '';
+    copiarPrecadLink();
+    if(document.getElementById('cfg-view-precad').style.display !== 'none') loadPrecad();
+  }catch(e){ toast(e.message,'error'); }
+  finally{ btn.disabled = false; btn.textContent = 'Gerar link'; }
+}
+
+function copiarPrecadLink(){ copiarTexto(document.getElementById('pl-url').value); }
+function copiarPrecadUrl(token){ copiarTexto(precadUrl(token)); }
+
+function copiarTexto(txt){
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(
+    ()=>toast('Link copiado','success'),
+    ()=>toast('Não foi possível copiar. O link é: '+txt,'info')
+  );
+}
+
+async function revogarPrecadLink(token){
+  if(!confirm('Desativar este link?\n\nQuem já se cadastrou continua na fila; o link só deixa de aceitar novos cadastros.')) return;
+  const res = await fetch(`${A1.rest('a1_precad_links')}?token=eq.${encodeURIComponent(token)}`,
+    {method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify({revoked:true})});
+  if(res.ok){ toast('Link desativado','info'); loadPrecad(); }
+  else toast('Não foi possível desativar o link','error');
 }
 
 // ═══ Usuários gestores ════════════════════════════════════════════════════════
