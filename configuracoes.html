@@ -449,6 +449,19 @@
             <option value="">Selecione...</option>
           </select>
         </div>
+        <div class="form-group"><label>Estado</label>
+          <select id="empr-f-estado" onchange="emprEstadoMudou()">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Cidade</label>
+          <select id="empr-f-cidade">
+            <option value="">Escolha o estado primeiro</option>
+          </select>
+        </div>
+        <div class="form-group full" style="font-size:.72rem;color:var(--t3);margin-top:-.3rem">
+          Estado e cidade são preenchidos automaticamente no novo repasse deste empreendimento.
+        </div>
         <div class="form-group full" style="margin-top:.1rem">
           <label style="display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--t2);text-transform:none;letter-spacing:0">
             <input type="checkbox" id="empr-f-sem-unidades" onchange="toggleEmprSemUnidades()" style="width:15px;height:15px;accent-color:var(--emerald);cursor:pointer">
@@ -4087,10 +4100,11 @@ function renderEmprList() {
     return;
   }
   el.innerHTML = `<table class="pt-table">
-    <thead><tr><th>Nome</th><th>Regional</th><th>Tipo</th><th>Unidades</th><th></th></tr></thead>
+    <thead><tr><th>Nome</th><th>Regional</th><th>Cidade / UF</th><th>Tipo</th><th>Unidades</th><th></th></tr></thead>
     <tbody>${G.empreendimentos.map(d => `<tr>
       <td style="font-weight:600">${esc(d.name)}</td>
       <td>${esc(d.regional||'—')}</td>
+      <td style="font-size:.78rem">${d.cidade||d.estado ? esc([d.cidade, d.estado].filter(Boolean).join(' / ')) : '<span style="color:var(--t3)">—</span>'}</td>
       <td><span class="pt-type" style="background:#e0f2fe;color:#0284c7">${d.tipo||'blocos'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count||0} unidades</td>
       <td style="display:flex;gap:.35rem">
@@ -4109,6 +4123,59 @@ function toggleEmprSemUnidades() {
               (G.editingEmprId ? 'Salvar Alterações' : 'Cadastrar Unidades');
 }
 
+// ── Estados e municípios (base do IBGE, tabela a1_estados / a1_municipios) ────
+// A lista inteira do Brasil não vem para o navegador: os estados são 27 e as
+// cidades chegam só do estado escolhido — nenhum estado passa de 853 (Minas).
+const LOC = { estados: null, cidades: {} };
+
+async function carregarEstados(){
+  if (LOC.estados) return LOC.estados;
+  const rows = await fetch(`${A1.rest('a1_estados')}?select=uf,nome&order=nome.asc`, {headers:A1.headers()})
+    .then(r=>r.json()).catch(()=>null);
+  LOC.estados = Array.isArray(rows) ? rows : [];
+  return LOC.estados;
+}
+
+async function carregarCidades(uf){
+  if (!uf) return [];
+  if (LOC.cidades[uf]) return LOC.cidades[uf];
+  const rows = await fetch(`${A1.rest('a1_municipios')}?uf=eq.${encodeURIComponent(uf)}&select=nome&order=nome.asc`,
+    {headers:A1.headers()}).then(r=>r.json()).catch(()=>null);
+  LOC.cidades[uf] = Array.isArray(rows) ? rows.map(r=>r.nome) : [];
+  return LOC.cidades[uf];
+}
+
+async function preencherEstados(atual){
+  const sel = document.getElementById('empr-f-estado'); if(!sel) return;
+  const lista = await carregarEstados();
+  if(!lista.length){
+    // Sem a tabela no banco, dizer o que fazer vale mais que um campo vazio.
+    sel.innerHTML = '<option value="">Rode o SQL de estados e municípios</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Selecione...</option>' +
+    lista.map(e=>`<option value="${e.uf}"${e.uf===atual?' selected':''}>${esc(e.nome)} (${e.uf})</option>`).join('');
+}
+
+async function preencherCidades(uf, atual){
+  const sel = document.getElementById('empr-f-cidade'); if(!sel) return;
+  if(!uf){ sel.innerHTML = '<option value="">Escolha o estado primeiro</option>'; return; }
+  sel.innerHTML = '<option value="">Carregando...</option>';
+  const lista = await carregarCidades(uf);
+  // Se o estado mudou enquanto a lista vinha, esta resposta já não vale.
+  if(document.getElementById('empr-f-estado')?.value !== uf) return;
+  if(!lista.length){ sel.innerHTML = '<option value="">Nenhuma cidade encontrada</option>'; return; }
+  sel.innerHTML = '<option value="">Selecione...</option>' +
+    lista.map(n=>`<option${n===atual?' selected':''}>${esc(n)}</option>`).join('');
+  // Cidade gravada antes que não está mais na lista continua aparecendo, senão
+  // salvar de novo apagaria o dado sem ninguém perceber.
+  if(atual && !lista.includes(atual)) sel.insertAdjacentHTML('beforeend', `<option selected>${esc(atual)}</option>`);
+}
+
+function emprEstadoMudou(){
+  preencherCidades(document.getElementById('empr-f-estado').value, '');
+}
+
 function openEmprModal() {
   G.editingEmprId = null;
   document.getElementById('empr-form-title').textContent = 'Novo empreendimento';
@@ -4118,6 +4185,7 @@ function openEmprModal() {
   document.getElementById('empr-f-pav').value  = '1';
   document.getElementById('empr-f-upf').value  = '4';
   preencherSelectRegional(document.getElementById('empr-f-regional'), '');
+  preencherEstados(''); preencherCidades('', '');
   document.getElementById('empr-f-sem-unidades').checked = false;
   document.getElementById('empr-unidades-wrap').style.display = '';
   document.getElementById('empr-err').style.display = 'none';
@@ -4140,6 +4208,7 @@ function editEmpreendimento(id) {
   document.getElementById('empr-f-pav').value      = d.pavimentos || 1;
   document.getElementById('empr-f-upf').value      = d.unidades_pav || 4;
   preencherSelectRegional(document.getElementById('empr-f-regional'), d.regional || '');
+  preencherEstados(d.estado || '').then(() => preencherCidades(d.estado || '', d.cidade || ''));
   document.getElementById('empr-f-sem-unidades').checked = semUnidades;
   document.getElementById('empr-unidades-wrap').style.display = semUnidades ? 'none' : '';
   document.getElementById('empr-err').style.display = 'none';
@@ -4222,6 +4291,8 @@ async function saveEmpreendimento() {
   const payload = {
     name,
     regional:    document.getElementById('empr-f-regional').value,
+    estado:      document.getElementById('empr-f-estado').value || null,
+    cidade:      document.getElementById('empr-f-cidade').value || null,
     unit_count:  units.length,
     units:       units,
     ...(semUnidades ? {} : {
