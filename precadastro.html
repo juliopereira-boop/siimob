@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Cadastro de corretor — SIIMOB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F8FAFC;--card:#fff;--border:#E2E8F0;
+      --t1:#0F172A;--t2:#475569;--t3:#94A3B8;
+      --green:#3D5CC8;--green-dark:#1E3A8A;--radius:10px;
+      --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;color:var(--t1);font-size:14px;background:var(--bg);
+         min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;
+         -webkit-font-smoothing:antialiased}
+    input,button,select{font-family:inherit}
+    .hidden{display:none!important}
+
+    .wrap{width:100%;max-width:470px}
+    .logo{font-size:1.5rem;font-weight:900;letter-spacing:-.05em;display:flex;align-items:center;
+          gap:.45rem;justify-content:center;margin-bottom:1.4rem}
+    .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+          box-shadow:var(--shadow-lg);padding:2rem 1.9rem}
+    .title{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.35rem}
+    .sub{font-size:.82rem;color:var(--t2);line-height:1.55;margin-bottom:1.4rem}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;background:#EEF2FF;border:1px solid #C7D2FE;
+           color:var(--green-dark);border-radius:99px;padding:.25rem .7rem;font-size:.72rem;
+           font-weight:700;margin-bottom:.9rem}
+
+    .fg{margin-bottom:.9rem}
+    .fg label{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;
+              letter-spacing:.06em;color:var(--t3);margin-bottom:.35rem}
+    .fg input{width:100%;padding:.62rem .8rem;border:1px solid var(--border);border-radius:8px;
+              font-size:.88rem;color:var(--t1);background:#fff;outline:none;transition:border-color .15s}
+    .fg input:focus{border-color:var(--green)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+    .hint{font-size:.72rem;color:var(--t3);margin-top:.3rem}
+
+    .btn{width:100%;padding:.75rem;border:none;border-radius:8px;background:var(--green);color:#fff;
+         font-size:.9rem;font-weight:700;cursor:pointer;transition:background .15s}
+    .btn:hover:not(:disabled){background:var(--green-dark)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+
+    .msg{border-radius:8px;padding:.65rem .8rem;font-size:.8rem;line-height:1.5;margin-bottom:1rem}
+    .msg-err{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C}
+    .msg-ok{background:#ECFDF5;border:1px solid #A7F3D0;color:#047857}
+
+    .done{text-align:center}
+    .done-ico{width:56px;height:56px;border-radius:50%;background:#ECFDF5;display:flex;
+              align-items:center;justify-content:center;margin:0 auto 1rem}
+    .foot{text-align:center;font-size:.7rem;color:var(--t3);margin-top:1.2rem}
+
+    @media(max-width:520px){ .row{grid-template-columns:1fr} .card{padding:1.5rem 1.2rem} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">SIIMOB<span class="logo-dot"></span></div>
+
+    <!-- Carregando o link -->
+    <div class="card" id="v-load">
+      <div class="sub" style="margin:0;text-align:center">Verificando o link...</div>
+    </div>
+
+    <!-- Link inválido / vencido -->
+    <div class="card hidden" id="v-invalido">
+      <div class="title">Link indisponível</div>
+      <div class="sub" id="invalido-txt"></div>
+      <div class="sub" style="margin:0">Peça um novo link a quem te enviou este.</div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="card hidden" id="v-form">
+      <div class="badge"><span id="badge-txt"></span></div>
+      <div class="title">Cadastro de corretor</div>
+      <div class="sub">
+        Preencha seus dados de acesso. O cadastro é enviado para aprovação —
+        você poderá entrar assim que for liberado.
+      </div>
+
+      <div class="msg msg-err hidden" id="form-err"></div>
+
+      <div class="fg">
+        <label>Nome completo *</label>
+        <input type="text" id="f-nome" autocomplete="name" placeholder="Seu nome">
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>CPF *</label>
+          <input type="text" id="f-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+          <div class="hint">É o seu login.</div>
+        </div>
+        <div class="fg">
+          <label>Telefone</label>
+          <input type="text" id="f-fone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000">
+        </div>
+      </div>
+      <div class="fg">
+        <label>E-mail</label>
+        <input type="email" id="f-email" autocomplete="email" placeholder="voce@email.com">
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>Senha *</label>
+          <input type="password" id="f-senha" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="fg">
+          <label>Repetir senha *</label>
+          <input type="password" id="f-senha2" autocomplete="new-password" placeholder="Digite de novo">
+        </div>
+      </div>
+
+      <button class="btn" id="btn-enviar" onclick="enviar()">Enviar cadastro</button>
+      <div class="foot">Seus dados são usados apenas para criar seu acesso.</div>
+    </div>
+
+    <!-- Enviado -->
+    <div class="card hidden" id="v-ok">
+      <div class="done">
+        <div class="done-ico">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="title">Cadastro enviado</div>
+        <div class="sub">
+          Seu cadastro foi enviado para aprovação. Assim que for liberado por
+          <b id="ok-empresa"></b>, você já poderá entrar com o seu CPF e a senha que acabou de criar.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="/js/config.js"></script>
+<script>
+// A página é pública: não existe sessão aqui. Toda escrita passa pelas funções
+// a1_precad_info / a1_precad_enviar, que rodam com privilégio próprio no banco
+// e fazem exatamente duas coisas — conferir o link e criar o corretor SEM acesso.
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+let INFO = null;
+
+const $  = id => document.getElementById(id);
+const ver = id => { ['v-load','v-invalido','v-form','v-ok'].forEach(v => $(v).classList.add('hidden')); $(id).classList.remove('hidden'); };
+
+const MOTIVOS = {
+  invalido: 'Este link não existe ou já foi desativado.',
+  revogado: 'Este link foi desativado por quem o gerou.',
+  expirado: 'O prazo deste link terminou.'
+};
+
+async function rpc(fn, body){
+  const res = await fetch(`${A1_URL}/rest/v1/rpc/${fn}`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'apikey':A1_KEY, 'Authorization':`Bearer ${A1_KEY}` },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+
+async function boot(){
+  if(!TOKEN){ $('invalido-txt').textContent = MOTIVOS.invalido; ver('v-invalido'); return; }
+  try{
+    INFO = await rpc('a1_precad_info', { p_token: TOKEN });
+  }catch(e){
+    $('invalido-txt').textContent = 'Não foi possível verificar o link agora. Tente de novo em instantes.';
+    ver('v-invalido'); return;
+  }
+  if(!INFO || !INFO.ok){
+    $('invalido-txt').textContent = MOTIVOS[INFO && INFO.error] || MOTIVOS.invalido;
+    ver('v-invalido'); return;
+  }
+  $('badge-txt').textContent = INFO.imobiliaria ? `${INFO.empresa} · ${INFO.imobiliaria}` : INFO.empresa;
+  $('ok-empresa').textContent = INFO.empresa || 'a empresa';
+  ver('v-form');
+  $('f-nome').focus();
+}
+
+// ── Máscaras ────────────────────────────────────────────────────────────────
+function mascaraCPF(v){
+  v = v.replace(/\D/g,'').slice(0,11);
+  return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+}
+function mascaraFone(v){
+  v = v.replace(/\D/g,'').slice(0,11);
+  if(v.length <= 10) return v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4})(\d)/,'$1-$2');
+  return v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');
+}
+$('f-cpf').addEventListener('input', e => { e.target.value = mascaraCPF(e.target.value); });
+$('f-fone').addEventListener('input', e => { e.target.value = mascaraFone(e.target.value); });
+$('f-senha2').addEventListener('keydown', e => { if(e.key === 'Enter') enviar(); });
+
+// CPF de verdade: os dois dígitos finais têm que fechar. Isso evita fila de
+// validação cheia de cadastro digitado errado.
+function cpfValido(cpf){
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  for(let t = 9; t < 11; t++){
+    let s = 0;
+    for(let i = 0; i < t; i++) s += parseInt(cpf[i],10) * ((t + 1) - i);
+    let d = (s * 10) % 11; if(d === 10) d = 0;
+    if(d !== parseInt(cpf[t],10)) return false;
+  }
+  return true;
+}
+
+function erro(msg){ const e = $('form-err'); e.textContent = msg; e.classList.remove('hidden'); }
+function limpaErro(){ $('form-err').classList.add('hidden'); }
+
+const ERROS = {
+  link_invalido: 'Este link não vale mais. Peça um novo a quem te enviou.',
+  nome_vazio:    'Informe o seu nome completo.',
+  cpf_invalido:  'O CPF precisa ter 11 dígitos.',
+  senha_curta:   'A senha deve ter ao menos 6 caracteres.',
+  cpf_duplicado: 'Já existe um cadastro com este CPF. Se você já se cadastrou, aguarde a liberação.'
+};
+
+async function enviar(){
+  limpaErro();
+  const nome   = $('f-nome').value.trim();
+  const cpf    = $('f-cpf').value.replace(/\D/g,'');
+  const senha  = $('f-senha').value;
+  const senha2 = $('f-senha2').value;
+
+  if(nome.length < 3)         return erro('Informe o seu nome completo.');
+  if(!cpfValido(cpf))         return erro('CPF inválido. Confira os números.');
+  if(senha.length < 6)        return erro('A senha deve ter ao menos 6 caracteres.');
+  if(senha !== senha2)        return erro('As duas senhas não são iguais.');
+
+  const btn = $('btn-enviar'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try{
+    const r = await rpc('a1_precad_enviar', {
+      p_token: TOKEN, p_nome: nome, p_cpf: cpf,
+      p_email: $('f-email').value.trim(), p_fone: $('f-fone').value.trim(), p_senha: senha
+    });
+    if(!r || !r.ok) throw new Error(ERROS[r && r.error] || 'Não foi possível enviar o cadastro.');
+    ver('v-ok');
+  }catch(e){
+    erro(e.message.startsWith('HTTP') ? 'Não foi possível enviar agora. Tente de novo em instantes.' : e.message);
+    btn.disabled = false; btn.textContent = 'Enviar cadastro';
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
