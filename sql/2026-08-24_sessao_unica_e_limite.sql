@@ -26,6 +26,35 @@
 -- Rode no SQL Editor do Supabase. Pode rodar de novo sem problema.
 -- =============================================================================
 
+-- IMPORTANTE — ORDEM COM O ARQUIVO DE SENHA
+-- Este arquivo recria a1_login e a1_partner_login. Se rodasse comparando a
+-- senha por igualdade, desfaria o bcrypt do 2026-08-27_senha_bcrypt.sql e
+-- trancaria todo mundo para fora. Por isso ele também usa a1_senha_ok, que é
+-- definida logo abaixo se ainda não existir. Assim a ordem entre os dois
+-- arquivos deixa de importar.
+
+create extension if not exists pgcrypto;
+set search_path = public, extensions, pg_temp;
+
+create or replace function a1_senha_interna(p_senha text)
+returns text language sql immutable
+set search_path = public, extensions, pg_temp as $$
+  select encode(digest(coalesce(p_senha,'') || '::a1', 'sha256'), 'hex');
+$$;
+
+create or replace function a1_senha_ok(p_senha text, p_hash text)
+returns boolean language sql stable
+set search_path = public, extensions, pg_temp as $$
+  select case
+    when p_hash is null or p_senha is null then false
+    when p_hash like '$2%' then p_hash = crypt(a1_senha_interna(p_senha), p_hash)
+    else p_hash = a1_senha_interna(p_senha)
+  end;
+$$;
+
+grant execute on function a1_senha_interna(text) to anon, authenticated;
+grant execute on function a1_senha_ok(text, text) to anon, authenticated;
+
 -- ─── 1. Carimbo de atividade na sessão ───────────────────────────────────────
 alter table a1_sessions add column if not exists last_seen timestamptz not null default now();
 create index if not exists idx_a1_sessions_tenant_seen on a1_sessions (tenant_id, last_seen);
@@ -85,7 +114,8 @@ $$;
 
 -- ─── 4. Login do usuário interno ─────────────────────────────────────────────
 create or replace function a1_login(p_tenant_slug text, p_cpf text, p_password text)
-returns json language plpgsql security definer as $$
+returns json language plpgsql security definer
+set search_path = public, extensions, pg_temp as $$
 declare
   v_tenant a1_tenants%rowtype;
   v_user   a1_users%rowtype;
@@ -102,8 +132,9 @@ begin
    where tenant_id = v_tenant.id and cpf = p_cpf and is_active = true limit 1;
   if v_user.id is null then return json_build_object('error','invalid_credentials'); end if;
 
-  v_hash := encode(digest(p_password || '::a1','sha256'),'hex');
-  if v_user.password_hash <> v_hash then return json_build_object('error','invalid_credentials'); end if;
+  if not a1_senha_ok(p_password, v_user.password_hash) then
+    return json_build_object('error','invalid_credentials');
+  end if;
 
   -- Trava por cliente: dois logins ao mesmo tempo não escapam juntos do teto.
   perform pg_advisory_xact_lock(hashtext(v_tenant.id::text));
@@ -142,7 +173,8 @@ $$;
 
 -- ─── 5. Login de parceiro (correspondente / corretor) ────────────────────────
 create or replace function a1_partner_login(p_tenant_slug text, p_cpf text, p_password text)
-returns json language plpgsql security definer as $$
+returns json language plpgsql security definer
+set search_path = public, extensions, pg_temp as $$
 declare
   v_tenant  a1_tenants%rowtype;
   v_partner a1_partners%rowtype;
@@ -155,12 +187,16 @@ begin
    where slug = p_tenant_slug and status <> 'cancelled' limit 1;
   if v_tenant.id is null then return json_build_object('error','tenant_not_found'); end if;
 
-  v_hash := encode(digest(p_password || '::a1','sha256'),'hex');
-
+  -- A senha saiu do WHERE: com sal, cada hash é único e não dá para comparar
+  -- por igualdade. Busca pelo CPF e confere depois.
   select * into v_partner from a1_partners
    where tenant_id = v_tenant.id and cpf = p_cpf
-     and password_hash = v_hash and is_active = true and approved = true limit 1;
+     and is_active = true and approved = true limit 1;
   if v_partner.id is null then return json_build_object('error','invalid_credentials'); end if;
+  if not a1_senha_ok(p_password, v_partner.password_hash) then
+    return json_build_object('error','invalid_credentials');
+  end if;
+  v_hash := v_partner.password_hash;
 
   -- Usuário-sombra que representa o parceiro nas sessões.
   select id into v_uid from a1_users
