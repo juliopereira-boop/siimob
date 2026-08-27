@@ -2044,7 +2044,9 @@ function gotoRegistro(view) {
 
 function switchTab(tab, el) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
+  // Nem todo chamador tem o botão em mãos (switchView passa null quando a aba
+  // não está na tela). Sem esta guarda, a troca de visão morria aqui.
+  if (el && el.classList) el.classList.add('active');
   ['dashboard','repasse','config'].forEach(t =>
     document.getElementById('tab-'+t).style.display = t===tab?'':'none'
   );
@@ -3081,7 +3083,7 @@ async function openNewCase() {
   if (!G.empresasLoaded) await loadEmpresas();
   const partnerSel = document.getElementById('n-partner');
   partnerSel.innerHTML='<option value="">Selecione...</option>'+
-    G.empresas.filter(e=>e.is_active).map(e=>`<option value="${e.name}">${esc(e.name)}</option>`).join('');
+    G.empresas.filter(e=>e.is_active).map(e=>`<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
   if (isCCA && G.user.empresa_name) {
     partnerSel.value = G.user.empresa_name;
     partnerSel.disabled = true;
@@ -3092,7 +3094,7 @@ async function openNewCase() {
   // imobiliárias — carrega de a1_partners type=imobiliaria
   const imobs = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
   document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
-    imobs.map(i=>`<option value="${i.name}">${esc(i.name)}</option>`).join('');
+    imobs.map(i=>`<option value="${esc(i.name)}">${esc(i.name)}</option>`).join('');
 
   // analistas e usuarios correspondentes — filtrados por empresa selecionada
   if (!G.analistasLoaded) await loadAnalistas();
@@ -3105,7 +3107,7 @@ async function openNewCase() {
     // sem empresa selecionada: lista todos os analistas ativos (comportamento anterior)
     const managerSel = document.getElementById('n-manager');
     managerSel.innerHTML='<option value="">Selecione...</option>'+
-      G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${a.name}">${esc(a.name)}</option>`).join('');
+      G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
     managerSel.disabled = false;
   }
 
@@ -4731,71 +4733,112 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e
 init();
 
 // ── Registro sub-module loaders ─────────────────────────────────────────────
+// Os três cadastros abaixo dividem o mesmo formato: carrega, guarda a lista e
+// desenha. A busca refiltra o que já está na memória — antes ela chamava uma
+// função que não existia e digitar não fazia nada.
+// O id do container muda entre as telas ('bancos-list' aqui, 'banco-list' no
+// pipeline), então aceita os dois em vez de desistir em silêncio.
+function _listaEl(...ids){ for(const id of ids){ const el=document.getElementById(id); if(el) return el; } return null; }
+function _combina(texto, termo){ return !termo || String(texto||'').toLowerCase().includes(termo); }
+
 async function loadDespachantes() {
   G.despLoaded = true;
-  const list = document.getElementById('desp-list');
+  const list = _listaEl('desp-list');
   if (!list) return;
   list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
   try {
-    const r = await fetch(A1.tbl('despachantes') + '?order=nome.asc', { headers: A1.headers() });
-    const rows = await r.json();
-    if (!Array.isArray(rows) || rows.length === 0) {
-      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum despachante cadastrado.</p>'; return;
-    }
-    list.innerHTML = rows.map(d => `
+    const rows = await fetch(A1.tbl('despachantes') + '?order=nome.asc', { headers: A1.headers() }).then(r=>r.json());
+    G.despachantes = Array.isArray(rows) ? rows : [];
+  } catch(e) {
+    list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar despachantes.</p>'; return;
+  }
+  renderDespachantes();
+}
+
+function renderDespachantes() {
+  const list = _listaEl('desp-list'); if (!list) return;
+  const q = (document.getElementById('desp-search')?.value || '').toLowerCase();
+  const rows = (G.despachantes||[]).filter(d => _combina(`${d.nome||''} ${d.email||''} ${d.telefone||''}`, q));
+  if (!rows.length) {
+    list.innerHTML = `<p style="color:#888;padding:1rem">${(G.despachantes||[]).length ? 'Nenhum despachante encontrado.' : 'Nenhum despachante cadastrado.'}</p>`;
+    return;
+  }
+  list.innerHTML = rows.map(d => `
       <div class="cfg-list-row">
         <div>
-          <div class="cfg-list-name">${d.nome||'—'}</div>
-          <div class="cfg-list-sub">${d.email||''} ${d.telefone ? '· '+d.telefone : ''}</div>
+          <div class="cfg-list-name">${esc(d.nome)||'—'}</div>
+          <div class="cfg-list-sub">${esc(d.email||'')} ${d.telefone ? '· '+esc(d.telefone) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editDespachante('${d.id}')">✏️</button>
+        <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
       </div>`).join('');
-  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar despachantes.</p>'; }
 }
+function filtrarDespachantes(){ renderDespachantes(); }
 
 async function loadBancos() {
   G.bancosLoaded = true;
-  const list = document.getElementById('bancos-list');
+  const list = _listaEl('bancos-list','banco-list');
   if (!list) return;
   list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
   try {
-    const r = await fetch(A1.tbl('bancos') + '?order=nome.asc', { headers: A1.headers() });
-    const rows = await r.json();
-    if (!Array.isArray(rows) || rows.length === 0) {
-      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum banco cadastrado.</p>'; return;
-    }
-    list.innerHTML = rows.map(b => `
+    const rows = await fetch(A1.tbl('bancos') + '?order=nome.asc', { headers: A1.headers() }).then(r=>r.json());
+    G.bancos = Array.isArray(rows) ? rows : [];
+  } catch(e) {
+    list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar bancos.</p>'; return;
+  }
+  renderBancos();
+}
+
+function renderBancos() {
+  const list = _listaEl('bancos-list','banco-list'); if (!list) return;
+  const q = (document.getElementById('banco-search')?.value || '').toLowerCase();
+  const rows = (G.bancos||[]).filter(b => _combina(`${b.nome||''} ${b.codigo||''}`, q));
+  if (!rows.length) {
+    list.innerHTML = `<p style="color:#888;padding:1rem">${(G.bancos||[]).length ? 'Nenhum banco encontrado.' : 'Nenhum banco cadastrado.'}</p>`;
+    return;
+  }
+  list.innerHTML = rows.map(b => `
       <div class="cfg-list-row">
         <div>
-          <div class="cfg-list-name">${b.nome||'—'}</div>
-          <div class="cfg-list-sub">${b.codigo ? 'Cód. '+b.codigo : ''}</div>
+          <div class="cfg-list-name">${esc(b.nome)||'—'}</div>
+          <div class="cfg-list-sub">${b.codigo ? 'Cód. '+esc(b.codigo) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editBanco('${b.id}')">✏️</button>
+        <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
       </div>`).join('');
-  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar bancos.</p>'; }
 }
+function filtrarBancos(){ renderBancos(); }
 
 async function loadCartorios() {
   G.cartoriosLoaded = true;
-  const list = document.getElementById('cartorios-list');
+  const list = _listaEl('cartorios-list','cart-list');
   if (!list) return;
   list.innerHTML = '<p style="color:#888;padding:1rem">Carregando…</p>';
   try {
-    const r = await fetch(A1.tbl('cartorios') + '?order=nome.asc', { headers: A1.headers() });
-    const rows = await r.json();
-    if (!Array.isArray(rows) || rows.length === 0) {
-      list.innerHTML = '<p style="color:#888;padding:1rem">Nenhum cartório cadastrado.</p>'; return;
-    }
-    list.innerHTML = rows.map(c => `
+    const rows = await fetch(A1.tbl('cartorios') + '?order=nome.asc', { headers: A1.headers() }).then(r=>r.json());
+    G.cartorios = Array.isArray(rows) ? rows : [];
+  } catch(e) {
+    list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar cartórios.</p>'; return;
+  }
+  renderCartorios();
+}
+
+function renderCartorios() {
+  const list = _listaEl('cartorios-list','cart-list'); if (!list) return;
+  const q = (document.getElementById('cart-search')?.value || '').toLowerCase();
+  const rows = (G.cartorios||[]).filter(c => _combina(`${c.nome||''} ${c.municipio||''} ${c.uf||''}`, q));
+  if (!rows.length) {
+    list.innerHTML = `<p style="color:#888;padding:1rem">${(G.cartorios||[]).length ? 'Nenhum cartório encontrado.' : 'Nenhum cartório cadastrado.'}</p>`;
+    return;
+  }
+  list.innerHTML = rows.map(c => `
       <div class="cfg-list-row">
         <div>
-          <div class="cfg-list-name">${c.nome||'—'}</div>
-          <div class="cfg-list-sub">${c.municipio||''} ${c.uf ? '– '+c.uf : ''}</div>
+          <div class="cfg-list-name">${esc(c.nome)||'—'}</div>
+          <div class="cfg-list-sub">${esc(c.municipio||'')} ${c.uf ? '– '+esc(c.uf) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editCartorio('${c.id}')">✏️</button>
+        <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
       </div>`).join('');
-  } catch(e) { list.innerHTML = '<p style="color:#c00;padding:1rem">Erro ao carregar cartórios.</p>'; }
 }
+function filtrarCartorios(){ renderCartorios(); }
 
 function editDespachante(id) { toast('Em breve: editar despachante','info'); }
 function editBanco(id)       { toast('Em breve: editar banco','info'); }

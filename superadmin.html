@@ -1891,7 +1891,7 @@ function geraHtmlContrato(d) {
 <p>1.1. O presente contrato tem como objeto a prestação, pela <strong>Contratada</strong>, de serviços de acesso à plataforma <em>SIIMOB</em> — sistema de gestão imobiliária e financeira em modelo de Software como Serviço (SaaS) —, disponibilizado via internet, conforme plano contratado.</p>
 <p>1.2. Os serviços incluem acesso a até <strong>${d.maxUsers} (${numExtenso(d.maxUsers)}) usuário${d.maxUsers !== 1 ? 's' : ''}</strong> simultâneos, contratados no plano <strong>${d.planName}</strong>, com acesso aos módulos abaixo relacionados, além de suporte técnico nos limites deste plano, atualizações de sistema realizadas automaticamente pela Contratada e armazenamento seguro dos dados do Contratante:</p>
 ${d.modulosList && d.modulosList.length
-  ? `<ul>${d.modulosList.map(m => `<li><strong>${m.name}</strong>${m.expires_at ? ` — vigência até ${new Date(m.expires_at).toLocaleDateString('pt-BR')}` : ''}</li>`).join('')}</ul>`
+  ? `<ul>${d.modulosList.map(m => `<li><strong>${esc(m.name)}</strong>${m.expires_at ? ` — vigência até ${new Date(m.expires_at).toLocaleDateString('pt-BR')}` : ''}</li>`).join('')}</ul>`
   : `<ul><li>Módulos conforme habilitação vigente na plataforma</li></ul>`
 }
 <p>1.3. A Contratada reserva-se o direito de alterar, atualizar ou descontinuar funcionalidades, mediante notificação com antecedência mínima de 30 (trinta) dias.</p>

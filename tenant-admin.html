@@ -129,6 +129,13 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
+// Texto vindo do banco nunca entra cru no HTML: um nome com "<" viraria tag.
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 async function init() {
   let user;
   try { user = a1RequireAuth(['owner','admin']); } catch { return; }
@@ -149,9 +156,9 @@ async function loadUsers() {
 
   document.getElementById('users-tbody').innerHTML = users.map(u => `
     <tr>
-      <td>${u.name}</td>
-      <td>${u.cpf || '—'}</td>
-      <td><span class="badge badge-gray">${u.role}</span></td>
+      <td>${esc(u.name)}</td>
+      <td>${esc(u.cpf || '—')}</td>
+      <td><span class="badge badge-gray">${esc(u.role)}</span></td>
       <td>${u.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
       <td style="font-size:.78rem;color:var(--muted)">${u.last_seen ? new Date(u.last_seen).toLocaleString('pt-BR') : 'Nunca'}</td>
       <td>
@@ -171,9 +178,9 @@ async function loadPartners() {
   document.getElementById('partners-tbody').innerHTML = partners.length
     ? partners.map(p => `
         <tr>
-          <td>${p.name}</td>
-          <td><span class="badge badge-indigo">${p.type}</span></td>
-          <td>${p.cpf || '—'}</td>
+          <td>${esc(p.name)}</td>
+          <td><span class="badge badge-indigo">${esc(p.type)}</span></td>
+          <td>${esc(p.cpf || '—')}</td>
           <td>${p.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
           <td>${p.approved ? '<span class="badge badge-green">Sim</span>' : '<span class="badge badge-yellow">Não</span>'}</td>
           <td style="display:flex;gap:.3rem">

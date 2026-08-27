@@ -49,6 +49,13 @@ const A1 = {
     return `${A1_URL}/rest/v1/rpc/${fn}`;
   },
 
+  // Apelido de rest(). Os cadastros de despachantes, bancos e cartórios chamam
+  // A1.tbl(), que nunca existiu — as três telas quebravam antes da primeira
+  // requisição, sem listar e sem salvar.
+  tbl(table) {
+    return this.rest(table);
+  },
+
   // ─── Storage (arquivos) — separado das tabelas do banco ─────────────────────
   // Uploads (documentos anexados, etc.) vão para o Storage do Supabase, não
   // para colunas de tabela. Cada objeto vive em '{bucket}/{tenant_id}/...';
