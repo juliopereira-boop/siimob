@@ -343,6 +343,25 @@
     .pt-pg-btn.active{background:#ede9fe;color:#1E3A8A;border-color:#ddd6fe}
 
     /* ── Dashboard filter bar ── */
+
+    /* ── Filtros recolhidos ──────────────────────────────────────────────────
+       São muitos filtros e quase sempre só um ou dois estão em uso. Ficam
+       escondidos atrás do botão Filtrar; o contador ao lado avisa quantos estão
+       valendo, para ninguém achar que a lista está incompleta sem entender o
+       porquê. A escolha de deixar aberto ou fechado fica gravada no navegador. */
+    .filtros-topo{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+    .btn-filtrar{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;
+      border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--t1);
+      font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+    .btn-filtrar:hover{border-color:var(--t3)}
+    .btn-filtrar.aberto{background:var(--t1);color:#fff;border-color:var(--t1)}
+    .btn-filtrar .seta{transition:transform .18s}
+    .btn-filtrar.aberto .seta{transform:rotate(180deg)}
+    .filtros-ativos{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;color:var(--t2)}
+    .filtros-pino{display:inline-block;min-width:18px;height:18px;line-height:18px;text-align:center;
+      border-radius:9px;background:#3D5CC8;color:#fff;font-size:.68rem;font-weight:800;padding:0 .35rem}
+    .filtros-limpar{background:none;border:none;color:#3D5CC8;font-size:.75rem;font-weight:700;
+      cursor:pointer;text-decoration:underline;font-family:inherit;padding:0}
     .dash-filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;padding:.6rem .875rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
     .dash-filter-bar select,.dash-filter-bar input{padding:.32rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;background:var(--bg);color:var(--t1)}
     .dash-filter-bar input{width:150px}
@@ -446,7 +465,15 @@
   <div id="tab-dashboard">
 
     <!-- Filter bar -->
-    <div class="dash-filter-bar">
+    <div class="filtros-topo">
+      <button class="btn-filtrar" id="btn-filtrar-dash" onclick="alternarFiltros('dash')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+        Filtrar
+        <svg class="seta" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <span class="filtros-ativos" id="filtros-ativos-dash"></span>
+    </div>
+    <div class="dash-filter-bar" id="dash-filter-bar" style="display:none">
       <span class="dash-filter-label">Filtrar</span>
       <select id="df-regional" onchange="applyDashFilter()"><option value="">Todas as regionais</option></select>
       <select id="df-empr"     onchange="applyDashFilter()"><option value="">Empreendimento</option></select>
@@ -457,6 +484,7 @@
       <select id="df-convenio" onchange="applyDashFilter()"><option value="">Convênio</option></select>
       <select id="df-agencia" onchange="applyDashFilter()"><option value="">Agência</option></select>
       <select id="df-coordenador" onchange="applyDashFilter()"><option value="">Coordenador</option></select>
+      <select id="df-modalidade" onchange="applyDashFilter()"><option value="">Modalidade</option></select>
       <input  id="df-search" type="text" placeholder="Buscar cliente..." oninput="applyDashFilter()">
       <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
@@ -575,6 +603,19 @@
       </div>
     </div>
 
+    <!-- Processos por coordenador -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Processos por Coordenador</div>
+        <div style="font-size:.72rem;color:var(--t3);margin:-.5rem 0 .7rem">Conta pela equipe: cada processo entra no coordenador do corretor que o trouxe.</div>
+        <div id="coord-dist-list"><div class="spinner"></div></div>
+      </div>
+      <div class="panel" style="padding:1.15rem">
+        <div class="sec-title">Por Modalidade de Imóvel</div>
+        <div id="modalidade-dist-list"><div class="spinner"></div></div>
+      </div>
+    </div>
+
     <!-- Agenda de entrevistas -->
     <div class="panel" style="padding:1.15rem;margin-bottom:1.25rem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
@@ -600,7 +641,15 @@
     </div>
 
     <!-- Filters -->
-    <div class="filter-bar">
+    <div class="filtros-topo">
+      <button class="btn-filtrar" id="btn-filtrar-lista" onclick="alternarFiltros('lista')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+        Filtrar
+        <svg class="seta" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <span class="filtros-ativos" id="filtros-ativos-lista"></span>
+    </div>
+    <div class="filter-bar" id="filter-bar" style="display:none">
       <input id="f-search" type="text" placeholder="Buscar cliente, CPF...">
       <select id="f-empr"><option value="">Empreendimento</option></select>
       <select id="f-parceiro"><option value="">Correspondente</option></select>
@@ -610,6 +659,7 @@
       <select id="f-convenio"><option value="">Convênio</option></select>
       <select id="f-agencia"><option value="">Agência</option></select>
       <select id="f-coordenador"><option value="">Coordenador</option></select>
+      <select id="f-modalidade"><option value="">Modalidade</option></select>
       <select id="f-usuario"><option value="">Usuário Correspondente</option></select>
       <select id="f-entrevista">
         <option value="">Entrevista</option>
@@ -1211,6 +1261,9 @@
             </div>
             <div class="form-group"><label>Agência <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
               <select id="n-agencia"><option value="">Selecione...</option></select>
+            </div>
+            <div class="form-group"><label>Modalidade do imóvel <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
+              <select id="n-modalidade"><option value="">Selecione...</option></select>
             </div>
           </div>
         </div>
@@ -1965,7 +2018,7 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows] = await Promise.all([
+  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -1975,6 +2028,7 @@ async function loadData() {
     fetch(`${A1.rest('a1_partners')}?type=eq.convenio&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.agencia&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.modalidade&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
   G.cases  = cases;
@@ -1983,6 +2037,7 @@ async function loadData() {
   G.convenios  = Array.isArray(conveniosRows)  ? conveniosRows  : [];
   G.agencias   = Array.isArray(agenciasRows)   ? agenciasRows   : [];
   G.coordenadores = Array.isArray(coordsRows) ? coordsRows : [];
+  G.modalidades   = Array.isArray(modalidadesRows) ? modalidadesRows : [];
   // Garante que TODO processo apareça no pipeline: processos com etapa inválida
   // (stage_id nulo ou apontando para etapa inexistente) são movidos para a etapa
   // inicial. Não-destrutivo: só afeta quem não estava em nenhuma etapa válida.
@@ -2034,6 +2089,9 @@ function populateFilterOptions() {
   const _fcv=document.getElementById('f-convenio');
   if(_fcv){ const conv=[...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort();
     _fcv.innerHTML = '<option value="">Convênio</option>' + conv.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
+  const _fmo=document.getElementById('f-modalidade');
+  if(_fmo){ const mods=[...new Set([..._modalidadeNames(), ...G.cases.map(c=>c.payload&&c.payload.modalidade).filter(Boolean)])].sort();
+    _fmo.innerHTML = '<option value="">Modalidade</option>' + mods.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
   const _fkd=document.getElementById('f-coordenador');
   if(_fkd){ const kds=_coordenadorNames().slice().sort();
     _fkd.innerHTML = '<option value="">Coordenador</option>' + kds.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
@@ -2109,7 +2167,7 @@ function switchView(view) {
 
 // ─── Dashboard filters ────────────────────────────────────────────────────────
 function dashCases() {
-  const { regional, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, search } = G.dashFilters;
+  const { regional, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, modalidade, search } = G.dashFilters;
   const sm = stageMap();
   const _etDash = etapasDoUsuario();
   return G.cases.filter(c => {
@@ -2129,6 +2187,7 @@ function dashCases() {
     if (convenio && (c.payload&&c.payload.convenio) !== convenio) return false;
     if (agencia  && (c.payload&&c.payload.agencia)  !== agencia)  return false;
     if (coordenador && !_souDaEquipe(c, coordenador)) return false;
+    if (modalidade && (c.payload&&c.payload.modalidade) !== modalidade) return false;
     if (search) {
       const q = search.toLowerCase();
       if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
@@ -2156,6 +2215,7 @@ function populateDashFilters() {
   sel('df-convenio', 'Convênio',           [...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort(), df.convenio);
   sel('df-agencia',  'Agência',            [...new Set([..._agenciaNames(),  ...G.cases.map(c=>c.payload&&c.payload.agencia ).filter(Boolean)])].sort(), df.agencia);
   sel('df-coordenador','Coordenador',       _coordenadorNames().slice().sort(), df.coordenador);
+  sel('df-modalidade','Modalidade',         [...new Set([..._modalidadeNames(), ...G.cases.map(c=>c.payload&&c.payload.modalidade).filter(Boolean)])].sort(), df.modalidade);
   const srch = document.getElementById('df-search'); if(srch) srch.value = df.search;
 }
 
@@ -2169,14 +2229,16 @@ function applyDashFilter() {
   G.dashFilters.convenio = document.getElementById('df-convenio')?.value  || '';
   G.dashFilters.agencia  = document.getElementById('df-agencia')?.value   || '';
   G.dashFilters.coordenador = document.getElementById('df-coordenador')?.value || '';
+  G.dashFilters.modalidade  = document.getElementById('df-modalidade')?.value  || '';
+  pintarContadorFiltros();
   G.dashFilters.search   = document.getElementById('df-search')?.value    || '';
   renderDashboard();
 }
 
 function clearDashFilters() {
-  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', corretor:'', convenio:'', agencia:'', coordenador:'', search:'' };
-  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-corretor','df-convenio','df-agencia','df-coordenador','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  renderDashboard();
+  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', corretor:'', convenio:'', agencia:'', coordenador:'', modalidade:'', search:'' };
+  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-corretor','df-convenio','df-agencia','df-coordenador','df-modalidade','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderDashboard();pintarContadorFiltros();
 }
 
 // ─── Módulo Financeiro (helpers) ──────────────────────────────────────────────
@@ -2304,6 +2366,8 @@ function renderDashboard() {
   renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#3D5CC8');
   renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#2563eb');
   renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#2945B0');
+  renderDistList('coord-dist-list',    cases.map(c=>_coordenadorDoCorretor(c.broker_name)).filter(Boolean), '#a21caf');
+  renderDistList('modalidade-dist-list', cases.map(c=>c.payload&&c.payload.modalidade).filter(Boolean),     '#e11d48');
   renderAgendaCalendar();
 }
 
@@ -2426,7 +2490,7 @@ function renderRegionalTabs() {
 function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
 
 function filteredCases() {
-  const { search, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, entrevista, usuario } = G.filters;
+  const { search, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, modalidade, entrevista, usuario } = G.filters;
   const sm=stageMap(), isPartner=G.user.role==='partner' && !(G.user.permissions&&G.user.permissions.gerente);
   return G.cases.filter(c=>{
     if (isPartner) {
@@ -2454,6 +2518,7 @@ function filteredCases() {
     if(convenio && (c.payload&&c.payload.convenio)!==convenio) return false;
     if(agencia  && (c.payload&&c.payload.agencia )!==agencia ) return false;
     if(coordenador && !_souDaEquipe(c, coordenador))           return false;
+    if(modalidade && (c.payload&&c.payload.modalidade)!==modalidade) return false;
     if(usuario && (c.payload?.usuario_correspondente||'')!==usuario) return false;
     if(entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
@@ -2795,6 +2860,19 @@ function _corretorNames(){ return (Array.isArray(G.corretores)?G.corretores:[]).
 function _convenioNames(){ return (Array.isArray(G.convenios)?G.convenios:[]).filter(c=>c.is_active!==false).map(c=>c.name); }
 // A agência aparece como "número - nome", que é como ela foi cadastrada em
 // Configurações. O número sozinho não diz nada; o nome sozinho repete.
+// Nome do coordenador a que o corretor do processo responde. Vem do cadastro do
+// corretor, não do processo — então acompanha a mudança de equipe sozinho.
+function _coordenadorDoCorretor(nomeCorretor){
+  if(!nomeCorretor) return '';
+  const co = (Array.isArray(G.corretores)?G.corretores:[]).find(x=>x.name===nomeCorretor);
+  const id = co && co.extra && co.extra.coordenador_id;
+  if(!id) return '';
+  const k = (Array.isArray(G.coordenadores)?G.coordenadores:[]).find(x=>x.id===id);
+  return k ? k.name : '';
+}
+
+function _modalidadeNames(){ return (Array.isArray(G.modalidades)?G.modalidades:[]).filter(m=>m.is_active!==false).map(m=>m.name); }
+
 function _coordenadorNames(){ return (Array.isArray(G.coordenadores)?G.coordenadores:[]).filter(k=>k.is_active!==false).map(k=>k.name); }
 
 // O processo não guarda coordenador: quem tem coordenador é o CORRETOR
@@ -2853,6 +2931,7 @@ function renderModalDet() {
       <div class="form-group"><label>Corretor</label><select id="e-broker">${selOpts(_corretorNames(), c.broker_name)}</select></div>
       <div class="form-group"><label>Convênio</label><select id="e-convenio">${selOpts(_convenioNames(), p.convenio||'')}</select></div>
       <div class="form-group"><label>Agência</label><select id="e-agencia">${selOpts(_agenciaNames(), p.agencia||'')}</select></div>
+      <div class="form-group"><label>Modalidade do imóvel</label><select id="e-modalidade">${selOpts(_modalidadeNames(), p.modalidade||'')}</select></div>
       <div class="form-group"><label>Estado</label><input id="e-estado" class="campo-auto" readonly tabindex="-1" value="${esc(p.estado||'')}" placeholder="Vem do empreendimento"></div>
       <div class="form-group"><label>Cidade</label><input id="e-cidade" class="campo-auto" readonly tabindex="-1" value="${esc(p.cidade||'')}" placeholder="Vem do empreendimento"></div>
       <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
@@ -3115,7 +3194,7 @@ async function saveCase() {
   const oldStage=G.editingCaseData.stage_id;
   if(stageId!==oldStage && !podeMover(oldStage, stageId)){ avisoBloqueio(oldStage); return; }
   const _entDate=document.getElementById('e-ent-date')?.value||null;
-  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||'')};
+  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||'')};
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
@@ -3231,6 +3310,8 @@ async function openNewCase() {
   if (convSel) convSel.innerHTML = selOpts(_convenioNames(), '');
   const agSel = document.getElementById('n-agencia');
   if (agSel) agSel.innerHTML = selOpts(_agenciaNames(), '');
+  const moSel = document.getElementById('n-modalidade');
+  if (moSel) moSel.innerHTML = selOpts(_modalidadeNames(), '');
   const _ne=document.getElementById('n-estado'), _nc=document.getElementById('n-cidade');
   if(_ne) _ne.value=''; if(_nc) _nc.value='';
 
@@ -3326,7 +3407,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||''),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||''),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -4762,9 +4843,64 @@ async function removeDoc(docId){
   } else toast('Erro ao remover','error');
 }
 
+
+// ─── Filtros recolhidos ───────────────────────────────────────────────────────
+// Cada barra guarda seu próprio estado (aberta/fechada) no navegador, por isso
+// as duas chaves separadas. O contador é recalculado a cada mudança: sem ele,
+// uma barra fechada com filtro ativo esconderia o motivo de a lista estar curta.
+const _FILTROS_CHAVE = { dash:'a1_filtros_dash', lista:'a1_filtros_lista' };
+
+function _filtrosLer(qual){
+  try { return localStorage.getItem(_FILTROS_CHAVE[qual]) === 'aberto'; } catch { return false; }
+}
+function _filtrosGravar(qual, aberto){
+  try { localStorage.setItem(_FILTROS_CHAVE[qual], aberto ? 'aberto' : 'fechado'); } catch {}
+}
+
+function alternarFiltros(qual){
+  const barra = document.getElementById(qual === 'dash' ? 'dash-filter-bar' : 'filter-bar');
+  const botao = document.getElementById(qual === 'dash' ? 'btn-filtrar-dash' : 'btn-filtrar-lista');
+  if(!barra || !botao) return;
+  const aberto = barra.style.display === 'none';
+  barra.style.display = aberto ? '' : 'none';
+  botao.classList.toggle('aberto', aberto);
+  _filtrosGravar(qual, aberto);
+}
+
+// Quantos filtros estão realmente valendo agora.
+function _contarFiltros(obj){
+  return Object.values(obj || {}).filter(v => v !== '' && v !== null && v !== undefined).length;
+}
+
+function pintarContadorFiltros(){
+  const par = [['dash', G.dashFilters, 'filtros-ativos-dash'], ['lista', G.filters, 'filtros-ativos-lista']];
+  for (const [qual, obj, id] of par) {
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const n = _contarFiltros(obj);
+    el.innerHTML = n
+      ? `<span class="filtros-pino">${n}</span> ${n === 1 ? 'filtro aplicado' : 'filtros aplicados'}
+         <button class="filtros-limpar" onclick="${qual === 'dash' ? 'clearDashFilters()' : 'clearFilters()'}">limpar</button>`
+      : '';
+  }
+}
+
+function iniciarFiltros(){
+  for (const qual of ['dash','lista']) {
+    const barra = document.getElementById(qual === 'dash' ? 'dash-filter-bar' : 'filter-bar');
+    const botao = document.getElementById(qual === 'dash' ? 'btn-filtrar-dash' : 'btn-filtrar-lista');
+    if(!barra || !botao) continue;
+    const aberto = _filtrosLer(qual);
+    barra.style.display = aberto ? '' : 'none';
+    botao.classList.toggle('aberto', aberto);
+  }
+  pintarContadorFiltros();
+}
+document.addEventListener('DOMContentLoaded', iniciarFiltros);
+
 // ─── Filter events ────────────────────────────────────────────────────────────
 document.addEventListener('input',e=>{
-  if(e.target.id==='f-search'){G.filters.search=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-search'){G.filters.search=e.target.value;renderKanban();renderList();pintarContadorFiltros();}
 });
 document.addEventListener('change',e=>{
   if(e.target.id==='f-empr')       {G.filters.empr=e.target.value;renderKanban();renderList();}
@@ -4775,15 +4911,17 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-convenio')   {G.filters.convenio=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-agencia')    {G.filters.agencia=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-coordenador'){G.filters.coordenador=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-modalidade') {G.filters.modalidade=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-usuario')    {G.filters.usuario=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();renderList();}
   if(e.target.id==='tbl-stage-filter') renderList();
+  if(/^f-/.test(e.target.id)) pintarContadorFiltros();
 });
 
 function clearFilters(){
-  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',corretor:'',convenio:'',agencia:'',coordenador:'',entrevista:'',usuario:''};
-  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-corretor','f-convenio','f-agencia','f-coordenador','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  renderKanban();renderList();
+  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',corretor:'',convenio:'',agencia:'',coordenador:'',modalidade:'',entrevista:'',usuario:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-corretor','f-convenio','f-agencia','f-coordenador','f-modalidade','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderKanban();renderList();pintarContadorFiltros();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
