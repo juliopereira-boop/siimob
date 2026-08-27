@@ -316,6 +316,13 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script>
+// Texto vindo do banco nunca entra cru no HTML: um nome com "<" viraria tag.
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const NODE_W  = 215;
 const PORT_Y  = 50;  // y offset from node top to port center
@@ -489,7 +496,7 @@ function render() {
     el.innerHTML = `
       <div class="node-top-bar" style="background:${s.color||'#6366f1'}"></div>
       <div class="node-header">
-        <div class="node-name">${s.name}</div>
+        <div class="node-name">${esc(s.name)}</div>
         <div class="node-meta">Ordem: ${s.position} · ${cnt} card${cnt!==1?'s':''}</div>
       </div>
       <div class="node-badges">${badges}</div>
@@ -740,7 +747,7 @@ async function saveStage() {
 
 async function deleteStage() {
   if (!editingStage) return;
-  if (!confirm(`Excluir a etapa "${editingStage.name}"? Os cards nesta etapa ficarão sem etapa.`)) return;
+  if (!confirm(`Excluir a etapa "${esc(editingStage.name)}"? Os cards nesta etapa ficarão sem etapa.`)) return;
   await fetch(`${A1.rest('a1_stages')}?id=eq.${editingStage.id}`, { method: 'DELETE', headers: A1.headers() });
   stages = stages.filter(s => s.id !== editingStage.id);
   edges  = edges.filter(e => e.from_id !== editingStage.id && e.to_id !== editingStage.id);
