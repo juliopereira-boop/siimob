@@ -456,6 +456,7 @@
       <select id="df-corretor" onchange="applyDashFilter()"><option value="">Corretor</option></select>
       <select id="df-convenio" onchange="applyDashFilter()"><option value="">Convênio</option></select>
       <select id="df-agencia" onchange="applyDashFilter()"><option value="">Agência</option></select>
+      <select id="df-coordenador" onchange="applyDashFilter()"><option value="">Coordenador</option></select>
       <input  id="df-search" type="text" placeholder="Buscar cliente..." oninput="applyDashFilter()">
       <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
     </div>
@@ -608,6 +609,7 @@
       <select id="f-corretor"><option value="">Corretor</option></select>
       <select id="f-convenio"><option value="">Convênio</option></select>
       <select id="f-agencia"><option value="">Agência</option></select>
+      <select id="f-coordenador"><option value="">Coordenador</option></select>
       <select id="f-usuario"><option value="">Usuário Correspondente</option></select>
       <select id="f-entrevista">
         <option value="">Entrevista</option>
@@ -1979,7 +1981,7 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows] = await Promise.all([
+  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -1988,6 +1990,7 @@ async function loadData() {
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.convenio&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.agencia&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
   G.cases  = cases;
@@ -1995,6 +1998,7 @@ async function loadData() {
   G.corretores = Array.isArray(corretoresRows) ? corretoresRows : [];
   G.convenios  = Array.isArray(conveniosRows)  ? conveniosRows  : [];
   G.agencias   = Array.isArray(agenciasRows)   ? agenciasRows   : [];
+  G.coordenadores = Array.isArray(coordsRows) ? coordsRows : [];
   // Garante que TODO processo apareça no pipeline: processos com etapa inválida
   // (stage_id nulo ou apontando para etapa inexistente) são movidos para a etapa
   // inicial. Não-destrutivo: só afeta quem não estava em nenhuma etapa válida.
@@ -2046,6 +2050,9 @@ function populateFilterOptions() {
   const _fcv=document.getElementById('f-convenio');
   if(_fcv){ const conv=[...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort();
     _fcv.innerHTML = '<option value="">Convênio</option>' + conv.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
+  const _fkd=document.getElementById('f-coordenador');
+  if(_fkd){ const kds=_coordenadorNames().slice().sort();
+    _fkd.innerHTML = '<option value="">Coordenador</option>' + kds.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
   const _fag=document.getElementById('f-agencia');
   if(_fag){ const ags=[...new Set([..._agenciaNames(), ...G.cases.map(c=>c.payload&&c.payload.agencia).filter(Boolean)])].sort();
     _fag.innerHTML = '<option value="">Agência</option>' + ags.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
@@ -2118,7 +2125,7 @@ function switchView(view) {
 
 // ─── Dashboard filters ────────────────────────────────────────────────────────
 function dashCases() {
-  const { regional, empr, parceiro, re, analista, corretor, convenio, agencia, search } = G.dashFilters;
+  const { regional, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, search } = G.dashFilters;
   const sm = stageMap();
   const _etDash = etapasDoUsuario();
   return G.cases.filter(c => {
@@ -2137,6 +2144,7 @@ function dashCases() {
     if (corretor && c.broker_name  !== corretor)  return false;
     if (convenio && (c.payload&&c.payload.convenio) !== convenio) return false;
     if (agencia  && (c.payload&&c.payload.agencia)  !== agencia)  return false;
+    if (coordenador && !_souDaEquipe(c, coordenador)) return false;
     if (search) {
       const q = search.toLowerCase();
       if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
@@ -2163,6 +2171,7 @@ function populateDashFilters() {
   sel('df-corretor', 'Corretor',           [...new Set(G.cases.map(c=>c.broker_name).filter(Boolean))].sort(), df.corretor);
   sel('df-convenio', 'Convênio',           [...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort(), df.convenio);
   sel('df-agencia',  'Agência',            [...new Set([..._agenciaNames(),  ...G.cases.map(c=>c.payload&&c.payload.agencia ).filter(Boolean)])].sort(), df.agencia);
+  sel('df-coordenador','Coordenador',       _coordenadorNames().slice().sort(), df.coordenador);
   const srch = document.getElementById('df-search'); if(srch) srch.value = df.search;
 }
 
@@ -2175,13 +2184,14 @@ function applyDashFilter() {
   G.dashFilters.corretor = document.getElementById('df-corretor')?.value  || '';
   G.dashFilters.convenio = document.getElementById('df-convenio')?.value  || '';
   G.dashFilters.agencia  = document.getElementById('df-agencia')?.value   || '';
+  G.dashFilters.coordenador = document.getElementById('df-coordenador')?.value || '';
   G.dashFilters.search   = document.getElementById('df-search')?.value    || '';
   renderDashboard();
 }
 
 function clearDashFilters() {
-  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', corretor:'', convenio:'', agencia:'', search:'' };
-  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-corretor','df-convenio','df-agencia','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.dashFilters = { regional:'', empr:'', parceiro:'', re:'', analista:'', corretor:'', convenio:'', agencia:'', coordenador:'', search:'' };
+  ['df-regional','df-empr','df-parceiro','df-re','df-analista','df-corretor','df-convenio','df-agencia','df-coordenador','df-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderDashboard();
 }
 
@@ -2432,7 +2442,7 @@ function renderRegionalTabs() {
 function selectGroup(k){ G.currentGroup=k; renderRegionalTabs(); renderKanban(); }
 
 function filteredCases() {
-  const { search, empr, parceiro, re, analista, corretor, convenio, agencia, entrevista, usuario } = G.filters;
+  const { search, empr, parceiro, re, analista, corretor, convenio, agencia, coordenador, entrevista, usuario } = G.filters;
   const sm=stageMap(), isPartner=G.user.role==='partner' && !(G.user.permissions&&G.user.permissions.gerente);
   return G.cases.filter(c=>{
     if (isPartner) {
@@ -2459,6 +2469,7 @@ function filteredCases() {
     if(corretor && c.broker_name!==corretor)                   return false;
     if(convenio && (c.payload&&c.payload.convenio)!==convenio) return false;
     if(agencia  && (c.payload&&c.payload.agencia )!==agencia ) return false;
+    if(coordenador && !_souDaEquipe(c, coordenador))           return false;
     if(usuario && (c.payload?.usuario_correspondente||'')!==usuario) return false;
     if(entrevista && c.payload?.entrevista_status!==entrevista) return false;
     return true;
@@ -2800,6 +2811,41 @@ function _corretorNames(){ return (Array.isArray(G.corretores)?G.corretores:[]).
 function _convenioNames(){ return (Array.isArray(G.convenios)?G.convenios:[]).filter(c=>c.is_active!==false).map(c=>c.name); }
 // A agência aparece como "número - nome", que é como ela foi cadastrada em
 // Configurações. O número sozinho não diz nada; o nome sozinho repete.
+// Nome do coordenador a que o corretor do processo responde. Vem do cadastro do
+// corretor, não do processo — então acompanha a mudança de equipe sozinho.
+function _coordenadorDoCorretor(nomeCorretor){
+  if(!nomeCorretor) return '';
+  const co = (Array.isArray(G.corretores)?G.corretores:[]).find(x=>x.name===nomeCorretor);
+  const id = co && co.extra && co.extra.coordenador_id;
+  if(!id) return '';
+  const k = (Array.isArray(G.coordenadores)?G.coordenadores:[]).find(x=>x.id===id);
+  return k ? k.name : '';
+}
+
+function _coordenadorNames(){ return (Array.isArray(G.coordenadores)?G.coordenadores:[]).filter(k=>k.is_active!==false).map(k=>k.name); }
+
+// O processo não guarda coordenador: quem tem coordenador é o CORRETOR
+// (extra.coordenador_id, definido no cadastro). Filtrar por coordenador é,
+// portanto, mostrar o que a equipe dele trouxe. Guardar uma cópia no processo
+// deixaria os dois desencontrados no dia em que o corretor mudasse de equipe.
+function _corretoresDoCoordenador(nomeCoord){
+  const k = (Array.isArray(G.coordenadores)?G.coordenadores:[]).find(x=>x.name===nomeCoord);
+  if(!k) return null;
+  return new Set((Array.isArray(G.corretores)?G.corretores:[])
+    .filter(c => c.extra && c.extra.coordenador_id === k.id)
+    .map(c => c.name));
+}
+
+// Cache por nome: a lista de corretores só muda quando a página recarrega, e
+// sem isto a conta seria refeita para cada processo, a cada tecla do filtro.
+const _EQUIPE = {};
+function _souDaEquipe(c, nomeCoord){
+  if(!(nomeCoord in _EQUIPE)) _EQUIPE[nomeCoord] = _corretoresDoCoordenador(nomeCoord);
+  const equipe = _EQUIPE[nomeCoord];
+  if(!equipe) return false;              // coordenador que não existe mais
+  return equipe.has(c.broker_name);
+}
+
 function _agenciaNames(){
   return (Array.isArray(G.agencias)?G.agencias:[]).filter(a=>a.is_active!==false).map(a=>{
     const num = (a.extra && a.extra.numero) || '';
@@ -4798,14 +4844,15 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-corretor')   {G.filters.corretor=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-convenio')   {G.filters.convenio=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-agencia')    {G.filters.agencia=e.target.value;renderKanban();renderList();}
+  if(e.target.id==='f-coordenador'){G.filters.coordenador=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-usuario')    {G.filters.usuario=e.target.value;renderKanban();renderList();}
   if(e.target.id==='f-entrevista') {G.filters.entrevista=e.target.value;renderKanban();renderList();}
   if(e.target.id==='tbl-stage-filter') renderList();
 });
 
 function clearFilters(){
-  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',corretor:'',convenio:'',agencia:'',entrevista:'',usuario:''};
-  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-corretor','f-convenio','f-agencia','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  G.filters={search:'',empr:'',parceiro:'',re:'',analista:'',corretor:'',convenio:'',agencia:'',coordenador:'',entrevista:'',usuario:''};
+  ['f-search','f-empr','f-parceiro','f-re','f-analista','f-corretor','f-convenio','f-agencia','f-coordenador','f-usuario','f-entrevista'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderKanban();renderList();
 }
 
@@ -4871,6 +4918,7 @@ function exportarPlanilha(){
     ['Regional',            c => (c.payload||{}).regional],
     ['Convênio',            c => (c.payload||{}).convenio],
     ['Agência',             c => (c.payload||{}).agencia],
+    ['Coordenador',         c => _coordenadorDoCorretor(c.broker_name)],
     ['Estado',              c => (c.payload||{}).estado],
     ['Cidade',              c => (c.payload||{}).cidade],
     ['Correspondente',      c => c.partner_name],
