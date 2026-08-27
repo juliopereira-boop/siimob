@@ -532,7 +532,7 @@
       <div style="overflow-x:auto">
         <table class="pt-table">
           <thead><tr>
-            <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Cidade / Regional</th><th>Status</th><th></th>
+            <th>Razão Social</th><th>CNPJ</th><th>E-mail</th><th>Telefone</th><th>Cidade / Regional</th><th>Status</th><th style="width:20%">ID</th><th></th>
           </tr></thead>
           <tbody id="imob-tbody"><tr><td colspan="7" class="pt-empty">Carregando...</td></tr></tbody>
         </table>
@@ -705,7 +705,7 @@
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Somente um gestor pode cadastrar outro gestor. O gestor tem acesso completo ao painel.</div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Perfil</th><th>Status</th><th style="width:24%">ID</th><th>Ações</th></tr></thead>
         <tbody id="gestor-tbody"><tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
       </table>
     </div>
@@ -1623,7 +1623,11 @@ function renderRegionaisList() {
   el.innerHTML = list.map((r,i)=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.4rem">
       <span style="font-size:.82rem;font-weight:600;color:var(--t1)">${esc(r)}</span>
-      <button class="btn-icon" title="Remover" onclick="removeRegional(${i})">🗑️</button>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <code onclick="copiarId('${esc(r)}')" title="Regional é identificada pelo nome. Clique para copiar."
+          style="cursor:pointer;font-size:.68rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.1rem .35rem;color:var(--t3)">pelo nome</code>
+        <button class="btn-icon" title="Remover" onclick="removeRegional(${i})">🗑️</button>
+      </div>
     </div>`).join('');
 }
 function regErr(m){ const e=document.getElementById('reg-err'); if(e){ e.textContent=m||''; e.style.display=m?'block':'none'; } }
@@ -2909,7 +2913,7 @@ async function loadFlags() {
 function renderFlags(){
   const el=document.getElementById('flags-list');
   el.innerHTML=G.flags.length
-    ?G.flags.map(f=>`<div class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#3D5CC8'};display:inline-block"></span>${esc(f.name)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
+    ?G.flags.map(f=>`<div class="tag-item" title="ID: ${esc(f.id)}"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#3D5CC8'};display:inline-block"></span>${esc(f.name)} ${idChip(f.id)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
     :'<span style="color:var(--t3);font-size:.77rem">Nenhuma flag cadastrada.</span>';
 }
 
@@ -3819,13 +3823,14 @@ async function loadGestores(){
 
 function renderGestores(){
   const tb=document.getElementById('gestor-tbody'); if(!tb) return;
-  if(!GESTORES.length){ tb.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum gestor cadastrado.</td></tr>'; return; }
+  if(!GESTORES.length){ tb.innerHTML='<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum gestor cadastrado.</td></tr>'; return; }
   tb.innerHTML=GESTORES.map(u=>`<tr>
     <td><b>${esc(u.name)}</b></td>
     <td style="color:var(--t2)">${esc(u.cpf||'—')}</td>
     <td style="color:var(--t2);font-size:.78rem">${esc(u.email||'—')}</td>
     <td>${u.role==='owner'?'<span style="color:#7c3aed;font-weight:700;font-size:.75rem">Proprietário</span>':'<span style="font-size:.75rem">Gestor</span>'}</td>
     <td>${u.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
+    <td>${idChip(u.id)}</td>
     <td style="white-space:nowrap">
       <button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button>
       ${u.id===G.user.id?'<span style="font-size:.7rem;color:var(--t3);margin-left:.3rem">você</span>'
@@ -4122,13 +4127,14 @@ function renderEmprList() {
     return;
   }
   el.innerHTML = `<table class="pt-table">
-    <thead><tr><th>Nome</th><th>Regional</th><th>Cidade / UF</th><th>Tipo</th><th>Unidades</th><th></th></tr></thead>
+    <thead><tr><th>Nome</th><th>Regional</th><th>Cidade / UF</th><th>Tipo</th><th>Unidades</th><th style="width:18%">ID</th><th></th></tr></thead>
     <tbody>${G.empreendimentos.map(d => `<tr>
       <td style="font-weight:600">${esc(d.name)}</td>
       <td>${esc(d.regional||'—')}</td>
       <td style="font-size:.78rem">${d.cidade||d.estado ? esc([d.cidade, d.estado].filter(Boolean).join(' / ')) : '<span style="color:var(--t3)">—</span>'}</td>
       <td><span class="pt-type" style="background:#e0f2fe;color:#0284c7">${d.tipo||'blocos'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count||0} unidades</td>
+      <td>${idChip(d.id)}</td>
       <td style="display:flex;gap:.35rem">
         <button class="pt-act" onclick="editEmpreendimento('${d.id}')">Editar</button>
         <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${esc(d.name)}')">Excluir</button>
@@ -4438,7 +4444,7 @@ function renderImobList() {
   const page  = G.imobPage;
   const slice = G.imobFiltered.slice(page*pp, page*pp+pp);
   if (!total) {
-    tbody.innerHTML = `<tr><td colspan="7" class="pt-empty">${G.imobs.length ? 'Nenhuma imobiliária encontrada.' : 'Nenhuma imobiliária cadastrada ainda.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="pt-empty">${G.imobs.length ? 'Nenhuma imobiliária encontrada.' : 'Nenhuma imobiliária cadastrada ainda.'}</td></tr>`;
     document.getElementById('imob-count').textContent = '0 registros';
     document.getElementById('imob-pg-btns').innerHTML = '';
     return;
@@ -4451,6 +4457,7 @@ function renderImobList() {
       <td>${esc(i.phone||'—')}</td>
       <td>${esc(i.region||'—')}</td>
       <td><span class="status-dot ${i.is_active?'active':'inactive'}"></span>${i.is_active?'Ativa':'Inativa'}</td>
+      <td>${idChip(i.id)}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openImob(${JSON.stringify(i).replace(/"/g,'&quot;')})">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${esc(i.name)}')">Excluir</button>
@@ -5017,7 +5024,10 @@ function renderDespachantes() {
           <div class="cfg-list-name">${esc(d.nome)||'—'}</div>
           <div class="cfg-list-sub">${esc(d.email||'')} ${d.telefone ? '· '+esc(d.telefone) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(d.id)}
+          <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarDespachantes(){ renderDespachantes(); }
@@ -5050,7 +5060,10 @@ function renderBancos() {
           <div class="cfg-list-name">${esc(b.nome)||'—'}</div>
           <div class="cfg-list-sub">${b.codigo ? 'Cód. '+esc(b.codigo) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(b.id)}
+          <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarBancos(){ renderBancos(); }
@@ -5083,7 +5096,10 @@ function renderCartorios() {
           <div class="cfg-list-name">${esc(c.nome)||'—'}</div>
           <div class="cfg-list-sub">${esc(c.municipio||'')} ${c.uf ? '– '+esc(c.uf) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(c.id)}
+          <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarCartorios(){ renderCartorios(); }

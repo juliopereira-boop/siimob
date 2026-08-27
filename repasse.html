@@ -616,6 +616,13 @@
       </div>
     </div>
 
+    <!-- Tempo da venda até cada etapa -->
+    <div class="panel" style="padding:1.15rem;margin-bottom:1.25rem">
+      <div class="sec-title">Tempo da Venda até Cada Etapa</div>
+      <div style="font-size:.72rem;color:var(--t3);margin:-.5rem 0 .9rem" id="tempo-etapa-sub"></div>
+      <div id="tempo-etapa-list"><div class="spinner"></div></div>
+    </div>
+
     <!-- Agenda de entrevistas -->
     <div class="panel" style="padding:1.15rem;margin-bottom:1.25rem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
@@ -1221,6 +1228,9 @@
               </select>
             </div>
             <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" placeholder="Ex.: 178000 → 178.000,00"></div>
+            <div class="form-group"><label>Data da Venda</label>
+              <input id="n-data-venda" type="date">
+            </div>
             <div class="form-group"><label>Estado</label>
               <input id="n-estado" type="text" class="campo-auto" readonly tabindex="-1" placeholder="Vem do empreendimento">
             </div>
@@ -2027,7 +2037,8 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows] = await Promise.all([
+  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows,
+         imobsRows, ccaRows, emprRows, empresasRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -2038,6 +2049,13 @@ async function loadData() {
     fetch(`${A1.rest('a1_partners')}?type=eq.agencia&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.modalidade&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    // Estas quatro alimentam os filtros. Só nome e situação — são listas curtas
+    // e sem elas um cadastro recém-criado não aparecia para filtrar até existir
+    // um processo usando ele.
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=name,is_active&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=name,is_active&order=name.asc`,         { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_developments')}?select=name&order=name.asc`,                            { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_corr_empresas')}?select=name,is_active&order=name.asc`,                 { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
   G.cases  = cases;
@@ -2047,6 +2065,10 @@ async function loadData() {
   G.agencias   = Array.isArray(agenciasRows)   ? agenciasRows   : [];
   G.coordenadores = Array.isArray(coordsRows) ? coordsRows : [];
   G.modalidades   = Array.isArray(modalidadesRows) ? modalidadesRows : [];
+  G.imobsFiltro   = Array.isArray(imobsRows)    ? imobsRows    : [];
+  G.ccasFiltro    = Array.isArray(ccaRows)      ? ccaRows      : [];
+  G.emprFiltro    = Array.isArray(emprRows)     ? emprRows     : [];
+  G.empresasFiltro= Array.isArray(empresasRows) ? empresasRows : [];
   // Garante que TODO processo apareça no pipeline: processos com etapa inválida
   // (stage_id nulo ou apontando para etapa inexistente) são movidos para a etapa
   // inicial. Não-destrutivo: só afeta quem não estava em nenhuma etapa válida.
@@ -2083,17 +2105,17 @@ async function loadData() {
 }
 
 function populateFilterOptions() {
-  const emprs    = [...new Set(G.cases.map(c=>c.development).filter(Boolean))].sort();
-  const partners = [...new Set(G.cases.map(c=>c.partner_name).filter(Boolean))].sort();
-  const res      = [...new Set(G.cases.map(c=>c.real_estate_name).filter(Boolean))].sort();
+  const emprs    = _opcoesFiltro((G.emprFiltro||[]).map(e=>e.name), G.cases.map(c=>c.development));
+  const partners = _opcoesFiltro(_ativos(G.empresasFiltro),          G.cases.map(c=>c.partner_name));
+  const res      = _opcoesFiltro(_ativos(G.imobsFiltro),             G.cases.map(c=>c.real_estate_name));
   document.getElementById('dl-developments').innerHTML = emprs.map(e=>`<option value="${esc(e)}">`).join('');
   document.getElementById('dl-partners').innerHTML     = partners.map(p=>`<option value="${esc(p)}">`).join('');
-  const analistaNomes = G.analistas.filter(a=>a.is_active!==false).map(a=>a.name).sort();
+  const analistaNomes = _opcoesFiltro(_ativos(G.analistas), G.cases.map(c=>c.manager_name));
   document.getElementById('f-empr').innerHTML     = '<option value="">Empreendimento</option>' + emprs.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
   document.getElementById('f-parceiro').innerHTML = '<option value="">Correspondente</option>' + partners.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
   document.getElementById('f-re').innerHTML       = '<option value="">Imobiliária</option>'    + res.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   document.getElementById('f-analista').innerHTML = '<option value="">Analista</option>'       + analistaNomes.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
-  const corretores = [...new Set(G.cases.map(c=>c.broker_name).filter(Boolean))].sort();
+  const corretores = _opcoesFiltro(_ativos(G.corretores), G.cases.map(c=>c.broker_name));
   const _fc=document.getElementById('f-corretor'); if(_fc) _fc.innerHTML = '<option value="">Corretor</option>' + corretores.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
   const _fcv=document.getElementById('f-convenio');
   if(_fcv){ const conv=[...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort();
@@ -2107,7 +2129,7 @@ function populateFilterOptions() {
   const _fag=document.getElementById('f-agencia');
   if(_fag){ const ags=[...new Set([..._agenciaNames(), ...G.cases.map(c=>c.payload&&c.payload.agencia).filter(Boolean)])].sort();
     _fag.innerHTML = '<option value="">Agência</option>' + ags.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); }
-  const usuariosCorr = [...new Set(G.cases.map(c=>c.payload&&c.payload.usuario_correspondente).filter(Boolean))].sort();
+  const usuariosCorr = _opcoesFiltro(_ativos(G.ccasFiltro), G.cases.map(c=>c.payload&&c.payload.usuario_correspondente));
   const _fu=document.getElementById('f-usuario'); if(_fu) _fu.innerHTML = '<option value="">Usuário Correspondente</option>' + usuariosCorr.map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
   document.getElementById('tbl-stage-filter').innerHTML = '<option value="">Todas as etapas</option>' + G.stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
@@ -2206,21 +2228,21 @@ function dashCases() {
 }
 
 function populateDashFilters() {
-  const emprs    = [...new Set(G.cases.map(c=>c.development).filter(Boolean))].sort();
-  const partners = [...new Set(G.cases.map(c=>c.partner_name).filter(Boolean))].sort();
-  const res      = [...new Set(G.cases.map(c=>c.real_estate_name).filter(Boolean))].sort();
+  const emprs    = _opcoesFiltro((G.emprFiltro||[]).map(e=>e.name), G.cases.map(c=>c.development));
+  const partners = _opcoesFiltro(_ativos(G.empresasFiltro),          G.cases.map(c=>c.partner_name));
+  const res      = _opcoesFiltro(_ativos(G.imobsFiltro),             G.cases.map(c=>c.real_estate_name));
   const df = G.dashFilters;
   const sel = (id, placeholder, opts, cur) => {
     const el = document.getElementById(id); if(!el) return;
     el.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('');
   };
-  const analistas = G.analistas.filter(a=>a.is_active!==false).map(a=>a.name).sort();
+  const analistas = _opcoesFiltro(_ativos(G.analistas), G.cases.map(c=>c.manager_name));
   sel('df-regional', 'Todas as regionais', G.groups,   df.regional);
   sel('df-empr',     'Empreendimento',     emprs,      df.empr);
   sel('df-parceiro', 'Correspondente',     partners,   df.parceiro);
   sel('df-re',       'Imobiliaria',        res,        df.re);
   sel('df-analista', 'Analista',           analistas,  df.analista);
-  sel('df-corretor', 'Corretor',           [...new Set(G.cases.map(c=>c.broker_name).filter(Boolean))].sort(), df.corretor);
+  sel('df-corretor', 'Corretor',           _opcoesFiltro(_ativos(G.corretores), G.cases.map(c=>c.broker_name)), df.corretor);
   sel('df-convenio', 'Convênio',           [...new Set([..._convenioNames(), ...G.cases.map(c=>c.payload&&c.payload.convenio).filter(Boolean)])].sort(), df.convenio);
   sel('df-agencia',  'Agência',            [...new Set([..._agenciaNames(),  ...G.cases.map(c=>c.payload&&c.payload.agencia ).filter(Boolean)])].sort(), df.agencia);
   sel('df-coordenador','Coordenador',       _coordenadorNames().slice().sort(), df.coordenador);
@@ -2377,8 +2399,75 @@ function renderDashboard() {
   renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#2945B0');
   renderDistList('coord-dist-list',    cases.map(c=>_coordenadorDoCorretor(c.broker_name)).filter(Boolean), '#a21caf');
   renderDistList('modalidade-dist-list', cases.map(c=>c.payload&&c.payload.modalidade).filter(Boolean),     '#e11d48');
+  renderTempoEtapas(cases);
   renderAgendaCalendar();
 }
+
+// Quantos dias, em média, cada processo levou da venda até chegar na etapa em
+// que está hoje. Só entra quem tem data de venda preenchida — e o rodapé diz
+// quantos ficaram de fora, senão uma média baseada em três processos passaria
+// por verdade geral.
+function renderTempoEtapas(cases){
+  const el = document.getElementById('tempo-etapa-list');
+  const sub = document.getElementById('tempo-etapa-sub');
+  if(!el) return;
+  const hoje = new Date();
+  const porEtapa = {};
+  let comData = 0, semData = 0;
+
+  for(const c of cases){
+    const venda = _dataVenda(c);
+    if(!venda){ semData++; continue; }
+    comData++;
+    // A referência é quando o processo entrou na etapa atual; se não houver,
+    // usa hoje — para quem está parado, o número cresce, que é o que interessa.
+    const marco = c.stage_entered_at ? new Date(c.stage_entered_at) : hoje;
+    const dias = Math.round((marco - venda) / 86400000);
+    if(!isFinite(dias) || dias < 0) continue;
+    const et = c.stage_id || 'sem-etapa';
+    (porEtapa[et] = porEtapa[et] || []).push(dias);
+  }
+
+  const ordem = etapasOrdenadas();
+  const linhas = ordem
+    .filter(s => porEtapa[s.id] && porEtapa[s.id].length)
+    .map(s => {
+      const v = porEtapa[s.id];
+      const media = Math.round(v.reduce((a,b)=>a+b,0) / v.length);
+      return { nome:s.name, cor:s.color||'#3D5CC8', media, n:v.length };
+    });
+
+  if(sub){
+    sub.textContent = comData
+      ? `Média de dias entre a data da venda e a chegada na etapa. ${comData} processo${comData!==1?'s':''} com data preenchida${semData?`; ${semData} sem data ficaram de fora`:''}.`
+      : 'Nenhum processo tem Data da Venda preenchida ainda — preencha no cadastro para esta visão funcionar.';
+  }
+  if(!linhas.length){ el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Sem dados para calcular.</span>'; return; }
+
+  const maior = Math.max(...linhas.map(l=>l.media)) || 1;
+  el.innerHTML = linhas.map((l,i)=>`
+    <div class="dist-row">
+      <div class="dist-num">${i+1}</div>
+      <div class="dist-name" title="${esc(l.nome)}">${esc(l.nome)} <span style="color:var(--t3);font-weight:400">(${l.n})</span></div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(l.media/maior*100)}%;background:${esc(l.cor)}"></div></div>
+      <div class="dist-val">${l.media}d</div>
+    </div>`).join('');
+}
+
+// Data da venda, aceitando o que o usuário digitou e o que veio da importação.
+function _dataVenda(c){
+  const bruto = c && c.payload && c.payload.data_venda;
+  if(!bruto) return null;
+  const d = new Date(String(bruto).length <= 10 ? bruto + 'T12:00:00' : bruto);
+  return isNaN(d) ? null : d;
+}
+
+// Etapas na ordem do workflow; as sem posição vão para o fim.
+function etapasOrdenadas(){
+  return (Array.isArray(G.stages)?G.stages:[]).slice()
+    .sort((a,b)=>(a.position??999)-(b.position??999));
+}
+
 
 function renderDonutChart(cases, sm) {
   const el = document.getElementById('donut-wrap');
@@ -2880,6 +2969,16 @@ function _coordenadorDoCorretor(nomeCorretor){
   return k ? k.name : '';
 }
 
+// A REGRA DOS FILTROS, valendo para todos: a lista é o cadastro somado ao que
+// já está em uso nos processos. Só o cadastro esconderia dado antigo cujo
+// cadastro foi apagado; só os processos esconderia cadastro novo que ainda não
+// foi usado — foi exatamente o que aconteceu com a imobiliária recém-criada.
+function _opcoesFiltro(doCadastro, dosProcessos){
+  return [...new Set([...(doCadastro||[]), ...(dosProcessos||[])].filter(Boolean))]
+    .sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+}
+const _ativos = lista => (Array.isArray(lista)?lista:[]).filter(x=>x.is_active!==false).map(x=>x.name);
+
 function _modalidadeNames(){ return (Array.isArray(G.modalidades)?G.modalidades:[]).filter(m=>m.is_active!==false).map(m=>m.name); }
 
 function _coordenadorNames(){ return (Array.isArray(G.coordenadores)?G.coordenadores:[]).filter(k=>k.is_active!==false).map(k=>k.name); }
@@ -2941,6 +3040,7 @@ function renderModalDet() {
       <div class="form-group"><label>Convênio</label><select id="e-convenio">${selOpts(_convenioNames(), p.convenio||'')}</select></div>
       <div class="form-group"><label>Agência</label><select id="e-agencia">${selOpts(_agenciaNames(), p.agencia||'')}</select></div>
       <div class="form-group"><label>Modalidade do imóvel</label><select id="e-modalidade">${selOpts(_modalidadeNames(), p.modalidade||'')}</select></div>
+      <div class="form-group"><label>Data da Venda</label><input id="e-data-venda" type="date" value="${esc((p.data_venda||'').slice(0,10))}"></div>
       <div class="form-group"><label>Estado</label><input id="e-estado" class="campo-auto" readonly tabindex="-1" value="${esc(p.estado||'')}" placeholder="Vem do empreendimento"></div>
       <div class="form-group"><label>Cidade</label><input id="e-cidade" class="campo-auto" readonly tabindex="-1" value="${esc(p.cidade||'')}" placeholder="Vem do empreendimento"></div>
       <div class="form-group"><label>Fone Corretor</label><input id="e-broker-phone" value="${esc(c.broker_phone||'')}"></div>
@@ -3203,7 +3303,7 @@ async function saveCase() {
   const oldStage=G.editingCaseData.stage_id;
   if(stageId!==oldStage && !podeMover(oldStage, stageId)){ avisoBloqueio(oldStage); return; }
   const _entDate=document.getElementById('e-ent-date')?.value||null;
-  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||'')};
+  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||''),data_venda:(v('e-data-venda')||'')};
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
@@ -3323,6 +3423,7 @@ async function openNewCase() {
   if (moSel) moSel.innerHTML = selOpts(_modalidadeNames(), '');
   const _ne=document.getElementById('n-estado'), _nc=document.getElementById('n-cidade');
   if(_ne) _ne.value=''; if(_nc) _nc.value='';
+  const _ndv=document.getElementById('n-data-venda'); if(_ndv) _ndv.value='';
 
   document.getElementById('modal-new-bg').classList.remove('hidden');
 }
@@ -3416,7 +3517,7 @@ async function createCase() {
   const manager = document.getElementById('n-manager').value;
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||''),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||''),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),data_venda:(v('n-data-venda')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -5002,6 +5103,21 @@ init();
 // função que não existia e digitar não fazia nada.
 // O id do container muda entre as telas ('bancos-list' aqui, 'banco-list' no
 // pipeline), então aceita os dois em vez de desistir em silêncio.
+// Identificador visível dos cadastros — serve para importações e para casar
+// registro com planilha. Mostra um trecho e copia o valor inteiro no clique.
+function idChip(id){
+  if(!id) return '<span style="color:var(--t3)">—</span>';
+  return `<code onclick="copiarId('${id}')" title="Clique para copiar: ${id}"
+    style="cursor:pointer;font-size:.7rem;background:var(--bg);border:1px solid var(--border);
+           border-radius:4px;padding:.1rem .35rem;color:var(--t2)">${esc(String(id).slice(0,8))}…</code>`;
+}
+function copiarId(id){
+  navigator.clipboard.writeText(id).then(
+    ()=>toast('ID copiado: '+id,'success'),
+    ()=>toast('Não foi possível copiar. O ID é: '+id,'info')
+  );
+}
+
 function _listaEl(...ids){ for(const id of ids){ const el=document.getElementById(id); if(el) return el; } return null; }
 function _combina(texto, termo){ return !termo || String(texto||'').toLowerCase().includes(termo); }
 
@@ -5033,7 +5149,10 @@ function renderDespachantes() {
           <div class="cfg-list-name">${esc(d.nome)||'—'}</div>
           <div class="cfg-list-sub">${esc(d.email||'')} ${d.telefone ? '· '+esc(d.telefone) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(d.id)}
+          <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarDespachantes(){ renderDespachantes(); }
@@ -5066,7 +5185,10 @@ function renderBancos() {
           <div class="cfg-list-name">${esc(b.nome)||'—'}</div>
           <div class="cfg-list-sub">${b.codigo ? 'Cód. '+esc(b.codigo) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(b.id)}
+          <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarBancos(){ renderBancos(); }
@@ -5099,7 +5221,10 @@ function renderCartorios() {
           <div class="cfg-list-name">${esc(c.nome)||'—'}</div>
           <div class="cfg-list-sub">${esc(c.municipio||'')} ${c.uf ? '– '+esc(c.uf) : ''}</div>
         </div>
-        <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          ${idChip(c.id)}
+          <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
+        </div>
       </div>`).join('');
 }
 function filtrarCartorios(){ renderCartorios(); }
