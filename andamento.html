@@ -6,7 +6,8 @@
   <title>Andamento — SIIMOB</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
   <style>
     :root {
       --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
@@ -19,7 +20,7 @@
       --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
     input,select,textarea,button{font-family:inherit}
     a{text-decoration:none;color:inherit}
 
@@ -1964,7 +1965,7 @@ function applyPartnerRestrictions() {
 async function loadData() {
   const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,attachment_pdf,attachment_name,attachment_doc2,attachment_doc2_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -2645,6 +2646,73 @@ function openFluxo(e, caseId, stageId) {
   popup.style.left=(r.left+window.scrollX)+'px';
   setTimeout(()=>document.addEventListener('click',closeFluxo,{once:true}),10);
 }
+// De onde vêm os documentos antigos em base64. Aceita os dois formatos para o
+// sistema funcionar antes e depois do SQL de desempenho.
+function docsAntigos(c){
+  if (c && Array.isArray(c.legacy_docs)) return c.legacy_docs;
+  if (c && c.payload && Array.isArray(c.payload.documents)) return c.payload.documents;
+  return [];
+}
+
+// Traz do banco o que a listagem deixou de carregar por peso: anexo antigo em
+// base64 e o payload completo. Guarda no processo em memória, então abrir o
+// mesmo cartão de novo não repete a busca.
+async function completarProcesso(id){
+  const c = G.cases.find(x=>x.id===id);
+  if(!c) return null;
+  if(c.__completo) { G.editingCaseData = {...c, payload:{...(c.payload||{})}}; return c; }
+  const linha = await fetch(`${A1.rest('a1_cases')}?id=eq.${id}&select=payload,documents`,
+    {headers:A1.headers()}).then(r=>r.json()).then(a=>(a&&a[0])||null).catch(()=>null);
+  if(!linha) return null;
+  if(linha.payload && typeof linha.payload === 'object') c.payload = linha.payload;
+  c.documents = Array.isArray(linha.documents) ? linha.documents : [];
+  c.__completo = true;
+  if(G.editingCaseId === id) G.editingCaseData = {...c, payload:{...(c.payload||{})}};
+  return c;
+}
+
+// Os arquivos em base64 (anexo antigo e documentos legados) só interessam a
+// quem abre a aba de documentos. Buscar isso ao abrir o cartão deixaria cada
+// clique esperando por centenas de KB sem motivo.
+async function completarArquivos(id){
+  const c = G.cases.find(x=>x.id===id);
+  if(!c || c.__arquivos) return c;
+  const linha = await fetch(`${A1.rest('a1_cases')}?id=eq.${id}&select=attachment_pdf,attachment_name,attachment_doc2,attachment_doc2_name,legacy_docs`,
+    {headers:A1.headers()}).then(r=>r.json()).then(a=>(a&&a[0])||null).catch(()=>null);
+  if(!linha) return null;
+  c.attachment_pdf = linha.attachment_pdf;
+  c.attachment_name = linha.attachment_name;
+  c.attachment_doc2 = linha.attachment_doc2;
+  c.attachment_doc2_name = linha.attachment_doc2_name;
+  if('legacy_docs' in linha) c.legacy_docs = Array.isArray(linha.legacy_docs) ? linha.legacy_docs : [];
+  c.__arquivos = true;
+  if(G.editingCaseId === id){
+    Object.assign(G.editingCaseData, {
+      attachment_pdf:c.attachment_pdf, attachment_name:c.attachment_name,
+      attachment_doc2:c.attachment_doc2, attachment_doc2_name:c.attachment_doc2_name,
+      legacy_docs:c.legacy_docs
+    });
+  }
+  return c;
+}
+
+// Gravação de payload feita FORA do modal (agendar entrevista, mudar status).
+// Lê o payload de verdade no banco na hora, junta a mudança e grava. Assim não
+// depende do que a listagem trouxe e não atropela alteração feita por outra
+// pessoa nos campos que não estão sendo mexidos.
+async function gravarPayload(caseId, mudancas){
+  const atual = await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}&select=payload`,{headers:A1.headers()})
+    .then(r=>r.json()).then(a=>(a&&a[0]&&a[0].payload)||{}).catch(()=>null);
+  if(atual === null){ toast('Não foi possível salvar agora. Tente de novo.','error'); return null; }
+  const payload = { ...atual, ...mudancas };
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,
+    {method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  if(!res.ok){ toast('Não foi possível salvar agora. Tente de novo.','error'); return null; }
+  const idx = G.cases.findIndex(x=>x.id===caseId);
+  if(idx > -1) G.cases[idx].payload = payload;
+  return payload;
+}
+
 function closeFluxo(){ document.getElementById('fluxo-popup').classList.add('hidden'); }
 
 // ─── Card modal ───────────────────────────────────────────────────────────────
@@ -2653,6 +2721,11 @@ async function openCard(id) {
   if(!c) return;
   G.editingCaseId=id;
   G.editingCaseData={...c,payload:{...(c.payload||{})}};
+  // A lista não carrega mais os anexos antigos (base64 dentro da tabela) nem o
+  // payload completo — eram megabytes em toda abertura de página. Aqui, ao abrir
+  // UM processo, busca o que falta. Também é o que protege a gravação: sem o
+  // payload inteiro em mãos, salvar apagaria as chaves que não vieram.
+  await completarProcesso(id);
   if(c.is_new){
     fetch(`${A1.rest('a1_cases')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({is_new:false})});
     c.is_new=false;
@@ -2958,9 +3031,12 @@ async function openDoc(path){
 }
 
 async function renderModalDocs(){
-  const c=G.editingCaseData||{};
   const body=document.getElementById('mc-body');
   body.innerHTML='<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
+  // Os arquivos em base64 vivem no banco e só esta aba precisa deles. Buscar
+  // aqui é o que mantém o clique no cartão instantâneo.
+  if (G.editingCaseId) await completarArquivos(G.editingCaseId);
+  const c=G.editingCaseData||{};
   await fetchDocTypes();
   // documentos NOVOS ficam em coluna própria (fora do payload) — carrega sob demanda só nesta aba.
   // IMPORTANTE: nunca fazer fallback/merge do payload.documents (base64 antigo) para dentro de
@@ -2974,7 +3050,10 @@ async function renderModalDocs(){
   const types=(G.docTypes||[]).filter(t=>t.active!==false && (t.module==='repasse'||!t.module));
   const docs=Array.isArray(c.documents)?c.documents:[];
   // Documentos ANTIGOS (base64 dentro do payload) só para exibir/abrir — nunca regravados junto.
-  const legacyDocs=Array.isArray(c.payload&&c.payload.documents)?c.payload.documents:[];
+  // O SQL de desempenho move estes documentos de payload.documents para a
+  // coluna legacy_docs, para não virem junto da listagem. Lê dos dois lugares:
+  // antes de rodar o SQL vale o primeiro, depois vale o segundo.
+  const legacyDocs=docsAntigos(c);
   const opts=types.length?types.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join(''):'<option value="">Nenhum tipo cadastrado</option>';
   const legacy=c.attachment_pdf?`<div class="doc-row"><div style="flex:1"><div class="doc-name">${esc(c.attachment_name||'Documento.pdf')}</div><div class="doc-type-lbl">Anexo antigo</div></div><a href="${c.attachment_pdf}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a></div>`:'';
   body.innerHTML=`
@@ -3260,11 +3339,9 @@ async function confirmAgendamento() {
   const caseId = _agdCaseId;
   const c = G.cases.find(x => x.id === caseId);
   if (!c) return;
-  const payload = { ...(c.payload || {}), entrevista_status: 'agendado', agendamento_data: iso, agendamento_obs: obs };
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`, { method:'PATCH', headers:A1.headers(), body:JSON.stringify({payload}) });
+  const payload = await gravarPayload(caseId, { entrevista_status:'agendado', agendamento_data: iso, agendamento_obs: obs });
+  if (!payload) return;
   fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(), body:JSON.stringify({ case_id:caseId, type:'agendamento', description:`Entrevista agendada para ${fmtDateHour(iso)}${obs?' — '+obs:''}`, actor_name:G.user.name }) });
-  const idx = G.cases.findIndex(x => x.id === caseId);
-  if (idx > -1) G.cases[idx].payload = payload;
   closeModal('modal-agendamento-bg');
   renderKanban(); renderDashboard();
   toast('Entrevista agendada', 'success');
@@ -3273,11 +3350,9 @@ async function confirmAgendamento() {
 async function setEnt(caseId,status,e) {
   e.stopPropagation();
   const c = G.cases.find(x => x.id === caseId);
-  const payload = { ...(c?.payload || {}), entrevista_status: status };
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`, { method:'PATCH', headers:A1.headers(), body:JSON.stringify({payload}) });
+  const payload = await gravarPayload(caseId, { entrevista_status: status });
+  if (!payload) return;
   fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(), body:JSON.stringify({ case_id:caseId, type:'interview', description:`Status entrevista: ${status}`, actor_name:G.user.name }) });
-  const idx = G.cases.findIndex(x => x.id === caseId);
-  if (idx > -1) G.cases[idx].payload = payload;
   renderKanban(); renderDashboard();
   toast(`Entrevista: ${status}`, 'success');
 }
@@ -4635,13 +4710,19 @@ async function removeDoc(docId){
     } else toast('Erro ao remover','error');
     return;
   }
-  // documento antigo (base64, ainda dentro do payload) — remoção pontual, não mexe na coluna documents
-  const legacyList=Array.isArray(G.editingCaseData.payload&&G.editingCaseData.payload.documents)?G.editingCaseData.payload.documents:[];
-  const legacyDocs=legacyList.filter(d=>d.id!==docId);
-  const payload={...(G.editingCaseData.payload||{}),documents:legacyDocs};
-  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({payload})});
+  // Documento antigo em base64. Depois do SQL de desempenho ele vive na coluna
+  // legacy_docs; antes, dentro do payload. Remove de onde estiver — gravar no
+  // lugar errado apagaria o documento sem apagar a referência, ou o contrário.
+  const naColuna = Array.isArray(G.editingCaseData.legacy_docs);
+  const legacyList = docsAntigos(G.editingCaseData);
+  const restantes = legacyList.filter(d=>d.id!==docId);
+  const corpo = naColuna
+    ? { legacy_docs: restantes }
+    : { payload: {...(G.editingCaseData.payload||{}), documents: restantes} };
+  const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(corpo)});
   if(res.ok){
-    G.editingCaseData.payload=payload;
+    if(naColuna) G.editingCaseData.legacy_docs = restantes;
+    else         G.editingCaseData.payload = corpo.payload;
     renderModalDocs();toast('Documento removido','info');
   } else toast('Erro ao remover','error');
 }
