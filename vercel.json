@@ -15,6 +15,7 @@
     { "source": "/:slug/admin",        "destination": "/tenant-admin.html" },
     { "source": "/:slug/workflow",     "destination": "/workflow.html" },
     { "source": "/:slug/configuracoes","destination": "/configuracoes.html" },
+    { "source": "/:slug/importar",     "destination": "/importar.html" },
     { "source": "/superadmin",         "destination": "/superadmin.html" }
   ],
   "headers": [
