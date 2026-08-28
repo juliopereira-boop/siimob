@@ -1263,8 +1263,12 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
+            <div class="form-group"><label>Coordenador <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
+              <select id="n-coordenador" onchange="aoTrocarCoordenador('n')"><option value="">Selecione...</option></select>
+            </div>
             <div class="form-group"><label>Corretor <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
-              <select id="n-broker"><option value="">Selecione...</option></select>
+              <select id="n-broker" onchange="aoTrocarCorretor('n')"><option value="">Selecione...</option></select>
+              <div id="n-coord-obs" style="display:none;font-size:.7rem;color:#b45309;margin-top:.25rem"></div>
             </div>
             <div class="form-group"><label>Convênio <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
               <select id="n-convenio"><option value="">Selecione...</option></select>
@@ -2937,6 +2941,61 @@ function switchModalTab(tab,el){
   else if(tab==='docs') renderModalDocs();
 }
 
+
+// ─── Coordenador e corretor andam juntos nos formulários ─────────────────────
+// O vínculo mora no cadastro do corretor (extra.coordenador_id) — continua
+// sendo a única verdade. Aqui os dois campos só se ajudam: escolher o corretor
+// mostra o coordenador dele; escolher o coordenador encurta a lista de
+// corretores para a equipe dele. Nada de coordenador é gravado no processo,
+// senão trocar o corretor de equipe deixaria os processos antigos mentindo.
+
+function _corretoresParaFormulario(nomeCoord){
+  const todos = _corretorNames();
+  if(!nomeCoord) return todos;
+  const equipe = _corretoresDoCoordenador(nomeCoord);
+  return equipe ? todos.filter(n => equipe.has(n)) : todos;
+}
+
+function aoTrocarCorretor(pre){
+  const bro = document.getElementById(pre + '-broker');
+  const coo = document.getElementById(pre + '-coordenador');
+  if(!bro || !coo) return;
+  const k = _coordenadorDoCorretor(bro.value);
+  if(k){
+    // O coordenador pode não estar na lista se ficou inativo; acrescenta para
+    // não sumir da tela o vínculo que existe de verdade.
+    if(![...coo.options].some(o => o.value === k)) coo.add(new Option(k, k));
+    coo.value = k;
+  } else if(bro.value && coo.value && !_corretoresParaFormulario(coo.value).includes(bro.value)){
+    coo.value = '';
+  }
+  avisoCoordenador(pre);
+}
+
+function aoTrocarCoordenador(pre){
+  const bro = document.getElementById(pre + '-broker');
+  const coo = document.getElementById(pre + '-coordenador');
+  if(!bro || !coo) return;
+  const atual = bro.value;
+  const lista = _corretoresParaFormulario(coo.value);
+  bro.innerHTML = selOpts(lista, lista.includes(atual) ? atual : '');
+  avisoCoordenador(pre);
+}
+
+// Corretor sem coordenador no cadastro é situação real (veio de importação, ou
+// ninguém definiu ainda). Melhor dizer do que deixar o campo vazio sem motivo.
+function avisoCoordenador(pre){
+  const el = document.getElementById(pre + '-coord-obs');
+  if(!el) return;
+  const bro = document.getElementById(pre + '-broker');
+  const coo = document.getElementById(pre + '-coordenador');
+  const semVinculo = bro && bro.value && !_coordenadorDoCorretor(bro.value);
+  el.textContent = semVinculo
+    ? 'Este corretor ainda não tem coordenador no cadastro. Defina em Configurações → Corretores.'
+    : (coo && coo.value ? '' : '');
+  el.style.display = semVinculo ? '' : 'none';
+}
+
 function selOpts(items, cur){
   cur = cur || '';
   items = Array.isArray(items) ? items : [];
@@ -3036,7 +3095,11 @@ function renderModalDet() {
       <div class="form-group"><label>Imobiliaria</label><select id="e-re">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
       <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
       <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
-      <div class="form-group"><label>Corretor</label><select id="e-broker">${selOpts(_corretorNames(), c.broker_name)}</select></div>
+      <div class="form-group"><label>Coordenador</label><select id="e-coordenador" onchange="aoTrocarCoordenador('e')">${selOpts(_coordenadorNames(), _coordenadorDoCorretor(c.broker_name))}</select></div>
+      <div class="form-group"><label>Corretor</label>
+        <select id="e-broker" onchange="aoTrocarCorretor('e')">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name)), c.broker_name)}</select>
+        <div id="e-coord-obs" style="display:none;font-size:.7rem;color:#b45309;margin-top:.25rem"></div>
+      </div>
       <div class="form-group"><label>Convênio</label><select id="e-convenio">${selOpts(_convenioNames(), p.convenio||'')}</select></div>
       <div class="form-group"><label>Agência</label><select id="e-agencia">${selOpts(_agenciaNames(), p.agencia||'')}</select></div>
       <div class="form-group"><label>Modalidade do imóvel</label><select id="e-modalidade">${selOpts(_modalidadeNames(), p.modalidade||'')}</select></div>
@@ -3056,6 +3119,7 @@ function renderModalDet() {
     </div>
     <div class="form-section-title">Observacoes</div>
     <div class="form-group full"><textarea id="e-obs" rows="4">${esc(c.observations||'')}</textarea></div>`;
+  avisoCoordenador('e');
 }
 
 function renderModalHist() {
@@ -3413,8 +3477,11 @@ async function openNewCase() {
     managerSel.disabled = false;
   }
 
+  const coordSel = document.getElementById('n-coordenador');
+  if (coordSel) coordSel.innerHTML = selOpts(_coordenadorNames(), '');
   const brokerSel = document.getElementById('n-broker');
   if (brokerSel) brokerSel.innerHTML = selOpts(_corretorNames(), '');
+  avisoCoordenador('n');
   const convSel = document.getElementById('n-convenio');
   if (convSel) convSel.innerHTML = selOpts(_convenioNames(), '');
   const agSel = document.getElementById('n-agencia');
