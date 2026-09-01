@@ -1,31 +1,106 @@
 {
   "rewrites": [
-    { "source": "/",                  "destination": "/index.html" },
-    { "source": "/conheca",           "destination": "/lp.html" },
-    { "source": "/siimob",            "destination": "/lp.html" },
-    { "source": "/cadastro-corretor", "destination": "/precadastro.html" },
-    { "source": "/:slug/login",       "destination": "/login.html" },
-    { "source": "/:slug/repasse",            "destination": "/repasse.html" },
-    { "source": "/:slug/andamento",          "destination": "/andamento.html" },
-    { "source": "/:slug/listagem",           "destination": "/listagem.html" },
-    { "source": "/:slug/registro",           "destination": "/registro.html" },
-    { "source": "/:slug/registro-listagem",  "destination": "/registro-listagem.html" },
-    { "source": "/:slug/crm",                "destination": "/crm.html" },
-    { "source": "/:slug/dashboard",    "destination": "/repasse.html" },
-    { "source": "/:slug/admin",        "destination": "/tenant-admin.html" },
-    { "source": "/:slug/workflow",     "destination": "/workflow.html" },
-    { "source": "/:slug/configuracoes","destination": "/configuracoes.html" },
-    { "source": "/:slug/importar",     "destination": "/importar.html" },
-    { "source": "/superadmin",         "destination": "/superadmin.html" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conheca",
+      "destination": "/lp.html"
+    },
+    {
+      "source": "/siimob",
+      "destination": "/lp.html"
+    },
+    {
+      "source": "/indica",
+      "destination": "/indica.html"
+    },
+    {
+      "source": "/indicasii",
+      "destination": "/indica.html"
+    },
+    {
+      "source": "/indica/cadastro",
+      "destination": "/indica-cadastro.html"
+    },
+    {
+      "source": "/cadastro-corretor",
+      "destination": "/precadastro.html"
+    },
+    {
+      "source": "/:slug/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/:slug/repasse",
+      "destination": "/repasse.html"
+    },
+    {
+      "source": "/:slug/andamento",
+      "destination": "/andamento.html"
+    },
+    {
+      "source": "/:slug/listagem",
+      "destination": "/listagem.html"
+    },
+    {
+      "source": "/:slug/registro",
+      "destination": "/registro.html"
+    },
+    {
+      "source": "/:slug/registro-listagem",
+      "destination": "/registro-listagem.html"
+    },
+    {
+      "source": "/:slug/crm",
+      "destination": "/crm.html"
+    },
+    {
+      "source": "/:slug/dashboard",
+      "destination": "/repasse.html"
+    },
+    {
+      "source": "/:slug/admin",
+      "destination": "/tenant-admin.html"
+    },
+    {
+      "source": "/:slug/workflow",
+      "destination": "/workflow.html"
+    },
+    {
+      "source": "/:slug/configuracoes",
+      "destination": "/configuracoes.html"
+    },
+    {
+      "source": "/:slug/importar",
+      "destination": "/importar.html"
+    },
+    {
+      "source": "/superadmin",
+      "destination": "/superadmin.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options",  "value": "nosniff" },
-        { "key": "X-Frame-Options",         "value": "DENY" },
-        { "key": "X-XSS-Protection",        "value": "1; mode=block" },
-        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     }
   ]

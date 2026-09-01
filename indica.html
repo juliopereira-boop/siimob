@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IndicaSII — indique uma empresa e ganhe 20% do contrato | SIIMOB</title>
+  <meta name="description" content="Indique construtoras, imobiliárias e correspondentes para o SIIMOB. Contrato fechado, você recebe 20% do valor. Sem limite de indicações e com acompanhamento online.">
+  <link rel="canonical" href="https://siimob.com.br/indica">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#0D1A5E">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SIIMOB">
+  <meta property="og:title" content="IndicaSII — indique e ganhe 20% do contrato fechado">
+  <meta property="og:description" content="Você conhece uma empresa que ainda controla repasse em planilha? Indique para o SIIMOB e receba 20% do contrato fechado.">
+  <meta property="og:url" content="https://siimob.com.br/indica">
+  <meta property="og:image" content="https://siimob.com.br/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IndicaSII — indique e ganhe 20% do contrato fechado">
+  <meta name="twitter:description" content="Indique empresas do mercado imobiliário para o SIIMOB e seja recompensado quando virar contrato.">
+  <meta name="twitter:image" content="https://siimob.com.br/icon-512.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+  <style>
+    :root{
+      --escuro:#0D1A5E; --escuro-2:#152272; --azul:#3D5CC8; --azul-cl:#7090E8; --azul-esc:#1E3A8A;
+      --bg:#FBFCFE; --bg-2:#F4F7FB; --card:#fff; --borda:#E6EBF2; --borda-2:#D6DEEA;
+      --t1:#0B1220; --t2:#4A5568; --t3:#8A96A8; --verde:#0F9D6E; --verde-cl:#ECFDF5;
+      --raio:14px; --raio-lg:20px;
+      --sombra:0 1px 2px rgba(11,18,32,.04), 0 4px 14px rgba(11,18,32,.05);
+      --sombra-2:0 2px 6px rgba(11,18,32,.06), 0 18px 44px rgba(11,18,32,.09);
+      --cx:1240px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;scroll-padding-top:82px}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+         color:var(--t1);background:var(--bg);font-size:16px;line-height:1.6;
+         -webkit-font-smoothing:antialiased;overflow-x:hidden}
+    img{max-width:100%;display:block}
+    input,button,select,textarea{font:inherit;color:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .oculto{display:none!important}
+    :focus-visible{outline:2px solid var(--azul);outline-offset:3px;border-radius:4px}
+
+    .cx{max-width:var(--cx);margin:0 auto;padding:0 32px}
+    @media(max-width:1024px){ .cx{padding:0 24px} }
+    @media(max-width:640px){  .cx{padding:0 18px} }
+
+    section{padding:96px 0}
+    section.compacta{padding:72px 0}
+    @media(max-width:768px){ section{padding:64px 0} section.compacta{padding:48px 0} }
+
+    .sobrancelha{display:inline-block;font-size:.74rem;font-weight:800;letter-spacing:.13em;
+      text-transform:uppercase;color:var(--azul);margin-bottom:14px}
+    h1{font-size:clamp(2.4rem,5.6vw,4.1rem);font-weight:800;letter-spacing:-.035em;line-height:1.05}
+    h2{font-size:clamp(1.55rem,3.4vw,2.5rem);font-weight:800;letter-spacing:-.03em;line-height:1.18;
+      overflow-wrap:break-word}
+    h3{font-size:1.06rem;font-weight:700;letter-spacing:-.015em;line-height:1.35}
+    .lead{font-size:1.05rem;color:var(--t2);line-height:1.68;max-width:640px}
+    .centro{text-align:center} .centro .lead{margin-left:auto;margin-right:auto}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+      padding:.88rem 1.6rem;border:1px solid transparent;border-radius:11px;
+      font-size:.95rem;font-weight:700;letter-spacing:-.01em;transition:all .2s ease;white-space:nowrap}
+    .btn-1{background:var(--azul);color:#fff;box-shadow:0 2px 10px rgba(61,92,200,.28)}
+    .btn-1:hover{background:var(--azul-esc);transform:translateY(-1px);box-shadow:0 6px 20px rgba(61,92,200,.34)}
+    .btn-2{background:var(--card);color:var(--t1);border-color:var(--borda-2)}
+    .btn-2:hover{border-color:var(--t3);background:var(--bg-2)}
+    .btn-claro{background:#fff;color:var(--escuro)}
+    .btn-claro:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+    .btn-fant{background:transparent;color:#fff;border-color:rgba(255,255,255,.34)}
+    .btn-fant:hover{background:rgba(255,255,255,.1)}
+    .btn-sm{padding:.6rem 1.05rem;font-size:.86rem}
+    .btn-lg{padding:1.05rem 2rem;font-size:1.02rem}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    /* ═══ cabeçalho ═══ */
+    .topo{position:sticky;top:0;z-index:100;background:rgba(251,252,254,.86);
+      backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,box-shadow .2s}
+    .topo.rolou{border-bottom-color:var(--borda);box-shadow:0 1px 12px rgba(11,18,32,.05)}
+    .topo-in{display:flex;align-items:center;gap:1.5rem;height:72px}
+    .logo{display:flex;align-items:center;gap:.55rem;font-weight:900;font-size:1.12rem;letter-spacing:-.04em;flex-shrink:0}
+    .logo small{font-size:.7rem;font-weight:700;color:var(--azul);letter-spacing:0;
+      background:#EEF2FF;padding:.15rem .45rem;border-radius:5px}
+    .nav{display:flex;gap:.3rem;margin:0 auto}
+    .nav a{padding:.5rem .8rem;font-size:.9rem;font-weight:600;color:var(--t2);border-radius:8px;transition:.15s}
+    .nav a:hover{color:var(--t1);background:var(--bg-2)}
+    .topo-acoes{display:flex;align-items:center;gap:.55rem;flex-shrink:0}
+    .hamb{display:none;width:42px;height:42px;border:1px solid var(--borda-2);border-radius:10px;
+      background:var(--card);align-items:center;justify-content:center}
+    /* Sem overflow:hidden, o painel deslocado para fora continuava contando na
+       largura do documento e criava rolagem lateral no celular. */
+    .gaveta{position:fixed;inset:0;z-index:110;background:rgba(11,18,32,.5);opacity:0;pointer-events:none;
+      transition:opacity .25s;overflow:hidden}
+    .gaveta.aberta{opacity:1;pointer-events:auto}
+    .gaveta-p{position:absolute;top:0;right:0;bottom:0;width:min(320px,86vw);background:var(--card);
+      padding:1.5rem;display:flex;flex-direction:column;gap:.3rem;transform:translateX(100%);transition:transform .25s ease}
+    .gaveta.aberta .gaveta-p{transform:translateX(0)}
+    .gaveta-p a{display:block;padding:.85rem .7rem;font-size:1rem;font-weight:600;color:var(--t1);border-radius:9px}
+    .gaveta-p .btn{display:flex;width:100%}
+    .gaveta-p a:hover{background:var(--bg-2)}
+    .gaveta-x{align-self:flex-end;width:38px;height:38px;border:1px solid var(--borda);border-radius:9px;
+      background:var(--bg-2);margin-bottom:.6rem}
+    @media(max-width:1024px){ .nav,.topo-acoes .btn{display:none} .hamb{display:flex} .topo-in{justify-content:space-between} }
+
+    /* ═══ hero ═══ */
+    .hero{padding:76px 0 88px;background:
+      radial-gradient(ellipse 900px 520px at 88% -8%, rgba(112,144,232,.14), transparent 62%),
+      radial-gradient(ellipse 700px 460px at 4% 96%, rgba(61,92,200,.08), transparent 58%)}
+    .hero-grade{display:grid;grid-template-columns:minmax(0,55fr) minmax(0,45fr);gap:56px;align-items:center}
+    .hero h1{margin-bottom:20px}
+    .hero h1 em{font-style:normal;color:var(--azul);position:relative;white-space:nowrap}
+    .hero-ctas{display:flex;gap:.7rem;margin:30px 0 26px;flex-wrap:wrap}
+    .provas{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem}
+    .prova{display:flex;align-items:center;gap:.45rem;font-size:.87rem;color:var(--t2);font-weight:600}
+    .prova svg{color:var(--verde);flex-shrink:0}
+    @media(max-width:960px){ .hero-grade{grid-template-columns:1fr;gap:44px} .hero{padding:52px 0 64px}
+      .hero-ctas .btn{width:100%} }
+
+    /* painel do hero */
+    .visor{position:relative}
+    .painel{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio-lg);
+      box-shadow:var(--sombra-2);overflow:hidden}
+    .painel-topo{background:var(--escuro);padding:.85rem 1.15rem;display:flex;align-items:center;gap:.5rem}
+    .bolinha{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22)}
+    .painel-topo span{margin-left:auto;font-size:.72rem;color:rgba(255,255,255,.62);font-weight:600}
+    .painel-corpo{padding:1.35rem}
+    .rot{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+    .emp{font-size:1.12rem;font-weight:800;letter-spacing:-.02em;margin:.2rem 0 1rem}
+    .trilho{display:flex;align-items:center;gap:.4rem;margin-bottom:1.15rem}
+    .no{flex:1;height:5px;border-radius:99px;background:var(--borda)}
+    .no.on{background:var(--verde)}
+    .selo-ok{display:inline-flex;align-items:center;gap:.4rem;background:var(--verde-cl);color:var(--verde);
+      border:1px solid #A7F3D0;border-radius:99px;padding:.3rem .75rem;font-size:.78rem;font-weight:800}
+    .ganho{background:linear-gradient(135deg,#0D1A5E,#3D5CC8);color:#fff;border-radius:13px;
+      padding:1.05rem 1.15rem;margin-top:1.15rem}
+    .ganho-l{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.66)}
+    .ganho-v{font-size:1.85rem;font-weight:900;letter-spacing:-.035em;margin-top:.1rem}
+    .fichas{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.85rem}
+    .ficha{background:var(--card);border:1px solid var(--borda);border-radius:11px;padding:.75rem;text-align:center;
+      box-shadow:var(--sombra)}
+    .ficha b{display:block;font-size:1.25rem;font-weight:900;letter-spacing:-.03em}
+    .ficha span{font-size:.7rem;color:var(--t3);font-weight:600;line-height:1.3;display:block;margin-top:.1rem}
+
+    /* ═══ captura ═══ */
+    .captura{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio-lg);
+      padding:2rem;box-shadow:var(--sombra-2);max-width:560px;margin:0 auto}
+    .campo{margin-bottom:.95rem}
+    .campo label{display:block;font-size:.78rem;font-weight:700;color:var(--t2);margin-bottom:.35rem}
+    .campo input,.campo select,.campo textarea{width:100%;padding:.78rem .95rem;border:1px solid var(--borda-2);
+      border-radius:10px;font-size:.95rem;background:var(--card);transition:border-color .15s,box-shadow .15s}
+    .campo input:focus,.campo select:focus,.campo textarea:focus{outline:none;border-color:var(--azul);
+      box-shadow:0 0 0 3px rgba(61,92,200,.12)}
+    .campo input[aria-invalid="true"]{border-color:#DC2626;box-shadow:0 0 0 3px rgba(220,38,38,.1)}
+    .campo-erro{font-size:.78rem;color:#DC2626;margin-top:.3rem;font-weight:600}
+    .aviso-legal{font-size:.78rem;color:var(--t3);line-height:1.55;margin-top:.85rem}
+    .aviso-legal a{color:var(--azul);font-weight:600;text-decoration:underline}
+
+    /* ═══ passos ═══ */
+    .passos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem;position:relative;margin-top:3rem}
+    .passos::before{content:'';position:absolute;top:44px;left:16%;right:16%;height:2px;
+      background:linear-gradient(90deg,var(--borda),var(--borda-2),var(--borda));z-index:0}
+    .passo{position:relative;z-index:1;background:var(--card);border:1px solid var(--borda);
+      border-radius:var(--raio);padding:1.7rem;box-shadow:var(--sombra);transition:transform .2s,box-shadow .2s}
+    .passo:hover{transform:translateY(-3px);box-shadow:var(--sombra-2)}
+    .passo-n{position:absolute;top:1.2rem;right:1.4rem;font-size:2.6rem;font-weight:900;
+      color:var(--bg-2);letter-spacing:-.05em;line-height:1}
+    .icone{width:46px;height:46px;border-radius:12px;background:#EEF2FF;color:var(--azul);
+      display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+    .passo p{font-size:.92rem;color:var(--t2);margin-top:.4rem;line-height:1.62}
+    @media(max-width:900px){ .passos{grid-template-columns:1fr;gap:1rem;margin-top:2rem} .passos::before{display:none} }
+
+    /* ═══ simulador ═══ */
+    .sim{background:var(--escuro);color:#fff;border-radius:var(--raio-lg);padding:2.6rem;
+      display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);gap:2.6rem;align-items:center;
+      background-image:radial-gradient(ellipse 620px 380px at 92% 4%, rgba(112,144,232,.24), transparent 60%)}
+    .sim h2{color:#fff;margin-bottom:.5rem}
+    .sim .lead{color:#B9C4D8}
+    .sim-ctrl{margin-top:1.9rem}
+    .sim-lin{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.6rem}
+    .sim-lab{font-size:.8rem;font-weight:700;color:#B9C4D8;letter-spacing:.02em}
+    .sim-val{font-size:1rem;font-weight:800;color:#fff}
+    input[type=range]{width:100%;height:6px;border-radius:99px;appearance:none;
+      background:rgba(255,255,255,.18);outline:none;cursor:pointer}
+    input[type=range]::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;
+      background:#fff;border:4px solid var(--azul-cl);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;
+      border:4px solid var(--azul-cl);cursor:pointer;border-width:4px}
+    .sim-res{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--raio);padding:2rem;text-align:center}
+    .sim-res-l{font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8FA0C0}
+    .sim-res-v{font-size:clamp(2.1rem,4.4vw,3.1rem);font-weight:900;letter-spacing:-.04em;
+      margin:.5rem 0 .3rem;color:#fff;font-variant-numeric:tabular-nums}
+    .sim-res-c{font-size:.83rem;color:#9FB0CC;line-height:1.5}
+    .sim-nota{font-size:.76rem;color:#8FA0C0;margin-top:1rem;line-height:1.55}
+    @media(max-width:900px){ .sim{grid-template-columns:1fr;gap:1.9rem;padding:1.9rem} }
+
+    /* ═══ escada de ganhos ═══ */
+    .duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3.5rem;align-items:center}
+    @media(max-width:900px){ .duas{grid-template-columns:minmax(0,1fr);gap:2.2rem} }
+    .escada{display:flex;flex-direction:column;gap:.6rem}
+    .degrau{display:flex;align-items:center;gap:1rem;background:var(--card);border:1px solid var(--borda);
+      border-radius:12px;padding:1rem 1.15rem;box-shadow:var(--sombra)}
+    .degrau-n{width:38px;height:38px;border-radius:10px;background:#EEF2FF;color:var(--azul);
+      display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0}
+    .degrau-t{font-size:.9rem;color:var(--t2);font-weight:600}
+    .degrau-v{margin-left:auto;font-size:1.12rem;font-weight:900;letter-spacing:-.025em;color:var(--verde);
+      font-variant-numeric:tabular-nums}
+
+    /* ═══ grades ═══ */
+    .grade3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.4rem;margin-top:3rem}
+    @media(max-width:1000px){ .grade3{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    @media(max-width:640px){  .grade3{grid-template-columns:minmax(0,1fr);margin-top:2rem} }
+    .item{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:1.6rem;
+      transition:transform .2s,box-shadow .2s,border-color .2s}
+    .item:hover{transform:translateY(-3px);box-shadow:var(--sombra-2);border-color:var(--borda-2)}
+    .item p{font-size:.9rem;color:var(--t2);margin-top:.4rem;line-height:1.62}
+
+    /* ═══ métricas ═══ */
+    .metricas{background:var(--escuro);color:#fff}
+    .metricas-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2rem;text-align:center}
+    .metrica-v{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:900;letter-spacing:-.04em;line-height:1;
+      overflow-wrap:anywhere}
+    .metrica-v.reservado{font-size:clamp(1.1rem,3vw,1.6rem)}
+    .metrica-v.reservado{color:rgba(255,255,255,.45)}
+    .metrica-l{font-size:.85rem;color:#9FB0CC;margin-top:.5rem;line-height:1.45}
+    .metricas-nota{text-align:center;font-size:.78rem;color:#7C8BA8;margin-top:1.8rem}
+    @media(max-width:768px){ .metricas-g{grid-template-columns:repeat(2,1fr);gap:1.8rem} }
+
+    /* ═══ comparação ═══ */
+    .comp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.6rem;margin-top:3rem}
+    @media(max-width:900px){ .comp{grid-template-columns:1fr;margin-top:2rem} }
+    .prog{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio-lg);padding:2rem;
+      display:flex;flex-direction:column}
+    .prog.destaque{border:2px solid var(--azul);box-shadow:0 4px 30px rgba(61,92,200,.14);position:relative}
+    .prog-fita{position:absolute;top:-12px;left:2rem;background:var(--azul);color:#fff;font-size:.7rem;
+      font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.28rem .7rem;border-radius:6px}
+    .prog h3{font-size:1.3rem;letter-spacing:-.025em}
+    .prog-res{font-size:.9rem;color:var(--t2);margin:.45rem 0 1.4rem;line-height:1.6}
+    .prog-itens{list-style:none;display:flex;flex-direction:column;gap:.9rem;margin-bottom:1.7rem;flex:1}
+    .prog-itens li{display:flex;gap:.85rem;font-size:.9rem;line-height:1.55}
+    .prog-itens .r{font-weight:700;color:var(--t3);min-width:118px;flex-shrink:0;font-size:.78rem;
+      text-transform:uppercase;letter-spacing:.05em;padding-top:.1rem}
+    .prog-itens .v{color:var(--t1)}
+    @media(max-width:520px){ .prog-itens li{flex-direction:column;gap:.15rem} .prog-itens .r{min-width:0} }
+
+    /* ═══ segmentos ═══ */
+    .seg{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden;
+      transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+    .seg:hover{transform:translateY(-4px);box-shadow:var(--sombra-2)}
+    .seg-capa{height:150px;position:relative;overflow:hidden;background:var(--escuro)}
+    .seg-capa svg{position:absolute;inset:0;width:100%;height:100%;transition:transform .35s ease}
+    .seg:hover .seg-capa svg{transform:scale(1.06)}
+    .seg-corpo{padding:1.5rem;display:flex;flex-direction:column;flex:1}
+    .seg-corpo p{font-size:.9rem;color:var(--t2);margin:.4rem 0 1.2rem;line-height:1.6;flex:1}
+    .seg-cta{font-size:.9rem;font-weight:700;color:var(--azul);display:inline-flex;align-items:center;gap:.4rem;
+      background:none;border:none;padding:0;transition:gap .2s}
+    .seg:hover .seg-cta{gap:.7rem}
+
+    /* ═══ depoimentos ═══ */
+    .dep{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:1.7rem;
+      display:flex;flex-direction:column;gap:1.1rem}
+    .dep-txt{font-size:.94rem;color:var(--t2);line-height:1.68;flex:1}
+    .dep-quem{display:flex;align-items:center;gap:.8rem}
+    .dep-av{width:44px;height:44px;border-radius:50%;background:var(--bg-2);border:1px solid var(--borda);
+      display:flex;align-items:center;justify-content:center;color:var(--t3);flex-shrink:0}
+    .dep-nome{font-size:.9rem;font-weight:800}
+    .dep-cargo{font-size:.8rem;color:var(--t3)}
+    .reservado-nota{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:10px;
+      padding:.7rem .9rem;font-size:.82rem;margin-top:1.5rem;line-height:1.55}
+
+    /* ═══ dúvidas ═══ */
+    .faq{max-width:820px;margin:2.6rem auto 0;display:flex;flex-direction:column;gap:.7rem}
+    .faq-i{background:var(--card);border:1px solid var(--borda);border-radius:12px;overflow:hidden;transition:border-color .2s}
+    .faq-i[data-aberto="1"]{border-color:var(--borda-2);box-shadow:var(--sombra)}
+    .faq-b{width:100%;background:none;border:none;padding:1.15rem 1.35rem;display:flex;align-items:center;
+      gap:1rem;text-align:left;font-size:1rem;font-weight:700;letter-spacing:-.015em;color:var(--t1)}
+    .faq-b:hover{background:var(--bg-2)}
+    .faq-seta{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform .25s}
+    .faq-i[data-aberto="1"] .faq-seta{transform:rotate(180deg);color:var(--azul)}
+    .faq-r{max-height:0;overflow:hidden;transition:max-height .3s ease}
+    .faq-r-in{padding:0 1.35rem 1.25rem;font-size:.94rem;color:var(--t2);line-height:1.7}
+
+    /* ═══ CTA final ═══ */
+    .final{background:linear-gradient(150deg,#0D1A5E 0%,#1E3A8A 58%,#3D5CC8 100%);color:#fff;text-align:center;
+      position:relative;overflow:hidden}
+    .final::after{content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse 700px 400px at 50% 120%, rgba(112,144,232,.3), transparent 60%)}
+    .final .cx{position:relative;z-index:1}
+    .final h2{color:#fff;margin-bottom:.8rem}
+    .final p{color:#C3CEE2;font-size:1.05rem;max-width:540px;margin:0 auto 2rem;line-height:1.65}
+    .final-nota{font-size:.85rem;color:#8FA0C0;margin-top:1.2rem}
+
+    /* ═══ rodapé ═══ */
+    .rodape{background:#080F35;color:#8895B0;padding:3.5rem 0 2rem;font-size:.9rem}
+    .rodape-g{display:grid;grid-template-columns:1.7fr 1fr 1fr 1fr;gap:2.5rem;margin-bottom:2.5rem}
+    @media(max-width:820px){ .rodape-g{grid-template-columns:1fr 1fr;gap:2rem} }
+    @media(max-width:480px){ .rodape-g{grid-template-columns:1fr} }
+    .rodape h4{font-size:.72rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#fff;margin-bottom:1rem}
+    .rodape ul{list-style:none;display:flex;flex-direction:column;gap:.65rem}
+    .rodape a:hover{color:#fff}
+    .rodape-logo{color:#fff;font-weight:900;font-size:1.2rem;letter-spacing:-.04em;margin-bottom:.8rem;display:block}
+    .rodape-desc{line-height:1.7;max-width:280px;font-size:.88rem}
+    .rodape-fim{border-top:1px solid rgba(255,255,255,.08);padding-top:1.6rem;font-size:.83rem;color:#66748F}
+
+    /* aparecer ao rolar */
+    .surge{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+    .surge.visivel{opacity:1;transform:none}
+    /* Em tela estreita o texto do botão não cabia numa linha só, e o nowrap
+       empurrava a página. Aqui ele pode quebrar e ocupar a largura. */
+    @media(max-width:400px){
+      .btn{white-space:normal;text-align:center}
+      .btn-lg{width:100%;padding:.95rem 1.1rem}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      .surge{opacity:1;transform:none;transition:none}
+      *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════ HEADER ════════ -->
+<header class="topo" id="topo">
+  <div class="cx topo-in">
+    <a href="#" class="logo" aria-label="SIIMOB, página inicial do IndicaSII">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7090E8"/><stop offset="100%" stop-color="#3D5CC8"/></linearGradient></defs><polygon points="10,8 84,4 81,29 7,33" fill="url(#lg)"/><polygon points="7,33 26,31 26,57 7,59" fill="#0D1A5E"/><path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#lg)"/></svg>
+      SIIMOB <small>IndicaSII</small>
+    </a>
+    <nav class="nav" id="nav" aria-label="Seções da página"></nav>
+    <div class="topo-acoes">
+      <a class="btn btn-2 btn-sm" href="#acompanhar" id="btn-login">Acompanhar</a>
+      <a class="btn btn-1 btn-sm" href="#cadastro">Criar conta</a>
+      <button class="hamb" id="hamb" aria-label="Abrir menu" aria-expanded="false" aria-controls="gaveta">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="gaveta" id="gaveta" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="gaveta-p">
+    <button class="gaveta-x" id="gaveta-x" aria-label="Fechar menu">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="gaveta-links"></div>
+    <a class="btn btn-2" href="#acompanhar" style="margin-top:.8rem">Acompanhar indicações</a>
+    <a class="btn btn-1" href="#cadastro" style="margin-top:.5rem">Criar conta</a>
+  </div>
+</div>
+
+<main>
+
+<!-- ════════ HERO ════════ -->
+<section class="hero" id="inicio">
+  <div class="cx hero-grade">
+    <div>
+      <span class="sobrancelha">Programa oficial de indicação</span>
+      <h1>Sua indicação pode valer <em id="hero-valor">R$ 2.400</em></h1>
+      <p class="lead">
+        Indique construtoras, imobiliárias e correspondentes que ainda controlam repasse
+        em planilha. Quando a indicação vira contrato, você recebe
+        <strong id="hero-perc">20%</strong> do valor fechado. Você não precisa vender nada —
+        a conversa comercial é nossa.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn btn-1 btn-lg" href="#cadastro">Quero indicar</a>
+        <a class="btn btn-2 btn-lg" href="#como-funciona">Ver como funciona</a>
+      </div>
+      <div class="provas">
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Sem limite de indicações</span>
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Acompanhamento online</span>
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Não precisa ser cliente</span>
+      </div>
+    </div>
+
+    <!-- composição de interface, não foto de banco de imagem -->
+    <div class="visor" aria-hidden="true">
+      <div class="painel">
+        <div class="painel-topo">
+          <span class="bolinha"></span><span class="bolinha"></span><span class="bolinha"></span>
+          <span>Minhas indicações</span>
+        </div>
+        <div class="painel-corpo">
+          <div class="rot">Empresa indicada</div>
+          <div class="emp">Construtora Horizonte</div>
+          <div class="trilho">
+            <div class="no on"></div><div class="no on"></div><div class="no on"></div><div class="no on"></div>
+          </div>
+          <span class="selo-ok">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            Contrato fechado
+          </span>
+          <div class="ganho">
+            <div class="ganho-l">Sua recompensa</div>
+            <div class="ganho-v" id="visor-ganho">R$ 2.400</div>
+          </div>
+        </div>
+      </div>
+      <div class="fichas">
+        <div class="ficha"><b>3</b><span>indicações</span></div>
+        <div class="ficha"><b>2</b><span>em negociação</span></div>
+        <div class="ficha"><b style="color:var(--verde)">1</b><span>convertida</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ CAPTURA ════════ -->
+<section class="compacta" id="cadastro" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro" style="margin-bottom:2rem">
+      <h2>Preencha seus dados e comece</h2>
+      <p class="lead">Dois campos agora. Os dados da empresa que você quer indicar vêm na tela seguinte.</p>
+    </div>
+    <form class="captura" id="form-inicio" novalidate>
+      <div class="campo">
+        <label for="i-nome">Nome completo</label>
+        <input type="text" id="i-nome" name="nome" autocomplete="name" placeholder="Como você se chama"
+               aria-describedby="e-nome">
+        <div class="campo-erro oculto" id="e-nome" role="alert"></div>
+      </div>
+      <div class="campo">
+        <label for="i-fone">WhatsApp</label>
+        <input type="tel" id="i-fone" name="telefone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000"
+               autocomplete="tel" aria-describedby="e-fone">
+        <div class="campo-erro oculto" id="e-fone" role="alert"></div>
+      </div>
+      <button type="submit" class="btn btn-1 btn-lg" style="width:100%">Quero participar</button>
+      <p class="aviso-legal">
+        Ao continuar, você concorda com a <a href="#duvidas">política de privacidade</a> e com o
+        regulamento do programa. Usamos seus dados apenas para tratar da indicação e pagar a recompensa.
+      </p>
+    </form>
+  </div>
+</section>
+
+<!-- ════════ COMO FUNCIONA ════════ -->
+<section id="como-funciona">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Como funciona</span>
+      <h2>Indicar é simples</h2>
+      <p class="lead">Três passos. Você faz o primeiro; do segundo em diante, é com a gente.</p>
+    </div>
+    <div class="passos">
+      <article class="passo surge">
+        <span class="passo-n">01</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <h3>Faça a indicação</h3>
+        <p>Preencha o nome da empresa e, se souber, quem é o contato lá dentro. Leva menos de dois minutos e não exige nenhum compromisso seu.</p>
+      </article>
+      <article class="passo surge">
+        <span class="passo-n">02</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h3>Nosso time assume</h3>
+        <p>A equipe comercial entra em contato, apresenta o sistema e conduz a negociação. Você acompanha cada mudança pelo seu painel, sem precisar cobrar ninguém.</p>
+      </article>
+      <article class="passo surge">
+        <span class="passo-n">03</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h3>Você recebe</h3>
+        <p>Contrato assinado e primeiro pagamento confirmado, a recompensa fica disponível no painel e vai para a chave PIX que você cadastrou.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ SIMULADOR ════════ -->
+<section class="compacta" id="simulador">
+  <div class="cx">
+    <div class="sim surge">
+      <div>
+        <span class="sobrancelha" style="color:var(--azul-cl)">Estimativa de ganhos</span>
+        <h2>Veja quanto você pode ganhar</h2>
+        <p class="lead">Mexa nos controles. A conta é direta: <strong id="sim-formula">20%</strong> do valor do contrato, vezes o número de indicações que virarem cliente.</p>
+
+        <div class="sim-ctrl">
+          <div class="sim-lin">
+            <label class="sim-lab" for="sim-qtd">Indicações que viram contrato</label>
+            <output class="sim-val" id="sim-qtd-v" for="sim-qtd">1 indicação</output>
+          </div>
+          <input type="range" id="sim-qtd" min="1" max="10" step="1" value="1"
+                 aria-label="Número de indicações convertidas">
+        </div>
+
+        <div class="sim-ctrl">
+          <div class="sim-lin">
+            <label class="sim-lab" for="sim-val">Valor de cada contrato</label>
+            <output class="sim-val" id="sim-val-v" for="sim-val">R$ 12.000</output>
+          </div>
+          <input type="range" id="sim-val" min="3000" max="60000" step="1000" value="12000"
+                 aria-label="Valor estimado de cada contrato">
+        </div>
+      </div>
+
+      <div class="sim-res">
+        <div class="sim-res-l">Você pode ganhar</div>
+        <div class="sim-res-v" id="sim-total" aria-live="polite">R$ 2.400</div>
+        <div class="sim-res-c" id="sim-conta">1 contrato de R$ 12.000 × 20%</div>
+        <a class="btn btn-claro btn-lg" href="#cadastro" style="width:100%;margin-top:1.4rem">Começar a indicar</a>
+        <p class="sim-nota">Simulação. O valor real depende do contrato que a empresa indicada fechar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ QUANTO MAIS INDICA ════════ -->
+<section class="compacta">
+  <div class="cx duas">
+    <div class="surge">
+      <span class="sobrancelha">Sem teto</span>
+      <h2>Quanto mais você indica, mais pode ganhar</h2>
+      <p class="lead" style="margin-top:1rem">
+        Não existe limite de indicações nem prazo para participar. Cada empresa que você
+        apresenta é acompanhada separadamente, e cada contrato fechado gera a sua
+        recompensa — inclusive quando fecham no mesmo mês.
+      </p>
+      <p class="lead" style="margin-top:.9rem">
+        O painel mostra o andamento de cada uma, o que já está disponível para receber e
+        o que já foi pago. Nada de você ter que perguntar como ficou.
+      </p>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.6rem">Fazer minha primeira indicação</a>
+    </div>
+    <div class="escada surge" id="escada"></div>
+  </div>
+</section>
+
+<!-- ════════ DIFERENCIAIS ════════ -->
+<section id="diferenciais" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Diferenciais</span>
+      <h2>Por que vale a pena indicar o SIIMOB</h2>
+      <p class="lead">Indicar algo ruim queima a sua relação com quem você indicou. Estes são os motivos pelos quais você pode indicar sem medo.</p>
+    </div>
+    <div class="grade3" id="grade-dif"></div>
+  </div>
+</section>
+
+<!-- ════════ MÉTRICAS ════════ -->
+<section class="metricas compacta" id="numeros">
+  <div class="cx">
+    <div class="metricas-g" id="grade-metricas"></div>
+    <p class="metricas-nota oculto" id="metricas-nota">
+      Os números acima são espaços reservados. Substitua em <code>js/indica-config.js</code> antes de divulgar a página.
+    </p>
+  </div>
+</section>
+
+<!-- ════════ BENEFÍCIOS ════════ -->
+<section id="beneficios">
+  <div class="cx duas">
+    <div class="visor surge" aria-hidden="true">
+      <div class="painel">
+        <div class="painel-topo">
+          <span class="bolinha"></span><span class="bolinha"></span><span class="bolinha"></span>
+          <span>Painel do indicador</span>
+        </div>
+        <div class="painel-corpo" style="padding:1.1rem">
+          <div style="display:flex;flex-direction:column;gap:.55rem">
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Construtora Horizonte</div><div style="font-size:.75rem;color:var(--t3)">Teresina / PI</div></div>
+              <span class="selo-ok" style="font-size:.7rem;padding:.2rem .55rem">Fechado</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Imobiliária Meridiano</div><div style="font-size:.75rem;color:var(--t3)">Timon / MA</div></div>
+              <span style="font-size:.7rem;font-weight:800;background:#FEF3C7;color:#92400E;padding:.2rem .55rem;border-radius:99px">Proposta</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Correspondente Aurora</div><div style="font-size:.75rem;color:var(--t3)">Altos / PI</div></div>
+              <span style="font-size:.7rem;font-weight:800;background:#EFF6FF;color:#1E40AF;padding:.2rem .55rem;border-radius:99px">Em contato</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="surge">
+      <span class="sobrancelha">Benefícios</span>
+      <h2>Transforme seu networking em oportunidade</h2>
+      <p class="lead" style="margin-top:1rem">
+        Você já conhece as empresas certas. Quem trabalha no setor convive todo dia com
+        construtora perdendo prazo por causa de planilha, e com corretor sem saber em que
+        pé está o processo do cliente dele.
+      </p>
+      <p class="lead" style="margin-top:.9rem">
+        Apresentar o SIIMOB a essas pessoas não custa nada a você e resolve um problema
+        real para elas. Se virar contrato, o retorno é seu.
+      </p>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.6rem">Quero começar a indicar</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ COMPARAÇÃO ════════ -->
+<section style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Dois caminhos</span>
+      <h2>Qual programa combina com você?</h2>
+      <p class="lead">Indicar de vez em quando e receber por contrato fechado, ou atuar comercialmente junto com a gente.</p>
+    </div>
+    <div class="comp" id="comp"></div>
+  </div>
+</section>
+
+<!-- ════════ SEGMENTOS ════════ -->
+<section id="segmentos">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Quem indicar</span>
+      <h2>Que tipo de empresa você pode indicar</h2>
+      <p class="lead">Se a empresa trabalha com repasse imobiliário e ainda controla isso em planilha ou no WhatsApp, ela se encaixa.</p>
+    </div>
+    <div class="grade3" id="grade-seg"></div>
+  </div>
+</section>
+
+<!-- ════════ DEPOIMENTOS ════════ -->
+<section id="depoimentos" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Depoimentos</span>
+      <h2>O que dizem quem já indicou</h2>
+      <p class="lead">Histórias de quem apresentou o SIIMOB para alguém do setor.</p>
+    </div>
+    <div class="grade3" id="grade-dep"></div>
+    <div class="reservado-nota oculto" id="dep-nota">
+      Os depoimentos acima são espaços reservados. Substitua por textos reais, com autorização de quem falou, em <code>js/indica-config.js</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ════════ DÚVIDAS ════════ -->
+<section id="duvidas">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Dúvidas</span>
+      <h2>Perguntas frequentes</h2>
+      <p class="lead">O que costumam perguntar antes de fazer a primeira indicação.</p>
+    </div>
+    <div class="faq" id="faq"></div>
+  </div>
+</section>
+
+<!-- ════════ CTA FINAL ════════ -->
+<section class="final compacta">
+  <div class="cx">
+    <h2>Comece a indicar hoje</h2>
+    <p>Cadastre-se, indique e acompanhe tudo em um só lugar. Sua primeira indicação leva dois minutos.</p>
+    <a class="btn btn-claro btn-lg" href="#cadastro">Quero começar agora</a>
+    <p class="final-nota">Cadastro rápido · Acompanhamento online · Sem limite de indicações</p>
+  </div>
+</section>
+
+<!-- ════════ ACOMPANHAR ════════ -->
+<section class="compacta" id="acompanhar">
+  <div class="cx">
+    <div class="centro surge" style="margin-bottom:2rem">
+      <span class="sobrancelha">Já indiquei</span>
+      <h2>Acompanhar minhas indicações</h2>
+      <p class="lead">Cole o link que você recebeu ao fazer a primeira indicação.</p>
+    </div>
+    <div class="captura" id="painel-entrar">
+      <div class="campo-erro oculto" id="p-erro" role="alert" style="margin-bottom:.8rem"></div>
+      <div class="campo">
+        <label for="p-token">Link ou código de acompanhamento</label>
+        <input type="text" id="p-token" placeholder="Cole aqui o link do seu painel">
+      </div>
+      <button class="btn btn-1 btn-lg" style="width:100%" onclick="entrarPainel()">Acompanhar</button>
+    </div>
+    <div id="painel-dados" class="oculto">
+      <div class="grade3" style="margin-top:0;margin-bottom:1.4rem" id="painel-totais"></div>
+      <div class="item" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+            <thead><tr>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Empresa</th>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Cidade</th>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Situação</th>
+              <th style="text-align:right;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Recompensa</th>
+            </tr></thead>
+            <tbody id="p-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.4rem">Indicar outra empresa</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ════════ RODAPÉ ════════ -->
+<footer class="rodape">
+  <div class="cx">
+    <div class="rodape-g">
+      <div>
+        <span class="rodape-logo">SIIMOB</span>
+        <p class="rodape-desc">
+          O IndicaSII é o programa de indicação do SIIMOB, o sistema de gestão de
+          repasse imobiliário. Indique, acompanhe e receba.
+        </p>
+      </div>
+      <div>
+        <h4>Menu</h4>
+        <ul id="rodape-menu"></ul>
+      </div>
+      <div>
+        <h4>Links úteis</h4>
+        <ul>
+          <li><a href="/conheca">Site institucional</a></li>
+          <li><a href="#duvidas">Regulamento do programa</a></li>
+          <li><a href="#duvidas">Política de privacidade</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Acesso</h4>
+        <ul>
+          <li><a href="#acompanhar">Acompanhar indicações</a></li>
+          <li><a href="#cadastro">Criar conta</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rodape-fim">© <span id="ano"></span> SIIMOB. Todos os direitos reservados.</div>
+  </div>
+</footer>
+
+<script src="/js/config.js"></script>
+<script src="/js/indica-config.js"></script>
+<script>
+// ═════════════════════════════════════════════════════════════════════════════
+// INDICASII — página pública
+//
+// Sem login. Toda escrita passa por a1_indica_enviar / a1_indica_painel, que
+// rodam com privilégio próprio no banco. As tabelas não têm leitura pública:
+// sem isso, bastaria abrir o endereço da API para baixar a carteira de
+// prospecção inteira, com telefone e e-mail de cada empresa indicada.
+//
+// Nenhum número da página é escrito à mão — tudo sai de js/indica-config.js.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const $  = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const reservado = s => String(s || '').trim().startsWith('[');
+
+const brl = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
+const brlExato = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+const R = INDICA.recompensa;
+const comissao = (valorContrato, qtd = 1) => valorContrato * (R.percentual / 100) * qtd;
+
+$('ano').textContent = new Date().getFullYear();
+
+// ═══ menu ════════════════════════════════════════════════════════════════════
+const linksMenu = INDICA.menu.map(m => `<a href="#${m.id}">${esc(m.texto)}</a>`).join('');
+$('nav').innerHTML = linksMenu;
+$('gaveta-links').innerHTML = linksMenu;
+$('rodape-menu').innerHTML = INDICA.menu.map(m => `<li><a href="#${m.id}">${esc(m.texto)}</a></li>`).join('');
+
+const gaveta = $('gaveta'), hamb = $('hamb');
+function abrirMenu(v){
+  gaveta.classList.toggle('aberta', v);
+  hamb.setAttribute('aria-expanded', String(v));
+  document.body.style.overflow = v ? 'hidden' : '';
+  if (v) gaveta.querySelector('.gaveta-x').focus();
+}
+hamb.addEventListener('click', () => abrirMenu(!gaveta.classList.contains('aberta')));
+$('gaveta-x').addEventListener('click', () => abrirMenu(false));
+gaveta.addEventListener('click', e => { if (e.target === gaveta) abrirMenu(false); });
+gaveta.addEventListener('keydown', e => { if (e.key === 'Escape') { abrirMenu(false); hamb.focus(); } });
+$('gaveta-links').addEventListener('click', e => { if (e.target.tagName === 'A') abrirMenu(false); });
+
+addEventListener('scroll', () => { $('topo').classList.toggle('rolou', scrollY > 8); }, { passive:true });
+
+// ═══ hero e simulador ════════════════════════════════════════════════════════
+$('hero-perc').textContent  = R.percentual + '%';
+$('hero-valor').textContent = brl.format(comissao(R.contratoExemplo));
+$('visor-ganho').textContent = brl.format(comissao(R.contratoExemplo));
+$('sim-formula').textContent = R.percentual + '%';
+
+const sQtd = $('sim-qtd'), sVal = $('sim-val');
+sQtd.max = R.maxIndicacoes;
+sVal.min = R.contratoMin; sVal.max = R.contratoMax; sVal.step = R.contratoPasso;
+sVal.value = R.contratoExemplo;
+
+function calcular(){
+  const q = +sQtd.value, v = +sVal.value;
+  $('sim-qtd-v').textContent = q === 1 ? '1 indicação' : `${q} indicações`;
+  $('sim-val-v').textContent = brl.format(v);
+  $('sim-total').textContent = brl.format(comissao(v, q));
+  $('sim-conta').textContent =
+    `${q} contrato${q>1?'s':''} de ${brl.format(v)} × ${R.percentual}%`;
+}
+sQtd.addEventListener('input', calcular);
+sVal.addEventListener('input', calcular);
+calcular();
+
+// Escada de exemplos: calculada, nunca digitada.
+$('escada').innerHTML = [1,2,3,5].map(n => `
+  <div class="degrau">
+    <div class="degrau-n">${n}</div>
+    <div class="degrau-t">${n === 1 ? 'indicação convertida' : 'indicações convertidas'}</div>
+    <div class="degrau-v">${brl.format(comissao(R.contratoExemplo, n))}</div>
+  </div>`).join('') +
+  `<p style="font-size:.78rem;color:var(--t3);margin-top:.4rem;line-height:1.5">
+     Exemplos considerando contratos de ${brl.format(R.contratoExemplo)}. Mexa no simulador acima para outros valores.
+   </p>`;
+
+// ═══ diferenciais ════════════════════════════════════════════════════════════
+const ICONES = {
+  fluxo:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+  olho:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  pessoas:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  planilha:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  escudo:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>',
+  raio:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+};
+$('grade-dif').innerHTML = INDICA.diferenciais.map(d => `
+  <article class="item surge">
+    <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[d.icone]||ICONES.fluxo}</svg></div>
+    <h3>${esc(d.titulo)}</h3>
+    <p>${esc(d.texto)}</p>
+  </article>`).join('');
+
+// ═══ métricas ════════════════════════════════════════════════════════════════
+// Número reservado aparece esmaecido e com aviso — para ninguém publicar
+// métrica inventada sem perceber.
+$('grade-metricas').innerHTML = INDICA.metricas.map(m => `
+  <div>
+    <div class="metrica-v${reservado(m.valor)?' reservado':''}">${esc(m.valor)}</div>
+    <div class="metrica-l">${esc(m.rotulo)}</div>
+  </div>`).join('');
+if (INDICA.metricas.some(m => reservado(m.valor))) $('metricas-nota').classList.remove('oculto');
+
+// ═══ comparação ══════════════════════════════════════════════════════════════
+function cartaoPrograma(p, destaque){
+  return `<article class="prog${destaque?' destaque':''}">
+    ${destaque?'<span class="prog-fita">Mais escolhido</span>':''}
+    <h3>${esc(p.titulo)}</h3>
+    <p class="prog-res">${esc(p.resumo)}</p>
+    <ul class="prog-itens">
+      ${p.itens.map(i => `<li><span class="r">${esc(i.rotulo)}</span><span class="v">${
+        esc(i.valor).replace('PERCENTUAL', `<strong>${R.percentual}%</strong>`)
+      }</span></li>`).join('')}
+    </ul>
+    <a class="btn ${destaque?'btn-1':'btn-2'} btn-lg" href="#cadastro">${esc(p.cta)}</a>
+  </article>`;
+}
+$('comp').innerHTML = cartaoPrograma(INDICA.programas.indicacao, true)
+                    + cartaoPrograma(INDICA.programas.parceria, false);
+
+// ═══ segmentos ═══════════════════════════════════════════════════════════════
+// Capas desenhadas aqui mesmo: nada de imagem de banco tirada de outro site.
+const CAPAS = {
+  construtora:`<svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice"><rect width="400" height="150" fill="#0D1A5E"/><g fill="#3D5CC8" opacity=".85"><rect x="40" y="60" width="52" height="90" rx="3"/><rect x="104" y="34" width="60" height="116" rx="3"/><rect x="176" y="72" width="46" height="78" rx="3"/><rect x="234" y="20" width="66" height="130" rx="3"/><rect x="312" y="56" width="50" height="94" rx="3"/></g><g fill="#7090E8" opacity=".55"><rect x="118" y="48" width="10" height="10"/><rect x="136" y="48" width="10" height="10"/><rect x="118" y="68" width="10" height="10"/><rect x="136" y="68" width="10" height="10"/><rect x="248" y="36" width="11" height="11"/><rect x="268" y="36" width="11" height="11"/><rect x="248" y="58" width="11" height="11"/><rect x="268" y="58" width="11" height="11"/></g></svg>`,
+  imobiliaria:`<svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice"><rect width="400" height="150" fill="#0D1A5E"/><path d="M120 96 L200 40 L280 96 L280 150 L120 150 Z" fill="#3D5CC8" opacity=".9"/><path d="M104 100 L200 30 L296 100" stroke="#7090E8" stroke-width="7" fill="none" stroke-linejoin="round"/><rect x="182" y="112" width="36" height="38" fill="#0D1A5E"/><rect x="140" y="112" width="26" height="24" fill="#7090E8" opacity=".65"/><rect x="234" y="112" width="26" height="24" fill="#7090E8" opacity=".65"/></svg>`,
+  correspondente:`<svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice"><rect width="400" height="150" fill="#0D1A5E"/><rect x="88" y="34" width="224" height="94" rx="8" fill="#3D5CC8" opacity=".9"/><rect x="110" y="56" width="120" height="9" rx="4" fill="#7090E8"/><rect x="110" y="76" width="180" height="8" rx="4" fill="#7090E8" opacity=".55"/><rect x="110" y="94" width="150" height="8" rx="4" fill="#7090E8" opacity=".4"/><circle cx="286" cy="62" r="17" fill="#0D1A5E"/><path d="M279 62l5 5 10-10" stroke="#12B981" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+$('grade-seg').innerHTML = INDICA.segmentos.map(s => `
+  <article class="seg surge">
+    <div class="seg-capa">${CAPAS[s.chave] || CAPAS.construtora}</div>
+    <div class="seg-corpo">
+      <h3>${esc(s.titulo)}</h3>
+      <p>${esc(s.texto)}</p>
+      <button class="seg-cta" onclick="indicarSegmento('${esc(s.titulo)}')">
+        Indicar empresa
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </article>`).join('');
+
+function indicarSegmento(titulo){
+  try{ sessionStorage.setItem('indica_segmento', titulo); }catch{}
+  location.hash = '#cadastro';
+  setTimeout(() => $('i-nome').focus(), 500);
+}
+
+// ═══ depoimentos ═════════════════════════════════════════════════════════════
+$('grade-dep').innerHTML = INDICA.depoimentos.map(d => `
+  <article class="dep surge">
+    <p class="dep-txt">${esc(d.texto)}</p>
+    <div class="dep-quem">
+      <div class="dep-av" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div><div class="dep-nome">${esc(d.nome)}</div><div class="dep-cargo">${esc(d.cargo)}</div></div>
+    </div>
+  </article>`).join('');
+if (INDICA.depoimentos.some(d => reservado(d.nome))) $('dep-nota').classList.remove('oculto');
+
+// ═══ dúvidas ═════════════════════════════════════════════════════════════════
+// Sanfona acessível: botão de verdade, aria-expanded, e só uma aberta por vez.
+$('faq').innerHTML = INDICA.duvidas.map((d, i) => `
+  <div class="faq-i" data-aberto="0">
+    <h3 style="font-size:inherit;font-weight:inherit;margin:0">
+      <button class="faq-b" id="faq-b-${i}" aria-expanded="false" aria-controls="faq-r-${i}" onclick="alternarFaq(${i})">
+        ${esc(d.p)}
+        <svg class="faq-seta" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </h3>
+    <div class="faq-r" id="faq-r-${i}" role="region" aria-labelledby="faq-b-${i}">
+      <div class="faq-r-in">${esc(d.r)}</div>
+    </div>
+  </div>`).join('');
+
+function alternarFaq(i){
+  const itens = [...document.querySelectorAll('#faq .faq-i')];
+  const alvo = itens[i];
+  const abrindo = alvo.dataset.aberto !== '1';
+  itens.forEach((it, k) => {
+    const aberto = abrindo && k === i;
+    it.dataset.aberto = aberto ? '1' : '0';
+    it.querySelector('.faq-b').setAttribute('aria-expanded', String(aberto));
+    const r = it.querySelector('.faq-r');
+    r.style.maxHeight = aberto ? r.scrollHeight + 'px' : '0px';
+  });
+}
+
+// ═══ aparecer ao rolar ═══════════════════════════════════════════════════════
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visivel'); obs.unobserve(e.target); }
+  }), { threshold:.12, rootMargin:'0px 0px -40px 0px' });
+  document.querySelectorAll('.surge').forEach(el => obs.observe(el));
+} else {
+  document.querySelectorAll('.surge').forEach(el => el.classList.add('visivel'));
+}
+
+// ═══ formulário de captura ═══════════════════════════════════════════════════
+function mascaraFone(v){
+  const d = v.replace(/\D/g,'').slice(0,11);
+  if (d.length <= 10) return d.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4})(\d)/,'$1-$2');
+  return d.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');
+}
+$('i-fone').addEventListener('input', e => { e.target.value = mascaraFone(e.target.value); });
+
+function marcaErro(campo, msg){
+  const inp = $('i-' + campo), el = $('e-' + campo);
+  if (msg) { inp.setAttribute('aria-invalid','true'); el.textContent = msg; el.classList.remove('oculto'); }
+  else     { inp.removeAttribute('aria-invalid'); el.classList.add('oculto'); }
+  return !msg;
+}
+
+$('form-inicio').addEventListener('submit', e => {
+  e.preventDefault();
+  const nome = $('i-nome').value.trim();
+  const fone = $('i-fone').value.replace(/\D/g,'');
+  const okN = marcaErro('nome', nome.length < 3 ? 'Escreva seu nome completo.' : '');
+  const okF = marcaErro('fone', fone.length < 10 ? 'Informe um telefone com DDD.' : '');
+  if (!okN || !okF) { (!okN ? $('i-nome') : $('i-fone')).focus(); return; }
+  // Guarda o que já foi digitado para a próxima tela não pedir de novo.
+  try{
+    sessionStorage.setItem('indica_nome', nome);
+    sessionStorage.setItem('indica_fone', $('i-fone').value);
+  }catch{}
+  location.href = '/indica/cadastro';
+});
+
+// ═══ painel de quem já indicou ═══════════════════════════════════════════════
+const ROTULO = { nova:'Recebida', em_contato:'Em contato', proposta:'Proposta enviada',
+                 fechado:'Contrato fechado', perdido:'Não seguiu' };
+const CORES = { nova:['#EFF6FF','#1E40AF'], em_contato:['#ECFEFF','#0E7490'], proposta:['#FEF3C7','#92400E'],
+                fechado:['#ECFDF5','#047857'], perdido:['#F1F5F9','#64748B'] };
+
+async function rpc(fn, corpo){
+  const r = await fetch(`${A1_URL}/rest/v1/rpc/${fn}`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', apikey:A1_KEY, Authorization:`Bearer ${A1_KEY}` },
+    body: JSON.stringify(corpo)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+function erroPainel(msg){
+  const e = $('p-erro');
+  if (!msg) { e.classList.add('oculto'); return; }
+  e.textContent = msg; e.classList.remove('oculto');
+}
+
+function entrarPainel(){
+  const bruto = $('p-token').value.trim();
+  // Aceita o link inteiro ou só o código — quem colou o link não deveria
+  // precisar entender qual pedaço importa.
+  const tok = (bruto.match(/[?&]t=([\w-]+)/) || [])[1] || bruto;
+  if (!tok) { erroPainel('Cole o link ou o código que você recebeu.'); return; }
+  carregarPainel(tok);
+}
+
+async function carregarPainel(token){
+  erroPainel('');
+  try{
+    const r = await rpc('a1_indica_painel', { p_token: token });
+    if (!r || !r.ok) { erroPainel('Não encontrei este código. Confira o link que você recebeu.'); return; }
+    try{ localStorage.setItem('indica_token', token); }catch{}
+    $('painel-entrar').classList.add('oculto');
+    $('painel-dados').classList.remove('oculto');
+    const lista = Array.isArray(r.indicacoes) ? r.indicacoes : [];
+    $('painel-totais').innerHTML = [
+      ['Indicações', String(lista.length), 'var(--t1)'],
+      ['A receber',  brlExato.format(r.total_a_receber || 0), 'var(--verde)'],
+      ['Total ganho', brlExato.format(r.total_geral || 0), 'var(--t1)'],
+    ].map(([l,v,c]) => `<div class="item" style="text-align:center">
+        <div style="font-size:.68rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--t3)">${l}</div>
+        <div style="font-size:1.7rem;font-weight:900;letter-spacing:-.03em;margin-top:.25rem;color:${c}">${esc(v)}</div>
+      </div>`).join('');
+    $('p-tbody').innerHTML = lista.length ? lista.map(i => {
+      const [bg, cor] = CORES[i.status] || CORES.nova;
+      return `<tr>
+        <td style="padding:.8rem 1rem;border-bottom:1px solid var(--borda)"><b>${esc(i.empresa)}</b></td>
+        <td style="padding:.8rem 1rem;border-bottom:1px solid var(--borda);color:var(--t2)">${esc([i.cidade,i.uf].filter(Boolean).join(' / ') || '—')}</td>
+        <td style="padding:.8rem 1rem;border-bottom:1px solid var(--borda)">
+          <span style="display:inline-block;font-size:.75rem;font-weight:800;padding:.2rem .6rem;border-radius:99px;background:${bg};color:${cor}">${esc(ROTULO[i.status]||i.status)}</span>
+          ${i.pago ? '<div style="font-size:.72rem;color:var(--verde);font-weight:700;margin-top:.2rem">pago</div>' : ''}
+        </td>
+        <td style="padding:.8rem 1rem;border-bottom:1px solid var(--borda);text-align:right;font-weight:800">${Number(i.comissao) ? brlExato.format(i.comissao) : '—'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--t3)">Nenhuma indicação ainda.</td></tr>';
+    $('acompanhar').scrollIntoView({ behavior:'smooth', block:'start' });
+  }catch{
+    erroPainel('Não consegui carregar agora. Tente de novo em instantes.');
+  }
+}
+
+// Quem chega pelo link do painel já cai nele.
+(function(){
+  const naUrl = new URLSearchParams(location.search).get('t');
+  const guardado = (()=>{ try{ return localStorage.getItem('indica_token'); }catch{ return null; } })();
+  if (naUrl) carregarPainel(naUrl);
+  else if (guardado) $('p-token').value = `${location.origin}/indica?t=${guardado}`;
+})();
+</script>
+
+<script type="application/ld+json" id="ld-faq"></script>
+<script>
+// Schema.org só com o que a página realmente mostra.
+$('ld-faq').textContent = JSON.stringify({
+  '@context':'https://schema.org',
+  '@graph':[
+    { '@type':'Organization', name:'SIIMOB', url:'https://siimob.com.br',
+      logo:'https://siimob.com.br/icon-512.png' },
+    { '@type':'FAQPage', mainEntity: INDICA.duvidas.map(d => ({
+        '@type':'Question', name:d.p,
+        acceptedAnswer:{ '@type':'Answer', text:d.r }
+      })) }
+  ]
+});
+</script>
+</body>
+</html>
