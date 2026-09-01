@@ -753,9 +753,11 @@ async function loadIndicacoes() {
   renderIndicacoes();
 }
 
+// A recompensa é percentual da PRIMEIRA PARCELA paga pela empresa indicada,
+// nunca do valor total do contrato, e sai uma única vez.
 function comissaoDe(i){
-  return i.status === 'fechado' && i.valor_contrato
-    ? Number(i.valor_contrato) * (Number(i.percentual||20)/100) : 0;
+  return i.status === 'fechado' && i.valor_primeira_parcela
+    ? Number(i.valor_primeira_parcela) * (Number(i.percentual||20)/100) : 0;
 }
 
 function renderIndicacoes() {
@@ -772,7 +774,7 @@ function renderIndicacoes() {
   }
   const th = t => `<th style="text-align:left;padding:.5rem;border-bottom:1px solid var(--border);font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">${t}</th>`;
   box.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
-    <thead><tr>${th('Empresa indicada')}${th('Quem indicou')}${th('Situação')}${th('Valor do contrato')}${th('Recompensa')}${th('')}</tr></thead>
+    <thead><tr>${th('Empresa indicada')}${th('Quem indicou')}${th('Situação')}${th('1ª parcela')}${th('Recompensa')}${th('')}</tr></thead>
     <tbody>${INDICACOES.map(i => {
       const q = i.a1_indicadores || {};
       const com = comissaoDe(i);
@@ -794,10 +796,11 @@ function renderIndicacoes() {
           </select>
         </td>
         <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
-          <input type="number" value="${i.valor_contrato||''}" placeholder="0,00" step="0.01"
+          <input type="number" value="${i.valor_primeira_parcela||''}" placeholder="0,00" step="0.01"
+            title="Valor da primeira parcela paga pela empresa indicada — não o total do contrato"
             onchange="mudarValorIndicacao('${i.id}', this.value)"
             style="width:110px;font-size:.78rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px">
-          <div style="color:var(--t3);font-size:.68rem;margin-top:.1rem">${i.percentual||20}% para quem indicou</div>
+          <div style="color:var(--t3);font-size:.68rem;margin-top:.1rem">${i.percentual||20}% da 1ª parcela</div>
         </td>
         <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;font-weight:800;color:${com?'#12B981':'var(--t3)'}">
           ${com ? brlSA(com) : '—'}
@@ -822,7 +825,7 @@ async function patchIndicacao(id, corpo, msg) {
 function mudarStatusIndicacao(id, status) { patchIndicacao(id, { status }, 'Situação atualizada'); }
 function mudarValorIndicacao(id, valor) {
   const v = parseFloat(String(valor).replace(',','.'));
-  patchIndicacao(id, { valor_contrato: isFinite(v) && v > 0 ? v : null }, 'Valor do contrato salvo');
+  patchIndicacao(id, { valor_primeira_parcela: isFinite(v) && v > 0 ? v : null }, 'Valor da primeira parcela salvo');
 }
 function marcarPagoIndicacao(id) {
   const i = INDICACOES.find(x => x.id === id);

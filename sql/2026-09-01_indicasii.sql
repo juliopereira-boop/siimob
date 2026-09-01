@@ -2,7 +2,10 @@
 -- INDICASII — PROGRAMA DE INDICAÇÃO
 --
 -- Alguém indica uma empresa que pode virar cliente do SIIMOB. Se o contrato
--- fechar, essa pessoa recebe 20% do valor fechado.
+-- fechar, essa pessoa recebe 20% da PRIMEIRA PARCELA paga pela empresa — uma
+-- única vez, e não 20% do valor total do contrato. Por isso a coluna se chama
+-- valor_primeira_parcela: nome de coluna também é documentação, e "valor do
+-- contrato" seria uma base de cálculo diferente.
 --
 -- O DESENHO E O PORQUÊ
 -- A página de indicação é PÚBLICA: quem indica não tem login. Isso significa
@@ -52,7 +55,9 @@ create table if not exists a1_indicacoes (
   observacoes    text,
   status         text        not null default 'nova',
   -- nova | em_contato | proposta | fechado | perdido
-  valor_contrato numeric(14,2),               -- preenchido quando fecha
+  -- Base de cálculo: a PRIMEIRA parcela paga pela empresa indicada, não o
+  -- contrato inteiro. Preenchida quando fecha.
+  valor_primeira_parcela numeric(14,2),
   percentual     numeric(5,2) not null default 20.00,
   pago           boolean      not null default false,
   pago_em        timestamptz,
@@ -63,8 +68,24 @@ create table if not exists a1_indicacoes (
 create index if not exists idx_indicacoes_indicador on a1_indicacoes (indicador_id, criado_em desc);
 create index if not exists idx_indicacoes_status    on a1_indicacoes (status, criado_em desc);
 
--- A comissão é conta, não digitação: sai do valor e do percentual da própria
--- linha, e vale zero enquanto o contrato não fechar.
+-- Se esta base já tinha a coluna com o nome antigo (valor_contrato), renomeia
+-- em vez de criar uma segunda: o dado que já está lá é o mesmo, e ficar com as
+-- duas colunas é o caminho mais curto para pagar comissão errada.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'a1_indicacoes'
+                and column_name = 'valor_contrato')
+     and not exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'a1_indicacoes'
+                and column_name = 'valor_primeira_parcela')
+  then
+    alter table a1_indicacoes rename column valor_contrato to valor_primeira_parcela;
+  end if;
+end $$;
+
+-- A comissão é conta, não digitação: sai da primeira parcela e do percentual da
+-- própria linha, e vale zero enquanto o contrato não fechar.
 create or replace function a1_indica_comissao(p_status text, p_valor numeric, p_perc numeric)
 returns numeric language sql immutable
 set search_path = public, pg_temp as $$
@@ -161,12 +182,12 @@ begin
   select coalesce(json_agg(x order by x.criado_em desc), '[]'::json) into v_lista
   from (
     select i.id, i.empresa, i.cidade, i.uf, i.status, i.criado_em,
-           i.valor_contrato, i.percentual, i.pago,
-           a1_indica_comissao(i.status, i.valor_contrato, i.percentual) as comissao
+           i.valor_primeira_parcela, i.percentual, i.pago,
+           a1_indica_comissao(i.status, i.valor_primeira_parcela, i.percentual) as comissao
     from a1_indicacoes i where i.indicador_id = v_ind.id
   ) x;
 
-  select coalesce(sum(a1_indica_comissao(status, valor_contrato, percentual)), 0)
+  select coalesce(sum(a1_indica_comissao(status, valor_primeira_parcela, percentual)), 0)
     into v_total from a1_indicacoes where indicador_id = v_ind.id;
 
   return json_build_object(
@@ -174,7 +195,7 @@ begin
     'nome', v_ind.nome,
     'chave_pix', v_ind.chave_pix,
     'indicacoes', v_lista,
-    'total_a_receber', (select coalesce(sum(a1_indica_comissao(status, valor_contrato, percentual)),0)
+    'total_a_receber', (select coalesce(sum(a1_indica_comissao(status, valor_primeira_parcela, percentual)),0)
                           from a1_indicacoes where indicador_id = v_ind.id and pago = false),
     'total_geral', v_total
   );
