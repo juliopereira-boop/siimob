@@ -907,6 +907,7 @@ function abrirAviso(id) {
   document.getElementById('aviso-titulo-modal').textContent = a ? 'Editar aviso' : 'Novo aviso';
   document.getElementById('av-titulo').value = (a && a.titulo) || '';
   document.getElementById('av-corpo').value  = (a && a.corpo)  || '';
+  document.getElementById('av-imagem').value = (a && a.imagem_url) || '';
   document.getElementById('av-video').value  = (a && a.video_url) || '';
   document.getElementById('av-expira').value = (a && a.expira_em) ? String(a.expira_em).slice(0,10) : '';
   document.getElementById('av-fixado').checked = !!(a && a.fixado);
@@ -932,10 +933,18 @@ function abrirAviso(id) {
   openModal('modal-aviso');
 }
 
+// A imagem pode vir de duas portas: link colado ou arquivo enviado. O link
+// digitado ganha da última coisa enviada — é o que a pessoa está vendo na tela.
+function imagemDoAviso() {
+  const t = (document.getElementById('av-imagem').value || '').trim();
+  return t || AVISO_ARQ.imagem || '';
+}
 function pintarPreviaAviso() {
   const i = document.getElementById('av-img-prev');
-  i.innerHTML = AVISO_ARQ.imagem
-    ? `<img src="${esc(AVISO_ARQ.imagem)}" style="max-width:220px;border-radius:8px;display:block">
+  const url = imagemDoAviso();
+  i.innerHTML = url
+    ? `<img src="${esc(url)}" style="max-width:260px;border-radius:8px;display:block"
+            onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'Não consegui carregar esta imagem. Confira o endereço.',style:'font-size:.75rem;color:#B91C1C'}))">
        <button class="btn btn-ghost" style="font-size:.72rem;margin-top:.3rem" onclick="tirarArquivoAviso('imagem')">Remover imagem</button>`
     : '';
   const v = document.getElementById('av-vid-prev');
@@ -945,7 +954,8 @@ function pintarPreviaAviso() {
 }
 function tirarArquivoAviso(qual) {
   AVISO_ARQ[qual] = '';
-  if (qual === 'video') document.getElementById('av-video').value = '';
+  document.getElementById(qual === 'video' ? 'av-video' : 'av-imagem').value = '';
+  if (qual === 'imagem') document.getElementById('av-img-arq').value = '';
   pintarPreviaAviso();
 }
 
@@ -975,7 +985,7 @@ async function subirArquivoAviso(input, qual) {
         : ('HTTP ' + r.status));
     }
     AVISO_ARQ[qual] = `${SA_URL}/storage/v1/object/public/avisos/${nome}`;
-    if (qual === 'video') document.getElementById('av-video').value = AVISO_ARQ.video;
+    document.getElementById(qual === 'video' ? 'av-video' : 'av-imagem').value = AVISO_ARQ[qual];
     document.getElementById('av-erro').classList.add('hidden');
     pintarPreviaAviso();
   } catch (e) { erroAviso('Não consegui enviar: ' + e.message); input.value = ''; }
@@ -998,7 +1008,7 @@ async function salvarAviso(publicar) {
   const corpo = {
     titulo,
     corpo: document.getElementById('av-corpo').value,
-    imagem_url: AVISO_ARQ.imagem || null,
+    imagem_url: imagemDoAviso() || null,
     video_url: (document.getElementById('av-video').value.trim() || AVISO_ARQ.video || null),
     publicos, tenants,
     fixado: document.getElementById('av-fixado').checked,
@@ -2445,6 +2455,14 @@ document.addEventListener('keydown', e => {
       </div>
 
       <div class="form-group full"><label>Imagem</label>
+        <input id="av-imagem" type="text" placeholder="Link da imagem, ou envie um arquivo abaixo"
+               oninput="pintarPreviaAviso()">
+        <div style="font-size:.7rem;color:var(--t3);margin:.3rem 0 .4rem">
+          Banner pronto do IndicaSII:
+          <code style="cursor:pointer;text-decoration:underline"
+                onclick="document.getElementById('av-imagem').value='https://siimob.com.br/assets/banners/indicasii-mural.jpg';pintarPreviaAviso()"
+          >/assets/banners/indicasii-mural.jpg</code>
+        </div>
         <input id="av-img-arq" type="file" accept="image/*" onchange="subirArquivoAviso(this,'imagem')">
         <div id="av-img-prev" style="margin-top:.5rem"></div>
       </div>
