@@ -16,7 +16,16 @@ const A1 = {
   get token()  { return localStorage.getItem('a1_token'); },
   get slug()   { return localStorage.getItem('a1_slug')  || getSlugFromURL(); },
   get user()   {
-    try { return JSON.parse(localStorage.getItem('a1_user') || 'null'); }
+    try {
+      const u = JSON.parse(localStorage.getItem('a1_user') || 'null');
+      // permissions é jsonb e normalmente chega como objeto. Se por qualquer
+      // caminho vier como texto, todo `p.gerente` do sistema daria undefined e
+      // a pessoa seria silenciosamente rebaixada. Normaliza num lugar só.
+      if (u && typeof u.permissions === 'string') {
+        try { u.permissions = JSON.parse(u.permissions); } catch { u.permissions = {}; }
+      }
+      return u;
+    }
     catch { return null; }
   },
 
