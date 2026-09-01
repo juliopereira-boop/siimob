@@ -20,9 +20,13 @@ const INDICA = {
     // é um EXEMPLO para a simulação — quem usa a página pode mudar no próprio
     // simulador. Ajuste aqui o valor que melhor representa seus contratos.
     contratoExemplo: 12000,
-    contratoMin: 3000,
+    // Piso do programa: o menor contrato aceito é R$ 600 — 20% disso são
+    // R$ 120, a menor comissão possível. O simulador começa exatamente daí.
+    contratoMin: 600,
     contratoMax: 60000,
-    contratoPasso: 1000,
+    // Passo de 100 para que o piso de 600 seja alcançável e os valores baixos
+    // tenham granularidade, sem deixar o arrasto até 60.000 travado.
+    contratoPasso: 100,
     maxIndicacoes: 10,
   },
 
