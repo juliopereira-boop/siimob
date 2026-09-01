@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Repasse — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#0D1A5E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
@@ -558,7 +562,7 @@
           <div class="kpi2-card">
             <div class="kpi2-label">Maior Gargalo</div>
             <div class="kpi2-value" id="kpi2-gargalo">—</div>
-            <div class="kpi2-sub" id="kpi2-gargalo-sub">etapa com mais casos</div>
+            <div class="kpi2-sub" id="kpi2-gargalo-sub">etapa que mais segura processo</div>
           </div>
           <div class="kpi2-card">
             <div class="kpi2-label">Tempo Medio Total</div>
@@ -614,6 +618,16 @@
         <div class="sec-title">Por Modalidade de Imóvel</div>
         <div id="modalidade-dist-list"><div class="spinner"></div></div>
       </div>
+    </div>
+
+    <!-- Onde o funil trava -->
+    <div class="panel" style="padding:1.15rem;margin-bottom:1.25rem">
+      <div class="sec-title">Onde o Funil Trava</div>
+      <div style="font-size:.72rem;color:var(--t3);margin:-.5rem 0 .9rem">
+        Ordenado por <b>dias-espera</b>: a soma dos dias que os processos estão parados em cada etapa.
+        Só a quantidade engana — a etapa inicial é sempre a mais cheia. O que trava é processo parado.
+      </div>
+      <div id="gargalo-list"><div class="spinner"></div></div>
     </div>
 
     <!-- Tempo da venda até cada etapa -->
@@ -2041,10 +2055,11 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows,
+  const [stages, casosRes, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows,
          imobsRows, ccaRows, emprRows, empresasRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`)
+      .catch(()=>({linhas:[],total:0,completo:false,erro:'falha de rede'})),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -2062,7 +2077,14 @@ async function loadData() {
     fetch(`${A1.rest('a1_corr_empresas')}?select=name,is_active&order=name.asc`,                 { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
   G.stages = stages;
-  G.cases  = cases;
+  // buscarTudo devolve as linhas mais o que o banco disse existir. O resto de
+  // loadData trabalha com a lista, então ela vira "cases" aqui mesmo.
+  const cases = Array.isArray(casosRes && casosRes.linhas) ? casosRes.linhas
+              : (Array.isArray(casosRes) ? casosRes : []);
+  G.cases      = cases;
+  G.casosTotal = (casosRes && casosRes.total != null) ? casosRes.total : cases.length;
+  G.casosCompleto = !casosRes || casosRes.completo !== false;
+  avisarCargaIncompleta(casosRes && casosRes.erro);
   if (Array.isArray(analistasRows) && analistasRows.length) G.analistas = analistasRows; // popula o filtro de Analista
   G.corretores = Array.isArray(corretoresRows) ? corretoresRows : [];
   G.convenios  = Array.isArray(conveniosRows)  ? conveniosRows  : [];
@@ -2328,12 +2350,10 @@ function renderDashboard() {
   const taxa = cases.length ? Math.round(final.length / cases.length * 100) : 0;
   setT('kpi2-taxa', taxa + '%');
 
-  const stageCounts = {};
-  for (const c of nonFinal) stageCounts[c.stage_id] = (stageCounts[c.stage_id]||0)+1;
-  const gargaloEntry = Object.entries(stageCounts).sort((a,b)=>b[1]-a[1])[0];
-  if (gargaloEntry) {
-    setT('kpi2-gargalo',     gargaloEntry[1]);
-    setT('kpi2-gargalo-sub', sm[gargaloEntry[0]]?.name || '—');
+  const g = calcularGargalo(nonFinal, sm);
+  if (g) {
+    setT('kpi2-gargalo',     g.processos);
+    setT('kpi2-gargalo-sub', `${g.nome} · ${g.mediaDias}d parados`);
   } else {
     setT('kpi2-gargalo','—'); setT('kpi2-gargalo-sub','sem dados');
   }
@@ -2403,6 +2423,7 @@ function renderDashboard() {
   renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#2945B0');
   renderDistList('coord-dist-list',    cases.map(c=>_coordenadorDoCorretor(c.broker_name)).filter(Boolean), '#a21caf');
   renderDistList('modalidade-dist-list', cases.map(c=>c.payload&&c.payload.modalidade).filter(Boolean),     '#e11d48');
+  renderGargalo(nonFinal, sm);
   renderTempoEtapas(cases);
   renderAgendaCalendar();
 }
@@ -2573,6 +2594,92 @@ function renderDistList(elId, items, color) {
       <div class="dist-name" title="${esc(name)}">${esc(name)}</div>
       <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(n/maxN*100)}%;background:${color}"></div></div>
       <div class="dist-val">${n}</div>
+    </div>`).join('');
+}
+
+// Quando a leitura não trouxe tudo, é obrigação dizer. Um painel com número
+// errado e cara de certo é pior do que um painel que assume a falha.
+function avisarCargaIncompleta(motivo){
+  const id = 'aviso-carga-incompleta';
+  let el = document.getElementById(id);
+  if (G.casosCompleto) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:.6rem;z-index:9000;'
+      + 'background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;padding:.6rem .95rem;'
+      + 'border-radius:8px;font-size:.8rem;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.12);max-width:92vw';
+    document.body.appendChild(el);
+  }
+  el.textContent = `Atenção: carreguei ${G.cases.length} de ${G.casosTotal} processos`
+    + (motivo ? ` (${motivo})` : '') + '. Os números desta tela estão incompletos — recarregue a página.';
+}
+
+// ─── Onde o funil realmente trava ────────────────────────────────────────────
+// Contar processos por etapa não acha gargalo: a etapa inicial quase sempre é a
+// mais cheia só porque tudo passa por ela, e some do radar a etapa com cinco
+// processos parados há dois meses — que é onde o dinheiro está preso.
+//
+// O que trava é processo PARADO. Então a medida é quantidade × tempo: a soma
+// dos dias que os processos estão esperando naquela etapa (dias-espera). Uma
+// etapa com 40 processos de 1 dia soma 40; outra com 5 processos de 60 dias
+// soma 300 — e é essa a que precisa de gente.
+function calcularGargalo(processos, mapaEtapas){
+  const porEtapa = {};
+  for (const c of processos) {
+    const id = c.stage_id;
+    if (!id) continue;
+    const e = porEtapa[id] || (porEtapa[id] = { dias: [], soma: 0 });
+    const d = stageDays(c);
+    e.dias.push(d);
+    e.soma += d;
+  }
+  const linhas = Object.entries(porEtapa).map(([id, e]) => ({
+    id,
+    nome: (mapaEtapas[id] && mapaEtapas[id].name) || '—',
+    processos: e.dias.length,
+    mediaDias: Math.round(e.soma / e.dias.length),
+    maiorDias: Math.max(...e.dias),
+    diasEspera: e.soma
+  }));
+  if (!linhas.length) return null;
+  // Empate em dias-espera desempata pelo que está parado há mais tempo.
+  linhas.sort((a,b) => b.diasEspera - a.diasEspera || b.maiorDias - a.maiorDias);
+  return linhas[0];
+}
+
+// A mesma conta, para todas as etapas, alimentando o painel.
+function gargaloPorEtapa(processos, mapaEtapas){
+  const porEtapa = {};
+  for (const c of processos) {
+    const id = c.stage_id; if (!id) continue;
+    const e = porEtapa[id] || (porEtapa[id] = { dias: [], soma: 0 });
+    const d = stageDays(c); e.dias.push(d); e.soma += d;
+  }
+  return Object.entries(porEtapa).map(([id, e]) => ({
+    id, nome: (mapaEtapas[id] && mapaEtapas[id].name) || '—',
+    cor: (mapaEtapas[id] && mapaEtapas[id].color) || '#3D5CC8',
+    processos: e.dias.length,
+    mediaDias: Math.round(e.soma / e.dias.length),
+    maiorDias: Math.max(...e.dias),
+    diasEspera: e.soma
+  })).sort((a,b) => b.diasEspera - a.diasEspera);
+}
+
+function renderGargalo(processos, mapaEtapas){
+  const el = document.getElementById('gargalo-list');
+  if(!el) return;
+  const linhas = gargaloPorEtapa(processos, mapaEtapas);
+  if(!linhas.length){ el.innerHTML = '<span style="color:var(--t3);font-size:.77rem">Sem processos em andamento.</span>'; return; }
+  const maior = linhas[0].diasEspera || 1;
+  el.innerHTML = linhas.map((l,i)=>`
+    <div class="dist-row">
+      <div class="dist-num">${i+1}</div>
+      <div class="dist-name" title="${esc(l.nome)}">${esc(l.nome)}
+        <span style="color:var(--t3);font-weight:400">${l.processos} proc. · média ${l.mediaDias}d · pior ${l.maiorDias}d</span>
+      </div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(l.diasEspera/maior*100)}%;background:${esc(l.cor)}"></div></div>
+      <div class="dist-val">${l.diasEspera}</div>
     </div>`).join('');
 }
 

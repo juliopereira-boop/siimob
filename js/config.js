@@ -56,6 +56,54 @@ const A1 = {
     return this.rest(table);
   },
 
+  // ─── Leitura completa, em páginas ───────────────────────────────────────────
+  // O PostgREST tem teto de linhas por resposta (1.000 no padrão do Supabase).
+  // Uma consulta que passe disso volta CORTADA, com status 206 — e quem só olha
+  // o corpo da resposta não percebe: o sistema mostra mil processos achando que
+  // são todos. Com 74 processos isso é invisível; num cliente grande, o painel
+  // e o relatório passam a mentir sem ninguém notar.
+  //
+  // Aqui a leitura vai até o fim, uma faixa por vez, e devolve junto quantos o
+  // banco disse que existem. Se bater no teto de segurança, avisa em vez de
+  // entregar um pedaço como se fosse o todo.
+  async buscarTudo(url, opcoes = {}) {
+    const tamanho = opcoes.tamanho || 1000;
+    const tetoSeguranca = opcoes.teto || 50000;
+    const linhas = [];
+    let total = null, inicio = 0;
+
+    for (;;) {
+      const res = await fetch(url, {
+        headers: this.headers({
+          'Range-Unit': 'items',
+          'Range': `${inicio}-${inicio + tamanho - 1}`,
+          'Prefer': 'count=exact'
+        })
+      });
+      if (!res.ok && res.status !== 206) {
+        return { linhas, total: total ?? linhas.length, completo: false, erro: 'HTTP ' + res.status };
+      }
+      const parte = await res.json().catch(() => []);
+      if (!Array.isArray(parte)) {
+        return { linhas, total: total ?? linhas.length, completo: false, erro: 'resposta inesperada' };
+      }
+      linhas.push(...parte);
+
+      // "0-999/2600" — o número depois da barra é o total de verdade.
+      const faixa = res.headers.get('content-range') || '';
+      const t = parseInt((faixa.split('/')[1] || ''), 10);
+      if (!isNaN(t)) total = t;
+
+      if (parte.length < tamanho) break;                 // acabou
+      if (total != null && linhas.length >= total) break; // já tem tudo
+      inicio += tamanho;
+      if (linhas.length >= tetoSeguranca) {
+        return { linhas, total: total ?? linhas.length, completo: false, erro: 'volume acima do teto' };
+      }
+    }
+    return { linhas, total: total ?? linhas.length, completo: true, erro: null };
+  },
+
   // ─── Storage (arquivos) — separado das tabelas do banco ─────────────────────
   // Uploads (documentos anexados, etc.) vão para o Storage do Supabase, não
   // para colunas de tabela. Cada objeto vive em '{bucket}/{tenant_id}/...';
