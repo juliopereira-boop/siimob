@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IndicaSII — indique uma empresa e ganhe 20% do contrato | SIIMOB</title>
-  <meta name="description" content="Indique construtoras, imobiliárias e correspondentes para o SIIMOB. Contrato fechado, você recebe 20% do valor. Sem limite de indicações e com acompanhamento online.">
+  <title>IndicaSII — indique e ganhe 20% da primeira parcela | SIIMOB</title>
+  <meta name="description" content="Indique construtoras, imobiliárias e correspondentes para o SIIMOB. Contrato fechado, você recebe 20% da primeira parcela, uma única vez. Sem limite de indicações e com acompanhamento online.">
   <link rel="canonical" href="https://siimob.com.br/indica">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
@@ -13,13 +13,13 @@
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SIIMOB">
-  <meta property="og:title" content="IndicaSII — indique e ganhe 20% do contrato fechado">
-  <meta property="og:description" content="Você conhece uma empresa que ainda controla repasse em planilha? Indique para o SIIMOB e receba 20% do contrato fechado.">
+  <meta property="og:title" content="IndicaSII — indique e ganhe 20% da primeira parcela">
+  <meta property="og:description" content="Você conhece uma empresa que ainda controla repasse em planilha? Indique para o SIIMOB e receba 20% da primeira parcela que ela pagar.">
   <meta property="og:url" content="https://siimob.com.br/indica">
   <meta property="og:image" content="https://siimob.com.br/icon-512.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="IndicaSII — indique e ganhe 20% do contrato fechado">
-  <meta name="twitter:description" content="Indique empresas do mercado imobiliário para o SIIMOB e seja recompensado quando virar contrato.">
+  <meta name="twitter:title" content="IndicaSII — indique e ganhe 20% da primeira parcela">
+  <meta name="twitter:description" content="Indique empresas do mercado imobiliário para o SIIMOB e receba 20% da primeira parcela quando virar contrato.">
   <meta name="twitter:image" content="https://siimob.com.br/icon-512.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -364,12 +364,12 @@
   <div class="cx hero-grade">
     <div>
       <span class="sobrancelha">Programa oficial de indicação</span>
-      <h1>Sua indicação pode valer <em id="hero-valor">R$ 2.400</em></h1>
+      <h1>Sua indicação pode valer <em id="hero-valor">R$ 300</em></h1>
       <p class="lead">
         Indique construtoras, imobiliárias e correspondentes que ainda controlam repasse
         em planilha. Quando a indicação vira contrato, você recebe
-        <strong id="hero-perc">20%</strong> do valor fechado. Você não precisa vender nada —
-        a conversa comercial é nossa.
+        <strong id="hero-perc">20%</strong> da primeira parcela que ela pagar — pagamento
+        único, sem recorrência. Você não precisa vender nada: a conversa comercial é nossa.
       </p>
       <div class="hero-ctas">
         <a class="btn btn-1 btn-lg" href="#cadastro">Quero indicar</a>
@@ -401,7 +401,7 @@
           </span>
           <div class="ganho">
             <div class="ganho-l">Sua recompensa</div>
-            <div class="ganho-v" id="visor-ganho">R$ 2.400</div>
+            <div class="ganho-v" id="visor-ganho">R$ 300</div>
           </div>
         </div>
       </div>
@@ -468,7 +468,7 @@
         <span class="passo-n">03</span>
         <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
         <h3>Você recebe</h3>
-        <p>Contrato assinado e primeiro pagamento confirmado, a recompensa fica disponível no painel e vai para a chave PIX que você cadastrou.</p>
+        <p>Contrato assinado e primeira parcela confirmada, os 20% dessa parcela ficam disponíveis no painel e vão para a chave PIX que você cadastrou. É um pagamento único, por indicação.</p>
       </article>
     </div>
   </div>
@@ -481,7 +481,7 @@
       <div>
         <span class="sobrancelha" style="color:var(--azul-cl)">Estimativa de ganhos</span>
         <h2>Veja quanto você pode ganhar</h2>
-        <p class="lead">Mexa nos controles. A conta é direta: <strong id="sim-formula">20%</strong> do valor do contrato, vezes o número de indicações que virarem cliente.</p>
+        <p class="lead">Mexa nos controles. A conta é direta: <strong id="sim-formula">20%</strong> da <strong>primeira parcela</strong> que cada empresa pagar, vezes o número de indicações que virarem cliente. Não é percentual do contrato inteiro.</p>
 
         <div class="sim-ctrl">
           <div class="sim-lin">
@@ -494,20 +494,20 @@
 
         <div class="sim-ctrl">
           <div class="sim-lin">
-            <label class="sim-lab" for="sim-val">Valor de cada contrato</label>
-            <output class="sim-val" id="sim-val-v" for="sim-val">R$ 12.000</output>
+            <label class="sim-lab" for="sim-val">Valor da primeira parcela</label>
+            <output class="sim-val" id="sim-val-v" for="sim-val">R$ 1.500</output>
           </div>
-          <input type="range" id="sim-val" min="600" max="60000" step="100" value="12000"
-                 aria-label="Valor estimado de cada contrato">
+          <input type="range" id="sim-val" min="600" max="5000" step="50" value="1500"
+                 aria-label="Valor estimado da primeira parcela do contrato">
         </div>
       </div>
 
       <div class="sim-res">
         <div class="sim-res-l">Você pode ganhar</div>
-        <div class="sim-res-v" id="sim-total" aria-live="polite">R$ 2.400</div>
-        <div class="sim-res-c" id="sim-conta">1 contrato de R$ 12.000 × 20%</div>
+        <div class="sim-res-v" id="sim-total" aria-live="polite">R$ 300</div>
+        <div class="sim-res-c" id="sim-conta">20% de R$ 1.500 × 1 indicação</div>
         <a class="btn btn-claro btn-lg" href="#cadastro" style="width:100%;margin-top:1.4rem">Começar a indicar</a>
-        <p class="sim-nota">Simulação. O valor real depende do contrato que a empresa indicada fechar.</p>
+        <p class="sim-nota">Simulação. O valor real depende da primeira parcela do contrato que a empresa indicada fechar. A recompensa incide só sobre essa parcela e é paga uma única vez.</p>
       </div>
     </div>
   </div>
@@ -522,7 +522,7 @@
       <p class="lead" style="margin-top:1rem">
         Não existe limite de indicações nem prazo para participar. Cada empresa que você
         apresenta é acompanhada separadamente, e cada contrato fechado gera a sua
-        recompensa — inclusive quando fecham no mesmo mês.
+        recompensa sobre a primeira parcela dele — inclusive quando fecham no mesmo mês.
       </p>
       <p class="lead" style="margin-top:.9rem">
         O painel mostra o andamento de cada uma, o que já está disponível para receber e
@@ -606,7 +606,7 @@
     <div class="centro surge">
       <span class="sobrancelha">Dois caminhos</span>
       <h2>Qual programa combina com você?</h2>
-      <p class="lead">Indicar de vez em quando e receber por contrato fechado, ou atuar comercialmente junto com a gente.</p>
+      <p class="lead">Indicar de vez em quando e receber sobre a primeira parcela de cada contrato fechado, ou atuar comercialmente junto com a gente.</p>
     </div>
     <div class="comp" id="comp"></div>
   </div>
@@ -756,7 +756,8 @@ const reservado = s => String(s || '').trim().startsWith('[');
 const brl = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
 const brlExato = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
 const R = INDICA.recompensa;
-const comissao = (valorContrato, qtd = 1) => valorContrato * (R.percentual / 100) * qtd;
+// A recompensa incide sobre a PRIMEIRA PARCELA, nunca sobre o contrato inteiro.
+const comissao = (primeiraParcela, qtd = 1) => primeiraParcela * (R.percentual / 100) * qtd;
 
 $('ano').textContent = new Date().getFullYear();
 
@@ -783,14 +784,14 @@ addEventListener('scroll', () => { $('topo').classList.toggle('rolou', scrollY >
 
 // ═══ hero e simulador ════════════════════════════════════════════════════════
 $('hero-perc').textContent  = R.percentual + '%';
-$('hero-valor').textContent = brl.format(comissao(R.contratoExemplo));
-$('visor-ganho').textContent = brl.format(comissao(R.contratoExemplo));
+$('hero-valor').textContent = brl.format(comissao(R.parcelaExemplo));
+$('visor-ganho').textContent = brl.format(comissao(R.parcelaExemplo));
 $('sim-formula').textContent = R.percentual + '%';
 
 const sQtd = $('sim-qtd'), sVal = $('sim-val');
 sQtd.max = R.maxIndicacoes;
-sVal.min = R.contratoMin; sVal.max = R.contratoMax; sVal.step = R.contratoPasso;
-sVal.value = R.contratoExemplo;
+sVal.min = R.parcelaMin; sVal.max = R.parcelaMax; sVal.step = R.parcelaPasso;
+sVal.value = R.parcelaExemplo;
 
 function calcular(){
   const q = +sQtd.value, v = +sVal.value;
@@ -798,7 +799,7 @@ function calcular(){
   $('sim-val-v').textContent = brl.format(v);
   $('sim-total').textContent = brl.format(comissao(v, q));
   $('sim-conta').textContent =
-    `${q} contrato${q>1?'s':''} de ${brl.format(v)} × ${R.percentual}%`;
+    `${R.percentual}% de ${brl.format(v)} × ${q} indicaç${q>1?'ões':'ão'}`;
 }
 sQtd.addEventListener('input', calcular);
 sVal.addEventListener('input', calcular);
@@ -809,10 +810,10 @@ $('escada').innerHTML = [1,2,3,5].map(n => `
   <div class="degrau">
     <div class="degrau-n">${n}</div>
     <div class="degrau-t">${n === 1 ? 'indicação convertida' : 'indicações convertidas'}</div>
-    <div class="degrau-v">${brl.format(comissao(R.contratoExemplo, n))}</div>
+    <div class="degrau-v">${brl.format(comissao(R.parcelaExemplo, n))}</div>
   </div>`).join('') +
   `<p style="font-size:.78rem;color:var(--t3);margin-top:.4rem;line-height:1.5">
-     Exemplos considerando contratos de ${brl.format(R.contratoExemplo)}. Mexa no simulador acima para outros valores.
+     Exemplos considerando primeira parcela de ${brl.format(R.parcelaExemplo)} em cada contrato, com a recompensa paga uma vez por indicação. Mexa no simulador acima para outros valores.
    </p>`;
 
 // ═══ diferenciais ════════════════════════════════════════════════════════════

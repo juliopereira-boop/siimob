@@ -13,20 +13,27 @@ const INDICA = {
   siteInstitucional: '/conheca',
 
   // ─── A regra do programa ───────────────────────────────────────────────────
-  // A recompensa é percentual sobre o contrato fechado, não valor fixo.
+  // LEIA ANTES DE MEXER NOS TEXTOS.
+  // A recompensa é 20% da PRIMEIRA PARCELA paga pela empresa indicada, uma
+  // única vez. NÃO é 20% do valor total do contrato e NÃO é recorrente.
+  // Nenhum texto do programa pode dizer apenas "20% do contrato": lido de
+  // fora, isso significa 20% do contrato inteiro, e a diferença entre uma
+  // coisa e outra é grande o bastante para virar discussão. Sempre escreva
+  // "da primeira parcela" e diga que o pagamento é único.
   recompensa: {
-    percentual: 20,          // % do valor do contrato fechado
-    // O simulador precisa de um valor de contrato para mostrar uma conta. Este
-    // é um EXEMPLO para a simulação — quem usa a página pode mudar no próprio
-    // simulador. Ajuste aqui o valor que melhor representa seus contratos.
-    contratoExemplo: 12000,
-    // Piso do programa: o menor contrato aceito é R$ 600 — 20% disso são
-    // R$ 120, a menor comissão possível. O simulador começa exatamente daí.
-    contratoMin: 600,
-    contratoMax: 60000,
-    // Passo de 100 para que o piso de 600 seja alcançável e os valores baixos
-    // tenham granularidade, sem deixar o arrasto até 60.000 travado.
-    contratoPasso: 100,
+    percentual: 20,                        // % da primeira parcela
+    base: 'primeira parcela do contrato',  // aparece nos textos da página
+    // Valores do simulador. Todos são PRIMEIRA PARCELA (a mensalidade de
+    // entrada), nunca o contrato inteiro. Ajuste ao que a sua tabela de
+    // planos pratica — o simulador é só uma conta, não uma promessa.
+    parcelaExemplo: 1500,
+    // Piso do programa: a menor primeira parcela aceita é R$ 600 — 20% disso
+    // são R$ 120, a menor recompensa possível. O simulador começa daí.
+    parcelaMin: 600,
+    parcelaMax: 5000,
+    // Passo de 50 para o piso de 600 ser alcançável e os valores baixos
+    // terem granularidade.
+    parcelaPasso: 50,
     maxIndicacoes: 10,
   },
 
@@ -74,7 +81,7 @@ const INDICA = {
       resumo: 'Para quem conhece alguém que precisa do sistema e quer ser reconhecido por isso.',
       itens: [
         { rotulo:'Para quem',      valor:'Qualquer pessoa. Não precisa ser cliente.' },
-        { rotulo:'Recompensa',     valor:'PERCENTUAL do contrato fechado.' },
+        { rotulo:'Recompensa',     valor:'PERCENTUAL da primeira parcela, pago uma vez.' },
         { rotulo:'O que você faz', valor:'Indica e pronto. A conversa comercial é nossa.' },
         { rotulo:'Acompanhamento', valor:'Painel próprio, com o andamento de cada indicação.' },
         { rotulo:'Limite',         valor:'Nenhum. Indique quantas empresas quiser.' },
@@ -109,22 +116,24 @@ const INDICA = {
 
   // ─── Dúvidas ───────────────────────────────────────────────────────────────
   duvidas: [
+    { p:'Os 20% são sobre o quê, exatamente?',
+      r:'Sobre a primeira parcela paga pela empresa que você indicou — a mensalidade de entrada do contrato. Não são 20% do valor total do contrato, e não é um valor que se repete todo mês: a recompensa é paga uma única vez por indicação convertida. Exemplo: se a primeira parcela for de R$ 1.000, você recebe R$ 200.' },
     { p:'Quem pode participar?',
       r:'Qualquer pessoa maior de idade, com CPF ou CNPJ. Você não precisa ser cliente do SIIMOB nem trabalhar no mercado imobiliário — basta conhecer uma empresa que se encaixe.' },
     { p:'Posso indicar uma empresa que já é cliente?',
       r:'Não. Se a empresa já usa o SIiMOB ou já estava em negociação conosco antes da sua indicação, ela não gera recompensa. Você vê isso no seu painel, marcada como não elegível.' },
     { p:'Quando eu recebo?',
-      r:'Depois que o contrato é assinado e o primeiro pagamento é confirmado. Aí a recompensa entra como disponível no seu painel e é enviada para a chave PIX que você cadastrou.' },
+      r:'Depois que o contrato é assinado e a primeira parcela é confirmada. Aí os 20% dessa parcela entram como disponíveis no seu painel e são enviados para a chave PIX que você cadastrou. É um pagamento único, por indicação.' },
     { p:'Como acompanho minha indicação?',
       r:'Ao enviar a primeira indicação você recebe um link pessoal. Por ele, a qualquer momento, você vê em que pé está cada empresa que indicou e quanto tem a receber.' },
     { p:'Existe limite de indicações?',
-      r:'Não. Indique quantas empresas quiser. Cada uma é acompanhada separadamente e cada contrato fechado gera a sua recompensa.' },
+      r:'Não. Indique quantas empresas quiser. Cada uma é acompanhada separadamente e cada contrato fechado gera a sua recompensa sobre a primeira parcela dele.' },
     { p:'A mesma empresa pode ser indicada por duas pessoas?',
       r:'Vale a primeira indicação registrada. Por isso, se você já conversou com alguém, não deixe para depois.' },
     { p:'O que acontece depois que eu indico?',
       r:'Nossa equipe comercial entra em contato com a empresa, apresenta o sistema e conduz a negociação. Você não precisa participar — mas pode acompanhar tudo pelo painel.' },
     { p:'Qual a diferença para o programa de parceria?',
-      r:'Na indicação você apenas apresenta a empresa e recebe pelo contrato fechado. Na parceria você atua junto com a gente na conversa comercial, com modelo de remuneração combinado à parte.' },
+      r:'Na indicação você apenas apresenta a empresa e recebe 20% da primeira parcela do contrato fechado, uma vez. Na parceria você atua junto com a gente na conversa comercial, com modelo de remuneração combinado à parte, que pode incluir recorrência.' },
   ],
 
   // ─── Menu ──────────────────────────────────────────────────────────────────
