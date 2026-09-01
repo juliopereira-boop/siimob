@@ -171,7 +171,12 @@ async function a1RefreshPartnerPerms() {
     if (!res.ok) return null;                     // servidor fora: mantém o que já tem
     const row = (await res.json())[0];
     if (!row || !row.permissions) return null;
-    u.permissions = row.permissions;
+    // jsonb costuma chegar como objeto; se vier texto, virar objeto aqui evita
+    // que todo `permissions.gerente` do sistema dê undefined.
+    let perms = row.permissions;
+    if (typeof perms === 'string') { try { perms = JSON.parse(perms); } catch { return null; } }
+    if (!perms || typeof perms !== 'object') return null;
+    u.permissions = perms;
     if (row.type) u.type = row.type;
     try { localStorage.setItem('a1_user', JSON.stringify(u)); } catch {}
     return u.permissions;

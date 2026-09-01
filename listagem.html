@@ -1861,7 +1861,11 @@ async function init() {
 
   // para usuario CCA: busca empresa, permissoes e lista de colegas com visibilidade compartilhada
   if (G.user.role === 'partner' && G.user.type === 'cca') {
-    const pr = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id,permissions`, {headers:A1.headers()})
+    // Só a empresa: as permissões já vieram do a1RefreshPartnerPerms no início
+    // do boot, que é o único lugar que lê, normaliza e grava. Buscar de novo
+    // aqui criava um segundo dono da mesma informação — e como este bloco roda
+    // depois, era ele quem ganhava, sem normalizar nada.
+    const pr = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id`, {headers:A1.headers()})
       .then(r=>r.json()).then(a=>a[0]||null).catch(()=>null);
     if (pr?.empresa_id) {
       const emp = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${pr.empresa_id}&select=name`, {headers:A1.headers()})
@@ -1873,10 +1877,6 @@ async function init() {
       G.user.shared_managers = colegas
         .filter(c => c.name !== G.user.name && c.permissions?.ver_todos_repasses === true)
         .map(c => c.name);
-    }
-    if (pr?.permissions) {
-      G.user.permissions = pr.permissions;
-      try { const s=JSON.parse(localStorage.getItem('a1_user')||'{}'); s.permissions=pr.permissions; localStorage.setItem('a1_user',JSON.stringify(s)); } catch{}
     }
   }
 
@@ -1971,12 +1971,45 @@ function liberarEdicao(id){
   openCard(id);
 }
 function podeEditarProcesso(c){
-  if (!hasPerm('editar_repasses')) return false;
+  // Gestor não tem restrição, ponto — e este teste vem ANTES de qualquer outro
+  // para que nenhuma regra criada depois (permissão, etapa, dono do processo)
+  // consiga alcançar quem administra o sistema.
   if (souGestorUser()) return true;
   if (((G.user && G.user.permissions) || {}).gerente) return true;
+  if (!hasPerm('editar_repasses')) return false;
   // Etapa marcada apenas como "ver" é somente leitura, mesmo sendo processo dele.
   if (nivelNaEtapa(c && c.stage_id) !== 'editar') return false;
   return isMeuProcesso(c) || (c && _destravados.has(c.id));
+}
+
+// Como o sistema enxerga quem está logado. Vai escrito na tarja de somente
+// leitura: quando o gestor jura que a pessoa está com acesso total e a tarja
+// aparece assim mesmo, a resposta quase sempre é que ela entrou por outro
+// login. Melhor a tela dizer isso do que virar chamado de suporte.
+function papelLegivel(){
+  const u = G.user || {};
+  if (u.role !== 'partner') return 'gestor';
+  const p = u.permissions || {};
+  if (p.gerente) return 'gerente';
+  if (u.type === 'corretor')    return 'corretor';
+  if (u.type === 'analista')    return 'analista';
+  if (u.type === 'despachante') return 'despachante';
+  return 'correspondente';
+}
+
+// Antes de dizer a alguém que ele não pode editar, confere a permissão no banco.
+// As permissões no navegador são o retrato do login: se o gestor marcou
+// "Gerente" ou "Editar operações" depois disso, a pessoa continuava bloqueada
+// enquanto o gestor, olhando o cadastro, jurava que tinha liberado. Só custa
+// uma consulta, e só no caminho em que a resposta seria "não".
+async function podeEditarConferindo(c){
+  if (podeEditarProcesso(c)) return true;
+  if (!G.user || G.user.role !== 'partner') return false;
+  try {
+    await a1RefreshPartnerPerms();
+    G.user = A1.user || G.user;
+  } catch { /* sem rede: fica com o que tinha */ }
+  return podeEditarProcesso(c);
 }
 
 function hasPerm(key) {
@@ -3025,11 +3058,17 @@ async function openCard(id) {
   }
   const _lock=document.getElementById('mc-lock');
   if(_lock){
-    if(podeEditarProcesso(c)){ _lock.style.display='none'; _lock.innerHTML=''; }
+    if(await podeEditarConferindo(c)){ _lock.style.display='none'; _lock.innerHTML=''; }
     else{
-      const dono=[c.broker_name,c.manager_name,c.payload&&c.payload.usuario_correspondente].find(Boolean)||'outro usuário';
+      // A tarja diz o MOTIVO. "Processo de outro usuário" mandava o gestor
+      // procurar dono onde não havia, quando o problema era a permissão.
+      const dono=[c.broker_name,c.manager_name,c.payload&&c.payload.usuario_correspondente].find(Boolean);
+      const motivo = !hasPerm('editar_repasses')
+        ? 'Seu acesso não inclui <b>Editar operações</b>.'
+        : (dono ? `Processo de <b>${esc(dono)}</b>.` : 'Processo <b>sem responsável definido</b>.');
       _lock.style.display='';
-      _lock.innerHTML=`Processo de <b>${esc(dono)}</b> — você está apenas visualizando. `+
+      _lock.innerHTML=`${motivo} Você está apenas visualizando. `+
+        `<span style="opacity:.75">Seu acesso: <b>${esc(papelLegivel())}</b>.</span> `+
         `<button class="btn btn-ghost btn-sm" style="margin-left:.4rem" onclick="liberarEdicao('${c.id}')">Liberar edição</button>`;
     }
   }
@@ -3475,8 +3514,12 @@ async function saveCase() {
   if(!id) return;
   if(document.getElementById('vr-previsto')){ saveValores(); return; }
   if(!document.getElementById('e-name')){ toast('Abra a aba "Dados" para salvar o cadastro','info'); return; }
-  if (!hasPerm('editar_repasses')) { toast('Sem permissão para editar operações', 'error'); return; }
-  if (!podeEditarProcesso(G.editingCaseData)) { toast('Este processo não é seu. Use "Liberar edição" no topo do cartão.', 'error'); return; }
+  if (!await podeEditarConferindo(G.editingCaseData)) {
+    toast(hasPerm('editar_repasses')
+      ? 'Este processo não é seu. Use "Liberar edição" no topo do cartão.'
+      : 'Sem permissão para editar operações', 'error');
+    return;
+  }
   const stageId=document.getElementById('mc-stage-sel').value;
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
@@ -5120,8 +5163,12 @@ async function importCvcrmCase(){
 
 async function attachDoc(file){
   if(!file||!G.editingCaseId) return;
-  if(!hasPerm('editar_repasses')){ toast('Sem permissão para anexar documentos. Peça ao gestor a permissão "Editar operações" ou "Gerente".','error'); return; }
-  if(!podeEditarProcesso(G.editingCaseData)){ toast('Este processo não é seu. Use "Liberar edição" no topo do cartão.','error'); return; }
+  if(!await podeEditarConferindo(G.editingCaseData)){
+    toast(hasPerm('editar_repasses')
+      ? 'Este processo não é seu. Use "Liberar edição" no topo do cartão.'
+      : 'Sem permissão para anexar documentos. Peça ao gestor a permissão "Editar operações" ou "Gerente".','error');
+    return;
+  }
   const type=document.getElementById('doc-type-sel')?.value||'';
   const docId='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   const safeName=(file.name||'documento').replace(/[^a-zA-Z0-9._-]/g,'_');
