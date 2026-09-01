@@ -1,7 +1,16 @@
 // ─── Mural de Avisos: o lado de quem usa o sistema ───────────────────────────
 // Depois do login, mostra num pop-up os avisos que o superadmin publicou para o
-// tipo daquele usuário. Aviso lido não volta — e o "lido" fica no banco, não no
-// navegador, senão bastaria abrir do celular para o mesmo aviso reaparecer.
+// tipo daquele usuário.
+//
+// O aviso volta A CADA LOGIN. Dentro da mesma sessão ele não repete — trocar de
+// tela ou recarregar a página não faz o pop-up piscar de novo —, mas quem sai e
+// entra vê outra vez. Aviso que aparece uma vez na vida não avisa: quem fechou
+// correndo no primeiro dia nunca mais leria.
+//
+// O "já mostrei" fica preso ao TOKEN da sessão, não ao usuário: token novo
+// (login novo) começa a conta do zero. Fica em localStorage e não em
+// sessionStorage porque o sistema abre abas (o cartão, o relatório) e o pop-up
+// não pode reaparecer em cada aba nova da mesma sessão.
 //
 // Nenhuma regra de quem-vê-o-quê é decidida aqui: quem filtra é a função
 // a1_avisos_para_mim, no banco. Decidir isso no navegador seria decidir num
@@ -25,6 +34,28 @@ const A1Avisos = (() => {
 
   function chaveDoUsuario(u) {
     return `${u.tenant_id}::${u.partner_id || u.id}`;
+  }
+
+  // ─── Já mostrei nesta sessão? ──────────────────────────────────────────────
+  // A chave carrega o token. Login novo, token novo, lista vazia — que é como o
+  // aviso volta a aparecer sem depender de nada do banco.
+  const CHAVE_VISTOS = 'a1_avisos_vistos';
+
+  function vistosNestaSessao() {
+    try {
+      const g = JSON.parse(localStorage.getItem(CHAVE_VISTOS) || 'null');
+      if (!g || g.token !== A1.token) return [];
+      return Array.isArray(g.ids) ? g.ids : [];
+    } catch { return []; }
+  }
+
+  function marcarVistoNaSessao(id) {
+    if (!id) return;
+    try {
+      const ids = vistosNestaSessao();
+      if (ids.indexOf(id) === -1) ids.push(id);
+      localStorage.setItem(CHAVE_VISTOS, JSON.stringify({ token: A1.token, ids }));
+    } catch { /* navegador sem espaço: o aviso repete, o que é o lado seguro */ }
   }
 
   const esc = s => String(s == null ? '' : s)
@@ -162,11 +193,12 @@ const A1Avisos = (() => {
     if (abrindo) c.scrollIntoView({ block:'nearest', behavior:'smooth' });
   }
 
-  // Marcar como lido é o que faz o aviso não voltar. Se falhar, tudo bem: o
-  // aviso reaparece no próximo acesso, que é melhor do que sumir sem ter sido
-  // visto.
+  // Duas contas diferentes. No NAVEGADOR, "já mostrei nesta sessão" — é o que
+  // impede o pop-up de piscar a cada tela. No BANCO, o registro de quem viu e
+  // quando, que serve para relatório e não decide mais se o aviso aparece.
   async function marcarLido(aviso) {
-    if (!aviso || aviso.fixado) return;
+    if (!aviso) return;
+    marcarVistoNaSessao(aviso.id);
     try {
       await fetch(A1.rest('a1_avisos_lidos'), {
         method: 'POST',
@@ -203,7 +235,10 @@ const A1Avisos = (() => {
       if (!res.ok) return;                       // sem mural instalado: segue a vida
       const lista = await res.json().catch(() => []);
       if (!Array.isArray(lista) || !lista.length) return;
-      fila = lista; atual = 0;
+      const jaVistos = vistosNestaSessao();
+      const pendentes = lista.filter(a => jaVistos.indexOf(a.id) === -1);
+      if (!pendentes.length) return;
+      fila = pendentes; atual = 0;
       estilo();
       desenhar();
     } catch { /* aviso nunca pode atrapalhar quem está trabalhando */ }
