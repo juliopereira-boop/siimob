@@ -206,6 +206,7 @@
         Interessados
         <span id="leads-badge" style="display:none;margin-left:.4rem;background:#12B981;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
+      <div class="sa-tab" onclick="switchSaTab('avisos',this)">Mural de Avisos</div>
       <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
     </div>
   </div>
@@ -392,6 +393,20 @@
           </div>
         </div>
         <div id="leads-list" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Mural de Avisos ══ -->
+    <div id="satab-avisos" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Mural de Avisos</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">Publique um aviso e ele aparece num pop-up para quem entrar no sistema. Aviso lido não volta, a não ser que você o fixe.</div>
+          </div>
+          <button class="btn btn-primary" onclick="abrirAviso(null)">+ Novo aviso</button>
+        </div>
+        <div id="avisos-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
       </div>
     </div>
 
@@ -679,13 +694,228 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos','melhorias','interessados','plataforma'].forEach(t => {
+  ['clientes','modulos','planos','melhorias','interessados','avisos','plataforma'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
   if (name === 'melhorias')    loadFeedback();
   if (name === 'interessados') loadLeads();
   if (name === 'plataforma')   initLogoUpload();
+  if (name === 'avisos')       loadAvisos();
+}
+
+
+// ═══ Mural de Avisos ═════════════════════════════════════════════════════════
+// Aviso é da plataforma, não de um cliente: por isso a tabela não tem tenant_id
+// e a escrita só acontece daqui, com a chave de serviço. Quem lê é o sistema de
+// cada cliente, e só o que está publicado e dentro do prazo.
+let AVISOS = [], EDIT_AVISO = null, AVISO_ARQ = { imagem:'', video:'' };
+const AV_ROTULO = { gestor:'Gestores', correspondente:'Correspondentes', analista:'Analistas',
+                    corretor:'Corretores', despachante:'Despachantes' };
+
+async function loadAvisos() {
+  const box = document.getElementById('avisos-lista');
+  box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>';
+  try {
+    const r = await fetch(`${SA_URL}/rest/v1/a1_avisos?order=criado_em.desc`, { headers: saHeaders() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    AVISOS = await r.json();
+    if (!Array.isArray(AVISOS)) AVISOS = [];
+  } catch (e) {
+    box.innerHTML = `<div style="padding:1.2rem;color:#b91c1c;font-size:.8rem">
+      Não consegui ler os avisos: ${esc(e.message)}.<br>
+      Se a tabela ainda não existe, rode <code>sql/2026-09-01_mural_avisos.sql</code> no Supabase.</div>`;
+    return;
+  }
+  renderAvisos();
+}
+
+function renderAvisos() {
+  const box = document.getElementById('avisos-lista');
+  if (!AVISOS.length) {
+    box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhum aviso criado ainda.</div>';
+    return;
+  }
+  const agora = new Date();
+  box.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <thead><tr>
+      <th style="text-align:left;padding:.5rem;border-bottom:1px solid var(--border);font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">Aviso</th>
+      <th style="text-align:left;padding:.5rem;border-bottom:1px solid var(--border);font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">Quem vê</th>
+      <th style="text-align:left;padding:.5rem;border-bottom:1px solid var(--border);font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">Situação</th>
+      <th style="width:230px;padding:.5rem;border-bottom:1px solid var(--border)"></th>
+    </tr></thead><tbody>
+    ${AVISOS.map(a => {
+      const venceu = a.expira_em && new Date(a.expira_em) < agora;
+      const sit = !a.publicado ? '<span style="color:var(--t3);font-weight:700">Rascunho</span>'
+                : venceu       ? '<span style="color:#b45309;font-weight:700">Vencido</span>'
+                               : '<span style="color:#12B981;font-weight:700">No ar</span>';
+      const quem = (a.publicos && a.publicos.length)
+        ? a.publicos.map(p => AV_ROTULO[p] || p).join(', ') : 'Todos';
+      const clientes = (a.tenants && a.tenants.length) ? `${a.tenants.length} cliente(s)` : 'Todos os clientes';
+      return `<tr>
+        <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9)">
+          <b>${esc(a.titulo)}</b>${a.fixado ? ' <span style="font-size:.62rem;background:#EEF2FF;color:#3D5CC8;padding:.1rem .35rem;border-radius:4px;font-weight:800">FIXADO</span>' : ''}
+          <div style="color:var(--t3);font-size:.72rem;margin-top:.15rem">
+            ${a.imagem_url ? 'imagem · ' : ''}${a.video_url ? 'vídeo · ' : ''}${esc((a.corpo||'').slice(0,70))}${(a.corpo||'').length>70?'…':''}
+          </div>
+        </td>
+        <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9);color:var(--t2)">
+          ${esc(quem)}<div style="color:var(--t3);font-size:.72rem">${esc(clientes)}</div>
+        </td>
+        <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9)">${sit}</td>
+        <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9);white-space:nowrap;text-align:right">
+          <button class="btn btn-ghost" style="font-size:.74rem" onclick="abrirAviso('${a.id}')">Editar</button>
+          <button class="btn btn-ghost" style="font-size:.74rem" onclick="alternarPublicacao('${a.id}')">${a.publicado ? 'Despublicar' : 'Publicar'}</button>
+          <button class="btn btn-ghost" style="font-size:.74rem;color:#dc2626" onclick="excluirAviso('${a.id}')">Excluir</button>
+        </td></tr>`;
+    }).join('')}
+  </tbody></table></div>`;
+}
+
+function abrirAviso(id) {
+  const a = id ? AVISOS.find(x => x.id === id) : null;
+  EDIT_AVISO = a ? a.id : null;
+  AVISO_ARQ = { imagem: (a && a.imagem_url) || '', video: (a && a.video_url) || '' };
+  document.getElementById('aviso-titulo-modal').textContent = a ? 'Editar aviso' : 'Novo aviso';
+  document.getElementById('av-titulo').value = (a && a.titulo) || '';
+  document.getElementById('av-corpo').value  = (a && a.corpo)  || '';
+  document.getElementById('av-video').value  = (a && a.video_url) || '';
+  document.getElementById('av-expira').value = (a && a.expira_em) ? String(a.expira_em).slice(0,10) : '';
+  document.getElementById('av-fixado').checked = !!(a && a.fixado);
+  document.getElementById('av-erro').classList.add('hidden');
+  document.getElementById('av-img-arq').value = '';
+  document.getElementById('av-vid-arq').value = '';
+  pintarPreviaAviso();
+
+  const pub = new Set((a && a.publicos) || []);
+  document.querySelectorAll('.av-pub').forEach(cb => { cb.checked = pub.has(cb.value); });
+
+  // Lista de clientes: marcar nenhum quer dizer "todos", que é o caso comum.
+  const sel = new Set((a && a.tenants) || []);
+  const box = document.getElementById('av-tenants');
+  const lista = Array.isArray(TENANTS) ? TENANTS : [];
+  box.innerHTML = lista.length
+    ? lista.map(t => `<label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+        <input type="checkbox" class="av-tenant" value="${esc(t.id)}"${sel.has(t.id) ? ' checked' : ''}> ${esc(t.name)}
+      </label>`).join('')
+    : '<span style="color:var(--t3);font-size:.78rem">Nenhum cliente carregado.</span>';
+
+  document.getElementById('av-btn-publicar').textContent = (a && a.publicado) ? 'Salvar e manter no ar' : 'Publicar';
+  openModal('modal-aviso');
+}
+
+function pintarPreviaAviso() {
+  const i = document.getElementById('av-img-prev');
+  i.innerHTML = AVISO_ARQ.imagem
+    ? `<img src="${esc(AVISO_ARQ.imagem)}" style="max-width:220px;border-radius:8px;display:block">
+       <button class="btn btn-ghost" style="font-size:.72rem;margin-top:.3rem" onclick="tirarArquivoAviso('imagem')">Remover imagem</button>`
+    : '';
+  const v = document.getElementById('av-vid-prev');
+  v.innerHTML = AVISO_ARQ.video
+    ? `Arquivo enviado. <button class="btn btn-ghost" style="font-size:.72rem" onclick="tirarArquivoAviso('video')">Remover</button>`
+    : '';
+}
+function tirarArquivoAviso(qual) {
+  AVISO_ARQ[qual] = '';
+  if (qual === 'video') document.getElementById('av-video').value = '';
+  pintarPreviaAviso();
+}
+
+// Envia para o bucket público "avisos". Aviso é conteúdo que todo mundo do
+// sistema vê, então link público simplifica e não expõe nada que já não fosse
+// para ser visto.
+async function subirArquivoAviso(input, qual) {
+  const arq = input.files && input.files[0];
+  if (!arq) return;
+  const limite = qual === 'video' ? 50 : 5;
+  if (arq.size > limite * 1024 * 1024) {
+    erroAviso(`Arquivo grande demais (${(arq.size/1048576).toFixed(1)} MB). O limite é ${limite} MB.`);
+    input.value = ''; return;
+  }
+  const nome = `${Date.now()}-${arq.name.replace(/[^\w.\-]/g,'_')}`;
+  try {
+    const r = await fetch(`${SA_URL}/storage/v1/object/avisos/${nome}`, {
+      method: 'POST',
+      headers: { apikey: SA_KEY, Authorization: `Bearer ${SA_KEY}`, 'x-upsert': 'true',
+                 'Content-Type': arq.type || 'application/octet-stream' },
+      body: arq
+    });
+    if (!r.ok) {
+      const txt = await r.text().catch(()=> '');
+      throw new Error(/Bucket not found/i.test(txt)
+        ? 'O bucket "avisos" não existe. Crie no Supabase em Storage → New bucket → nome "avisos" → marque Public.'
+        : ('HTTP ' + r.status));
+    }
+    AVISO_ARQ[qual] = `${SA_URL}/storage/v1/object/public/avisos/${nome}`;
+    if (qual === 'video') document.getElementById('av-video').value = AVISO_ARQ.video;
+    document.getElementById('av-erro').classList.add('hidden');
+    pintarPreviaAviso();
+  } catch (e) { erroAviso('Não consegui enviar: ' + e.message); input.value = ''; }
+}
+
+function erroAviso(msg) {
+  const el = document.getElementById('av-erro');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+
+async function salvarAviso(publicar) {
+  const titulo = document.getElementById('av-titulo').value.trim();
+  if (!titulo) { erroAviso('Escreva um título para o aviso.'); return; }
+
+  const publicos = [...document.querySelectorAll('.av-pub:checked')].map(c => c.value);
+  const tenants  = [...document.querySelectorAll('.av-tenant:checked')].map(c => c.value);
+  const expira   = document.getElementById('av-expira').value;
+  const jaEstava = EDIT_AVISO && (AVISOS.find(a => a.id === EDIT_AVISO) || {}).publicado;
+
+  const corpo = {
+    titulo,
+    corpo: document.getElementById('av-corpo').value,
+    imagem_url: AVISO_ARQ.imagem || null,
+    video_url: (document.getElementById('av-video').value.trim() || AVISO_ARQ.video || null),
+    publicos, tenants,
+    fixado: document.getElementById('av-fixado').checked,
+    publicado: publicar,
+    expira_em: expira ? expira + 'T23:59:59' : null,
+  };
+  // publicado_em marca a estreia: republicar não deve reordenar o mural.
+  if (publicar && !jaEstava) corpo.publicado_em = new Date().toISOString();
+
+  const btns = ['av-btn-publicar','av-btn-rascunho'].map(i => document.getElementById(i));
+  btns.forEach(b => b.disabled = true);
+  try {
+    const url = EDIT_AVISO ? `${SA_URL}/rest/v1/a1_avisos?id=eq.${EDIT_AVISO}` : `${SA_URL}/rest/v1/a1_avisos`;
+    const r = await fetch(url, { method: EDIT_AVISO ? 'PATCH' : 'POST',
+      headers: saHeaders({ Prefer: 'return=representation' }), body: JSON.stringify(corpo) });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.message || ('HTTP ' + r.status)); }
+    closeModal('modal-aviso');
+    toast(publicar ? 'Aviso no ar' : 'Rascunho salvo', 'success');
+    loadAvisos();
+  } catch (e) { erroAviso('Não consegui salvar: ' + e.message); }
+  finally { btns.forEach(b => b.disabled = false); }
+}
+
+async function alternarPublicacao(id) {
+  const a = AVISOS.find(x => x.id === id); if (!a) return;
+  const corpo = { publicado: !a.publicado };
+  if (!a.publicado && !a.publicado_em) corpo.publicado_em = new Date().toISOString();
+  try {
+    const r = await fetch(`${SA_URL}/rest/v1/a1_avisos?id=eq.${id}`,
+      { method: 'PATCH', headers: saHeaders(), body: JSON.stringify(corpo) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast(a.publicado ? 'Aviso saiu do ar' : 'Aviso no ar', 'info');
+    loadAvisos();
+  } catch (e) { toast('Não consegui alterar: ' + e.message, 'error'); }
+}
+
+async function excluirAviso(id) {
+  const a = AVISOS.find(x => x.id === id);
+  if (!confirm(`Excluir o aviso "${a ? a.titulo : ''}"? Isso não pode ser desfeito.`)) return;
+  try {
+    const r = await fetch(`${SA_URL}/rest/v1/a1_avisos?id=eq.${id}`, { method: 'DELETE', headers: saHeaders() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast('Aviso excluído', 'info');
+    loadAvisos();
+  } catch (e) { toast('Não consegui excluir: ' + e.message, 'error'); }
 }
 
 // ─── Interessados (leads da landing page) ─────────────────────────────────────
@@ -2070,5 +2300,67 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeModal('modal-users'); closeDespLimitModal(); }
 });
 </script>
+
+<div class="modal-bg hidden" id="modal-aviso">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="aviso-titulo-modal">Novo aviso</div>
+      <button class="modal-close" onclick="closeModal('modal-aviso')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="av-erro" class="hidden" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-bottom:.9rem"></div>
+      <div class="form-group full"><label>Título *</label>
+        <input id="av-titulo" type="text" placeholder="Ex.: Manutenção programada no sábado">
+      </div>
+      <div class="form-group full"><label>Texto</label>
+        <textarea id="av-corpo" rows="5" placeholder="Escreva o aviso. Linha em branco separa parágrafo."></textarea>
+      </div>
+
+      <div class="form-group full"><label>Imagem</label>
+        <input id="av-img-arq" type="file" accept="image/*" onchange="subirArquivoAviso(this,'imagem')">
+        <div id="av-img-prev" style="margin-top:.5rem"></div>
+      </div>
+
+      <div class="form-group full"><label>Vídeo</label>
+        <input id="av-video" type="text" placeholder="Link do YouTube/Vimeo, ou envie um arquivo abaixo">
+        <input id="av-vid-arq" type="file" accept="video/*" style="margin-top:.4rem" onchange="subirArquivoAviso(this,'video')">
+        <div id="av-vid-prev" style="margin-top:.4rem;font-size:.75rem;color:var(--t3)"></div>
+      </div>
+
+      <div class="form-group full"><label>Quem vê este aviso</label>
+        <div style="font-size:.72rem;color:var(--t3);margin:-.2rem 0 .5rem">Nenhum marcado = todo mundo vê.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.75rem">
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="gestor"> Gestores</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="correspondente"> Correspondentes</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="analista"> Analistas</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="corretor"> Corretores</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="despachante"> Despachantes</label>
+        </div>
+      </div>
+
+      <div class="form-group full"><label>Para quais clientes</label>
+        <div style="font-size:.72rem;color:var(--t3);margin:-.2rem 0 .5rem">Nenhum marcado = todos os clientes.</div>
+        <div id="av-tenants" style="display:flex;flex-direction:column;gap:.3rem;max-height:180px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group"><label>Expira em <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
+          <input id="av-expira" type="date">
+        </div>
+        <div class="form-group"><label>Comportamento</label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;cursor:pointer;padding-top:.4rem">
+            <input type="checkbox" id="av-fixado"> Fixado (aparece sempre, não some ao ler)
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-aviso')">Cancelar</button>
+      <button class="btn btn-ghost" id="av-btn-rascunho" onclick="salvarAviso(false)">Salvar rascunho</button>
+      <button class="btn btn-primary" id="av-btn-publicar" onclick="salvarAviso(true)">Publicar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
