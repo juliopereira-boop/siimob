@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Ícone da aba: a mesma marca do cabeçalho do sistema, sobre fundo escuro
+       para continuar legível a 16px, que é o tamanho real na aba do navegador. -->
+  <defs>
+    <linearGradient id="g" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7090E8"/>
+      <stop offset="100%" stop-color="#3D5CC8"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="#0D1A5E"/>
+  <g transform="translate(50 50) scale(0.78) translate(-45 -44)">
+    <polygon points="10,8 84,4 81,29 7,33" fill="url(#g)"/>
+    <polygon points="7,33 26,31 26,57 7,59" fill="#5B7BE0"/>
+    <path d="M7,59 L62,54 L62,42 L80,40 L80,80 L7,84Z" fill="url(#g)"/>
+  </g>
+</svg>
