@@ -119,6 +119,14 @@
 
     /* ── Config hub ── */
     .cfg-hub{padding:.5rem 0 1.5rem}
+    /* Eram vinte cards numa lista só; agora vão por assunto, com busca — é a
+       primeira tela que o cliente abre quando quer mexer em alguma coisa. */
+    .cfg-grupo{margin-bottom:1.6rem}
+    .cfg-section-sub{font-size:.75rem;color:var(--t3);margin:-.35rem 0 .7rem}
+    .cfg-busca-wrap{display:flex;align-items:center;gap:.5rem;background:var(--card);
+      border:1px solid var(--border);border-radius:9px;padding:.5rem .75rem;margin-bottom:1.4rem;max-width:420px}
+    .cfg-busca-wrap input{flex:1;border:none;outline:none;font-size:.85rem;color:var(--t1);background:transparent}
+    .cfg-hub-card.oculto{display:none}
     .cfg-section-hdr{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:1.5rem 0 .7rem;display:flex;align-items:center;gap:.5rem}
     .cfg-section-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
     .cfg-section-hdr:first-child{margin-top:0}
@@ -211,184 +219,175 @@
   <!-- ─── Hub ─────────────────────────────── -->
   <div id="cfg-hub">
 
-    <div class="cfg-section-hdr">Workflow</div>
-    <div class="cfg-cards">
-      <div class="cfg-hub-card" onclick="openCfgView('wf')">
-        <div class="cfg-hub-icon" style="background:#ede9fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        </div>
-        <div class="cfg-card-label">Editor de Workflow</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('flags')">
-        <div class="cfg-hub-icon" style="background:#dbeafe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        </div>
-        <div class="cfg-card-label">Flags de Etapa</div>
-      </div>
+    <div class="cfg-busca-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="cfg-busca" placeholder="Buscar configuração..." oninput="filtrarHub(this.value)">
+      <span id="cfg-busca-vazio" style="display:none;font-size:.78rem;color:var(--t3)">Nada com esse nome.</span>
     </div>
 
-    <div class="cfg-section-hdr">Cadastros</div>
-    <div class="cfg-cards">
-      <div class="cfg-hub-card" onclick="openCfgView('regionais')">
-        <div class="cfg-hub-icon" style="background:#E0E7FF">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        </div>
-        <div class="cfg-card-label">Regionais</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('empreendimentos')">
-        <div class="cfg-hub-icon" style="background:#e0f2fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg>
-        </div>
-        <div class="cfg-card-label">Empreendimentos</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
-        <div class="cfg-hub-icon" style="background:#fef3c7">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div class="cfg-card-label">Correspondentes / CCA</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('imobiliarias')">
-        <div class="cfg-hub-icon" style="background:#ffe4e6">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
-        <div class="cfg-card-label">Imobiliárias</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('doctypes')">
-        <div class="cfg-hub-icon" style="background:#ede9fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
-        </div>
-        <div class="cfg-card-label">Tipos de documento</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('comissao')">
-        <div class="cfg-hub-icon" style="background:#d1fae5">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="cfg-card-label">Configuração de Comissão</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('convenios')">
-        <div class="cfg-hub-icon" style="background:#e0f2fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
-        </div>
-        <div class="cfg-card-label">Convênios</div>
-      </div>
-      <div class="cfg-hub-card" id="cfg-card-importar" onclick="location.href='/'+G.slug+'/importar'">
-        <div class="cfg-hub-icon" style="background:#dcfce7">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-        </div>
-        <div class="cfg-card-label">Importar base</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('modalidades')">
-        <div class="cfg-hub-icon" style="background:#ffe4e6">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
-        </div>
-        <div class="cfg-card-label">Modalidades de Imóvel</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('coordenadores')">
-        <div class="cfg-hub-icon" style="background:#fae8ff">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a21caf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div class="cfg-card-label">Coordenadores</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('agencias')">
-        <div class="cfg-hub-icon" style="background:#fef3c7">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
-        </div>
-        <div class="cfg-card-label">Agências</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('corretores')">
-        <div class="cfg-hub-icon" style="background:#dcfce7">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
-        </div>
-        <div class="cfg-card-label">Corretores</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('precad')" style="position:relative">
-        <div class="cfg-hub-icon" style="background:#ffedd5">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
-        </div>
-        <div class="cfg-card-label">Validação de corretores</div>
-        <span id="precad-badge" style="display:none;position:absolute;top:.5rem;right:.6rem;background:#ea580c;color:#fff;font-size:.68rem;font-weight:800;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 .3rem"></span>
-      </div>
-      <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
-        <div class="cfg-hub-icon" style="background:#ede9fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
-        </div>
-        <div class="cfg-card-label">Usuários Gestores</div>
-      </div>
-      <div class="cfg-hub-card" onclick="openCfgView('analistas')">
-        <div class="cfg-hub-icon" style="background:#dbeafe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
-        </div>
-        <div class="cfg-card-label">Analistas de Crédito</div>
-      </div>
-    </div>
-
-    <!-- Registro module section — shown only when module is active -->
-    <div id="cfg-section-registro" style="display:none">
-      <div class="cfg-section-hdr" style="color:#2945B0">Registro</div>
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Workflow e etapas</div>
+      <div class="cfg-section-sub">Como o processo anda e o que cada etapa exige.</div>
       <div class="cfg-cards">
-        <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
-          <div class="cfg-hub-icon" style="background:#E0E7FF">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
+        <div class="cfg-hub-card" onclick="openCfgView('wf')">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </div>
-          <div class="cfg-card-label">Despachantes</div>
+          <div class="cfg-card-label">Editor de Workflow</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('flags')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <div class="cfg-card-label">Flags de Etapa</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('doctypes')">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          </div>
+          <div class="cfg-card-label">Tipos de documento</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('comissao')">
+          <div class="cfg-hub-icon" style="background:#d1fae5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="cfg-card-label">Configuração de Comissão</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Usuários e acesso</div>
+      <div class="cfg-section-sub">Quem entra no sistema e o que cada um pode fazer.</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
+          </div>
+          <div class="cfg-card-label">Usuários Gestores</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('analistas')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+          </div>
+          <div class="cfg-card-label">Analistas de Crédito</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('corretores')">
+          <div class="cfg-hub-icon" style="background:#dcfce7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+          </div>
+          <div class="cfg-card-label">Corretores</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('precad')" style="position:relative">
+          <div class="cfg-hub-icon" style="background:#ffedd5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+          </div>
+          <div class="cfg-card-label">Validação de corretores</div>
+          <span id="precad-badge" style="display:none;position:absolute;top:.5rem;right:.6rem;background:#ea580c;color:#fff;font-size:.68rem;font-weight:800;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 .3rem"></span>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('coordenadores')">
+          <div class="cfg-hub-icon" style="background:#fae8ff">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a21caf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="cfg-card-label">Coordenadores</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
+          <div class="cfg-hub-icon" style="background:#fef3c7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="cfg-card-label">Correspondentes / CCA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Empreendimentos e parceiros</div>
+      <div class="cfg-section-sub">De quem é o imóvel e quem trabalha com ele.</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('empreendimentos')">
+          <div class="cfg-hub-icon" style="background:#e0f2fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg>
+          </div>
+          <div class="cfg-card-label">Empreendimentos</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('regionais')">
+          <div class="cfg-hub-icon" style="background:#E0E7FF">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="cfg-card-label">Regionais</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('imobiliarias')">
+          <div class="cfg-hub-icon" style="background:#ffe4e6">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="cfg-card-label">Imobiliárias</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
+            <div class="cfg-hub-icon" style="background:#E0E7FF">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
+            </div>
+            <div class="cfg-card-label">Despachantes</div>
+          </div>
+      </div>
+    </div>
+
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Cadastros do repasse</div>
+      <div class="cfg-section-sub">As listas que aparecem no cadastro do processo e nos filtros.</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('convenios')">
+          <div class="cfg-hub-icon" style="background:#e0f2fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+          </div>
+          <div class="cfg-card-label">Convênios</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('modalidades')">
+          <div class="cfg-hub-icon" style="background:#ffe4e6">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          </div>
+          <div class="cfg-card-label">Modalidades de Imóvel</div>
+        </div>
+        <div class="cfg-hub-card" onclick="openCfgView('agencias')">
+          <div class="cfg-hub-icon" style="background:#fef3c7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
+          </div>
+          <div class="cfg-card-label">Agências</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('bancos')">
-          <div class="cfg-hub-icon" style="background:#dbeafe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
+            <div class="cfg-hub-icon" style="background:#dbeafe">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
+            </div>
+            <div class="cfg-card-label">Bancos</div>
           </div>
-          <div class="cfg-card-label">Bancos</div>
-        </div>
         <div class="cfg-hub-card" onclick="openCfgView('cartorios')">
-          <div class="cfg-hub-icon" style="background:#f0fdf4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
+            <div class="cfg-hub-icon" style="background:#f0fdf4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
+            </div>
+            <div class="cfg-card-label">Cartórios</div>
           </div>
-          <div class="cfg-card-label">Cartórios</div>
-        </div>
       </div>
     </div>
 
-    <div class="cfg-section-hdr">Notificacoes</div>
-    <div class="cfg-cards">
-      <div class="cfg-hub-card cfg-disabled">
-        <div class="cfg-hub-icon" style="background:#EEF2FF">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Ferramentas e suporte</div>
+      <div class="cfg-section-sub">Trazer dados de fora e falar com quem cuida do sistema.</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" id="cfg-card-importar" onclick="location.href='/'+G.slug+'/importar'">
+          <div class="cfg-hub-icon" style="background:#dcfce7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          </div>
+          <div class="cfg-card-label">Importar base</div>
         </div>
-        <div class="cfg-card-label">E-mail · Novo processo</div>
-        <div class="cfg-card-soon">Em breve</div>
-      </div>
-      <div class="cfg-hub-card cfg-disabled">
-        <div class="cfg-hub-icon" style="background:#fefce8">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/><circle cx="18" cy="18" r="3"/><path d="M18 16v2l1 1"/></svg>
+        <div class="cfg-hub-card" onclick="openFeedbackModal()" style="border-color:#e0e7ff">
+          <div class="cfg-hub-icon" style="background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+          </div>
+          <div class="cfg-card-label">Sugerir melhoria</div>
         </div>
-        <div class="cfg-card-label">E-mail · Vencimento avaliacao</div>
-        <div class="cfg-card-soon">Em breve</div>
-      </div>
-    </div>
-
-    <div class="cfg-section-hdr">Integracoes</div>
-    <div class="cfg-cards">
-      <div class="cfg-hub-card cfg-disabled">
-        <div class="cfg-hub-icon" style="background:#fef2f2">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        </div>
-        <div class="cfg-card-label">Envio pelo Gmail</div>
-        <div class="cfg-card-soon">Em breve</div>
       </div>
     </div>
+  </div>
 
-    <div class="cfg-section-hdr">Suporte</div>
-    <div class="cfg-cards">
-      <div class="cfg-hub-card" onclick="openFeedbackModal()" style="border-color:#e0e7ff">
-        <div class="cfg-hub-icon" style="background:#ede9fe">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
-        </div>
-        <div class="cfg-card-label">Sugerir melhoria</div>
-      </div>
-    </div>
-
-  </div><!-- /#cfg-hub -->
-
-  <!-- ─── Sub-view: Editor de Workflow ─── -->
   <div id="cfg-view-wf" style="display:none">
     <div class="cfg-view-hdr">
       <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
@@ -1490,6 +1489,27 @@ async function init() {
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
 const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
+
+
+// Busca do hub: esconde card por card e some com o grupo que ficar vazio, para
+// não sobrar título de seção sem nada embaixo.
+function filtrarHub(termo){
+  const q = (termo || '').trim().toLowerCase();
+  let achou = 0;
+  document.querySelectorAll('#cfg-hub .cfg-grupo').forEach(grupo => {
+    let visiveis = 0;
+    grupo.querySelectorAll('.cfg-hub-card').forEach(card => {
+      const txt = (card.textContent || '').toLowerCase();
+      const bate = !q || txt.includes(q);
+      card.classList.toggle('oculto', !bate);
+      if (bate) visiveis++;
+    });
+    grupo.style.display = visiveis ? '' : 'none';
+    achou += visiveis;
+  });
+  const vazio = document.getElementById('cfg-busca-vazio');
+  if (vazio) vazio.style.display = achou ? 'none' : '';
+}
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
