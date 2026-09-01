@@ -1,0 +1,41 @@
+name: Testes
+
+# Roda em todo push e em toda proposta de merge. Se reprovar, o commit fica
+# marcado com o X vermelho no GitHub — é o sinal para não subir para produção.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  suite:
+    name: Suíte de navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Rodar a suíte
+        run: npm test
+
+      - name: Guardar as capturas de tela quando falhar
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: |
+            testes/*.png
+          if-no-files-found: ignore
+          retention-days: 7
