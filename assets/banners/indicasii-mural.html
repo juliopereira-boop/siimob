@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  body{font-family:'Inter',system-ui,sans-serif;background:#062B29;color:#fff;overflow:hidden}
+
+  .banner{
+    position:relative;width:1200px;height:630px;overflow:hidden;
+    background:
+      radial-gradient(880px 640px at 92% -14%, rgba(51,233,215,.34), transparent 60%),
+      radial-gradient(720px 540px at 2% 112%, rgba(20,146,135,.40), transparent 64%),
+      linear-gradient(135deg,#04211F 0%,#083F3B 46%,#0B534E 100%);
+    padding:52px 64px 48px;display:flex;flex-direction:column;
+  }
+  .linha{position:absolute;left:0;right:0;top:0;height:6px;
+    background:linear-gradient(90deg,#33E9D7,#149287 58%,transparent)}
+  .deco{position:absolute;pointer-events:none;opacity:.05;fill:#fff}
+  .d1{right:-230px;top:-190px;width:700px;transform:rotate(-14deg)}
+  .d2{left:-230px;bottom:-250px;width:560px;transform:rotate(9deg)}
+
+  header{display:flex;align-items:center;gap:15px;position:relative;z-index:2}
+  .marca{font-size:27px;font-weight:800;letter-spacing:-.02em}
+  .selo{margin-left:auto;font-size:16px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.13em;color:#C6F8F1;border:2px solid rgba(51,233,215,.40);
+    background:rgba(51,233,215,.10);border-radius:100px;padding:10px 22px}
+
+  .meio{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:44px;
+    align-items:center;position:relative;z-index:2}
+
+  .prog{font-size:78px;font-weight:900;letter-spacing:-.04em;line-height:1;
+    background:linear-gradient(100deg,#FFFFFF 20%,#6FF1E3 94%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{margin-top:24px;font-size:42px;line-height:1.2;font-weight:800;letter-spacing:-.025em;
+    color:#EAFFFC;max-width:640px}
+  h1 em{font-style:normal;color:#3BF0DE}
+
+  .cartao{background:rgba(255,255,255,.08);border:2px solid rgba(120,240,225,.30);
+    border-radius:26px;padding:34px 20px 30px;text-align:center;
+    box-shadow:0 26px 64px rgba(0,0,0,.32)}
+  .cartao .n{font-size:132px;line-height:.84;font-weight:900;letter-spacing:-.06em;
+    background:linear-gradient(160deg,#FFFFFF 6%,#3BF0DE 94%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .cartao .t{margin-top:20px;font-size:25px;font-weight:800;color:#EAFFFC;line-height:1.25}
+
+  footer{display:flex;align-items:flex-end;gap:20px;position:relative;z-index:2}
+  .url{font-size:31px;font-weight:900;letter-spacing:-.02em;color:#fff}
+  .url s{text-decoration:none;color:#3BF0DE}
+  .obs{margin-left:auto;text-align:right;font-size:20px;font-weight:600;
+    color:rgba(206,244,239,.66);line-height:1.35}
+</style>
+
+<div class="banner">
+  <div class="linha"></div>
+  <svg class="deco d1" viewBox="0 0 1280 1280"><path d="M466 165 A290 290 0 0 0 466 745 Z"/><rect x="530" y="163" width="580" height="292" rx="146"/><rect x="172" y="825" width="580" height="290" rx="145"/><path d="M818 535 A290 290 0 0 1 818 1115 Z"/></svg>
+  <svg class="deco d2" viewBox="0 0 1280 1280"><path d="M466 165 A290 290 0 0 0 466 745 Z"/><rect x="530" y="163" width="580" height="292" rx="146"/><rect x="172" y="825" width="580" height="290" rx="145"/><path d="M818 535 A290 290 0 0 1 818 1115 Z"/></svg>
+
+  <header>
+    <svg width="46" height="46" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="ba" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.88)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+        <linearGradient id="bb" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+        <linearGradient id="bc" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient>
+        <linearGradient id="bd" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.88)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+      </defs>
+      <path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#ba)"/>
+      <rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#bb)"/>
+      <rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#bc)"/>
+      <path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#bd)"/>
+    </svg>
+    <span class="marca">SIIMOB</span>
+    <span class="selo">Programa de indicação</span>
+  </header>
+
+  <div class="meio">
+    <div>
+      <div class="prog">IndicaSII</div>
+      <h1>Indique uma empresa e ganhe<br><em>quando o contrato fechar</em></h1>
+    </div>
+    <div class="cartao">
+      <div class="n">20%</div>
+      <div class="t">do contrato<br>fechado</div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="url">siimob.com.br<s>/indica</s></span>
+    <span class="obs">Sem limite de indicações<br>Pago via PIX</span>
+  </footer>
+</div>
