@@ -207,6 +207,7 @@
         <span id="leads-badge" style="display:none;margin-left:.4rem;background:#12B981;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
       <div class="sa-tab" onclick="switchSaTab('avisos',this)">Mural de Avisos</div>
+      <div class="sa-tab" onclick="switchSaTab('indica',this)">IndicaSII</div>
       <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
     </div>
   </div>
@@ -393,6 +394,22 @@
           </div>
         </div>
         <div id="leads-list" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: IndicaSII ══ -->
+    <div id="satab-indica" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">IndicaSII — indicações recebidas</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">
+              Quem indicou vê o andamento no painel dele. Ao marcar como fechado e informar o valor, a recompensa é calculada sozinha.
+            </div>
+          </div>
+          <div id="indica-resumo" style="font-size:.8rem;color:var(--t2);text-align:right"></div>
+        </div>
+        <div id="indica-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
       </div>
     </div>
 
@@ -694,7 +711,7 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos','melhorias','interessados','avisos','plataforma'].forEach(t => {
+  ['clientes','modulos','planos','melhorias','interessados','avisos','indica','plataforma'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
@@ -702,8 +719,116 @@ function switchSaTab(name, el) {
   if (name === 'interessados') loadLeads();
   if (name === 'plataforma')   initLogoUpload();
   if (name === 'avisos')       loadAvisos();
+  if (name === 'indica')       loadIndicacoes();
 }
 
+
+
+// ═══ IndicaSII ═══════════════════════════════════════════════════════════════
+// As tabelas de indicação não têm leitura pública nenhuma — só a chave de
+// serviço enxerga. Aqui é o único lugar onde a carteira aparece inteira.
+let INDICACOES = [];
+const IND_STATUS = ['nova','em_contato','proposta','fechado','perdido'];
+const IND_ROT = { nova:'Recebida', em_contato:'Em contato', proposta:'Proposta',
+                  fechado:'Fechado', perdido:'Não seguiu' };
+const IND_COR = { nova:'#3D5CC8', em_contato:'#0891b2', proposta:'#F5A524',
+                  fechado:'#12B981', perdido:'#94a3b8' };
+const brlSA = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+async function loadIndicacoes() {
+  const box = document.getElementById('indica-lista');
+  box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>';
+  try {
+    const r = await fetch(`${SA_URL}/rest/v1/a1_indicacoes?select=*,a1_indicadores(nome,documento,email,telefone,chave_pix)&order=criado_em.desc`,
+      { headers: saHeaders() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    INDICACOES = await r.json();
+    if (!Array.isArray(INDICACOES)) INDICACOES = [];
+  } catch (e) {
+    box.innerHTML = `<div style="padding:1.2rem;color:#b91c1c;font-size:.8rem">
+      Não consegui ler as indicações: ${esc(e.message)}.<br>
+      Se as tabelas ainda não existem, rode <code>sql/2026-09-01_indicasii.sql</code> no Supabase.</div>`;
+    return;
+  }
+  renderIndicacoes();
+}
+
+function comissaoDe(i){
+  return i.status === 'fechado' && i.valor_contrato
+    ? Number(i.valor_contrato) * (Number(i.percentual||20)/100) : 0;
+}
+
+function renderIndicacoes() {
+  const box = document.getElementById('indica-lista');
+  const fechadas = INDICACOES.filter(i => i.status === 'fechado');
+  const aPagar = INDICACOES.filter(i => !i.pago).reduce((a,i) => a + comissaoDe(i), 0);
+  document.getElementById('indica-resumo').innerHTML =
+    `<b>${INDICACOES.length}</b> indicação(ões) · <b>${fechadas.length}</b> fechada(s)<br>
+     <span style="color:#12B981;font-weight:800">${brlSA(aPagar)}</span> a pagar`;
+
+  if (!INDICACOES.length) {
+    box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhuma indicação recebida ainda.</div>';
+    return;
+  }
+  const th = t => `<th style="text-align:left;padding:.5rem;border-bottom:1px solid var(--border);font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">${t}</th>`;
+  box.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <thead><tr>${th('Empresa indicada')}${th('Quem indicou')}${th('Situação')}${th('Valor do contrato')}${th('Recompensa')}${th('')}</tr></thead>
+    <tbody>${INDICACOES.map(i => {
+      const q = i.a1_indicadores || {};
+      const com = comissaoDe(i);
+      return `<tr>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
+          <b>${esc(i.empresa)}</b>
+          <div style="color:var(--t3);font-size:.72rem">${esc([i.cidade,i.uf].filter(Boolean).join(' / ') || '—')}${i.porte ? ' · ' + esc(i.porte) : ''}</div>
+          ${i.contato_nome || i.contato_fone ? `<div style="color:var(--t2);font-size:.72rem;margin-top:.15rem">${esc(i.contato_nome||'')} ${esc(i.contato_fone||'')}</div>` : ''}
+        </td>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
+          ${esc(q.nome||'—')}
+          <div style="color:var(--t3);font-size:.72rem">${esc(q.telefone||q.email||'')}</div>
+          ${q.chave_pix ? `<div style="color:var(--t3);font-size:.72rem">PIX: ${esc(q.chave_pix)}</div>` : ''}
+        </td>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
+          <select onchange="mudarStatusIndicacao('${i.id}', this.value)"
+            style="font-size:.75rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px;color:${IND_COR[i.status]||'#333'};font-weight:700">
+            ${IND_STATUS.map(s => `<option value="${s}"${s===i.status?' selected':''}>${IND_ROT[s]}</option>`).join('')}
+          </select>
+        </td>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
+          <input type="number" value="${i.valor_contrato||''}" placeholder="0,00" step="0.01"
+            onchange="mudarValorIndicacao('${i.id}', this.value)"
+            style="width:110px;font-size:.78rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px">
+          <div style="color:var(--t3);font-size:.68rem;margin-top:.1rem">${i.percentual||20}% para quem indicou</div>
+        </td>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;font-weight:800;color:${com?'#12B981':'var(--t3)'}">
+          ${com ? brlSA(com) : '—'}
+        </td>
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;white-space:nowrap;text-align:right">
+          ${com ? (i.pago
+            ? '<span style="font-size:.72rem;color:#12B981;font-weight:800">pago</span>'
+            : `<button class="btn btn-ghost" style="font-size:.73rem" onclick="marcarPagoIndicacao('${i.id}')">Marcar pago</button>`) : ''}
+        </td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+async function patchIndicacao(id, corpo, msg) {
+  try {
+    const r = await fetch(`${SA_URL}/rest/v1/a1_indicacoes?id=eq.${id}`,
+      { method:'PATCH', headers: saHeaders(), body: JSON.stringify({ ...corpo, atualizado_em: new Date().toISOString() }) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (msg) toast(msg, 'success');
+    loadIndicacoes();
+  } catch (e) { toast('Não consegui salvar: ' + e.message, 'error'); }
+}
+function mudarStatusIndicacao(id, status) { patchIndicacao(id, { status }, 'Situação atualizada'); }
+function mudarValorIndicacao(id, valor) {
+  const v = parseFloat(String(valor).replace(',','.'));
+  patchIndicacao(id, { valor_contrato: isFinite(v) && v > 0 ? v : null }, 'Valor do contrato salvo');
+}
+function marcarPagoIndicacao(id) {
+  const i = INDICACOES.find(x => x.id === id);
+  if (!confirm(`Confirmar o pagamento de ${brlSA(comissaoDe(i))} para ${(i.a1_indicadores||{}).nome || 'quem indicou'}?`)) return;
+  patchIndicacao(id, { pago: true, pago_em: new Date().toISOString() }, 'Marcado como pago');
+}
 
 // ═══ Mural de Avisos ═════════════════════════════════════════════════════════
 // Aviso é da plataforma, não de um cliente: por isso a tabela não tem tenant_id
