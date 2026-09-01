@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1280" width="1280" height="1280" role="img" aria-label="SIIMOB">
+  <!-- Logo oficial do SIIMOB: quatro peças que formam um S — meia-lua à
+       esquerda em cima, cápsula à direita em cima, cápsula à esquerda embaixo
+       e meia-lua à direita embaixo. Cada peça tem seu próprio degradê, do
+       turquesa claro ao verde-azulado escuro. -->
+  <defs>
+    <linearGradient id="sii-a" x1="172" y1="530" x2="466" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="55%"  stop-color="#149287"/>
+      <stop offset="100%" stop-color="#33E9D7"/>
+    </linearGradient>
+    <linearGradient id="sii-b" x1="820" y1="163" x2="820" y2="455" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="55%"  stop-color="#159A8E"/>
+      <stop offset="100%" stop-color="#3BF0DE"/>
+    </linearGradient>
+    <linearGradient id="sii-c" x1="462" y1="825" x2="462" y2="1115" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3BF0DE"/>
+      <stop offset="45%"  stop-color="#159A8E"/>
+      <stop offset="100%" stop-color="#0B534E"/>
+    </linearGradient>
+    <linearGradient id="sii-d" x1="1108" y1="750" x2="814" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="55%"  stop-color="#149287"/>
+      <stop offset="100%" stop-color="#33E9D7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- meia-lua superior esquerda (metade esquerda de um círculo) -->
+  <path d="M466 165 A290 290 0 0 0 466 745 Z" fill="url(#sii-a)"/>
+  <!-- cápsula superior direita -->
+  <rect x="530" y="163" width="580" height="292" rx="146" fill="url(#sii-b)"/>
+  <!-- cápsula inferior esquerda -->
+  <rect x="172" y="825" width="580" height="290" rx="145" fill="url(#sii-c)"/>
+  <!-- meia-lua inferior direita (metade direita de um círculo) -->
+  <path d="M818 535 A290 290 0 0 1 818 1115 Z" fill="url(#sii-d)"/>
+</svg>
