@@ -15,8 +15,13 @@ Como o arquivo está no repositório, ele também fica no ar depois do deploy:
 
     https://siimob.com.br/assets/banners/indicasii-mural.jpg
 
-Dá para colar essa URL direto no campo de imagem do aviso, sem precisar subir
-arquivo nenhum para o Storage.
+Cole essa URL no campo **Imagem** do aviso (superadmin → Mural de Avisos →
+Novo aviso). Não precisa subir arquivo nenhum para o Storage — o atalho com o
+endereço já está escrito ali embaixo do campo, é só clicar.
+
+No pop-up do mural a imagem vem primeiro, de ponta a ponta, e o texto do aviso
+fica atrás do botão "Ler o aviso completo". A arte é o que prende a atenção; o
+texto é para quem se interessou.
 
 ## Como gerar de novo (se mudar o texto ou o percentual)
 
