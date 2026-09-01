@@ -12,16 +12,19 @@ const AVISOS = [
 ];
 const lidos = new Set();
 
-async function abrirComo(usuario) {
+async function abrirComo(usuario, token, vistos) {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport:{width:1280,height:900} });
   const erros = [];
   p.on('pageerror', e => erros.push(e.message));
-  await p.addInitScript(u => {
-    localStorage.setItem('a1_token','tok'); localStorage.setItem('a1_slug','thecred');
-    localStorage.setItem('a1_user', JSON.stringify(u));
+  await p.addInitScript(a => {
+    localStorage.setItem('a1_token', a.tk); localStorage.setItem('a1_slug','thecred');
+    localStorage.setItem('a1_user', JSON.stringify(a.u));
+    // o que o navegador já viu é levado de uma "sessão" para a outra, como
+    // aconteceria de verdade: o localStorage sobrevive ao logout
+    if (a.vistos) localStorage.setItem('a1_avisos_vistos', a.vistos);
     window.__XSS = 0;
-  }, usuario);
+  }, { u: usuario, tk: token || 'tok', vistos: vistos || '' });
   await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({status:200,contentType:'text/css',body:''}));
   await p.route(/supabase\.co/, async r => {
     const u = r.request().url(), m = r.request().method();
@@ -29,9 +32,13 @@ async function abrirComo(usuario) {
     if (u.includes('/rpc/a1_avisos_para_mim')) {
       const corpo = JSON.parse(r.request().postData()||'{}');
       const pub = corpo.p_publico, chave = corpo.p_user_key;
+      // A função do banco NÃO esconde mais o que já foi lido: quem decide se
+      // repete é o navegador, pelo token da sessão. A ordem é a mesma do SQL:
+      // fixado primeiro, depois do mais novo para o mais velho.
       return j(AVISOS.filter(a => a.publicado
-        && (!a.publicos.length || a.publicos.includes(pub))
-        && (a.fixado || !lidos.has(a.id + '|' + chave))));
+        && (!a.publicos.length || a.publicos.includes(pub)))
+        .sort((x, y) => (y.fixado === true) - (x.fixado === true)
+                     || String(y.publicado_em||'').localeCompare(String(x.publicado_em||''))));
     }
     if (u.includes('a1_avisos_lidos') && m === 'POST') {
       const c = JSON.parse(r.request().postData()||'{}');
@@ -47,6 +54,12 @@ async function abrirComo(usuario) {
   await p.waitForTimeout(2600);
   return { b, p, erros };
 }
+
+// O que o navegador guardou de "já mostrei nesta sessão". É isso que atravessa
+// o logout na vida real — o localStorage não some quando a pessoa sai.
+const pegarVistos = p => p.evaluate(() => localStorage.getItem('a1_avisos_vistos') || '');
+
+let VISTOS_APOS_1 = '';
 
 (async () => {
   console.log('== GESTOR vê os dois avisos ==');
@@ -90,13 +103,30 @@ async function abrirComo(usuario) {
     await p.click('.av-btn-p'); await p.waitForTimeout(600);
     checa('fecha no fim', await p.locator('#a1-avisos').count() === 0);
     checa('sem erro de JS', erros.length === 0, erros[0]||'');
+    VISTOS_APOS_1 = await pegarVistos(p);
+    checa('o navegador registrou os dois avisos desta sessão',
+      (JSON.parse(VISTOS_APOS_1 || '{}').ids || []).length === 2, VISTOS_APOS_1);
+    checa('e amarrou o registro ao token da sessão',
+      JSON.parse(VISTOS_APOS_1 || '{}').token === 'tok', VISTOS_APOS_1);
     await b.close();
   }
 
-  console.log('\n== GESTOR recarrega: aviso lido não volta ==');
+  console.log('\n== MESMA SESSÃO: o pop-up não fica piscando ==');
   {
-    const { b, p } = await abrirComo({id:'u1',tenant_id:'t1',name:'Julio',role:'owner'});
-    checa('nenhum pop-up', await p.locator('#a1-avisos').count() === 0);
+    // mesmo token, e o navegador já registrou os dois avisos
+    const { b, p } = await abrirComo({id:'u1',tenant_id:'t1',name:'Julio',role:'owner'}, 'tok', VISTOS_APOS_1);
+    checa('recarregar a página não traz o pop-up de volta', await p.locator('#a1-avisos').count() === 0);
+    await b.close();
+  }
+
+  console.log('\n== SAIU E ENTROU: o aviso aparece de novo ==');
+  {
+    // token novo = login novo. O localStorage continua lá (logout não o apaga),
+    // mas a lista de vistos estava presa ao token antigo.
+    const { b, p } = await abrirComo({id:'u1',tenant_id:'t1',name:'Julio',role:'owner'}, 'tok-DEPOIS-DO-LOGIN', VISTOS_APOS_1);
+    checa('o pop-up volta no login seguinte', await p.locator('#a1-avisos').count() === 1);
+    checa('e volta desde o primeiro aviso', /Para todos/.test(await p.locator('.av-titulo').textContent()));
+    checa('com a contagem cheia de novo', /1 de 2/.test(await p.locator('.av-conta').textContent()));
     await b.close();
   }
 
@@ -113,7 +143,7 @@ async function abrirComo(usuario) {
   {
     AVISOS.push({id:'a3',titulo:'Fixado',corpo:'sempre',publicos:[],tenants:[],publicado:true,fixado:true,publicado_em:'2026-09-01T11:00:00Z'});
     const { b, p } = await abrirComo({id:'u1',tenant_id:'t1',name:'Julio',role:'owner'});
-    checa('fixado aparece mesmo com os outros lidos', /Fixado/.test(await p.locator('.av-titulo').textContent()));
+    checa('fixado vem primeiro na fila', /Fixado/.test(await p.locator('.av-titulo').textContent()));
     await p.click('.av-btn-p'); await p.waitForTimeout(400);
     await b.close();
     const { b:b2, p:p2 } = await abrirComo({id:'u1',tenant_id:'t1',name:'Julio',role:'owner'});

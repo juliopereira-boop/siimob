@@ -58,8 +58,9 @@ create table if not exists a1_avisos_lidos (
 
 alter table a1_avisos_lidos enable row level security;
 
--- Marcar como lido é a única escrita que o usuário faz aqui. Não pode apagar
--- (para não "desler" e ver de novo) nem alterar linha de outro.
+-- Marcar como lido é a única escrita que o usuário faz aqui. Vale como registro
+-- de quem viu e quando; não decide mais se o aviso aparece. Não pode apagar nem
+-- alterar linha de outro.
 drop policy if exists "avisos_lidos_ler"    on a1_avisos_lidos;
 drop policy if exists "avisos_lidos_marcar" on a1_avisos_lidos;
 create policy "avisos_lidos_ler"    on a1_avisos_lidos for select using (true);
@@ -71,6 +72,15 @@ grant select, insert on a1_avisos_lidos to anon, authenticated;
 -- ─── O que este usuário tem para ver agora ───────────────────────────────────
 -- Uma função só, para a tela não precisar montar a regra no navegador — regra
 -- de quem vê o quê no cliente é regra que dá para burlar.
+--
+-- O aviso volta A CADA LOGIN, de propósito. A versão anterior escondia o que já
+-- tinha sido lido uma vez, e na prática o recado passava despercebido: quem
+-- fechou o pop-up correndo no primeiro dia nunca mais o via. Quem não repete
+-- não avisa. A conta de "já mostrei nesta sessão" é feita no navegador, presa
+-- ao token do login — trocou de login, o aviso aparece de novo.
+--
+-- a1_avisos_lidos continua sendo gravado, mas agora só como registro de quem
+-- viu e quando; não filtra mais nada.
 create or replace function a1_avisos_para_mim(p_publico text, p_user_key text)
 returns setof a1_avisos
 language sql stable security definer
@@ -81,9 +91,6 @@ set search_path = public, extensions, pg_temp as $$
     and  (a.expira_em is null or a.expira_em > now())
     and  (cardinality(a.publicos) = 0 or p_publico = any(a.publicos))
     and  (cardinality(a.tenants)  = 0 or a1_tenant() = any(a.tenants))
-    and  (a.fixado = true
-          or not exists (select 1 from a1_avisos_lidos l
-                          where l.aviso_id = a.id and l.user_key = p_user_key))
   order by a.fixado desc, a.publicado_em desc nulls last
   limit 20;
 $$;
@@ -99,7 +106,8 @@ grant execute on function a1_avisos_para_mim(text, text) to anon, authenticated;
 --
 -- COMO CONFERIR
 --   1. No superadmin, crie um aviso de teste, escolha "Gestores" e publique.
---   2. Entre com um gestor: o pop-up aparece. Feche e recarregue: não volta.
+--   2. Entre com um gestor: o pop-up aparece. Feche e recarregue a página: não
+--      volta (mesma sessão). Saia e entre de novo: volta a aparecer.
 --   3. Entre com um corretor: não deve aparecer nada.
 --   4. Despublique o aviso e recarregue: some para todos.
 -- =============================================================================
