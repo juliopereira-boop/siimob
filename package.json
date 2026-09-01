@@ -1,0 +1,14 @@
+{
+  "name": "siimob",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SIIMOB — sistema de repasse imobiliário. Site estático servido pela Vercel; o banco é Supabase.",
+  "scripts": {
+    "servidor": "python3 -m http.server 8099",
+    "teste": "node testes/roda-tudo.js",
+    "teste:um": "node --"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
