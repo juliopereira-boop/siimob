@@ -456,10 +456,17 @@
           </table></div>
         </div>
         <div class="panel" style="padding:1.25rem">
-          <div class="section-title" style="margin-bottom:.9rem">Por cliente, no período</div>
+          <div class="section-title" style="margin-bottom:.2rem">Por cliente, no período</div>
+          <div style="font-size:.72rem;color:var(--t3);margin-bottom:.9rem">
+            <b>Acessos</b> é quantas vezes se entrou; <b>usuários</b>, quantas pessoas diferentes.
+            Nenhum dos dois diz nada sobre estarem juntas — para isso é a última coluna,
+            que é a comparada com o teto do plano.
+          </div>
           <div class="tbl-wrap"><table>
-            <thead><tr><th>Cliente</th><th>Acessos</th><th>Usuários</th><th>Último</th></tr></thead>
-            <tbody id="mon-clientes"><tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+            <thead><tr><th>Cliente</th><th>Acessos</th><th>Usuários</th>
+              <th title="Maior número de pessoas do cliente dentro do sistema ao mesmo tempo, medido no instante de cada login">Máx. simultâneo</th>
+              <th>Último</th></tr></thead>
+            <tbody id="mon-clientes"><tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -830,6 +837,7 @@ async function loadMonitor() {
     kpi('Usuários distintos', d.total_usuarios || 0, rotuloJanela) +
     kpi('Pico do período', pico, d.janela === 'hora' ? 'na hora mais movimentada'
         : (d.janela === 'semana' ? 'na semana mais movimentada' : 'no dia mais movimentado')) +
+    kpi('Máx. simultâneo', d.pico_simultaneos ?? '—', 'pessoas juntas, em qualquer cliente') +
     kpi('Entradas de suporte', d.acessos_suporte || 0, 'suas, fora da conta acima');
 
   // ─── gráfico ───────────────────────────────────────────────────────────────
@@ -880,13 +888,25 @@ async function loadMonitor() {
   // ─── por cliente ───────────────────────────────────────────────────────────
   const porCli = d.por_cliente || [];
   document.getElementById('mon-clientes').innerHTML = porCli.length
-    ? porCli.map(c => `<tr>
-        <td style="font-weight:600">${esc(c.cliente)}</td>
-        <td>${c.acessos}</td>
-        <td>${c.usuarios}</td>
-        <td style="white-space:nowrap;color:var(--t3)">${c.ultimo ? new Date(c.ultimo).toLocaleString('pt-BR') : '—'}</td>
-      </tr>`).join('')
-    : '<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--t3)">Nada no período.</td></tr>';
+    ? porCli.map(c => {
+        // Estourar o teto do plano é o tipo de coisa que não pode passar
+        // despercebida numa tabela: fica em vermelho, com o limite ao lado.
+        const max = c.max_simultaneos, lim = c.limite;
+        const passou = max != null && lim > 0 && max > lim;
+        const cel = max == null
+          ? '<span style="color:var(--t3)">—</span>'
+          : `<b style="color:${passou ? '#DC2626' : (max === lim ? '#D97706' : 'var(--t1)')}">${max}</b>` +
+            (lim > 0 ? `<span style="color:var(--t3)"> / ${lim}</span>` : '') +
+            (passou ? ' <span style="color:#DC2626;font-size:.68rem;font-weight:800">acima do teto</span>' : '');
+        return `<tr>
+          <td style="font-weight:600">${esc(c.cliente)}</td>
+          <td>${c.acessos}</td>
+          <td>${c.usuarios}</td>
+          <td style="white-space:nowrap">${cel}</td>
+          <td style="white-space:nowrap;color:var(--t3)">${c.ultimo ? new Date(c.ultimo).toLocaleString('pt-BR') : '—'}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--t3)">Nada no período.</td></tr>';
 }
 
 // ═══ IndicaSII ═══════════════════════════════════════════════════════════════

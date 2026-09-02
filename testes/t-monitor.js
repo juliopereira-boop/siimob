@@ -23,9 +23,14 @@ const MONITOR = {
     { nome: 'Raissa', papel: 'partner', modulo: 'andamento', cliente: 'THE CRED', ha_segundos: 95 },
     { nome: '<img src=x onerror="window.__XSS=1">', papel: 'partner', modulo: 'crm', cliente: 'Beta', ha_segundos: 140 },
   ],
-  baldes, total_acessos: 37, total_usuarios: 7, acessos_suporte: 4,
-  por_cliente: [{ cliente: 'THE CRED', acessos: 30, usuarios: 5, ultimo: new Date().toISOString() },
-                { cliente: 'Beta', acessos: 7, usuarios: 2, ultimo: new Date().toISOString() }],
+  baldes, total_acessos: 37, total_usuarios: 7, acessos_suporte: 4, pico_simultaneos: 5,
+  por_cliente: [
+    // dentro do teto
+    { cliente: 'THE CRED', acessos: 30, usuarios: 5, max_simultaneos: 3, limite: 5, ultimo: new Date().toISOString() },
+    // ACIMA do teto — tem de gritar na tela
+    { cliente: 'Beta', acessos: 7, usuarios: 2, max_simultaneos: 5, limite: 3, ultimo: new Date().toISOString() },
+    // cliente antigo, sem medição ainda
+    { cliente: 'Gama', acessos: 2, usuarios: 1, max_simultaneos: null, limite: 3, ultimo: new Date().toISOString() }],
 };
 
 const TENANTS  = [{ id: 't1', name: 'THE CRED', slug: 'thecred', status: 'active', plan: 'pro', max_users: 10, created_at: '2026-01-01' }];
@@ -109,6 +114,21 @@ async function abrir() {
     && /há 1 min/.test(await p.locator('#mon-online').textContent()));
   c('quebra por cliente', /THE CRED/.test(await p.locator('#mon-clientes').textContent())
     && /Beta/.test(await p.locator('#mon-clientes').textContent()));
+
+  console.log('  -- máximo simultâneo --');
+  c('KPI de máximo simultâneo', /Máx\. simultâneo/.test(kpis) && /\b5\b/.test(kpis), kpis.slice(0,240));
+  const tbl = await p.locator('#mon-clientes').textContent();
+  c('mostra o máximo ao lado do teto do plano', /3 \/ 5/.test(tbl), tbl.slice(0, 200));
+  c('acusa quem passou do teto', /5 \/ 3/.test(tbl) && /acima do teto/.test(tbl), tbl.slice(0, 300));
+  c('quem passou fica em vermelho', await p.evaluate(() => {
+    const tr = [...document.querySelectorAll('#mon-clientes tr')].find(r => /Beta/.test(r.textContent));
+    const b = tr && tr.querySelector('b');
+    return !!b && getComputedStyle(b).color === 'rgb(220, 38, 38)';
+  }));
+  c('cliente sem medição não inventa número', /—/.test(
+    await p.locator('#mon-clientes tr:has-text("Gama")').textContent()));
+  c('a tabela explica que acesso não é simultâneo',
+    /Nenhum dos dois diz nada sobre estarem juntas/i.test(await p.locator('#satab-monitor').textContent()));
 
   console.log('  -- troca de período --');
   await p.selectOption('#mon-janela', 'semana'); await p.waitForTimeout(700);
