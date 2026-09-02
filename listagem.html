@@ -3027,6 +3027,22 @@ async function completarArquivos(id){
 // Lê o payload de verdade no banco na hora, junta a mudança e grava. Assim não
 // depende do que a listagem trouxe e não atropela alteração feita por outra
 // pessoa nos campos que não estão sendo mexidos.
+// Grava o valor NO PROCESSO DA LISTA e na cópia que o cartão está usando.
+//
+// O cartão trabalha com uma cópia rasa do processo (G.editingCaseData). Escrever
+// só na cópia funciona enquanto o cartão está aberto e desaparece no
+// fechar-e-reabrir, porque o cartão é remontado a partir da lista — e a lista
+// ainda tem o objeto velho, marcado como "já carregado". Foi exatamente assim
+// que documento anexado sumia da tela: estava gravado no banco, o sistema dizia
+// "salvo", e ao voltar no cliente a tela relia o objeto antigo.
+//
+// Toda escrita feita de dentro do cartão passa por aqui.
+function anotarNoProcesso(id, campos){
+  const c = G.cases.find(x => x.id === id);
+  if (c) Object.assign(c, campos);
+  if (G.editingCaseData && G.editingCaseData.id === id) Object.assign(G.editingCaseData, campos);
+}
+
 async function gravarPayload(caseId, mudancas){
   const atual = await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}&select=payload`,{headers:A1.headers()})
     .then(r=>r.json()).then(a=>(a&&a[0]&&a[0].payload)||{}).catch(()=>null);
@@ -5182,7 +5198,7 @@ async function attachDoc(file){
   docs.push(doc);
   const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
   if(res.ok){
-    G.editingCaseData.documents=docs;
+    anotarNoProcesso(G.editingCaseId, { documents: docs });
     fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:G.editingCaseId,type:'document',description:`Documento anexado: ${type||'sem tipo'} — ${file.name}`,actor_name:G.user.name})}).catch(()=>{});
     renderModalDocs();toast('Documento anexado','success');
   } else {
@@ -5203,7 +5219,7 @@ async function removeDoc(docId){
     const docs=list.filter(d=>d.id!==docId);
     const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({documents:docs})});
     if(res.ok){
-      G.editingCaseData.documents=docs;
+      anotarNoProcesso(G.editingCaseId, { documents: docs });
       if(target&&target.path) A1.storageRemove('case-documents',target.path).catch(()=>{});
       renderModalDocs();toast('Documento removido','info');
     } else toast('Erro ao remover','error');
@@ -5220,8 +5236,8 @@ async function removeDoc(docId){
     : { payload: {...(G.editingCaseData.payload||{}), documents: restantes} };
   const res=await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(corpo)});
   if(res.ok){
-    if(naColuna) G.editingCaseData.legacy_docs = restantes;
-    else         G.editingCaseData.payload = corpo.payload;
+    if(naColuna) anotarNoProcesso(G.editingCaseId, { legacy_docs: restantes });
+    else         anotarNoProcesso(G.editingCaseId, { payload: corpo.payload });
     renderModalDocs();toast('Documento removido','info');
   } else toast('Erro ao remover','error');
 }
