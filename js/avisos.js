@@ -70,6 +70,17 @@ const A1Avisos = (() => {
     return /^https?:\/\//i.test(s) ? s : '';
   }
 
+  // Endereço escrito no meio do texto vira link clicável. A ordem importa: o
+  // texto JÁ vem escapado quando chega aqui, então o que se procura é o
+  // endereço no texto seguro, e nunca o contrário. Só http e https; nada de
+  // "javascript:" virando link porque alguém escreveu isso no aviso.
+  function linkarTexto(seguro) {
+    return String(seguro).replace(
+      /\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)\]}"']/gi,
+      u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`
+    );
+  }
+
   function estilo() {
     if (document.getElementById('a1-avisos-css')) return;
     const st = document.createElement('style');
@@ -105,6 +116,11 @@ const A1Avisos = (() => {
       .av-corpo{padding:1.1rem 1.25rem;overflow-y:auto;font-size:.88rem;line-height:1.65;
         color:#334155;flex:1 1 auto;min-height:0}
       .av-corpo p{margin:0 0 .7rem}
+      .av-corpo a{color:#3D5CC8;font-weight:600;word-break:break-word}
+      .av-acao{padding:1rem 1.25rem;background:#fff;border-top:1px solid #E2E8F0;flex-shrink:0}
+      .av-acao a{display:block;text-align:center;padding:.7rem 1rem;border-radius:9px;
+        background:#3D5CC8;color:#fff;font-size:.86rem;font-weight:800;text-decoration:none}
+      .av-acao a:hover{background:#1E3A8A}
       .av-corpo img,.av-corpo video{max-width:100%;border-radius:9px;display:block;margin:.5rem 0}
       .av-rodape{padding:.85rem 1.25rem;border-top:1px solid #E2E8F0;display:flex;
         align-items:center;gap:.6rem}
@@ -146,7 +162,13 @@ const A1Avisos = (() => {
         : '');
 
     const texto = (a.corpo || '').split(/\n{2,}/).filter(Boolean)
-      .map(par => `<p>${esc(par).replace(/\n/g,'<br>')}</p>`).join('');
+      .map(par => `<p>${linkarTexto(esc(par)).replace(/\n/g,'<br>')}</p>`).join('');
+
+    const link = urlSegura(a.link_url);
+    const acao = link
+      ? `<div class="av-acao"><a href="${esc(link)}" target="_blank" rel="noopener noreferrer"
+           >${esc((a.link_texto || '').trim() || 'Saiba mais')}</a></div>`
+      : '';
 
     // Quando existe arte, ela é o aviso: o texto começa fechado, atrás de um
     // botão. Sem arte, esconder o texto deixaria a caixa vazia — aí ele abre
@@ -173,6 +195,7 @@ const A1Avisos = (() => {
             </button>` : ''}
           <div class="av-corpo" id="av-corpo"${recolhido ? ' hidden' : ''}>${texto}</div>
         ` : ''}
+        ${acao}
         <div class="av-rodape">
           <span class="av-conta">${fila.length > 1 ? `${atual + 1} de ${fila.length}` : ''}</span>
           ${atual + 1 < fila.length

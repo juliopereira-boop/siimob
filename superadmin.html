@@ -1093,6 +1093,8 @@ function abrirAviso(id) {
   document.getElementById('av-titulo').value = (a && a.titulo) || '';
   document.getElementById('av-corpo').value  = (a && a.corpo)  || '';
   document.getElementById('av-imagem').value = (a && a.imagem_url) || '';
+  document.getElementById('av-link').value       = (a && a.link_url)   || '';
+  document.getElementById('av-link-texto').value = (a && a.link_texto) || '';
   document.getElementById('av-video').value  = (a && a.video_url) || '';
   document.getElementById('av-expira').value = (a && a.expira_em) ? String(a.expira_em).slice(0,10) : '';
   document.getElementById('av-fixado').checked = !!(a && a.fixado);
@@ -1194,6 +1196,8 @@ async function salvarAviso(publicar) {
     titulo,
     corpo: document.getElementById('av-corpo').value,
     imagem_url: imagemDoAviso() || null,
+    link_url:   document.getElementById('av-link').value.trim() || null,
+    link_texto: document.getElementById('av-link-texto').value.trim() || null,
     video_url: (document.getElementById('av-video').value.trim() || AVISO_ARQ.video || null),
     publicos, tenants,
     fixado: document.getElementById('av-fixado').checked,
@@ -2707,6 +2711,18 @@ document.addEventListener('keydown', e => {
       </div>
       <div class="form-group full"><label>Texto</label>
         <textarea id="av-corpo" rows="5" placeholder="Escreva o aviso. Linha em branco separa parágrafo."></textarea>
+        <div style="font-size:.68rem;color:var(--t3);margin-top:.25rem">
+          Endereço escrito no meio do texto já vira link clicável sozinho. Para uma ação
+          principal, use o botão abaixo — ninguém clica em link perdido no meio do parágrafo.
+        </div>
+      </div>
+
+      <div class="form-group"><label>Link do botão</label>
+        <input id="av-link" type="text" placeholder="https://siimob.com.br/indicasii">
+        <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Deixe em branco para o aviso não ter botão.</div>
+      </div>
+      <div class="form-group"><label>Texto do botão</label>
+        <input id="av-link-texto" type="text" placeholder="Saiba mais">
       </div>
 
       <div class="form-group full"><label>Imagem</label>

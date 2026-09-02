@@ -57,6 +57,11 @@ async function abrir() {
       const corpo = JSON.parse(r.request().postData() || '{}');
       return j({ ...MONITOR, janela: corpo.p_janela || 'dia' });
     }
+    if (u.includes('a1_avisos') && (m === 'POST' || m === 'PATCH')) {
+      const corpo = JSON.parse(r.request().postData() || '{}');
+      criadas.push(corpo);
+      return j([{ id: 'av1', ...corpo }]);
+    }
     if (u.includes('a1_sessions') && m === 'POST') {
       const corpo = JSON.parse(r.request().postData() || '{}');
       criadas.push(corpo);
@@ -136,6 +141,21 @@ async function abrir() {
   c('a legenda diz o que é cada barra', /uma semana/.test(await p.locator('#mon-grafico-leg').textContent()));
 
   c('nome de usuário com HTML não executa', (await p.evaluate(() => window.__XSS || 0)) === 0);
+
+  console.log('\n== FORMULÁRIO DO AVISO: campo de link ==');
+  await p.click('.sa-tab:has-text("Mural de Avisos")'); await p.waitForTimeout(700);
+  await p.evaluate(() => abrirAviso(null)); await p.waitForTimeout(500);
+  c('tem campo para o endereço do botão', (await p.locator('#av-link').count()) === 1);
+  c('e para o texto do botão', (await p.locator('#av-link-texto').count()) === 1);
+  c('o exemplo aponta para /indicasii',
+    /indicasii/.test(await p.locator('#av-link').getAttribute('placeholder') || ''));
+  await p.fill('#av-titulo', 'Aviso com link');
+  await p.fill('#av-link', 'https://siimob.com.br/indicasii');
+  await p.fill('#av-link-texto', 'Quero indicar');
+  await p.evaluate(() => salvarAviso(true)); await p.waitForTimeout(800);
+  { const env = criadas.filter(x => x.titulo).pop() || {};
+    c('salva o endereço do botão', env.link_url === 'https://siimob.com.br/indicasii', JSON.stringify(env));
+    c('salva o texto do botão', env.link_texto === 'Quero indicar', JSON.stringify(env)); }
 
   console.log('\n== ACESSAR COMO CADA USUÁRIO ==');
   await p.click('.sa-tab:has-text("Clientes")'); await p.waitForTimeout(600);

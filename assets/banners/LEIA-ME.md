@@ -23,6 +23,14 @@ No pop-up do mural a imagem vem primeiro, de ponta a ponta, e o texto do aviso
 fica atrás do botão "Ler o aviso completo". A arte é o que prende a atenção; o
 texto é para quem se interessou.
 
+No campo **Link do botão** do aviso, use:
+
+    https://siimob.com.br/indicasii
+
+e em **Texto do botão**, algo como "Quero indicar". Endereço escrito no meio do
+texto também vira link clicável sozinho, mas ninguém clica em link perdido no
+meio do parágrafo — a ação principal merece o botão.
+
 ## Como gerar de novo (se mudar o texto ou o percentual)
 
 A arte é uma página HTML fotografada pelo navegador — 1200×630 em escala 2×,
