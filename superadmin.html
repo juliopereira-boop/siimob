@@ -629,7 +629,7 @@
         <div style="flex:1"></div>
         <span id="cob-status" style="font-size:.75rem;font-weight:700"></span>
       </div>
-      <div style="font-size:.7rem;color:var(--t3);margin-bottom:.5rem">Clique no mês para alternar entre <b>Pago</b> e <b>Pendente</b>.</div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:.5rem">Clique no mês para girar entre <b>Pendente</b> → <b>Pago</b> → <b>Em atraso</b>. Mês em atraso faz o cliente ver a tarja de cobrança dentro do sistema dele.</div>
       <div id="cob-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem"></div>
       <div id="cob-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
     </div>
@@ -2032,19 +2032,31 @@ function setEl(id, v) { const el = document.getElementById(id); if(el) el.textCo
 
 // ─── Cobrança (billing) ────────────────────────────────────────────────────────
 // Dados por tenant ficam em a1_config key='billing':
-//   { due_day, valor, paid:{'YYYY-MM':{paid:true,date:iso}}, notified:{'YYYY-MM':iso} }
+//   { due_day, valor, notified:{'YYYY-MM':iso},
+//     paid:{'YYYY-MM':{paid:true,date:iso}}   → mês pago
+//              ou {atraso:true,desde:iso}     → mês em atraso, marcado à mão
+//              ou ausente                     → mês pendente }
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 let COB = { tenantId:null, name:'', email:'', year:2026, data:null };
 
 function cobKey(y, mIdx) { return `${y}-${String(mIdx+1).padStart(2,'0')}`; }
 
-// true se o mês (ano/mês) já passou do dia de vencimento e não está pago
-function isOverdue(y, mIdx, dueDay, paidMap) {
-  if (!dueDay) return false;
-  if (paidMap && paidMap[cobKey(y, mIdx)] && paidMap[cobKey(y, mIdx)].paid) return false;
-  const now = new Date();
+// Estado de um mês: 'pago' | 'atraso' | 'pendente'.
+// O atraso vem de dois caminhos. AUTOMÁTICO: passou do dia de vencimento e não
+// foi pago. À MÃO: o gestor marcou — que é o que permite cobrar antes de o
+// vencimento chegar, ou marcar atraso num mês sem dia de vencimento cadastrado.
+function estadoMes(y, mIdx, dueDay, paidMap) {
+  const r = paidMap && paidMap[cobKey(y, mIdx)];
+  if (r && r.paid)   return 'pago';
+  if (r && r.atraso) return 'atraso';
+  if (!dueDay) return 'pendente';
   const due = new Date(y, mIdx, dueDay, 23, 59, 59);
-  return now > due;
+  return new Date() > due ? 'atraso' : 'pendente';
+}
+
+// Mantida para quem já chamava: agora é só uma leitura do estado.
+function isOverdue(y, mIdx, dueDay, paidMap) {
+  return estadoMes(y, mIdx, dueDay, paidMap) === 'atraso';
 }
 
 async function loadBilling(tenantId) {
@@ -2097,12 +2109,14 @@ function renderCobranca() {
   const dueDay = parseInt(COB.data.due_day) || 0;
   grid.innerHTML = MESES.map((m, i) => {
     const k = cobKey(COB.year, i);
-    const isPaid = paid[k] && paid[k].paid;
-    const overdue = !isPaid && isOverdue(COB.year, i, dueDay, paid);
-    const bg  = isPaid ? '#dcfce7' : overdue ? '#fee2e2' : '#f1f5f9';
-    const col = isPaid ? '#15803d' : overdue ? '#b91c1c' : '#64748b';
-    const lbl = isPaid ? 'Pago' : overdue ? 'Vencido' : 'Pendente';
-    const sub = isPaid && paid[k].date ? new Date(paid[k].date).toLocaleDateString('pt-BR') : '';
+    const est = estadoMes(COB.year, i, dueDay, paid);
+    const r = paid[k] || {};
+    const bg  = est === 'pago' ? '#dcfce7' : est === 'atraso' ? '#fee2e2' : '#f1f5f9';
+    const col = est === 'pago' ? '#15803d' : est === 'atraso' ? '#b91c1c' : '#64748b';
+    const lbl = est === 'pago' ? 'Pago' : est === 'atraso' ? 'Em atraso' : 'Pendente';
+    // Data embaixo: quando pagou, ou desde quando está marcado em atraso.
+    const quando = est === 'pago' ? r.date : (r.atraso ? r.desde : '');
+    const sub = quando ? new Date(quando).toLocaleDateString('pt-BR') : '';
     return `<button onclick="cobToggle(${i})" style="text-align:left;border:1px solid ${col}33;background:${bg};color:${col};border-radius:.5rem;padding:.5rem .6rem;cursor:pointer;font-family:inherit">
       <div style="font-size:.8rem;font-weight:700">${m}</div>
       <div style="font-size:.68rem;font-weight:600">${lbl}</div>
@@ -2118,18 +2132,23 @@ function renderCobranca() {
     const cp = paid[curK] && paid[curK].paid;
     const cur = new Date();
     const curOver = !cp && dueDay && cur.getFullYear() === now.getFullYear() && isOverdue(now.getFullYear(), now.getMonth(), dueDay, paid);
-    st.textContent = cp ? '● Mês atual pago' : curOver ? '● Mês atual VENCIDO' : '● Mês atual pendente';
+    st.textContent = cp ? '● Mês atual pago' : curOver ? '● Mês atual EM ATRASO' : '● Mês atual pendente';
     st.style.color = cp ? '#15803d' : curOver ? '#b91c1c' : '#64748b';
   }
 }
 
+// O clique gira entre os três estados, na ordem em que a cobrança acontece na
+// vida real: está pendente → pagou → não pagou, virou atraso → resolveu.
 async function cobToggle(mIdx) {
   const k = cobKey(COB.year, mIdx);
   if (!COB.data.paid) COB.data.paid = {};
-  if (COB.data.paid[k] && COB.data.paid[k].paid) {
-    delete COB.data.paid[k];
+  const r = COB.data.paid[k];
+  if (r && r.paid) {
+    COB.data.paid[k] = { atraso: true, desde: new Date().toISOString() };   // pago → em atraso
+  } else if (r && r.atraso) {
+    delete COB.data.paid[k];                                                // em atraso → pendente
   } else {
-    COB.data.paid[k] = { paid: true, date: new Date().toISOString() };
+    COB.data.paid[k] = { paid: true, date: new Date().toISOString() };       // pendente → pago
     // ao marcar como pago, limpa a marca de notificação do mês
     if (COB.data.notified) delete COB.data.notified[k];
   }
