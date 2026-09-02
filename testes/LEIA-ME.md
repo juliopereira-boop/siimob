@@ -25,6 +25,7 @@ saída != 0 quando falha, que é o que a CI lê.
 | `fake.js` | O banco de mentira. Uma função `responder(url)` que devolve o mesmo formato que o PostgREST devolveria. |
 | `comum.js` | `abrir(pagina, opcoes)` — sobe o navegador, planta a sessão no `localStorage`, intercepta tudo que iria para o Supabase e devolve a página pronta. |
 | `roda-tudo.js` | Servidor + corredor de todas as suítes. |
+| `fixtures/` | Arquivos de entrada. `base-exemplo.xlsx` é a planilha do importador, gerada por `gerar-planilha.py` — mesmas 11 colunas da base real, dados inventados. |
 | `t-*.js` | As suítes. Uma por assunto. |
 
 Nenhuma requisição sai para a internet: fontes do Google e Supabase são
@@ -44,6 +45,14 @@ await abrir('repasse.html', { extras: true });   // só quem precisa liga
 Isso é resultado de cicatriz: quando os 23 entraram ligados por padrão, cinco
 suítes passaram a falhar porque contavam cartões, e as falhas ficaram meses no
 vermelho até virarem ruído que ninguém mais lia.
+
+### Nada de arquivo de fora
+
+A suíte só pode depender do que está no repositório. `t-import` apontava para a
+planilha que o cliente enviou uma vez, guardada num diretório temporário; no dia
+em que aquele diretório sumiu, o teste passou a falhar por falta de arquivo — e
+na CI nunca teria funcionado. Hoje a planilha é gerada e versionada, com dados
+inventados: nome ou CPF de pessoa real não entra no repositório.
 
 ### Regra ao escrever asserção
 
@@ -66,7 +75,9 @@ continua dizendo a verdade.
 | `t-gerente` | **Permissões.** Gestor sem restrição, gerente, tarja de somente leitura |
 | `t-mural` | Mural de avisos: quem vê o quê, imagem, expandir texto |
 | `t-indica` | Página do IndicaSII, simulador, FAQ, cadastro |
-| `t-import` | Importador de planilha |
+| `t-import` | Importador de planilha (usa `fixtures/base-exemplo.xlsx`) |
+| `t-cobranca` | Giro Pendente→Pago→Em atraso e a tarja de cobrança no cliente |
+| `t-monitor` | Monitor de acessos e "Acessar" por usuário no superadmin |
 | `t-resto` | As telas menores — só que montam e não têm XSS |
 
 ## XSS

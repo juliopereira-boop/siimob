@@ -1,6 +1,12 @@
 const { chromium } = require('playwright');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
-const ARQ = '/root/.claude/uploads/ae532d4b-468c-5806-aa82-fa5aa6191ed4/63c11fa1-LISTA_DOS_PROCESSOS__ETAPA_CONFORMIDADE_1.xlsx';
+// A planilha de exemplo vive no repositório, com as mesmas 11 colunas da base
+// real e dados inventados. Antes isto apontava para o arquivo que o cliente
+// enviou uma vez, guardado fora do projeto: quando aquela pasta sumiu, o teste
+// passou a falhar por falta de arquivo — e na CI nunca teria funcionado.
+// Gerada por testes/fixtures/gerar-planilha.py.
+const path = require('path');
+const ARQ = path.join(__dirname, 'fixtures', 'base-exemplo.xlsx');
 
 // Banco de mentira que reflete o que o cliente REALMENTE tem cadastrado hoje
 const ANALISTAS = ['AMANDA DA SILVA RODRIGUES','ANDREIA PEREIRA SOUSA SILVA','GILBERTO FERREIRA',
@@ -53,7 +59,7 @@ const criados = [];
   await p.goto(BASE + '/importar.html', {waitUntil:'load'});
   await p.waitForTimeout(1200);
 
-  console.log('== 1. LER A PLANILHA REAL ==');
+  console.log('== 1. LER A PLANILHA ==');
   await p.setInputFiles('#arq', ARQ);
   await p.waitForTimeout(2500);
   const info = await p.locator('#arq-info').textContent();
@@ -126,32 +132,45 @@ const criados = [];
   console.log('  ' + JSON.stringify(proc[0].corpo, null, 1).replace(/\n/g,'\n  '));
 
   console.log('\n  --- conferências ---');
-  const ok=(n,c)=>console.log(`  ${c?'✓':'✗'} ${n}`);
-  ok('74 processos', proc.length===74);
+  // As contagens vêm da planilha de exemplo do repositório (5 linhas), e não de
+  // um arquivo de fora que pode desaparecer. Onde dá, a conferência é sobre o
+  // CONTEÚDO, que não apodrece quando a planilha ganhar mais uma linha.
+  let bad = 0;
+  const ok=(n,c,x='')=>{ if(!c) bad++; console.log(`  ${c?'✓':'✗'} ${n}${c?'':'  '+x}`); };
+  ok('5 processos, um por linha', proc.length===5, 'n='+proc.length);
   ok('todo processo tem etapa', proc.every(c=>c.corpo.stage_id && c.corpo.stage_name));
   ok('todo processo tem cliente', proc.every(c=>c.corpo.client_name));
   ok('CPF só com dígitos', proc.every(c=>/^\d*$/.test(c.corpo.client_cpf)));
   ok('CPF com 11 dígitos', proc.every(c=>c.corpo.client_cpf.length===11));
   ok('data no formato ISO ou vazia', proc.every(c=>!c.corpo.payload.data_venda || /^\d{4}-\d{2}-\d{2}$/.test(c.corpo.payload.data_venda)));
   const semData = proc.filter(c=>!c.corpo.payload.data_venda).length;
-  ok('15 sem data, como avisado', semData===15);
+  ok('linha sem data da venda não trava a importação', semData===1, 'semData='+semData);
   const teresina = proc.filter(c=>c.corpo.payload.cidade==='Teresina');
   ok('Teresina veio com PI', teresina.length>0 && teresina.every(c=>c.corpo.payload.estado==='PI'));
   const timon = proc.filter(c=>c.corpo.payload.cidade==='Timon');
   ok('Timon veio com MA (nao PI)', timon.length>0 && timon.every(c=>c.corpo.payload.estado==='MA'));
+  ok('analista ligado pelo nome completo',
+     proc.some(c=>c.corpo.manager_name==='AMANDA DA SILVA RODRIGUES'),
+     proc.map(c=>c.corpo.manager_name).join('|'));
   const semAnalista = proc.filter(c=>!c.corpo.manager_name);
-  ok('só os da ANA CAROLINA ficam sem analista', semAnalista.length>0 && semAnalista.length<74);
-  ok('analista ligado pelo nome completo', proc.some(c=>c.corpo.manager_name==='THYAGO DE FRANÇA BARBOSA'));
-  ok('regional preenchida', proc.every(c=>c.corpo.payload.regional));
-  ok('agência com número e nome', proc.every(c=>/^\d+ - /.test(c.corpo.payload.agencia)));
+  ok('analista que não existe no cadastro fica em branco, não inventa',
+     semAnalista.length===1, 'semAnalista='+semAnalista.length);
+  const comRegional = proc.filter(c=>c.corpo.payload.regional);
+  ok('construtora conhecida vira regional', comRegional.length===4, 'n='+comRegional.length);
+  const comAgencia = proc.filter(c=>c.corpo.payload.agencia);
+  ok('agência com número e nome', comAgencia.length===4 && comAgencia.every(c=>/^\d+ - /.test(c.corpo.payload.agencia)),
+     comAgencia.map(c=>c.corpo.payload.agencia).join('|'));
   ok('modalidade preenchida', proc.every(c=>c.corpo.payload.modalidade));
   ok('marcado como vindo de importação', proc.every(c=>c.corpo.payload.origem==='importacao'));
-  ok('36 corretores', porTipo.corretor===36);
-  ok('7 coordenadores', porTipo.coordenador===7);
-  ok('4 modalidades', porTipo.modalidade===4);
-  ok('5 agências', porTipo.agencia===5);
+  ok('3 corretores, sem repetir', porTipo.corretor===3, 'n='+porTipo.corretor);
+  ok('2 coordenadores', porTipo.coordenador===2, 'n='+porTipo.coordenador);
+  ok('3 modalidades', porTipo.modalidade===3, 'n='+porTipo.modalidade);
+  ok('2 agências', porTipo.agencia===2, 'n='+porTipo.agencia);
   const ligacoes = criados.filter(c=>c.url==='a1_partners' && c.m==='PATCH');
   ok('corretores ligados ao coordenador', ligacoes.length>0);
+  const desconhecida = proc.find(c=>c.corpo.client_name==='CLIENTE EXEMPLO CINCO');
+  ok('status que não existe cai na etapa inicial, e não fora do pipeline',
+     !!desconhecida && !!desconhecida.corpo.stage_id, JSON.stringify(desconhecida && desconhecida.corpo.stage_name));
 
   const porEtapa={};
   proc.forEach(c=>{porEtapa[c.corpo.stage_name]=(porEtapa[c.corpo.stage_name]||0)+1;});
@@ -160,5 +179,5 @@ const criados = [];
 
   console.log(erros.length ? '\nERROS:\n' + erros.slice(0,8).join('\n') : '\nsem erros de JS');
   await b.close();
-  process.exit(erros.length ? 1 : 0);   // a CI lê o código de saída
+  process.exit(erros.length || bad ? 1 : 0);   // a CI lê o código de saída
 })();
