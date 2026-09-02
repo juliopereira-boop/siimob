@@ -40,6 +40,12 @@ create table if not exists a1_acessos (
   criado_em  timestamptz not null default now()
 );
 
+-- Quantas pessoas do cliente estavam dentro no instante deste login, contando
+-- esta. Medir no login é exato, não é amostragem: o número de gente online só
+-- SOBE quando alguém entra. Toda subida passa por aqui, então o maior valor
+-- registrado é o maior que de fato aconteceu.
+alter table a1_acessos add column if not exists simultaneos int;
+
 create index if not exists idx_acessos_quando on a1_acessos (criado_em desc);
 create index if not exists idx_acessos_tenant on a1_acessos (tenant_id, criado_em desc);
 
@@ -47,9 +53,19 @@ create index if not exists idx_acessos_tenant on a1_acessos (tenant_id, criado_e
 create or replace function a1_registrar_acesso()
 returns trigger language plpgsql security definer
 set search_path = public, pg_temp as $$
+declare v_sim int;
 begin
-  insert into a1_acessos (tenant_id, user_id, papel, origem)
-  values (new.tenant_id, new.user_id, new.role, coalesce(new.origem, 'login'));
+  -- Mesma régua que o login usa para decidir o limite: presença vista nos
+  -- últimos 90 segundos. Conta as OUTRAS pessoas e soma esta, porque a
+  -- presença de quem está entrando ainda não foi gravada neste ponto.
+  select count(distinct user_key) + 1 into v_sim
+  from   a1_presence
+  where  tenant_id = new.tenant_id
+    and  last_seen >= now() - interval '90 seconds'
+    and  user_key <> (new.tenant_id::text || '::' || new.user_id::text);
+
+  insert into a1_acessos (tenant_id, user_id, papel, origem, simultaneos)
+  values (new.tenant_id, new.user_id, new.role, coalesce(new.origem, 'login'), v_sim);
   return new;
 exception when others then
   -- Registrar acesso NUNCA pode impedir alguém de entrar no sistema. Se falhar,
@@ -137,11 +153,16 @@ begin
     'acessos_suporte',(select count(*)                from a1_acessos where origem='suporte' and criado_em >= v_desde),
 
     -- ── por cliente ──────────────────────────────────────────────────────────
+    'pico_simultaneos', (select coalesce(max(simultaneos),0) from a1_acessos
+                          where origem='login' and criado_em >= v_desde),
+
     'por_cliente', coalesce((
       select json_agg(x order by x.acessos desc) from (
         select coalesce(t.name,'(sem cliente)') as cliente,
                count(a.id)               as acessos,
                count(distinct a.user_id) as usuarios,
+               max(a.simultaneos)        as max_simultaneos,
+               max(t.max_users)          as limite,
                max(a.criado_em)          as ultimo
         from   a1_acessos a
         left join a1_tenants t on t.id = a.tenant_id
@@ -174,7 +195,13 @@ on conflict do nothing;
 --   2. select * from a1_acessos order by criado_em desc limit 5;
 --      → a linha do seu login está lá, com origem = 'login'.
 --   3. select a1_sa_monitor('hora');
---      → devolve o json com 'online' maior que zero e 24 baldes.
+--      → devolve o json com 'online' maior que zero e 24 baldes, e cada
+--        cliente com 'max_simultaneos' e o 'limite' do plano dele.
+--
+--   Para conferir o teto: coloque max_users = 2 num cliente de teste e ponha
+--   três pessoas diferentes dentro ao mesmo tempo. A terceira tem de ouvir
+--   "Limite de 2 acessos simultâneos atingido", e max_simultaneos nunca pode
+--   passar de 2 no painel.
 --   4. No superadmin, aba "Monitor": o painel mostra o mesmo número.
 --
 -- O QUE ESTE ARQUIVO NÃO FAZ
