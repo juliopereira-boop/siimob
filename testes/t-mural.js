@@ -6,7 +6,9 @@ const checa=(n,c,x='')=>{ c?(ok++,console.log('  ✓ '+n)):(bad++,console.log(' 
 // Avisos que o "banco" tem, com públicos diferentes
 const AVISOS = [
   {id:'a1',titulo:'Para todos',corpo:'linha 1\n\nlinha 2',publicos:[],tenants:[],publicado:true,fixado:false,publicado_em:'2026-09-01T10:00:00Z'},
-  {id:'a2',titulo:'Só gestores <img src=x onerror="window.__XSS=1">',corpo:'texto do aviso com arte',
+  {id:'a2',titulo:'Só gestores <img src=x onerror="window.__XSS=1">',
+   corpo:'texto do aviso com arte\n\nIndique agora: https://siimob.com.br/indicasii e boa sorte.',
+   link_url:'https://siimob.com.br/indicasii', link_texto:'Quero indicar',
    imagem_url:BASE + '/assets/banners/indicasii-mural.jpg',
    publicos:['gestor'],tenants:[],publicado:true,fixado:false,publicado_em:'2026-09-01T09:00:00Z'},
 ];
@@ -71,6 +73,7 @@ let VISTOS_APOS_1 = '';
     checa('parágrafos separados', (await p.locator('.av-corpo p').count()) === 2);
     checa('sem arte, o texto já vem aberto', await p.locator('.av-corpo').isVisible());
     checa('sem arte, não há botão de expandir', (await p.locator('.av-mais').count()) === 0);
+    checa('aviso sem link não ganha botão de ação', (await p.locator('.av-acao').count()) === 0);
     await p.screenshot({path:__dirname+'/mural-popup.png', clip:{x:340,y:180,width:600,height:420}});
     await p.click('.av-btn-p'); await p.waitForTimeout(500);
     checa('próximo mostra o segundo', /gestores/.test(await p.locator('.av-titulo').textContent()));
@@ -98,6 +101,24 @@ let VISTOS_APOS_1 = '';
       await p.locator('.av-arte a').getAttribute('href') || ''));
     checa('link externo com rel seguro', /noopener/.test(
       await p.locator('.av-arte a').getAttribute('rel') || ''));
+
+    console.log('  -- botão de link e endereço no texto --');
+    checa('o aviso tem botão de ação', (await p.locator('.av-acao a').count()) === 1);
+    checa('com o texto que o gestor escolheu', /Quero indicar/.test(await p.locator('.av-acao a').textContent()));
+    checa('apontando para o endereço certo',
+      (await p.locator('.av-acao a').getAttribute('href')) === 'https://siimob.com.br/indicasii');
+    checa('abre em outra aba, com rel seguro',
+      (await p.locator('.av-acao a').getAttribute('target')) === '_blank'
+      && /noopener/.test(await p.locator('.av-acao a').getAttribute('rel') || ''));
+    checa('o botão aparece mesmo com o texto recolhido',
+      await p.locator('.av-acao a').isVisible() && !(await p.locator('.av-corpo').isVisible()));
+    await p.click('.av-mais'); await p.waitForTimeout(300);
+    checa('endereço escrito no texto virou link clicável',
+      (await p.locator('.av-corpo a[href="https://siimob.com.br/indicasii"]').count()) === 1,
+      await p.locator('.av-corpo').innerHTML());
+    checa('o link do texto não engole a palavra seguinte',
+      /e boa sorte/.test(await p.locator('.av-corpo').textContent()));
+    await p.click('.av-mais'); await p.waitForTimeout(300);
     checa('título com HTML não executa', (await p.evaluate(()=>window.__XSS||0)) === 0);
     checa('o HTML aparece como texto', /<img/.test(await p.locator('.av-titulo').textContent()));
     await p.click('.av-btn-p'); await p.waitForTimeout(600);

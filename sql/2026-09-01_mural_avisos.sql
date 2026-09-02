@@ -30,6 +30,12 @@ create table if not exists a1_avisos (
   criado_em    timestamptz not null default now()
 );
 
+-- ─── Botão de link ───────────────────────────────────────────────────────────
+-- Endereço escrito no meio do texto o usuário não clica: ele lê, ignora e a
+-- ação que motivou o aviso não acontece. O link vira um botão embaixo do aviso.
+alter table a1_avisos add column if not exists link_url   text;
+alter table a1_avisos add column if not exists link_texto text;
+
 create index if not exists idx_avisos_publicados
   on a1_avisos (publicado, publicado_em desc);
 
