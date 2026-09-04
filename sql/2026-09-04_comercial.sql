@@ -65,6 +65,7 @@ create table if not exists a1_comerciais (
   imobiliaria_id uuid,
   empresa_id     uuid,
   situacao_id    uuid references a1_co_situacoes(id),
+  situacao_em    timestamptz not null default now(),   -- relógio do SLA da fila
   proposta       jsonb not null default '{}'::jsonb,
   -- Cópia dos dados no momento em que o Comercial nasceu. Mudança posterior na
   -- Pré-análise NÃO altera silenciosamente o que já foi negociado.
@@ -81,6 +82,7 @@ create unique index if not exists idx_co_uma_por_pa
   on a1_comerciais (pre_analise_id) where pre_analise_id is not null;
 create index if not exists idx_co_tenant_sit on a1_comerciais (tenant_id, situacao_id);
 create index if not exists idx_co_corretor   on a1_comerciais (tenant_id, corretor_id);
+alter table a1_comerciais add column if not exists situacao_em timestamptz not null default now();
 
 create table if not exists a1_co_contratos (
   id            uuid primary key default gen_random_uuid(),
@@ -226,11 +228,17 @@ begin
     if new.versao is distinct from old.versao then
       raise exception 'versao_e_do_sistema';
     end if;
+    if new.situacao_em is distinct from old.situacao_em then
+      raise exception 'relogio_do_sla_e_do_sistema';
+    end if;
     if (new.corretor_id is distinct from old.corretor_id
         or new.empresa_id is distinct from old.empresa_id)
        and not (a1_e_gestor() or a1_perm('gerente')) then
       raise exception 'redistribuir_carteira_e_do_gestor';
     end if;
+  end if;
+  if new.situacao_id is distinct from old.situacao_id then
+    new.situacao_em := now();
   end if;
   new.atualizado_em := now();
   return new;

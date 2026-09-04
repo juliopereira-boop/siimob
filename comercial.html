@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comercial — SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0B534E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<style>
+  :root{
+    --bg:#F8FAFC;--card:#fff;--border:#e2e6ef;--t1:#0f1520;--t2:#4a5568;--t3:#8896a7;--t4:#b8c4d0;
+    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#3D5CC8;
+    --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);--shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
+  input,button,select,textarea{font-family:inherit}
+  a{text-decoration:none;color:inherit}
+  .hdr{background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
+  .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
+  .hdr-right{display:flex;align-items:center;gap:.8rem;font-size:.8rem}
+  .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer}
+  .btn-hdr:hover{background:rgba(255,255,255,.25)}
+  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
+  .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
+  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+  .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+  .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.75rem;margin-bottom:1.25rem}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;box-shadow:var(--shadow);border-left:3px solid var(--blue)}
+  .kpi-card.g{border-left-color:var(--green)}.kpi-card.a{border-left-color:var(--amber)}
+  .kpi-card.v{border-left-color:var(--violet)}.kpi-card.r{border-left-color:var(--red)}
+  .kpi-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.3rem}
+  .kpi-value{font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
+  .kpi-sub{font-size:.7rem;color:var(--t3);margin-top:.15rem}
+
+  .toolbar{display:flex;gap:.5rem;align-items:center;margin-bottom:.9rem;flex-wrap:wrap}
+  .toolbar input,.toolbar select{padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:var(--card)}
+  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)}
+  .seg button{border:none;background:none;padding:.45rem .8rem;font-size:.76rem;font-weight:700;color:var(--t3);cursor:pointer}
+  .seg button.on{background:var(--violet);color:#fff}
+
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto}
+  table.fila{width:100%;border-collapse:collapse;font-size:.8rem}
+  table.fila th{padding:.55rem .85rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;position:sticky;top:0;z-index:2}
+  table.fila td{padding:.6rem .85rem;border-bottom:1px solid var(--border);vertical-align:middle}
+  table.fila tr:last-child td{border-bottom:none}
+  table.fila tbody tr{cursor:pointer}
+  table.fila tbody tr:hover{background:#f7f9fc}
+  .cli{font-weight:700}
+  .sub{font-size:.68rem;color:var(--t3)}
+  .cod{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--t3)}
+  .val{font-family:'DM Mono',monospace;font-weight:700}
+  .sit{font-size:.66rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;color:#fff;white-space:nowrap}
+  .sla{display:flex;align-items:center;gap:.4rem;min-width:118px}
+  .sla-track{flex:1;height:6px;background:#eef1f6;border-radius:4px;overflow:hidden}
+  .sla-fill{height:100%;border-radius:4px}
+  .sla-txt{font-size:.66rem;font-weight:700;font-family:'DM Mono',monospace;white-space:nowrap}
+  .sla-ok .sla-fill{background:var(--green)}   .sla-ok .sla-txt{color:var(--green)}
+  .sla-at .sla-fill{background:var(--amber)}   .sla-at .sla-txt{color:var(--amber)}
+  .sla-ex .sla-fill{background:var(--red)}     .sla-ex .sla-txt{color:var(--red)}
+  .sla-nd .sla-fill{background:var(--t4)}      .sla-nd .sla-txt{color:var(--t3)}
+  .vazio{text-align:center;padding:2.5rem 1rem;color:var(--t3);font-size:.82rem}
+
+  .kanban{display:flex;gap:.7rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+  .k-col{width:272px;flex-shrink:0;display:flex;flex-direction:column}
+  .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700}
+  .k-col-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.08rem .45rem;font-size:.66rem;font-weight:800}
+  .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:110px;display:flex;flex-direction:column;gap:.4rem}
+  .co-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.6rem .7rem;cursor:pointer;box-shadow:var(--shadow)}
+  .co-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .co-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
+  .co-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
+  .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
+  .chip.val{background:#dcfce7;color:#166534;font-family:'DM Mono',monospace}
+  .chip.w{background:#fef9c3;color:#854d0e}.chip.r{background:#fee2e2;color:#b91c1c}
+  .chips{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.35rem}
+
+  .btn{border:none;border-radius:8px;padding:.5rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--violet);color:#fff}.btn-primary:hover{background:#2c4196}
+  .btn-ghost{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+  .btn-sm{padding:.35rem .65rem;font-size:.74rem}
+  .btn-danger{background:#fee2e2;color:#b91c1c}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(15,21,32,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:1.5rem}
+  .modal-bg.hidden{display:none}
+  .modal{background:var(--card);border-radius:14px;width:100%;max-width:900px;max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden}
+  .modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);gap:1rem}
+  .modal-title{font-size:1rem;font-weight:800}
+  .modal-sub{font-size:.75rem;color:var(--t3);margin-top:.15rem}
+  .modal-close{background:var(--bg);border:1px solid var(--border);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--t3);flex-shrink:0}
+  .modal-tabs{display:flex;gap:.2rem;padding:0 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .modal-tab{padding:.6rem .75rem;font-size:.77rem;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
+  .modal-tab.active{color:var(--violet);border-bottom-color:var(--violet)}
+  .modal-body{padding:1.25rem;overflow-y:auto}
+  .modal-foot{padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .fg{display:flex;flex-direction:column}.fg.full{grid-column:1/-1}
+  .fg label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:.25rem}
+  .fg input,.fg select,.fg textarea{padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--card)}
+  .sec-title{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:1.1rem 0 .6rem}
+  .sec-title:first-child{margin-top:0}
+
+  .linha{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.55rem .7rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.4rem;background:var(--card)}
+  .linha .nm{font-weight:700;font-size:.82rem}
+  .linha .mt{font-size:.68rem;color:var(--t3)}
+  .pill{font-size:.62rem;font-weight:800;padding:.12rem .45rem;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .pill.ok{background:#dcfce7;color:#166534}.pill.no{background:#fee2e2;color:#b91c1c}
+  .pill.wt{background:#fef9c3;color:#854d0e}.pill.nt{background:#eef2ff;color:#3730A3}
+
+  .timeline{display:flex;flex-direction:column}
+  .tl-item{display:flex;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+  .tl-item:last-child{border-bottom:none}
+  .tl-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;flex-shrink:0;background:#eef2ff;color:#3730A3}
+  .tl-desc{font-size:.79rem;line-height:1.4}.tl-meta{font-size:.67rem;color:var(--t3);margin-top:.1rem}
+
+  .aviso{border-radius:9px;padding:.7rem .85rem;font-size:.78rem;line-height:1.45;margin-bottom:.9rem}
+  .aviso.i{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+  .aviso.w{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+  .aviso.e{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .aviso.s{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+
+  #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
+  .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg);max-width:360px}
+  .toast-success{background:#16a34a}.toast-error{background:#dc2626}.toast-info{background:#334155}
+  @media(max-width:720px){ .fgrid{grid-template-columns:1fr} .main{padding:1rem .8rem} }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sico1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sico1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sico1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sico1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sico1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sico1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sico1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sico1d)"/></svg>
+    <span>SIIMOB</span>
+  </div>
+  <div class="hdr-right">
+    <span id="hdr-user"></span>
+    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="fila"    onclick="trocarAba('fila',this)">Fila</button>
+  <button class="tab-btn"        data-tab="esteira" onclick="trocarAba('esteira',this)">Esteira</button>
+  <a class="tab-btn" id="link-pa" href="" style="margin-left:auto;opacity:.75">Pré-análise ↗</a>
+  <a class="tab-btn" id="link-repasse" href="" style="opacity:.75">Repasse ↗</a>
+</div>
+
+<div class="main">
+  <div id="aba-fila">
+    <div class="kpi-grid" id="kpis"></div>
+    <div class="toolbar">
+      <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderFila()" style="min-width:220px">
+      <select id="f-situacao" onchange="renderFila()"><option value="">Todas as situações</option></select>
+      <select id="f-corretor" onchange="renderFila()"><option value="">Todos os corretores</option></select>
+      <div class="seg" role="group" aria-label="Filtro de prazo">
+        <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
+        <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
+        <button id="sla-at" onclick="filtrarSla('at')">Atenção</button>
+        <button id="sla-ex" onclick="filtrarSla('ex')">Estourado</button>
+      </div>
+      <div style="flex:1"></div>
+      <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+
+  <div id="aba-esteira" style="display:none"><div class="kanban" id="kanban"></div></div>
+</div>
+
+<!-- ══════════ DOSSIÊ COMERCIAL ══════════ -->
+<div class="modal-bg hidden" id="modal-dossie">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title" id="dos-titulo"></div><div class="modal-sub" id="dos-sub"></div></div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span id="dos-situacao"></span>
+        <button class="modal-close" onclick="fecharModal('modal-dossie')" aria-label="Fechar">×</button>
+      </div>
+    </div>
+    <div class="modal-tabs" id="dos-tabs">
+      <button class="modal-tab active" data-dt="proposta" onclick="trocarAbaDossie('proposta',this)">Proposta</button>
+      <button class="modal-tab" data-dt="origem"    onclick="trocarAbaDossie('origem',this)">Origem</button>
+      <button class="modal-tab" data-dt="contrato"  onclick="trocarAbaDossie('contrato',this)">Contrato</button>
+      <button class="modal-tab" data-dt="historico" onclick="trocarAbaDossie('historico',this)">Histórico</button>
+      <button class="modal-tab" data-dt="repasse"   onclick="trocarAbaDossie('repasse',this)">Repasse</button>
+    </div>
+    <div class="modal-body" id="dos-body"></div>
+    <div class="modal-foot">
+      <div id="dos-acoes" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
+      <div style="display:flex;gap:.45rem;align-items:center">
+        <select id="dos-mover" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
+        <button class="btn btn-primary btn-sm" id="dos-btn-mover" onclick="moverSituacao()">Mover</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/avisos.js"></script>
+<script src="/js/cobranca-aviso.js"></script>
+<script>
+const G = {
+  user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
+  corretores:[], empreendimentos:[], filtroSla:'', aba:'fila',
+  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[]
+};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,tipo='info'){ const w=document.getElementById('toast-wrap'); const d=document.createElement('div'); d.className='toast toast-'+tipo; d.textContent=msg; w.appendChild(d); setTimeout(()=>d.remove(),4200); }
+function fecharModal(id){ document.getElementById(id).classList.add('hidden'); }
+function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
+const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+function brl(cent){ return _brl.format((Number(cent)||0)/100); }
+function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
+function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
+function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function mascaraDoc(d){ d=soDigitos(d);
+  if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  return d; }
+function ehGestor(){ return G.user && G.user.role !== 'partner'; }
+function perm(chave){ if (ehGestor()) return true;
+  const p = (G.user && G.user.permissions) || {};
+  return p.gerente === true || p[chave] === true; }
+
+function sla(co){
+  const s = G.situacoes.find(x => x.id === co.situacao_id);
+  const horas = s && s.sla_horas;
+  const desde = co.situacao_em || co.criado_em;
+  const decorridas = desde ? (Date.now() - new Date(desde).getTime())/3600000 : 0;
+  if (!horas || horas <= 0) return { cls:'sla-nd', pct:0, txt:humano(decorridas), nivel:'nd' };
+  const pct = Math.min(100, (decorridas/horas)*100);
+  const nivel = pct >= 100 ? 'ex' : (pct >= 75 ? 'at' : 'ok');
+  const restam = horas - decorridas;
+  return { cls:'sla-'+nivel, pct, nivel, txt: restam >= 0 ? ('faltam '+humano(restam)) : ('há '+humano(-restam)) };
+}
+function humano(h){ if (h<1) return Math.max(0,Math.round(h*60))+'min'; if (h<48) return Math.round(h)+'h'; return Math.round(h/24)+'d'; }
+
+// O nome do cliente e os valores vêm do SNAPSHOT gravado quando o Comercial
+// nasceu — não de uma nova leitura da pré-análise. É essa a diferença entre
+// "o que foi aprovado" e "o que está lá agora".
+function tituloDe(co){
+  const s = co.origem_snapshot || {};
+  const p = (s.participantes || []).find(x => x.papel === 'TITULAR') || (s.participantes || [])[0];
+  return (p && p.nome) || G.titulares[co.id] || 'Sem titular';
+}
+function valorDe(co){ const c = (co.origem_snapshot || {}).credito || {}; return c.valor_total || 0; }
+
+async function init(){
+  try { G.user = a1RequireAuth(); } catch { return; }
+  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  try { await a1RequireModule('COMERCIAL'); } catch { return; }
+  G.slug = A1.slug;
+  document.getElementById('hdr-user').textContent = `${G.user.name} · ${ehGestor() ? 'Gestor' : (G.user.type || 'Parceiro')}`;
+  document.getElementById('link-pa').href      = `/${G.slug}/pre-analise`;
+  document.getElementById('link-repasse').href = `/${G.slug}/repasse`;
+  a1StartHeartbeat('comercial');
+  await carregar();
+  const id = new URLSearchParams(location.search).get('id');
+  if (id) abrirDossie(id);
+}
+
+async function carregar(){
+  const h = { headers: A1.headers() };
+  const [sit, tr, co, corr, empr] = await Promise.all([
+    fetch(`${A1.rest('a1_co_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
+    A1.buscarTudo(`${A1.rest('a1_comerciais')}?order=criado_em.desc`),
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+  ]);
+  G.situacoes = Array.isArray(sit) ? sit : [];
+  G.transicoes = Array.isArray(tr) ? tr : [];
+  G.lista = (co && Array.isArray(co.linhas)) ? co.linhas : [];
+  G.corretores = Array.isArray(corr) ? corr : [];
+  G.empreendimentos = Array.isArray(empr) ? empr : [];
+  preencherFiltros();
+  renderFila(); renderEsteira();
+}
+
+function preencherFiltros(){
+  document.getElementById('f-situacao').innerHTML = '<option value="">Todas as situações</option>' +
+    G.situacoes.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('');
+  document.getElementById('f-corretor').innerHTML = '<option value="">Todos os corretores</option>' +
+    G.corretores.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
+function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
+function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
+function nomeEmpr(id){ const e = G.empreendimentos.find(x=>x.id===id); return e ? e.name : '—'; }
+
+function filtrarSla(n){
+  G.filtroSla = n;
+  ['todos','ok','at','ex'].forEach(k => {
+    const b = document.getElementById('sla-'+k);
+    if (b) b.classList.toggle('on', (k==='todos'?'':k) === n);
+  });
+  renderFila();
+}
+
+function filtradas(){
+  const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
+  const fs = document.getElementById('f-situacao').value;
+  const fc = document.getElementById('f-corretor').value;
+  return G.lista.filter(c => {
+    if (fs && c.situacao_id !== fs) return false;
+    if (fc && c.corretor_id !== fc) return false;
+    if (G.filtroSla && sla(c).nivel !== G.filtroSla) return false;
+    if (q){
+      const alvo = [c.codigo, c.unidade, tituloDe(c), nomeEmpr(c.empreendimento_id)].join(' ').toLowerCase();
+      const nums = soDigitos(q);
+      if (!alvo.includes(q) && !(nums && soDigitos(alvo).includes(nums))) return false;
+    }
+    return true;
+  });
+}
+
+function renderFila(){
+  const linhas = filtradas();
+  document.getElementById('fila-contagem').textContent =
+    `${linhas.length} de ${G.lista.length} negócio${G.lista.length===1?'':'s'}`;
+  renderKpis();
+  const wrap = document.getElementById('fila-wrap');
+  if (!G.situacoes.length){
+    wrap.innerHTML = `<div class="vazio"><strong>A esteira do Comercial ainda não foi configurada.</strong><br>
+      Peça ao administrador para criar as situações no painel do superadmin.</div>`;
+    return;
+  }
+  if (!linhas.length){
+    wrap.innerHTML = `<div class="vazio">${G.lista.length
+      ? 'Nenhum negócio com esses filtros.'
+      : 'Nenhum negócio ainda. O Comercial nasce a partir de uma pré-análise aprovada.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = `<table class="fila"><thead><tr>
+      <th>Cliente</th><th>Código</th><th>Empreendimento</th><th>Corretor</th>
+      <th>Valor aprovado</th><th>Situação</th><th>Prazo da etapa</th><th>Repasse</th>
+    </tr></thead><tbody>${linhas.map(linhaFila).join('')}</tbody></table>`;
+}
+
+function linhaFila(c){
+  const s = sla(c);
+  return `<tr onclick="abrirDossie('${esc(c.id)}')" tabindex="0"
+             onkeydown="if(event.key==='Enter')abrirDossie('${esc(c.id)}')">
+    <td><div class="cli">${esc(tituloDe(c))}</div></td>
+    <td class="cod">${esc(c.codigo || c.id.slice(0,8))}</td>
+    <td>${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ` <span class="sub">· un. ${esc(c.unidade)}</span>` : ''}</td>
+    <td>${esc(nomeCorretor(c.corretor_id))}</td>
+    <td class="val">${esc(brl(valorDe(c)))}</td>
+    <td><span class="sit" style="background:${esc(corSituacao(c.situacao_id))}">${esc(nomeSituacao(c.situacao_id))}</span></td>
+    <td><div class="sla ${s.cls}"><div class="sla-track"><div class="sla-fill" style="width:${s.pct.toFixed(0)}%"></div></div>
+        <span class="sla-txt">${esc(s.txt)}</span></div></td>
+    <td>${c.repasse_case_id ? '<span class="pill ok">criado</span>' : '<span class="pill wt">não</span>'}</td>
+  </tr>`;
+}
+
+function renderKpis(){
+  const conta = n => G.lista.filter(c => sla(c).nivel === n).length;
+  const soma  = G.lista.reduce((a,c) => a + valorDe(c), 0);
+  const comRepasse = G.lista.filter(c => c.repasse_case_id).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi-card v"><div class="kpi-label">Negócios</div><div class="kpi-value">${G.lista.length}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">Valor em esteira</div>
+      <div class="kpi-value" style="font-size:1.15rem">${esc(brl(soma))}</div></div>
+    <div class="kpi-card a"><div class="kpi-label">Atenção</div><div class="kpi-value">${conta('at')}</div></div>
+    <div class="kpi-card r"><div class="kpi-label">Estourado</div><div class="kpi-value">${conta('ex')}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">Repasse criado</div><div class="kpi-value">${comRepasse}</div></div>`;
+}
+
+function renderEsteira(){
+  const el = document.getElementById('kanban');
+  if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
+  const linhas = filtradas();
+  el.innerHTML = G.situacoes.map(s => {
+    const dela = linhas.filter(c => c.situacao_id === s.id);
+    return `<div class="k-col">
+      <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
+        <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
+      <div class="k-col-body">${dela.map(cartao).join('') ||
+        '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function cartao(c){
+  const s = sla(c);
+  const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
+  return `<div class="co-card" style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
+    <div class="co-name">${esc(tituloDe(c))}</div>
+    <div class="co-line">${esc(nomeEmpr(c.empreendimento_id))}${c.unidade?' · un. '+esc(c.unidade):''}</div>
+    <div class="chips"><span class="chip val">${esc(brl(valorDe(c)))}</span>
+      <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
+      ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
+  </div>`;
+}
+
+function trocarAba(aba, el){
+  G.aba = aba;
+  ['fila','esteira'].forEach(a => document.getElementById('aba-'+a).style.display = (a===aba?'':'none'));
+  document.querySelectorAll('.tabs-bar .tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (aba === 'esteira') renderEsteira();
+}
+
+// ══════════ DOSSIÊ ══════════
+async function abrirDossie(id){
+  let co = G.lista.find(c => c.id === id);
+  if (!co){
+    const r = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${id}&select=*`, { headers:A1.headers() })
+      .then(x=>x.json()).catch(()=>[]);
+    co = (Array.isArray(r) && r[0]) || null;
+    if (!co){ toast('Negócio não encontrado ou fora da sua carteira.','error'); return; }
+  }
+  G.atual = co; G.abaDossie = 'proposta';
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.dt === 'proposta'));
+  document.getElementById('modal-dossie').classList.remove('hidden');
+  document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
+
+  const h = { headers:A1.headers() };
+  const [ct, ev] = await Promise.all([
+    fetch(`${A1.rest('a1_co_contratos')}?comercial_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_co_eventos')}?comercial_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[])
+  ]);
+  G.atualContratos = Array.isArray(ct) ? ct : [];
+  G.atualEv = Array.isArray(ev) ? ev : [];
+
+  document.getElementById('dos-titulo').textContent = tituloDe(co);
+  document.getElementById('dos-sub').textContent =
+    `${nomeEmpr(co.empreendimento_id)}${co.unidade ? ' · un. ' + co.unidade : ''} · código ${co.codigo || co.id.slice(0,8)}`;
+  document.getElementById('dos-situacao').innerHTML =
+    `<span class="sit" style="background:${esc(corSituacao(co.situacao_id))}">${esc(nomeSituacao(co.situacao_id))}</span>`;
+  montarRodape();
+  renderDossie();
+}
+
+function trocarAbaDossie(aba, el){
+  G.abaDossie = aba;
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderDossie();
+}
+
+function renderDossie(){
+  const f = { proposta:dosProposta, origem:dosOrigem, contrato:dosContrato,
+              historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
+  document.getElementById('dos-body').innerHTML = f ? f() : '';
+  // O alerta de "venda acima do crédito" tem de aparecer ao ABRIR a proposta
+  // já salva, não só quando alguém digita. Ligado só ao oninput, ele ficava
+  // invisível justamente para quem abre o negócio para conferir.
+  if (G.abaDossie === 'proposta') conferirProposta();
+}
+
+function dosProposta(){
+  const co = G.atual, p = co.proposta || {}, pode = perm('editar_repasses');
+  const cr = (co.origem_snapshot || {}).credito || {};
+  const aprovado = cr.valor_total || 0;
+  return `
+    <div class="fgrid">
+      <div class="fg"><label>Valor da venda (R$)</label>
+        <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda/100).toFixed(2).replace('.',',')) : ''}"
+               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
+      <div class="fg"><label>Entrada / recursos próprios (R$)</label>
+        <input id="p-entrada" value="${p.valor_entrada != null ? esc((p.valor_entrada/100).toFixed(2).replace('.',',')) : ''}"
+               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
+      <div class="fg"><label>Desconto concedido (R$)</label>
+        <input id="p-desc" value="${p.desconto != null ? esc((p.desconto/100).toFixed(2).replace('.',',')) : ''}"
+               inputmode="decimal" ${pode?'':'disabled'}></div>
+      <div class="fg"><label>Comissão (%)</label>
+        <input id="p-com" type="number" step="0.01" min="0" max="100" value="${esc(p.comissao_pct != null ? p.comissao_pct : '')}" ${pode?'':'disabled'}></div>
+      <div class="fg full"><label>Observações da negociação</label>
+        <textarea id="p-obs" rows="3" ${pode?'':'disabled'}>${esc(p.observacoes || '')}</textarea></div>
+    </div>
+    <div id="p-conferencia" style="margin-top:.9rem"></div>
+    <div class="sec-title">Crédito aprovado na origem</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total aprovado</label><input value="${esc(brl(aprovado))}" disabled></div>
+    </div>
+    ${pode ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarProposta()">Salvar proposta</button></div>` : ''}`;
+}
+
+// O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
+// descobrir na negociação do que na assinatura.
+function conferirProposta(){
+  const el = document.getElementById('p-conferencia'); if (!el) return;
+  const cr = (G.atual.origem_snapshot || {}).credito || {};
+  const aprovado = Number(cr.valor_total) || 0;
+  const venda   = paraCentavos(document.getElementById('p-venda').value) || 0;
+  const entrada = paraCentavos(document.getElementById('p-entrada').value) || 0;
+  if (!venda || !aprovado){ el.innerHTML = ''; return; }
+  const falta = venda - entrada - aprovado;
+  el.innerHTML = falta > 0
+    ? `<div class="aviso w">A venda de ${esc(brl(venda))} menos a entrada de ${esc(brl(entrada))}
+        deixa <strong>${esc(brl(falta))}</strong> acima do crédito aprovado de ${esc(brl(aprovado))}.</div>`
+    : `<div class="aviso s">Venda coberta pelo crédito aprovado mais a entrada.</div>`;
+}
+
+async function salvarProposta(){
+  const co = G.atual;
+  const proposta = {
+    valor_venda:   paraCentavos(document.getElementById('p-venda').value),
+    valor_entrada: paraCentavos(document.getElementById('p-entrada').value),
+    desconto:      paraCentavos(document.getElementById('p-desc').value),
+    comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
+    observacoes:   document.getElementById('p-obs').value || null
+  };
+  const res = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${co.id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify({ proposta }) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar a proposta.'),'error'); return; }
+  co.proposta = proposta;
+  toast('Proposta salva.','success');
+  renderFila(); renderEsteira();
+}
+
+function dosOrigem(){
+  const s = G.atual.origem_snapshot || {};
+  const cr = s.credito || {}, pa = s.pre_analise || {}, ps = s.participantes || [];
+  return `
+    <div class="aviso i">Esta é a <strong>fotografia</strong> do que foi aprovado no momento em que o
+      negócio nasceu. Se a pré-análise mudar depois, isto <em>não</em> muda — e é de propósito:
+      o que entrou em negociação foi isto.</div>
+    <div class="sec-title" style="margin-top:0">Pré-análise de origem</div>
+    <div class="fgrid">
+      <div class="fg"><label>Código</label><input value="${esc(pa.codigo || (pa.id||'').slice(0,8))}" disabled></div>
+      <div class="fg"><label>Unidade</label><input value="${esc(pa.unidade || '—')}" disabled></div>
+      <div class="fg"><label>Capturado em</label><input value="${esc(dataHoraBR(s.capturado_em))}" disabled></div>
+      <div class="fg"><label>Versão do crédito</label><input value="${esc(cr.versao != null ? cr.versao : '—')}" disabled></div>
+    </div>
+    <div class="sec-title">Participantes na aprovação</div>
+    ${ps.length ? ps.map(p => `
+      <div class="linha"><div><div class="nm">${esc(p.nome || '—')}
+        <span class="pill ${p.papel==='TITULAR'?'nt':'wt'}">${esc(p.papel||'')}</span></div></div>
+        <div class="nm">${esc(brl(p.renda_analisada))}</div></div>`).join('')
+      : '<div class="sub">sem participantes registrados</div>'}
+    <div class="sec-title">Valores aprovados</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total</label><input value="${esc(brl(cr.valor_total))}" disabled></div>
+      <div class="fg"><label>Prestação</label><input value="${esc(brl(cr.prestacao))}" disabled></div>
+      <div class="fg"><label>Prazo</label><input value="${cr.prazo_meses ? esc(cr.prazo_meses)+' meses' : '—'}" disabled></div>
+    </div>
+    ${G.atual.pre_analise_id ? `<div style="margin-top:1rem">
+      <a class="btn btn-ghost btn-sm" href="/${esc(G.slug)}/pre-analise">Abrir a Pré-análise ↗</a></div>` : ''}`;
+}
+
+function dosContrato(){
+  const pode = perm('editar_repasses');
+  const podeAssinar = ehGestor() || perm('gerente') || perm('analisar_credito');
+  const linhas = G.atualContratos.map(c => `
+    <div class="linha">
+      <div><div class="nm">Versão ${c.versao}
+        <span class="pill ${c.status==='ASSINADO'?'ok':c.status==='CANCELADO'?'no':'wt'}">${esc(c.status)}</span></div>
+        <div class="mt">${esc(dataHoraBR(c.criado_em))}${c.provedor ? ' · ' + esc(c.provedor) : ''}${
+          c.assinado_em ? ' · assinado em ' + esc(dataBR(c.assinado_em)) : ''}</div></div>
+      <div style="display:flex;gap:.4rem">
+        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" onclick="baixarContrato('${esc(c.id)}')">Abrir</button>` : ''}
+        ${podeAssinar && c.status !== 'ASSINADO' && c.status !== 'CANCELADO'
+          ? `<button class="btn btn-primary btn-sm" onclick="marcarAssinado('${esc(c.id)}')">Marcar assinado</button>` : ''}
+      </div>
+    </div>`).join('');
+  return `
+    ${linhas || '<div class="sub">Nenhum contrato registrado.</div>'}
+    ${pode ? `
+      <div class="sec-title">Novo contrato</div>
+      <div class="fgrid">
+        <div class="fg"><label>Situação</label>
+          <select id="ct-status">
+            <option value="EM_CONFECCAO">Em confecção</option>
+            <option value="GERADO">Gerado</option>
+            <option value="AGUARDANDO_ASSINATURA">Aguardando assinatura</option>
+          </select></div>
+        <div class="fg"><label>Provedor de assinatura</label>
+          <input id="ct-prov" placeholder="ex.: Clicksign, D4Sign"></div>
+        <div class="fg full"><label>Arquivo (opcional)</label><input type="file" id="ct-arq"></div>
+      </div>
+      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-ct" onclick="criarContrato()">Registrar contrato</button></div>` : ''}
+    ${podeAssinar ? '' : `<div class="aviso i" style="margin-top:.9rem">Marcar um contrato como
+      <strong>assinado</strong> é de quem tem permissão para isso. Se quem vende pudesse carimbar
+      sozinho, a exigência de contrato assinado deixaria de ser exigência.</div>`}`;
+}
+
+async function criarContrato(){
+  const btn = document.getElementById('btn-ct'); btn.disabled = true; btn.textContent = 'Registrando…';
+  try {
+    const arq = document.getElementById('ct-arq').files[0];
+    let chave = null;
+    if (arq){
+      if (arq.size > 20*1024*1024) throw new Error('Arquivo acima de 20 MB.');
+      const limpo = arq.name.replace(/[^\w.\-]+/g,'_').slice(-80);
+      chave = `${G.user.tenant_id}/comercial/${G.atual.id}/${Date.now()}_${limpo}`;
+      if (!await A1.storageUpload('case-documents', chave, arq)) throw new Error('Falha no envio do arquivo.');
+    }
+    const res = await fetch(A1.rest('a1_co_contratos'), {
+      method:'POST', headers:A1.returnHeaders(),
+      body: JSON.stringify({ tenant_id:G.user.tenant_id, comercial_id:G.atual.id,
+        versao: (G.atualContratos[0] ? G.atualContratos[0].versao : 0) + 1,
+        status: document.getElementById('ct-status').value,
+        provedor: document.getElementById('ct-prov').value || null,
+        storage_key: chave })
+    });
+    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o contrato.'));
+    G.atualContratos.unshift((await res.json())[0]);
+    toast('Contrato registrado.','success');
+    montarRodape(); renderDossie();
+  } catch(e){ toast(e.message,'error'); }
+  finally { const b = document.getElementById('btn-ct'); if (b){ b.disabled = false; b.textContent = 'Registrar contrato'; } }
+}
+
+async function marcarAssinado(id){
+  const res = await fetch(`${A1.rest('a1_co_contratos')}?id=eq.${id}`, {
+    method:'PATCH', headers:A1.headers(),
+    body: JSON.stringify({ status:'ASSINADO', assinado_em: new Date().toISOString() }) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível marcar como assinado.'),'error'); return; }
+  const c = G.atualContratos.find(x => x.id === id);
+  if (c){ c.status = 'ASSINADO'; c.assinado_em = new Date().toISOString(); }
+  toast('Contrato marcado como assinado.','success');
+  montarRodape(); renderDossie();
+}
+
+async function baixarContrato(id){
+  const c = G.atualContratos.find(x => x.id === id); if (!c || !c.storage_key) return;
+  const url = await A1.storageSignedUrl('case-documents', c.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
+function dosHistorico(){
+  if (!G.atualEv.length) return '<div class="sub">Sem histórico ainda.</div>';
+  return `<div class="timeline">${G.atualEv.map(e => {
+    const de = e.de_situacao ? nomeSituacao(e.de_situacao) : null;
+    const para = e.para_situacao ? nomeSituacao(e.para_situacao) : null;
+    const just = e.detalhe && e.detalhe.justificativa;
+    return `<div class="tl-item">
+      <div class="tl-dot">${e.evento === 'transicao' ? '→' : e.evento === 'repasse_criado' ? '✓' : '•'}</div>
+      <div><div class="tl-desc">${esc(rotuloEvento(e.evento))}${
+        de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
+        para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
+        ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
+        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${e.ator_nome ? ' · ' + esc(e.ator_nome) : ''}</div></div>
+    </div>`; }).join('')}</div>`;
+}
+function rotuloEvento(e){
+  return { transicao:'Mudança de situação', criado_da_pre_analise:'Criado a partir da pré-análise',
+           repasse_criado:'Cartão de Repasse criado' }[e] || e;
+}
+
+function dosRepasse(){
+  const co = G.atual;
+  if (co.repasse_case_id){
+    return `<div class="aviso s">O cartão de Repasse deste negócio já foi criado.</div>
+      <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O vínculo é único: um comercial gera
+      um cartão e só um. Clicar de novo devolve o mesmo — não cria um segundo, mesmo com dois cliques
+      simultâneos ou duas abas abertas.</p>
+      <div style="margin-top:1rem"><a class="btn btn-primary btn-sm" href="/${esc(G.slug)}/andamento">Abrir o Repasse ↗</a></div>`;
+  }
+  const assinado = G.atualContratos.some(c => c.status === 'ASSINADO');
+  return `<div class="aviso i">Ainda não existe cartão de Repasse para este negócio.</div>
+    ${assinado ? '<div class="aviso s">Há contrato assinado.</div>'
+               : '<div class="aviso w">Não há contrato assinado. Exigir contrato assinado antes do repasse é <strong>opção do cliente</strong>, marcada na transição da esteira — não é regra fixa do sistema.</div>'}
+    <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">Quando a esteira permitir, o botão
+    <strong>Criar Repasse</strong> aparece no rodapé. O cartão nasce na etapa inicial que o próprio
+    cliente configurou no workflow de Repasse, com o nome do titular e os valores aprovados.</p>`;
+}
+
+function montarRodape(){
+  const co = G.atual, pode = perm('editar_repasses');
+  const destinos = G.transicoes
+    .filter(t => t.de_id === null || t.de_id === co.situacao_id)
+    .map(t => G.situacoes.find(s => s.id === t.para_id))
+    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== co.situacao_id);
+  const sel = document.getElementById('dos-mover');
+  sel.innerHTML = destinos.length
+    ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
+    : '<option value="">nenhuma transição disponível</option>';
+  sel.disabled = !destinos.length || !pode;
+  document.getElementById('dos-btn-mover').disabled = !destinos.length || !pode;
+
+  const acoes = document.getElementById('dos-acoes');
+  acoes.innerHTML = co.repasse_case_id
+    ? '<span class="sub">Repasse já criado.</span>'
+    : (pode ? `<button class="btn btn-primary btn-sm" id="btn-repasse" onclick="criarRepasse()">Criar Repasse</button>` : '');
+}
+
+async function moverSituacao(){
+  const co = G.atual, para = document.getElementById('dos-mover').value;
+  if (!para) return;
+  const just = prompt('Justificativa (opcional):') || null;
+  const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
+  try {
+    const res = await fetch(A1.rpc('a1_co_transicionar'), {
+      method:'POST', headers:A1.headers(),
+      body: JSON.stringify({ p_comercial:co.id, p_para:para, p_justificativa:just, p_versao_esperada:co.versao })
+    });
+    const j = await res.json().catch(()=>null);
+    if (!res.ok){ toast(traduzErro(j),'error'); return; }
+    if (j && j.ok === false){ toast(j.erro || 'A esteira barrou a transição.','error'); return; }
+    toast(j && j.repasse_case_id ? 'Situação alterada e cartão de Repasse criado.' : 'Situação alterada.','success');
+    fecharModal('modal-dossie');
+    await carregar();
+  } finally { btn.disabled = false; }
+}
+
+async function criarRepasse(){
+  const btn = document.getElementById('btn-repasse'); btn.disabled = true; btn.textContent = 'Criando…';
+  try {
+    const res = await fetch(A1.rpc('a1_co_executar_acao'), {
+      method:'POST', headers:A1.headers(),
+      body: JSON.stringify({ p_comercial:G.atual.id, p_acao:'CREATE_REPASS' }) });
+    const j = await res.json().catch(()=>null);
+    if (!res.ok){ toast(traduzErro(j),'error'); return; }
+    if (j && j.ok === false){ toast(j.erro || 'Não foi possível criar o Repasse.','error'); return; }
+    toast('Cartão de Repasse criado.','success');
+    G.atual.repasse_case_id = j.repasse_case_id;
+    await carregar();
+    montarRodape();
+    trocarAbaDossie('repasse', document.querySelector('#dos-tabs [data-dt="repasse"]'));
+  } finally {
+    const b = document.getElementById('btn-repasse');
+    if (b){ b.disabled = false; b.textContent = 'Criar Repasse'; }
+  }
+}
+
+async function mensagemErro(res, padrao){
+  try {
+    const j = await res.json();
+    const m = j && (j.message || j.hint || j.details);
+    if (res.status === 401 || res.status === 403 || /row-level security/i.test(m||''))
+      return 'Você não tem permissão para isso.';
+    if (/situacao_so_muda_por_transicao/.test(m||''))
+      return 'A situação só muda pela esteira, não por edição direta.';
+    if (/snapshot_da_aprovacao/.test(m||''))
+      return 'A fotografia do crédito aprovado não pode ser reescrita.';
+    if (/vinculo_de_repasse/.test(m||''))
+      return 'O vínculo com o Repasse é criado pela ação, não à mão.';
+    if (/sem_permissao_para_marcar_contrato_assinado/.test(m||''))
+      return 'Você não tem permissão para marcar contrato como assinado.';
+    return m || padrao;
+  } catch { return padrao; }
+}
+
+function traduzErro(j){
+  const m = (j && (j.message || j.error)) || '';
+  const mapa = {
+    nao_encontrado:          'Negócio não encontrado.',
+    modulo_desabilitado:     'O módulo não está liberado para este cliente.',
+    sem_acesso:              'Este negócio não é da sua carteira.',
+    sem_permissao:           'Você não tem permissão para isso.',
+    versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. Recarregue a tela.',
+    transicao_nao_permitida: 'A esteira do cliente não permite essa mudança a partir da situação atual.',
+    papel_nao_autorizado:    'Seu papel não pode fazer essa transição.',
+    contrato_nao_assinado:   'Esta transição exige contrato assinado.',
+    sem_titular:             'Sem titular: o cartão de Repasse exige o nome do cliente.',
+    repasse_sem_etapa:       'O cliente não tem etapa cadastrada no workflow de Repasse.',
+    modulo_repasse_desabilitado:'O módulo Repasse não está liberado para este cliente.',
+    acao_desconhecida:       'Ação desconhecida.'
+  };
+  for (const k in mapa) if (m.includes(k)) return mapa[k];
+  return m || 'Não foi possível concluir a operação.';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-bg:not(.hidden)').forEach(m => m.classList.add('hidden'));
+});
+init();
+</script>
+</body>
+</html>

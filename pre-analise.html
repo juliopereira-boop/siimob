@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pré-análise — SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0B534E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<style>
+  :root{
+    --bg:#F8FAFC;--card:#fff;--border:#e2e6ef;--t1:#0f1520;--t2:#4a5568;--t3:#8896a7;--t4:#b8c4d0;
+    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#3D5CC8;
+    --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);--shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
+  input,button,select,textarea{font-family:inherit}
+  a{text-decoration:none;color:inherit}
+  .hdr{background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
+  .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
+  .hdr-right{display:flex;align-items:center;gap:.8rem;font-size:.8rem}
+  .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer}
+  .btn-hdr:hover{background:rgba(255,255,255,.25)}
+  .btn-hdr-primary{background:#fff;color:var(--violet)}
+  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
+  .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
+  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+  .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+  .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.75rem;margin-bottom:1.25rem}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;box-shadow:var(--shadow);border-left:3px solid var(--blue)}
+  .kpi-card.g{border-left-color:var(--green)}.kpi-card.a{border-left-color:var(--amber)}
+  .kpi-card.v{border-left-color:var(--violet)}.kpi-card.r{border-left-color:var(--red)}
+  .kpi-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.3rem}
+  .kpi-value{font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
+  .kpi-sub{font-size:.7rem;color:var(--t3);margin-top:.15rem}
+
+  .toolbar{display:flex;gap:.5rem;align-items:center;margin-bottom:.9rem;flex-wrap:wrap}
+  .toolbar input,.toolbar select{padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:var(--card)}
+  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)}
+  .seg button{border:none;background:none;padding:.45rem .8rem;font-size:.76rem;font-weight:700;color:var(--t3);cursor:pointer}
+  .seg button.on{background:var(--violet);color:#fff}
+
+  /* ── Fila ── */
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto}
+  table.fila{width:100%;border-collapse:collapse;font-size:.8rem}
+  table.fila th{padding:.55rem .85rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;position:sticky;top:0;z-index:2}
+  table.fila td{padding:.6rem .85rem;border-bottom:1px solid var(--border);vertical-align:middle}
+  table.fila tr:last-child td{border-bottom:none}
+  table.fila tbody tr{cursor:pointer}
+  table.fila tbody tr:hover{background:#f7f9fc}
+  .cli{font-weight:700}
+  .sub{font-size:.68rem;color:var(--t3)}
+  .cod{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--t3)}
+  .sit{font-size:.66rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;color:#fff;white-space:nowrap}
+  .sla{display:flex;align-items:center;gap:.4rem;min-width:118px}
+  .sla-track{flex:1;height:6px;background:#eef1f6;border-radius:4px;overflow:hidden}
+  .sla-fill{height:100%;border-radius:4px}
+  .sla-txt{font-size:.66rem;font-weight:700;font-family:'DM Mono',monospace;white-space:nowrap}
+  .sla-ok .sla-fill{background:var(--green)}   .sla-ok .sla-txt{color:var(--green)}
+  .sla-at .sla-fill{background:var(--amber)}   .sla-at .sla-txt{color:var(--amber)}
+  .sla-ex .sla-fill{background:var(--red)}     .sla-ex .sla-txt{color:var(--red)}
+  .sla-nd .sla-fill{background:var(--t4)}      .sla-nd .sla-txt{color:var(--t3)}
+  .vazio{text-align:center;padding:2.5rem 1rem;color:var(--t3);font-size:.82rem}
+
+  /* ── Esteira (kanban) ── */
+  .kanban{display:flex;gap:.7rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+  .k-col{width:272px;flex-shrink:0;display:flex;flex-direction:column}
+  .k-col-header{display:flex;align-items:center;justify-content:space-between;padding:.55rem .7rem;border-radius:var(--radius) var(--radius) 0 0;color:#fff;font-size:.75rem;font-weight:700}
+  .k-col-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.08rem .45rem;font-size:.66rem;font-weight:800}
+  .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:110px;display:flex;flex-direction:column;gap:.4rem}
+  .pa-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.6rem .7rem;cursor:pointer;box-shadow:var(--shadow)}
+  .pa-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .pa-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
+  .pa-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
+  .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
+  .chip.val{background:#dcfce7;color:#166534;font-family:'DM Mono',monospace}
+  .chip.w{background:#fef9c3;color:#854d0e}.chip.r{background:#fee2e2;color:#b91c1c}
+  .chips{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.35rem}
+
+  .btn{border:none;border-radius:8px;padding:.5rem .9rem;font-size:.8rem;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--violet);color:#fff}.btn-primary:hover{background:#2c4196}
+  .btn-ghost{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+  .btn-sm{padding:.35rem .65rem;font-size:.74rem}
+  .btn-danger{background:#fee2e2;color:#b91c1c}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(15,21,32,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:1.5rem}
+  .modal-bg.hidden{display:none}
+  .modal{background:var(--card);border-radius:14px;width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden}
+  .modal.wide{max-width:900px}
+  .modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);gap:1rem}
+  .modal-title{font-size:1rem;font-weight:800}
+  .modal-sub{font-size:.75rem;color:var(--t3);margin-top:.15rem}
+  .modal-close{background:var(--bg);border:1px solid var(--border);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--t3);flex-shrink:0}
+  .modal-tabs{display:flex;gap:.2rem;padding:0 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .modal-tab{padding:.6rem .75rem;font-size:.77rem;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
+  .modal-tab.active{color:var(--violet);border-bottom-color:var(--violet)}
+  .modal-body{padding:1.25rem;overflow-y:auto}
+  .modal-foot{padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .fg{display:flex;flex-direction:column}.fg.full{grid-column:1/-1}
+  .fg label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:.25rem}
+  .fg input,.fg select,.fg textarea{padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;background:var(--card)}
+  .fg .chk{flex-direction:row;align-items:center;gap:.4rem;display:flex;font-size:.8rem;font-weight:600;color:var(--t2);text-transform:none;letter-spacing:0}
+  .sec-title{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:1.1rem 0 .6rem}
+  .sec-title:first-child{margin-top:0}
+
+  /* passos do assistente */
+  .passos{display:flex;gap:.4rem;padding:.75rem 1.25rem;background:#fafbfc;border-bottom:1px solid var(--border)}
+  .passo{flex:1;display:flex;align-items:center;gap:.45rem;font-size:.72rem;font-weight:700;color:var(--t3)}
+  .passo .n{width:22px;height:22px;border-radius:50%;background:#e6eaf2;color:var(--t3);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+  .passo.on{color:var(--violet)} .passo.on .n{background:var(--violet);color:#fff}
+  .passo.ok .n{background:var(--green);color:#fff}
+
+  .linha{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.55rem .7rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.4rem;background:var(--card)}
+  .linha .nm{font-weight:700;font-size:.82rem}
+  .linha .mt{font-size:.68rem;color:var(--t3)}
+  .pill{font-size:.62rem;font-weight:800;padding:.12rem .45rem;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .pill.ok{background:#dcfce7;color:#166534}.pill.no{background:#fee2e2;color:#b91c1c}
+  .pill.wt{background:#fef9c3;color:#854d0e}.pill.nt{background:#eef2ff;color:#3730A3}
+
+  .timeline{display:flex;flex-direction:column}
+  .tl-item{display:flex;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+  .tl-item:last-child{border-bottom:none}
+  .tl-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;flex-shrink:0;background:#eef2ff;color:#3730A3}
+  .tl-desc{font-size:.79rem;line-height:1.4}.tl-meta{font-size:.67rem;color:var(--t3);margin-top:.1rem}
+
+  .aviso{border-radius:9px;padding:.7rem .85rem;font-size:.78rem;line-height:1.45;margin-bottom:.9rem}
+  .aviso.i{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+  .aviso.w{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+  .aviso.e{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .aviso.s{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+
+  #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
+  .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg);max-width:360px}
+  .toast-success{background:#16a34a}.toast-error{background:#dc2626}.toast-info{background:#334155}
+  @media(max-width:720px){ .fgrid{grid-template-columns:1fr} .main{padding:1rem .8rem} }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sipa1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sipa1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sipa1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sipa1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sipa1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sipa1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sipa1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sipa1d)"/></svg>
+    <span>SIIMOB</span>
+  </div>
+  <div class="hdr-right">
+    <span id="hdr-user"></span>
+    <button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>
+    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
+  </div>
+</div>
+
+<div class="tabs-bar" id="tabs-bar">
+  <button class="tab-btn active" data-tab="fila"    onclick="trocarAba('fila',this)">Fila</button>
+  <button class="tab-btn"        data-tab="esteira" onclick="trocarAba('esteira',this)">Esteira</button>
+  <button class="tab-btn"        data-tab="painel"  onclick="trocarAba('painel',this)">Painel</button>
+  <a class="tab-btn" id="link-repasse" href="" style="margin-left:auto;opacity:.75">Repasse ↗</a>
+</div>
+
+<div class="main">
+
+  <div id="aba-fila">
+    <div class="kpi-grid" id="kpis-fila"></div>
+    <div class="toolbar">
+      <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." oninput="renderFila()" style="min-width:220px">
+      <select id="f-situacao" onchange="renderFila()"><option value="">Todas as situações</option></select>
+      <select id="f-corretor" onchange="renderFila()"><option value="">Todos os corretores</option></select>
+      <select id="f-empr"     onchange="renderFila()"><option value="">Todos os empreendimentos</option></select>
+      <div class="seg" role="group" aria-label="Filtro de prazo">
+        <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
+        <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
+        <button id="sla-at"     onclick="filtrarSla('at')">Atenção</button>
+        <button id="sla-ex"     onclick="filtrarSla('ex')">Estourado</button>
+      </div>
+      <div style="flex:1"></div>
+      <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+
+  <div id="aba-esteira" style="display:none">
+    <div class="kanban" id="kanban"></div>
+  </div>
+
+  <div id="aba-painel" style="display:none"></div>
+
+</div>
+
+<!-- ══════════ ASSISTENTE — NOVA PRÉ-ANÁLISE ══════════ -->
+<div class="modal-bg hidden" id="modal-nova">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Nova Pré-análise</div>
+           <div class="modal-sub" id="nova-sub">Passo 1 de 3 — o negócio</div></div>
+      <button class="modal-close" onclick="fecharModal('modal-nova')" aria-label="Fechar">×</button>
+    </div>
+    <div class="passos">
+      <div class="passo on" id="passo-1"><span class="n">1</span> Negócio</div>
+      <div class="passo"    id="passo-2"><span class="n">2</span> Titular</div>
+      <div class="passo"    id="passo-3"><span class="n">3</span> Renda</div>
+    </div>
+    <div class="modal-body" id="nova-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="nova-voltar" onclick="passoAnterior()" style="visibility:hidden">Voltar</button>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="fecharModal('modal-nova')">Cancelar</button>
+        <button class="btn btn-primary" id="nova-avancar" onclick="passoSeguinte()">Avançar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DOSSIÊ 360º ══════════ -->
+<div class="modal-bg hidden" id="modal-dossie">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="dos-titulo"></div>
+        <div class="modal-sub"  id="dos-sub"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span id="dos-situacao"></span>
+        <button class="modal-close" onclick="fecharModal('modal-dossie')" aria-label="Fechar">×</button>
+      </div>
+    </div>
+    <div class="modal-tabs" id="dos-tabs">
+      <button class="modal-tab active" data-dt="dados"   onclick="trocarAbaDossie('dados',this)">Dados</button>
+      <button class="modal-tab" data-dt="pessoas"        onclick="trocarAbaDossie('pessoas',this)">Pessoas</button>
+      <button class="modal-tab" data-dt="credito"        onclick="trocarAbaDossie('credito',this)">Crédito</button>
+      <button class="modal-tab" data-dt="documentos"     onclick="trocarAbaDossie('documentos',this)">Documentos</button>
+      <button class="modal-tab" data-dt="checklist"      onclick="trocarAbaDossie('checklist',this)">Checklist</button>
+      <button class="modal-tab" data-dt="historico"      onclick="trocarAbaDossie('historico',this)">Histórico</button>
+      <button class="modal-tab" data-dt="comercial"      onclick="trocarAbaDossie('comercial',this)">Comercial</button>
+    </div>
+    <div class="modal-body" id="dos-body"></div>
+    <div class="modal-foot">
+      <div id="dos-acoes" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
+      <div style="display:flex;gap:.45rem;align-items:center">
+        <select id="dos-mover" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
+        <button class="btn btn-primary btn-sm" id="dos-btn-mover" onclick="moverSituacao()">Mover</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/avisos.js"></script>
+<script src="/js/cobranca-aviso.js"></script>
+<script>
+const G = {
+  user:null, slug:null,
+  situacoes:[], transicoes:[], lista:[], pessoas:{},
+  corretores:[], imobiliarias:[], empreendimentos:[],
+  filtroSla:'', aba:'fila', abaDossie:'dados',
+  atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null,
+  passo:1, rascunho:{}
+};
+
+// ─── utilitários ─────────────────────────────────────────────────────────────
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,tipo='info'){ const w=document.getElementById('toast-wrap'); const d=document.createElement('div'); d.className='toast toast-'+tipo; d.textContent=msg; w.appendChild(d); setTimeout(()=>d.remove(),4200); }
+function fecharModal(id){ document.getElementById(id).classList.add('hidden'); }
+function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
+const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+// Dinheiro é guardado em CENTAVOS, inteiro. Guardar reais em ponto flutuante é
+// como se acerta a soma do subsídio com o FGTS por um centavo e depois se
+// discute com o banco de quem é o erro.
+function brl(cent){ return _brl.format((Number(cent)||0)/100); }
+function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
+function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
+function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function mascaraDoc(d){ d=soDigitos(d);
+  if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  return d; }
+
+// CPF conferido de verdade, com os dois dígitos. Um CPF digitado errado só
+// aparece semanas depois, quando o banco recusa o processo inteiro.
+function cpfValido(cpf){
+  cpf = soDigitos(cpf);
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  for (let t = 9; t < 11; t++) {
+    let s = 0;
+    for (let i = 0; i < t; i++) s += parseInt(cpf[i],10) * ((t + 1) - i);
+    let d = (s * 10) % 11; if (d === 10) d = 0;
+    if (d !== parseInt(cpf[t],10)) return false;
+  }
+  return true;
+}
+
+function ehGestor(){ return G.user && G.user.role !== 'partner'; }
+function perm(chave){
+  if (ehGestor()) return true;
+  const p = (G.user && G.user.permissions) || {};
+  return p.gerente === true || p[chave] === true;
+}
+
+// ─── SLA ─────────────────────────────────────────────────────────────────────
+// O relógio conta a partir de quando o processo ENTROU na situação atual, não
+// de quando foi criado. Um processo pode estar há 40 dias na esteira e há duas
+// horas na etapa que está travando — é a segunda informação que resolve o dia.
+function sla(pa){
+  const s = G.situacoes.find(x => x.id === pa.situacao_id);
+  const horas = s && s.sla_horas;
+  const desde = pa.situacao_em || pa.criado_em;
+  const decorridas = desde ? (Date.now() - new Date(desde).getTime())/3600000 : 0;
+  if (!horas || horas <= 0) return { cls:'sla-nd', pct:0, txt:humano(decorridas), nivel:'nd' };
+  const pct = Math.min(100, (decorridas/horas)*100);
+  const nivel = pct >= 100 ? 'ex' : (pct >= 75 ? 'at' : 'ok');
+  const restam = horas - decorridas;
+  return { cls:'sla-'+nivel, pct, nivel,
+           txt: restam >= 0 ? ('faltam ' + humano(restam)) : ('há ' + humano(-restam)) };
+}
+function humano(h){
+  if (h < 1) return Math.max(0,Math.round(h*60)) + 'min';
+  if (h < 48) return Math.round(h) + 'h';
+  return Math.round(h/24) + 'd';
+}
+
+// ─── boot ────────────────────────────────────────────────────────────────────
+async function init(){
+  try { G.user = a1RequireAuth(); } catch { return; }
+  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  try { await a1RequireModule('PRE_ANALISE'); } catch { return; }
+  G.slug = A1.slug;
+  document.getElementById('hdr-user').textContent = `${G.user.name} · ${ehGestor() ? 'Gestor' : (G.user.type || 'Parceiro')}`;
+  document.getElementById('link-repasse').href = `/${G.slug}/repasse`;
+  if (!perm('criar_repasses')) document.getElementById('btn-nova').style.display = 'none';
+  a1StartHeartbeat('pre-analise');
+  await carregar();
+}
+
+async function carregar(){
+  const h = { headers: A1.headers() };
+  const [sit, tr, pre, corr, imob, empr] = await Promise.all([
+    fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
+    A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+  ]);
+  G.situacoes     = Array.isArray(sit)  ? sit  : [];
+  G.transicoes    = Array.isArray(tr)   ? tr   : [];
+  G.lista         = (pre && Array.isArray(pre.linhas)) ? pre.linhas : [];
+  G.corretores    = Array.isArray(corr) ? corr : [];
+  G.imobiliarias  = Array.isArray(imob) ? imob : [];
+  G.empreendimentos = Array.isArray(empr) ? empr : [];
+
+  // Os nomes dos clientes vêm dos participantes. Uma consulta só para a fila
+  // inteira, em vez de uma por linha.
+  await carregarTitulares();
+  preencherFiltros();
+  renderFila(); renderEsteira(); renderPainel();
+}
+
+async function carregarTitulares(){
+  G.titulares = {};
+  if (!G.lista.length) return;
+  const ids = G.lista.map(p => p.id);
+  const part = await A1.buscarTudo(
+    `${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&pre_analise_id=in.(${ids.join(',')})&select=pre_analise_id,pessoa_id,renda_declarada`);
+  const linhas = (part && part.linhas) || [];
+  const pids = [...new Set(linhas.map(l => l.pessoa_id).filter(Boolean))];
+  if (pids.length){
+    const pes = await A1.buscarTudo(
+      `${A1.rest('a1_pa_pessoas')}?id=in.(${pids.join(',')})&select=id,nome,documento,telefone`);
+    ((pes && pes.linhas) || []).forEach(p => { G.pessoas[p.id] = p; });
+  }
+  linhas.forEach(l => { G.titulares[l.pre_analise_id] = G.pessoas[l.pessoa_id] || null; });
+}
+
+function preencherFiltros(){
+  const fs = document.getElementById('f-situacao');
+  fs.innerHTML = '<option value="">Todas as situações</option>' +
+    G.situacoes.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('');
+  const fc = document.getElementById('f-corretor');
+  fc.innerHTML = '<option value="">Todos os corretores</option>' +
+    G.corretores.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  const fe = document.getElementById('f-empr');
+  fe.innerHTML = '<option value="">Todos os empreendimentos</option>' +
+    G.empreendimentos.map(e => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
+}
+
+function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
+function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
+function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
+function nomeEmpr(id){ const e = G.empreendimentos.find(x=>x.id===id); return e ? e.name : '—'; }
+
+// ─── fila ────────────────────────────────────────────────────────────────────
+function filtrarSla(n){
+  G.filtroSla = n;
+  ['todos','ok','at','ex'].forEach(k => {
+    const b = document.getElementById('sla-'+k);
+    if (b) b.classList.toggle('on', (k==='todos' ? '' : k) === n);
+  });
+  renderFila();
+}
+
+function filtradas(){
+  const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
+  const fs = document.getElementById('f-situacao').value;
+  const fc = document.getElementById('f-corretor').value;
+  const fe = document.getElementById('f-empr').value;
+  return G.lista.filter(p => {
+    if (fs && p.situacao_id !== fs) return false;
+    if (fc && p.corretor_id !== fc) return false;
+    if (fe && p.empreendimento_id !== fe) return false;
+    if (G.filtroSla && sla(p).nivel !== G.filtroSla) return false;
+    if (q){
+      const t = G.titulares[p.id];
+      const alvo = [p.codigo, p.unidade, t && t.nome, t && t.documento,
+                    nomeEmpr(p.empreendimento_id)].join(' ').toLowerCase();
+      // A comparação só por dígitos serve para achar o CPF digitado sem
+      // pontuação. Só vale quando o que foi digitado TEM dígito: sem essa
+      // guarda, buscar "Pedro" vira buscar "" — e "" está dentro de tudo,
+      // então a busca por nome devolvia a fila inteira.
+      const nums = soDigitos(q);
+      if (!alvo.includes(q) && !(nums && soDigitos(alvo).includes(nums))) return false;
+    }
+    return true;
+  });
+}
+
+function renderFila(){
+  const linhas = filtradas();
+  document.getElementById('fila-contagem').textContent =
+    `${linhas.length} de ${G.lista.length} pré-análise${G.lista.length===1?'':'s'}`;
+  renderKpis();
+
+  const wrap = document.getElementById('fila-wrap');
+  if (!G.situacoes.length){
+    wrap.innerHTML = `<div class="vazio"><strong>A esteira ainda não foi configurada.</strong><br>
+      Peça ao administrador para criar as situações da Pré-análise no painel do superadmin.</div>`;
+    return;
+  }
+  if (!linhas.length){
+    wrap.innerHTML = `<div class="vazio">${G.lista.length ? 'Nenhuma pré-análise com esses filtros.' : 'Nenhuma pré-análise ainda.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = `<table class="fila"><thead><tr>
+      <th>Cliente</th><th>Código</th><th>Empreendimento</th><th>Corretor</th>
+      <th>Situação</th><th>Prazo da etapa</th><th>Criada</th>
+    </tr></thead><tbody>${linhas.map(linhaFila).join('')}</tbody></table>`;
+}
+
+function linhaFila(p){
+  const t = G.titulares[p.id];
+  const s = sla(p);
+  return `<tr onclick="abrirDossie('${esc(p.id)}')" tabindex="0"
+             onkeydown="if(event.key==='Enter')abrirDossie('${esc(p.id)}')">
+    <td><div class="cli">${esc(t ? t.nome : 'Sem titular')}</div>
+        <div class="sub">${t && t.documento ? esc(mascaraDoc(t.documento)) : '—'}</div></td>
+    <td class="cod">${esc(p.codigo || p.id.slice(0,8))}</td>
+    <td>${esc(nomeEmpr(p.empreendimento_id))}${p.unidade ? ` <span class="sub">· un. ${esc(p.unidade)}</span>` : ''}</td>
+    <td>${esc(nomeCorretor(p.corretor_id))}</td>
+    <td><span class="sit" style="background:${esc(corSituacao(p.situacao_id))}">${esc(nomeSituacao(p.situacao_id))}</span></td>
+    <td><div class="sla ${s.cls}"><div class="sla-track"><div class="sla-fill" style="width:${s.pct.toFixed(0)}%"></div></div>
+        <span class="sla-txt">${esc(s.txt)}</span></div></td>
+    <td class="sub">${esc(dataBR(p.criado_em))}</td>
+  </tr>`;
+}
+
+function renderKpis(){
+  const total = G.lista.length;
+  const conta = n => G.lista.filter(p => sla(p).nivel === n).length;
+  const aprovadas = G.lista.filter(p => {
+    const s = G.situacoes.find(x=>x.id===p.situacao_id); return s && s.flag === 'APROVADO';
+  }).length;
+  document.getElementById('kpis-fila').innerHTML = `
+    <div class="kpi-card v"><div class="kpi-label">Na esteira</div><div class="kpi-value">${total}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">No prazo</div><div class="kpi-value">${conta('ok')}</div></div>
+    <div class="kpi-card a"><div class="kpi-label">Atenção</div><div class="kpi-value">${conta('at')}</div>
+         <div class="kpi-sub">passou de 75% do prazo</div></div>
+    <div class="kpi-card r"><div class="kpi-label">Estourado</div><div class="kpi-value">${conta('ex')}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">Aprovadas</div><div class="kpi-value">${aprovadas}</div></div>`;
+}
+
+// ─── esteira (kanban) ────────────────────────────────────────────────────────
+function renderEsteira(){
+  const el = document.getElementById('kanban');
+  if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
+  const linhas = filtradas();
+  el.innerHTML = G.situacoes.map(s => {
+    const dela = linhas.filter(p => p.situacao_id === s.id);
+    return `<div class="k-col">
+      <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
+        <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
+      <div class="k-col-body">${dela.map(cartao).join('') ||
+        '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function cartao(p){
+  const t = G.titulares[p.id], s = sla(p);
+  const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
+  return `<div class="pa-card" style="border-left-color:${cor}" onclick="abrirDossie('${esc(p.id)}')">
+    <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
+    <div class="pa-line">${esc(nomeEmpr(p.empreendimento_id))}${p.unidade?' · un. '+esc(p.unidade):''}</div>
+    <div class="pa-line">${esc(nomeCorretor(p.corretor_id))}</div>
+    <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span></div>
+  </div>`;
+}
+
+// ─── painel ──────────────────────────────────────────────────────────────────
+function renderPainel(){
+  const el = document.getElementById('aba-painel');
+  if (!G.lista.length){ el.innerHTML = `<div class="vazio">Sem dados ainda.</div>`; return; }
+  const porSit = G.situacoes.map(s => ({
+    s, n: G.lista.filter(p => p.situacao_id === s.id).length,
+    ex: G.lista.filter(p => p.situacao_id === s.id && sla(p).nivel === 'ex').length
+  }));
+  const maior = Math.max(1, ...porSit.map(x => x.n));
+  const porCorretor = {};
+  G.lista.forEach(p => { const k = nomeCorretor(p.corretor_id); porCorretor[k] = (porCorretor[k]||0)+1; });
+  const ranking = Object.entries(porCorretor).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  el.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card v"><div class="kpi-label">Total</div><div class="kpi-value">${G.lista.length}</div></div>
+      <div class="kpi-card a"><div class="kpi-label">Tempo médio na etapa</div>
+        <div class="kpi-value">${esc(humano(mediaHoras()))}</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Fora do prazo</div>
+        <div class="kpi-value">${G.lista.filter(p=>sla(p).nivel==='ex').length}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" id="painel-grid">
+      <div class="tbl-wrap" style="padding:1rem">
+        <div class="sec-title" style="margin-top:0">Onde os processos estão parados</div>
+        ${porSit.map(x => `
+          <div style="margin-bottom:.6rem">
+            <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:.2rem">
+              <span>${esc(x.s.nome)}</span>
+              <span style="font-weight:700">${x.n}${x.ex ? ` <span style="color:var(--red)">(${x.ex} fora do prazo)</span>` : ''}</span>
+            </div>
+            <div class="sla-track"><div class="sla-fill" style="width:${(x.n/maior*100).toFixed(0)}%;background:${esc(x.s.cor||'#64748b')}"></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="tbl-wrap" style="padding:1rem">
+        <div class="sec-title" style="margin-top:0">Por corretor</div>
+        ${ranking.map(([nome,n]) => `
+          <div style="display:flex;justify-content:space-between;font-size:.79rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
+            <span>${esc(nome)}</span><span style="font-weight:700">${n}</span></div>`).join('') ||
+          '<div class="sub">sem dados</div>'}
+      </div>
+    </div>`;
+}
+function mediaHoras(){
+  if (!G.lista.length) return 0;
+  const soma = G.lista.reduce((a,p) => {
+    const d = p.situacao_em || p.criado_em;
+    return a + (d ? (Date.now() - new Date(d).getTime())/3600000 : 0);
+  }, 0);
+  return soma / G.lista.length;
+}
+
+function trocarAba(aba, el){
+  G.aba = aba;
+  ['fila','esteira','painel'].forEach(a =>
+    document.getElementById('aba-'+a).style.display = (a===aba ? '' : 'none'));
+  document.querySelectorAll('.tabs-bar .tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (aba === 'esteira') renderEsteira();
+  if (aba === 'painel')  renderPainel();
+}
+
+// ══════════ ASSISTENTE ══════════
+function abrirAssistente(){
+  G.passo = 1;
+  G.rascunho = { empreendimento_id:'', unidade:'', imobiliaria_id:'',
+                 titular:{ documento:'', nome:'', nascimento:'', telefone:'', email:'', estado_civil:'' },
+                 pessoaExistente:null,
+                 renda_declarada:'', fonte_renda:'', associados:[] };
+  document.getElementById('modal-nova').classList.remove('hidden');
+  renderPasso();
+}
+
+function renderPasso(){
+  const n = G.passo;
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('passo-'+i);
+    el.className = 'passo' + (i===n ? ' on' : (i<n ? ' ok' : ''));
+  });
+  document.getElementById('nova-sub').textContent =
+    `Passo ${n} de 3 — ` + ['o negócio','quem é o titular','renda e associados'][n-1];
+  document.getElementById('nova-voltar').style.visibility = n===1 ? 'hidden' : 'visible';
+  document.getElementById('nova-avancar').textContent = n===3 ? 'Criar pré-análise' : 'Avançar';
+  document.getElementById('nova-body').innerHTML = [passo1,passo2,passo3][n-1]();
+  if (n===3) renderAssociados();
+}
+
+function passo1(){
+  const r = G.rascunho;
+  return `
+    <div class="aviso i">A unidade aqui é <strong>referência de interesse</strong> e não reserva estoque.
+    A reserva acontece no Comercial, depois da aprovação.</div>
+    <div class="fgrid">
+      <div class="fg full"><label>Empreendimento *</label>
+        <select id="w-empr">${G.empreendimentos.length
+          ? '<option value="">Selecione…</option>' + G.empreendimentos.map(e =>
+              `<option value="${esc(e.id)}" ${e.id===r.empreendimento_id?'selected':''}>${esc(e.name)}</option>`).join('')
+          : '<option value="">Nenhum empreendimento cadastrado</option>'}</select></div>
+      <div class="fg"><label>Unidade de interesse</label>
+        <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
+      <div class="fg"><label>Imobiliária</label>
+        <select id="w-imob"><option value="">—</option>${G.imobiliarias.map(i =>
+          `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>
+    </div>`;
+}
+
+function passo2(){
+  const t = G.rascunho.titular;
+  return `
+    <div class="aviso i">Digite o CPF e clique em <strong>Buscar</strong>: se a pessoa já existe no cadastro,
+    os dados vêm preenchidos e nenhuma duplicata é criada.</div>
+    <div class="fgrid">
+      <div class="fg"><label>CPF do titular *</label>
+        <div style="display:flex;gap:.4rem">
+          <input id="w-doc" value="${esc(t.documento)}" placeholder="000.000.000-00" style="flex:1">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="buscarPessoa()">Buscar</button>
+        </div>
+        <div id="w-doc-msg" style="font-size:.7rem;margin-top:.25rem;color:var(--t3)"></div></div>
+      <div class="fg"><label>Nome completo *</label><input id="w-nome" value="${esc(t.nome)}"></div>
+      <div class="fg"><label>Nascimento</label><input id="w-nasc" type="date" value="${esc(t.nascimento)}"></div>
+      <div class="fg"><label>Estado civil</label>
+        <select id="w-ec">${['','Solteiro(a)','Casado(a)','União estável','Divorciado(a)','Viúvo(a)']
+          .map(o => `<option ${o===t.estado_civil?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+      <div class="fg"><label>Telefone</label><input id="w-tel" value="${esc(t.telefone)}"></div>
+      <div class="fg"><label>E-mail</label><input id="w-mail" type="email" value="${esc(t.email)}"></div>
+    </div>`;
+}
+
+function passo3(){
+  const r = G.rascunho;
+  return `
+    <div class="fgrid">
+      <div class="fg"><label>Renda declarada do titular (R$)</label>
+        <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal"></div>
+      <div class="fg"><label>Fonte da renda</label>
+        <select id="w-fonte">${['','CLT','Autônomo','Servidor público','Aposentado','Empresário','Informal']
+          .map(o => `<option ${o===r.fonte_renda?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+    </div>
+    <div class="sec-title">Associados (composição de renda)</div>
+    <div id="w-assoc"></div>
+    <button class="btn btn-ghost btn-sm" type="button" onclick="addAssociado()">+ Adicionar associado</button>
+    <div class="aviso w" style="margin-top:1rem">A decisão de crédito é registrada depois, por quem tem
+    permissão para analisar. Quem cria a pré-análise não aprova o próprio crédito.</div>`;
+}
+
+function renderAssociados(){
+  const el = document.getElementById('w-assoc');
+  if (!el) return;
+  const as = G.rascunho.associados;
+  el.innerHTML = as.length ? as.map((a,i) => `
+    <div class="fgrid" style="margin-bottom:.5rem;padding:.6rem;border:1px solid var(--border);border-radius:8px">
+      <div class="fg"><label>CPF</label><input value="${esc(a.documento)}" oninput="G.rascunho.associados[${i}].documento=this.value"></div>
+      <div class="fg"><label>Nome</label><input value="${esc(a.nome)}" oninput="G.rascunho.associados[${i}].nome=this.value"></div>
+      <div class="fg"><label>Renda (R$)</label><input value="${esc(a.renda)}" inputmode="decimal" oninput="G.rascunho.associados[${i}].renda=this.value"></div>
+      <div class="fg"><label>&nbsp;</label><button class="btn btn-danger btn-sm" type="button" onclick="remAssociado(${i})">Remover</button></div>
+    </div>`).join('') : '<div class="sub" style="margin-bottom:.5rem">Nenhum associado.</div>';
+}
+function addAssociado(){ guardarPasso(); G.rascunho.associados.push({documento:'',nome:'',renda:''}); renderPasso(); }
+function remAssociado(i){ guardarPasso(); G.rascunho.associados.splice(i,1); renderPasso(); }
+
+function guardarPasso(){
+  const v = id => { const e = document.getElementById(id); return e ? e.value : undefined; };
+  const r = G.rascunho;
+  if (G.passo === 1){
+    if (v('w-empr')    !== undefined) r.empreendimento_id = v('w-empr');
+    if (v('w-unidade') !== undefined) r.unidade           = v('w-unidade');
+    if (v('w-imob')    !== undefined) r.imobiliaria_id    = v('w-imob');
+  }
+  if (G.passo === 2){
+    const t = r.titular;
+    if (v('w-doc')  !== undefined) t.documento  = v('w-doc');
+    if (v('w-nome') !== undefined) t.nome       = v('w-nome');
+    if (v('w-nasc') !== undefined) t.nascimento = v('w-nasc');
+    if (v('w-ec')   !== undefined) t.estado_civil = v('w-ec');
+    if (v('w-tel')  !== undefined) t.telefone   = v('w-tel');
+    if (v('w-mail') !== undefined) t.email      = v('w-mail');
+  }
+  if (G.passo === 3){
+    if (v('w-renda') !== undefined) r.renda_declarada = v('w-renda');
+    if (v('w-fonte') !== undefined) r.fonte_renda     = v('w-fonte');
+  }
+}
+
+async function buscarPessoa(){
+  const doc = soDigitos(document.getElementById('w-doc').value);
+  const msg = document.getElementById('w-doc-msg');
+  if (doc.length !== 11 && doc.length !== 14){ msg.textContent = 'Informe um CPF ou CNPJ completo.'; return; }
+  if (doc.length === 11 && !cpfValido(doc)){ msg.style.color = 'var(--red)'; msg.textContent = 'CPF inválido — confira os dígitos.'; return; }
+  msg.style.color = 'var(--t3)'; msg.textContent = 'buscando…';
+  const achou = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${doc}&select=*`, { headers:A1.headers() })
+    .then(r=>r.json()).catch(()=>[]);
+  if (Array.isArray(achou) && achou[0]){
+    const p = achou[0];
+    G.rascunho.pessoaExistente = p.id;
+    G.rascunho.titular = { documento:p.documento||'', nome:p.nome||'', nascimento:(p.nascimento||'').slice(0,10),
+                           telefone:p.telefone||'', email:p.email||'', estado_civil:p.estado_civil||'' };
+    renderPasso();
+    const m2 = document.getElementById('w-doc-msg');
+    m2.style.color = 'var(--green)'; m2.textContent = 'Já cadastrado — dados preenchidos.';
+  } else {
+    G.rascunho.pessoaExistente = null;
+    msg.style.color = 'var(--t3)';
+    msg.textContent = 'Não encontrado no cadastro. Preencha os dados ao lado.';
+  }
+}
+
+function passoAnterior(){ guardarPasso(); G.passo = Math.max(1, G.passo-1); renderPasso(); }
+
+async function passoSeguinte(){
+  guardarPasso();
+  const r = G.rascunho;
+  if (G.passo === 1){
+    if (!r.empreendimento_id){ toast('Escolha o empreendimento.','error'); return; }
+    G.passo = 2; renderPasso(); return;
+  }
+  if (G.passo === 2){
+    const doc = soDigitos(r.titular.documento);
+    if (!r.titular.nome.trim()){ toast('O nome do titular é obrigatório.','error'); return; }
+    if (doc.length === 11 && !cpfValido(doc)){ toast('CPF do titular inválido.','error'); return; }
+    if (!doc){ toast('Informe o CPF ou CNPJ do titular.','error'); return; }
+    G.passo = 3; renderPasso(); return;
+  }
+  await criarPreAnalise();
+}
+
+async function criarPreAnalise(){
+  const btn = document.getElementById('nova-avancar');
+  btn.disabled = true; btn.textContent = 'Criando…';
+  try {
+    const r = G.rascunho, tid = G.user.tenant_id;
+
+    // 1. Pessoa titular — reaproveita a existente em vez de duplicar.
+    let pessoaId = r.pessoaExistente;
+    if (!pessoaId){
+      const corpo = { tenant_id:tid, tipo: soDigitos(r.titular.documento).length===14 ? 'PJ' : 'PF',
+                      documento: soDigitos(r.titular.documento), nome: r.titular.nome.trim(),
+                      nascimento: r.titular.nascimento || null, estado_civil: r.titular.estado_civil || null,
+                      telefone: r.titular.telefone || null, email: r.titular.email || null };
+      const res = await fetch(A1.rest('a1_pa_pessoas'), { method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
+      if (!res.ok) throw new Error(await mensagemErro(res, 'Não foi possível cadastrar a pessoa.'));
+      pessoaId = ((await res.json())[0] || {}).id;
+    }
+    if (!pessoaId) throw new Error('Não foi possível identificar o titular.');
+
+    // 2. A pré-análise. Dono, cliente e situação inicial quem decide é o banco.
+    const resPa = await fetch(A1.rest('a1_pre_analises'), {
+      method:'POST', headers:A1.returnHeaders(),
+      body: JSON.stringify({ tenant_id:tid, empreendimento_id:r.empreendimento_id,
+                             unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null })
+    });
+    if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.'));
+    const pa = (await resPa.json())[0];
+
+    // 3. Participantes.
+    const participantes = [{ tenant_id:tid, pre_analise_id:pa.id, pessoa_id:pessoaId, papel:'TITULAR',
+                             renda_declarada: paraCentavos(r.renda_declarada),
+                             fonte_renda: r.fonte_renda || null }];
+    for (const a of r.associados){
+      if (!a.nome.trim()) continue;
+      const docA = soDigitos(a.documento);
+      let idA = null;
+      if (docA){
+        const ex = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${docA}&select=id`, { headers:A1.headers() })
+          .then(x=>x.json()).catch(()=>[]);
+        idA = (Array.isArray(ex) && ex[0]) ? ex[0].id : null;
+      }
+      if (!idA){
+        const criada = await fetch(A1.rest('a1_pa_pessoas'), { method:'POST', headers:A1.returnHeaders(),
+          body: JSON.stringify({ tenant_id:tid, documento: docA || null, nome: a.nome.trim() }) })
+          .then(x => x.ok ? x.json() : []).catch(()=>[]);
+        idA = (criada[0] || {}).id;
+      }
+      if (idA) participantes.push({ tenant_id:tid, pre_analise_id:pa.id, pessoa_id:idA,
+                                    papel:'ASSOCIADO', renda_declarada: paraCentavos(a.renda) });
+    }
+    const resPart = await fetch(A1.rest('a1_pa_participantes'), {
+      method:'POST', headers:A1.headers(), body: JSON.stringify(participantes) });
+    if (!resPart.ok) toast('Pré-análise criada, mas houve erro ao gravar os participantes.','error');
+
+    fecharModal('modal-nova');
+    toast('Pré-análise criada.','success');
+    await carregar();
+    abrirDossie(pa.id);
+  } catch (e){
+    toast(e.message || 'Erro ao criar a pré-análise.','error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Criar pré-análise';
+  }
+}
+
+// O PostgREST devolve o motivo em JSON. Mostrar "erro 403" para o operador não
+// ajuda ninguém; mostrar a regra que barrou, sim.
+async function mensagemErro(res, padrao){
+  try {
+    const j = await res.json();
+    const m = j && (j.message || j.hint || j.details);
+    if (res.status === 401 || res.status === 403 || /row-level security/i.test(m||''))
+      return 'Você não tem permissão para isso.';
+    return m || padrao;
+  } catch { return padrao; }
+}
+
+// ══════════ DOSSIÊ ══════════
+async function abrirDossie(id){
+  const pa = G.lista.find(p => p.id === id);
+  if (!pa) return;
+  G.atual = pa; G.abaDossie = 'dados';
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.dt === 'dados'));
+  document.getElementById('modal-dossie').classList.remove('hidden');
+  document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
+
+  const h = { headers:A1.headers() };
+  const [part, cred, docs, ev, co] = await Promise.all([
+    fetch(`${A1.rest('a1_pa_participantes')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_pa_eventos')}?pre_analise_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
+  ]);
+  G.atualPart = Array.isArray(part) ? part : [];
+  G.atualCred = Array.isArray(cred) ? cred : [];
+  G.atualDocs = Array.isArray(docs) ? docs : [];
+  G.atualEv   = Array.isArray(ev)   ? ev   : [];
+  G.atualCo   = (Array.isArray(co) && co[0]) || null;
+
+  const faltam = G.atualPart.map(p => p.pessoa_id).filter(pid => pid && !G.pessoas[pid]);
+  if (faltam.length){
+    const pes = await fetch(`${A1.rest('a1_pa_pessoas')}?id=in.(${faltam.join(',')})&select=*`, h)
+      .then(r=>r.json()).catch(()=>[]);
+    (Array.isArray(pes)?pes:[]).forEach(p => { G.pessoas[p.id] = p; });
+  }
+
+  const t = G.titulares[id];
+  document.getElementById('dos-titulo').textContent = t ? t.nome : 'Pré-análise sem titular';
+  document.getElementById('dos-sub').textContent =
+    `${nomeEmpr(pa.empreendimento_id)}${pa.unidade ? ' · un. ' + pa.unidade : ''} · código ${pa.codigo || pa.id.slice(0,8)}`;
+  document.getElementById('dos-situacao').innerHTML =
+    `<span class="sit" style="background:${esc(corSituacao(pa.situacao_id))}">${esc(nomeSituacao(pa.situacao_id))}</span>`;
+  montarRodapeDossie();
+  renderDossie();
+}
+
+function trocarAbaDossie(aba, el){
+  G.abaDossie = aba;
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderDossie();
+}
+
+function renderDossie(){
+  const f = { dados:dosDados, pessoas:dosPessoas, credito:dosCredito, documentos:dosDocumentos,
+              checklist:dosChecklist, historico:dosHistorico, comercial:dosComercial }[G.abaDossie];
+  document.getElementById('dos-body').innerHTML = f ? f() : '';
+}
+
+function dosDados(){
+  const p = G.atual, s = sla(p);
+  const podeEditar = perm('editar_repasses');
+  return `
+    <div class="fgrid">
+      <div class="fg"><label>Empreendimento</label>
+        <select id="d-empr" ${podeEditar?'':'disabled'}>${G.empreendimentos.map(e =>
+          `<option value="${esc(e.id)}" ${e.id===p.empreendimento_id?'selected':''}>${esc(e.name)}</option>`).join('')}</select></div>
+      <div class="fg"><label>Unidade de interesse</label>
+        <input id="d-unidade" value="${esc(p.unidade||'')}" ${podeEditar?'':'disabled'}></div>
+      <div class="fg"><label>Imobiliária</label>
+        <select id="d-imob" ${podeEditar?'':'disabled'}><option value="">—</option>${G.imobiliarias.map(i =>
+          `<option value="${esc(i.id)}" ${i.id===p.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>
+      <div class="fg"><label>Validade da pré-análise</label>
+        <input id="d-vence" type="date" value="${esc((p.vence_em||'').slice(0,10))}" ${podeEditar?'':'disabled'}></div>
+      <div class="fg"><label>Corretor</label><input value="${esc(nomeCorretor(p.corretor_id))}" disabled></div>
+      <div class="fg"><label>Criada em</label><input value="${esc(dataHoraBR(p.criado_em))}" disabled></div>
+      <div class="fg full"><label>Prazo desta etapa</label>
+        <div class="sla ${s.cls}" style="padding:.35rem 0">
+          <div class="sla-track"><div class="sla-fill" style="width:${s.pct.toFixed(0)}%"></div></div>
+          <span class="sla-txt">${esc(s.txt)}</span></div>
+        <div class="sub">na situação desde ${esc(dataHoraBR(p.situacao_em))}</div></div>
+    </div>
+    ${podeEditar ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarDados()">Salvar dados</button></div>` : ''}`;
+}
+
+async function salvarDados(){
+  const p = G.atual;
+  const corpo = {
+    empreendimento_id: document.getElementById('d-empr').value,
+    unidade:           document.getElementById('d-unidade').value || null,
+    imobiliaria_id:    document.getElementById('d-imob').value || null,
+    vence_em:          document.getElementById('d-vence').value || null
+  };
+  const res = await fetch(`${A1.rest('a1_pre_analises')}?id=eq.${p.id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.'),'error'); return; }
+  Object.assign(p, corpo);
+  toast('Dados salvos.','success');
+  renderFila(); renderEsteira();
+}
+
+function dosPessoas(){
+  const linhas = G.atualPart
+    .slice().sort((a,b) => (a.papel==='TITULAR'?0:1) - (b.papel==='TITULAR'?0:1))
+    .map(pt => {
+      const pe = G.pessoas[pt.pessoa_id] || {};
+      return `<div class="linha">
+        <div><div class="nm">${esc(pe.nome || 'Sem nome')}
+          <span class="pill ${pt.papel==='TITULAR'?'nt':'wt'}">${esc(pt.papel)}</span></div>
+          <div class="mt">${esc(mascaraDoc(pe.documento||'') || 'sem documento')}
+            ${pe.telefone ? ' · ' + esc(pe.telefone) : ''}</div></div>
+        <div style="text-align:right">
+          <div class="nm">${pt.renda_declarada ? esc(brl(pt.renda_declarada)) : '—'}</div>
+          <div class="mt">${esc(pt.fonte_renda || 'renda declarada')}</div></div>
+      </div>`;
+    }).join('');
+  const soma = G.atualPart.reduce((a,p) => a + (Number(p.renda_declarada)||0), 0);
+  return `${linhas || '<div class="sub">Nenhum participante.</div>'}
+    <div class="linha" style="background:#fafbfc"><div class="nm">Renda familiar declarada</div>
+      <div class="nm">${esc(brl(soma))}</div></div>
+    <div class="aviso w" style="margin-top:.9rem">Mexer em participante depois de uma aprovação
+    <strong>invalida a decisão de crédito</strong>. É proposital: aprovar com um número e negociar
+    com outro é como o processo cai lá na frente.</div>`;
+}
+
+function dosCredito(){
+  const podeAnalisar = perm('analisar_credito');
+  const hist = G.atualCred.map(c => `
+    <div class="linha">
+      <div><div class="nm">Versão ${c.versao}
+        <span class="pill ${c.status==='APROVADO'?'ok':c.status==='REPROVADO'?'no':c.status==='INVALIDADA'?'no':'wt'}">${esc(c.status)}</span></div>
+        <div class="mt">${esc(dataHoraBR(c.criado_em))}${c.motivo ? ' · ' + esc(c.motivo) : ''}</div></div>
+      <div style="text-align:right">
+        <div class="nm">${esc(brl(c.valor_total))}</div>
+        <div class="mt">${c.prestacao ? esc(brl(c.prestacao)) + '/mês' : ''}${c.prazo_meses ? ' · ' + c.prazo_meses + 'm' : ''}</div></div>
+    </div>`).join('');
+
+  if (!podeAnalisar){
+    return `<div class="aviso i">Você não tem permissão para registrar decisão de crédito.
+      Quem vende não aprova — é a permissão <strong>analisar_credito</strong> que libera esta aba.</div>
+      ${hist || '<div class="sub">Nenhuma decisão registrada.</div>'}`;
+  }
+  const prox = (G.atualCred[0] ? G.atualCred[0].versao : 0) + 1;
+  return `
+    ${hist ? `<div class="sec-title" style="margin-top:0">Decisões anteriores</div>${hist}` : ''}
+    <div class="sec-title">Nova decisão — versão ${prox}</div>
+    <div class="aviso i">Decisão não se edita: cada análise cria uma versão nova, e a anterior fica no histórico.
+      O total tem de fechar com a soma de financiado + subsídio + FGTS.</div>
+    <div class="fgrid">
+      <div class="fg"><label>Resultado</label>
+        <select id="c-status"><option value="APROVADO">Aprovado</option><option value="PENDENTE">Pendente</option>
+          <option value="REPROVADO">Reprovado</option><option value="EM_ANALISE">Em análise</option></select></div>
+      <div class="fg"><label>Renda familiar considerada (R$)</label><input id="c-renda" inputmode="decimal"></div>
+      <div class="fg"><label>Valor financiado (R$)</label><input id="c-fin" inputmode="decimal" oninput="somarCredito()"></div>
+      <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" oninput="somarCredito()"></div>
+      <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" oninput="somarCredito()"></div>
+      <div class="fg"><label>Total (soma)</label><input id="c-total" disabled></div>
+      <div class="fg"><label>Valor de avaliação (R$)</label><input id="c-aval" inputmode="decimal"></div>
+      <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal"></div>
+      <div class="fg"><label>Prazo (meses)</label><input id="c-prazo" type="number" min="1" max="480"></div>
+      <div class="fg"><label>Motivo / condicionante</label><input id="c-motivo"></div>
+      <div class="fg full"><label>Justificativa</label><textarea id="c-just" rows="2"></textarea></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarCredito()">Registrar decisão</button></div>`;
+}
+
+function somarCredito(){
+  const n = id => paraCentavos(document.getElementById(id).value) || 0;
+  const t = n('c-fin') + n('c-sub') + n('c-fgts');
+  document.getElementById('c-total').value = brl(t);
+}
+
+async function salvarCredito(){
+  const p = G.atual, n = id => paraCentavos(document.getElementById(id).value);
+  const fin = n('c-fin') || 0, sub = n('c-sub') || 0, fgts = n('c-fgts') || 0;
+  if (!fin && !sub && !fgts){ toast('Informe pelo menos um valor.','error'); return; }
+  const corpo = {
+    tenant_id: G.user.tenant_id, pre_analise_id: p.id,
+    versao: (G.atualCred[0] ? G.atualCred[0].versao : 0) + 1,
+    status: document.getElementById('c-status').value,
+    renda_familiar: n('c-renda'), valor_aprovado: fin, valor_subsidio: sub, valor_fgts: fgts,
+    valor_total: fin + sub + fgts, valor_avaliacao: n('c-aval'),
+    prestacao: n('c-prest'),
+    prazo_meses: parseInt(document.getElementById('c-prazo').value,10) || null,
+    motivo: document.getElementById('c-motivo').value || null,
+    justificativa: document.getElementById('c-just').value || null,
+    decidido_em: new Date().toISOString()
+  };
+  const res = await fetch(A1.rest('a1_pa_analises_credito'), {
+    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.'),'error'); return; }
+  G.atualCred.unshift((await res.json())[0] || corpo);
+  toast('Decisão registrada.','success');
+  montarRodapeDossie();
+  renderDossie();
+}
+
+function dosDocumentos(){
+  const podeAnalisar = perm('analisar_credito');
+  const linhas = G.atualDocs.map(d => `
+    <div class="linha">
+      <div><div class="nm">${esc(d.tipo)}</div>
+        <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · ${esc(dataHoraBR(d.criado_em))}</div></div>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span class="pill ${d.status==='APROVADO'?'ok':d.status==='REPROVADO'?'no':'wt'}">${esc(d.status)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDoc('${esc(d.id)}')">Abrir</button>
+        ${podeAnalisar ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${esc(d.id)}','APROVADO')">Aprovar</button>
+          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${esc(d.id)}','REPROVADO')">Reprovar</button>` : ''}
+      </div>
+    </div>`).join('');
+  return `
+    ${linhas || '<div class="sub">Nenhum documento enviado.</div>'}
+    ${perm('criar_repasses') ? `
+      <div class="sec-title">Enviar documento</div>
+      <div class="fgrid">
+        <div class="fg"><label>Tipo</label>
+          <select id="doc-tipo">${['RG / CNH','CPF','Comprovante de renda','Comprovante de residência',
+            'Certidão de estado civil','Extrato FGTS','Carteira de trabalho','Imposto de renda','Outro']
+            .map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+        <div class="fg"><label>Arquivo</label><input type="file" id="doc-arq"></div>
+      </div>
+      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-doc" onclick="enviarDoc()">Enviar</button></div>
+      <div class="aviso i" style="margin-top:.9rem">Enviar é de todos; <strong>aprovar é de quem analisa</strong>.
+        Sem isso, uma transição que exige "documentos aprovados" seria satisfeita por quem enviou os documentos.</div>` : ''}`;
+}
+
+async function enviarDoc(){
+  const arq = document.getElementById('doc-arq').files[0];
+  if (!arq){ toast('Escolha um arquivo.','error'); return; }
+  if (arq.size > 20 * 1024 * 1024){ toast('Arquivo acima de 20 MB.','error'); return; }
+  const btn = document.getElementById('btn-doc'); btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const limpo = arq.name.replace(/[^\w.\-]+/g,'_').slice(-80);
+    const chave = `${G.user.tenant_id}/pre-analise/${G.atual.id}/${Date.now()}_${limpo}`;
+    if (!await A1.storageUpload('case-documents', chave, arq)) throw new Error('Falha no envio do arquivo.');
+    const res = await fetch(A1.rest('a1_pa_documentos'), {
+      method:'POST', headers:A1.returnHeaders(),
+      body: JSON.stringify({ tenant_id:G.user.tenant_id, pre_analise_id:G.atual.id,
+        tipo: document.getElementById('doc-tipo').value, storage_key: chave,
+        nome_arquivo: arq.name, mime: arq.type || null })
+    });
+    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o documento.'));
+    G.atualDocs.unshift((await res.json())[0]);
+    toast('Documento enviado.','success');
+    renderDossie();
+  } catch(e){ toast(e.message,'error'); }
+  finally { const b = document.getElementById('btn-doc'); if (b){ b.disabled = false; b.textContent = 'Enviar'; } }
+}
+
+async function baixarDoc(id){
+  const d = G.atualDocs.find(x => x.id === id); if (!d) return;
+  const url = await A1.storageSignedUrl('case-documents', d.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
+async function analisarDoc(id, status){
+  const res = await fetch(`${A1.rest('a1_pa_documentos')}?id=eq.${id}`, {
+    method:'PATCH', headers:A1.headers(),
+    body: JSON.stringify({ status, analisado_em: new Date().toISOString() }) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível analisar o documento.'),'error'); return; }
+  const d = G.atualDocs.find(x => x.id === id); if (d) d.status = status;
+  toast(status === 'APROVADO' ? 'Documento aprovado.' : 'Documento reprovado.','success');
+  montarRodapeDossie(); renderDossie();
+}
+
+// O checklist não é decorativo: cada linha é exatamente uma condição que o
+// banco vai conferir na hora de destravar o Comercial.
+function checklist(){
+  const temTitular  = G.atualPart.some(p => p.papel === 'TITULAR');
+  const aprovado    = G.atualCred.some(c => c.status === 'APROVADO');
+  const invalidada  = G.atualCred.some(c => c.status === 'INVALIDADA') && !aprovado;
+  const docsPend    = G.atualDocs.filter(d => d.status !== 'APROVADO').length;
+  return [
+    { ok: temTitular, txt:'Titular definido',
+      obs: temTitular ? '' : 'sem titular o cartão de Repasse não tem nome de cliente' },
+    { ok: G.atualPart.some(p => Number(p.renda_declarada) > 0), txt:'Renda declarada informada',
+      obs:'usada na composição de renda' },
+    { ok: aprovado, txt:'Decisão de crédito aprovada e válida',
+      obs: invalidada ? 'havia uma aprovação, mas um dado material mudou e ela foi invalidada' : '' },
+    { ok: G.atualDocs.length > 0, txt:'Documentos enviados', obs: G.atualDocs.length + ' arquivo(s)' },
+    { ok: docsPend === 0 && G.atualDocs.length > 0, txt:'Documentos analisados',
+      obs: docsPend ? docsPend + ' pendente(s)' : '' }
+  ];
+}
+
+function dosChecklist(){
+  return checklist().map(i => `
+    <div class="linha">
+      <div><div class="nm">${i.ok ? '✓' : '○'} ${esc(i.txt)}</div>
+        ${i.obs ? `<div class="mt">${esc(i.obs)}</div>` : ''}</div>
+      <span class="pill ${i.ok?'ok':'wt'}">${i.ok?'ok':'falta'}</span>
+    </div>`).join('');
+}
+
+function dosHistorico(){
+  if (!G.atualEv.length) return '<div class="sub">Sem histórico ainda.</div>';
+  return `<div class="timeline">${G.atualEv.map(e => {
+    const de = e.de_situacao ? nomeSituacao(e.de_situacao) : null;
+    const para = e.para_situacao ? nomeSituacao(e.para_situacao) : null;
+    const just = e.detalhe && e.detalhe.justificativa;
+    return `<div class="tl-item">
+      <div class="tl-dot">${e.evento === 'transicao' ? '→' : e.evento === 'decisao_invalidada' ? '!' : '•'}</div>
+      <div><div class="tl-desc">${esc(rotuloEvento(e.evento))}${
+        de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
+        para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
+        ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
+        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${e.ator_nome ? ' · ' + esc(e.ator_nome) : ''}</div></div>
+    </div>`; }).join('')}</div>
+  <div class="aviso i" style="margin-top:.9rem">O histórico só recebe linhas novas. Não se edita e não se
+    apaga — nem pelo gestor, nem pela API.</div>`;
+}
+function rotuloEvento(e){
+  return { transicao:'Mudança de situação', criado_da_pre_analise:'Comercial criado',
+           decisao_invalidada:'Decisão de crédito invalidada' }[e] || e;
+}
+
+function dosComercial(){
+  if (!G.atualCo){
+    const c = checklist();
+    const faltando = c.filter(i => !i.ok && /titular|crédito/i.test(i.txt));
+    return `<div class="aviso i">Ainda não existe um Comercial para esta pré-análise.</div>
+      ${faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f=>f.txt).join(', '))}.</div>` : ''}
+      <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O Comercial nasce por
+      <strong>ação da esteira</strong> — nunca por um cadastro paralelo. É isso que garante que ninguém
+      pule a aprovação de crédito. Quando as condições estiverem cumpridas, o botão
+      <strong>Habilitar Comercial</strong> aparece aqui embaixo.</p>`;
+  }
+  const co = G.atualCo, snap = co.origem_snapshot || {};
+  const cr = snap.credito || {};
+  return `
+    <div class="aviso s">Comercial criado em ${esc(dataHoraBR(co.criado_em))}.</div>
+    <div class="sec-title" style="margin-top:0">Fotografia do que foi aprovado</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total</label><input value="${esc(brl(cr.valor_total))}" disabled></div>
+    </div>
+    <div class="aviso i" style="margin-top:.9rem">Esta fotografia não muda se a pré-análise mudar depois.
+      O que entrou em negociação foi isto, e é isto que o histórico vai mostrar.</div>
+    <div style="margin-top:1rem"><a class="btn btn-primary btn-sm" href="/${esc(G.slug)}/comercial?id=${esc(co.id)}">Abrir no Comercial ↗</a></div>`;
+}
+
+// ─── rodapé: ações e transições possíveis ────────────────────────────────────
+function montarRodapeDossie(){
+  const p = G.atual;
+  const podeMover = perm('editar_repasses');
+
+  // As situações de destino são as arestas que a esteira do cliente permite a
+  // partir daqui. A tela não inventa caminho: mostra o que o banco aceita.
+  const destinos = G.transicoes
+    .filter(t => t.de_id === null || t.de_id === p.situacao_id)
+    .map(t => G.situacoes.find(s => s.id === t.para_id))
+    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== p.situacao_id);
+
+  const sel = document.getElementById('dos-mover');
+  sel.innerHTML = destinos.length
+    ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
+    : '<option value="">nenhuma transição disponível</option>';
+  sel.disabled = !destinos.length || !podeMover;
+  document.getElementById('dos-btn-mover').disabled = !destinos.length || !podeMover;
+
+  const acoes = document.getElementById('dos-acoes');
+  const jaTem = !!G.atualCo;
+  const podeHabilitar = !jaTem && podeMover &&
+    G.atualPart.some(x => x.papel === 'TITULAR') &&
+    G.atualCred.some(c => c.status === 'APROVADO');
+  acoes.innerHTML = podeHabilitar
+    ? `<button class="btn btn-primary btn-sm" id="btn-habilitar" onclick="habilitarComercial()">Habilitar Comercial</button>`
+    : (jaTem ? `<span class="sub">Comercial já criado.</span>` : '');
+}
+
+async function moverSituacao(){
+  const p = G.atual, para = document.getElementById('dos-mover').value;
+  if (!para) return;
+  const just = prompt('Justificativa (opcional):') || null;
+  const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
+  try {
+    const res = await fetch(A1.rpc('a1_pa_transicionar'), {
+      method:'POST', headers:A1.headers(),
+      body: JSON.stringify({ p_pre_analise:p.id, p_para:para, p_justificativa:just, p_versao_esperada:p.versao })
+    });
+    const j = await res.json().catch(()=>null);
+    if (!res.ok){ toast(traduzErro(j),'error'); return; }
+    if (j && j.ok === false){ toast(j.erro || 'A esteira barrou a transição.','error'); return; }
+    toast('Situação alterada.','success');
+    fecharModal('modal-dossie');
+    await carregar();
+  } finally { btn.disabled = false; }
+}
+
+async function habilitarComercial(){
+  const btn = document.getElementById('btn-habilitar'); btn.disabled = true; btn.textContent = 'Habilitando…';
+  try {
+    const res = await fetch(A1.rpc('a1_pa_executar_acao'), {
+      method:'POST', headers:A1.headers(),
+      body: JSON.stringify({ p_pre_analise:G.atual.id, p_acao:'ENABLE_COMMERCIAL' }) });
+    const j = await res.json().catch(()=>null);
+    if (!res.ok){ toast(traduzErro(j),'error'); return; }
+    if (j && j.ok === false){ toast(j.erro || 'Não foi possível habilitar o Comercial.','error'); return; }
+    toast('Comercial criado.','success');
+    await abrirDossie(G.atual.id);
+    trocarAbaDossie('comercial', document.querySelector('#dos-tabs [data-dt="comercial"]'));
+  } finally {
+    const b = document.getElementById('btn-habilitar');
+    if (b){ b.disabled = false; b.textContent = 'Habilitar Comercial'; }
+  }
+}
+
+// As funções do banco levantam exceção com um código curto. O operador precisa
+// da regra em português, não do identificador do PL/pgSQL.
+function traduzErro(j){
+  const m = (j && (j.message || j.error)) || '';
+  const mapa = {
+    nao_encontrado:            'Processo não encontrado.',
+    modulo_desabilitado:       'O módulo não está liberado para este cliente.',
+    sem_acesso:                'Este processo não é da sua carteira.',
+    sem_permissao:             'Você não tem permissão para isso.',
+    versao_desatualizada:      'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
+    transicao_nao_permitida:   'A esteira do cliente não permite essa mudança a partir da situação atual.',
+    papel_nao_autorizado:      'Seu papel não pode fazer essa transição.',
+    documentos_pendentes:      'Esta transição exige todos os documentos aprovados.',
+    sem_aprovacao_valida:      'Não há decisão de crédito aprovada e válida.',
+    sem_titular:               'A pré-análise não tem titular.',
+    acao_desconhecida:         'Ação desconhecida.',
+    modulo_comercial_desabilitado:'O módulo Comercial não está liberado para este cliente.'
+  };
+  for (const k in mapa) if (m.includes(k)) return mapa[k];
+  return m || 'Não foi possível concluir a operação.';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-bg:not(.hidden)').forEach(m => m.classList.add('hidden'));
+});
+init();
+</script>
+</body>
+</html>

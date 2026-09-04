@@ -1,8 +1,11 @@
 const { chromium } = require('playwright');
-const { responder, usarExtras } = require('./fake');
+const { responder, usarExtras, liberarModulos } = require('./fake');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 async function abrir(pag, opc = {}) {
   usarExtras(opc.extras === true);
+  // Módulos novos nascem sem licença, como em todo cliente de hoje. Quem for
+  // testá-los ligados pede: abrir('pre-analise.html', {modulos:['PRE_ANALISE']}).
+  liberarModulos(opc.modulos || []);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];
@@ -19,7 +22,7 @@ async function abrir(pag, opc = {}) {
     window.fetch = function(u, o){ if(o && o.method && o.method!=='GET') window.__POSTS.push({url:String(u),m:o.method,body:o.body}); return f.apply(this,arguments); };
   });
   await p.route(/supabase\.co/, r => {
-    let d; try { d = responder(r.request().url(), r.request().method()); } catch(e){ d = []; }
+    let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch(e){ d = []; }
     r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-1/2'},body:JSON.stringify(d)});
   });
   await p.goto(BASE + '/'+pag, {waitUntil:'load'});

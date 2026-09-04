@@ -210,6 +210,11 @@
       </div>
     </div>
 
+    <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
+         libera a licença para este cliente — nenhum cliente de hoje os vê. -->
+    <a class="tab-btn" id="link-pre-analise" href="" style="display:none">Pré-análise</a>
+    <a class="tab-btn" id="link-comercial"   href="" style="display:none">Comercial</a>
+
     <div class="tab-btn active">Configuracoes</div>
   </div>
 </div>
@@ -1491,6 +1496,17 @@ async function init() {
       if (cfgEl) cfgEl.style.display = '';
     }
   }).catch(()=>{});
+
+  // Módulos novos: a aba só aparece com a licença liberada. O acesso real aos
+  // dados continua barrado por RLS mesmo que alguém force o link na barra.
+  ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
+    a1HasModule(mod).then(ok => {
+      if (ok !== true) return;
+      const alvo = mod === 'PRE_ANALISE' ? 'pre-analise' : 'comercial';
+      const el = document.getElementById('link-' + alvo);
+      if (el){ el.href = `/${G.slug}/${alvo}`; el.style.display = ''; }
+    }).catch(()=>{});
+  });
 
   // Load stages (needed for regionais sub-view)
   // A coluna chama-se module_key. Com "module" o PostgREST devolvia um objeto
