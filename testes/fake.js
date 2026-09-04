@@ -58,6 +58,83 @@ const D = {
   precad_links: [{token:'tok123',imobiliaria_nome:'Imob Alfa',expires_at:'2026-09-30T12:00:00Z',usos:1,revoked:false}],
   corr_empresas: [{id:'e1',tenant_id:'t1',name:'Empresa Corr '+ASPA,cnpj:'00000000000000',is_active:true,regional:'Centro'},
                   {id:'e2',tenant_id:'t1',name:'Correspondente Sem Processo',cnpj:'11111111111111',is_active:true}],
+  // ── Módulos novos ──────────────────────────────────────────────────────────
+  // "Em análise" tem SLA de 24h e um processo parado há 3 dias: é assim que o
+  // teste do prazo estourado prova alguma coisa em vez de só renderizar verde.
+  pa_situacoes: [
+    {id:'ps1',tenant_id:'t1',nome:'Nova '+XSS,flag:'INICIAL',ordem:0,cor:'#6366f1',sla_horas:4,ativo:true},
+    {id:'ps2',tenant_id:'t1',nome:'Em análise',flag:null,ordem:1,cor:'#0ea5e9',sla_horas:24,ativo:true},
+    {id:'ps3',tenant_id:'t1',nome:'Aprovada',flag:'APROVADO',ordem:2,cor:'#22c55e',sla_horas:null,ativo:true},
+    {id:'ps4',tenant_id:'t1',nome:'Reprovada',flag:'REPROVADO',ordem:3,cor:'#ef4444',sla_horas:null,ativo:true}],
+  pa_transicoes: [
+    {id:'pt1',tenant_id:'t1',de_id:'ps1',para_id:'ps2',papeis:[],requisitos:{},acao:null,acao_modo:'CONFIRMAR',ativo:true},
+    {id:'pt2',tenant_id:'t1',de_id:'ps2',para_id:'ps3',papeis:[],requisitos:{},acao:'ENABLE_COMMERCIAL',acao_modo:'AUTO',ativo:true},
+    {id:'pt3',tenant_id:'t1',de_id:null,para_id:'ps4',papeis:[],requisitos:{},acao:null,acao_modo:'CONFIRMAR',ativo:true}],
+  pre_analises: (()=>{ const h=Date.now(); return [
+    {id:'pa1',tenant_id:'t1',codigo:'PA-001',empreendimento_id:'d1',unidade:'101 '+XSS,corretor_id:'p3',
+     imobiliaria_id:'p1',situacao_id:'ps2',situacao_em:new Date(h-72*36e5).toISOString(),versao:1,
+     criado_em:new Date(h-10*864e5).toISOString()},
+    {id:'pa2',tenant_id:'t1',codigo:'PA-002',empreendimento_id:'d2',unidade:'202',corretor_id:'p10',
+     situacao_id:'ps1',situacao_em:new Date(h-1*36e5).toISOString(),versao:1,
+     criado_em:new Date(h-2*864e5).toISOString()},
+    {id:'pa3',tenant_id:'t1',codigo:'PA-003',empreendimento_id:'d1',corretor_id:'p3',
+     situacao_id:'ps3',situacao_em:new Date(h-5*864e5).toISOString(),versao:2,
+     criado_em:new Date(h-20*864e5).toISOString()},
+    // pa4 é a única aprovada que ainda NÃO virou comercial. Sem ela o teste do
+    // botão "Habilitar Comercial" não teria como acontecer: pa3 já tem o seu.
+    {id:'pa4',tenant_id:'t1',codigo:'PA-004',empreendimento_id:'d1',corretor_id:'p10',
+     situacao_id:'ps3',situacao_em:new Date(h-2*864e5).toISOString(),versao:1,
+     criado_em:new Date(h-6*864e5).toISOString()}]; })(),
+  pa_pessoas: [
+    {id:'pe1',tenant_id:'t1',tipo:'PF',documento:'52998224725',nome:'Maria Titular '+XSS,telefone:'11988887777',email:'m@x.com'},
+    {id:'pe2',tenant_id:'t1',tipo:'PF',documento:'11144477735',nome:'Pedro Titular'},
+    {id:'pe3',tenant_id:'t1',tipo:'PF',documento:'12345678909',nome:'Joana Associada'}],
+  pa_participantes: [
+    {id:'pp1',tenant_id:'t1',pre_analise_id:'pa1',pessoa_id:'pe1',papel:'TITULAR',renda_declarada:450000,fonte_renda:'CLT'},
+    {id:'pp2',tenant_id:'t1',pre_analise_id:'pa1',pessoa_id:'pe3',papel:'ASSOCIADO',renda_declarada:220000},
+    {id:'pp3',tenant_id:'t1',pre_analise_id:'pa2',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:300000},
+    {id:'pp4',tenant_id:'t1',pre_analise_id:'pa3',pessoa_id:'pe1',papel:'TITULAR',renda_declarada:450000},
+    {id:'pp5',tenant_id:'t1',pre_analise_id:'pa4',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:380000}],
+  pa_credito: [
+    {id:'pc1',tenant_id:'t1',pre_analise_id:'pa3',versao:1,status:'APROVADO',valor_aprovado:20000000,
+     valor_subsidio:3000000,valor_fgts:1000000,valor_total:24000000,prestacao:150000,prazo_meses:360,
+     criado_em:'2026-08-20T10:00:00Z'},
+    {id:'pc2',tenant_id:'t1',pre_analise_id:'pa1',versao:1,status:'EM_ANALISE',valor_total:null,criado_em:'2026-08-25T10:00:00Z'},
+    {id:'pc3',tenant_id:'t1',pre_analise_id:'pa4',versao:1,status:'APROVADO',valor_aprovado:15000000,
+     valor_subsidio:0,valor_fgts:0,valor_total:15000000,prestacao:120000,prazo_meses:360,
+     criado_em:'2026-08-29T10:00:00Z'}],
+  pa_documentos: [
+    {id:'pd1',tenant_id:'t1',pre_analise_id:'pa1',tipo:'RG / CNH',storage_key:'t1/pre-analise/pa1/rg.pdf',
+     nome_arquivo:'rg '+XSS+'.pdf',status:'ENVIADO',criado_em:'2026-08-25T10:00:00Z'},
+    {id:'pd2',tenant_id:'t1',pre_analise_id:'pa3',tipo:'Comprovante de renda',storage_key:'t1/pre-analise/pa3/renda.pdf',
+     nome_arquivo:'renda.pdf',status:'APROVADO',criado_em:'2026-08-21T10:00:00Z'}],
+  pa_eventos: [
+    {id:1,tenant_id:'t1',pre_analise_id:'pa1',evento:'transicao',de_situacao:'ps1',para_situacao:'ps2',
+     ator_nome:'Julio '+XSS,detalhe:{justificativa:'documentos recebidos '+XSS},criado_em:'2026-08-25T11:00:00Z'}],
+  co_situacoes: [
+    {id:'cs1',tenant_id:'t1',nome:'Proposta',flag:'INICIAL',ordem:0,cor:'#6366f1',sla_horas:24,ativo:true},
+    {id:'cs2',tenant_id:'t1',nome:'Contrato assinado '+XSS,flag:'CONTRATO_ASSINADO',ordem:1,cor:'#22c55e',sla_horas:null,ativo:true}],
+  co_transicoes: [
+    {id:'ct1',tenant_id:'t1',de_id:'cs1',para_id:'cs2',papeis:[],requisitos:{contrato_assinado:true},
+     acao:'CREATE_REPASS',acao_modo:'AUTO',ativo:true}],
+  comerciais: (()=>{ const h=Date.now(); return [
+    {id:'co1',tenant_id:'t1',codigo:'CO-001',pre_analise_id:'pa3',empreendimento_id:'d1',unidade:'101',
+     corretor_id:'p3',situacao_id:'cs1',situacao_em:new Date(h-48*36e5).toISOString(),versao:1,
+     proposta:{valor_venda:26000000,valor_entrada:500000},repasse_case_id:null,
+     criado_em:new Date(h-5*864e5).toISOString(),
+     origem_snapshot:{capturado_em:'2026-08-22T10:00:00Z',
+       pre_analise:{id:'pa3',codigo:'PA-003',unidade:'101'},
+       credito:{versao:1,valor_aprovado:20000000,valor_subsidio:3000000,valor_fgts:1000000,
+                valor_total:24000000,prestacao:150000,prazo_meses:360},
+       participantes:[{pessoa_id:'pe1',nome:'Maria Titular '+XSS,papel:'TITULAR',renda_analisada:450000}]}}]; })(),
+  co_contratos: [
+    {id:'cc1',tenant_id:'t1',comercial_id:'co1',versao:1,status:'AGUARDANDO_ASSINATURA',
+     provedor:'Clicksign '+XSS,storage_key:'t1/comercial/co1/ct.pdf',criado_em:'2026-08-28T10:00:00Z'}],
+  co_eventos: [
+    {id:1,tenant_id:'t1',comercial_id:'co1',evento:'criado_da_pre_analise',para_situacao:'cs1',
+     ator_nome:'Julio',detalhe:{},criado_em:'2026-08-22T10:00:00Z'}],
+  integra_eventos: [],
+
   stage_edges: [{from_id:'s1',to_id:'s2'},{from_id:'s2',to_id:'s3'}],
   case_events: [{id:'ev1',case_id:'c1',type:'comment',description:'comentário '+XSS,actor_name:'Julio',created_at:'2026-08-02T10:00:00Z'}],
   stage_flags: [{id:'fl1',tenant_id:'t1',name:'Urgente',color:'#dc2626'}],
@@ -79,11 +156,26 @@ const D = {
 let COM_EXTRAS = false;
 function usarExtras(v) { COM_EXTRAS = v !== false; }
 
-function responder(url, metodo) {
+// Licença dos módulos novos. Vazia por padrão — é a situação de TODO cliente
+// hoje, e é o que faz o teste "nenhum cliente foi afetado" significar alguma
+// coisa. Os módulos antigos seguem respondendo que sim, como sempre.
+let MODULOS_NOVOS = [];
+function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : []; }
+
+function responder(url, metodo, corpo) {
   const u = new URL(url);
   const p = u.pathname;
   const qs = u.search;
-  if (p.includes('/rpc/a1_has_module')) return true;
+  if (p.includes('/rpc/a1_has_module')) {
+    let chave = '';
+    try { chave = (JSON.parse(corpo || '{}') || {}).p_module_key || ''; } catch {}
+    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL') return MODULOS_NOVOS.includes(chave);
+    return true;
+  }
+  if (p.includes('/rpc/a1_pa_transicionar') || p.includes('/rpc/a1_co_transicionar'))
+    return { ok:true, situacao_id:'ps2' };
+  if (p.includes('/rpc/a1_pa_executar_acao')) return { ok:true, comercial_id:'co1' };
+  if (p.includes('/rpc/a1_co_executar_acao')) return { ok:true, repasse_case_id:'c1' };
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;
   if (p.includes('/rpc/')) return {ok:true};
@@ -103,6 +195,35 @@ function responder(url, metodo) {
     if (!sel) return r;
     const cols = decodeURIComponent(sel).split(',').map(s=>s.split(':').pop().trim());
     return r.map(c => { const o={}; for(const k of cols) if(k in c) o[k]=c[k]; return o; });
+  }
+  // ── Módulos novos ──────────────────────────────────────────────────────────
+  // Sem licença, as tabelas não devolvem NADA — é o que o RLS faz de verdade
+  // quando a1_tem_modulo() responde não. O andaime tem de imitar isso, senão o
+  // teste de "módulo desligado" aprovaria uma tela que na prática vazaria.
+  const TAB_PA = { a1_pa_situacoes:'pa_situacoes', a1_pa_transicoes:'pa_transicoes',
+                   a1_pre_analises:'pre_analises', a1_pa_pessoas:'pa_pessoas',
+                   a1_pa_participantes:'pa_participantes', a1_pa_analises_credito:'pa_credito',
+                   a1_pa_documentos:'pa_documentos', a1_pa_eventos:'pa_eventos' };
+  const TAB_CO = { a1_co_situacoes:'co_situacoes', a1_co_transicoes:'co_transicoes',
+                   a1_comerciais:'comerciais', a1_co_contratos:'co_contratos',
+                   a1_co_eventos:'co_eventos', a1_integra_eventos:'integra_eventos' };
+  if (TAB_PA[t] || TAB_CO[t]) {
+    const mod = TAB_PA[t] ? 'PRE_ANALISE' : 'COMERCIAL';
+    if (!MODULOS_NOVOS.includes(mod)) return [];
+    let r = (D[TAB_PA[t] || TAB_CO[t]] || []).slice();
+    const filtroId = (qs.match(/[?&]id=eq\.([a-z0-9-]+)/)||[])[1];
+    if (filtroId) r = r.filter(x => x.id === filtroId);
+    const pai = (qs.match(/pre_analise_id=eq\.([a-z0-9-]+)/)||[])[1];
+    if (pai) r = r.filter(x => x.pre_analise_id === pai);
+    const com = (qs.match(/comercial_id=eq\.([a-z0-9-]+)/)||[])[1];
+    if (com) r = r.filter(x => x.comercial_id === com);
+    const doc = (qs.match(/documento=eq\.(\d+)/)||[])[1];
+    if (doc) r = r.filter(x => x.documento === doc);
+    const dentro = (qs.match(/(?:id|pre_analise_id)=in\.\(([^)]*)\)/)||[])[1];
+    if (dentro) { const ids = decodeURIComponent(dentro).split(',');
+      r = r.filter(x => ids.includes(x.id) || ids.includes(x.pre_analise_id)); }
+    if (/papel=eq\.TITULAR/.test(qs)) r = r.filter(x => x.papel === 'TITULAR');
+    return r;
   }
   if (t === 'a1_stage_edges') return D.stage_edges;
   if (t === 'a1_stage_flags') return D.stage_flags;
@@ -135,4 +256,4 @@ function responder(url, metodo) {
   }
   return [];
 }
-module.exports = { responder, usarExtras, XSS, ASPA };
+module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D };

@@ -206,6 +206,7 @@
         Interessados
         <span id="leads-badge" style="display:none;margin-left:.4rem;background:#12B981;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
+      <div class="sa-tab" onclick="switchSaTab('esteiras',this)">Esteiras</div>
       <div class="sa-tab" onclick="switchSaTab('monitor',this)">Monitor</div>
       <div class="sa-tab" onclick="switchSaTab('avisos',this)">Mural de Avisos</div>
       <div class="sa-tab" onclick="switchSaTab('indica',this)">IndicaSII</div>
@@ -486,6 +487,37 @@
     </div>
 
     <!-- ══ TAB: Plataforma ══ -->
+    <!-- ══ TAB: Esteiras (Pré-análise e Comercial) ══ -->
+    <div id="satab-esteiras" style="display:none">
+      <div class="panel" style="padding:1.1rem;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
+          <div class="form-group" style="min-width:230px">
+            <label>Cliente</label>
+            <select id="est-tenant" onchange="carregarEsteira()"><option value="">Selecione um cliente...</option></select>
+          </div>
+          <div class="form-group" style="min-width:180px">
+            <label>Módulo</label>
+            <select id="est-modulo" onchange="carregarEsteira()">
+              <option value="PRE_ANALISE">Pré-análise</option>
+              <option value="COMERCIAL">Comercial</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarEsteira()">Recarregar</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem;line-height:1.5">
+          A <strong>situação</strong> diz onde o processo está. A <strong>transição</strong> é a seta
+          entre duas situações — e é nela que mora a <strong>ação</strong>, que é o que provoca efeito
+          em outro módulo. Manter as duas coisas separadas é o que evita um simples "mudar de status"
+          acabar criando registro em outro lugar sem ninguém pedir.
+        </div>
+      </div>
+
+      <div id="est-corpo">
+        <div style="text-align:center;padding:3rem;color:var(--t3);font-size:.82rem">
+          Selecione um cliente para configurar a esteira.</div>
+      </div>
+    </div>
+
     <div id="satab-plataforma" style="display:none">
       <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
         <div class="section-hdr" style="margin-bottom:1rem">
@@ -787,10 +819,11 @@ function saLogout() {
 function switchSaTab(name, el) {
   document.querySelectorAll('.sa-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','modulos','planos','melhorias','interessados','monitor','avisos','indica','plataforma'].forEach(t => {
+  ['clientes','modulos','planos','melhorias','interessados','esteiras','monitor','avisos','indica','plataforma'].forEach(t => {
     const div = document.getElementById(`satab-${t}`);
     if (div) div.style.display = t === name ? '' : 'none';
   });
+  if (name === 'esteiras')     prepararEsteiras();
   if (name === 'melhorias')    loadFeedback();
   if (name === 'interessados') loadLeads();
   if (name === 'plataforma')   initLogoUpload();
@@ -801,6 +834,310 @@ function switchSaTab(name, el) {
 
 
 
+
+// ═══ Esteiras dos módulos novos ══════════════════════════════════════════════
+// A esteira é a máquina de estados que cada cliente configura para si. Vive
+// aqui, e não dentro do sistema do cliente, por dois motivos: a chave de
+// serviço passa por cima do RLS (então dá para preparar a esteira antes de o
+// cliente sequer ter a licença), e configuração de fluxo é decisão de
+// implantação, feita junto com o cliente, não pelo operador do dia a dia.
+//
+// Um detalhe que parece bobo e não é: as ações (ENABLE_COMMERCIAL,
+// CREATE_REPASS) ficam na TRANSIÇÃO, nunca na situação. Se o efeito estivesse
+// preso ao estado, qualquer caminho que chegasse àquele estado dispararia o
+// efeito — inclusive uma correção manual de status.
+const EST = { situacoes: [], transicoes: [], modulo: 'PRE_ANALISE', tenant: null };
+
+const EST_DEF = {
+  PRE_ANALISE: {
+    nome: 'Pré-análise',
+    tabSit: 'a1_pa_situacoes', tabTr: 'a1_pa_transicoes',
+    flags: ['INICIAL','APROVADO','REPROVADO','PENDENTE','VENCIDO','CANCELADO','ENCERRADO'],
+    acoes: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Comercial']],
+    requisitos: [['documentos_aprovados','Exigir todos os documentos aprovados']],
+    // Ponto de partida inspirado no fluxo de mercado; o cliente ajusta depois.
+    padrao: [
+      { nome:'Nova',              flag:'INICIAL',   cor:'#6366f1', sla_horas:4  },
+      { nome:'Em análise',        flag:null,        cor:'#0ea5e9', sla_horas:24 },
+      { nome:'Pendência',         flag:'PENDENTE',  cor:'#f59e0b', sla_horas:48 },
+      { nome:'Aprovada',          flag:'APROVADO',  cor:'#22c55e', sla_horas:null },
+      { nome:'Reprovada',         flag:'REPROVADO', cor:'#ef4444', sla_horas:null },
+      { nome:'Cancelada',         flag:'CANCELADO', cor:'#94a3b8', sla_horas:null }
+    ]
+  },
+  COMERCIAL: {
+    nome: 'Comercial',
+    tabSit: 'a1_co_situacoes', tabTr: 'a1_co_transicoes',
+    flags: ['INICIAL','CONTRATO_ASSINADO','CANCELADO','ENCERRADO'],
+    acoes: [['','nenhuma'],['CREATE_REPASS','Criar cartão no Repasse'],
+            ['SEND_TO_SIGNATURE','Enviar para assinatura'],
+            ['MARK_CONTRACT_SIGNED','Marcar contrato assinado']],
+    requisitos: [['contrato_assinado','Exigir contrato assinado']],
+    padrao: [
+      { nome:'Proposta',          flag:'INICIAL',           cor:'#6366f1', sla_horas:24 },
+      { nome:'Negociação',        flag:null,                cor:'#8b5cf6', sla_horas:72 },
+      { nome:'Contrato',          flag:null,                cor:'#0ea5e9', sla_horas:48 },
+      { nome:'Contrato assinado', flag:'CONTRATO_ASSINADO', cor:'#22c55e', sla_horas:null },
+      { nome:'Cancelado',         flag:'CANCELADO',         cor:'#ef4444', sla_horas:null }
+    ]
+  }
+};
+
+function prepararEsteiras() {
+  const sel = document.getElementById('est-tenant');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Selecione um cliente...</option>' +
+    TENANTS.map(t => `<option value="${t.id}">${esc(t.name)} (${t.slug})</option>`).join('');
+  if (cur) { sel.value = cur; carregarEsteira(); }
+}
+
+async function carregarEsteira() {
+  EST.tenant = document.getElementById('est-tenant').value || null;
+  EST.modulo = document.getElementById('est-modulo').value;
+  const corpo = document.getElementById('est-corpo');
+  if (!EST.tenant) {
+    corpo.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--t3);font-size:.82rem">
+      Selecione um cliente para configurar a esteira.</div>`;
+    return;
+  }
+  const d = EST_DEF[EST.modulo];
+  corpo.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--t3)">carregando…</div>`;
+  const [sit, tr] = await Promise.all([
+    fetch(`${saRest(d.tabSit)}?tenant_id=eq.${EST.tenant}&order=ordem.asc`, { headers: saHeaders() })
+      .then(r => r.json()).catch(() => []),
+    fetch(`${saRest(d.tabTr)}?tenant_id=eq.${EST.tenant}`, { headers: saHeaders() })
+      .then(r => r.json()).catch(() => [])
+  ]);
+  EST.situacoes  = Array.isArray(sit) ? sit : [];
+  EST.transicoes = Array.isArray(tr)  ? tr  : [];
+  renderEsteira();
+}
+
+function renderEsteira() {
+  const d = EST_DEF[EST.modulo];
+  const corpo = document.getElementById('est-corpo');
+
+  if (!EST.situacoes.length) {
+    corpo.innerHTML = `
+      <div class="panel" style="padding:2rem;text-align:center">
+        <div class="section-title" style="margin-bottom:.4rem">Este cliente ainda não tem esteira de ${esc(d.nome)}</div>
+        <div style="font-size:.78rem;color:var(--t3);max-width:520px;margin:0 auto 1.2rem;line-height:1.55">
+          Sem situações cadastradas, o módulo abre mas não funciona: não há para onde mover um processo.
+          Comece pelo desenho padrão e ajuste com o cliente — nada aqui é definitivo.
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="semearEsteira()">Criar esteira padrão de ${esc(d.nome)}</button>
+      </div>`;
+    return;
+  }
+
+  const nomeSit = id => { const s = EST.situacoes.find(x => x.id === id); return s ? s.nome : '—'; };
+
+  corpo.innerHTML = `
+    <div class="panel" style="overflow:hidden;margin-bottom:1.25rem">
+      <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <div class="section-title">Situações de ${esc(d.nome)}</div>
+        <button class="btn btn-ghost btn-xs" onclick="novaSituacao()">+ Situação</button>
+      </div>
+      <div class="tbl-wrap" style="border:none;box-shadow:none">
+        <table><thead><tr>
+          <th style="width:36px">#</th><th>Nome</th><th>Classificação</th>
+          <th>Cor</th><th>SLA (horas)</th><th style="width:1%"></th>
+        </tr></thead><tbody>
+        ${EST.situacoes.map((s, i) => `
+          <tr>
+            <td style="color:var(--t3)">${i + 1}</td>
+            <td><input value="${esc(s.nome)}" onchange="editarSituacao('${esc(s.id)}','nome',this.value)"
+                       style="width:100%;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
+            <td><select onchange="editarSituacao('${esc(s.id)}','flag',this.value)"
+                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
+                  <option value="">—</option>
+                  ${d.flags.map(f => `<option value="${f}" ${s.flag === f ? 'selected' : ''}>${f}</option>`).join('')}
+                </select></td>
+            <td><input type="color" value="${esc(s.cor || '#64748b')}" onchange="editarSituacao('${esc(s.id)}','cor',this.value)"
+                       style="width:44px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0;cursor:pointer"></td>
+            <td><input type="number" min="0" max="8760" value="${s.sla_horas == null ? '' : s.sla_horas}"
+                       placeholder="sem prazo" onchange="editarSituacao('${esc(s.id)}','sla_horas',this.value)"
+                       style="width:92px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
+            <td><button class="btn btn-danger btn-xs" onclick="apagarSituacao('${esc(s.id)}')">Apagar</button></td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border)">
+        SLA em branco significa "sem prazo": a fila mostra há quanto tempo o processo está parado,
+        mas não pinta de vermelho.
+      </div>
+    </div>
+
+    <div class="panel" style="overflow:hidden">
+      <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <div class="section-title">Transições permitidas</div>
+        <button class="btn btn-ghost btn-xs" onclick="novaTransicao()">+ Transição</button>
+      </div>
+      ${EST.transicoes.length ? `
+      <div class="tbl-wrap" style="border:none;box-shadow:none">
+        <table><thead><tr>
+          <th>De</th><th>Para</th><th>Ação disparada</th><th>Quando</th>
+          <th>Requisito</th><th>Papéis</th><th style="width:1%"></th>
+        </tr></thead><tbody>
+        ${EST.transicoes.map(t => `
+          <tr>
+            <td><select onchange="editarTransicao('${esc(t.id)}','de_id',this.value||null)"
+                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
+                  <option value="">qualquer situação</option>
+                  ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.de_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
+                </select></td>
+            <td><select onchange="editarTransicao('${esc(t.id)}','para_id',this.value)"
+                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
+                  ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.para_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
+                </select></td>
+            <td><select onchange="editarTransicao('${esc(t.id)}','acao',this.value||null)"
+                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
+                  ${d.acoes.map(([v, r]) => `<option value="${v}" ${(t.acao || '') === v ? 'selected' : ''}>${esc(r)}</option>`).join('')}
+                </select></td>
+            <td><select onchange="editarTransicao('${esc(t.id)}','acao_modo',this.value)"
+                        ${t.acao ? '' : 'disabled'}
+                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
+                  <option value="CONFIRMAR" ${t.acao_modo === 'CONFIRMAR' ? 'selected' : ''}>o operador confirma</option>
+                  <option value="AUTO"      ${t.acao_modo === 'AUTO'      ? 'selected' : ''}>automático</option>
+                </select></td>
+            <td>${d.requisitos.map(([k, r]) => `
+                  <label style="display:flex;align-items:center;gap:.3rem;font-size:.71rem;color:var(--t2);cursor:pointer">
+                    <input type="checkbox" ${(t.requisitos || {})[k] ? 'checked' : ''}
+                           onchange="editarRequisito('${esc(t.id)}','${k}',this.checked)"
+                           style="accent-color:#3D5CC8;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`).join('')}</td>
+            <td><input value="${esc((t.papeis || []).join(', '))}" placeholder="todos"
+                       onchange="editarPapeis('${esc(t.id)}',this.value)"
+                       style="width:130px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem"></td>
+            <td><button class="btn btn-danger btn-xs" onclick="apagarTransicao('${esc(t.id)}')">Apagar</button></td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>` : `<div style="padding:2rem;text-align:center;color:var(--t3);font-size:.8rem">
+        Nenhuma transição. Sem elas, nada se move na esteira.
+        <div style="margin-top:.8rem"><button class="btn btn-primary btn-xs" onclick="semearTransicoes()">Ligar as situações em sequência</button></div>
+      </div>`}
+      <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border);line-height:1.5">
+        <strong>Automático</strong> executa a ação junto com a mudança de situação, na mesma transação:
+        ou valem as duas coisas, ou nenhuma. <strong>O operador confirma</strong> mostra um botão e espera o clique.<br>
+        <strong>Papéis</strong> em branco = qualquer um com permissão de editar. Para restringir, liste os tipos
+        separados por vírgula (ex.: <code>analista, coordenador</code>). Gestor nunca é barrado por este campo.
+      </div>
+    </div>`;
+}
+
+async function semearEsteira() {
+  const d = EST_DEF[EST.modulo];
+  const linhas = d.padrao.map((s, i) => ({ tenant_id: EST.tenant, nome: s.nome, flag: s.flag,
+                                           cor: s.cor, ordem: i, sla_horas: s.sla_horas, ativo: true }));
+  const res = await fetch(saRest(d.tabSit), {
+    method: 'POST', headers: saHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify(linhas) });
+  if (!res.ok) { toast('Não foi possível criar a esteira.', 'error'); return; }
+  EST.situacoes = await res.json();
+  await semearTransicoes();
+  toast(`Esteira padrão de ${d.nome} criada.`, 'success');
+}
+
+// Liga cada situação à seguinte e permite voltar para as terminais de qualquer
+// lugar (cancelar e reprovar acontecem a qualquer momento, não só no fim).
+async function semearTransicoes() {
+  const d = EST_DEF[EST.modulo];
+  const ordenadas = EST.situacoes.slice().sort((a, b) => a.ordem - b.ordem);
+  const terminais = ordenadas.filter(s => ['REPROVADO','CANCELADO','ENCERRADO'].includes(s.flag));
+  const fluxo     = ordenadas.filter(s => !terminais.includes(s));
+  const novas = [];
+  for (let i = 0; i < fluxo.length - 1; i++) {
+    novas.push({ tenant_id: EST.tenant, de_id: fluxo[i].id, para_id: fluxo[i+1].id,
+                 papeis: [], requisitos: {}, acao: null, acao_modo: 'CONFIRMAR', ativo: true });
+  }
+  terminais.forEach(t => novas.push({ tenant_id: EST.tenant, de_id: null, para_id: t.id,
+                 papeis: [], requisitos: {}, acao: null, acao_modo: 'CONFIRMAR', ativo: true }));
+  if (!novas.length) { renderEsteira(); return; }
+  const res = await fetch(saRest(d.tabTr), {
+    method: 'POST', headers: saHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify(novas) });
+  EST.transicoes = res.ok ? await res.json() : EST.transicoes;
+  renderEsteira();
+}
+
+async function novaSituacao() {
+  const nome = prompt('Nome da nova situação:');
+  if (!nome || !nome.trim()) return;
+  const d = EST_DEF[EST.modulo];
+  const ordem = EST.situacoes.length ? Math.max(...EST.situacoes.map(s => s.ordem || 0)) + 1 : 0;
+  const res = await fetch(saRest(d.tabSit), {
+    method: 'POST', headers: saHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify({ tenant_id: EST.tenant, nome: nome.trim(), ordem, cor: '#64748b', ativo: true }) });
+  if (!res.ok) { toast('Não foi possível criar a situação.', 'error'); return; }
+  EST.situacoes.push((await res.json())[0]);
+  renderEsteira();
+}
+
+async function editarSituacao(id, campo, valor) {
+  const d = EST_DEF[EST.modulo];
+  if (campo === 'sla_horas') valor = valor === '' ? null : parseInt(valor, 10);
+  if (campo === 'flag')      valor = valor || null;
+  const res = await fetch(`${saRest(d.tabSit)}?id=eq.${id}`, {
+    method: 'PATCH', headers: saHeaders(), body: JSON.stringify({ [campo]: valor }) });
+  if (!res.ok) { toast('Não foi possível salvar.', 'error'); return; }
+  const s = EST.situacoes.find(x => x.id === id); if (s) s[campo] = valor;
+  toast('Salvo.', 'success');
+}
+
+async function apagarSituacao(id) {
+  const usada = EST.transicoes.filter(t => t.de_id === id || t.para_id === id).length;
+  if (!confirm(usada
+    ? `Esta situação é usada em ${usada} transição(ões), que serão apagadas junto. Continuar?`
+    : 'Apagar esta situação?')) return;
+  const d = EST_DEF[EST.modulo];
+  const res = await fetch(`${saRest(d.tabSit)}?id=eq.${id}`, { method: 'DELETE', headers: saHeaders() });
+  if (!res.ok) {
+    // O banco recusa apagar uma situação em que ainda existe processo parado —
+    // e faz bem: apagar deixaria o processo apontando para o nada.
+    toast('Não foi possível apagar. Provavelmente há processos nesta situação.', 'error');
+    return;
+  }
+  EST.situacoes  = EST.situacoes.filter(s => s.id !== id);
+  EST.transicoes = EST.transicoes.filter(t => t.de_id !== id && t.para_id !== id);
+  renderEsteira();
+  toast('Situação apagada.', 'warn');
+}
+
+async function novaTransicao() {
+  if (EST.situacoes.length < 2) { toast('Crie pelo menos duas situações antes.', 'error'); return; }
+  const d = EST_DEF[EST.modulo];
+  const res = await fetch(saRest(d.tabTr), {
+    method: 'POST', headers: saHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify({ tenant_id: EST.tenant, de_id: EST.situacoes[0].id,
+                           para_id: EST.situacoes[1].id, papeis: [], requisitos: {},
+                           acao: null, acao_modo: 'CONFIRMAR', ativo: true }) });
+  if (!res.ok) { toast('Não foi possível criar a transição.', 'error'); return; }
+  EST.transicoes.push((await res.json())[0]);
+  renderEsteira();
+}
+
+async function editarTransicao(id, campo, valor) {
+  const d = EST_DEF[EST.modulo];
+  const res = await fetch(`${saRest(d.tabTr)}?id=eq.${id}`, {
+    method: 'PATCH', headers: saHeaders(), body: JSON.stringify({ [campo]: valor }) });
+  if (!res.ok) { toast('Não foi possível salvar.', 'error'); return; }
+  const t = EST.transicoes.find(x => x.id === id); if (t) t[campo] = valor;
+  // Tirar a ação tem de tirar o modo junto: "automático" sem ação nenhuma é um
+  // estado que confunde quem lê a tabela depois.
+  if (campo === 'acao') renderEsteira();
+  else toast('Salvo.', 'success');
+}
+
+async function editarRequisito(id, chave, ligado) {
+  const t = EST.transicoes.find(x => x.id === id); if (!t) return;
+  const req = Object.assign({}, t.requisitos || {});
+  if (ligado) req[chave] = true; else delete req[chave];
+  await editarTransicao(id, 'requisitos', req);
+}
+
+async function editarPapeis(id, texto) {
+  const papeis = String(texto || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  await editarTransicao(id, 'papeis', papeis);
+}
 
 // ═══ Monitor de acessos ══════════════════════════════════════════════════════
 // Uma chamada só (a1_sa_monitor) devolve o agora, o histórico e a quebra por

@@ -459,6 +459,10 @@
         <a class="dd-item" id="link-registro-listagem" href="">Listagem</a>
       </div>
     </div>
+    <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
+         libera a licença para este cliente — nenhum cliente de hoje os vê. -->
+    <a class="tab-btn" id="link-pre-analise" href="" style="display:none">Pré-análise</a>
+    <a class="tab-btn" id="link-comercial"   href="" style="display:none">Comercial</a>
     <a class="tab-btn" id="link-config" href="">Configuracoes</a>
   </div>
 </div>
@@ -1895,6 +1899,19 @@ async function init() {
       if (cfgEl) cfgEl.style.display = '';
     }
   }).catch(()=>{});
+
+  // Módulos novos: a aba só aparece com a licença liberada. A pergunta vai ao
+  // servidor; a resposta não é guardada em lugar nenhum que o usuário alcance,
+  // e o acesso real aos dados continua barrado por RLS mesmo que alguém force
+  // o link na barra de endereço.
+  ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
+    a1HasModule(mod).then(ok => {
+      if (ok !== true) return;
+      const alvo = mod === 'PRE_ANALISE' ? 'pre-analise' : 'comercial';
+      const el = document.getElementById('link-' + alvo);
+      if (el){ el.href = `/${G.slug}/${alvo}`; el.style.display = ''; }
+    }).catch(()=>{});
+  });
 
   await loadData();
   if (G.isCorrTenant && G.fixedCorr) {

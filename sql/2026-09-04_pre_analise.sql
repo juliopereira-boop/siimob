@@ -88,6 +88,10 @@ create table if not exists a1_pre_analises (
   correspondente_id uuid,
   empresa_id     uuid,                       -- empresa correspondente, p/ escopo
   situacao_id    uuid references a1_pa_situacoes(id),
+  -- Quando ENTROU na situação atual. O SLA da fila se mede a partir daqui, e
+  -- não da criação: um processo pode estar há 40 dias na esteira e há 2 horas
+  -- na etapa que está atrasando. Quem cuida da coluna é o orquestrador.
+  situacao_em    timestamptz not null default now(),
   versao         int  not null default 1,
   vence_em       timestamptz,
   criado_por     uuid,
@@ -98,6 +102,8 @@ create index if not exists idx_pa_tenant_sit on a1_pre_analises (tenant_id, situ
 create index if not exists idx_pa_corretor   on a1_pre_analises (tenant_id, corretor_id);
 create index if not exists idx_pa_empresa    on a1_pre_analises (tenant_id, empresa_id);
 create index if not exists idx_pa_vence      on a1_pre_analises (tenant_id, vence_em);
+-- Para quem já rodou a versão anterior deste arquivo.
+alter table a1_pre_analises add column if not exists situacao_em timestamptz not null default now();
 
 -- Titular e associados. O titular é único e a troca fica registrada.
 create table if not exists a1_pa_participantes (
@@ -351,6 +357,9 @@ begin
     if new.versao is distinct from old.versao then
       raise exception 'versao_e_do_sistema';
     end if;
+    if new.situacao_em is distinct from old.situacao_em then
+      raise exception 'relogio_do_sla_e_do_sistema';
+    end if;
     -- Passar o processo para outro corretor é ato de quem manda na carteira,
     -- não do corretor que quer se livrar dele nem de quem quer puxá-lo.
     if (new.corretor_id is distinct from old.corretor_id
@@ -359,12 +368,50 @@ begin
       raise exception 'redistribuir_carteira_e_do_gestor';
     end if;
   end if;
+  if new.situacao_id is distinct from old.situacao_id then
+    new.situacao_em := now();
+  end if;
   new.atualizado_em := now();
   return new;
 end $$;
 drop trigger if exists trg_pa_guarda on a1_pre_analises;
 create trigger trg_pa_guarda before update on a1_pre_analises
   for each row execute function a1_pa_guarda_update();
+
+-- E na criação: o dono é quem criou, decidido aqui e não pelo formulário.
+-- Se a tela pudesse escolher, bastava um corretor mandar o POST com o
+-- corretor_id de um colega para plantar processo na carteira alheia — ou
+-- deixar o campo em branco e criar um processo que ele mesmo não enxerga.
+create or replace function a1_pa_guarda_insert()
+returns trigger language plpgsql
+set search_path = public, extensions, pg_temp as $$
+declare v_tenant uuid := a1_tenant(); v_ator uuid := a1_ator();
+begin
+  -- Sem sessão (importação pela chave de serviço, carga de migração) não há
+  -- o que forçar: respeita o que veio. Toda chamada vinda do navegador TEM
+  -- sessão, então para ela a regra abaixo vale sempre.
+  if v_tenant is not null then new.tenant_id := v_tenant; end if;
+  if v_ator   is not null then
+    new.criado_por := v_ator;
+    if not (a1_e_gestor() or a1_perm('gerente')) then
+      new.corretor_id := v_ator;
+      new.empresa_id  := coalesce(a1_empresa_ator(), new.empresa_id);
+    elsif new.corretor_id is null then
+      new.corretor_id := v_ator;
+    end if;
+  end if;
+  new.situacao_em := now();
+  -- Situação inicial da esteira do cliente, se a tela não mandou nenhuma.
+  if new.situacao_id is null then
+    select id into new.situacao_id from a1_pa_situacoes
+     where tenant_id = new.tenant_id and ativo and flag = 'INICIAL'
+     order by ordem limit 1;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_pa_guarda_ins on a1_pre_analises;
+create trigger trg_pa_guarda_ins before insert on a1_pre_analises
+  for each row execute function a1_pa_guarda_insert();
 
 -- Pessoas: só aparecem para quem enxerga alguma pré-análise em que ela entra.
 -- Sem isso, a lista de pessoas seria uma agenda da empresa inteira aberta a

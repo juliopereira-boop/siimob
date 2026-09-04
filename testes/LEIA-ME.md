@@ -79,7 +79,22 @@ continua dizendo a verdade.
 | `t-cobranca` | Giro Pendente→Pago→Em atraso e a tarja de cobrança no cliente |
 | `t-monitor` | Monitor de acessos e "Acessar" por usuário no superadmin |
 | `t-modulos-novos` | Pré-análise e Comercial: que não aparecem para cliente nenhum |
+| `t-modulos-telas` | As telas dos módulos novos: fila, SLA, assistente, dossiê, esteira |
 | `t-resto` | As telas menores — só que montam e não têm XSS |
+
+## Licença dos módulos novos nos testes
+
+`abrir()` liga os módulos novos **desligados**, que é a situação de todo cliente
+hoje — e é isso que faz a verificação "nenhum cliente foi afetado" significar
+alguma coisa. Quem for testar as telas novas pede a licença:
+
+```js
+await abrir('pre-analise.html', { modulos: ['PRE_ANALISE'] });
+```
+
+Com a lista vazia, `a1_has_module` responde `false` para `PRE_ANALISE` e
+`COMERCIAL`, e as tabelas dos dois módulos devolvem lista vazia — como o RLS faz
+de verdade quando a licença não existe.
 
 ## E as provas de banco
 

@@ -407,6 +407,31 @@ reset role;
 select checa('o cartão de repasse já criado continua no Repasse',
   (select count(*) from a1_cases where payload->>'origem' = 'comercial') = 1);
 
+-- ─── 15. O DONO DO PROCESSO É DECIDIDO NO BANCO ──────────────────────────────
+-- Fica por último porque cria uma pré-análise a mais, e várias verificações
+-- acima contam linhas.
+set role anon;
+select teste_entrar('tk-bruno');
+-- Bruno manda o POST com o corretor_id da Ana: plantar processo na carteira
+-- alheia. Nada na tela impede um POST assim; o banco tem de impedir.
+insert into a1_pre_analises (id, tenant_id, empreendimento_id, corretor_id)
+  values ('80000000-0000-0000-0000-000000000009','11111111-1111-1111-1111-111111111111',
+          'd0000000-0000-0000-0000-000000000001',
+          'b0000000-0000-0000-0000-000000000001');
+select teste_entrar('tk-gestor');
+select checa('corretor não planta processo na carteira de outro: o dono vira quem criou',
+  (select corretor_id from a1_pre_analises
+    where id = '80000000-0000-0000-0000-000000000009')
+  = 'b0000000-0000-0000-0000-000000000002');
+select checa('e o relógio do SLA nasce junto com o processo',
+  (select situacao_em from a1_pre_analises
+    where id = '80000000-0000-0000-0000-000000000009') > now() - interval '1 minute');
+select checa('e ele cai na situação inicial da esteira do cliente',
+  (select situacao_id from a1_pre_analises
+    where id = '80000000-0000-0000-0000-000000000009')
+  = '50000000-0000-0000-0000-000000000001');
+reset role;
+
 -- =============================================================================
 \o
 \echo ''

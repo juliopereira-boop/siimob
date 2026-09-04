@@ -57,6 +57,14 @@
       "destination": "/crm.html"
     },
     {
+      "source": "/:slug/pre-analise",
+      "destination": "/pre-analise.html"
+    },
+    {
+      "source": "/:slug/comercial",
+      "destination": "/comercial.html"
+    },
+    {
       "source": "/:slug/dashboard",
       "destination": "/repasse.html"
     },
