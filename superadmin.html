@@ -731,7 +731,25 @@ const MODULES_DEF = [
   { key: 'ocr',              name: 'Leitor OCR',               desc: 'Extração automática de dados de documentos PDF via inteligência artificial.' },
   { key: 'workflow_avancado',name: 'Workflow Avançado',        desc: 'Motor de automação com pré-requisitos, ações e gatilhos personalizados.' },
   { key: 'multi_regional',   name: 'Multi-Regional',           desc: 'Segregação de dados e relatórios por região geográfica.' },
+  // Módulos novos. Nascem desligados para todo cliente: as tabelas deles só
+  // respondem depois que a licença é criada aqui — não é a tela que esconde, é
+  // a política do banco que não entrega linha.
+  { key: 'PRE_ANALISE',      name: 'Pré-análise',              desc: 'Entrada do processo: pessoas, dossiê, renda, FGTS, subsídio, correspondente e decisão de crédito. Esteira própria.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: [] },
+  { key: 'COMERCIAL',        name: 'Comercial',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
 ];
+
+// Dependência entre módulos. Não é bloqueio: Comercial funciona sozinho para
+// quem já negocia fora do sistema. É aviso — sem Pré-análise, o caminho
+// automático "aprovou → abre o comercial" simplesmente não existe, e é melhor
+// dizer isso na hora de liberar do que o cliente descobrir depois.
+function avisoDependencia(mod, activeKeys) {
+  const faltando = (mod.dependeDe || []).filter(k => !activeKeys.has(k));
+  if (!faltando.length) return '';
+  const nomes = faltando.map(k => (MODULES_DEF.find(m => m.key === k) || {}).name || k);
+  return `<div style="font-size:.66rem;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;
+    border-radius:6px;padding:.35rem .5rem;margin-top:.4rem;line-height:1.4">
+    Funciona sozinho, mas o fluxo automático precisa de <b>${esc(nomes.join(', '))}</b>.</div>`;
+}
 
 function saHeaders(extra = {}) {
   return { 'Content-Type':'application/json', 'apikey':SA_KEY, 'Authorization':`Bearer ${SA_KEY}`, ...extra };
@@ -1579,6 +1597,7 @@ function loadTenantModulesFor() {
           <div class="mod-name">${esc(mod.name)}</div>
           <div class="mod-key">${esc(mod.key)}</div>
           <div class="mod-desc">${esc(mod.desc)}</div>
+          ${avisoDependencia(mod, activeKeys)}
           ${expiryStr ? `<div style="font-size:.68rem;color:var(--t3);margin-bottom:.45rem">${expiryStr}</div>` : ''}
           <div class="mod-actions">
             ${isActive

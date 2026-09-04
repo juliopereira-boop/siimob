@@ -939,6 +939,28 @@
         <div class="form-group full"><label>Nome *</label><input id="coord-nome"></div>
         <div class="form-group"><label>E-mail</label><input id="coord-email" type="email"></div>
         <div class="form-group"><label>Telefone</label><input id="coord-phone"></div>
+
+        <div class="form-group full" style="border-top:1px solid var(--border);padding-top:.9rem;margin-top:.3rem">
+          <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)">Acesso ao sistema</label>
+          <div style="font-size:.72rem;color:var(--t3);margin:.2rem 0 .6rem">
+            Coordenador só entra no sistema se tiver CPF e senha. Sem isso ele continua
+            existindo apenas como cadastro, para vincular a equipe.
+          </div>
+        </div>
+        <div class="form-group"><label>CPF (login)</label>
+          <input id="coord-cpf" inputmode="numeric" placeholder="Somente números"></div>
+        <div class="form-group"><label>Senha de acesso</label>
+          <input id="coord-senha" type="password" autocomplete="new-password"
+                 placeholder="Deixe em branco para manter a atual"></div>
+        <div class="form-group full">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer">
+            <input type="checkbox" id="coord-ve-equipe" checked style="width:16px;height:16px">
+            <span>Vê os processos de toda a sua equipe</span>
+          </label>
+          <div style="font-size:.7rem;color:var(--t3);margin-top:.2rem">
+            Desmarcado, o coordenador entra e enxerga apenas o que for dele.
+          </div>
+        </div>
         <div class="form-group full" id="coord-id-wrap" style="display:none">
           <label>ID do registro</label>
           <input id="coord-id" readonly style="background:var(--bg);font-family:Consolas,monospace;font-size:.78rem;color:var(--t2)">
@@ -3352,6 +3374,12 @@ function openCoordenador(id){
   document.getElementById('coord-nome').value  = c?.name  || '';
   document.getElementById('coord-email').value = c?.email || '';
   document.getElementById('coord-phone').value = c?.phone || '';
+  document.getElementById('coord-cpf').value   = c?.cpf   || '';
+  document.getElementById('coord-senha').value = '';
+  // Ausente = marcado, para o coordenador que já existe não perder visão ao ser
+  // editado. Quem quiser restringir desmarca de propósito.
+  document.getElementById('coord-ve-equipe').checked =
+    !(c && c.permissions && c.permissions.ver_todos_analistas === false);
   document.getElementById('coord-id-wrap').style.display = c ? '' : 'none';
   document.getElementById('coord-id').value = c?.id || '';
 
@@ -3375,10 +3403,26 @@ function openCoordenador(id){
 async function saveCoordenador(){
   const nome = document.getElementById('coord-nome').value.trim();
   if(!nome){ toast('Informe o nome do coordenador','error'); return; }
+  const cpf   = document.getElementById('coord-cpf').value.replace(/\D/g,'');
+  const senha = document.getElementById('coord-senha').value;
+  const veEquipe = document.getElementById('coord-ve-equipe').checked;
+  if (cpf && cpf.length !== 11) { toast('CPF deve ter 11 dígitos','error'); return; }
+  if (senha && senha.length < 6) { toast('A senha precisa de pelo menos 6 caracteres','error'); return; }
+
   const payload = { tenant_id:G.user.tenant_id, type:'coordenador', name:nome,
     email:document.getElementById('coord-email').value.trim(),
     phone:document.getElementById('coord-phone').value.trim(),
+    cpf: cpf || null,
+    // Coordenador entra para acompanhar a equipe: lê e acompanha, não cria nem
+    // apaga processo. Quem precisar de mais recebe do gestor, na tela de
+    // usuários — permissão a mais por padrão é como se perde controle.
+    permissions: { ver_repasses:true, criar_repasses:false, editar_repasses:false,
+                   ver_dashboard:true, baixar_documentos:false, editar_perfil:true,
+                   ver_todos_analistas: veEquipe },
     is_active:true, approved:true };
+  // Só manda a senha quando foi digitada: campo em branco mantém a atual. O
+  // gatilho do banco converte para bcrypt na gravação.
+  if (senha) payload.password_hash = await sha256(senha + '::a1');
   const btn=document.getElementById('coord-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
   try{
     let id = COORD_ID;
