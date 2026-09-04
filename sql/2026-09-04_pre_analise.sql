@@ -200,6 +200,11 @@ set search_path = public, extensions, pg_temp as $$
     -- Gestor e gerente enxergam a carteira inteira do próprio cliente.
     when a1_e_gestor() then true
     when a1_perm('gerente') then true
+    -- Visão completa marcada no cadastro — é como o coordenador enxerga a
+    -- equipe. Repare que o sistema antigo trata a AUSÊNCIA desta chave como
+    -- "vê tudo"; aqui, ausente é "não vê". Módulo novo não herda um padrão
+    -- aberto: quem precisa de visão ampla recebe a marca explicitamente.
+    when a1_perm('ver_todos_analistas') then true
     -- Correspondente enxerga o da própria empresa.
     when a1_tipo_ator() = 'cca' and p_empresa is not null
          and p_empresa = a1_empresa_ator() then true
@@ -230,6 +235,8 @@ begin
     execute format('drop policy if exists %I on %I', t || '_rls', t);
     execute format('drop policy if exists %I on %I', t || '_ler', t);
     execute format('drop policy if exists %I on %I', t || '_escrever', t);
+    execute format('drop policy if exists %I on %I', t || '_criar', t);
+    execute format('drop policy if exists %I on %I', t || '_editar', t);
     execute format('revoke all on %I from anon, authenticated', t);
     execute format('grant select, insert, update on %I to anon, authenticated', t);
   end loop;
@@ -265,7 +272,7 @@ create policy a1_pre_analises_editar on a1_pre_analises for update
 do $$
 declare t text;
 begin
-  foreach t in array array['a1_pa_participantes','a1_pa_analises_credito','a1_pa_documentos']
+  foreach t in array array['a1_pa_participantes','a1_pa_documentos']
   loop
     execute format($f$
       create policy %I on %I for select using (
@@ -286,6 +293,79 @@ begin
   end loop;
 end $$;
 
+-- ─── Decisão de crédito: quem vende não aprova ───────────────────────────────
+-- Esta tabela ficava na regra geral, e a regra geral é "quem edita a pré-análise
+-- edita as filhas". O efeito era que o corretor dono do processo podia inserir
+-- ele mesmo uma linha APROVADO e, com ela, destravar o Comercial — a aprovação
+-- de crédito, que é o portão do fluxo inteiro, ficava do lado de dentro do
+-- portão. Agora exige 'analisar_credito', que gestor e gerente já têm por
+-- definição e que o cliente concede a quem de fato analisa.
+create policy a1_pa_analises_credito_ler on a1_pa_analises_credito for select
+  using (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE')
+         and exists (select 1 from a1_pre_analises pa
+                      where pa.id = a1_pa_analises_credito.pre_analise_id
+                        and a1_pa_visivel(pa.corretor_id, pa.empresa_id)));
+create policy a1_pa_analises_credito_escrever on a1_pa_analises_credito for all
+  using (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE')
+         and a1_perm('analisar_credito')
+         and exists (select 1 from a1_pre_analises pa
+                      where pa.id = a1_pa_analises_credito.pre_analise_id
+                        and a1_pa_visivel(pa.corretor_id, pa.empresa_id)))
+  with check (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE')
+              and a1_perm('analisar_credito'));
+
+-- Mesma lógica no dossiê: qualquer um envia o documento, só quem analisa dá o
+-- veredito. Sem isto, uma transição que exige "documentos aprovados" seria
+-- satisfeita por quem enviou os documentos.
+create or replace function a1_pa_guarda_documento()
+returns trigger language plpgsql
+set search_path = public, extensions, pg_temp as $$
+begin
+  if new.status in ('APROVADO','REPROVADO')
+     and (tg_op = 'INSERT' or new.status is distinct from old.status)
+     and not a1_perm('analisar_credito') then
+    raise exception 'sem_permissao_para_analisar_documento';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_pa_doc_guarda on a1_pa_documentos;
+create trigger trg_pa_doc_guarda before insert or update on a1_pa_documentos
+  for each row execute function a1_pa_guarda_documento();
+
+-- ─── O que o navegador pode reescrever numa pré-análise ──────────────────────
+-- A política de UPDATE dizia apenas "é do seu cliente e é seu". Isso deixava o
+-- PATCH direto reescrever situacao_id — ou seja, pular a esteira inteira:
+-- sem checar a aresta, sem checar o papel, sem gravar histórico e sem disparar
+-- (nem barrar) a ação ligada à transição. Mover situação é ato do orquestrador.
+create or replace function a1_pa_guarda_update()
+returns trigger language plpgsql
+set search_path = public, extensions, pg_temp as $$
+begin
+  if new.tenant_id is distinct from old.tenant_id then
+    raise exception 'tenant_nao_muda';
+  end if;
+  if not a1_no_orquestrador() then
+    if new.situacao_id is distinct from old.situacao_id then
+      raise exception 'situacao_so_muda_por_transicao';
+    end if;
+    if new.versao is distinct from old.versao then
+      raise exception 'versao_e_do_sistema';
+    end if;
+    -- Passar o processo para outro corretor é ato de quem manda na carteira,
+    -- não do corretor que quer se livrar dele nem de quem quer puxá-lo.
+    if (new.corretor_id is distinct from old.corretor_id
+        or new.empresa_id is distinct from old.empresa_id)
+       and not (a1_e_gestor() or a1_perm('gerente')) then
+      raise exception 'redistribuir_carteira_e_do_gestor';
+    end if;
+  end if;
+  new.atualizado_em := now();
+  return new;
+end $$;
+drop trigger if exists trg_pa_guarda on a1_pre_analises;
+create trigger trg_pa_guarda before update on a1_pre_analises
+  for each row execute function a1_pa_guarda_update();
+
 -- Pessoas: só aparecem para quem enxerga alguma pré-análise em que ela entra.
 -- Sem isso, a lista de pessoas seria uma agenda da empresa inteira aberta a
 -- qualquer corretor.
@@ -296,9 +376,27 @@ create policy a1_pa_pessoas_ler on a1_pa_pessoas for select
                           join a1_pre_analises pa on pa.id = pp.pre_analise_id
                          where pp.pessoa_id = a1_pa_pessoas.id
                            and a1_pa_visivel(pa.corretor_id, pa.empresa_id))));
-create policy a1_pa_pessoas_escrever on a1_pa_pessoas for all
-  using (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE') and a1_perm('criar_repasses'))
-  with check (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE') and a1_perm('criar_repasses'));
+-- E a escrita é declarada por comando, NÃO com um FOR ALL.
+--
+-- Aqui estava o furo que a prova pegou: um "for all using (…criar_repasses…)"
+-- parece falar só de escrita, mas no Postgres FOR ALL também vale para SELECT, e
+-- as políticas se somam com OU. O resultado era que a política de leitura acima,
+-- cuidadosamente restrita, era contornada pela de escrita logo abaixo dela:
+-- qualquer corretor com permissão de criar via a agenda inteira do cliente —
+-- nome, CPF, telefone e endereço de todo cliente da concorrência interna.
+-- Escrever e ler são autorizações diferentes e agora estão escritas separadas.
+create policy a1_pa_pessoas_criar on a1_pa_pessoas for insert
+  with check (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE')
+              and a1_perm('criar_repasses'));
+create policy a1_pa_pessoas_editar on a1_pa_pessoas for update
+  using (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE')
+         and a1_perm('criar_repasses')
+         and (a1_e_gestor() or a1_perm('gerente')
+              or exists (select 1 from a1_pa_participantes pp
+                          join a1_pre_analises pa on pa.id = pp.pre_analise_id
+                         where pp.pessoa_id = a1_pa_pessoas.id
+                           and a1_pa_visivel(pa.corretor_id, pa.empresa_id))))
+  with check (tenant_id = a1_tenant() and a1_tem_modulo('PRE_ANALISE'));
 
 -- Histórico: lê quem enxerga a pré-análise; ninguém altera nem apaga.
 create policy a1_pa_eventos_ler on a1_pa_eventos for select
@@ -319,4 +417,7 @@ revoke insert on a1_pa_eventos from anon, authenticated;
 --   2. Libere PRE_ANALISE para um cliente de teste no superadmin e repita.
 --   3. Com sessão de corretor, peça a lista: só devem vir as dele.
 --   4. select * from a1_pa_eventos; devolve; update/delete devem falhar.
+--
+-- Tudo isso está automatizado em testes/sql/ — 65 verificações rodando como
+-- 'anon' com token no cabeçalho, que é como o PostgREST chega ao banco.
 -- =============================================================================

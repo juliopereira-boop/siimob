@@ -39,3 +39,40 @@ jobs:
             testes/*.png
           if-no-files-found: ignore
           retention-days: 7
+
+  # A suíte de navegador confere o que o usuário vê. Esta confere o que o banco
+  # entrega para quem pede direto na API, que é onde uma regra escrita só em
+  # JavaScript não protege nada.
+  banco:
+    name: Autorização no banco
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5473:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar o cliente do Postgres
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Prova de autorização
+        env:
+          PGPORT: '5473'
+          PGPASSWORD: postgres
+        run: testes/sql/roda.sh
+
+      - name: Prova de concorrência
+        env:
+          PGPORT: '5473'
+          PGPASSWORD: postgres
+        run: testes/sql/prova-concorrencia.sh
