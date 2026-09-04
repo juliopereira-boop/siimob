@@ -98,6 +98,11 @@ declare
   v_sit  uuid;
   v_snap jsonb;
 begin
+  -- Marca a transação como "vinda da esteira". É o que autoriza os gatilhos de
+  -- proteção a deixarem passar a escrita em situacao_id, versao e no vínculo —
+  -- colunas que o PATCH direto do navegador não pode tocar.
+  perform set_config('a1.orquestrador', '1', true);
+
   select * into v_pa from a1_pre_analises where id = p_pre_analise;
   if v_pa.id is null then raise exception 'pre_analise_inexistente'; end if;
   if v_pa.tenant_id <> a1_tenant() then raise exception 'fora_do_cliente'; end if;
@@ -184,6 +189,8 @@ declare
   v_nome  text;
   v_doc   text;
 begin
+  perform set_config('a1.orquestrador', '1', true);
+
   select * into v_co from a1_comerciais where id = p_comercial;
   if v_co.id is null then raise exception 'comercial_inexistente'; end if;
   if v_co.tenant_id <> a1_tenant() then raise exception 'fora_do_cliente'; end if;
@@ -239,8 +246,12 @@ begin
   values (v_co.tenant_id, 'repasse', v_stage.id, v_stage.name, now(),
       v_nome, coalesce(v_doc,''),
       nullif(v_snap#>>'{pre_analise,empreendimento_id}',''), v_co.unidade,
-      (select name from a1_partners where id = v_co.corretor_id),
-      (select name from a1_partners where id = v_co.imobiliaria_id),
+      -- Com tenant_id no filtro: a função roda com privilégio de dono, então
+      -- sem ele um corretor_id apontado para outro cliente traria o nome de lá.
+      (select name from a1_partners
+        where id = v_co.corretor_id    and tenant_id = v_co.tenant_id),
+      (select name from a1_partners
+        where id = v_co.imobiliaria_id and tenant_id = v_co.tenant_id),
       true, now(),
       jsonb_build_object(
         'origem', 'comercial',
@@ -278,6 +289,8 @@ declare
   v_comercial uuid;
   v_erro text;
 begin
+  perform set_config('a1.orquestrador', '1', true);
+
   select * into v_pa from a1_pre_analises where id = p_pre_analise;
   if v_pa.id is null or v_pa.tenant_id <> a1_tenant() then
     raise exception 'nao_encontrado'; end if;
@@ -354,6 +367,8 @@ declare
   v_case uuid;
   v_erro text;
 begin
+  perform set_config('a1.orquestrador', '1', true);
+
   select * into v_co from a1_comerciais where id = p_comercial;
   if v_co.id is null or v_co.tenant_id <> a1_tenant() then raise exception 'nao_encontrado'; end if;
   if not a1_tem_modulo('COMERCIAL') then raise exception 'modulo_desabilitado'; end if;
@@ -412,7 +427,7 @@ end $$;
 -- aprovação. Sem isto, aprova-se com um número e negocia-se com outro.
 create or replace function a1_pa_invalidar_decisao()
 returns trigger language plpgsql security definer
-set search_path = public, pg_temp as $$
+set search_path = public, extensions, pg_temp as $$
 declare v_pa uuid;
 begin
   v_pa := coalesce(new.pre_analise_id, old.pre_analise_id);
@@ -449,11 +464,28 @@ grant execute on function a1_pa_transicionar(uuid,uuid,text,int) to anon, authen
 grant execute on function a1_co_transicionar(uuid,uuid,text,int) to anon, authenticated;
 
 -- Execução manual da ação, quando o modo é CONFIRMAR (o operador clica).
+--
+-- ATENÇÃO AO QUE ESTAS DUAS FUNÇÕES SÃO: caminhos de escrita com privilégio de
+-- dono, expostos ao navegador, que recebem um id do cliente. A primeira versão
+-- conferia só a permissão genérica 'editar_repasses' e delegava o resto ao
+-- validador — que verifica o cliente, mas não verifica QUEM. Ou seja: um
+-- corretor com permissão de editar podia mandar o id da pré-análise de um
+-- colega (ids vazam em link, em relatório, em conversa) e criar o Comercial do
+-- processo do outro. Dentro do cliente certo, na carteira errada.
+--
+-- Agora a checagem é a mesma da transição: módulo ligado, processo visível
+-- para este ator, e só então permissão.
 create or replace function a1_pa_executar_acao(p_pre_analise uuid, p_acao text)
 returns json language plpgsql security definer
 set search_path = public, extensions, pg_temp as $$
-declare v_erro text;
+declare v_erro text; v_pa a1_pre_analises%rowtype;
 begin
+  perform set_config('a1.orquestrador', '1', true);
+
+  select * into v_pa from a1_pre_analises where id = p_pre_analise;
+  if v_pa.id is null or v_pa.tenant_id <> a1_tenant() then raise exception 'nao_encontrado'; end if;
+  if not a1_tem_modulo('PRE_ANALISE') then raise exception 'modulo_desabilitado'; end if;
+  if not a1_pa_visivel(v_pa.corretor_id, v_pa.empresa_id) then raise exception 'sem_acesso'; end if;
   if not a1_perm('editar_repasses') then raise exception 'sem_permissao'; end if;
   if p_acao <> 'ENABLE_COMMERCIAL' then raise exception 'acao_desconhecida'; end if;
   v_erro := a1_pa_pode_criar_comercial(p_pre_analise);
@@ -468,8 +500,14 @@ end $$;
 create or replace function a1_co_executar_acao(p_comercial uuid, p_acao text)
 returns json language plpgsql security definer
 set search_path = public, extensions, pg_temp as $$
-declare v_erro text;
+declare v_erro text; v_co a1_comerciais%rowtype;
 begin
+  perform set_config('a1.orquestrador', '1', true);
+
+  select * into v_co from a1_comerciais where id = p_comercial;
+  if v_co.id is null or v_co.tenant_id <> a1_tenant() then raise exception 'nao_encontrado'; end if;
+  if not a1_tem_modulo('COMERCIAL') then raise exception 'modulo_desabilitado'; end if;
+  if not a1_co_visivel(v_co.corretor_id, v_co.empresa_id) then raise exception 'sem_acesso'; end if;
   if not a1_perm('editar_repasses') then raise exception 'sem_permissao'; end if;
   if p_acao <> 'CREATE_REPASS' then raise exception 'acao_desconhecida'; end if;
   v_erro := a1_co_pode_criar_repasse(p_comercial);
@@ -494,4 +532,7 @@ grant execute on function a1_co_executar_acao(uuid,text) to anon, authenticated;
 --   3. Executar a mesma ação duas vezes devolve o MESMO id nas duas.
 --   4. Mexer num participante depois de aprovado deixa a decisão INVALIDADA e
 --      a criação do Comercial volta a ser recusada.
+--
+-- Automatizado: testes/sql/roda.sh (autorização) e
+-- testes/sql/prova-concorrencia.sh (oito chamadas simultâneas → um registro só).
 -- =============================================================================

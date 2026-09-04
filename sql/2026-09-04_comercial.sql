@@ -143,6 +143,7 @@ set search_path = public, extensions, pg_temp as $$
   select case
     when a1_e_gestor() then true
     when a1_perm('gerente') then true
+    when a1_perm('ver_todos_analistas') then true   -- visão completa (coordenador)
     when a1_tipo_ator() = 'cca' and p_empresa is not null
          and p_empresa = a1_empresa_ator() then true
     when p_corretor is not null and p_corretor = a1_ator() then true
@@ -196,6 +197,64 @@ create policy a1_comerciais_editar on a1_comerciais for update
          and a1_co_visivel(corretor_id, empresa_id) and a1_perm('editar_repasses'))
   with check (tenant_id = a1_tenant() and a1_tem_modulo('COMERCIAL'));
 grant update on a1_comerciais to anon, authenticated;
+
+-- Um UPDATE liberado é um UPDATE em TODAS as colunas — e nesta tabela há três
+-- que não são do operador: situacao_id (que é da esteira), repasse_case_id (que
+-- é o vínculo criado pela ação, e apontá-lo à mão amarraria o comercial a um
+-- cartão de repasse qualquer) e origem_snapshot (a fotografia do crédito
+-- aprovado, que existe justamente para NÃO poder ser reescrita depois).
+create or replace function a1_co_guarda_update()
+returns trigger language plpgsql
+set search_path = public, extensions, pg_temp as $$
+begin
+  if new.tenant_id is distinct from old.tenant_id then
+    raise exception 'tenant_nao_muda';
+  end if;
+  if new.pre_analise_id is distinct from old.pre_analise_id then
+    raise exception 'origem_nao_muda';
+  end if;
+  if not a1_no_orquestrador() then
+    if new.situacao_id is distinct from old.situacao_id then
+      raise exception 'situacao_so_muda_por_transicao';
+    end if;
+    if new.repasse_case_id is distinct from old.repasse_case_id then
+      raise exception 'vinculo_de_repasse_e_da_acao';
+    end if;
+    if new.origem_snapshot is distinct from old.origem_snapshot then
+      raise exception 'snapshot_da_aprovacao_nao_se_reescreve';
+    end if;
+    if new.versao is distinct from old.versao then
+      raise exception 'versao_e_do_sistema';
+    end if;
+    if (new.corretor_id is distinct from old.corretor_id
+        or new.empresa_id is distinct from old.empresa_id)
+       and not (a1_e_gestor() or a1_perm('gerente')) then
+      raise exception 'redistribuir_carteira_e_do_gestor';
+    end if;
+  end if;
+  new.atualizado_em := now();
+  return new;
+end $$;
+drop trigger if exists trg_co_guarda on a1_comerciais;
+create trigger trg_co_guarda before update on a1_comerciais
+  for each row execute function a1_co_guarda_update();
+
+-- Contrato assinado é requisito de transição em alguns clientes. Se quem vende
+-- pudesse carimbar ASSINADO sozinho, o requisito não seria requisito.
+create or replace function a1_co_guarda_contrato()
+returns trigger language plpgsql
+set search_path = public, extensions, pg_temp as $$
+begin
+  if new.status = 'ASSINADO'
+     and (tg_op = 'INSERT' or new.status is distinct from old.status)
+     and not (a1_e_gestor() or a1_perm('gerente') or a1_perm('analisar_credito')) then
+    raise exception 'sem_permissao_para_marcar_contrato_assinado';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_co_contrato_guarda on a1_co_contratos;
+create trigger trg_co_contrato_guarda before insert or update on a1_co_contratos
+  for each row execute function a1_co_guarda_contrato();
 
 create policy a1_co_contratos_ler on a1_co_contratos for select
   using (tenant_id = a1_tenant() and a1_tem_modulo('COMERCIAL')

@@ -78,7 +78,15 @@ continua dizendo a verdade.
 | `t-import` | Importador de planilha (usa `fixtures/base-exemplo.xlsx`) |
 | `t-cobranca` | Giro Pendente→Pago→Em atraso e a tarja de cobrança no cliente |
 | `t-monitor` | Monitor de acessos e "Acessar" por usuário no superadmin |
+| `t-modulos-novos` | Pré-análise e Comercial: que não aparecem para cliente nenhum |
 | `t-resto` | As telas menores — só que montam e não têm XSS |
+
+## E as provas de banco
+
+`testes/sql/` é outra coisa: em vez de abrir o navegador, conversa direto com o
+PostgREST-equivalente e confere o que o banco entrega para quem pede por fora do
+sistema. Rodam num Postgres descartável e não passam nem perto de produção.
+Veja `testes/sql/LEIA-ME.md`.
 
 ## XSS
 
