@@ -61,7 +61,15 @@
       "destination": "/pre-analise.html"
     },
     {
+      "source": "/:slug/pre-analise-listagem",
+      "destination": "/pre-analise.html"
+    },
+    {
       "source": "/:slug/comercial",
+      "destination": "/comercial.html"
+    },
+    {
+      "source": "/:slug/comercial-listagem",
       "destination": "/comercial.html"
     },
     {
