@@ -1145,6 +1145,10 @@
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="alterar_etapa" checked> Alterar etapa</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="baixar_documentos" checked> Baixar documentos</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="ver_dashboard" checked> Ver dashboard</label>
+            <!-- Quem vende não aprova. Esta permissão separa registrar a decisão
+                 de crédito e dar o veredito nos documentos de simplesmente
+                 editar o processo. Só vale no módulo de Pré-análise. -->
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer" title="Permite registrar a decisão de crédito e aprovar ou reprovar documentos na Pré-análise. Sem isto, quem edita o processo não decide sobre ele."><input type="checkbox" class="an-perm" data-key="analisar_credito"> Analisar crédito e documentos</label>
           </div>
         </div>
 
@@ -1259,6 +1263,10 @@
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="ver_dashboard"> Ver dashboard</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="baixar_documentos"> Baixar documentos</label>
             <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="editar_perfil" checked> Editar perfil próprio</label>
+            <!-- No correspondente bancário é ele quem de fato analisa. Ainda
+                 assim a permissão é explícita: editar a operação e decidir
+                 sobre o crédito dela são coisas diferentes. -->
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer" title="Permite registrar a decisão de crédito e aprovar ou reprovar documentos na Pré-análise. Sem isto, quem edita a operação não decide sobre ela."><input type="checkbox" class="pt-perm" data-key="analisar_credito"> Analisar crédito e documentos</label>
           </div>
           <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
         </div>

@@ -352,6 +352,21 @@ const { abrir, checa, resumo } = require('./comum');
     await b.close();
   }
 
+  console.log('\n== PERMISSÃO DE ANALISAR CRÉDITO ==');
+  {
+    const { b, p, erros } = await abrir('configuracoes.html');
+    // A permissão existe no cadastro, senão só gestor e gerente aprovariam
+    // e a separação "quem vende não aprova" ficaria sem quem exercê-la.
+    await p.evaluate(() => openCfgView('analistas')); await p.waitForTimeout(500);
+    await p.evaluate(() => openAnalista(null)); await p.waitForTimeout(400);
+    checa('o cadastro de analista oferece "analisar crédito"',
+      (await p.locator('.an-perm[data-key="analisar_credito"]').count()) === 1);
+    checa('e ela NÃO vem marcada por padrão',
+      !(await p.locator('.an-perm[data-key="analisar_credito"]').isChecked()));
+    checa('sem erro de JS', erros.length === 0, erros[0] || '');
+    await b.close();
+  }
+
   console.log('\n== CONFIGURAÇÃO DA ESTEIRA NO SUPERADMIN ==');
   {
     const { chromium } = require('playwright');
