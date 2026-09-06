@@ -21,16 +21,14 @@
   body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
   input,button,select,textarea{font-family:inherit}
   a{text-decoration:none;color:inherit}
-  .hdr{background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
-  .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
-  .hdr-right{display:flex;align-items:center;gap:.8rem;font-size:.8rem}
-  .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer}
-  .btn-hdr:hover{background:rgba(255,255,255,.25)}
-  .btn-hdr-primary{background:#fff;color:var(--violet)}
-  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
-  .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
-  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+  /* O cabeçalho e a barra de abas vêm de js/modulo-shell.js. Redefinir .hdr,
+     .tabs-bar ou .tab-btn aqui foi exatamente o que deixou esta tela torta:
+     duas folhas brigando pelo mesmo seletor, e ganhava a que carregasse por
+     último. Se precisar mexer na barra, mexa no shell. */
   .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+  .pg-hdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap}
+  .pg-titulo{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}
+  .pg-vista{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
   .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -147,51 +145,42 @@
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-logo">
-    <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sipa1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sipa1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sipa1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sipa1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sipa1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sipa1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sipa1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sipa1d)"/></svg>
-    <span>SIIMOB</span>
-  </div>
-  <div class="hdr-right">
-    <span id="hdr-user"></span>
-    <button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>
-    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
-  </div>
-</div>
-
-<div class="tabs-bar" id="tabs-bar">
-  <button class="tab-btn active" data-tab="fila"    onclick="trocarAba('fila',this)">Fila</button>
-  <button class="tab-btn"        data-tab="esteira" onclick="trocarAba('esteira',this)">Esteira</button>
-  <button class="tab-btn"        data-tab="painel"  onclick="trocarAba('painel',this)">Painel</button>
-  <a class="tab-btn" id="link-repasse" href="" style="margin-left:auto;opacity:.75">Repasse ↗</a>
-</div>
+<div id="shell"></div>
 
 <div class="main">
 
-  <div id="aba-fila">
-    <div class="kpi-grid" id="kpis-fila"></div>
-    <div class="toolbar">
-      <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." oninput="renderFila()" style="min-width:220px">
-      <select id="f-situacao" onchange="renderFila()"><option value="">Todas as situações</option></select>
-      <select id="f-corretor" onchange="renderFila()"><option value="">Todos os corretores</option></select>
-      <select id="f-empr"     onchange="renderFila()"><option value="">Todos os empreendimentos</option></select>
-      <div class="seg" role="group" aria-label="Filtro de prazo">
-        <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
-        <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
-        <button id="sla-at"     onclick="filtrarSla('at')">Atenção</button>
-        <button id="sla-ex"     onclick="filtrarSla('ex')">Estourado</button>
-      </div>
-      <div style="flex:1"></div>
-      <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+  <div class="pg-hdr">
+    <h1 class="pg-titulo">Pré-análise</h1>
+    <span class="pg-vista" id="pg-vista"></span>
+  </div>
+
+  <!-- KPIs e barra de filtros ficam FORA das vistas: são os mesmos números e os
+       mesmos filtros nas duas, e duplicá-los era o caminho mais curto para uma
+       delas parar de filtrar sem ninguém perceber. -->
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="toolbar">
+    <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." oninput="renderVista()" style="min-width:220px">
+    <select id="f-situacao" onchange="renderVista()"><option value="">Todas as situações</option></select>
+    <select id="f-corretor" onchange="renderVista()"><option value="">Todos os corretores</option></select>
+    <select id="f-empr"     onchange="renderVista()"><option value="">Todos os empreendimentos</option></select>
+    <div class="seg" role="group" aria-label="Filtro de prazo">
+      <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
+      <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
+      <button id="sla-at"     onclick="filtrarSla('at')">Atenção</button>
+      <button id="sla-ex"     onclick="filtrarSla('ex')">Estourado</button>
     </div>
+    <div style="flex:1"></div>
+    <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+  </div>
+
+  <div id="vista-andamento" style="display:none">
+    <div class="kanban" id="kanban"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+
+  <div id="vista-listagem" style="display:none">
     <div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div>
   </div>
-
-  <div id="aba-esteira" style="display:none">
-    <div class="kanban" id="kanban"></div>
-  </div>
-
-  <div id="aba-painel" style="display:none"></div>
 
 </div>
 
@@ -256,6 +245,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -263,7 +253,7 @@ const G = {
   user:null, slug:null,
   situacoes:[], transicoes:[], lista:[], pessoas:{},
   corretores:[], imobiliarias:[], empreendimentos:[],
-  filtroSla:'', aba:'fila', abaDossie:'dados',
+  filtroSla:'', abaDossie:'dados',
   atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null,
   passo:1, rascunho:{}
 };
@@ -335,9 +325,17 @@ async function init(){
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   try { await a1RequireModule('PRE_ANALISE'); } catch { return; }
   G.slug = A1.slug;
-  document.getElementById('hdr-user').textContent = `${G.user.name} · ${ehGestor() ? 'Gestor' : (G.user.type || 'Parceiro')}`;
-  document.getElementById('link-repasse').href = `/${G.slug}/repasse`;
+
+  // Cabeçalho e abas vêm do shell — os mesmos de Dashboard, Repasse e Comercial.
+  // O botão de criar entra como ação do cabeçalho, e não como um botão solto
+  // desta tela, para não voltarmos a ter duas barras diferentes no produto.
+  await a1MontarShell(document.getElementById('shell'), {
+    ativo:'PRE_ANALISE', vista: a1VistaDaURL(),
+    acoes: '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
+  });
   if (!perm('criar_repasses')) document.getElementById('btn-nova').style.display = 'none';
+
+  aplicarVista();
   a1StartHeartbeat('pre-analise');
   await carregar();
 }
@@ -363,7 +361,7 @@ async function carregar(){
   // inteira, em vez de uma por linha.
   await carregarTitulares();
   preencherFiltros();
-  renderFila(); renderEsteira(); renderPainel();
+  renderVista();
 }
 
 async function carregarTitulares(){
@@ -406,7 +404,7 @@ function filtrarSla(n){
     const b = document.getElementById('sla-'+k);
     if (b) b.classList.toggle('on', (k==='todos' ? '' : k) === n);
   });
-  renderFila();
+  renderVista();
 }
 
 function filtradas(){
@@ -434,12 +432,31 @@ function filtradas(){
   });
 }
 
-function renderFila(){
+// Quem manda na vista é o endereço, não uma variável desta tela. Guardar em
+// global fazia a URL e o que estava na tela divergirem: o link direto abria uma
+// coisa e o botão "voltar" do navegador não desfazia nada.
+//
+// Chamado antes de os dados chegarem, para o operador ver o quadro certo (com o
+// indicador de carregando) em vez de uma faixa em branco enquanto a busca corre.
+function aplicarVista(){
+  const v = a1VistaDaURL();
+  document.getElementById('pg-vista').textContent = v === 'listagem' ? 'Listagem' : 'Andamento';
+  document.getElementById('vista-andamento').style.display = v === 'andamento' ? '' : 'none';
+  document.getElementById('vista-listagem').style.display  = v === 'listagem'  ? '' : 'none';
+  return v;
+}
+
+function renderVista(){
+  const v = aplicarVista();
   const linhas = filtradas();
   document.getElementById('fila-contagem').textContent =
     `${linhas.length} de ${G.lista.length} pré-análise${G.lista.length===1?'':'s'}`;
   renderKpis();
 
+  if (v === 'listagem') renderFila(linhas); else renderAndamento(linhas);
+}
+
+function renderFila(linhas){
   const wrap = document.getElementById('fila-wrap');
   if (!G.situacoes.length){
     wrap.innerHTML = `<div class="vazio"><strong>A esteira ainda não foi configurada.</strong><br>
@@ -479,7 +496,7 @@ function renderKpis(){
   const aprovadas = G.lista.filter(p => {
     const s = G.situacoes.find(x=>x.id===p.situacao_id); return s && s.flag === 'APROVADO';
   }).length;
-  document.getElementById('kpis-fila').innerHTML = `
+  document.getElementById('kpis').innerHTML = `
     <div class="kpi-card v"><div class="kpi-label">Na esteira</div><div class="kpi-value">${total}</div></div>
     <div class="kpi-card g"><div class="kpi-label">No prazo</div><div class="kpi-value">${conta('ok')}</div></div>
     <div class="kpi-card a"><div class="kpi-label">Atenção</div><div class="kpi-value">${conta('at')}</div>
@@ -488,11 +505,10 @@ function renderKpis(){
     <div class="kpi-card g"><div class="kpi-label">Aprovadas</div><div class="kpi-value">${aprovadas}</div></div>`;
 }
 
-// ─── esteira (kanban) ────────────────────────────────────────────────────────
-function renderEsteira(){
+// ─── andamento (quadro por situação) ─────────────────────────────────────────
+function renderAndamento(linhas){
   const el = document.getElementById('kanban');
   if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
-  const linhas = filtradas();
   el.innerHTML = G.situacoes.map(s => {
     const dela = linhas.filter(p => p.situacao_id === s.id);
     return `<div class="k-col">
@@ -515,66 +531,9 @@ function cartao(p){
   </div>`;
 }
 
-// ─── painel ──────────────────────────────────────────────────────────────────
-function renderPainel(){
-  const el = document.getElementById('aba-painel');
-  if (!G.lista.length){ el.innerHTML = `<div class="vazio">Sem dados ainda.</div>`; return; }
-  const porSit = G.situacoes.map(s => ({
-    s, n: G.lista.filter(p => p.situacao_id === s.id).length,
-    ex: G.lista.filter(p => p.situacao_id === s.id && sla(p).nivel === 'ex').length
-  }));
-  const maior = Math.max(1, ...porSit.map(x => x.n));
-  const porCorretor = {};
-  G.lista.forEach(p => { const k = nomeCorretor(p.corretor_id); porCorretor[k] = (porCorretor[k]||0)+1; });
-  const ranking = Object.entries(porCorretor).sort((a,b)=>b[1]-a[1]).slice(0,10);
-
-  el.innerHTML = `
-    <div class="kpi-grid">
-      <div class="kpi-card v"><div class="kpi-label">Total</div><div class="kpi-value">${G.lista.length}</div></div>
-      <div class="kpi-card a"><div class="kpi-label">Tempo médio na etapa</div>
-        <div class="kpi-value">${esc(humano(mediaHoras()))}</div></div>
-      <div class="kpi-card r"><div class="kpi-label">Fora do prazo</div>
-        <div class="kpi-value">${G.lista.filter(p=>sla(p).nivel==='ex').length}</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" id="painel-grid">
-      <div class="tbl-wrap" style="padding:1rem">
-        <div class="sec-title" style="margin-top:0">Onde os processos estão parados</div>
-        ${porSit.map(x => `
-          <div style="margin-bottom:.6rem">
-            <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:.2rem">
-              <span>${esc(x.s.nome)}</span>
-              <span style="font-weight:700">${x.n}${x.ex ? ` <span style="color:var(--red)">(${x.ex} fora do prazo)</span>` : ''}</span>
-            </div>
-            <div class="sla-track"><div class="sla-fill" style="width:${(x.n/maior*100).toFixed(0)}%;background:${esc(x.s.cor||'#64748b')}"></div></div>
-          </div>`).join('')}
-      </div>
-      <div class="tbl-wrap" style="padding:1rem">
-        <div class="sec-title" style="margin-top:0">Por corretor</div>
-        ${ranking.map(([nome,n]) => `
-          <div style="display:flex;justify-content:space-between;font-size:.79rem;padding:.35rem 0;border-bottom:1px solid var(--border)">
-            <span>${esc(nome)}</span><span style="font-weight:700">${n}</span></div>`).join('') ||
-          '<div class="sub">sem dados</div>'}
-      </div>
-    </div>`;
-}
-function mediaHoras(){
-  if (!G.lista.length) return 0;
-  const soma = G.lista.reduce((a,p) => {
-    const d = p.situacao_em || p.criado_em;
-    return a + (d ? (Date.now() - new Date(d).getTime())/3600000 : 0);
-  }, 0);
-  return soma / G.lista.length;
-}
-
-function trocarAba(aba, el){
-  G.aba = aba;
-  ['fila','esteira','painel'].forEach(a =>
-    document.getElementById('aba-'+a).style.display = (a===aba ? '' : 'none'));
-  document.querySelectorAll('.tabs-bar .tab-btn').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
-  if (aba === 'esteira') renderEsteira();
-  if (aba === 'painel')  renderPainel();
-}
+// A vista de painel saiu daqui: os números da Pré-análise passaram a viver no
+// Dashboard central, junto com os dos outros módulos. Manter uma cópia nesta
+// tela era garantir dois lugares mostrando totais diferentes do mesmo dado.
 
 // ══════════ ASSISTENTE ══════════
 function abrirAssistente(){
@@ -909,7 +868,7 @@ async function salvarDados(){
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.'),'error'); return; }
   Object.assign(p, corpo);
   toast('Dados salvos.','success');
-  renderFila(); renderEsteira();
+  renderVista();
 }
 
 function dosPessoas(){

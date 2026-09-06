@@ -53,11 +53,81 @@ const { abrir, checa, resumo } = require('./comum');
     await b.close();
   }
 
-  console.log('\n== FILA DA PRÉ-ANÁLISE ==');
+  console.log('\n== O CABEÇALHO É O MESMO DO RESTO DO SISTEMA ==');
   {
+    // O dono reclamou de "ficar esquisito" ao entrar nas telas novas: elas
+    // desenhavam um cabeçalho próprio. Agora vem do shell, e a barra tem de
+    // trazer as mesmas abas de qualquer outra tela do produto.
     const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE'] });
-    const corpo = await p.evaluate(() => document.body.innerText);
+    const abas = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#shell .tabs-bar .tab-btn'))
+        .map(a => a.textContent.replace(/[▾\s]+/g, ' ').trim()));
+    checa('a barra traz Dashboard, Repasse e Pré-análise, como no resto do sistema',
+      abas.includes('Dashboard') && abas.includes('Repasse') && abas.includes('Pré-análise'),
+      JSON.stringify(abas));
+    checa('a aba da Pré-análise está marcada como a atual',
+      await p.evaluate(() => {
+        const a = Array.from(document.querySelectorAll('#shell .tab-btn'))
+          .find(x => /Pré-análise/.test(x.textContent));
+        return !!a && a.classList.contains('active');
+      }));
+
+    // Fila/Esteira/Painel saíram: quem escolhe a vista é o menu do shell.
+    const itens = await p.evaluate(() => {
+      const g = Array.from(document.querySelectorAll('#shell .tab-group'))
+        .find(x => /Pré-análise/.test(x.querySelector('.tab-btn').textContent));
+      return g ? Array.from(g.querySelectorAll('.dd-item')).map(i => i.textContent.trim()) : [];
+    });
+    checa('e o menu da Pré-análise oferece exatamente Andamento e Listagem',
+      itens.length === 2 && itens[0] === 'Andamento' && itens[1] === 'Listagem',
+      JSON.stringify(itens));
+    checa('a tela não desenha mais um cabeçalho próprio',
+      await p.evaluate(() => document.querySelectorAll('.hdr').length === 1
+                          && document.querySelectorAll('.tabs-bar').length === 1));
+    checa('e o botão de criar continua à mão, agora como ação do cabeçalho',
+      (await p.locator('#shell #btn-nova').count()) === 1);
+    checa('sem erro de JS', erros.length === 0, erros[0] || '');
+    todosErros.push(...erros);
+    await b.close();
+  }
+
+  console.log('\n== ANDAMENTO DA PRÉ-ANÁLISE ==');
+  {
+    // Sem ?vista, a tela abre no Andamento — o quadro por situação.
+    const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE'] });
     checa('a tela abre', /Pré-análise/i.test(await p.title()));
+    checa('e continua se apresentando como Pré-análise',
+      /Pré-análise/.test(await p.locator('.pg-titulo').textContent()));
+    checa('o andamento mostra uma coluna por situação',
+      (await p.locator('.k-col').count()) === 4);
+    checa('e distribui os processos pelas colunas',
+      (await p.locator('.pa-card').count()) === 4);
+    checa('a listagem fica escondida', !(await p.locator('#vista-listagem').isVisible()));
+
+    // Os filtros são os mesmos nas duas vistas — aqui eles têm de mexer no quadro.
+    await p.click('#sla-ex'); await p.waitForTimeout(250);
+    checa('filtrar por prazo estourado também filtra o quadro',
+      (await p.locator('.pa-card').count()) === 1);
+    await p.click('#sla-todos'); await p.waitForTimeout(250);
+    await p.fill('#f-busca', 'Maria'); await p.waitForTimeout(250);
+    checa('e a busca também', (await p.locator('.pa-card').count()) === 2);
+    await p.fill('#f-busca', ''); await p.waitForTimeout(250);
+
+    checa('nenhum XSS', await p.evaluate(() => window.__XSS === 0));
+    checa('sem erro de JS', erros.length === 0, erros[0] || '');
+    todosErros.push(...erros);
+    await b.close();
+  }
+
+  console.log('\n== LISTAGEM DA PRÉ-ANÁLISE ==');
+  {
+    // A vista vem do endereço, não de um clique guardado em variável: é isso
+    // que faz o link direto e o botão "voltar" do navegador continuarem valendo.
+    const { b, p, erros } = await abrir('pre-analise.html?vista=listagem', { modulos:['PRE_ANALISE'] });
+    const corpo = await p.evaluate(() => document.body.innerText);
+    checa('o endereço decide a vista: ?vista=listagem abre a tabela',
+      (await p.locator('table.fila').count()) === 1
+      && !(await p.locator('#vista-andamento').isVisible()));
     checa('lista as quatro pré-análises', /4 de 4 pré-análises/.test(corpo), corpo.slice(0,200));
     checa('mostra o nome do titular, que vem dos participantes', /Maria Titular/.test(corpo));
     checa('mostra o CPF formatado', /529\.982\.247-25/.test(corpo));
@@ -70,7 +140,7 @@ const { abrir, checa, resumo } = require('./comum');
       await p.evaluate(() => !!document.querySelector('.sla-ok')));
     checa('o KPI de estourado bate com o que a fila pinta de vermelho',
       await p.evaluate(() => {
-        const kpi = Array.from(document.querySelectorAll('#kpis-fila .kpi-card'))
+        const kpi = Array.from(document.querySelectorAll('#kpis .kpi-card'))
           .find(c => /Estourado/i.test(c.textContent));
         const n = kpi ? parseInt(kpi.querySelector('.kpi-value').textContent, 10) : -1;
         return n === document.querySelectorAll('table.fila .sla-ex').length && n === 1;
@@ -100,16 +170,11 @@ const { abrir, checa, resumo } = require('./comum');
       (await p.locator('table.fila tbody tr').count()) === 2);
     await p.selectOption('#f-situacao', ''); await p.waitForTimeout(200);
 
-    // Esteira
-    await p.click('.tab-btn[data-tab="esteira"]'); await p.waitForTimeout(400);
-    checa('a esteira mostra uma coluna por situação',
-      (await p.locator('.k-col').count()) === 4);
-    checa('e distribui os processos pelas colunas',
-      (await p.locator('.pa-card').count()) === 4);
-
-    await p.click('.tab-btn[data-tab="painel"]'); await p.waitForTimeout(400);
-    checa('o painel mostra onde os processos estão parados',
-      /Onde os processos est/i.test(await p.locator('#aba-painel').textContent()));
+    // O dossiê é o mesmo nas duas vistas: clicar na linha tem de abri-lo.
+    await p.click('table.fila tbody tr'); await p.waitForTimeout(800);
+    checa('clicar numa linha abre o dossiê',
+      await p.locator('#modal-dossie').isVisible()
+      && (await p.locator('#dos-titulo').textContent()).trim() !== '');
 
     checa('nenhum XSS', await p.evaluate(() => window.__XSS === 0));
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
@@ -284,8 +349,46 @@ const { abrir, checa, resumo } = require('./comum');
     checa('lista o negócio', /1 de 1 negócio/.test(corpo), corpo.slice(0,200));
     checa('o nome do cliente vem do snapshot da aprovação', /Maria Titular/.test(corpo));
     checa('mostra o valor aprovado', /240\.000,00/.test(corpo));
-    checa('e que o repasse ainda não foi criado',
-      (await p.locator('table.fila tbody .pill.wt').count()) === 1);
+
+    // O cabeçalho passou a ser o de js/modulo-shell.js, o mesmo dos quadros
+    // antigos. Era a divergência que fazia esta tela parecer outro produto.
+    const abas = await p.evaluate(() => Array.from(
+      document.querySelectorAll('#shell .tabs-bar > .tab-btn, #shell .tab-group > .tab-btn'))
+      .map(a => a.textContent.replace(/\s+/g, ' ').replace('▾', '').trim()));
+    checa('o cabeçalho traz as abas do resto do sistema',
+      abas.includes('Dashboard') && abas.includes('Repasse') && abas.includes('Configuracoes'),
+      JSON.stringify(abas));
+    checa('com o Comercial marcado como a tela atual',
+      await p.evaluate(() => {
+        const a = document.querySelector('#shell .tab-group > .tab-btn.active');
+        return !!a && /Comercial/.test(a.textContent);
+      }));
+    checa('e a Pré-análise, sem licença, continua fora da barra',
+      !abas.includes('Pré-análise'), JSON.stringify(abas));
+    checa('existe um cabeçalho só, não dois disputando o topo',
+      await p.evaluate(() => document.querySelectorAll('.hdr').length === 1
+                          && document.querySelectorAll('.tabs-bar').length === 1));
+
+    const menu = await p.evaluate(() => {
+      const g = Array.from(document.querySelectorAll('#shell .tab-group'))
+        .find(x => /Comercial/.test(x.querySelector('.tab-btn').textContent));
+      return g ? Array.from(g.querySelectorAll('.dd-item'))
+        .map(a => a.textContent.trim() + ' → ' + a.getAttribute('href')) : [];
+    });
+    checa('o menu Comercial oferece exatamente Andamento e Listagem',
+      menu.length === 2 && menu[0] === 'Andamento → /thecred/comercial'
+                        && menu[1] === 'Listagem → /thecred/comercial-listagem',
+      JSON.stringify(menu));
+
+    // Sem vista no endereço, abre no Andamento — e as abas internas Fila/Esteira
+    // deixaram de existir: quem escolhe a vista é o menu do cabeçalho.
+    checa('abre no Andamento, o quadro por situação',
+      await p.evaluate(() => document.getElementById('vista-andamento').offsetParent !== null
+                          && document.getElementById('vista-listagem').offsetParent === null));
+    checa('com uma coluna por situação da esteira',
+      (await p.locator('#vista-andamento .k-col').count()) === 2);
+    checa('e sem abas internas dentro do conteúdo',
+      (await p.locator('.main .tab-btn').count()) === 0);
 
     await p.evaluate(() => abrirDossie('co1')); await p.waitForTimeout(800);
     checa('o dossiê abre na proposta',
@@ -323,6 +426,46 @@ const { abrir, checa, resumo } = require('./comum');
     checa('nenhum insert direto em a1_cases',
       await p.evaluate(() => !(window.__POSTS||[])
         .some(x => /a1_cases/.test(x.url) && x.m === 'POST')));
+
+    checa('nenhum XSS', await p.evaluate(() => window.__XSS === 0));
+    checa('sem erro de JS', erros.length === 0, erros[0] || '');
+    todosErros.push(...erros);
+    await b.close();
+  }
+  {
+    // A outra vista do mesmo módulo, pedida pelo endereço — é por aí que o item
+    // do menu chega. E com o ?id= junto, porque é o link que a Pré-análise manda
+    // para cá: ele tem de abrir o negócio em qualquer das duas vistas.
+    const { b, p, erros } = await abrir('comercial.html?vista=listagem&id=co1', { modulos:['COMERCIAL'] });
+    checa('o link direto ?id= abre o dossiê do negócio',
+      !(await p.locator('#modal-dossie').getAttribute('class')).includes('hidden')
+      && /Maria Titular/.test(await p.locator('#dos-titulo').textContent()));
+    await p.evaluate(() => fecharModal('modal-dossie')); await p.waitForTimeout(200);
+
+    checa('?vista=listagem mostra a tabela no lugar do quadro',
+      await p.evaluate(() => document.getElementById('vista-listagem').offsetParent !== null
+                          && document.getElementById('vista-andamento').offsetParent === null));
+    checa('e o menu marca Listagem como a vista atual',
+      await p.evaluate(() => {
+        const a = document.querySelector('#shell .dd-item.active');
+        return !!a && a.textContent.trim() === 'Listagem';
+      }));
+    checa('a tabela mostra que o repasse ainda não foi criado',
+      (await p.locator('table.fila tbody .pill.wt').count()) === 1);
+
+    // Busca e filtro são da tela, não de uma aba: precisam valer aqui também.
+    await p.fill('#f-busca', 'Maria'); await p.waitForTimeout(250);
+    checa('a busca acha o negócio pelo nome do titular',
+      (await p.locator('table.fila tbody tr').count()) === 1);
+    await p.fill('#f-busca', 'ninguém'); await p.waitForTimeout(250);
+    checa('e esvazia a tabela quando nada casa',
+      (await p.locator('table.fila tbody tr').count()) === 0);
+    await p.fill('#f-busca', ''); await p.waitForTimeout(250);
+
+    await p.click('#sla-ex'); await p.waitForTimeout(250);
+    checa('o filtro de prazo deixa só a linha que a tabela pinta de vermelho',
+      (await p.locator('table.fila tbody tr').count()) === 1
+      && (await p.locator('table.fila .sla-ex').count()) === 1);
 
     checa('nenhum XSS', await p.evaluate(() => window.__XSS === 0));
     checa('sem erro de JS', erros.length === 0, erros[0] || '');

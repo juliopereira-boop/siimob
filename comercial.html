@@ -21,14 +21,10 @@
   body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--t1);font-size:14px;-webkit-font-smoothing:antialiased}
   input,button,select,textarea{font-family:inherit}
   a{text-decoration:none;color:inherit}
-  .hdr{background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
-  .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.95rem;letter-spacing:-.02em}
-  .hdr-right{display:flex;align-items:center;gap:.8rem;font-size:.8rem}
-  .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer}
-  .btn-hdr:hover{background:rgba(255,255,255,.25)}
-  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
-  .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
-  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+  /* Cabeçalho e barra de abas saem de js/modulo-shell.js. Esta tela tinha .hdr
+     e .tabs-bar próprios, com outra altura e outra cor de aba ativa; as duas
+     folhas disputando os mesmos seletores foi o que deixou o topo torto e com
+     cara de outro produto. Aqui não se redefine nada que o shell já pinta. */
   .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
   .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -136,44 +132,30 @@
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-logo">
-    <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sico1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sico1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sico1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sico1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sico1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sico1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sico1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sico1d)"/></svg>
-    <span>SIIMOB</span>
-  </div>
-  <div class="hdr-right">
-    <span id="hdr-user"></span>
-    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
-  </div>
-</div>
-
-<div class="tabs-bar">
-  <button class="tab-btn active" data-tab="fila"    onclick="trocarAba('fila',this)">Fila</button>
-  <button class="tab-btn"        data-tab="esteira" onclick="trocarAba('esteira',this)">Esteira</button>
-  <a class="tab-btn" id="link-pa" href="" style="margin-left:auto;opacity:.75">Pré-análise ↗</a>
-  <a class="tab-btn" id="link-repasse" href="" style="opacity:.75">Repasse ↗</a>
-</div>
+<div id="shell"></div>
 
 <div class="main">
-  <div id="aba-fila">
-    <div class="kpi-grid" id="kpis"></div>
-    <div class="toolbar">
-      <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderFila()" style="min-width:220px">
-      <select id="f-situacao" onchange="renderFila()"><option value="">Todas as situações</option></select>
-      <select id="f-corretor" onchange="renderFila()"><option value="">Todos os corretores</option></select>
-      <div class="seg" role="group" aria-label="Filtro de prazo">
-        <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
-        <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
-        <button id="sla-at" onclick="filtrarSla('at')">Atenção</button>
-        <button id="sla-ex" onclick="filtrarSla('ex')">Estourado</button>
-      </div>
-      <div style="flex:1"></div>
-      <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+  <div class="kpi-grid" id="kpis"></div>
+
+  <!-- Os filtros ficam FORA das vistas: quem recorta a lista e troca de vista
+       pelo menu do cabeçalho espera reencontrar o mesmo recorte, não a base
+       inteira de novo. -->
+  <div class="toolbar">
+    <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderVistas()" style="min-width:220px">
+    <select id="f-situacao" onchange="renderVistas()"><option value="">Todas as situações</option></select>
+    <select id="f-corretor" onchange="renderVistas()"><option value="">Todos os corretores</option></select>
+    <div class="seg" role="group" aria-label="Filtro de prazo">
+      <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
+      <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
+      <button id="sla-at" onclick="filtrarSla('at')">Atenção</button>
+      <button id="sla-ex" onclick="filtrarSla('ex')">Estourado</button>
     </div>
-    <div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div>
+    <div style="flex:1"></div>
+    <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
   </div>
 
-  <div id="aba-esteira" style="display:none"><div class="kanban" id="kanban"></div></div>
+  <div id="vista-andamento"><div class="kanban" id="kanban"><div class="spinner" style="margin:2rem"></div></div></div>
+  <div id="vista-listagem" style="display:none"><div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div></div>
 </div>
 
 <!-- ══════════ DOSSIÊ COMERCIAL ══════════ -->
@@ -208,12 +190,13 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
-  corretores:[], empreendimentos:[], filtroSla:'', aba:'fila',
+  corretores:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
   abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[]
 };
 
@@ -263,13 +246,24 @@ async function init(){
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   try { await a1RequireModule('COMERCIAL'); } catch { return; }
   G.slug = A1.slug;
-  document.getElementById('hdr-user').textContent = `${G.user.name} · ${ehGestor() ? 'Gestor' : (G.user.type || 'Parceiro')}`;
-  document.getElementById('link-pa').href      = `/${G.slug}/pre-analise`;
-  document.getElementById('link-repasse').href = `/${G.slug}/repasse`;
+  // Quem manda na vista é o endereço, não um botão desta tela: assim o item do
+  // menu, o link colado no WhatsApp e o "voltar" do navegador chegam no mesmo
+  // lugar. São só duas — Andamento e Listagem —, iguais aos quadros antigos.
+  G.vista = a1VistaDaURL();
+  G.modulos = await a1MontarShell(document.getElementById('shell'),
+    { ativo:'COMERCIAL', vista:G.vista }) || {};
+  aplicarVista();
   a1StartHeartbeat('comercial');
   await carregar();
+  // O deep link ?id= vem da Pré-análise, que manda o usuário direto ao negócio.
+  // Vale em qualquer das duas vistas — o dossiê é um modal, não uma terceira tela.
   const id = new URLSearchParams(location.search).get('id');
   if (id) abrirDossie(id);
+}
+
+function aplicarVista(){
+  document.getElementById('vista-andamento').style.display = G.vista === 'listagem' ? 'none' : '';
+  document.getElementById('vista-listagem').style.display  = G.vista === 'listagem' ? '' : 'none';
 }
 
 async function carregar(){
@@ -287,7 +281,7 @@ async function carregar(){
   G.corretores = Array.isArray(corr) ? corr : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
   preencherFiltros();
-  renderFila(); renderEsteira();
+  renderVistas();
 }
 
 function preencherFiltros(){
@@ -307,7 +301,7 @@ function filtrarSla(n){
     const b = document.getElementById('sla-'+k);
     if (b) b.classList.toggle('on', (k==='todos'?'':k) === n);
   });
-  renderFila();
+  renderVistas();
 }
 
 function filtradas(){
@@ -327,17 +321,26 @@ function filtradas(){
   });
 }
 
-function renderFila(){
+// As duas vistas mostram o MESMO recorte, então são desenhadas juntas: trocar
+// de vista é só trocar qual delas aparece, sem esperar por outra renderização e
+// sem risco de uma ficar com o filtro antigo.
+function renderVistas(){
   const linhas = filtradas();
   document.getElementById('fila-contagem').textContent =
     `${linhas.length} de ${G.lista.length} negócio${G.lista.length===1?'':'s'}`;
   renderKpis();
+  renderListagem(linhas);
+  renderAndamento(linhas);
+}
+
+// Sem esteira as duas vistas dizem a MESMA coisa. O Andamento é a vista que
+// abre por padrão e ficava só com "não foi configurada", sem dizer a quem pedir.
+const SEM_ESTEIRA = `<div class="vazio"><strong>A esteira do Comercial ainda não foi configurada.</strong><br>
+  Peça ao administrador para criar as situações no painel do superadmin.</div>`;
+
+function renderListagem(linhas){
   const wrap = document.getElementById('fila-wrap');
-  if (!G.situacoes.length){
-    wrap.innerHTML = `<div class="vazio"><strong>A esteira do Comercial ainda não foi configurada.</strong><br>
-      Peça ao administrador para criar as situações no painel do superadmin.</div>`;
-    return;
-  }
+  if (!G.situacoes.length){ wrap.innerHTML = SEM_ESTEIRA; return; }
   if (!linhas.length){
     wrap.innerHTML = `<div class="vazio">${G.lista.length
       ? 'Nenhum negócio com esses filtros.'
@@ -379,10 +382,9 @@ function renderKpis(){
     <div class="kpi-card g"><div class="kpi-label">Repasse criado</div><div class="kpi-value">${comRepasse}</div></div>`;
 }
 
-function renderEsteira(){
+function renderAndamento(linhas){
   const el = document.getElementById('kanban');
-  if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
-  const linhas = filtradas();
+  if (!G.situacoes.length){ el.innerHTML = SEM_ESTEIRA; return; }
   el.innerHTML = G.situacoes.map(s => {
     const dela = linhas.filter(c => c.situacao_id === s.id);
     return `<div class="k-col">
@@ -404,14 +406,6 @@ function cartao(c){
       <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
       ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
   </div>`;
-}
-
-function trocarAba(aba, el){
-  G.aba = aba;
-  ['fila','esteira'].forEach(a => document.getElementById('aba-'+a).style.display = (a===aba?'':'none'));
-  document.querySelectorAll('.tabs-bar .tab-btn').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
-  if (aba === 'esteira') renderEsteira();
 }
 
 // ══════════ DOSSIÊ ══════════
@@ -524,12 +518,15 @@ async function salvarProposta(){
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar a proposta.'),'error'); return; }
   co.proposta = proposta;
   toast('Proposta salva.','success');
-  renderFila(); renderEsteira();
+  renderVistas();
 }
 
 function dosOrigem(){
   const s = G.atual.origem_snapshot || {};
   const cr = s.credito || {}, pa = s.pre_analise || {}, ps = s.participantes || [];
+  // O atalho para a Pré-análise no fim só sai se o cliente TIVER o módulo. A
+  // barra de abas antiga o mostrava sempre, e quem clicava batia numa tela que
+  // o módulo desligado devolve na porta.
   return `
     <div class="aviso i">Esta é a <strong>fotografia</strong> do que foi aprovado no momento em que o
       negócio nasceu. Se a pré-análise mudar depois, isto <em>não</em> muda — e é de propósito:
@@ -556,7 +553,7 @@ function dosOrigem(){
       <div class="fg"><label>Prestação</label><input value="${esc(brl(cr.prestacao))}" disabled></div>
       <div class="fg"><label>Prazo</label><input value="${cr.prazo_meses ? esc(cr.prazo_meses)+' meses' : '—'}" disabled></div>
     </div>
-    ${G.atual.pre_analise_id ? `<div style="margin-top:1rem">
+    ${G.atual.pre_analise_id && G.modulos.PRE_ANALISE ? `<div style="margin-top:1rem">
       <a class="btn btn-ghost btn-sm" href="/${esc(G.slug)}/pre-analise">Abrir a Pré-análise ↗</a></div>` : ''}`;
 }
 

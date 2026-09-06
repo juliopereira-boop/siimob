@@ -472,6 +472,16 @@
   <!-- ══════════ DASHBOARD ══════════ -->
   <div id="tab-dashboard">
 
+    <!-- Seletor de painel. Nasce escondido e só aparece quando o cliente tem
+         mais de um módulo: um seletor de uma opção só é ruído, e é exatamente
+         a situação de todos os clientes de hoje, que só têm o Repasse. -->
+    <div id="seletor-painel" style="display:none;margin-bottom:1rem">
+      <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.4rem">Painel</div>
+      <div id="seletor-painel-botoes" style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)"></div>
+    </div>
+    <div id="painel-modulo" style="display:none"></div>
+    <div id="painel-repasse">
+
     <!-- Filter bar -->
     <div class="filtros-topo">
       <button class="btn-filtrar" id="btn-filtrar-dash" onclick="alternarFiltros('dash')">
@@ -654,6 +664,7 @@
       <div id="agenda-calendar"></div>
     </div>
 
+    </div><!-- /painel-repasse -->
   </div>
 
   <!-- ══════════ REPASSE ══════════ -->
@@ -1750,6 +1761,8 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
+<script src="/js/paineis.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1793,6 +1806,62 @@ function applyCustomLogo() {
     svg.replaceWith(img);
   });
 }
+
+// ─── Seletor de painel do Dashboard ──────────────────────────────────────────
+// O Dashboard sempre foi o do Repasse. Quando o cliente passa a ter mais de um
+// módulo, ele precisa escolher qual painel está olhando.
+//
+// A ordem NÃO é a da barra de abas: aqui segue a jornada do negócio — a pessoa
+// é pré-analisada, depois negocia, depois o repasse anda. A constante vem de
+// js/modulo-shell.js para não haver duas listas discordando.
+//
+// Com um módulo só, o seletor não aparece. É o caso de todos os clientes de
+// hoje, e é proposital: um seletor de uma opção só é ruído, e o Dashboard
+// continua exatamente o que sempre foi.
+const PAINEL_ROTULO = { PRE_ANALISE:'Pré-análise', COMERCIAL:'Comercial', repasse:'Repasse' };
+const PAINEL_CHAVE_MEM = 'a1_painel_dash';
+
+async function montarSeletorPainel(){
+  const caixa = document.getElementById('seletor-painel');
+  const botoes = document.getElementById('seletor-painel-botoes');
+  if (!caixa || !botoes || typeof A1_ORDEM_PAINEIS === 'undefined') return;
+
+  const tem = await Promise.all(A1_ORDEM_PAINEIS.map(m => a1HasModule(m).catch(() => null)));
+  const disponiveis = A1_ORDEM_PAINEIS.filter((m, i) => tem[i] === true);
+  if (disponiveis.length < 2) return;                 // um módulo só: sem seletor
+
+  let escolhido = 'repasse';
+  try { const g = sessionStorage.getItem(PAINEL_CHAVE_MEM);
+        if (g && disponiveis.includes(g)) escolhido = g; } catch {}
+
+  botoes.innerHTML = disponiveis.map(m =>
+    `<button type="button" data-painel="${esc(m)}" onclick="trocarPainel('${esc(m)}')"
+       style="border:none;background:none;padding:.45rem .95rem;font-size:.78rem;font-weight:700;color:var(--t3);cursor:pointer;font-family:inherit">${esc(PAINEL_ROTULO[m] || m)}</button>`
+  ).join('');
+  caixa.style.display = '';
+  trocarPainel(escolhido);
+}
+
+function trocarPainel(qual){
+  try { sessionStorage.setItem(PAINEL_CHAVE_MEM, qual); } catch {}
+  document.querySelectorAll('#seletor-painel-botoes button').forEach(b => {
+    const on = b.dataset.painel === qual;
+    b.style.background = on ? 'var(--violet, #3D5CC8)' : 'none';
+    b.style.color = on ? '#fff' : 'var(--t3)';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const repasse = document.getElementById('painel-repasse');
+  const modulo  = document.getElementById('painel-modulo');
+  if (!repasse || !modulo) return;
+  if (qual === 'repasse'){
+    repasse.style.display = ''; modulo.style.display = 'none'; modulo.innerHTML = '';
+    return;
+  }
+  repasse.style.display = 'none'; modulo.style.display = '';
+  if (qual === 'PRE_ANALISE') a1PainelPreAnalise(modulo);
+  if (qual === 'COMERCIAL')   a1PainelComercial(modulo);
+}
+
 
 async function init() {
   applyCustomLogo();
@@ -1896,6 +1965,9 @@ async function init() {
       if (el){ el.href = `/${G.slug}/${alvo}`; el.style.display = ''; }
     }).catch(()=>{});
   });
+
+  montarSeletorPainel();
+
 
   await loadData();
   if (G.isCorrTenant && G.fixedCorr) {
