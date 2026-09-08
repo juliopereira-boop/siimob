@@ -1351,7 +1351,15 @@
       <div class="form-grid">
         <div class="form-group full"><label>Nome *</label><input id="prof-name" type="text" placeholder="Seu nome"></div>
         <div class="form-group full"><label>E-mail</label><input id="prof-email" type="email" placeholder="voce@email.com"></div>
-        <div class="form-group"><label>CPF</label><input id="prof-cpf" type="text" placeholder="000.000.000-00"></div>
+        <!-- O CPF e o que liga a sessao ao cadastro: e por ele que o banco
+             descobre quem esta pedindo. Por isso o proprio dono nao o troca —
+             o banco recusa desde a trava de permissao do parceiro. Editavel
+             aqui, o campo so oferecia um erro. Quem corrige CPF e o gestor,
+             em Configuracoes. -->
+        <div class="form-group"><label>CPF</label>
+          <input id="prof-cpf" type="text" disabled
+                 title="Para corrigir o CPF, fale com o gestor: é ele que liga o seu login ao cadastro."
+                 style="background:var(--bg);color:var(--t3);cursor:not-allowed"></div>
         <div class="form-group"><label>Telefone</label><input id="prof-phone" type="tel" placeholder="(00) 00000-0000"></div>
         <div class="form-group full"><label>Nova senha <span style="text-transform:none;letter-spacing:0;color:var(--t3);font-weight:400">(deixe em branco para manter a atual)</span></label><input id="prof-password" type="password" autocomplete="new-password" placeholder="••••••"></div>
       </div>
@@ -2146,7 +2154,6 @@ async function saveProfile() {
   const payload = {
     name,
     email: document.getElementById('prof-email').value.trim() || null,
-    cpf:   document.getElementById('prof-cpf').value.trim()   || null,
     phone: document.getElementById('prof-phone').value.trim() || null,
   };
   const pwd = document.getElementById('prof-password').value;
@@ -2159,7 +2166,7 @@ async function saveProfile() {
     const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}`, {
       method:'PATCH', headers:A1.upsertHeaders(), body:JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error(res.status);
+    if (!res.ok) throw new Error(await motivoDoErro(res));
     G.user.name = name;
     try { const s=JSON.parse(localStorage.getItem('a1_user')||'{}'); s.name=name; localStorage.setItem('a1_user',JSON.stringify(s)); } catch{}
     const roleLabel = G.user.role === 'partner' ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente') : G.user.role;
@@ -2167,8 +2174,23 @@ async function saveProfile() {
     toast('Perfil atualizado com sucesso.','success');
     closeModal('modal-profile-bg');
   } catch(e) {
-    profErr('Erro ao salvar. Tente novamente.');
+    // "Tente novamente" nao ajuda quem foi barrado por regra: a pessoa tenta
+    // de novo, e de novo, e nunca descobre o motivo.
+    profErr(e.message || 'Erro ao salvar. Tente novamente.');
   } finally { btn.disabled=false; btn.textContent='Salvar'; }
+}
+
+// O banco recusa com um codigo curto. Quem le e uma pessoa.
+async function motivoDoErro(res){
+  let m = '';
+  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  if (/parceiro_nao_define_permissao/.test(m))
+    return 'Nome, e-mail, telefone e senha voce mesmo altera. CPF e permissoes so o gestor muda.';
+  if (/parceiro_nao_apaga_cadastro/.test(m))
+    return 'Apagar cadastro e coisa do gestor.';
+  if (res.status === 401 || res.status === 403 || /row-level security/i.test(m))
+    return 'Voce nao tem permissao para essa alteracao.';
+  return 'Erro ao salvar. Tente novamente.';
 }
 
 function applyPartnerRestrictions() {
