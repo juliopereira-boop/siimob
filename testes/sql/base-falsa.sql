@@ -121,3 +121,20 @@ begin
   perform set_config('request.headers',
     json_build_object('x-session-token', coalesce(p_token,''))::text, false);
 end $$;
+
+-- ─── As duas tabelas antigas, com a proteção que produção tem HOJE ───────────
+-- a1_sessions e a1_partners existem desde schema.sql, com RLS por cliente e
+-- grant completo para anon. É contra ESSA configuração que a trava nova precisa
+-- ser provada: se o andaime já nascesse trancado, a prova não provaria nada —
+-- passaria mesmo que sql/2026-09-06_travas_sessao_e_parceiro.sql não existisse.
+alter table a1_sessions enable row level security;
+drop policy if exists sessions_tenant_isolation on a1_sessions;
+create policy sessions_tenant_isolation on a1_sessions for all
+  using (tenant_id = a1_tenant()) with check (tenant_id = a1_tenant());
+grant select, insert, update, delete on a1_sessions to anon, authenticated;
+
+alter table a1_partners enable row level security;
+drop policy if exists partners_tenant_isolation on a1_partners;
+create policy partners_tenant_isolation on a1_partners for all
+  using (tenant_id = a1_tenant()) with check (tenant_id = a1_tenant());
+grant select, insert, update, delete on a1_partners to anon, authenticated;

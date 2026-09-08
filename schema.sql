@@ -484,9 +484,17 @@ CREATE POLICY "user_permissions_tenant_isolation" ON a1_user_permissions
     user_id IN (SELECT id FROM a1_users WHERE tenant_id = a1_tenant())
   );
 
--- a1_sessions — users can only see/delete their own session
-CREATE POLICY "sessions_tenant_isolation" ON a1_sessions
-  FOR ALL USING (tenant_id = a1_tenant());
+-- a1_sessions — a sessão é de quem a está usando, e de mais ninguém.
+-- Isolar só por cliente devolvia ao navegador de um corretor o token do dono da
+-- empresa, e um token é uma identidade inteira: quem o copia para o cabeçalho
+-- x-session-token vira a pessoa. Escrita direta não existe — criar e apagar
+-- sessão é trabalho de a1_login/a1_partner_login/a1_logout/a1_touch_session,
+-- todas SECURITY DEFINER (ver BLOCO 10, onde o grant também é restrito).
+-- Base já em produção: aplique sql/2026-09-06_travas_sessao_e_parceiro.sql.
+CREATE POLICY "sessions_propria" ON a1_sessions
+  FOR SELECT USING (
+    token = current_setting('request.headers', TRUE)::JSON->>'x-session-token'
+  );
 
 -- a1_tenant_modules — read-only for tenant users (write = service role only)
 CREATE POLICY "tenant_modules_read" ON a1_tenant_modules
@@ -523,6 +531,11 @@ CREATE POLICY "events_tenant_isolation" ON a1_events
   FOR ALL USING (tenant_id = a1_tenant());
 
 -- a1_partners
+-- A política isola por cliente; quem pode mudar as colunas que DECIDEM PODER
+-- (permissions, approved, is_active, type, cpf, tenant_id) é o gatilho
+-- trg_a1_partners_poder, em sql/2026-09-06_travas_sessao_e_parceiro.sql — sem
+-- ele, o dono de uma permissão reescreve a própria permissão, e a1_perm() (que
+-- é a base de autorização dos módulos novos) deixa de significar coisa alguma.
 CREATE POLICY "partners_tenant_isolation" ON a1_partners
   FOR ALL USING (tenant_id = a1_tenant());
 
@@ -771,7 +784,10 @@ GRANT SELECT ON a1_plan_modules TO anon;
 -- via RLS — grant table-level permissions and let RLS enforce isolation
 GRANT SELECT, INSERT, UPDATE, DELETE ON a1_users             TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON a1_user_permissions  TO anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON a1_sessions          TO anon;
+-- Só leitura, e a política acima já reduz a leitura à própria linha. Sessão se
+-- cria e se apaga por função SECURITY DEFINER; um navegador que pudesse dar
+-- UPDATE aqui se promoveria a owner com um PATCH.
+GRANT SELECT                         ON a1_sessions          TO anon;
 GRANT SELECT                         ON a1_tenant_modules    TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON a1_stages            TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON a1_stage_flags       TO anon;

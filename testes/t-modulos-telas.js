@@ -293,9 +293,14 @@ const { abrir, checa, resumo } = require('./comum');
     checa('com a justificativa', /documentos recebidos/.test(hist));
     checa('e avisa que não se apaga', /não\s+se\s+edita\s+e\s+não\s+se\s+apaga/i.test(hist), hist.slice(-160));
 
-    await p.click('#dos-tabs [data-dt="comercial"]'); await p.waitForTimeout(250);
-    checa('sem comercial, explica que ele nasce por ação da esteira',
-      /ação da esteira/i.test(await p.locator('#dos-body').textContent()));
+    // Este dossiê foi aberto com licença SÓ de Pré-análise. A aba Comercial não
+    // pode nem existir: prometer na tela um módulo que o cliente não comprou é
+    // o mesmo erro de deixá-lo carregar.
+    checa('sem a licença do Comercial, o dossiê não tem aba Comercial',
+      (await p.locator('#dos-tabs [data-dt="comercial"]').count()) === 0);
+    checa('e a tela não consulta a1_comerciais',
+      await p.evaluate(() => !performance.getEntriesByType('resource')
+        .some(r => /a1_comerciais/.test(r.name))));
 
     // Os destinos vêm das arestas da esteira, não de uma lista fixa.
     const destinos = await p.evaluate(() =>

@@ -461,8 +461,20 @@
     </div>
     <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
          libera a licença para este cliente — nenhum cliente de hoje os vê. -->
-    <a class="tab-btn" id="link-pre-analise" href="" style="display:none">Pré-análise</a>
-    <a class="tab-btn" id="link-comercial"   href="" style="display:none">Comercial</a>
+    <div class="tab-group" id="grupo-pre-analise" style="display:none">
+      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+    <div class="tab-group" id="grupo-comercial" style="display:none">
+      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
+      </div>
+    </div>
     <a class="tab-btn" id="link-config" href="">Configuracoes</a>
   </div>
 </div>
@@ -1960,9 +1972,18 @@ async function init() {
   ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
     a1HasModule(mod).then(ok => {
       if (ok !== true) return;
+      // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
+      // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
+      // a Listagem so se alcancava entrando no Andamento primeiro.
       const alvo = mod === 'PRE_ANALISE' ? 'pre-analise' : 'comercial';
-      const el = document.getElementById('link-' + alvo);
-      if (el){ el.href = `/${G.slug}/${alvo}`; el.style.display = ''; }
+      const pre  = mod === 'PRE_ANALISE' ? 'pa' : 'co';
+      const base = `/${G.slug}/${alvo}`;
+      const grupo = document.getElementById('grupo-' + alvo);
+      const liga = (id, href) => { const e = document.getElementById(id); if (e) e.href = href; };
+      liga('link-' + alvo, base);
+      liga(`link-${pre}-andamento`, base);
+      liga(`link-${pre}-listagem`, `${base}-listagem`);
+      if (grupo) grupo.style.display = '';
     }).catch(()=>{});
   });
 

@@ -16,7 +16,8 @@ for f in testes/sql/base-falsa.sql \
          sql/2026-09-04_identidade.sql \
          sql/2026-09-04_pre_analise.sql \
          sql/2026-09-04_comercial.sql \
-         sql/2026-09-04_gatilhos.sql; do
+         sql/2026-09-04_gatilhos.sql \
+         sql/2026-09-06_travas_sessao_e_parceiro.sql; do
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done

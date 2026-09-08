@@ -95,19 +95,35 @@ const D = {
     {id:'pp3',tenant_id:'t1',pre_analise_id:'pa2',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:300000},
     {id:'pp4',tenant_id:'t1',pre_analise_id:'pa3',pessoa_id:'pe1',papel:'TITULAR',renda_declarada:450000},
     {id:'pp5',tenant_id:'t1',pre_analise_id:'pa4',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:380000}],
-  pa_credito: [
+  // decidido_em é coluna real de a1_pa_analises_credito e faltava aqui. Sem ela
+  // o painel executivo não tem período de decisão: taxa de aprovação e tempo
+  // até decisão davam "—" e nenhum teste provava a conta. É relativa a agora
+  // para o teste não apodrecer quando a suíte rodar meses depois.
+  // pc4 existe para a taxa não ser 100% — com só aprovações, um numerador
+  // copiado no denominador passaria despercebido.
+  pa_credito: (()=>{ const h=Date.now(); return [
     {id:'pc1',tenant_id:'t1',pre_analise_id:'pa3',versao:1,status:'APROVADO',valor_aprovado:20000000,
      valor_subsidio:3000000,valor_fgts:1000000,valor_total:24000000,prestacao:150000,prazo_meses:360,
-     criado_em:'2026-08-20T10:00:00Z'},
+     criado_em:'2026-08-20T10:00:00Z',decidido_em:new Date(h-8*864e5).toISOString()},
     {id:'pc2',tenant_id:'t1',pre_analise_id:'pa1',versao:1,status:'EM_ANALISE',valor_total:null,criado_em:'2026-08-25T10:00:00Z'},
     {id:'pc3',tenant_id:'t1',pre_analise_id:'pa4',versao:1,status:'APROVADO',valor_aprovado:15000000,
      valor_subsidio:0,valor_fgts:0,valor_total:15000000,prestacao:120000,prazo_meses:360,
-     criado_em:'2026-08-29T10:00:00Z'}],
+     criado_em:'2026-08-29T10:00:00Z',decidido_em:new Date(h-3*864e5).toISOString()},
+    {id:'pc4',tenant_id:'t1',pre_analise_id:'pa2',versao:1,status:'REPROVADO',valor_total:null,
+     criado_em:new Date(h-4*864e5).toISOString(),decidido_em:new Date(h-1*864e5).toISOString()}]; })(),
   pa_documentos: [
     {id:'pd1',tenant_id:'t1',pre_analise_id:'pa1',tipo:'RG / CNH',storage_key:'t1/pre-analise/pa1/rg.pdf',
      nome_arquivo:'rg '+XSS+'.pdf',status:'ENVIADO',criado_em:'2026-08-25T10:00:00Z'},
     {id:'pd2',tenant_id:'t1',pre_analise_id:'pa3',tipo:'Comprovante de renda',storage_key:'t1/pre-analise/pa3/renda.pdf',
-     nome_arquivo:'renda.pdf',status:'APROVADO',criado_em:'2026-08-21T10:00:00Z'}],
+     nome_arquivo:'renda.pdf',status:'APROVADO',criado_em:'2026-08-21T10:00:00Z'},
+    // pa2 carrega o dossiê "com problema": uma pendência (para a taxa de
+    // pendência e o Pareto por tipo) e um documento em versão 2 (para a taxa de
+    // reenvio). Fica em pa2 de propósito — é a única pré-análise que nenhum
+    // teste de dossiê abre, então nada existente muda de comportamento.
+    {id:'pd3',tenant_id:'t1',pre_analise_id:'pa2',tipo:'Comprovante de renda',storage_key:'t1/pre-analise/pa2/renda.pdf',
+     nome_arquivo:'renda-pendente.pdf',versao:1,status:'PENDENTE_ENVIO',criado_em:'2026-08-30T10:00:00Z'},
+    {id:'pd4',tenant_id:'t1',pre_analise_id:'pa2',tipo:'RG / CNH',storage_key:'t1/pre-analise/pa2/rg-v2.pdf',
+     nome_arquivo:'rg-v2.pdf',versao:2,status:'ENVIADO',criado_em:'2026-08-31T10:00:00Z'}],
   pa_eventos: [
     {id:1,tenant_id:'t1',pre_analise_id:'pa1',evento:'transicao',de_situacao:'ps1',para_situacao:'ps2',
      ator_nome:'Julio '+XSS,detalhe:{justificativa:'documentos recebidos '+XSS},criado_em:'2026-08-25T11:00:00Z'}],

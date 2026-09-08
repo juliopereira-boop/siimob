@@ -329,10 +329,20 @@ async function init(){
   // Cabeçalho e abas vêm do shell — os mesmos de Dashboard, Repasse e Comercial.
   // O botão de criar entra como ação do cabeçalho, e não como um botão solto
   // desta tela, para não voltarmos a ter duas barras diferentes no produto.
-  await a1MontarShell(document.getElementById('shell'), {
+  // O shell devolve quais modulos o cliente TEM. Descartar esse retorno era o
+  // que fazia esta tela anunciar o Comercial — aba no dossie, botao de
+  // habilitar e consulta a a1_comerciais — para cliente que nao comprou o
+  // modulo. A tabela nao devolveria linha nenhuma, mas a promessa na tela ja e
+  // o problema: o modulo desligado nao pode nem aparecer.
+  const temModulo = await a1MontarShell(document.getElementById('shell'), {
     ativo:'PRE_ANALISE', vista: a1VistaDaURL(),
     acoes: '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
   });
+  G.temComercial = temModulo && temModulo.COMERCIAL === true;
+  if (!G.temComercial){
+    const abaCo = document.querySelector('#dos-tabs [data-dt="comercial"]');
+    if (abaCo) abaCo.remove();
+  }
   if (!perm('criar_repasses')) document.getElementById('btn-nova').style.display = 'none';
 
   aplicarVista();
@@ -342,13 +352,18 @@ async function init(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, pre, corr, imob, empr] = await Promise.all([
+  const [sit, tr, pre, corr, imob, empr, cfg] = await Promise.all([
     fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // Os tipos de documento sao cadastrados em Configuracoes > Tipos de
+    // documento, na aba deste modulo. Sem esta leitura, o cadastro existia e
+    // nao valia nada: a tela oferecia uma lista cravada no HTML, e o gestor
+    // configurava no vazio.
+    fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h).then(r=>r.json()).catch(()=>[])
   ]);
   G.situacoes     = Array.isArray(sit)  ? sit  : [];
   G.transicoes    = Array.isArray(tr)   ? tr   : [];
@@ -356,6 +371,7 @@ async function carregar(){
   G.corretores    = Array.isArray(corr) ? corr : [];
   G.imobiliarias  = Array.isArray(imob) ? imob : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
+  G.tiposDoc = lerTiposDoc(cfg);
 
   // Os nomes dos clientes vêm dos participantes. Uma consulta só para a fila
   // inteira, em vez de uma por linha.
@@ -390,6 +406,22 @@ function preencherFiltros(){
   const fe = document.getElementById('f-empr');
   fe.innerHTML = '<option value="">Todos os empreendimentos</option>' +
     G.empreendimentos.map(e => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
+}
+
+// Tipos cadastrados pelo gestor para ESTE modulo. Cliente que ainda nao
+// configurou nada continua com uma lista util em vez de um seletor vazio — o
+// dia 1 de um modulo novo nao pode ser uma tela travada.
+const TIPOS_DOC_PADRAO = ['RG / CNH','CPF','Comprovante de renda','Comprovante de residência',
+  'Certidão de estado civil','Extrato FGTS','Carteira de trabalho','Imposto de renda','Outro'];
+
+function lerTiposDoc(cfg){
+  let lista = [];
+  try { lista = JSON.parse((cfg && cfg[0] && cfg[0].value) || '[]'); } catch { lista = []; }
+  if (!Array.isArray(lista)) return TIPOS_DOC_PADRAO;
+  const meus = lista
+    .filter(t => t && t.module === 'PRE_ANALISE' && t.active !== false && t.name)
+    .map(t => String(t.name));
+  return meus.length ? meus : TIPOS_DOC_PADRAO;
 }
 
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
@@ -460,7 +492,7 @@ function renderFila(linhas){
   const wrap = document.getElementById('fila-wrap');
   if (!G.situacoes.length){
     wrap.innerHTML = `<div class="vazio"><strong>A esteira ainda não foi configurada.</strong><br>
-      Peça ao administrador para criar as situações da Pré-análise no painel do superadmin.</div>`;
+      Um gestor cria a esteira em <strong>Configurações &rsaquo; Workflow da Pré-análise</strong>.</div>`;
     return;
   }
   if (!linhas.length){
@@ -791,7 +823,10 @@ async function abrirDossie(id){
     fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_eventos')}?pre_analise_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
+    // Sem a licenca do Comercial nao se pergunta nada a ele.
+    G.temComercial
+      ? fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
+      : Promise.resolve([])
   ]);
   G.atualPart = Array.isArray(part) ? part : [];
   G.atualCred = Array.isArray(cred) ? cred : [];
@@ -986,8 +1021,7 @@ function dosDocumentos(){
       <div class="sec-title">Enviar documento</div>
       <div class="fgrid">
         <div class="fg"><label>Tipo</label>
-          <select id="doc-tipo">${['RG / CNH','CPF','Comprovante de renda','Comprovante de residência',
-            'Certidão de estado civil','Extrato FGTS','Carteira de trabalho','Imposto de renda','Outro']
+          <select id="doc-tipo">${(G.tiposDoc || TIPOS_DOC_PADRAO)
             .map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
         <div class="fg"><label>Arquivo</label><input type="file" id="doc-arq"></div>
       </div>
@@ -1134,7 +1168,7 @@ function montarRodapeDossie(){
 
   const acoes = document.getElementById('dos-acoes');
   const jaTem = !!G.atualCo;
-  const podeHabilitar = !jaTem && podeMover &&
+  const podeHabilitar = G.temComercial && !jaTem && podeMover &&
     G.atualPart.some(x => x.papel === 'TITULAR') &&
     G.atualCred.some(c => c.status === 'APROVADO');
   acoes.innerHTML = podeHabilitar

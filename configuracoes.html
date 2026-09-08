@@ -143,6 +143,13 @@
     .cfg-back-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:.3rem .75rem;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;white-space:nowrap}
     .cfg-back-btn:hover{color:var(--t1);background:var(--bg)}
     .cfg-view-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+    /* Caixa de explicação no topo das telas de esteira. As telas novas usam
+       .aviso.i para isto, mas essa família de classes não existe aqui — copiar
+       o nome sem copiar o estilo daria um parágrafo solto no lugar da caixa. */
+    .cfg-explica{background:#EEF2FF;border:1px solid #C7D2FE;border-left:3px solid var(--violet);
+                 border-radius:var(--radius);padding:.8rem 1rem;margin-bottom:1.25rem;
+                 font-size:.76rem;line-height:1.6;color:var(--t2)}
+    .cfg-explica strong{color:var(--t1)}
 
     /* ── Partner table ── */
     .pt-table{width:100%;border-collapse:collapse;font-size:.78rem}
@@ -212,8 +219,20 @@
 
     <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
          libera a licença para este cliente — nenhum cliente de hoje os vê. -->
-    <a class="tab-btn" id="link-pre-analise" href="" style="display:none">Pré-análise</a>
-    <a class="tab-btn" id="link-comercial"   href="" style="display:none">Comercial</a>
+    <div class="tab-group" id="grupo-pre-analise" style="display:none">
+      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+    <div class="tab-group" id="grupo-comercial" style="display:none">
+      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
+      </div>
+    </div>
 
     <div class="tab-btn active">Configuracoes</div>
   </div>
@@ -1537,9 +1556,18 @@ async function init() {
   ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
     a1HasModule(mod).then(ok => {
       if (ok !== true) return;
+      // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
+      // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
+      // a Listagem so se alcancava entrando no Andamento primeiro.
       const alvo = mod === 'PRE_ANALISE' ? 'pre-analise' : 'comercial';
-      const el = document.getElementById('link-' + alvo);
-      if (el){ el.href = `/${G.slug}/${alvo}`; el.style.display = ''; }
+      const pre  = mod === 'PRE_ANALISE' ? 'pa' : 'co';
+      const base = `/${G.slug}/${alvo}`;
+      const grupo = document.getElementById('grupo-' + alvo);
+      const liga = (id, href) => { const e = document.getElementById(id); if (e) e.href = href; };
+      liga('link-' + alvo, base);
+      liga(`link-${pre}-andamento`, base);
+      liga(`link-${pre}-listagem`, `${base}-listagem`);
+      if (grupo) grupo.style.display = '';
       cfgModsLiberar(mod);
     }).catch(()=>{});
   });
@@ -5374,7 +5402,11 @@ async function saveCartorio() {
 // para cá com quatro diferenças: fala com o token da sessão (A1) em vez da
 // chave de serviço, o cliente é o da sessão em vez de um seletor, o módulo é
 // fixo por tela (quem só tem Pré-análise não vê a palavra "Comercial" num
-// select) e não há DELETE — ver cfgEstAtivoSituacao.
+// select) e não há DELETE. Esse último é grant, não RLS: a Pré-análise recebeu
+// select/insert/update e o Comercial ganhou delete, então um botão "Apagar"
+// daria 403 numa tela e funcionaria na outra. Nas duas, remover é desmarcar
+// "Ativa" — a coluna já existe nas quatro tabelas, as filas já buscam com
+// ativo=is.true e a1_pa_transicionar já exige `and ativo`.
 
 const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false };
 
@@ -5455,7 +5487,7 @@ function cfgModsVista(nome, titulo, corpoHtml) {
 // A frase que evita o erro mais caro desta tela. Vai nas duas esteiras.
 function cfgEstExplicacao(d) {
   return `
-    <div class="aviso i" style="display:block;margin-bottom:1.25rem;font-size:.76rem;line-height:1.6">
+    <div class="cfg-explica">
       A <strong>situação</strong> diz onde o processo está. A <strong>ação</strong> não fica na
       situação, fica na <strong>transição</strong>: é ela que provoca efeito em outro módulo
       (${esc(d.acoes.filter(a => a[0]).map(a => a[1]).join(', '))}).
@@ -5474,7 +5506,15 @@ function cfgEstEsqueleto(modulo) {
 
 // Liga a interface de um módulo. Idempotente: init() chama uma vez por módulo,
 // e o cartão de integrações é comum aos dois (basta ter um deles).
+//
+// A licença não basta: tudo o que se monta aqui é escrita de configuração, e as
+// políticas `_escrever` das quatro tabelas de esteira exigem a1_e_gestor() —
+// que no banco é literalmente "papel diferente de partner". a1_integra_eventos
+// vai junto: a política de leitura dela também exige gestor. Sem esta porta, um
+// correspondente com a licença liberada veria os cartões, abriria o editor e
+// levaria 403 em cada clique, sem nada na tela explicando por quê.
 function cfgModsLiberar(mod) {
+  if (G.user.role === 'partner') return;
   if (CFG_MOD_LIB[mod] !== false) return;
   CFG_MOD_LIB[mod] = true;
 
@@ -5508,7 +5548,7 @@ function cfgModsLiberar(mod) {
                   grade:'cfg-cards-ferramentas', view:'integra',
                   rotulo:'Registro de integrações', fundo:'#fef3c7', icone:CFG_ICONE_INTEGRA });
   cfgModsVista('integra', 'Registro de integrações', `
-    <div class="aviso i" style="display:block;margin-bottom:1.25rem;font-size:.76rem;line-height:1.6">
+    <div class="cfg-explica">
       Cada vez que uma transição dispara uma ação entre módulos, o resultado fica registrado aqui.
       É onde está escrito por que uma pré-análise aprovada não virou Comercial — o motivo costuma
       apontar de volta para um ajuste no workflow.
@@ -5601,9 +5641,10 @@ function cfgEstRender() {
       <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border);line-height:1.55">
         <strong>SLA</strong> em branco significa "sem prazo": a fila mostra há quanto tempo o processo
         está parado, mas não pinta de vermelho.<br>
-        <strong>Desmarcar "Ativa"</strong> tira a situação da esteira sem apagá-la: ela some das telas e
-        deixa de ser destino de qualquer transição, e os processos que já estavam nela continuam
-        apontando para um nome que existe. Apagar de verdade deixaria processo órfão.
+        <strong>Desmarcar "Ativa"</strong> tira a situação da esteira sem apagá-la: ela some do quadro
+        e deixa de ser destino de qualquer transição. Não há como apagar de verdade — o banco recusa,
+        porque há processo apontando para ela. <strong>Antes de desativar, mova quem ainda está nessa
+        situação:</strong> a fila só carrega as ativas, então processo esquecido lá aparece sem nome.
       </div>
     </div>
 
@@ -5685,21 +5726,28 @@ async function cfgEstSalvarSituacao(id, campo, valor) {
   toast('Salvo.', 'success');
 }
 
-// Reordenar é trocar a coluna `ordem` de duas linhas — é ela que a fila lê,
-// não a posição na tabela desenhada. Usa o índice como novo valor porque uma
-// base antiga pode ter várias situações com ordem 0, e aí trocar os valores
-// entre si não moveria nada.
+// Reordenar é mexer na coluna `ordem` — é ela que a fila lê, não a posição na
+// tabela desenhada. Renumera a lista inteira de 0 a n-1 em vez de só trocar o
+// valor das duas linhas envolvidas: esteira semeada à mão pode ter empate
+// (várias situações com ordem 0) ou buraco (0, 5, 9), e nesses casos trocar os
+// dois valores entre si movia a linha para longe do lugar clicado, ou não movia
+// nada. Só vai PATCH para quem realmente mudou de número.
 async function cfgEstMover(id, passo) {
   const lista = CFG_EST.situacoes;
   const i = lista.findIndex(s => s.id === id);
   const j = i + passo;
   if (i < 0 || j < 0 || j >= lista.length) return;
   const d = CFG_EST_DEF[CFG_EST.modulo];
-  const a = lista[i], b = lista[j];
-  if (!await cfgEstPatch(d.tabSit, a.id, { ordem: j })) return;
-  if (!await cfgEstPatch(d.tabSit, b.id, { ordem: i })) return;
-  a.ordem = j; b.ordem = i;
-  lista[i] = b; lista[j] = a;
+  const nova = lista.slice();
+  nova.splice(j, 0, nova.splice(i, 1)[0]);
+  for (let k = 0; k < nova.length; k++) {
+    if (nova[k].ordem === k) continue;
+    // Metade renumerada é pior que nada: recarrega do servidor para a tela
+    // mostrar a ordem que de fato ficou gravada, não a que o clique pretendia.
+    if (!await cfgEstPatch(d.tabSit, nova[k].id, { ordem: k })) { await cfgEstAbrir(CFG_EST.modulo); return; }
+    nova[k].ordem = k;
+  }
+  CFG_EST.situacoes = nova;
   cfgEstRender();
 }
 
