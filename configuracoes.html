@@ -1645,8 +1645,6 @@ function openCfgView(view) {
   if (view === 'cartorios') loadCartorios();
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
-  if (view === 'esteira-pa') cfgEstAbrir('PRE_ANALISE');
-  if (view === 'esteira-co') cfgEstAbrir('COMERCIAL');
   if (view === 'integra')    cfgIntegraCarregar();
 }
 
@@ -5410,43 +5408,6 @@ async function saveCartorio() {
 
 const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false };
 
-// Cópia literal do EST_DEF do superadmin. As flags batem com os CHECKs de
-// a1_pa_situacoes/a1_co_situacoes, as ações com os CHECKs de `acao`, e os
-// requisitos com as chaves que a1_pa_transicionar/a1_co_transicionar de fato
-// leem. Chave inventada aqui vira caixa que o gestor marca e não faz nada.
-const CFG_EST_DEF = {
-  PRE_ANALISE: {
-    nome: 'Pré-análise', corpo: 'est-pa-corpo',
-    tabSit: 'a1_pa_situacoes', tabTr: 'a1_pa_transicoes',
-    flags: ['INICIAL','APROVADO','REPROVADO','PENDENTE','VENCIDO','CANCELADO','ENCERRADO'],
-    acoes: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Comercial']],
-    requisitos: [['documentos_aprovados','Exigir todos os documentos aprovados']],
-    padrao: [
-      { nome:'Nova',              flag:'INICIAL',   cor:'#6366f1', sla_horas:4  },
-      { nome:'Em análise',        flag:null,        cor:'#0ea5e9', sla_horas:24 },
-      { nome:'Pendência',         flag:'PENDENTE',  cor:'#f59e0b', sla_horas:48 },
-      { nome:'Aprovada',          flag:'APROVADO',  cor:'#22c55e', sla_horas:null },
-      { nome:'Reprovada',         flag:'REPROVADO', cor:'#ef4444', sla_horas:null },
-      { nome:'Cancelada',         flag:'CANCELADO', cor:'#94a3b8', sla_horas:null }
-    ]
-  },
-  COMERCIAL: {
-    nome: 'Comercial', corpo: 'est-co-corpo',
-    tabSit: 'a1_co_situacoes', tabTr: 'a1_co_transicoes',
-    flags: ['INICIAL','CONTRATO_ASSINADO','CANCELADO','ENCERRADO'],
-    acoes: [['','nenhuma'],['CREATE_REPASS','Criar cartão no Repasse'],
-            ['SEND_TO_SIGNATURE','Enviar para assinatura'],
-            ['MARK_CONTRACT_SIGNED','Marcar contrato assinado']],
-    requisitos: [['contrato_assinado','Exigir contrato assinado']],
-    padrao: [
-      { nome:'Proposta',          flag:'INICIAL',           cor:'#6366f1', sla_horas:24 },
-      { nome:'Negociação',        flag:null,                cor:'#8b5cf6', sla_horas:72 },
-      { nome:'Contrato',          flag:null,                cor:'#0ea5e9', sla_horas:48 },
-      { nome:'Contrato assinado', flag:'CONTRATO_ASSINADO', cor:'#22c55e', sla_horas:null },
-      { nome:'Cancelado',         flag:'CANCELADO',         cor:'#ef4444', sla_horas:null }
-    ]
-  }
-};
 
 const CFG_ICONE_FLUXO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
 const CFG_ICONE_INTEGRA = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`;
@@ -5484,35 +5445,12 @@ function cfgModsVista(nome, titulo, corpoHtml) {
   if (!CFG_VIEWS.includes(nome)) CFG_VIEWS.push(nome);
 }
 
-// A frase que evita o erro mais caro desta tela. Vai nas duas esteiras.
-function cfgEstExplicacao(d) {
-  return `
-    <div class="cfg-explica">
-      A <strong>situação</strong> diz onde o processo está. A <strong>ação</strong> não fica na
-      situação, fica na <strong>transição</strong>: é ela que provoca efeito em outro módulo
-      (${esc(d.acoes.filter(a => a[0]).map(a => a[1]).join(', '))}).
-      Se o efeito estivesse preso ao estado, qualquer caminho que chegasse ali o dispararia —
-      inclusive uma correção manual de status feita só para acertar um lançamento errado.
-    </div>`;
-}
+// O editor de esteira em tabela viveu aqui. Saiu porque virou DOIS editores
+// para a mesma coisa: uma tabela em Configurações e o quadro do Repasse em
+// workflow.html. O gestor tinha de aprender os dois, e um deles nem mostrava
+// as setas. O quadro passou a atender os módulos novos, e este ficou órfão.
+// Manter código que ninguém chama é guardar armadilha para quem vier depois.
 
-// Esqueleto da sub-tela do editor. O conteúdo real só é buscado quando o
-// gestor abre o cartão (openCfgView → cfgEstAbrir), nunca no carregamento.
-function cfgEstEsqueleto(modulo) {
-  const d = CFG_EST_DEF[modulo];
-  return cfgEstExplicacao(d) +
-    `<div id="${d.corpo}"></div>`;
-}
-
-// Liga a interface de um módulo. Idempotente: init() chama uma vez por módulo,
-// e o cartão de integrações é comum aos dois (basta ter um deles).
-//
-// A licença não basta: tudo o que se monta aqui é escrita de configuração, e as
-// políticas `_escrever` das quatro tabelas de esteira exigem a1_e_gestor() —
-// que no banco é literalmente "papel diferente de partner". a1_integra_eventos
-// vai junto: a política de leitura dela também exige gestor. Sem esta porta, um
-// correspondente com a licença liberada veria os cartões, abriria o editor e
-// levaria 403 em cada clique, sem nada na tela explicando por quê.
 function cfgModsLiberar(mod) {
   if (G.user.role === 'partner') return;
   if (CFG_MOD_LIB[mod] !== false) return;
@@ -5527,18 +5465,15 @@ function cfgModsLiberar(mod) {
       const el = document.getElementById(id);
       if (el) el.style.display = '';
     });
-    cfgModsCartao({ id:'cfg-card-wf-pa', modulo:'PRE_ANALISE', grade:'cfg-cards-workflow',
-                    view:'esteira-pa', rotulo:'Workflow da Pré-análise',
-                    fundo:'#ede9fe', icone:CFG_ICONE_FLUXO.replace('STROKE','#3D5CC8') });
-    cfgModsVista('esteira-pa', 'Workflow da Pré-análise', cfgEstEsqueleto('PRE_ANALISE'));
+    // O workflow NÃO ganha cartão próprio. O dono foi claro: "quando eu clico em
+    // editor de workflow, deve aparecer os ícones do workflow de cada módulo".
+    // Dois cartões separados eram dois editores para a mesma coisa, e um deles
+    // era uma tabela enquanto o outro era um quadro. Agora é o mesmo quadro do
+    // Repasse, e os módulos são botões dentro dele.
   }
 
   if (mod === 'COMERCIAL') {
     G.temCO = true;
-    cfgModsCartao({ id:'cfg-card-wf-co', modulo:'COMERCIAL', grade:'cfg-cards-workflow',
-                    view:'esteira-co', rotulo:'Workflow do Comercial',
-                    fundo:'#d1fae5', icone:CFG_ICONE_FLUXO.replace('STROKE','#16a34a') });
-    cfgModsVista('esteira-co', 'Workflow do Comercial', cfgEstEsqueleto('COMERCIAL'));
   }
 
   // Registro de integrações: a política a1_integra_eventos_ler exige só
@@ -5554,301 +5489,6 @@ function cfgModsLiberar(mod) {
       apontar de volta para um ajuste no workflow.
     </div>
     <div id="integra-corpo"></div>`);
-}
-
-// ── Editor de esteira ────────────────────────────────────────────────────────
-const CFG_EST = { modulo:null, situacoes:[], transicoes:[] };
-
-async function cfgEstAbrir(modulo) {
-  const d = CFG_EST_DEF[modulo];
-  const corpo = document.getElementById(d.corpo);
-  if (!corpo) return;
-  CFG_EST.modulo = modulo;
-  corpo.innerHTML = `<div style="text-align:center;padding:2.5rem;color:var(--t3);font-size:.8rem">Carregando a esteira…</div>`;
-  // Sem filtro por tenant na URL: a política de leitura já devolve só as linhas
-  // do cliente da sessão. Filtrar aqui daria a falsa impressão de que é a tela
-  // que separa um cliente do outro.
-  const [sit, tr] = await Promise.all([
-    fetch(`${A1.rest(d.tabSit)}?order=ordem.asc`, { headers:A1.headers() })
-      .then(r => r.json()).catch(() => []),
-    fetch(`${A1.rest(d.tabTr)}?select=*`, { headers:A1.headers() })
-      .then(r => r.json()).catch(() => [])
-  ]);
-  // Trocar de tela enquanto a busca estava no ar desenharia a esteira de um
-  // módulo dentro da tela do outro.
-  if (CFG_EST.modulo !== modulo) return;
-  CFG_EST.situacoes  = Array.isArray(sit) ? sit : [];
-  CFG_EST.transicoes = Array.isArray(tr)  ? tr  : [];
-  cfgEstRender();
-}
-
-function cfgEstRender() {
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const corpo = document.getElementById(d.corpo);
-  if (!corpo) return;
-
-  if (!CFG_EST.situacoes.length) {
-    corpo.innerHTML = `
-      <div class="panel" style="padding:2.5rem 1.5rem;text-align:center">
-        <div style="font-weight:800;font-size:.9rem;margin-bottom:.5rem">Sua esteira de ${esc(d.nome)} ainda está vazia</div>
-        <div style="font-size:.78rem;color:var(--t3);max-width:520px;margin:0 auto 1.4rem;line-height:1.6">
-          Sem situações cadastradas o módulo abre, mas nenhum processo anda: não há para onde mover.
-          Comece pelo desenho padrão e ajuste ao seu fluxo — nada aqui é definitivo, e a esteira
-          padrão nasce sem nenhuma automação ligada.
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="cfgEstSemear()">Criar esteira padrão de ${esc(d.nome)}</button>
-      </div>`;
-    return;
-  }
-
-  corpo.innerHTML = `
-    <div class="panel" style="overflow:hidden;margin-bottom:1.25rem">
-      <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
-        <div style="font-weight:800;font-size:.82rem">Situações de ${esc(d.nome)}</div>
-        <button class="btn btn-ghost btn-sm" onclick="cfgEstNovaSituacao()">+ Situação</button>
-      </div>
-      <div class="tbl-wrap" style="border:none;box-shadow:none">
-        <table><thead><tr>
-          <th style="width:74px">Ordem</th><th>Nome</th><th>Classificação</th>
-          <th>Cor</th><th>SLA (horas)</th><th style="width:1%">Ativa</th>
-        </tr></thead><tbody>
-        ${CFG_EST.situacoes.map((s, i) => `
-          <tr>
-            <td style="white-space:nowrap;color:var(--t3)">
-              <button class="btn btn-ghost btn-xs" ${i === 0 ? 'disabled' : ''}
-                      title="Subir" onclick="cfgEstMover('${esc(s.id)}',-1)">↑</button>
-              <button class="btn btn-ghost btn-xs" ${i === CFG_EST.situacoes.length - 1 ? 'disabled' : ''}
-                      title="Descer" onclick="cfgEstMover('${esc(s.id)}',1)">↓</button>
-            </td>
-            <td><input value="${esc(s.nome)}" onchange="cfgEstSalvarSituacao('${esc(s.id)}','nome',this.value)"
-                       style="width:100%;min-width:150px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td><select onchange="cfgEstSalvarSituacao('${esc(s.id)}','flag',this.value)"
-                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
-                  <option value="">—</option>
-                  ${d.flags.map(f => `<option value="${f}" ${s.flag === f ? 'selected' : ''}>${f}</option>`).join('')}
-                </select></td>
-            <td><input type="color" value="${esc(s.cor || '#64748b')}" onchange="cfgEstSalvarSituacao('${esc(s.id)}','cor',this.value)"
-                       style="width:44px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0;cursor:pointer"></td>
-            <td><input type="number" min="0" max="8760" value="${s.sla_horas == null ? '' : s.sla_horas}"
-                       placeholder="sem prazo" onchange="cfgEstSalvarSituacao('${esc(s.id)}','sla_horas',this.value)"
-                       style="width:92px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td style="text-align:center"><input type="checkbox" ${s.ativo === false ? '' : 'checked'}
-                       onchange="cfgEstSalvarSituacao('${esc(s.id)}','ativo',this.checked)"
-                       style="width:16px;height:16px;accent-color:#3D5CC8;cursor:pointer"></td>
-          </tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border);line-height:1.55">
-        <strong>SLA</strong> em branco significa "sem prazo": a fila mostra há quanto tempo o processo
-        está parado, mas não pinta de vermelho.<br>
-        <strong>Desmarcar "Ativa"</strong> tira a situação da esteira sem apagá-la: ela some do quadro
-        e deixa de ser destino de qualquer transição. Não há como apagar de verdade — o banco recusa,
-        porque há processo apontando para ela. <strong>Antes de desativar, mova quem ainda está nessa
-        situação:</strong> a fila só carrega as ativas, então processo esquecido lá aparece sem nome.
-      </div>
-    </div>
-
-    <div class="panel" style="overflow:hidden">
-      <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
-        <div style="font-weight:800;font-size:.82rem">Transições permitidas</div>
-        <button class="btn btn-ghost btn-sm" onclick="cfgEstNovaTransicao()">+ Transição</button>
-      </div>
-      ${CFG_EST.transicoes.length ? `
-      <div class="tbl-wrap" style="border:none;box-shadow:none">
-        <table><thead><tr>
-          <th>De</th><th>Para</th><th>Ação disparada</th><th>Quando</th>
-          <th>Requisito</th><th>Papéis</th><th style="width:1%">Ativa</th>
-        </tr></thead><tbody>
-        ${CFG_EST.transicoes.map(t => `
-          <tr>
-            <td><select onchange="cfgEstSalvarTransicao('${esc(t.id)}','de_id',this.value||null)"
-                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
-                  <option value="">qualquer situação</option>
-                  ${CFG_EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.de_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
-                </select></td>
-            <td><select onchange="cfgEstSalvarTransicao('${esc(t.id)}','para_id',this.value)"
-                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
-                  ${CFG_EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.para_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
-                </select></td>
-            <td><select onchange="cfgEstSalvarTransicao('${esc(t.id)}','acao',this.value||null)"
-                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
-                  ${d.acoes.map(([v, r]) => `<option value="${v}" ${(t.acao || '') === v ? 'selected' : ''}>${esc(r)}</option>`).join('')}
-                </select></td>
-            <td><select onchange="cfgEstSalvarTransicao('${esc(t.id)}','acao_modo',this.value)"
-                        ${t.acao ? '' : 'disabled'}
-                        style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
-                  <option value="CONFIRMAR" ${t.acao_modo === 'CONFIRMAR' ? 'selected' : ''}>o operador confirma</option>
-                  <option value="AUTO"      ${t.acao_modo === 'AUTO'      ? 'selected' : ''}>automático</option>
-                </select></td>
-            <td>${d.requisitos.map(([k, r]) => `
-                  <label style="display:flex;align-items:center;gap:.3rem;font-size:.71rem;color:var(--t2);cursor:pointer">
-                    <input type="checkbox" ${(t.requisitos || {})[k] ? 'checked' : ''}
-                           onchange="cfgEstRequisito('${esc(t.id)}','${k}',this.checked)"
-                           style="accent-color:#3D5CC8;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`).join('')}</td>
-            <td><input value="${esc((t.papeis || []).join(', '))}" placeholder="todos"
-                       onchange="cfgEstPapeis('${esc(t.id)}',this.value)"
-                       style="width:130px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem"></td>
-            <td style="text-align:center"><input type="checkbox" ${t.ativo === false ? '' : 'checked'}
-                       onchange="cfgEstSalvarTransicao('${esc(t.id)}','ativo',this.checked)"
-                       style="width:16px;height:16px;accent-color:#3D5CC8;cursor:pointer"></td>
-          </tr>`).join('')}
-        </tbody></table>
-      </div>` : `<div style="padding:2rem;text-align:center;color:var(--t3);font-size:.8rem">
-        Nenhuma transição. Sem elas, nada se move na esteira.
-        <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" onclick="cfgEstSemearTransicoes()">Ligar as situações em sequência</button></div>
-      </div>`}
-      <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border);line-height:1.55">
-        <strong>Automático</strong> executa a ação junto com a mudança de situação, na mesma transação:
-        ou valem as duas coisas, ou nenhuma. <strong>O operador confirma</strong> mostra um botão e espera o clique.<br>
-        <strong>Papéis</strong> em branco = qualquer um com permissão de editar. Para restringir, liste os tipos
-        separados por vírgula (ex.: <code>analista, coordenador</code>). Gestor nunca é barrado por este campo.<br>
-        <strong>Desmarcar "Ativa"</strong> apaga a transição na prática: ela deixa de ser oferecida e o banco
-        recusa quem tentar usá-la mesmo assim.
-      </div>
-    </div>`;
-}
-
-// PATCH de uma linha. Devolve true/false para quem precisa encadear (mover).
-async function cfgEstPatch(tabela, id, campos) {
-  const res = await fetch(`${A1.rest(tabela)}?id=eq.${encodeURIComponent(id)}`, {
-    method:'PATCH', headers:A1.headers(), body:JSON.stringify(campos) });
-  if (!res.ok) { toast('Não foi possível salvar.', 'error'); return false; }
-  return true;
-}
-
-async function cfgEstSalvarSituacao(id, campo, valor) {
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  if (campo === 'sla_horas') valor = valor === '' ? null : parseInt(valor, 10);
-  if (campo === 'flag')      valor = valor || null;
-  if (!await cfgEstPatch(d.tabSit, id, { [campo]: valor })) return;
-  const s = CFG_EST.situacoes.find(x => x.id === id);
-  if (s) s[campo] = valor;
-  toast('Salvo.', 'success');
-}
-
-// Reordenar é mexer na coluna `ordem` — é ela que a fila lê, não a posição na
-// tabela desenhada. Renumera a lista inteira de 0 a n-1 em vez de só trocar o
-// valor das duas linhas envolvidas: esteira semeada à mão pode ter empate
-// (várias situações com ordem 0) ou buraco (0, 5, 9), e nesses casos trocar os
-// dois valores entre si movia a linha para longe do lugar clicado, ou não movia
-// nada. Só vai PATCH para quem realmente mudou de número.
-async function cfgEstMover(id, passo) {
-  const lista = CFG_EST.situacoes;
-  const i = lista.findIndex(s => s.id === id);
-  const j = i + passo;
-  if (i < 0 || j < 0 || j >= lista.length) return;
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const nova = lista.slice();
-  nova.splice(j, 0, nova.splice(i, 1)[0]);
-  for (let k = 0; k < nova.length; k++) {
-    if (nova[k].ordem === k) continue;
-    // Metade renumerada é pior que nada: recarrega do servidor para a tela
-    // mostrar a ordem que de fato ficou gravada, não a que o clique pretendia.
-    if (!await cfgEstPatch(d.tabSit, nova[k].id, { ordem: k })) { await cfgEstAbrir(CFG_EST.modulo); return; }
-    nova[k].ordem = k;
-  }
-  CFG_EST.situacoes = nova;
-  cfgEstRender();
-}
-
-async function cfgEstNovaSituacao() {
-  const nome = prompt('Nome da nova situação:');
-  if (!nome || !nome.trim()) return;
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const ordem = CFG_EST.situacoes.length
-    ? Math.max(...CFG_EST.situacoes.map(s => s.ordem || 0)) + 1 : 0;
-  const res = await fetch(A1.rest(d.tabSit), {
-    method:'POST', headers:A1.returnHeaders(),
-    body:JSON.stringify({ tenant_id:G.user.tenant_id, nome:nome.trim(), ordem,
-                          cor:'#64748b', ativo:true }) });
-  if (!res.ok) { toast('Não foi possível criar a situação.', 'error'); return; }
-  const linha = (await res.json())[0];
-  if (linha) CFG_EST.situacoes.push(linha);
-  cfgEstRender();
-}
-
-async function cfgEstNovaTransicao() {
-  if (CFG_EST.situacoes.length < 2) { toast('Crie pelo menos duas situações antes.', 'error'); return; }
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const res = await fetch(A1.rest(d.tabTr), {
-    method:'POST', headers:A1.returnHeaders(),
-    body:JSON.stringify({ tenant_id:G.user.tenant_id, de_id:CFG_EST.situacoes[0].id,
-                          para_id:CFG_EST.situacoes[1].id, papeis:[], requisitos:{},
-                          acao:null, acao_modo:'CONFIRMAR', ativo:true }) });
-  if (!res.ok) { toast('Não foi possível criar a transição.', 'error'); return; }
-  const linha = (await res.json())[0];
-  if (linha) CFG_EST.transicoes.push(linha);
-  cfgEstRender();
-}
-
-async function cfgEstSalvarTransicao(id, campo, valor) {
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  if (!await cfgEstPatch(d.tabTr, id, { [campo]: valor })) return;
-  const t = CFG_EST.transicoes.find(x => x.id === id);
-  if (t) t[campo] = valor;
-  // Tirar a ação tem de desabilitar o "quando" junto: "automático" sem ação
-  // nenhuma é um estado que confunde quem lê a tabela depois.
-  if (campo === 'acao') cfgEstRender();
-  else toast('Salvo.', 'success');
-}
-
-async function cfgEstRequisito(id, chave, ligado) {
-  const t = CFG_EST.transicoes.find(x => x.id === id);
-  if (!t) return;
-  const req = Object.assign({}, t.requisitos || {});
-  if (ligado) req[chave] = true; else delete req[chave];
-  await cfgEstSalvarTransicao(id, 'requisitos', req);
-}
-
-async function cfgEstPapeis(id, texto) {
-  const papeis = String(texto || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  await cfgEstSalvarTransicao(id, 'papeis', papeis);
-}
-
-// A esteira semente. tenant_id vai no corpo porque a coluna é `not null` e não
-// tem default — é o valor da sessão, e o WITH CHECK do RLS recusaria qualquer
-// outro, então mandá-lo não é a tela escolhendo cliente.
-async function cfgEstSemear() {
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const linhas = d.padrao.map((s, i) => ({ tenant_id:G.user.tenant_id, nome:s.nome, flag:s.flag,
-                                           cor:s.cor, ordem:i, sla_horas:s.sla_horas, ativo:true }));
-  const res = await fetch(A1.rest(d.tabSit), {
-    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(linhas) });
-  if (!res.ok) { toast('Não foi possível criar a esteira.', 'error'); return; }
-  const criadas = await res.json();
-  CFG_EST.situacoes = Array.isArray(criadas) ? criadas : [];
-  await cfgEstSemearTransicoes();
-  toast(`Esteira padrão de ${d.nome} criada.`, 'success');
-}
-
-// Liga cada situação à seguinte e permite ir para as terminais de qualquer
-// lugar (cancelar e reprovar acontecem a qualquer momento, não só no fim).
-// Tudo nasce com acao:null e acao_modo CONFIRMAR de propósito: ligar sozinha
-// uma automação que cria registro em outro módulo, na conta de um cliente que
-// ainda está desenhando o fluxo, é o tipo de coisa que só se descobre depois
-// de já ter acontecido.
-async function cfgEstSemearTransicoes() {
-  const d = CFG_EST_DEF[CFG_EST.modulo];
-  const ordenadas = CFG_EST.situacoes.slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-  const terminais = ordenadas.filter(s => ['REPROVADO','CANCELADO','ENCERRADO'].includes(s.flag));
-  const fluxo     = ordenadas.filter(s => !terminais.includes(s));
-  const novas = [];
-  for (let i = 0; i < fluxo.length - 1; i++) {
-    novas.push({ tenant_id:G.user.tenant_id, de_id:fluxo[i].id, para_id:fluxo[i+1].id,
-                 papeis:[], requisitos:{}, acao:null, acao_modo:'CONFIRMAR', ativo:true });
-  }
-  terminais.forEach(t => novas.push({ tenant_id:G.user.tenant_id, de_id:null, para_id:t.id,
-                 papeis:[], requisitos:{}, acao:null, acao_modo:'CONFIRMAR', ativo:true }));
-  if (!novas.length) { cfgEstRender(); return; }
-  const res = await fetch(A1.rest(d.tabTr), {
-    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(novas) });
-  if (res.ok) {
-    const criadas = await res.json();
-    if (Array.isArray(criadas)) CFG_EST.transicoes = criadas;
-  } else {
-    toast('As situações foram criadas, mas as transições não.', 'error');
-  }
-  cfgEstRender();
 }
 
 // ── Registro de integrações (somente leitura) ────────────────────────────────

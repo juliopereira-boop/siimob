@@ -163,7 +163,7 @@ const D = {
       client_name:'Parado '+i,created_at:new Date(hoje-90*864e5).toISOString(),
       stage_entered_at:new Date(hoje-90*864e5).toISOString(),payload:{}});
     return out; })(),
-  stage_history: [], presence: [], leads: [], modules: [{key:'repasse',name:'Repasse'}],
+  stage_history: [], presence: [], leads: [], modules: [{key:'repasse',name:'Repasse',module_key:'repasse',tenant_id:'t1'}],
 };
 
 // Os 23 processos de "extras" existem para o KPI de gargalo (muitos recentes
@@ -178,13 +178,13 @@ function usarExtras(v) { COM_EXTRAS = v !== false; }
 let MODULOS_NOVOS = [];
 function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : []; }
 
-function responder(url, metodo, corpo) {
+function responder(url, metodo, corpo0) {
   const u = new URL(url);
   const p = u.pathname;
   const qs = u.search;
   if (p.includes('/rpc/a1_has_module')) {
     let chave = '';
-    try { chave = (JSON.parse(corpo || '{}') || {}).p_module_key || ''; } catch {}
+    try { chave = (JSON.parse(corpo0 || '{}') || {}).p_module_key || ''; } catch {}
     if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL') return MODULOS_NOVOS.includes(chave);
     return true;
   }
@@ -195,7 +195,20 @@ function responder(url, metodo, corpo) {
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;
   if (p.includes('/rpc/')) return {ok:true};
-  if (metodo !== 'GET') return [{id:'novo-1'}];
+  if (metodo !== 'GET') {
+    // Devolve as linhas que foram enviadas, com id — é o que o PostgREST faz
+    // com Prefer: return=representation. O talão fixo {id:'novo-1'} escondia
+    // todo código que insere em lote e usa o retorno para o passo seguinte:
+    // a semeadura da esteira liga uma situação na outra pelos ids que voltam,
+    // e com uma linha só de resposta ela não ligava nada — sem quebrar nada,
+    // que é o pior jeito de falhar.
+    let corpo = null;
+    try { corpo = JSON.parse(corpo0 || 'null'); } catch {}
+    const comId = (x, i) => Object.assign({ id: 'novo-' + (i + 1) }, x);
+    if (Array.isArray(corpo)) return corpo.map(comId);
+    if (corpo && typeof corpo === 'object') return [comId(corpo, 0)];
+    return [{ id: 'novo-1' }];
+  }
 
   const t = p.split('/rest/v1/')[1] || '';
   const filtroTipo = (qs.match(/type=eq\.([a-z_]+)/)||[])[1];
@@ -250,7 +263,13 @@ function responder(url, metodo, corpo) {
   if (t === 'a1_stage_history') return D.stage_history;
   if (t === 'a1_presence') return D.presence;
   if (t === 'a1_leads') return D.leads;
-  if (t === 'a1_modules' || t === 'a1_tenant_modules') return D.modules;
+  if (t === 'a1_modules') return D.modules;
+  // a1_tenant_modules é a LICENÇA, e há tela que a lê direto da tabela em vez
+  // de perguntar por a1_has_module — o editor de workflow é uma delas. Se o
+  // andaime respondesse sempre a mesma lista, o teste de "sem licença não
+  // aparece" passaria sem nada estar sendo testado.
+  if (t === 'a1_tenant_modules')
+    return D.modules.concat(MODULOS_NOVOS.map(k => ({ tenant_id:'t1', module_key:k })));
   if (t === 'a1_corr_empresas') return D.corr_empresas;
   if (t === 'a1_precad_links') return D.precad_links;
   if (t === 'a1_estados') return D.estados;
