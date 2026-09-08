@@ -432,6 +432,54 @@ select checa('e ele cai na situação inicial da esteira do cliente',
   = '50000000-0000-0000-0000-000000000001');
 reset role;
 
+-- ─── 16. SESSÃO E PERMISSÃO ──────────────────────────────────────────────────
+-- Todas as regras acima param de valer se o corretor conseguir virar gestor.
+-- E até esta rodada ele conseguia por dois caminhos, os dois com um PATCH só:
+-- copiar o token do dono (a1_sessions era isolada só por cliente) ou reescrever
+-- a própria linha de a1_partners, que é de onde a1_perm() lê. As duas travas
+-- estão em sql/2026-09-06_travas_sessao_e_parceiro.sql.
+set role anon;
+select teste_entrar('tk-ana');
+select checa('a sessão que o navegador enxerga é só a dele',
+  (select count(*) from a1_sessions) = 1
+  and (select token from a1_sessions) = 'tk-ana');
+select checa('o token do dono da empresa não chega ao navegador do corretor',
+  (select count(*) from a1_sessions where token = 'tk-gestor') = 0);
+select checa('e ele não se promove a owner na própria sessão',
+  tenta($$update a1_sessions set role = 'owner' where token = 'tk-ana'$$) is not null);
+select checa('nem apaga a sessão de ninguém pela tabela',
+  tenta($$delete from a1_sessions where token = 'tk-gestor'$$) is not null);
+
+select checa('o corretor não reescreve a própria permissão',
+  tenta($$update a1_partners set permissions = '{"gerente":true}'::jsonb
+           where id = a1_ator()$$) is not null);
+select checa('nem aprova ou reativa cadastro de terceiro',
+  tenta($$update a1_partners set approved = true, is_active = true
+           where id = 'b0000000-0000-0000-0000-000000000007'$$) is not null);
+select checa('nem troca o CPF, que é o que liga a sessão ao cadastro',
+  tenta($$update a1_partners set cpf = '10000000003' where id = a1_ator()$$) is not null);
+select checa('nem cadastra parceiro já nascido com permissão',
+  tenta($$insert into a1_partners (tenant_id, name, cpf, type, permissions)
+          values ('11111111-1111-1111-1111-111111111111','Fantasma','10000000099',
+                  'corretor','{"gerente":true}'::jsonb)$$) is not null);
+select checa('nem apaga colega do cadastro',
+  tenta($$delete from a1_partners where id = 'b0000000-0000-0000-0000-000000000002'$$) is not null);
+-- A trava é sobre PODER, não sobre a tabela: o que não decide acesso continua
+-- gravável, senão a correção vira um bloqueio geral disfarçado.
+select checa('mas o que não decide poder continua editável',
+  tenta($$update a1_partners set name = 'Ana Maria' where id = a1_ator()$$) is null);
+select checa('e ele continua não sendo gestor depois de tudo isso',
+  a1_e_gestor() = false and a1_perm('gerente') = false
+  and a1_perm('analisar_credito') = false);
+
+select teste_entrar('tk-gestor');
+select checa('o gestor, esse sim, cadastra e altera permissão como sempre',
+  tenta($$update a1_partners set permissions = '{"gerente":true}'::jsonb
+           where id = 'b0000000-0000-0000-0000-000000000002'$$) is null);
+select checa('e a sessão dele também só devolve a dele',
+  (select count(*) from a1_sessions) = 1);
+reset role;
+
 -- =============================================================================
 \o
 \echo ''

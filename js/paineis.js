@@ -4,8 +4,11 @@
 // O Dashboard sempre foi o do Repasse. Quando o cliente passa a ter mais de um
 // módulo, ele precisa escolher qual painel está olhando — e cada painel tem
 // perguntas próprias. Deixar isso dentro de repasse.html seria empurrar mais
-// 40 KB para um arquivo de 330 KB que um cliente usa agora; aqui fica separado,
-// e as três telas do Repasse só o incluem para o menu não divergir.
+// 40 KB para um arquivo de 330 KB que um cliente usa agora.
+//
+// Só repasse.html inclui este arquivo. A aba Dashboard — e com ela o seletor de
+// painel — existe lá e em nenhum outro lugar; andamento.html e listagem.html
+// chegaram a incluí-lo, e era peso morto em duas telas que já são pesadas.
 //
 // O QUE ESTE ARQUIVO NÃO FAZ, DE PROPÓSITO
 // Não existe meta, probabilidade por etapa, motivo estruturado de perda nem
@@ -31,9 +34,14 @@ const PN = { dias: 90, pa: null, co: null };
 const PN_PERIODOS = [[30, '30 dias'], [90, '90 dias'], [180, '180 dias'], [365, '12 meses'], [0, 'Tudo']];
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
+// A aspa SIMPLES entra aqui junto com as outras, e nao e capricho: os valores
+// escapados por esta funcao vao para dentro de onclick="location.href='...'",
+// ou seja, para dentro de uma string JS delimitada por aspa simples. Escapar
+// so a aspa dupla fecharia o atributo e deixaria a simples abrir codigo.
 function pnEsc(s){
   return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 const _pnBRL = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 });
@@ -56,6 +64,15 @@ function pnHoras(h){
 }
 function pnLinhas(r){ return Array.isArray(r) ? r : ((r && r.linhas) || []); }
 function pnMs(iso){ const t = iso ? new Date(iso).getTime() : NaN; return isNaN(t) ? null : t; }
+
+// O slug do cliente vai parar dentro de um trecho de JS que mora num atributo
+// onclick. Escapar HTML NÃO resolve isso: o navegador desfaz a entidade antes de
+// o JS rodar, então um &#39; volta a ser aspa e fecha a string. Percent-encoding
+// tira aspa, sinal de menor e barra de circulação e ainda deixa o slug normal
+// ([a-z0-9-]) intacto.
+function pnRota(caminho){
+  return '/' + encodeURIComponent(A1.slug || '') + '/' + caminho;
+}
 
 // Percentil com interpolação linear — o mesmo método do percentile_cont, que o
 // PostgREST não expõe. Fazer no navegador é o caminho que pre-analise.html e
@@ -267,6 +284,11 @@ function pnCalcPA(d){
   d.situacoes.forEach(s => { sitPorId[s.id] = s; });
   const emprPorId = {};
   d.empr.forEach(e => { emprPorId[e.id] = e.name; });
+  // Índice por id: o tempo total de pré-análise precisa da data de criação de
+  // cada uma, e procurá-la com find() dentro do laço das decisões custava
+  // n×m — num cliente com dez mil pré-análises isso trava a aba por segundos.
+  const prePorId = {};
+  d.pre.forEach(p => { prePorId[p.id] = p; });
 
   // Uma decisão por pré-análise: a de maior versão. INVALIDADA continua sendo
   // a vigente quando é a última — e é assim que ela some do numerador e do
@@ -366,7 +388,7 @@ function pnCalcPA(d){
     if (!noPeriodo(c.decidido_em)) return;
     const dec = pnMs(c.decidido_em), abriu = pnMs(c.criado_em);
     if (dec != null && abriu != null) tDecisao.push((dec - abriu) / 36e5);
-    const pa = d.pre.find(p => p.id === k);
+    const pa = prePorId[k];
     const nasceu = pa ? pnMs(pa.criado_em) : null;
     if (dec != null && nasceu != null) tTotal.push((dec - nasceu) / 36e5);
   });
@@ -393,6 +415,11 @@ function pnCalcPA(d){
   const aprovadas = safra.filter(p => { const c = vigente[p.id]; return c && c.status === 'APROVADO'; });
   const elegiveis = aprovadas.filter(p => temTitular[p.id]);
   const viraramCom = safra.filter(p => comPorPa[p.id]);
+  // A taxa conta só o que está DENTRO do denominador. Existe Comercial de
+  // pré-análise que hoje não é elegível — a aprovação foi invalidada depois, ou
+  // o titular saiu — e usar a contagem cheia dava mais de 100%, que numa tela
+  // executiva vira chamado de bug em vez de leitura de funil.
+  const elegiveisViraram = elegiveis.filter(p => comPorPa[p.id]).length;
 
   const dtDecisao = [], dtHandoff = [];
   concluidas.forEach(p => {
@@ -413,12 +440,12 @@ function pnCalcPA(d){
     vencidos, emRisco, comPrazo, semPrazo,
     p50Dec: pnPercentil(tDecisao, 0.5), p90Dec: pnPercentil(tDecisao, 0.9),
     p50Tot: pnPercentil(tTotal, 0.5),
-    pendencia: comDoc.length ? comPendencia / ativas.length : (ativas.length ? comPendencia / ativas.length : null),
+    pendencia: ativas.length ? comPendencia / ativas.length : null,
     comPendencia, semDossie: ativas.length - comDoc.length,
     reenvio: baseReenvio.length ? comReenvio / baseReenvio.length : null,
     baseReenvio: baseReenvio.length,
-    conversao: elegiveis.length ? viraramCom.length / elegiveis.length : null,
-    elegiveis: elegiveis.length,
+    conversao: elegiveis.length ? elegiveisViraram / elegiveis.length : null,
+    elegiveis: elegiveis.length, elegiveisViraram,
     paretoTipo,
     funil: {
       criadas: safra.length, semPendencia: semPendencia.length, concluidas: concluidas.length,
@@ -431,7 +458,7 @@ function pnCalcPA(d){
 
 function pnDesenharPA(alvo){
   const d = PN.pa, c = pnCalcPA(d), per = pnRotuloPeriodo();
-  const slug = A1.slug || '';
+  const rota = pnRota('pre-analise');
 
   const kpis = [
     pnKpi({ rotulo:'Entradas no período', valor: c.entradas, cor:'kpi-violet',
@@ -480,7 +507,7 @@ function pnDesenharPA(alvo){
   // não devolve linha e o cartão marcaria 0% numa operação que nem tem a etapa.
   if (d.temCo) {
     kpis.push(pnKpi({ rotulo:'Conversão → Comercial', valor: pnPct(c.conversao), cor:'kpi-green',
-      sub: c.elegiveis ? c.elegiveis + ' elegíveis' : 'nenhuma elegível no período',
+      sub: c.elegiveis ? `${c.elegiveisViraram} de ${c.elegiveis} elegíveis` : 'nenhuma elegível no período',
       titulo:'pré-análises que viraram Comercial ÷ elegíveis, onde elegível = decisão vigente APROVADO E participante TITULAR — exatamente a regra de a1_pa_pode_criar_comercial. '
            + `Safra criada no período (${per}).` }));
   }
@@ -512,7 +539,7 @@ function pnDesenharPA(alvo){
   const fila = c.fila.slice(0, 12);
   const tabela = fila.length ? `<div class="pn-tbl-wrap"><table class="pn-tbl">
     <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Na situação</th><th style="text-align:right">SLA</th></tr></thead>
-    <tbody>${fila.map(l => `<tr onclick="location.href='/${pnEsc(slug)}/pre-analise'" title="Abrir a fila de Pré-análise">
+    <tbody>${fila.map(l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila de Pré-análise">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>
@@ -643,7 +670,13 @@ function pnCalcCO(d){
   // denominador vira o próprio numerador e a taxa dá 100%. Isso não é um
   // resultado, é um cadastro faltando — e o painel diz isso em vez do número.
   const temCancelamento = d.situacoes.some(s => s.flag === 'CANCELADO');
-  const cancelados = d.com.filter(co => flagDe(co) === 'CANCELADO').length;
+  // Os dois lados no MESMO período de encerramento. O numerador já é filtrado
+  // por assinado_em; contar todos os cancelamentos do histórico contra os
+  // contratos de um mês derrubava a taxa quanto mais antigo fosse o cliente.
+  // O carimbo do cancelamento é situacao_em — é quando o caso entrou na
+  // situação cancelada, e o banco não guarda outra data para isso.
+  const cancelados = d.com.filter(co =>
+    flagDe(co) === 'CANCELADO' && noPeriodo(co.situacao_em || co.criado_em)).length;
   const win = (temCancelamento && (assinados.length + cancelados))
     ? assinados.length / (assinados.length + cancelados) : null;
 
@@ -678,7 +711,13 @@ function pnCalcCO(d){
   const passaram = {};
   d.eventos.forEach(e => { if (e.para_situacao && destinos[e.para_situacao]) passaram[e.comercial_id] = true; });
   const baseRepasse = Object.keys(passaram).length;
-  const viraramRepasse = d.com.filter(co => co.repasse_case_id).length;
+  // Numerador dentro do denominador, pelo mesmo motivo da conversão da
+  // Pré-análise: há comercial com repasse_case_id preenchido sem evento de
+  // passagem (vínculo feito na mão, ou carga migrada), e contá-lo aqui fazia a
+  // taxa passar de 100%. Quantos são fica no rodapé do cartão, para o gestor
+  // saber que existem em vez de o número simplesmente não fechar.
+  const viraramRepasse = d.com.filter(co => co.repasse_case_id && passaram[co.id]).length;
+  const repasseForaDaBase = d.com.filter(co => co.repasse_case_id && !passaram[co.id]).length;
 
   const nascimentoRepasse = {};
   d.eventos.forEach(e => { if (e.evento === 'repasse_criado') nascimentoRepasse[e.comercial_id] = e.criado_em; });
@@ -713,7 +752,7 @@ function pnCalcCO(d){
     p50Aging: pnPercentil(aging, 0.5), p90Aging: pnPercentil(aging, 0.9),
     estourados, comPrazo, semPrazo, faixas,
     convRepasse: baseRepasse ? viraramRepasse / baseRepasse : null,
-    baseRepasse, viraramRepasse,
+    baseRepasse, viraramRepasse, repasseForaDaBase,
     funil: {
       criados: safra.length, proposta: comProposta.length, contrato: comContrato.length,
       assinado: comAssinado.length, repasse: comRepasse.length,
@@ -726,7 +765,7 @@ function pnCalcCO(d){
 
 function pnDesenharCO(alvo){
   const d = PN.co, c = pnCalcCO(d), per = pnRotuloPeriodo();
-  const slug = A1.slug || '';
+  const rota = pnRota('comercial');
 
   const kpis = [
     pnKpi({ rotulo:'Comerciais ativos', valor: c.ativos, cor:'kpi-blue', sub:'estoque de agora',
@@ -765,7 +804,10 @@ function pnDesenharCO(alvo){
     pnKpi({ rotulo:'Conversão → Repasse', valor: pnPct(c.convRepasse), cor:'kpi-violet',
       sub: c.baseRepasse ? `${c.viraramRepasse} de ${c.baseRepasse}` : 'nenhum passou pela etapa de criar repasse',
       titulo:'comerciais com repasse_case_id ÷ comerciais que já passaram por uma situação de destino de transição com ação CREATE_REPASS. '
-           + 'O denominador vem do histórico de eventos, não da situação atual: quem avançou depois continua contando, e é esse caso que revela o repasse que não nasceu.' })
+           + 'O denominador vem do histórico de eventos, não da situação atual: quem avançou depois continua contando, e é esse caso que revela o repasse que não nasceu. '
+           + (c.repasseForaDaBase
+              ? c.repasseForaDaBase + ' comercial(is) têm repasse vinculado sem evento de passagem pela etapa (vínculo manual ou carga migrada) e ficam fora dos dois lados.'
+              : '') })
   ];
 
   const f = c.funil;
@@ -785,7 +827,7 @@ function pnDesenharCO(alvo){
   const fila = c.fila.slice(0, 12);
   const tabela = fila.length ? `<div class="pn-tbl-wrap"><table class="pn-tbl">
     <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Valor</th><th style="text-align:right">Na situação</th></tr></thead>
-    <tbody>${fila.map(l => `<tr onclick="location.href='/${pnEsc(slug)}/comercial'" title="Abrir a fila do Comercial">
+    <tbody>${fila.map(l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila do Comercial">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>
