@@ -10,7 +10,8 @@ const { abrir, checa, resumo } = require('./comum');
   grupos.forEach(g => { console.log(`\n  [${g.titulo}] ${g.sub}`); g.cards.forEach(c=>console.log('     · '+c)); });
   checa('5 grupos', grupos.length === 5, 'n='+grupos.length);
   checa('todo grupo tem explicação', grupos.every(g=>g.sub.length > 10));
-  checa('21 cards no total', grupos.reduce((a,g)=>a+g.cards.length,0) === 21);
+  // 21 de sempre + Perfis de acesso, que entrou em "Usuários e acesso".
+  checa('22 cards no total', grupos.reduce((a,g)=>a+g.cards.length,0) === 22);
   checa('nenhum card órfão fora de grupo',
     (await p.locator('#cfg-hub .cfg-hub-card').count()) === (await p.locator('#cfg-hub .cfg-grupo .cfg-hub-card').count()));
 
@@ -23,7 +24,7 @@ const { abrir, checa, resumo } = require('./comum');
   await p.fill('#cfg-busca','zzzzz'); await p.waitForTimeout(250);
   checa('avisa quando não acha nada', await p.locator('#cfg-busca-vazio').isVisible());
   await p.fill('#cfg-busca',''); await p.waitForTimeout(250);
-  checa('limpar devolve tudo', (await p.locator('#cfg-hub .cfg-hub-card:not(.oculto)').count()) === 21);
+  checa('limpar devolve tudo', (await p.locator('#cfg-hub .cfg-hub-card:not(.oculto)').count()) === 22);
 
   console.log('\n== AS TELAS CONTINUAM ABRINDO ==');
   const VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas',

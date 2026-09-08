@@ -165,18 +165,53 @@ async function a1RefreshPartnerPerms() {
   if (!u || u.role !== 'partner' || !u.id) return null;
   try {
     const res = await fetch(
-      `${A1.rest('a1_partners')}?id=eq.${u.id}&select=permissions,type`,
+      `${A1.rest('a1_partners')}?id=eq.${u.id}&select=permissions,type,perfil_id`,
       { headers: A1.headers() }
     );
     if (!res.ok) return null;                     // servidor fora: mantém o que já tem
     const row = (await res.json())[0];
-    if (!row || !row.permissions) return null;
+    if (!row) return null;
+
     // jsonb costuma chegar como objeto; se vier texto, virar objeto aqui evita
     // que todo `permissions.gerente` do sistema dê undefined.
-    let perms = row.permissions;
-    if (typeof perms === 'string') { try { perms = JSON.parse(perms); } catch { return null; } }
-    if (!perms || typeof perms !== 'object') return null;
+    const objeto = v => {
+      if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return null; } }
+      return (v && typeof v === 'object') ? v : null;
+    };
+    let perms = objeto(row.permissions);
+
+    // O PERFIL MANDA, QUANDO EXISTE — e a tradução acontece só aqui.
+    //
+    // Sem este ponto único, cada uma das telas teria de saber que perfis
+    // existem, e bastaria uma esquecer para a mesma pessoa ter permissões
+    // diferentes em duas abas do mesmo sistema. Daqui para a frente,
+    // A1.user.permissions já é a permissão EFETIVA, e nenhum hasPerm() do
+    // sistema precisou mudar.
+    //
+    // A mesma resolução existe no banco, em a1_perm(). As duas precisam
+    // concordar: esta decide o que a tela mostra, aquela decide o que a API
+    // entrega — e é aquela que protege.
+    if (row.perfil_id) {
+      try {
+        const rp = await fetch(
+          `${A1.rest('a1_perfis')}?id=eq.${row.perfil_id}&select=permissions,ativo`,
+          { headers: A1.headers() }
+        );
+        if (rp.ok) {
+          const perfil = (await rp.json())[0];
+          // Perfil desativado devolve a pessoa às marcas soltas dela, igual ao
+          // que a1_perm() faz. Divergir aqui daria tela e API discordando.
+          if (perfil && perfil.ativo !== false) {
+            const pp = objeto(perfil.permissions);
+            if (pp) perms = pp;
+          }
+        }
+      } catch {}                                  // rede fora: fica com o que veio da pessoa
+    }
+
+    if (!perms) return null;
     u.permissions = perms;
+    u.perfil_id = row.perfil_id || null;
     if (row.type) u.type = row.type;
     try { localStorage.setItem('a1_user', JSON.stringify(u)); } catch {}
     return u.permissions;
