@@ -65,12 +65,17 @@ with checagens as (
     (select count(*) from a1_modules where key in ('PRE_ANALISE','COMERCIAL'))::text,
     '2', 'rode sql/2026-09-04_modulos_catalogo.sql'
 
-  -- ─── 7. E não estão liberados para ninguém ─────────────────────────────────
-  -- Esperado ZERO enquanto você não liberar no superadmin. Se vier diferente
-  -- de zero, algum cliente já está com o módulo ligado — confira se foi você.
-  union all select 7, 'Clientes com os módulos liberados',
+  -- ─── 7. Quantas licenças existem hoje ──────────────────────────────────────
+  -- NÃO é conferência de erro: liberar módulo é decisão do superadmin, e o
+  -- número certo é o que você decidiu. A primeira versão desta linha marcava
+  -- qualquer número diferente de zero como PROBLEMA, o que assusta à toa.
+  --
+  -- Repare que conta LICENÇAS, não clientes: um cliente com os dois módulos
+  -- aparece como 2. Para saber QUEM, rode a segunda consulta lá embaixo — é
+  -- ela que responde a pergunta que importa, que não é "quantos" e sim "quais".
+  union all select 7, 'Licenças dos módulos novos (informativo)',
     (select count(*) from a1_tenant_modules where module_key in ('PRE_ANALISE','COMERCIAL'))::text,
-    '0 (até você liberar)', 'só você libera, no painel do superadmin'
+    'o que você liberou', 'veja a segunda consulta: confirme que é o cliente certo'
 
   -- ─── 8. A sessão é de quem a está usando ───────────────────────────────────
   union all select 8, 'Política de sessão restrita à própria linha',
@@ -112,7 +117,30 @@ select
   item,
   achado as "encontrado",
   esperado,
-  case when achado = split_part(esperado, ' ', 1) then 'ok' else 'PROBLEMA' end as situacao,
-  case when achado = split_part(esperado, ' ', 1) then '' else se_faltar end as o_que_fazer
+  case when ord = 7 then 'informativo'
+       when achado = split_part(esperado, ' ', 1) then 'ok'
+       else 'PROBLEMA' end as situacao,
+  case when ord = 7 or achado = split_part(esperado, ' ', 1) then '' else se_faltar end as o_que_fazer
 from checagens
 order by ord;
+
+-- =============================================================================
+-- QUEM ESTÁ COM OS MÓDULOS NOVOS
+--
+-- Esta é a consulta que responde a pergunta útil. Se aparecer um cliente que
+-- está trabalhando hoje e você não lembra de ter liberado, as pessoas de lá já
+-- estão vendo as abas novas — revogue no superadmin (Módulos > Revogar) e
+-- confira. Revogar não destrói nada: as tabelas param de responder, e o que já
+-- tiver sido criado continua onde está.
+-- =============================================================================
+select t.name         as cliente,
+       t.slug,
+       t.status       as situacao_do_cliente,
+       tm.module_key  as modulo,
+       tm.unlocked_at as liberado_em,
+       tm.unlocked_by as liberado_por,
+       coalesce(tm.expires_at::text, 'permanente') as validade
+  from a1_tenant_modules tm
+  join a1_tenants t on t.id = tm.tenant_id
+ where tm.module_key in ('PRE_ANALISE','COMERCIAL')
+ order by t.name, tm.module_key;
