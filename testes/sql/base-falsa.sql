@@ -63,12 +63,32 @@ begin
   on conflict (token) do update set user_id = excluded.user_id;
 end $$;
 
+-- last_seen, origem e a janela vêm de 2026-08-24_sessao_unica_e_limite.sql, que
+-- o andaime não carrega (recria a1_login inteiro, e login não é o que se prova
+-- aqui). Sem estas colunas, a1_ativos() nem compila — e o arquivo que a redefine
+-- falhava no meio, escondendo tudo que vinha depois dele.
 create table if not exists a1_sessions (
   token text primary key,
   tenant_id uuid references a1_tenants(id),
-  user_id uuid, role text,
+  user_id uuid references a1_users(id),
+  role text,
+  origem text default 'login',
   created_at timestamptz default now(),
-  expires_at timestamptz);
+  last_seen timestamptz default now(),
+  expires_at timestamptz default now() + interval '12 hours');
+
+create or replace function a1_sessao_janela()
+returns interval language sql immutable as $$ select interval '90 seconds' $$;
+
+create or replace function a1_ativos(p_tenant uuid, p_excluir_user uuid default null)
+returns int language sql stable security definer as $$
+  select count(distinct user_id)::int
+  from   a1_sessions
+  where  tenant_id = p_tenant
+    and  expires_at > now()
+    and  last_seen  > now() - a1_sessao_janela()
+    and  (p_excluir_user is null or user_id <> p_excluir_user);
+$$;
 
 create table if not exists a1_modules (
   key text primary key, name text, description text);

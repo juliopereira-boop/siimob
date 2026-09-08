@@ -52,22 +52,30 @@ insert into a1_users (id, tenant_id, name, role) values
 
 insert into a1_partners (id, tenant_id, name, cpf, type, empresa_id, permissions) values
   ('b0000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111','Ana','10000000001','corretor',null,
-   '{"ver_repasses":true,"criar_repasses":true,"editar_repasses":true}'),
+   '{"criar_repasses":true,"editar_repasses":true,"pa_ver":true,"pa_criar":true,"pa_editar":true,"co_ver":true,"co_editar":true}'),
   ('b0000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111','Bruno','10000000002','corretor',null,
-   '{"ver_repasses":true,"criar_repasses":true,"editar_repasses":true}'),
+   '{"criar_repasses":true,"editar_repasses":true,"pa_ver":true,"pa_criar":true,"pa_editar":true,"co_ver":true,"co_editar":true}'),
   ('b0000000-0000-0000-0000-000000000003','11111111-1111-1111-1111-111111111111','Carla','10000000003','analista',null,
-   '{"ver_repasses":true,"editar_repasses":true,"analisar_credito":true}'),
+   '{"editar_repasses":true,"pa_ver":true,"pa_editar":true,"analisar_credito":true,"co_ver":true}'),
   ('b0000000-0000-0000-0000-000000000004','11111111-1111-1111-1111-111111111111','Diego','10000000004','coordenador',null,
-   '{"ver_repasses":true,"ver_todos_analistas":true}'),
+   '{"ver_todos_analistas":true,"pa_ver":true,"co_ver":true}'),
   ('b0000000-0000-0000-0000-000000000005','11111111-1111-1111-1111-111111111111','Eva','10000000005','cca',
    'e0000000-0000-0000-0000-000000000001',
-   '{"ver_repasses":true,"criar_repasses":true,"editar_repasses":true}'),
+   '{"criar_repasses":true,"editar_repasses":true,"pa_ver":true,"pa_criar":true,"co_ver":true}'),
   -- Permissão gravada torta por tela antiga. Não pode derrubar a consulta.
   ('b0000000-0000-0000-0000-000000000006','11111111-1111-1111-1111-111111111111','Fabio','10000000006','corretor',null,
    '{"ver_repasses":"sim","editar_repasses":"","gerente":"nao"}'),
   -- Desligado no cadastro, mas com sessão viva. Não pode enxergar nada.
   ('b0000000-0000-0000-0000-000000000007','11111111-1111-1111-1111-111111111111','Gil','10000000007','corretor',null,
-   '{"ver_repasses":true,"editar_repasses":true}');
+   '{"editar_repasses":true,"pa_ver":true}'),
+  -- Helena tem TUDO do Repasse e NADA dos modulos novos. E o caso que prova a
+  -- separacao: antes, quem podia editar repasse podia editar pre-analise de
+  -- brinde, e liberar um modulo liberava os outros sem ninguem pedir.
+  -- ver_todos_analistas de proposito: sob a regra ANTIGA ela enxergaria a
+  -- carteira inteira da Pre-analise. Sem essa marca a prova passaria a toa,
+  -- porque ela nao tem processo nenhum atribuido.
+  ('b0000000-0000-0000-0000-000000000008','11111111-1111-1111-1111-111111111111','Helena','10000000008','corretor',null,
+   '{"criar_repasses":true,"editar_repasses":true,"alterar_etapa":true,"ver_todos_analistas":true}');
 
 insert into a1_sessions (token, tenant_id, user_id, role) values
   ('tk-gestor','11111111-1111-1111-1111-111111111111','a0000000-0000-0000-0000-000000000001','owner'),
@@ -81,6 +89,7 @@ select teste_login_parceiro('tk-diego','b0000000-0000-0000-0000-000000000004');
 select teste_login_parceiro('tk-eva',  'b0000000-0000-0000-0000-000000000005');
 select teste_login_parceiro('tk-fabio','b0000000-0000-0000-0000-000000000006');
 select teste_login_parceiro('tk-gil',  'b0000000-0000-0000-0000-000000000007');
+select teste_login_parceiro('tk-helena','b0000000-0000-0000-0000-000000000008');
 update a1_partners set is_active = false
  where id = 'b0000000-0000-0000-0000-000000000007';
 
@@ -478,6 +487,101 @@ select checa('o gestor, esse sim, cadastra e altera permissão como sempre',
            where id = 'b0000000-0000-0000-0000-000000000002'$$) is null);
 select checa('e a sessão dele também só devolve a dele',
   (select count(*) from a1_sessions) = 1);
+reset role;
+
+-- ─── 16. CADA MÓDULO TEM A PRÓPRIA PERMISSÃO ─────────────────────────────────
+-- Helena pode tudo no Repasse e nada nos módulos novos. Antes desta separação,
+-- 'editar_repasses' abria os três: liberar um módulo liberava os outros de
+-- brinde, e não havia como dar Repasse a alguém sem dar Pré-análise junto.
+set role anon;
+select teste_entrar('tk-helena');
+select checa('visão completa NÃO basta: sem pa_ver não se enxerga pré-análise',
+  (select count(*) from a1_pre_analises) = 0);
+select checa('e a visão completa dela é real — no Repasse ela vale',
+  a1_perm('ver_todos_analistas') = true);
+select checa('nem negócio do Comercial',
+  (select count(*) from a1_comerciais) = 0);
+select checa('e não cria pré-análise',
+  tenta($$insert into a1_pre_analises (tenant_id, empreendimento_id)
+          values ('11111111-1111-1111-1111-111111111111',
+                  'd0000000-0000-0000-0000-000000000001')$$) is not null);
+select checa('mas continua com o Repasse dela, intacto',
+  a1_perm('editar_repasses') = true and a1_perm('alterar_etapa') = true);
+select teste_entrar('tk-ana');
+select checa('a Ana enxerga a pré-análise dela como antes',
+  (select count(*) from a1_pre_analises) >= 1);
+
+-- ─── 17. O PERFIL MANDA, QUANDO EXISTE ───────────────────────────────────────
+select teste_entrar('tk-gestor');
+reset role;
+insert into a1_perfis (id, tenant_id, nome, permissions) values
+  ('f0000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Só leitura', '{"pa_ver":true,"co_ver":true}'),
+  ('f0000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'Analista pleno', '{"pa_ver":true,"pa_editar":true,"analisar_credito":true}');
+set role anon;
+
+select teste_entrar('tk-ana');
+select checa('sem perfil, valem as marcas soltas da pessoa',
+  a1_perm('pa_criar') = true and a1_perm('pa_editar') = true);
+
+-- O gatilho decide pelo que a SESSÃO diz (a1_papel), não pelo papel do banco:
+-- com o cabeçalho da Ana ainda posto, ele barra até o superusuário. Vestir o
+-- gestor aqui é o que um administrador de verdade faria.
+select teste_entrar('tk-gestor');
+reset role;
+update a1_partners set perfil_id = 'f0000000-0000-0000-0000-000000000001'
+ where id = 'b0000000-0000-0000-0000-000000000001';
+set role anon;
+select teste_entrar('tk-ana');
+-- Este é o ponto do recurso: o perfil substitui, não soma. Com as duas fontes
+-- valendo, ninguém saberia dizer olhando a tela por que fulano ainda consegue.
+select checa('com perfil, as marcas soltas deixam de valer',
+  a1_perm('pa_criar') = false and a1_perm('pa_editar') = false);
+select checa('e valem as do perfil', a1_perm('pa_ver') = true);
+select checa('quem virou só leitura não move mais a esteira',
+  tenta($$select a1_pa_transicionar('80000000-0000-0000-0000-000000000001',
+                                    '50000000-0000-0000-0000-000000000002')$$) is not null);
+
+select teste_entrar('tk-gestor');
+reset role;
+update a1_perfis set permissions = '{"pa_ver":true,"pa_editar":true}'
+ where id = 'f0000000-0000-0000-0000-000000000001';
+set role anon;
+select teste_entrar('tk-ana');
+select checa('mudar o PERFIL muda quem está nele, sem tocar na pessoa',
+  a1_perm('pa_editar') = true);
+
+select teste_entrar('tk-gestor');
+reset role;
+update a1_perfis set ativo = false where id = 'f0000000-0000-0000-0000-000000000001';
+set role anon;
+select teste_entrar('tk-ana');
+select checa('perfil desativado volta a pessoa para as marcas dela',
+  a1_perm('pa_criar') = true);
+
+-- ─── 18. NINGUÉM ESCOLHE O PRÓPRIO PERFIL ────────────────────────────────────
+select checa('o corretor não aponta a si mesmo para outro perfil',
+  tenta($$update a1_partners set perfil_id = 'f0000000-0000-0000-0000-000000000002'
+           where id = a1_ator()$$) is not null);
+select checa('nem cria perfil novo para si',
+  tenta($$insert into a1_perfis (tenant_id, nome, permissions)
+          values ('11111111-1111-1111-1111-111111111111','Meu perfil',
+                  '{"gerente":true}')$$) is not null);
+select checa('nem edita o perfil em que está',
+  tenta($$update a1_perfis set permissions = '{"gerente":true}'
+           where id = 'f0000000-0000-0000-0000-000000000001'$$) is not null
+  or (select permissions->>'gerente' from a1_perfis
+       where id = 'f0000000-0000-0000-0000-000000000001') is null);
+select checa('mas LÊ os perfis — a tela precisa mostrar em qual ele está',
+  (select count(*) from a1_perfis) = 2);
+select teste_entrar('tk-outro');
+select checa('e o outro cliente não vê perfil nenhum deste',
+  (select count(*) from a1_perfis) = 0);
+select teste_entrar('tk-gestor');
+select checa('o gestor, esse sim, cria e edita perfil',
+  tenta($$insert into a1_perfis (tenant_id, nome, permissions)
+          values ('11111111-1111-1111-1111-111111111111','Novo pelo gestor','{}')$$) is null);
 reset role;
 
 -- =============================================================================
