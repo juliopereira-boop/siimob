@@ -34,7 +34,13 @@ const MONITOR = {
 };
 
 const TENANTS  = [{ id: 't1', name: 'THE CRED', slug: 'thecred', status: 'active', plan: 'pro', max_users: 10, created_at: '2026-01-01' }];
-const USERS    = [{ id: 'u1', name: 'Julio Gestor', cpf: '11122233344', role: 'owner', is_active: true, tenant_id: 't1' }];
+// A Raissa já entrou alguma vez, então já tem usuário-sombra em a1_users com o
+// mesmo CPF — é o que a1_partner_login cria. A Ana nunca entrou: o sombra dela
+// tem de ser criado na hora, e é o outro caminho que o teste cobre.
+const USERS    = [
+  { id: 'u1', name: 'Julio Gestor', cpf: '11122233344', role: 'owner', is_active: true, tenant_id: 't1' },
+  { id: 'us-raissa', name: 'Raissa Correspondente', cpf: '05268025376', role: 'partner', is_active: true, tenant_id: 't1' },
+];
 const PARTNERS = [
   { id: 'p1', name: 'Raissa Correspondente', cpf: '05268025376', type: 'cca', is_active: true, approved: true,
     permissions: { gerente: true, editar_repasses: true }, tenant_id: 't1' },
@@ -65,6 +71,14 @@ async function abrir() {
     if (u.includes('a1_sessions') && m === 'POST') {
       const corpo = JSON.parse(r.request().postData() || '{}');
       criadas.push(corpo);
+      // a1_sessions.user_id tem CHAVE ESTRANGEIRA para a1_users. O andaime
+      // antigo aceitava qualquer id, e por isso o teste aprovava mandar o id de
+      // a1_partners — que em produção volta 409 Conflict. Aqui ele recusa igual.
+      if (!USERS.some(x => x.id === corpo.user_id)) {
+        return r.fulfill({ status: 409, contentType: 'application/json',
+          body: JSON.stringify({ code: '23503',
+            message: 'insert or update on table "a1_sessions" violates foreign key constraint' }) });
+      }
       return j([{ token: 'tok-' + criadas.length, ...corpo }]);
     }
     if (u.includes('a1_tenants'))  return j(TENANTS);
@@ -72,7 +86,18 @@ async function abrir() {
       const id = (u.match(/[?&]id=eq\.([a-z0-9-]+)/) || [])[1];
       return j(id ? PARTNERS.filter(x => x.id === id) : PARTNERS);
     }
-    if (u.includes('a1_users'))    return j(USERS);
+    if (u.includes('a1_users')) {
+      if (m === 'POST') {
+        // O usuário-sombra sendo criado. Passa a existir para o resto do teste,
+        // como aconteceria no banco.
+        const corpo = JSON.parse(r.request().postData() || '{}');
+        const novo = { id: 'sombra-' + (USERS.length + 1), ...corpo };
+        USERS.push(novo); criadas.push(corpo);
+        return j([novo]);
+      }
+      const cpf = (u.match(/cpf=eq\.(\d+)/) || [])[1];
+      return j(cpf ? USERS.filter(x => x.cpf === cpf) : USERS);
+    }
     return j([]);
   });
   await p.goto(BASE + '/superadmin.html', { waitUntil: 'load' });
@@ -172,19 +197,44 @@ async function abrir() {
   const botoes = await p.locator('#um-tbody button:has-text("Acessar")').count();
   c('botão Acessar em cada pessoa', botoes === 3, 'botões=' + botoes);
 
-  // entra como a correspondente (2ª linha da família de parceiros)
+  // Entrar como parceiro que JÁ tem usuário-sombra (já entrou alguma vez).
+  //
+  // A sessão precisa apontar para o SOMBRA em a1_users, não para a linha de
+  // a1_partners: a1_sessions.user_id tem chave estrangeira para a1_users, e
+  // mandar o id de parceiro devolvia 409 Conflict. A versão anterior deste
+  // teste afirmava user_id === 'p1' — ou seja, cobrava o comportamento errado
+  // e passava, porque o andaime não tinha a chave estrangeira.
   await p.locator('#um-tbody tr:has-text("Raissa Correspondente") button:has-text("Acessar")').click();
   await p.waitForTimeout(900);
   const sess = criadas[criadas.length - 1] || {};
-  c('cria sessão para o id certo', sess.user_id === 'p1', JSON.stringify(sess));
+  c('a sessão aponta para o usuário-sombra, não para a linha de parceiro',
+    sess.user_id === 'us-raissa', JSON.stringify(sess));
   c('com papel de parceiro', sess.role === 'partner', JSON.stringify(sess));
   c('marcada como suporte, fora da conta do cliente', sess.origem === 'suporte', JSON.stringify(sess));
+  c('e não criou sombra duplicada para quem já tinha',
+    !criadas.some(x => x.cpf === '05268025376' && x.role === 'partner'),
+    JSON.stringify(criadas.filter(x => x.cpf)));
 
   const guardado = await p.evaluate(() => JSON.parse(localStorage.getItem('a1_user') || '{}'));
+  c('mas o navegador guarda o id do PARCEIRO — é por ele que a tela lê permissão',
+    guardado.id === 'p1', JSON.stringify(guardado));
   c('a sessão do navegador leva o nome', guardado.name === 'Raissa Correspondente', JSON.stringify(guardado));
   c('leva o tipo do parceiro', guardado.type === 'cca', JSON.stringify(guardado));
   c('leva as permissões dela', !!(guardado.permissions || {}).gerente, JSON.stringify(guardado.permissions));
   c('abre o sistema numa aba nova', (await p.evaluate(() => window.__ABERTAS)).some(u => /thecred/.test(u)));
+
+  // Parceiro que NUNCA entrou não tem sombra: tem de ser criado na hora, igual
+  // ao que a1_partner_login faria no primeiro login dele.
+  await p.locator('#um-tbody tr:has-text("Ana Corretora") button:has-text("Acessar")').click();
+  await p.waitForTimeout(1000);
+  const criouSombra = criadas.filter(x => x.cpf === '22233344455');
+  c('parceiro sem sombra ganha uma, com o CPF dele', criouSombra.length === 1,
+    JSON.stringify(criadas.map(x => x.cpf).filter(Boolean)));
+  c('e o sombra nasce com papel de parceiro',
+    criouSombra[0] && criouSombra[0].role === 'partner', JSON.stringify(criouSombra[0]));
+  const sAna = criadas[criadas.length - 1] || {};
+  c('a sessão da Ana usa o sombra recém-criado', /^sombra-/.test(String(sAna.user_id)),
+    JSON.stringify(sAna));
 
   // entrar como gestor continua funcionando
   await p.locator('#um-tbody tr:has-text("Julio Gestor") button:has-text("Acessar")').click();

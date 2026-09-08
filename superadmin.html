@@ -2182,7 +2182,15 @@ async function loadTenantUsers() {
         onclick="acessarComo('${ACTIVE_TENANT_ID}','${arg(t.slug)}','${arg(t.name)}','${id}','${papel}','${arg(nome)}')">Acessar</button>`
     : '');
 
-  const linhasUsuarios = (Array.isArray(users) ? users : []).map(u => `<tr>
+  const linhasUsuarios = (Array.isArray(users) ? users : [])
+    // Fora os usuários-sombra. a1_partner_login cria, para cada parceiro que
+    // entra, uma linha em a1_users com o mesmo CPF e role='partner' — é ela que
+    // a sessão referencia. Listada aqui, a mesma pessoa aparecia DUAS vezes: uma
+    // como "gestor" de papel partner e outra na família de parceiros logo abaixo.
+    // Pior que confundir: a linha do sombra oferecia "Excluir", e apagá-la
+    // arrebentaria o vínculo entre o login do parceiro e a sessão dele.
+    .filter(u => u.role !== 'partner')
+    .map(u => `<tr>
       <td style="font-weight:600">${esc(u.name)}</td>
       <td class="mono">${esc(u.cpf||'—')}</td>
       <td><span class="badge badge-gray">${esc(u.role)}</span></td>
@@ -2314,22 +2322,67 @@ async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
   toast(`Abrindo "${tenantName}" como ${nome}...`, 'info');
   try {
     let extra = {};
+    // O id que vai para a SESSÃO nem sempre é o id que veio da lista.
+    //
+    // a1_sessions.user_id tem chave estrangeira para a1_users. Um corretor ou
+    // correspondente NÃO tem linha lá: ele vive em a1_partners. Mandar o id de
+    // parceiro direto era o que devolvia 409 Conflict — o Postgres recusando
+    // uma referência que não existe do outro lado.
+    //
+    // O login de verdade resolve isso criando um "usuário-sombra" em a1_users
+    // com o mesmo CPF, e é o id DELE que vai para a sessão (ver
+    // a1_partner_login em sql/2026-08-24_sessao_unica_e_limite.sql). Aqui se
+    // faz o mesmo, para a sessão de suporte ser idêntica à que a pessoa teria.
+    let idSessao = userId;
     if (papel === 'partner') {
       const [pt] = await fetch(
-        `${saRest('a1_partners')}?id=eq.${userId}&select=name,type,permissions,developments,region`,
+        `${saRest('a1_partners')}?id=eq.${userId}&select=name,type,permissions,developments,region,cpf,password_hash,tenant_id`,
         { headers: saHeaders() }
       ).then(r => r.json()).catch(() => []);
       if (!pt) throw new Error('Usuário não encontrado em a1_partners.');
       extra = { type: pt.type, permissions: pt.permissions || {},
                 developments: pt.developments, region: pt.region };
+
+      const cpf = String(pt.cpf || '').replace(/\D/g, '');
+      if (!cpf) {
+        // Não é limitação do suporte: é que a1_partner_login procura o parceiro
+        // PELO CPF. Sem CPF esta pessoa não consegue entrar no sistema de jeito
+        // nenhum, e não há sessão dela para reproduzir.
+        throw new Error('Este cadastro não tem CPF, então não tem login. '
+          + 'Cadastre o CPF em Configurações › Corretores para que ele possa entrar.');
+      }
+
+      const [sombra] = await fetch(
+        `${saRest('a1_users')}?tenant_id=eq.${pt.tenant_id || tenantId}&cpf=eq.${cpf}&select=id`,
+        { headers: saHeaders() }
+      ).then(r => r.json()).catch(() => []);
+
+      if (sombra) {
+        idSessao = sombra.id;
+      } else {
+        // Parceiro que nunca entrou ainda não tem sombra. Cria igual ao login,
+        // inclusive o hash: assim, quando ele entrar de verdade, encontra a
+        // mesma linha em vez de uma duplicada.
+        const criado = await fetch(saRest('a1_users'), {
+          method: 'POST',
+          headers: { ...saHeaders(), 'Prefer': 'return=representation' },
+          body: JSON.stringify({ tenant_id: pt.tenant_id || tenantId, name: pt.name,
+                                 cpf, password_hash: pt.password_hash || '', 
+                                 role: 'partner', is_active: true })
+        }).then(r => r.ok ? r.json() : []).catch(() => []);
+        if (!criado[0]) throw new Error('Não foi possível preparar a sessão deste parceiro.');
+        idSessao = criado[0].id;
+      }
     }
 
     const res = await fetch(saRest('a1_sessions'), {
       method: 'POST',
       headers: { ...saHeaders(), 'Prefer': 'return=representation' },
       // origem 'suporte' tira esta visita da conta de acessos do cliente no
-      // Monitor. Sem isso, o nosso próprio suporte inflaria o número dele.
-      body: JSON.stringify({ tenant_id: tenantId, user_id: userId, role: papel, origem: 'suporte' })
+      // Monitor E do teto de acessos simultâneos. Sem isso, o nosso próprio
+      // suporte ocuparia uma vaga paga e poderia trancar um usuário de verdade
+      // para fora — ver a1_ativos em sql/2026-09-08_suporte_nao_ocupa_vaga.sql.
+      body: JSON.stringify({ tenant_id: tenantId, user_id: idSessao, role: papel, origem: 'suporte' })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
