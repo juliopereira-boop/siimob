@@ -80,9 +80,17 @@ const gravado = (p, re) => p.evaluate(r => {
     checa('as de Repasse continuam', ks.includes('criar_repasses') && ks.includes('alterar_etapa'));
 
     // O que o catálogo diz que ninguém lê não pode voltar pela porta dos fundos.
-    checa('as três chaves decorativas sumiram do formulário',
-      !ks.some(k => ['ver_repasses','baixar_documentos','editar_perfil'].includes(k)),
+    //
+    // Eram TRÊS. 'ver_repasses' saiu desta lista porque voltou COM leitor: sem
+    // ela o módulo de Repasse não abre (semAcessoAoRepasse, provado em
+    // t-ver-repasses.js). Voltar decorativa é que não pode — e quem vigia isso
+    // é o teste de chave órfã no fim deste arquivo, que confere o projeto
+    // inteiro. As outras duas continuam sem leitor nenhum e sem lugar aqui.
+    checa('as chaves decorativas continuam fora do formulário',
+      !ks.some(k => ['baixar_documentos','editar_perfil'].includes(k)),
       ks.join(','));
+    checa('e "ver processos" está lá, agora que faz alguma coisa',
+      ks.includes('ver_repasses'), ks.join(','));
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
