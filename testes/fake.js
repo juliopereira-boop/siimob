@@ -37,6 +37,10 @@ const D = {
     {id:'p21',tenant_id:'t1',type:'cca',name:'Usuario Novo CCA',cpf:'33344455566',is_active:true,approved:true,permissions:{}},
     {id:'p2',tenant_id:'t1',type:'analista',name:'João Analista',cpf:'22222222222',email:'j@x.com',is_active:true,approved:true,permissions:{}},
     {id:'p3',tenant_id:'t1',type:'corretor',name:'Ana Souza',cpf:'33333333333',is_active:true,approved:true,permissions:{etapas:{s1:'editar'}},extra:{coordenador_id:'p7'}},
+    // Vinculada ao perfil "Corretor". Existe para provar que o cadastro abre
+    // seguindo o perfil, e não as marcas soltas — que aqui dizem o contrário
+    // de propósito: criar_repasses:false enquanto o perfil diz true.
+    {id:'p30',tenant_id:'t1',type:'corretor',name:'Clara Perfil',cpf:'55566677788',is_active:true,approved:true,perfil_id:'pf1',permissions:{criar_repasses:false,ver_dashboard:true,etapas:{s1:'editar'}}},
     {id:'p4',tenant_id:'t1',type:'corretor',name:'Bruno '+XSS,cpf:'44444444444',is_active:true,approved:false,permissions:{},created_at:'2026-08-25T10:00:00Z',extra:{origem:'pre-cadastro',imobiliaria_nome:'Imob Alfa',enviado_em:'2026-08-25T10:00:00Z'}},
     {id:'p5',tenant_id:'t1',type:'convenio',name:'Convênio Alfa',is_active:true,approved:true},
     {id:'p6',tenant_id:'t1',type:'agencia',name:'Centro',is_active:true,approved:true,extra:{numero:'1234'}},
@@ -163,6 +167,17 @@ const D = {
       client_name:'Parado '+i,created_at:new Date(hoje-90*864e5).toISOString(),
       stage_entered_at:new Date(hoje-90*864e5).toISOString(),payload:{}});
     return out; })(),
+  // Perfis de acesso. O inativo não é enfeite: perfil desligado tem de deixar
+  // de mandar, na tela e no banco, e é a única maneira de provar que a tela
+  // não promete uma coisa que a1_perm() não cumpre.
+  perfis: [
+    {id:'pf1',tenant_id:'t1',nome:'Corretor',descricao:'Vende e acompanha',ativo:true,
+     permissions:{criar_repasses:true, pa_ver:true, pa_criar:true, co_ver:true}},
+    {id:'pf2',tenant_id:'t1',nome:'Analista',ativo:true,
+     permissions:{editar_repasses:true, alterar_etapa:true, pa_ver:true, pa_editar:true,
+                  analisar_credito:true, co_ver:true}},
+    {id:'pf3',tenant_id:'t1',nome:'Antigo',ativo:false, permissions:{criar_repasses:true}},
+  ],
   stage_history: [], presence: [], leads: [], modules: [{key:'repasse',name:'Repasse',module_key:'repasse',tenant_id:'t1'}],
 };
 
@@ -280,6 +295,13 @@ function responder(url, metodo, corpo0) {
   if (t === 'despachantes') return D.despachantes;
   if (t === 'bancos') return D.bancos;
   if (t === 'cartorios') return D.cartorios;
+  if (t === 'a1_perfis') {
+    let r = D.perfis.slice();
+    if (/ativo=is\.true/.test(qs)) r = r.filter(x => x.ativo !== false);
+    const id = (qs.match(/id=eq\.([a-z0-9-]+)/)||[])[1];
+    if (id) r = r.filter(x => x.id === id);
+    return r;
+  }
   if (t === 'a1_partners') {
     let r = D.partners;
     if (filtroTipo) r = r.filter(x=>x.type===filtroTipo);

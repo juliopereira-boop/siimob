@@ -116,8 +116,11 @@ const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
       JSON.stringify(env && env.password_hash));
     checa('a senha digitada não aparece no corpo enviado',
       env && !JSON.stringify(env).includes('senhaboa123'));
-    checa('nasce podendo ver, não podendo editar',
-      env && env.permissions.ver_repasses === true
+    // 'ver_repasses' saiu do padrão: nada no sistema lê essa chave, e o teste
+    // que a exigia estava provando um enfeite. O que o coordenador de fato
+    // ganha ao nascer é o dashboard; o que ele não ganha é criar e editar.
+    checa('nasce acompanhando, não podendo criar nem editar',
+      env && env.permissions.ver_dashboard === true
          && env.permissions.editar_repasses === false
          && env.permissions.criar_repasses === false, JSON.stringify(env && env.permissions));
     checa('e enxergando a equipe', env && env.permissions.ver_todos_analistas === true);

@@ -76,12 +76,12 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
       return achou === 0;
     }));
 
-    // Estes três existem no HTML e nascem escondidos: são pedaços de telas
-    // antigas que só fazem sentido com a Pré-análise (a permissão
-    // 'analisar_credito' só é lida pelas políticas do módulo).
-    for (const id of ['an-perm-credito', 'pt-perm-credito', 'dt-mod-PRE_ANALISE'])
-      checa(`#${id} continua escondido`, await p.evaluate(x =>
-        document.getElementById(x).style.display === 'none', id));
+    // O terceiro módulo dos tipos de documento existe no HTML e nasce
+    // escondido. As permissões de Pré-análise já não estão no HTML: as caixas
+    // dos cadastros são montadas do catálogo na hora de abrir, e sem licença o
+    // catálogo não devolve nenhuma delas — provado em testes/t-perfis.js.
+    checa('#dt-mod-PRE_ANALISE continua escondido', await p.evaluate(() =>
+      document.getElementById('dt-mod-PRE_ANALISE').style.display === 'none'));
 
     checa('a palavra "Pré-análise" não aparece no hub', await p.evaluate(() =>
       !/Pr[ée]-an[áa]lise/i.test(document.getElementById('cfg-hub').innerText)));
@@ -99,13 +99,12 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     checa('cartão do registro de integrações', await p.locator('#cfg-card-integra').isVisible());
     checa('o hub continua com 5 grupos', await p.evaluate(() =>
       document.querySelectorAll('#cfg-hub .cfg-grupo').length) === 5);
-    // 21 de sempre + 1 do registro de integrações. Os workflows dos módulos
-    // NÃO entram como cartão: são botões dentro do Editor de Workflow.
+    // 22 de sempre (21 + Perfis de acesso) + 1 do registro de integrações. Os
+    // workflows dos módulos NÃO entram como cartão: são botões dentro do
+    // Editor de Workflow.
     const cards = await p.locator('#cfg-hub .cfg-hub-card:visible').count();
-    checa('21 cartões viram 22', cards === 22, 'n=' + cards);
-    checa('a permissão de analisar crédito aparece', await p.evaluate(() =>
-      document.getElementById('an-perm-credito').style.display !== 'none'));
-    checa('e o terceiro módulo dos tipos de documento também', await p.evaluate(() =>
+    checa('22 cartões viram 23', cards === 23, 'n=' + cards);
+    checa('o terceiro módulo dos tipos de documento aparece', await p.evaluate(() =>
       document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none'));
 
     // Nada é consultado só por ter licença: o editor busca quando o gestor abre.

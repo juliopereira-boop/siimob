@@ -146,6 +146,17 @@
     /* Caixa de explicação no topo das telas de esteira. As telas novas usam
        .aviso.i para isto, mas essa família de classes não existe aqui — copiar
        o nome sem copiar o estilo daria um parágrafo solto no lugar da caixa. */
+    .pf-grupo{border:1px solid var(--border);border-radius:9px;padding:.85rem;margin-bottom:.75rem}
+    .pf-grupo-titulo{font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.55rem}
+    .pf-item{display:flex;gap:.55rem;align-items:flex-start;padding:.4rem 0;cursor:pointer}
+    .pf-item input{width:16px;height:16px;margin-top:.15rem;accent-color:#16a34a;cursor:pointer;flex-shrink:0}
+    .pf-rotulo{display:block;font-size:.82rem;font-weight:600;color:var(--t1)}
+    .pf-ajuda{display:block;font-size:.7rem;color:var(--t3);line-height:1.4;margin-top:.1rem}
+    /* Quando um perfil manda, as marcas soltas continuam à vista — apagadas e
+       travadas. Sumir com elas esconderia de onde vem a permissão; deixá-las
+       clicáveis prometeria um efeito que a1_perm() não cumpre. */
+    .pf-travado{opacity:.55;cursor:not-allowed}
+    .pf-travado .pf-item,.pf-travado label{cursor:not-allowed}
     .cfg-explica{background:#EEF2FF;border:1px solid #C7D2FE;border-left:3px solid var(--violet);
                  border-radius:var(--radius);padding:.8rem 1rem;margin-bottom:1.25rem;
                  font-size:.76rem;line-height:1.6;color:var(--t2)}
@@ -286,6 +297,12 @@
       <div class="cfg-section-hdr">Usuários e acesso</div>
       <div class="cfg-section-sub">Quem entra no sistema e o que cada um pode fazer.</div>
       <div class="cfg-cards">
+        <div class="cfg-hub-card" id="cfg-card-perfis" onclick="openCfgView('perfis')">
+          <div class="cfg-hub-icon" style="background:#dcfce7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="cfg-card-label">Perfis de acesso</div>
+        </div>
         <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
           <div class="cfg-hub-icon" style="background:#ede9fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
@@ -735,6 +752,30 @@
     </div>
   </div>
 
+  <div id="cfg-view-perfis" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <div class="cfg-view-title">Perfis de acesso</div>
+    </div>
+    <div class="cfg-explica">
+      Um perfil descreve <strong>uma vez</strong> o que um tipo de gente pode fazer —
+      corretor, analista, coordenador — e as pessoas são vinculadas a ele. Mudou o
+      perfil, mudou todo mundo que está nele, sem abrir cadastro por cadastro.
+      <br><br>
+      Quem tem perfil segue <strong>só</strong> o que o perfil diz: as marcas soltas do
+      cadastro deixam de valer. É de propósito — com as duas coisas valendo, ninguém
+      consegue dizer, olhando a tela, por que um corretor consegue e o outro não.
+      <br><br>
+      As permissões de um módulo só aparecem aqui depois que o módulo é liberado
+      para o cliente.
+    </div>
+    <div class="pt-toolbar">
+      <button class="btn btn-primary btn-sm" onclick="perfilAbrir(null)">+ Novo perfil</button>
+      <button class="btn btn-ghost btn-sm" id="perfis-modelos" onclick="perfisSemear()">Criar os perfis mais comuns</button>
+    </div>
+    <div id="perfis-corpo"></div>
+  </div>
+
   <div id="cfg-view-gestores" style="display:none">
     <div class="cfg-view-hdr">
       <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
@@ -965,6 +1006,34 @@
   </div>
 </div>
 
+<div class="modal-bg hidden" id="modal-perfil-bg">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-perfil-titulo">Novo perfil</div>
+      <button class="modal-close" onclick="closeModal('modal-perfil-bg')" aria-label="Fechar">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2">
+        <div class="form-group"><label>Nome do perfil *</label>
+          <input id="perfil-nome" placeholder="Ex.: Corretor"></div>
+        <div class="form-group"><label>Descrição</label>
+          <input id="perfil-desc" placeholder="opcional"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:.45rem;margin:.8rem 0;font-size:.8rem;cursor:pointer">
+        <input type="checkbox" id="perfil-ativo" checked style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer">
+        Ativo — perfil desativado devolve as pessoas às marcas do próprio cadastro
+      </label>
+      <div class="section-title" style="margin:1rem 0 .6rem">O que quem estiver neste perfil pode fazer</div>
+      <div id="perfil-permissoes"></div>
+      <div id="perfil-erro" style="display:none;color:#b91c1c;font-size:.78rem;margin-top:.5rem"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-perfil-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="perfilSalvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg hidden" id="modal-coordenador-bg">
   <div class="modal" style="max-width:560px">
     <div class="modal-hdr">
@@ -996,6 +1065,14 @@
           </label>
           <div style="font-size:.7rem;color:var(--t3);margin-top:.2rem">
             Desmarcado, o coordenador entra e enxerga apenas o que for dele.
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Perfil de acesso</label>
+          <select id="cd-perfil"></select>
+          <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="cd-perfil-aviso">
+            Com um perfil escolhido, o coordenador segue exatamente o que o perfil diz.
+            Sem perfil, ele entra com o acesso de acompanhamento padrão.
           </div>
         </div>
         <div class="form-group full" id="coord-id-wrap" style="display:none">
@@ -1043,16 +1120,22 @@
         </div>
 
         <div class="form-group full" style="margin-top:.35rem">
-          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">O que o corretor pode fazer</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem">
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="ver_repasses" checked> Ver processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="criar_repasses"> Criar processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="editar_repasses"> Editar processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="alterar_etapa"> Alterar etapa</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="baixar_documentos"> Baixar documentos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="co-perm" data-key="ver_dashboard"> Ver dashboard</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer" title="Sem isto, o corretor vê apenas os processos em que ele é o corretor"><input type="checkbox" class="co-perm" data-key="ver_todos_analistas"> Visão completa (ver de todos)</label>
+          <label>Perfil de acesso</label>
+          <select id="co-perfil" onchange="perfilAplicado('co-perfil','co-perm')"></select>
+          <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="co-perfil-aviso">
+            Com um perfil escolhido, o corretor segue exatamente o que o perfil diz — as
+            marcas abaixo deixam de valer e ficam só para consulta. Perfis são
+            cadastrados em Configurações &rsaquo; Perfis de acesso.
           </div>
+        </div>
+
+        <div class="form-group full" style="margin-top:.35rem">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">O que o corretor pode fazer</div>
+          <!-- As caixas saem de js/permissoes.js, separadas por módulo, e só
+               aparecem as dos módulos que este cliente tem licenciado. Antes
+               eram escritas à mão aqui: por isso o cadastro seguia mostrando
+               apenas Repasse depois de o cliente contratar Pré-análise. -->
+          <div id="co-perm-caixas"></div>
         </div>
 
         <div class="form-group full" style="margin-top:.25rem">
@@ -1169,26 +1252,23 @@
         </div>
 
         <div class="form-group full" style="margin-top:.35rem">
-          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">O que o analista pode fazer</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem">
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="ver_repasses" checked> Ver processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="criar_repasses"> Criar processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="editar_repasses" checked> Editar processos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="alterar_etapa" checked> Alterar etapa</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="baixar_documentos" checked> Baixar documentos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" class="an-perm" data-key="ver_dashboard" checked> Ver dashboard</label>
-            <!-- Quem vende não aprova. Esta permissão separa registrar a decisão
-                 de crédito e dar o veredito nos documentos de simplesmente
-                 editar o processo. Só vale no módulo de Pré-análise.
-                 Por isso nasce escondida: 'analisar_credito' só é lida pelas
-                 políticas de a1_pa_analises_credito e a1_pa_documentos, que já
-                 exigem a licença. Para quem não tem Pré-análise, marcar a caixa
-                 não muda nada — e caixa que não faz nada é pior que caixa que
-                 não existe. Quem revela é cfgModsLiberar('PRE_ANALISE'). -->
-            <div id="an-perm-credito" style="display:none">
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer" title="Permite registrar a decisão de crédito e aprovar ou reprovar documentos na Pré-análise. Sem isto, quem edita o processo não decide sobre ele."><input type="checkbox" class="an-perm" data-key="analisar_credito"> Analisar crédito e documentos</label>
-            </div>
+          <label>Perfil de acesso</label>
+          <select id="an-perfil" onchange="perfilAplicado('an-perfil','an-perm')"></select>
+          <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="an-perfil-aviso">
+            Com um perfil escolhido, o analista segue exatamente o que o perfil diz — as
+            marcas abaixo deixam de valer e ficam só para consulta. Perfis são
+            cadastrados em Configurações &rsaquo; Perfis de acesso.
           </div>
+        </div>
+
+        <div class="form-group full" style="margin-top:.35rem">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">O que o analista pode fazer</div>
+          <!-- Mesmo catálogo do cadastro de corretor. "Analisar crédito e
+               documentos" — a marca que separa quem vende de quem aprova —
+               vive lá, no grupo da Pré-análise, e só aparece para quem tem
+               essa licença: sem ela, nenhuma política lê a chave, e caixa que
+               não faz nada é pior que caixa que não existe. -->
+          <div id="an-perm-caixas"></div>
         </div>
 
         <div class="form-group full" style="margin-top:.25rem">
@@ -1293,25 +1373,23 @@
             <input type="checkbox" id="pt-f-approved"> Aprovado
           </label>
         </div>
+        <div class="form-group full" style="margin-top:.35rem">
+          <label>Perfil de acesso</label>
+          <select id="pt-perfil" onchange="perfilAplicado('pt-perfil','pt-perm')"></select>
+          <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="pt-perfil-aviso">
+            Com um perfil escolhido, a pessoa segue exatamente o que o perfil diz — as
+            marcas abaixo deixam de valer e ficam só para consulta. Perfis são
+            cadastrados em Configurações &rsaquo; Perfis de acesso.
+          </div>
+        </div>
+
         <div class="form-group full" style="margin-top:.25rem">
           <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.6rem;padding-top:.5rem;border-top:1px solid var(--border)">Permissões do usuário</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem">
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="ver_repasses" checked> Ver operações</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="criar_repasses" checked> Criar operações</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="editar_repasses"> Editar operações</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="ver_dashboard"> Ver dashboard</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="baixar_documentos"> Baixar documentos</label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer"><input type="checkbox" class="pt-perm" data-key="editar_perfil" checked> Editar perfil próprio</label>
-            <!-- No correspondente bancário é ele quem de fato analisa. Ainda
-                 assim a permissão é explícita: editar a operação e decidir
-                 sobre o crédito dela são coisas diferentes.
-                 Escondida pelo mesmo motivo da gêmea em #cfg-view-analistas:
-                 sem a licença de Pré-análise a permissão não é lida por
-                 política nenhuma. -->
-            <div id="pt-perm-credito" style="display:none">
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--t1);cursor:pointer" title="Permite registrar a decisão de crédito e aprovar ou reprovar documentos na Pré-análise. Sem isto, quem edita a operação não decide sobre ela."><input type="checkbox" class="pt-perm" data-key="analisar_credito"> Analisar crédito e documentos</label>
-            </div>
-          </div>
+          <!-- Mesmo catálogo dos outros cadastros. Gerente, "ver todos os
+               processos" e "ver de todos os analistas" continuam nos cartões
+               grandes logo abaixo — são decisões de outra ordem e merecem o
+               peso visual que têm; por isso o montador pula essas três. -->
+          <div id="pt-perm-caixas"></div>
           <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
@@ -1460,6 +1538,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/permissoes.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -1512,6 +1591,12 @@ async function init() {
     // si também confere, então esconder aqui é conveniência, não a proteção.
     const _ci = document.getElementById('cfg-card-importar');
     if (_ci) _ci.style.display = 'none';
+    // Perfis mudam o que TODO mundo do perfil pode fazer. A política de
+    // a1_perfis só aceita escrita de a1_e_gestor(), então quem não é gestor
+    // veria o cartão, abriria e levaria um erro do banco — a recusa tem de
+    // acontecer antes disso.
+    const _cp = document.getElementById('cfg-card-perfis');
+    if (_cp) _cp.style.display = 'none';
   }
 
   const roleLabel = G.user.role === 'partner'
@@ -1568,6 +1653,13 @@ async function init() {
       liga(`link-${pre}-andamento`, base);
       liga(`link-${pre}-listagem`, `${base}-listagem`);
       if (grupo) grupo.style.display = '';
+      // A licença é fato do cliente, não do papel de quem está olhando. Estas
+      // duas dizem quais permissões o catálogo oferece nos cadastros de gente;
+      // ficavam dentro de cfgModsLiberar(), que devolve cedo para parceiro — e
+      // aí um correspondente-gerente editava um corretor sem enxergar as
+      // permissões dos módulos que o cliente comprou.
+      if (mod === 'PRE_ANALISE') G.temPA = true;
+      if (mod === 'COMERCIAL')   G.temCO = true;
       cfgModsLiberar(mod);
     }).catch(()=>{});
   });
@@ -1592,7 +1684,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['perfis','wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
 
 
 // Busca do hub: esconde card por card e some com o grupo que ficar vazio, para
@@ -1625,6 +1717,7 @@ function openCfgView(view) {
     const el = document.getElementById(`cfg-view-${v}`);
     if (el) el.style.display = v === view ? '' : 'none';
   });
+  if (view === 'perfis') perfisCarregar();
   if (view === 'flags') loadFlags();
   if (view === 'regionais') loadRegionaisCfg();
   if (view === 'empreendimentos') loadEmpreendimentos();
@@ -3099,6 +3192,7 @@ async function removeFlag(id){
 
 async function loadPartners() {
   G.partnersLoaded = true;
+  await perfisGarantir();
   G.partners = await fetch(`${A1.rest('a1_partners')}?type=eq.cca&order=name.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
   ptFilter();
@@ -3143,7 +3237,7 @@ function renderPartnerTable() {
         : `<span class="pt-status"><span class="pt-dot pt-dot-red"></span>Inativo</span>`;
     const empresa = G.empresas.find(e=>e.id===p.empresa_id);
     return `<tr>
-      <td style="font-weight:600">${esc(p.name)}</td>
+      <td style="font-weight:600">${esc(p.name)}${perfilEtiqueta(p.perfil_id)}</td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${esc(p.cpf||'—')}</td>
       <td>${esc(p.email||'—')}</td>
       <td>${esc(p.phone||'—')}</td>
@@ -3196,7 +3290,7 @@ function toggleAnalistaChecklist(verTodos, permitidos = []) {
   }
 }
 
-function openPartnerModal(id) {
+async function openPartnerModal(id) {
   const p = id ? G.partners.find(x=>x.id===id) : null;
   G.editingPartnerId = p ? p.id : null;
   document.getElementById('partner-modal-title').textContent = p ? 'Editar usuário' : 'Novo usuário correspondente';
@@ -3212,7 +3306,11 @@ function openPartnerModal(id) {
   document.getElementById('pt-f-password').value = '';
   document.getElementById('pt-f-active').checked   = p ? !!p.is_active : true;
   document.getElementById('pt-f-approved').checked = p ? !!p.approved  : false;
-  const PERM_DEFAULTS = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false };
+  // As tres chaves de peso — gerente, ver todos os processos, ver de todos os
+  // analistas — continuam nos cartoes grandes abaixo; o montador as pula.
+  permsMontar('pt-perm-caixas', 'pt-perm',
+              ['gerente','ver_todos_repasses','ver_todos_analistas']);
+  const PERM_DEFAULTS = { criar_repasses:true, editar_repasses:false, ver_dashboard:false, ver_todos_repasses:false };
   const savedPerms = p?.permissions || {};
   document.querySelectorAll('.pt-perm').forEach(cb => {
     const k = cb.dataset.key;
@@ -3243,6 +3341,8 @@ function openPartnerModal(id) {
     const permitidos = savedPerms.analistas_permitidos || [];
     toggleAnalistaChecklist(verAnalistas.checked, permitidos);
   }
+  await perfisParaSelect(document.getElementById('pt-perfil'), p?.perfil_id);
+  perfilAplicado('pt-perfil','pt-perm');
   document.getElementById('modal-partner-bg').classList.remove('hidden');
 }
 
@@ -3262,9 +3362,14 @@ async function savePartner() {
     region:     document.getElementById('pt-f-region').value.trim(),
     is_active:  document.getElementById('pt-f-active').checked,
     approved:   document.getElementById('pt-f-approved').checked,
+    perfil_id: document.getElementById('pt-perfil').value || null,
     permissions: (() => {
-      const perms = Object.fromEntries([...document.querySelectorAll('.pt-perm')].map(cb=>[cb.dataset.key,cb.checked]));
-      const verTodos = document.getElementById('pt-ver-analistas')?.checked !== false;
+      const perms = permsColetar('pt-perm','pt-perfil');
+      // Com perfil, quem decide "ver de todos" e o perfil: sobrescrever aqui
+      // pelo estado da tela gravaria a decisao dele como se fosse dela.
+      const comPerfil = !!document.getElementById('pt-perfil').value;
+      const verTodos = comPerfil ? perms.ver_todos_analistas === true
+                                 : document.getElementById('pt-ver-analistas')?.checked !== false;
       perms.ver_todos_analistas = verTodos;
       if (!verTodos) {
         perms.analistas_permitidos = [...document.querySelectorAll('.pt-analista-chk:checked')].map(c=>c.value);
@@ -3460,7 +3565,7 @@ function renderCoordenadores(){
 }
 
 let COORD_ID=null;
-function openCoordenador(id){
+async function openCoordenador(id){
   COORD_ID = id || null;
   const c = id ? CAD.coordenador.find(x=>x.id===id) : null;
   document.getElementById('coord-title').textContent = c ? 'Editar coordenador' : 'Novo coordenador';
@@ -3490,6 +3595,7 @@ function openCoordenador(id){
         </label>`;
       }).join('')
     : '<div style="color:var(--t3);font-size:.75rem">Nenhum corretor cadastrado ainda.</div>';
+  await perfisParaSelect(document.getElementById('cd-perfil'), c?.perfil_id);
   openModal('modal-coordenador-bg');
 }
 
@@ -3509,9 +3615,9 @@ async function saveCoordenador(){
     // Coordenador entra para acompanhar a equipe: lê e acompanha, não cria nem
     // apaga processo. Quem precisar de mais recebe do gestor, na tela de
     // usuários — permissão a mais por padrão é como se perde controle.
-    permissions: { ver_repasses:true, criar_repasses:false, editar_repasses:false,
-                   ver_dashboard:true, baixar_documentos:false, editar_perfil:true,
-                   ver_todos_analistas: veEquipe },
+    permissions: { criar_repasses:false, editar_repasses:false,
+                   ver_dashboard:true, ver_todos_analistas: veEquipe },
+    perfil_id: (document.getElementById('cd-perfil')||{}).value || null,
     is_active:true, approved:true };
   // Só manda a senha quando foi digitada: campo em branco mantém a atual. O
   // gatilho do banco converte para bcrypt na gravação.
@@ -3576,6 +3682,7 @@ async function loadCorretores(){
       .then(r=>r.json()).catch(()=>[]);
     if(!Array.isArray(G.stages)) G.stages=[];
   }
+  await perfisGarantir();
   const [corrs, coords] = await Promise.all([
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
@@ -3618,7 +3725,7 @@ function renderCorretores(){
         `<div style="color:var(--t3);font-size:.7rem;margin-top:.15rem">${esc([...ed,...vr].map(nomeEtapa).filter(Boolean).slice(0,3).join(', '))}${(ed.length+vr.length)>3?'…':''}</div>`
       : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>';
     return `<tr>
-      <td><b>${esc(c.name)}</b></td>
+      <td><b>${esc(c.name)}</b>${perfilEtiqueta(c.perfil_id)}</td>
       <td style="color:var(--t2)">${esc(c.cpf||'—')}<div style="color:var(--t3);font-size:.72rem">${esc(c.email||'')}</div></td>
       <td style="color:var(--t2);font-size:.78rem">${esc(((CAD.coordenador||[]).find(k=>k.id===(c.extra&&c.extra.coordenador_id))||{}).name||'—')}</td>
       <td>${etapasTxt}</td>
@@ -3692,7 +3799,7 @@ function pintarEtapasCorretor(){
 }
 
 let EDIT_CORRETOR_ID=null;
-function openCorretor(id){
+async function openCorretor(id){
   const c = id ? CORRETORES.find(x=>x.id===id) : null;
   EDIT_CORRETOR_ID = c ? c.id : null;
   ETAPAS_PREFIXO = 'co';
@@ -3712,11 +3819,16 @@ function openCorretor(id){
   document.getElementById('co-id').value = c?.id || '';
 
   const p = c?.permissions || {};
-  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false, alterar_etapa:false, baixar_documentos:false, ver_dashboard:false, ver_todos_analistas:false };
+  // Gerente e "compartilhar carteira" ficam de fora: o corretor nunca teve
+  // essas duas aqui, e um formulário não é lugar de estrear poder novo.
+  permsMontar('co-perm-caixas', 'co-perm', ['gerente','ver_todos_repasses']);
+  const PADRAO = { criar_repasses:false, editar_repasses:false, alterar_etapa:false, ver_dashboard:false, ver_todos_analistas:false };
   document.querySelectorAll('.co-perm').forEach(cb=>{
     const k=cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
   });
+  await perfisParaSelect(document.getElementById('co-perfil'), c?.perfil_id);
+  perfilAplicado('co-perfil','co-perm');
 
   // Compatibilidade: cadastros antigos guardavam só a lista de etapas liberadas,
   // sem nível. Viram "editar", que era o que valia antes.
@@ -3739,7 +3851,7 @@ async function saveCorretor(){
   if(!EDIT_CORRETOR_ID && pw.length<6){ toast('Defina uma senha de ao menos 6 caracteres','error'); return; }
   if(pw && pw.length<6){ toast('A senha deve ter ao menos 6 caracteres','error'); return; }
 
-  const perms=Object.fromEntries([...document.querySelectorAll('.co-perm')].map(cb=>[cb.dataset.key,cb.checked]));
+  const perms=permsColetar('co-perm','co-perfil');
   perms.etapas = {...CO_ETAPAS};
   // Lista simples mantida junto para não quebrar leitura antiga do campo.
   perms.etapas_permitidas = Object.keys(CO_ETAPAS);
@@ -3753,6 +3865,7 @@ async function saveCorretor(){
     phone:document.getElementById('co-phone').value.trim(),
     is_active:document.getElementById('co-active').checked,
     approved:true, permissions:perms,
+    perfil_id: document.getElementById('co-perfil').value || null,
     // O vínculo com o coordenador é o mesmo dado editado na tela do coordenador.
     extra:{ ...(atual.extra||{}), coordenador_id: document.getElementById('co-coordenador').value || null }
   };
@@ -3848,8 +3961,8 @@ async function validarPrecad(id){
   const corpo = { approved:true, is_active:true };
   const p = c.permissions;
   if(!p || typeof p !== 'object' || !Object.keys(p).length){
-    corpo.permissions = { ver_repasses:true, criar_repasses:false, editar_repasses:false,
-                          alterar_etapa:false, baixar_documentos:false, ver_dashboard:false,
+    corpo.permissions = { criar_repasses:false, editar_repasses:false,
+                          alterar_etapa:false, ver_dashboard:false,
                           ver_todos_analistas:false, etapas:{}, etapas_permitidas:[] };
   }
   const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(corpo)});
@@ -4712,6 +4825,7 @@ async function deleteImob(id, name) {
 
 async function loadAnalistas() {
   G.analistasLoaded = true;
+  await perfisGarantir();
   G.analistas = await fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, {headers:A1.headers()})
     .then(r=>r.json()).catch(()=>[]);
   analistaFilter();
@@ -4748,7 +4862,7 @@ function renderAnalistaList() {
           : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa — não verá nada</span>');
     const semLogin = !a.cpf ? '<div style="color:#b45309;font-size:.68rem">sem login</div>' : '';
     return `<tr>
-    <td style="font-weight:600">${esc(a.name)}${p.ver_todos_analistas?'<div style="font-size:.66rem;color:#2563eb;font-weight:700">vê todos</div>':''}</td>
+    <td style="font-weight:600">${esc(a.name)}${perfilEtiqueta(a.perfil_id)}${p.ver_todos_analistas?'<div style="font-size:.66rem;color:#2563eb;font-weight:700">vê todos</div>':''}</td>
     <td style="color:var(--t2)">${esc(a.cpf||'—')}${semLogin}</td>
     <td style="color:var(--t2);font-size:.78rem">${esc(a.email||'—')}${a.phone?`<div style="color:var(--t3)">${esc(a.phone)}</div>`:''}</td>
     <td>${acesso}</td>
@@ -4789,13 +4903,19 @@ async function openAnalista(a) {
   document.getElementById('analista-f-active').checked = a ? a.is_active !== false : true;
 
   const p = a?.permissions || {};
-  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:true, alterar_etapa:true,
-                   baixar_documentos:true, ver_dashboard:true, ver_todos_analistas:false };
+  // "Ver todos" tem cartão próprio logo abaixo das caixas; gerente e
+  // compartilhar carteira não pertencem a este cadastro.
+  permsMontar('an-perm-caixas', 'an-perm',
+              ['gerente','ver_todos_repasses','ver_todos_analistas']);
+  const PADRAO = { criar_repasses:false, editar_repasses:true, alterar_etapa:true,
+                   ver_dashboard:true, ver_todos_analistas:false };
   document.querySelectorAll('.an-perm').forEach(cb => {
     const k = cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
   });
   paintAnVisao();
+  await perfisParaSelect(document.getElementById('an-perfil'), a?.perfil_id);
+  perfilAplicado('an-perfil','an-perm');
 
   // Etapas já cadastradas; sem elas o seletor abriria vazio.
   if (!Array.isArray(G.stages) || !G.stages.length) {
@@ -4834,7 +4954,7 @@ async function saveAnalista() {
   if (!G.editingAnalistaId && pw.length < 6) { toast('Defina uma senha de ao menos 6 caracteres','error'); return; }
   if (pw && pw.length < 6) { toast('A senha deve ter ao menos 6 caracteres','error'); return; }
 
-  const perms = Object.fromEntries([...document.querySelectorAll('.an-perm')].map(cb=>[cb.dataset.key, cb.checked]));
+  const perms = permsColetar('an-perm','an-perfil');
   perms.etapas = {...CO_ETAPAS};
   perms.etapas_permitidas = Object.keys(CO_ETAPAS);
   if (!perms.etapas_permitidas.length &&
@@ -4850,6 +4970,7 @@ async function saveAnalista() {
     is_active:  document.getElementById('analista-f-active').checked,
     approved:   true,
     permissions: perms,
+    perfil_id:  document.getElementById('an-perfil').value || null,
     empresa_id: empresaId,
   };
   if (pw) payload.password_hash = await sha256(pw + '::a1');
@@ -5451,17 +5572,312 @@ function cfgModsVista(nome, titulo, corpoHtml) {
 // as setas. O quadro passou a atender os módulos novos, e este ficou órfão.
 // Manter código que ninguém chama é guardar armadilha para quem vier depois.
 
+// ══ Perfis de acesso ═════════════════════════════════════════════════════════
+// O que o gestor descreve aqui vira a permissão efetiva de todo mundo vinculado.
+// A resolução de verdade mora em duas pontas que precisam concordar:
+// a1_perm() no banco, que decide o que a API entrega, e a1RefreshPartnerPerms()
+// em js/auth.js, que decide o que a tela mostra. Esta tela só edita a descrição.
+const PERFIS = { lista: [], editando: null };
+
+async function perfisCarregar(){
+  const corpo = document.getElementById('perfis-corpo');
+  corpo.innerHTML = '<div class="pt-empty">carregando…</div>';
+  const linhas = await fetch(`${A1.rest('a1_perfis')}?order=nome.asc`, { headers: A1.headers() })
+    .then(r => r.ok ? r.json() : []).catch(() => []);
+  PERFIS.lista = Array.isArray(linhas) ? linhas : [];
+  perfisRender();
+}
+
+// Quais permissões existem para ESTE cliente. Um módulo não liberado não
+// aparece — do mesmo jeito que a aba dele não aparece.
+function perfisDisponiveis(){
+  return a1PermissoesPorModulo({ PRE_ANALISE: !!G.temPA, COMERCIAL: !!G.temCO, repasse: true });
+}
+
+function perfisRender(){
+  const corpo = document.getElementById('perfis-corpo');
+  const btnModelos = document.getElementById('perfis-modelos');
+  if (btnModelos) btnModelos.style.display = PERFIS.lista.length ? 'none' : '';
+
+  if (!PERFIS.lista.length){
+    corpo.innerHTML = `<div class="pt-empty">
+      Nenhum perfil ainda. Enquanto não houver, cada pessoa continua valendo pelas
+      marcas soltas do cadastro dela — que é como o sistema sempre funcionou.</div>`;
+    return;
+  }
+
+  const nomes = Object.fromEntries(A1_PERMISSOES.map(p => [p.chave, p.rotulo]));
+  corpo.innerHTML = `<div class="tbl-wrap"><table class="pt-table"><thead><tr>
+      <th>Perfil</th><th>O que pode fazer</th><th>Pessoas</th><th></th>
+    </tr></thead><tbody>${PERFIS.lista.map(p => {
+      const marcadas = Object.entries(p.permissions || {})
+        .filter(([, v]) => v === true).map(([k]) => nomes[k] || k);
+      return `<tr>
+        <td><div style="font-weight:700">${esc(p.nome)}</div>
+          ${p.descricao ? `<div style="font-size:.7rem;color:var(--t3)">${esc(p.descricao)}</div>` : ''}
+          ${p.ativo === false ? '<span class="pt-badge pt-off">Inativo</span>' : ''}</td>
+        <td style="font-size:.73rem;color:var(--t2);max-width:420px">
+          ${marcadas.length ? esc(marcadas.join(' · ')) : '<em>nada — quem estiver neste perfil não faz nada</em>'}</td>
+        <td class="mono" id="perfil-qtd-${esc(p.id)}">—</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn btn-ghost btn-xs" onclick="perfilAbrir('${esc(p.id)}')">Editar</button>
+          <button class="btn btn-danger btn-xs" onclick="perfilApagar('${esc(p.id)}')">Excluir</button>
+        </td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  perfisContarPessoas();
+}
+
+// Quantas pessoas estão em cada perfil. Importa na hora de mexer: alterar um
+// perfil com trinta pessoas é diferente de alterar um vazio, e a tela tem de
+// dizer isso antes, não depois.
+async function perfisContarPessoas(){
+  const linhas = await fetch(`${A1.rest('a1_partners')}?select=perfil_id&perfil_id=not.is.null`,
+    { headers: A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
+  const conta = {};
+  (Array.isArray(linhas) ? linhas : []).forEach(l => {
+    conta[l.perfil_id] = (conta[l.perfil_id] || 0) + 1; });
+  PERFIS.lista.forEach(p => {
+    const el = document.getElementById('perfil-qtd-' + p.id);
+    if (el) el.textContent = conta[p.id] || 0;
+  });
+}
+
+function perfilAbrir(id){
+  PERFIS.editando = id ? (PERFIS.lista.find(x => x.id === id) || null) : null;
+  const p = PERFIS.editando || { nome:'', descricao:'', permissions:{}, ativo:true };
+  const grupos = perfisDisponiveis();
+
+  const blocos = [...grupos.entries()].map(([mod, itens]) => `
+    <div class="pf-grupo">
+      <div class="pf-grupo-titulo">${esc(A1_ROTULO_MODULO[mod] || mod)}</div>
+      ${itens.map(i => `
+        <label class="pf-item" title="${esc(i.ajuda)}">
+          <input type="checkbox" class="pf-perm" data-chave="${esc(i.chave)}"
+                 ${(p.permissions || {})[i.chave] === true ? 'checked' : ''}>
+          <span><span class="pf-rotulo">${esc(i.rotulo)}</span>
+            <span class="pf-ajuda">${esc(i.ajuda)}</span></span>
+        </label>`).join('')}
+    </div>`).join('');
+
+  document.getElementById('modal-perfil-titulo').textContent = id ? 'Editar perfil' : 'Novo perfil';
+  document.getElementById('perfil-nome').value = p.nome || '';
+  document.getElementById('perfil-desc').value = p.descricao || '';
+  document.getElementById('perfil-ativo').checked = p.ativo !== false;
+  document.getElementById('perfil-permissoes').innerHTML = blocos;
+  document.getElementById('perfil-erro').style.display = 'none';
+  document.getElementById('modal-perfil-bg').classList.remove('hidden');
+}
+
+async function perfilSalvar(){
+  const nome = document.getElementById('perfil-nome').value.trim();
+  const erro = document.getElementById('perfil-erro');
+  if (!nome){ erro.textContent = 'Dê um nome ao perfil.'; erro.style.display = 'block'; return; }
+
+  const permissions = {};
+  document.querySelectorAll('#perfil-permissoes .pf-perm').forEach(c => {
+    if (c.checked) permissions[c.dataset.chave] = true;
+  });
+
+  const corpo = { tenant_id: G.user.tenant_id, nome,
+                  descricao: document.getElementById('perfil-desc').value.trim() || null,
+                  permissions, ativo: document.getElementById('perfil-ativo').checked,
+                  atualizado_em: new Date().toISOString() };
+
+  const alvo = PERFIS.editando
+    ? `${A1.rest('a1_perfis')}?id=eq.${PERFIS.editando.id}`
+    : A1.rest('a1_perfis');
+  const res = await fetch(alvo, {
+    method: PERFIS.editando ? 'PATCH' : 'POST',
+    headers: A1.headers(), body: JSON.stringify(corpo) });
+  if (!res.ok){
+    // Nome repetido tem índice único: dois perfis "Corretor" seriam dois
+    // significados para a mesma palavra na tela de cadastro.
+    const m = await res.json().catch(() => ({}));
+    erro.textContent = /duplicate|unique/i.test(m.message || '')
+      ? 'Já existe um perfil com esse nome.'
+      : 'Não foi possível salvar. Só o gestor edita perfis.';
+    erro.style.display = 'block';
+    return;
+  }
+  closeModal('modal-perfil-bg');
+  toast(PERFIS.editando ? 'Perfil atualizado. Quem está nele já segue as novas permissões.' : 'Perfil criado.', 'success');
+  await perfisCarregar();
+}
+
+async function perfilApagar(id){
+  const p = PERFIS.lista.find(x => x.id === id); if (!p) return;
+  const qtd = (document.getElementById('perfil-qtd-' + id) || {}).textContent || '0';
+  if (!confirm(Number(qtd) > 0
+    ? `${qtd} pessoa(s) estão neste perfil. Apagar devolve cada uma às marcas soltas do próprio cadastro. Continuar?`
+    : `Apagar o perfil "${p.nome}"?`)) return;
+  const res = await fetch(`${A1.rest('a1_perfis')}?id=eq.${id}`, { method:'DELETE', headers:A1.headers() });
+  if (!res.ok){ toast('Não foi possível apagar.', 'error'); return; }
+  toast('Perfil apagado.', 'warn');
+  await perfisCarregar();
+}
+
+// Ponto de partida, não regra. Sai do catálogo, então não inventa chave.
+async function perfisSemear(){
+  const linhas = A1_PERFIS_MODELO.map(m => ({
+    tenant_id: G.user.tenant_id, nome: m.nome, ativo: true,
+    permissions: Object.fromEntries(m.permissoes
+      // Só as permissões dos módulos que este cliente tem: semear marca de
+      // módulo que ele não comprou seria guardar promessa que não se cumpre.
+      .filter(k => { const d = A1_PERMISSOES.find(x => x.chave === k);
+                     return d && (!d.modulo || d.modulo === 'repasse'
+                       || (d.modulo === 'PRE_ANALISE' && G.temPA)
+                       || (d.modulo === 'COMERCIAL' && G.temCO)); })
+      .map(k => [k, true])),
+  }));
+  const res = await fetch(A1.rest('a1_perfis'), {
+    method:'POST', headers:A1.headers(), body: JSON.stringify(linhas) });
+  if (!res.ok){ toast('Não foi possível criar os perfis.', 'error'); return; }
+  toast('Perfis criados. Ajuste cada um antes de vincular gente.', 'success');
+  await perfisCarregar();
+}
+
+// Preenche um <select> de perfil. Usado pelos cadastros de gente.
+async function perfisParaSelect(sel, valor){
+  if (!sel) return;
+  if (!PERFIS.lista.length){
+    // Carrega todos, inclusive os inativos: um cadastro pode estar vinculado a
+    // um perfil que foi desligado, e a tela precisa poder dizer isso.
+    const linhas = await fetch(`${A1.rest('a1_perfis')}?order=nome.asc`,
+      { headers: A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
+    PERFIS.lista = Array.isArray(linhas) ? linhas : [];
+  }
+  const ativos = PERFIS.lista.filter(p => p.ativo !== false);
+  // Se a pessoa está num perfil que foi desativado, ele ainda aparece — marcado
+  // como inativo. Deixar cair para "Sem perfil" apagaria o vínculo em silêncio
+  // no primeiro salvamento, e o gestor nunca saberia que existiu.
+  const inativo = valor && !ativos.some(p => p.id === valor)
+                ? PERFIS.lista.find(p => p.id === valor) : null;
+  sel.innerHTML = '<option value="">Sem perfil — usar as marcas abaixo</option>' +
+    ativos.map(p => `<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('') +
+    (inativo ? `<option value="${esc(inativo.id)}">${esc(inativo.nome)} (inativo)</option>` : '');
+  sel.value = (valor && (inativo || ativos.some(p => p.id === valor))) ? valor : '';
+  // O cadastro está reabrindo: o que estava travado da vez anterior não vale
+  // mais. Sem isto, abrir o corretor A depois do B gravaria as marcas de B.
+  sel._marcas = null;
+}
+
+// ─── As caixas de permissão dos cadastros de gente ───────────────────────────
+//
+// Vêm todas do mesmo catálogo (js/permissoes.js), agrupadas por módulo, e só
+// entram as dos módulos que ESTE cliente tem licenciado. Era o pedido: liberou
+// Pré-análise no superadmin, as permissões de Pré-análise passam a aparecer no
+// cadastro de todo mundo, sozinhas.
+//
+// `pular` são as chaves que aquele formulário já mostra em outro lugar — os
+// cartões grandes de Gerente e de visão geral. Duas caixas para a mesma chave
+// seriam duas respostas para a mesma pergunta, e quem lê o formulário no fim
+// (Object.fromEntries) ficaria com a última.
+function permsMontar(idAlvo, classe, pular){
+  const alvo = document.getElementById(idAlvo); if (!alvo) return;
+  const fora = new Set(pular || []);
+  const grupos = perfisDisponiveis();
+  alvo.innerHTML = [...grupos.entries()].map(([mod, itens]) => {
+    const uteis = itens.filter(i => !fora.has(i.chave));
+    if (!uteis.length) return '';
+    return `<div class="pf-grupo">
+      <div class="pf-grupo-titulo">${esc(A1_ROTULO_MODULO[mod] || mod)}</div>
+      ${uteis.map(i => `
+        <label class="pf-item" title="${esc(i.ajuda)}">
+          <input type="checkbox" class="${esc(classe)}" data-key="${esc(i.chave)}">
+          <span><span class="pf-rotulo">${esc(i.rotulo)}</span>
+            <span class="pf-ajuda">${esc(i.ajuda)}</span></span>
+        </label>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// Escolheu um perfil: as caixas passam a mostrar o que o PERFIL diz, travadas.
+//
+// Isto é só a tela. Quem decide de verdade é a1_perm() no banco, que resolve
+// pelo perfil quando a pessoa tem um. As duas precisam concordar — se a tela
+// mostrasse uma coisa e a API entregasse outra, o gestor confiaria na errada.
+function perfilAplicado(idsel, classe){
+  const sel = document.getElementById(idsel); if (!sel) return;
+  const caixas = [...document.querySelectorAll('.' + classe)];
+  const aviso  = document.getElementById(idsel + '-aviso');
+  const achado = sel.value ? PERFIS.lista.find(p => p.id === sel.value) : null;
+  // Perfil desligado não manda em ninguém — é assim que a1_perm() e
+  // a1RefreshPartnerPerms() resolvem, e a tela tem de dizer a mesma coisa.
+  const perfil = achado && achado.ativo !== false ? achado : null;
+
+  if (!perfil){
+    // Volta ao que o gestor tinha marcado antes de o perfil entrar.
+    if (sel._marcas) caixas.forEach(c => { c.checked = !!sel._marcas[c.dataset.key]; });
+    sel._marcas = null;
+    caixas.forEach(c => { c.disabled = false;
+      const l = c.closest('label'); if (l) l.classList.remove('pf-travado'); });
+    if (aviso) aviso.innerHTML = achado
+      ? `O perfil <b>${esc(achado.nome)}</b> está inativo, então ele não manda em `
+        + 'nada: valem as marcas abaixo. Reative-o em Configurações &rsaquo; Perfis '
+        + 'de acesso para que volte a valer.'
+      : 'Sem perfil, valem as marcas abaixo, uma a uma. '
+        + 'Perfis são cadastrados em Configurações &rsaquo; Perfis de acesso.';
+    return;
+  }
+
+  // Guarda as marcas próprias ANTES de sobrescrever a tela. É o que vai ser
+  // gravado: se um dia o perfil for apagado, a pessoa volta ao que o gestor
+  // havia marcado, e não a uma fotografia do perfil.
+  if (!sel._marcas)
+    sel._marcas = Object.fromEntries(caixas.map(c => [c.dataset.key, c.checked]));
+
+  const perm = perfil.permissions || {};
+  caixas.forEach(c => {
+    c.checked  = perm[c.dataset.key] === true;
+    c.disabled = true;
+    const l = c.closest('label'); if (l) l.classList.add('pf-travado');
+  });
+  if (aviso) aviso.innerHTML = `Seguindo o perfil <b>${esc(perfil.nome)}</b>. `
+    + 'As marcas abaixo ficam só para consulta — mudar o perfil muda todo mundo '
+    + 'que está nele.';
+}
+
+// Carrega os perfis uma vez, para as listas de gente poderem dizer quem está
+// em qual. Sem isto a coluna nasceria vazia até alguém abrir a tela de Perfis.
+async function perfisGarantir(){
+  if (PERFIS.lista.length) return;
+  const linhas = await fetch(`${A1.rest('a1_perfis')}?order=nome.asc`,
+    { headers: A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
+  PERFIS.lista = Array.isArray(linhas) ? linhas : [];
+}
+
+// A etiqueta do perfil na listagem. Quem olha a lista precisa saber de onde vem
+// a permissão de cada um: sem isso, um corretor que "pode mais que o outro"
+// vira mistério, e o gestor vai procurar a resposta nas marcas — onde ela não está.
+function perfilEtiqueta(id){
+  if (!id) return '';
+  const p = PERFIS.lista.find(x => x.id === id);
+  if (!p) return '';
+  const off = p.ativo === false;
+  return `<div style="font-size:.66rem;font-weight:700;margin-top:.1rem;color:${off?'#b45309':'#0d9488'}">`
+       + `${esc(p.nome)}${off ? ' (perfil inativo — valem as marcas do cadastro)' : ''}</div>`;
+}
+
+// O que gravar no cadastro da pessoa. Com perfil escolhido, as caixas na tela
+// são as do perfil: gravar aquilo apagaria as marcas próprias dela.
+function permsColetar(classe, idsel){
+  const sel = idsel ? document.getElementById(idsel) : null;
+  if (sel && sel.value && sel._marcas) return { ...sel._marcas };
+  return Object.fromEntries(
+    [...document.querySelectorAll('.' + classe)].map(cb => [cb.dataset.key, cb.checked]));
+}
+
 function cfgModsLiberar(mod) {
   if (G.user.role === 'partner') return;
   if (CFG_MOD_LIB[mod] !== false) return;
   CFG_MOD_LIB[mod] = true;
 
   if (mod === 'PRE_ANALISE') {
-    G.temPA = true;
-    // Elementos que já existem no HTML e nasceram escondidos: a permissão de
-    // analisar crédito (nos dois cadastros) e o terceiro módulo dos tipos de
-    // documento. Mesmo gesto que o módulo Registro usa logo acima.
-    ['an-perm-credito','pt-perm-credito','dt-mod-PRE_ANALISE'].forEach(id => {
+    // O terceiro módulo dos tipos de documento nasce escondido no HTML.
+    // As permissões de Pré-análise não precisam mais deste empurrão: as caixas
+    // dos cadastros são montadas na hora de abrir, a partir do catálogo, e
+    // perfisDisponiveis() já lê G.temPA.
+    ['dt-mod-PRE_ANALISE'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = '';
     });
@@ -5470,10 +5886,6 @@ function cfgModsLiberar(mod) {
     // Dois cartões separados eram dois editores para a mesma coisa, e um deles
     // era uma tabela enquanto o outro era um quadro. Agora é o mesmo quadro do
     // Repasse, e os módulos são botões dentro dele.
-  }
-
-  if (mod === 'COMERCIAL') {
-    G.temCO = true;
   }
 
   // Registro de integrações: a política a1_integra_eventos_ler exige só

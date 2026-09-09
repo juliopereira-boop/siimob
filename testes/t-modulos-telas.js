@@ -502,7 +502,9 @@ const { abrir, checa, resumo } = require('./comum');
 
   console.log('\n== PERMISSÃO DE ANALISAR CRÉDITO ==');
   {
-    const { b, p, erros } = await abrir('configuracoes.html');
+    // Com a licença: a permissão só é lida pelas políticas da Pré-análise, então
+    // sem licença ela nem entra no formulário (testes/t-perfis.js prova isso).
+    const { b, p, erros } = await abrir('configuracoes.html', { modulos:['PRE_ANALISE'] });
     // A permissão existe no cadastro, senão só gestor e gerente aprovariam
     // e a separação "quem vende não aprova" ficaria sem quem exercê-la.
     await p.evaluate(() => openCfgView('analistas')); await p.waitForTimeout(500);
