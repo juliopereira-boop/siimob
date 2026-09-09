@@ -1863,6 +1863,12 @@ async function init() {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     const _bp = document.getElementById('btn-profile'); if (_bp) _bp.style.display = '';
+    // 'ver_repasses' é o degrau mais básico do módulo: sem ele o Repasse não
+    // abre. Nenhum cadastro antigo tem a chave, e por isso hasPerm() a trata
+    // como liberada quando ausente — quem tranca é a marca explícita, nunca a
+    // omissão. Tem de vir ANTES de desenhar qualquer coisa: aviso que aparece
+    // depois do quadro é o quadro tendo sido mostrado.
+    if (!hasPerm('ver_repasses')) { semAcessoAoRepasse(); return; }
     // Dashboard só aparece se o gestor liberou (ver_dashboard) — reflete o cadastro de permissões.
     if (!hasPerm('ver_dashboard')) {
       const _dl = document.getElementById('link-dashboard'); if (_dl) _dl.style.display = 'none';
@@ -2077,6 +2083,25 @@ async function podeEditarConferindo(c){
     G.user = A1.user || G.user;
   } catch { /* sem rede: fica com o que tinha */ }
   return podeEditarProcesso(c);
+}
+
+// Sem 'ver_repasses' não há Repasse para esta pessoa: as abas do módulo somem e
+// o conteúdo vira um aviso que diz a quem pedir. Não é redirecionamento porque
+// ela pode não ter nenhum outro módulo — e mandar para lugar nenhum é como um
+// laço de redirect começa.
+function semAcessoAoRepasse(){
+  ['link-dashboard','link-repasse-andamento','link-andamento','link-listagem']
+    .forEach(id => { const el = document.getElementById(id);
+                     const g = el && el.closest ? el.closest('.tab-group') : null;
+                     if (g) g.style.display = 'none'; else if (el) el.style.display = 'none'; });
+  const main = document.querySelector('.main');
+  if (main) main.innerHTML =
+    '<div style="max-width:520px;margin:3rem auto;text-align:center;background:var(--card);'
+    + 'border:1px solid var(--border);border-radius:12px;padding:2rem 1.5rem">'
+    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso ao Repasse</div>'
+    + '<div style="font-size:.85rem;color:var(--t2);line-height:1.55">O seu cadastro não tem a '
+    + 'permissão <b>Ver processos</b> no módulo de Repasse. Peça ao gestor em '
+    + 'Configurações › Corretores (ou no perfil de acesso vinculado a você).</div></div>';
 }
 
 function hasPerm(key) {

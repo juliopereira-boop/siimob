@@ -1451,6 +1451,27 @@
               <span style="color:var(--t3);font-size:.75rem">Carregando analistas...</span>
             </div>
           </div>
+
+          <!-- O correspondente entra no sistema como qualquer outro parceiro, e
+               não tinha onde o gestor dizer em que etapas ele atua: o acesso
+               dele era tudo-ou-nada enquanto corretor e analista já eram
+               detalhados. O seletor é o mesmo dos outros cadastros, e cobre os
+               três módulos licenciados. -->
+          <div class="form-group full" style="margin-top:.9rem">
+            <label>Acesso por etapa</label>
+            <div style="font-size:.72rem;color:var(--t3);margin:-.15rem 0 .5rem">
+              Em cada etapa escolha o que ele pode fazer. <b>Ver</b> deixa só acompanhar;
+              <b>Editar</b> libera alterar e mover (e liga o Ver junto). Etapa sem nada marcado
+              fica invisível para ele.
+            </div>
+            <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('ver')">Todas: só ver</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('editar')">Todas: editar</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(null)">Limpar</button>
+            </div>
+            <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+            <div id="pt-etapas-resumo" style="font-size:.72rem;color:var(--t3);margin-top:.45rem"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3457,6 +3478,20 @@ async function openPartnerModal(id) {
   }
   await perfisParaSelect(document.getElementById('pt-perfil'), p?.perfil_id);
   perfilAplicado('pt-perfil','pt-perm');
+
+  // Acesso por etapa, o mesmo seletor do corretor e do analista. Cadastro sem
+  // mapa nenhum abre sem restrição — é como ele sempre funcionou, e passar a
+  // exigir marcação aqui trancaria os correspondentes que já trabalham hoje.
+  ETAPAS_PREFIXO = 'pt';
+  await etapasGarantir();
+  CO_ETAPAS = {};
+  if (savedPerms.etapas && typeof savedPerms.etapas === 'object' && !Array.isArray(savedPerms.etapas)) {
+    Object.entries(savedPerms.etapas).forEach(([k,v]) => { if (v==='ver'||v==='editar') CO_ETAPAS[k]=v; });
+  } else if (Array.isArray(savedPerms.etapas_permitidas)) {
+    savedPerms.etapas_permitidas.forEach(id => { CO_ETAPAS[id] = 'editar'; });
+  }
+  pintarEtapasCorretor();
+
   document.getElementById('modal-partner-bg').classList.remove('hidden');
 }
 
@@ -3465,6 +3500,15 @@ async function savePartner() {
   const empresaId = document.getElementById('pt-f-empresa').value;
   if (!name) { toast('Nome e obrigatorio','error'); return; }
   if (!empresaId) { toast('Selecione a empresa correspondente','error'); return; }
+  // O cadastro já tinha mapa de etapas? A resposta muda o que o salvamento faz
+  // com um mapa vazio — ver o comentário em permissions, abaixo.
+  const _atual = G.editingPartnerId ? (G.partners.find(x=>x.id===G.editingPartnerId)||{}) : {};
+  const _pAtual = _atual.permissions || {};
+  const tinhaEtapas = !!(_pAtual.etapas && typeof _pAtual.etapas === 'object'
+                         && !Array.isArray(_pAtual.etapas) && Object.keys(_pAtual.etapas).length)
+                   || (Array.isArray(_pAtual.etapas_permitidas) && _pAtual.etapas_permitidas.length > 0);
+  if (tinhaEtapas && !Object.keys(CO_ETAPAS).length &&
+      !confirm('Nenhuma etapa ficou marcada. Esta pessoa vai entrar no sistema e não verá processo nenhum. Salvar assim mesmo?')) return;
   const payload = {
     tenant_id:  G.user.tenant_id,
     name,
@@ -3479,6 +3523,20 @@ async function savePartner() {
     perfil_id: document.getElementById('pt-perfil').value || null,
     permissions: (() => {
       const perms = permsColetar('pt-perm','pt-perfil');
+      // As etapas são da PESSOA, não do perfil: um perfil descreve um tipo de
+      // gente, e em que etapas cada um atua é decisão de carteira. Por isso
+      // elas são gravadas aqui mesmo quando há perfil escolhido.
+      //
+      // MAPA VAZIO NÃO É GRAVADO quando não havia mapa antes. Mapa vazio quer
+      // dizer "não vê etapa nenhuma": um correspondente que trabalha hoje sem
+      // mapa, aberto só para trocar o telefone, sairia cego do salvamento. Quem
+      // quiser tirar todo o acesso desmarca as etapas de quem JÁ tinha mapa —
+      // aí o vazio é decisão, não descuido.
+      const marcadas = Object.keys(CO_ETAPAS);
+      if (marcadas.length || tinhaEtapas) {
+        perms.etapas = {...CO_ETAPAS};
+        perms.etapas_permitidas = marcadas;
+      }
       // Com perfil, quem decide "ver de todos" e o perfil: sobrescrever aqui
       // pelo estado da tela gravaria a decisao dele como se fosse dela.
       const comPerfil = !!document.getElementById('pt-perfil').value;

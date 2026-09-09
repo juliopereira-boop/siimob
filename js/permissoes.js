@@ -34,6 +34,21 @@ const A1_PERMISSOES = [
     lida_em:'boot de repasse/andamento/listagem, js/modulo-shell.js' },
 
   // ── Repasse ────────────────────────────────────────────────────────────────
+  //
+  // 'ver_repasses' já existiu aqui e foi removida por não ter leitor: era a
+  // caixa decorativa clássica. Voltou porque a falta dela deixava o bloco do
+  // Repasse sem o degrau mais básico — dava para dizer "pode criar" e "pode
+  // editar", mas não dava para dizer apenas "pode ver". Desta vez ela É lida:
+  // sem a marca, o módulo não abre para a pessoa.
+  //
+  // AUSENTE VALE "PODE VER", e é de propósito: nenhum cadastro nem perfil de
+  // hoje tem esta chave, e tratá-la como negada trancaria todo mundo para fora
+  // do Repasse na primeira publicação. A partir daqui os formulários sempre a
+  // gravam, então a omissão só existe no que foi salvo antes desta mudança.
+  { chave:'ver_repasses', modulo:'repasse', rotulo:'Ver processos',
+    ajuda:'O degrau mais básico: sem isto o módulo de Repasse não abre para a '
+        + 'pessoa. Com isto e mais nada, ela acompanha sem poder alterar.',
+    lida_em:'hasPerm nas telas do Repasse (boot e barra de abas)' },
   { chave:'criar_repasses', modulo:'repasse', rotulo:'Criar processos',
     ajuda:'Abrir novo processo.',
     lida_em:'a1_perm (SQL), telas do Repasse' },
@@ -80,11 +95,11 @@ const A1_PERMISSOES = [
 // explicitamente liberado fica fechado, e um perfil novo que já nascesse podendo
 // tudo seria o contrário disso.
 const A1_PERFIS_MODELO = [
-  { nome:'Corretor',      permissoes:['criar_repasses','pa_ver','pa_criar','co_ver'] },
-  { nome:'Analista',      permissoes:['editar_repasses','alterar_etapa','ver_todos_analistas',
+  { nome:'Corretor',      permissoes:['ver_repasses','criar_repasses','pa_ver','pa_criar','co_ver'] },
+  { nome:'Analista',      permissoes:['ver_repasses','editar_repasses','alterar_etapa','ver_todos_analistas',
                                       'pa_ver','pa_editar','analisar_credito','co_ver'] },
-  { nome:'Coordenador',   permissoes:['ver_dashboard','ver_todos_analistas','pa_ver','co_ver'] },
-  { nome:'Correspondente',permissoes:['criar_repasses','editar_repasses','alterar_etapa',
+  { nome:'Coordenador',   permissoes:['ver_repasses','ver_dashboard','ver_todos_analistas','pa_ver','co_ver'] },
+  { nome:'Correspondente',permissoes:['ver_repasses','criar_repasses','editar_repasses','alterar_etapa',
                                       'pa_ver','pa_criar','pa_editar','analisar_credito',
                                       'co_ver','co_editar'] },
 ];
