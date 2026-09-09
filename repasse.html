@@ -443,6 +443,24 @@
   <div class="tabs-bar">
     <div class="tab-btn active">Dashboard</div>
 
+    <!-- A ordem da barra é a ordem do processo, e vale em todo o sistema:
+         Pré-análise → Comercial → Repasse. Os dois primeiros nascem escondidos e
+         só aparecem quando o superadmin libera a licença para este cliente. -->
+    <div class="tab-group" id="grupo-pre-analise" style="display:none">
+      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+    <div class="tab-group" id="grupo-comercial" style="display:none">
+      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+
     <!-- Repasse tab with view dropdown -->
     <div class="tab-group">
       <a class="tab-btn" id="link-repasse-andamento" href="">Repasse <span class="tab-caret">▾</span></a>
@@ -457,22 +475,6 @@
       <div class="tab-dd">
         <a class="dd-item" id="link-registro-andamento" href="">Andamento</a>
         <a class="dd-item" id="link-registro-listagem" href="">Listagem</a>
-      </div>
-    </div>
-    <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
-         libera a licença para este cliente — nenhum cliente de hoje os vê. -->
-    <div class="tab-group" id="grupo-pre-analise" style="display:none">
-      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
-      </div>
-    </div>
-    <div class="tab-group" id="grupo-comercial" style="display:none">
-      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
       </div>
     </div>
     <a class="tab-btn" id="link-config" href="">Configuracoes</a>
@@ -1295,7 +1297,7 @@
               </select>
             </div>
             <div class="form-group"><label>Imobiliária *</label>
-              <select id="n-re">
+              <select id="n-re" onchange="aoTrocarImobiliaria('n')">
                 <option value="">Selecione...</option>
               </select>
             </div>
@@ -3245,11 +3247,61 @@ function switchModalTab(tab,el){
 // corretores para a equipe dele. Nada de coordenador é gravado no processo,
 // senão trocar o corretor de equipe deixaria os processos antigos mentindo.
 
-function _corretoresParaFormulario(nomeCoord){
-  const todos = _corretorNames();
+// A imobiliária do corretor mora em extra.imobiliaria_id — o mesmo lugar em que
+// o pré-cadastro por link sempre a gravou, e que o cadastro de corretor em
+// Configurações agora deixa editar.
+function _imobIdPorNome(nome){
+  if(!nome) return '';
+  const i = (Array.isArray(G.imobs)?G.imobs:[]).find(x => x.name === nome);
+  return i ? i.id : '';
+}
+
+// Corretor SEM imobiliária no cadastro aparece em qualquer imobiliária, de
+// propósito: hoje quase nenhum tem o vínculo preenchido, e um filtro estrito
+// esvaziaria o seletor no primeiro dia — o gestor concluiria que o sistema
+// quebrou. Quem TEM vínculo só aparece na imobiliária dele, que é o que o
+// filtro veio fazer. À medida que os cadastros forem preenchidos, o filtro
+// aperta sozinho.
+function _corretoresDaImobiliaria(nomeImob){
+  const id = _imobIdPorNome(nomeImob);
+  if(!id) return null;
+  return new Set((Array.isArray(G.corretores)?G.corretores:[])
+    .filter(c => { const v = c.extra && c.extra.imobiliaria_id; return !v || v === id; })
+    .map(c => c.name));
+}
+
+function _imobiliariaDoCorretor(nomeCorretor){
+  if(!nomeCorretor) return '';
+  const co = (Array.isArray(G.corretores)?G.corretores:[]).find(x => x.name === nomeCorretor);
+  const id = co && co.extra && co.extra.imobiliaria_id;
+  if(!id) return '';
+  const i = (Array.isArray(G.imobs)?G.imobs:[]).find(x => x.id === id);
+  return i ? i.name : '';
+}
+
+function _corretoresParaFormulario(nomeCoord, nomeImob){
+  let todos = _corretorNames();
+  if(nomeImob){
+    const daImob = _corretoresDaImobiliaria(nomeImob);
+    if(daImob) todos = todos.filter(n => daImob.has(n));
+  }
   if(!nomeCoord) return todos;
   const equipe = _corretoresDoCoordenador(nomeCoord);
   return equipe ? todos.filter(n => equipe.has(n)) : todos;
+}
+
+// Trocar a imobiliária refaz a lista de corretores. O que já estava escolhido
+// só é mantido se continuar valendo para a nova imobiliária — senão o formulário
+// gravaria um corretor de outra imobiliária sem ninguém perceber.
+function aoTrocarImobiliaria(pre){
+  const bro = document.getElementById(pre + '-broker');
+  const imb = document.getElementById(pre + '-re');
+  if(!bro || !imb) return;
+  const coo = document.getElementById(pre + '-coordenador');
+  const atual = bro.value;
+  const lista = _corretoresParaFormulario(coo ? coo.value : '', imb.value);
+  bro.innerHTML = selOpts(lista, lista.includes(atual) ? atual : '');
+  avisoCoordenador(pre);
 }
 
 function aoTrocarCorretor(pre){
@@ -3265,6 +3317,14 @@ function aoTrocarCorretor(pre){
   } else if(bro.value && coo.value && !_corretoresParaFormulario(coo.value).includes(bro.value)){
     coo.value = '';
   }
+  // O corretor também sabe de que imobiliária é. Preencher sozinho evita o par
+  // errado — corretor de uma imobiliária gravado com o nome de outra.
+  const imb = document.getElementById(pre + '-re');
+  const nomeImob = _imobiliariaDoCorretor(bro.value);
+  if(imb && nomeImob){
+    if(![...imb.options].some(o => o.value === nomeImob)) imb.add(new Option(nomeImob, nomeImob));
+    imb.value = nomeImob;
+  }
   avisoCoordenador(pre);
 }
 
@@ -3273,7 +3333,8 @@ function aoTrocarCoordenador(pre){
   const coo = document.getElementById(pre + '-coordenador');
   if(!bro || !coo) return;
   const atual = bro.value;
-  const lista = _corretoresParaFormulario(coo.value);
+  const imb = document.getElementById(pre + '-re');
+  const lista = _corretoresParaFormulario(coo.value, imb ? imb.value : '');
   bro.innerHTML = selOpts(lista, lista.includes(atual) ? atual : '');
   avisoCoordenador(pre);
 }
@@ -3388,12 +3449,12 @@ function renderModalDet() {
     <div class="form-section-title">Parceiro e equipe</div>
     <div class="form-grid">
       ${G.isCorrTenant ? `<div class="form-group"><label>Correspondente</label><input value="${esc(G.fixedCorr||c.partner_name||'')}" disabled></div>` : `<div class="form-group"><label>Correspondente</label><select id="e-partner">${selOpts(_empresaNames(), c.partner_name)}</select></div>`}
-      <div class="form-group"><label>Imobiliaria</label><select id="e-re">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
+      <div class="form-group"><label>Imobiliaria</label><select id="e-re" onchange="aoTrocarImobiliaria('e')">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
       <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
       <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
       <div class="form-group"><label>Coordenador</label><select id="e-coordenador" onchange="aoTrocarCoordenador('e')">${selOpts(_coordenadorNames(), _coordenadorDoCorretor(c.broker_name))}</select></div>
       <div class="form-group"><label>Corretor</label>
-        <select id="e-broker" onchange="aoTrocarCorretor('e')">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name)), c.broker_name)}</select>
+        <select id="e-broker" onchange="aoTrocarCorretor('e')">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name), c.real_estate_name), c.broker_name)}</select>
         <div id="e-coord-obs" style="display:none;font-size:.7rem;color:#b45309;margin-top:.25rem"></div>
       </div>
       <div class="form-group"><label>Convênio</label><select id="e-convenio">${selOpts(_convenioNames(), p.convenio||'')}</select></div>
@@ -3759,6 +3820,11 @@ async function openNewCase() {
 
   // imobiliárias — carrega de a1_partners type=imobiliaria
   const imobs = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  // Guarda em G.imobs, e não só numa variável local: o filtro de corretor por
+  // imobiliária precisa do id, e o seletor só carrega o nome. Sem isto o filtro
+  // simplesmente não acontecia no formulário de processo novo — e não acontecer
+  // em silêncio é o pior jeito de falhar.
+  if (Array.isArray(imobs) && (!Array.isArray(G.imobs) || !G.imobs.length)) G.imobs = imobs;
   document.getElementById('n-re').innerHTML='<option value="">Selecione...</option>'+
     imobs.map(i=>`<option value="${esc(i.name)}">${esc(i.name)}</option>`).join('');
 

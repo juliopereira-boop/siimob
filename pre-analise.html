@@ -246,6 +246,7 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/modulo-shell.js"></script>
+<script src="/js/documentos.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -411,8 +412,11 @@ function preencherFiltros(){
 // Tipos cadastrados pelo gestor para ESTE modulo. Cliente que ainda nao
 // configurou nada continua com uma lista util em vez de um seletor vazio — o
 // dia 1 de um modulo novo nao pode ser uma tela travada.
-const TIPOS_DOC_PADRAO = ['RG / CNH','CPF','Comprovante de renda','Comprovante de residência',
-  'Certidão de estado civil','Extrato FGTS','Carteira de trabalho','Imposto de renda','Outro'];
+//
+// A lista mora em js/documentos.js porque Configuracoes oferece a MESMA lista
+// no botao "Usar lista padrao". Duas copias divergiriam, e o gestor acabaria
+// adotando em Configuracoes uma lista diferente da que a tela mostra.
+const TIPOS_DOC_PADRAO = a1DocsPadrao('PRE_ANALISE');
 
 function lerTiposDoc(cfg){
   let lista = [];

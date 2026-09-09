@@ -15,22 +15,26 @@
 //
 // Depende de: config.js e auth.js.
 
-// A ordem aqui é a ordem da barra. Repasse antes dos módulos novos porque é
-// onde o cliente de hoje trabalha; mexer nisso mudaria o sistema de quem já
-// usa, sem ninguém ter pedido.
+// A ordem aqui é a ordem da barra, e é a ordem do PROCESSO: a pessoa é
+// pré-analisada, depois negocia, depois o repasse anda.
+//
+// Ela já era essa no seletor de painel do dashboard (A1_ORDEM_PAINEIS) e não na
+// barra, que abria pelo Repasse. Duas ordens para a mesma coisa confundiam quem
+// olhava as duas telas; o dono pediu uma só, e é esta. Registro fica ao fim
+// porque não é etapa da mesma jornada — é módulo de despachante.
 const A1_MODULOS = [
-  { chave: 'repasse',     rotulo: 'Repasse',     sempre: false,
-    vistas: [['Andamento', 'andamento'], ['Listagem', 'listagem']] },
-  { chave: 'registro',    rotulo: 'Registro',    sempre: false,
-    vistas: [['Andamento', 'registro'], ['Listagem', 'registro-listagem']] },
   { chave: 'PRE_ANALISE', rotulo: 'Pré-análise', sempre: false,
     vistas: [['Andamento', 'pre-analise'], ['Listagem', 'pre-analise-listagem']] },
   { chave: 'COMERCIAL',   rotulo: 'Comercial',   sempre: false,
-    vistas: [['Andamento', 'comercial'], ['Listagem', 'comercial-listagem']] }
+    vistas: [['Andamento', 'comercial'], ['Listagem', 'comercial-listagem']] },
+  { chave: 'repasse',     rotulo: 'Repasse',     sempre: false,
+    vistas: [['Andamento', 'andamento'], ['Listagem', 'listagem']] },
+  { chave: 'registro',    rotulo: 'Registro',    sempre: false,
+    vistas: [['Andamento', 'registro'], ['Listagem', 'registro-listagem']] }
 ];
 
-// A ordem do SELETOR DE PAINEL do dashboard é outra: segue a jornada do
-// negócio — a pessoa é pré-analisada, depois negocia, depois o repasse anda.
+// O seletor de painel do dashboard segue a mesma ordem da barra. Ficou aqui,
+// separado, porque a lista dele não tem Registro — que não desenha painel.
 const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
 
 const A1_SHELL_CSS = `

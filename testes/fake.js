@@ -48,8 +48,13 @@ const D = {
     {id:'p14',tenant_id:'t1',type:'modalidade',name:'Imóvel usado',is_active:true,approved:true},
     {id:'p7',tenant_id:'t1',type:'coordenador',name:'Marcos Lima',is_active:true,approved:true},
     {id:'p9',tenant_id:'t1',type:'coordenador',name:'Rita Alves',is_active:true,approved:true},
-    {id:'p10',tenant_id:'t1',type:'corretor',name:'Carla Dias',cpf:'66666666666',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p7'}},
-    {id:'p11',tenant_id:'t1',type:'corretor',name:'Diego Melo',cpf:'77777777777',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p9'}},
+    // Carla e Diego existem para provar o filtro por imobiliária: cada uma na
+    // sua. Sem DUAS imobiliárias diferentes o teste passaria trivialmente —
+    // qualquer filtro devolveria a lista inteira e ninguém notaria.
+    {id:'p10',tenant_id:'t1',type:'corretor',name:'Carla Dias',cpf:'66666666666',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p7',imobiliaria_id:'p1'}},
+    {id:'p11',tenant_id:'t1',type:'corretor',name:'Diego Melo',cpf:'77777777777',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p9',imobiliaria_id:'p20'}},
+    // Sem imobiliária no cadastro: aparece em qualquer uma. É a situação dos 37
+    // corretores que existem hoje, e o motivo de o filtro não ser estrito.
     {id:'p12',tenant_id:'t1',type:'corretor',name:'Sem Equipe',cpf:'12312312312',is_active:true,approved:true,permissions:{},extra:{}},
     {id:'p8',tenant_id:'t1',type:'cca',name:'Usuário Corr',cpf:'55555555555',is_active:true,approved:true,permissions:{}}],
   users: [{id:'u1',tenant_id:'t1',name:'Julio',cpf:'99999999999',role:'owner',is_active:true,last_seen:'2026-08-27T09:00:00Z'}],
@@ -193,6 +198,14 @@ function usarExtras(v) { COM_EXTRAS = v !== false; }
 let MODULOS_NOVOS = [];
 function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : []; }
 
+// Os módulos ANTIGOS respondem que sim por padrão, porque é o que todo cliente
+// tem — e inverter isso quebraria a suíte inteira sem provar nada. Mas há tela
+// que depende de um deles estar AUSENTE (o cadastro de Analista de Crédito só
+// existe com Repasse ou Pré-análise), e sem poder dizer "não" a prova seria
+// impossível de escrever. Daí a negação explícita, uma exceção por teste.
+let MODULOS_NEGADOS = [];
+function negarModulos(lista) { MODULOS_NEGADOS = Array.isArray(lista) ? lista : []; }
+
 function responder(url, metodo, corpo0) {
   const u = new URL(url);
   const p = u.pathname;
@@ -200,6 +213,7 @@ function responder(url, metodo, corpo0) {
   if (p.includes('/rpc/a1_has_module')) {
     let chave = '';
     try { chave = (JSON.parse(corpo0 || '{}') || {}).p_module_key || ''; } catch {}
+    if (MODULOS_NEGADOS.includes(chave)) return false;
     if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL') return MODULOS_NOVOS.includes(chave);
     return true;
   }
@@ -313,4 +327,4 @@ function responder(url, metodo, corpo0) {
   }
   return [];
 }
-module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D };
+module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos };

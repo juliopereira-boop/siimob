@@ -1,11 +1,14 @@
 const { chromium } = require('playwright');
-const { responder, usarExtras, liberarModulos } = require('./fake');
+const { responder, usarExtras, liberarModulos, negarModulos } = require('./fake');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 async function abrir(pag, opc = {}) {
   usarExtras(opc.extras === true);
   // Módulos novos nascem sem licença, como em todo cliente de hoje. Quem for
   // testá-los ligados pede: abrir('pre-analise.html', {modulos:['PRE_ANALISE']}).
   liberarModulos(opc.modulos || []);
+  // Para provar o que some quando um módulo ANTIGO falta:
+  // abrir('configuracoes.html', {semModulos:['repasse']}).
+  negarModulos(opc.semModulos || []);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];

@@ -212,6 +212,24 @@
   <div class="tabs-bar">
     <a class="tab-btn" id="link-dashboard">Dashboard</a>
 
+    <!-- A ordem da barra é a ordem do processo, e vale em todo o sistema:
+         Pré-análise → Comercial → Repasse. Os dois primeiros nascem escondidos e
+         só aparecem quando o superadmin libera a licença para este cliente. -->
+    <div class="tab-group" id="grupo-pre-analise" style="display:none">
+      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+    <div class="tab-group" id="grupo-comercial" style="display:none">
+      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <div class="tab-dd">
+        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
+        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
+      </div>
+    </div>
+
     <div class="tab-group">
       <a class="tab-btn" id="link-repasse">Repasse <span class="tab-caret">▾</span></a>
       <div class="tab-dd">
@@ -225,23 +243,6 @@
       <div class="tab-dd">
         <a class="dd-item" id="link-registro-andamento">Andamento</a>
         <a class="dd-item" id="link-registro-listagem">Listagem</a>
-      </div>
-    </div>
-
-    <!-- Módulos novos. Nascem escondidos e só aparecem quando o superadmin
-         libera a licença para este cliente — nenhum cliente de hoje os vê. -->
-    <div class="tab-group" id="grupo-pre-analise" style="display:none">
-      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
-      </div>
-    </div>
-    <div class="tab-group" id="grupo-comercial" style="display:none">
-      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
       </div>
     </div>
 
@@ -309,7 +310,12 @@
           </div>
           <div class="cfg-card-label">Usuários Gestores</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('analistas')">
+        <!-- Analista de crédito só existe onde há processo para ele analisar:
+             Repasse ou Pré-análise. Sem nenhum dos dois o cartão é retirado do
+             DOM por analistaCartaoConferir() — e só quando as DUAS respostas
+             chegam negando, porque "não consegui perguntar" não pode virar
+             "não tem". -->
+        <div class="cfg-hub-card" id="cfg-card-analistas" onclick="openCfgView('analistas')">
           <div class="cfg-hub-icon" style="background:#dbeafe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
           </div>
@@ -629,20 +635,33 @@
       <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
       <div class="cfg-view-title">Tipos de documento</div>
     </div>
-    <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:520px">
-      <button class="dt-mod-btn" disabled style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t3);cursor:not-allowed" title="Em desenvolvimento">Reserva (em breve)</button>
+    <!-- A ordem das abas é a ordem do processo, a mesma de todo o sistema:
+         Pré-análise → Comercial → Repasse. O Comercial não tem aba aqui porque
+         não tem documento tipado — o que ele guarda é contrato, em
+         a1_co_contratos, com fluxo próprio. Aba dele aqui seria uma tela de
+         cadastro que nenhuma outra tela lê, e caixa que não faz nada é pior que
+         caixa ausente.
+         A aba da Pré-análise nasce escondida, no mesmo molde do Registro: quem
+         revela é a licença. Não precisou de tabela nova — o JSON de doc_types
+         em a1_config já carrega o campo module. -->
+    <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:620px">
+      <button id="dt-mod-PRE_ANALISE" class="dt-mod-btn" style="display:none;flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('PRE_ANALISE',this)">Pré-análise</button>
       <button id="dt-mod-repasse" class="dt-mod-btn active" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('repasse',this)">Repasse</button>
       <button id="dt-mod-registro" class="dt-mod-btn" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('registro',this)">Registro</button>
-      <!-- Terceiro módulo, no mesmo molde do Registro: nasce escondido e quem
-           revela é a licença. Não precisou de tabela nova — o JSON de doc_types
-           em a1_config já carrega o campo module. -->
-      <button id="dt-mod-PRE_ANALISE" class="dt-mod-btn" style="display:none;flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('PRE_ANALISE',this)">Pré-análise</button>
+      <button class="dt-mod-btn" disabled style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t3);cursor:not-allowed" title="Em desenvolvimento">Reserva (em breve)</button>
     </div>
     <div class="panel">
       <div style="padding:1rem 1rem .25rem">
         <div class="pt-toolbar">
           <input type="text" id="dt-name" placeholder="Nome do tipo (ex.: Comprovante de residência)" style="flex:1" onkeydown="if(event.key==='Enter')saveDocType()">
           <button class="btn btn-primary btn-sm" onclick="saveDocType()">+ Adicionar</button>
+        </div>
+        <!-- A lista que a tela do módulo já mostrava quando nada estava
+             cadastrado. Ela sumia no primeiro tipo próprio e o gestor não tinha
+             como recuperá-la; agora ela é adotável, e daí em diante é dele. -->
+        <div id="dt-padrao-wrap" style="display:none;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.15rem 0 .3rem">
+          <button class="btn btn-ghost btn-sm" onclick="usarDocTypesPadrao()">Usar lista padrão</button>
+          <span id="dt-padrao-hint" style="font-size:.72rem;color:var(--t3)"></span>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -719,8 +738,8 @@
     <div id="corretor-pendentes-aviso" style="display:none;font-size:.75rem;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:.5rem .7rem;margin:-.2rem 0 .7rem"></div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>Coordenador</th><th>Etapas liberadas</th><th>Status</th><th>ID</th><th>Ações</th></tr></thead>
-        <tbody id="corretor-tbody"><tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Imobiliária</th><th>Coordenador</th><th>Etapas liberadas</th><th>Status</th><th>ID</th><th>Ações</th></tr></thead>
+        <tbody id="corretor-tbody"><tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1111,6 +1130,14 @@
         <div class="form-group"><label>Senha <span id="co-pw-hint" style="font-weight:400;color:var(--t3)"></span></label><input id="co-password" type="password" placeholder="mínimo 6 caracteres"></div>
         <div class="form-group"><label>Situação</label>
           <label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem;padding-top:.45rem"><input type="checkbox" id="co-active" checked> Ativo (pode entrar no sistema)</label>
+        </div>
+        <!-- A imobiliária do corretor já existia no banco: o pré-cadastro por
+             link grava extra.imobiliaria_id desde sempre. O que faltava era o
+             gestor conseguir ver e mudar isso — e é esse vínculo que faz o
+             seletor de corretor, nos formulários de processo, listar só quem é
+             da imobiliária escolhida. -->
+        <div class="form-group"><label>Imobiliária</label>
+          <select id="co-imob"><option value="">Sem imobiliária</option></select>
         </div>
         <div class="form-group"><label>Coordenador</label>
           <select id="co-coordenador"><option value="">Sem coordenador</option></select>
@@ -1538,6 +1565,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/documentos.js"></script>
 <script src="/js/permissoes.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
@@ -1634,12 +1662,20 @@ async function init() {
     }
   }).catch(()=>{});
 
+  // A licença do Repasse nunca precisava ser perguntada aqui — a tela toda
+  // nasceu dele. Passou a precisar quando o cadastro de Analista de Crédito
+  // virou dependente de módulo: sem Repasse E sem Pré-análise não existe
+  // processo para o analista analisar.
+  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); })
+                        .catch(()=>{});
+
   // Módulos novos: a aba só aparece com a licença liberada. O acesso real aos
   // dados continua barrado por RLS mesmo que alguém force o link na barra.
   // O `ok !== true` é literal de propósito: a1HasModule devolve null quando o
   // servidor não respondeu, e "não consegui perguntar" não pode virar "não tem".
   ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
     a1HasModule(mod).then(ok => {
+      if (mod === 'PRE_ANALISE') { G.temPAResp = ok; analistaCartaoConferir(); }
       if (ok !== true) return;
       // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
       // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
@@ -1711,7 +1747,27 @@ function filtrarHub(termo){
   if (vazio) vazio.style.display = achou ? 'none' : '';
 }
 
+// Analista de Crédito depende de módulo: sem Repasse e sem Pré-análise não há
+// processo para ele analisar, e o cartão vira uma porta para um cadastro que
+// não serve para nada neste cliente.
+//
+// Só tira do DOM quando as DUAS respostas chegaram NEGANDO. a1HasModule devolve
+// null quando o servidor não respondeu, e "não consegui perguntar" não pode
+// virar "não tem" — o cliente ficaria sem o cadastro por causa de uma rede ruim.
+function analistaCartaoConferir(){
+  if (G.temRepasse !== false || G.temPAResp !== false) return;
+  const card = document.getElementById('cfg-card-analistas');
+  if (card) card.remove();
+}
+function analistaTemModulo(){ return !(G.temRepasse === false && G.temPAResp === false); }
+
 function openCfgView(view) {
+  // A busca do hub some com o cartão, mas o link direto continuaria abrindo a
+  // tela. Quem fecha essa porta é aqui.
+  if (view === 'analistas' && !analistaTemModulo()) {
+    toast('O cadastro de analistas exige o módulo de Repasse ou de Pré-análise.','info');
+    return;
+  }
   document.getElementById('cfg-hub').style.display = 'none';
   CFG_VIEWS.forEach(v => {
     const el = document.getElementById(`cfg-view-${v}`);
@@ -1783,8 +1839,45 @@ function switchDocTypeModule(mod,el){
   el.classList.add('active');
   renderDocTypesList();
 }
+// O que a lista padrão deste módulo ainda tem a acrescentar. Comparação por
+// nome em minúsculas: o gestor que já digitou "CPF" não deve receber outro.
+function docTypesPadraoFaltando(){
+  const mod=G.docTypeModule||'repasse';
+  const jaTem=new Set((G.docTypes||[]).filter(t=>t.module===mod)
+                                      .map(t=>(t.name||'').trim().toLowerCase()));
+  return a1DocsPadrao(mod).filter(n=>!jaTem.has(n.trim().toLowerCase()));
+}
+
+function pintarDocTypesPadrao(){
+  const wrap=document.getElementById('dt-padrao-wrap'); if(!wrap) return;
+  const faltam=docTypesPadraoFaltando();
+  // Módulo sem lista padrão, ou lista inteira já adotada: o botão sai de cena.
+  // Botão que não faz nada é pior que botão ausente.
+  wrap.style.display = faltam.length ? 'flex' : 'none';
+  const hint=document.getElementById('dt-padrao-hint');
+  if(hint) hint.textContent = faltam.length
+    ? `Acrescenta ${faltam.length} tipo(s) sugerido(s): ${faltam.join(', ')}.` : '';
+}
+
+async function usarDocTypesPadrao(){
+  const mod=G.docTypeModule||'repasse';
+  await fetchDocTypes();
+  const faltam=docTypesPadraoFaltando();
+  if(!faltam.length){ showToast('A lista padrão já está toda cadastrada','info'); return; }
+  // O índice entra no id porque Date.now() é o mesmo para o laço inteiro: sem
+  // ele, dois tipos da mesma leva poderiam nascer com o mesmo id, e apagar um
+  // apagaria o outro.
+  faltam.forEach((name,i)=>{
+    G.docTypes.push({id:'t'+Date.now().toString(36)+i.toString(36)+Math.random().toString(36).slice(2,6),
+                     name, module:mod, active:true});
+  });
+  await persistDocTypes(); renderDocTypesList();
+  showToast(`${faltam.length} tipo(s) da lista padrão cadastrado(s)`);
+}
+
 function renderDocTypesList(){
   const tb=document.getElementById('dt-tbody'); if(!tb) return;
+  pintarDocTypesPadrao();
   const list=(G.docTypes||[]).filter(t=>t.module===(G.docTypeModule||'repasse'));
   if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="pt-empty">Nenhum tipo cadastrado para este módulo.</td></tr>'; return; }
   tb.innerHTML=list.map(t=>{
@@ -3437,7 +3530,15 @@ const SIMPLES = {
   agencia:  { titulo:'agência',  tbody:'agencia-tbody',  colunas:4, temNumero:true  },
   modalidade:{titulo:'modalidade de imóvel', tbody:'modalidade-tbody', colunas:3, temNumero:false },
 };
-const CAD = { convenio:[], agencia:[], coordenador:[], modalidade:[] };
+const CAD = { convenio:[], agencia:[], coordenador:[], modalidade:[], imobiliaria:[] };
+
+// Nome da imobiliária vinculada a alguém. Usado na lista de corretores e no
+// formulário; devolve '' quando o vínculo aponta para algo que não existe mais.
+function nomeImobiliaria(id){
+  if(!id) return '';
+  const i=(CAD.imobiliaria||[]).find(x=>x.id===id);
+  return i ? i.name : '';
+}
 
 // Identificador visível em todos os cadastros — serve para importações.
 // Mostra um trecho e copia o valor inteiro no clique.
@@ -3683,9 +3784,12 @@ async function loadCorretores(){
     if(!Array.isArray(G.stages)) G.stages=[];
   }
   await perfisGarantir();
-  const [corrs, coords] = await Promise.all([
+  const [corrs, coords, imobs] = await Promise.all([
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    // A imobiliária entra aqui e não no boot porque só esta tela precisa dela:
+    // uma busca a mais no carregamento de todas as páginas custaria a todo mundo.
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&order=name.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
   ]);
   const todos = Array.isArray(corrs)?corrs:[];
   // Quem veio pelo link entra com approved = false e não aparece aqui: o lugar
@@ -3693,6 +3797,7 @@ async function loadCorretores(){
   CORRETORES  = todos.filter(c => c.approved !== false);
   PRECAD_PEND = todos.filter(c => c.approved === false);
   CAD.coordenador = Array.isArray(coords)?coords:[];
+  CAD.imobiliaria = Array.isArray(imobs)?imobs:[];
   pintarPrecadBadge();
   const aviso = document.getElementById('corretor-pendentes-aviso');
   if(aviso){
@@ -3711,7 +3816,7 @@ function renderCorretores(){
   const tb=document.getElementById('corretor-tbody'); if(!tb) return;
   const q=(document.getElementById('corretor-search')?.value||'').toLowerCase();
   const lista=CORRETORES.filter(c=>!q || `${c.name} ${c.cpf||''} ${c.email||''}`.toLowerCase().includes(q));
-  if(!lista.length){ tb.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum corretor cadastrado.</td></tr>'; return; }
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum corretor cadastrado.</td></tr>'; return; }
   tb.innerHTML=lista.map(c=>{
     const p=c.permissions||{};
     let mapa = (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : null;
@@ -3727,6 +3832,7 @@ function renderCorretores(){
     return `<tr>
       <td><b>${esc(c.name)}</b>${perfilEtiqueta(c.perfil_id)}</td>
       <td style="color:var(--t2)">${esc(c.cpf||'—')}<div style="color:var(--t3);font-size:.72rem">${esc(c.email||'')}</div></td>
+      <td style="color:var(--t2);font-size:.78rem">${esc(nomeImobiliaria(c.extra&&c.extra.imobiliaria_id)||'—')}</td>
       <td style="color:var(--t2);font-size:.78rem">${esc(((CAD.coordenador||[]).find(k=>k.id===(c.extra&&c.extra.coordenador_id))||{}).name||'—')}</td>
       <td>${etapasTxt}</td>
       <td>${c.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
@@ -3815,6 +3921,16 @@ async function openCorretor(id){
   const coordAtual = (c && c.extra && c.extra.coordenador_id) || '';
   coordSel.innerHTML = '<option value="">Sem coordenador</option>' +
     (CAD.coordenador||[]).map(k=>`<option value="${k.id}"${k.id===coordAtual?' selected':''}>${esc(k.name)}</option>`).join('');
+  const imobSel = document.getElementById('co-imob');
+  const imobAtual = (c && c.extra && c.extra.imobiliaria_id) || '';
+  imobSel.innerHTML = '<option value="">Sem imobiliária</option>' +
+    (CAD.imobiliaria||[]).map(i=>`<option value="${i.id}"${i.id===imobAtual?' selected':''}>${esc(i.name)}</option>`).join('');
+  // Imobiliária que ficou inativa (ou foi apagada) continuaria vinculada no
+  // banco e sumiria da tela — salvar o cadastro apagaria o vínculo sem avisar.
+  if (imobAtual && !imobSel.querySelector(`option[value="${imobAtual}"]`)) {
+    const o = new Option(nomeImobiliaria(imobAtual) || 'Imobiliária removida', imobAtual, true, true);
+    imobSel.add(o);
+  }
   document.getElementById('co-id-wrap').style.display = c ? '' : 'none';
   document.getElementById('co-id').value = c?.id || '';
 
@@ -3867,7 +3983,12 @@ async function saveCorretor(){
     approved:true, permissions:perms,
     perfil_id: document.getElementById('co-perfil').value || null,
     // O vínculo com o coordenador é o mesmo dado editado na tela do coordenador.
-    extra:{ ...(atual.extra||{}), coordenador_id: document.getElementById('co-coordenador').value || null }
+    // A imobiliária divide o mesmo `extra` porque é onde o pré-cadastro por link
+    // já a gravava — duas moradas para o mesmo vínculo seria a divergência de
+    // sempre.
+    extra:{ ...(atual.extra||{}),
+            coordenador_id: document.getElementById('co-coordenador').value || null,
+            imobiliaria_id: document.getElementById('co-imob').value || null }
   };
   if(pw) payload.password_hash=await sha256(pw+'::a1');
 

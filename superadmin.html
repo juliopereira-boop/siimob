@@ -754,6 +754,11 @@ let CONTRACT_MODS   = [];
 
 // `types`: tipos de cliente para os quais o módulo é ofertável. Ausente = todos.
 const MODULES_DEF = [
+  // A ordem da lista é a ordem do processo — Pré-análise → Comercial → Repasse —
+  // e é a mesma da barra de abas e do editor de workflow. Os dois primeiros
+  // continuam nascendo desligados para todo cliente; ordem não é licença.
+  { key: 'PRE_ANALISE',      name: 'Pré-análise',              desc: 'Entrada do processo: pessoas, dossiê, renda, FGTS, subsídio, correspondente e decisão de crédito. Esteira própria.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: [] },
+  { key: 'COMERCIAL',        name: 'Comercial',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
   { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.', types:['correspondente_bancario','imobiliaria','construtora'] },
   { key: 'registro',         name: 'Registro em Cartório',     desc: 'Módulo despachante: ITBI, protocolos, exigências e matrícula atualizada.', types:['correspondente_bancario','imobiliaria','construtora','despachante'] },
   { key: 'crm',              name: 'CRM Básico',               desc: 'Gestão de contatos, leads e clientes com histórico de interações.', types:['imobiliaria','construtora'] },
@@ -763,11 +768,10 @@ const MODULES_DEF = [
   { key: 'ocr',              name: 'Leitor OCR',               desc: 'Extração automática de dados de documentos PDF via inteligência artificial.' },
   { key: 'workflow_avancado',name: 'Workflow Avançado',        desc: 'Motor de automação com pré-requisitos, ações e gatilhos personalizados.' },
   { key: 'multi_regional',   name: 'Multi-Regional',           desc: 'Segregação de dados e relatórios por região geográfica.' },
-  // Módulos novos. Nascem desligados para todo cliente: as tabelas deles só
+  // Os módulos novos subiram para o topo da lista, na ordem do processo. Eles
+  // continuam nascendo desligados para todo cliente: as tabelas deles só
   // respondem depois que a licença é criada aqui — não é a tela que esconde, é
   // a política do banco que não entrega linha.
-  { key: 'PRE_ANALISE',      name: 'Pré-análise',              desc: 'Entrada do processo: pessoas, dossiê, renda, FGTS, subsídio, correspondente e decisão de crédito. Esteira própria.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: [] },
-  { key: 'COMERCIAL',        name: 'Comercial',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
 ];
 
 // Dependência entre módulos. Não é bloqueio: Comercial funciona sozinho para

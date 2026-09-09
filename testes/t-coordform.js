@@ -23,7 +23,13 @@ const { abrir, checa, resumo } = require('./comum');
   checa('e avisa que falta o vínculo', await p.locator('#n-coord-obs').isVisible());
   checa('o aviso diz onde resolver', /Configurações/.test(await p.locator('#n-coord-obs').textContent()));
 
+  // A imobiliária virou um segundo filtro, e os dois valem juntos. Escolher o
+  // corretor acima preencheu o campo com a imobiliária dele; sem limpar, a
+  // lista abaixo já viria filtrada por ela e o que se estaria medindo aqui não
+  // seria mais o coordenador. Quem prova o filtro por imobiliária é
+  // t-corretor-imobiliaria.js.
   console.log('\n-- coordenador primeiro: lista de corretores encolhe --');
+  await p.selectOption('#n-re',''); await p.waitForTimeout(300);
   await p.selectOption('#n-coordenador','Marcos Lima'); await p.waitForTimeout(400);
   const equipe = (await p.locator('#n-broker option').allTextContents()).filter(x=>!/Selecione/.test(x));
   checa('mostra só a equipe do Marcos', equipe.length === 2 && equipe.includes('Ana Souza') && equipe.includes('Carla Dias'),
@@ -43,6 +49,7 @@ const { abrir, checa, resumo } = require('./comum');
 
   console.log('\n-- o processo criado não guarda coordenador --');
   await p.fill('#n-name','Cliente Coord');
+  await p.selectOption('#n-re',''); await p.waitForTimeout(300);   // sem filtro de imobiliária
   await p.selectOption('#n-broker','Carla Dias'); await p.waitForTimeout(300);
   await p.selectOption('#n-development','d1'); await p.waitForTimeout(300);
   await p.evaluate(() => { const s=document.getElementById('n-stage'); if(s&&s.options.length>1) s.selectedIndex=1;

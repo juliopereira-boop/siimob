@@ -431,11 +431,13 @@ let WF_USER  = null;    // current logged-in user (holds tenant_id)
 //
 // Cada adaptador traduz nos dois sentidos, e o resto do arquivo — arrastar,
 // desenhar seta, conectar — não sabe de que módulo se trata.
+// Na ordem do processo, a mesma da barra e a mesma das abas de tipo de
+// documento: Pré-análise → Comercial → Repasse, e o Registro ao fim.
 const WF_MODULES = [
-  { key: 'repasse',     label: 'Repasse',     icone: '🏦', drv: 'stages' },
-  { key: 'registro',    label: 'Registro',    icone: '📁', drv: 'stages' },
   { key: 'PRE_ANALISE', label: 'Pré-análise', icone: '🔎', drv: 'pa' },
   { key: 'COMERCIAL',   label: 'Comercial',   icone: '🤝', drv: 'co' },
+  { key: 'repasse',     label: 'Repasse',     icone: '🏦', drv: 'stages' },
+  { key: 'registro',    label: 'Registro',    icone: '📁', drv: 'stages' },
 ];
 
 // Classificação da situação, por módulo. É um ENUM de escolha única no banco —
