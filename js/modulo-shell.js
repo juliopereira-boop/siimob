@@ -37,6 +37,20 @@ const A1_MODULOS = [
 // separado, porque a lista dele não tem Registro — que não desenha painel.
 const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
 
+// Como a pessoa se chama no cabeçalho. Fica aqui, num lugar só, porque o
+// Repasse tinha a SUA cópia disto — e a cópia dizia "Correspondente" para
+// qualquer parceiro que não fosse despachante. O mesmo corretor aparecia como
+// Corretor na Pré-análise e como Correspondente no Repasse, e quem olhava as
+// duas telas concluía, com razão, que o sistema estava misturando usuário.
+//
+// Tipo desconhecido vira "Parceiro", nunca "Correspondente": chutar um papel
+// que a pessoa não tem foi exatamente o defeito.
+function a1RotuloPapel(user){
+  if (!user || user.role !== 'partner') return 'Gestor';
+  return { cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
+           analista:'Analista', coordenador:'Coordenador' }[user.type] || 'Parceiro';
+}
+
 const A1_SHELL_CSS = `
 .hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
@@ -97,10 +111,7 @@ async function a1MontarShell(alvo, opcoes){
   }
 
   const tem = await a1ModulosDoCliente();
-  const papel = ehParceiro
-    ? ({ cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
-         analista:'Analista', coordenador:'Coordenador' }[user.type] || 'Parceiro')
-    : 'Gestor';
+  const papel = a1RotuloPapel(user);
 
   const abas = [];
 

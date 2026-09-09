@@ -206,6 +206,17 @@ function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : 
 let MODULOS_NEGADOS = [];
 function negarModulos(lista) { MODULOS_NEGADOS = Array.isArray(lista) ? lista : []; }
 
+// Os tipos de documento do cliente. O padrão é a lista de STRINGS soltas que
+// telas antigas gravaram — é o que a maioria dos clientes tem hoje, e é o
+// formato que a leitura precisa aguentar sem quebrar. Quem for testar a regra
+// de documento obrigatório pede os objetos: usarDocTypes([{...}]).
+const DOC_TYPES_PADRAO = '["RG","CPF"]';
+let DOC_TYPES = DOC_TYPES_PADRAO;
+function usarDocTypes(lista) {
+  DOC_TYPES = lista == null ? DOC_TYPES_PADRAO
+            : (typeof lista === 'string' ? lista : JSON.stringify(lista));
+}
+
 function responder(url, metodo, corpo0) {
   const u = new URL(url);
   const p = u.pathname;
@@ -285,7 +296,16 @@ function responder(url, metodo, corpo0) {
   }
   if (t === 'a1_stage_edges') return D.stage_edges;
   if (t === 'a1_stage_flags') return D.stage_flags;
-  if (t === 'a1_config') return D.config;
+  if (t === 'a1_config') {
+    // O filtro por chave existia na URL e era ignorado aqui: quem pedia
+    // ?key=eq.doc_types recebia a lista inteira e lia rows[0] — que é
+    // 'regionais'. A tela achava que os tipos de documento do cliente eram
+    // ["Centro","Sul"], e nenhum teste percebia porque nenhum olhava o conteúdo.
+    let r = D.config.map(c => c.key === 'doc_types' ? { ...c, value: DOC_TYPES } : c);
+    const chave = (qs.match(/[?&]key=eq\.([^&]+)/)||[])[1];
+    if (chave) r = r.filter(c => c.key === decodeURIComponent(chave));
+    return r;
+  }
   if (t === 'a1_developments') return D.developments;
   if (t === 'a1_users') return D.users;
   if (t === 'a1_case_events') return D.case_events;
@@ -327,4 +347,4 @@ function responder(url, metodo, corpo0) {
   }
   return [];
 }
-module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos };
+module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos, usarDocTypes };

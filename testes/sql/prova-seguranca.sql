@@ -584,6 +584,235 @@ select checa('o gestor, esse sim, cria e edita perfil',
           values ('11111111-1111-1111-1111-111111111111','Novo pelo gestor','{}')$$) is null);
 reset role;
 
+-- ═════════════════════════════════════════════════════════════════════════════
+-- VISIBILIDADE NO REPASSE
+--
+-- a1_cases só tinha isolamento por CLIENTE: qualquer pessoa dele recebia a
+-- carteira inteira pela API, e quem escondia o resto era a tela. Foi relatado
+-- em produção — um corretor vendo cartão que não era dele.
+--
+-- A regra aqui é a MESMA da tela, de propósito: API escondendo o que a tela
+-- mostra deixaria o gestor sem saber em qual acreditar.
+--
+-- Gente NOVA, só para este cenário. Reaproveitar a Ana e o Bruno parecia
+-- econômico e não era: as provas de Perfis já os tinham vinculado a um perfil,
+-- e o teste do "cadastro antigo" passou a medir o caso do cadastro novo sem
+-- ninguém perceber.
+-- ═════════════════════════════════════════════════════════════════════════════
+reset role;
+insert into a1_partners (id, tenant_id, name, cpf, type, permissions) values
+  -- Sem a chave ver_todos_analistas e sem perfil: é o cadastro antigo.
+  ('bb000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Vera Antiga','10000000091','corretor','{"criar_repasses":true}'),
+  -- Com a chave desligada: é a decisão explícita do gestor.
+  ('bb000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'Nara Fechada','10000000092','corretor',
+   '{"criar_repasses":true,"ver_todos_analistas":false}');
+select teste_login_parceiro('tk-vera','bb000000-0000-0000-0000-000000000001');
+select teste_login_parceiro('tk-nara','bb000000-0000-0000-0000-000000000002');
+
+insert into a1_cases (id, tenant_id, module_key, stage_id, client_name, broker_name) values
+  ('c2000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'repasse','c0000000-0000-0000-0000-000000000001','Cliente da Nara','Nara Fechada'),
+  ('c2000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'repasse','c0000000-0000-0000-0000-000000000001','Cliente da Vera','Vera Antiga');
+-- Um processo do OUTRO cliente: o isolamento por tenant continua tendo de valer.
+insert into a1_tenant_modules (tenant_id, module_key) values
+  ('22222222-2222-2222-2222-222222222222','repasse') on conflict do nothing;
+insert into a1_stages (id, tenant_id, module_key, name, position) values
+  ('c0000000-0000-0000-0000-000000000009','22222222-2222-2222-2222-222222222222',
+   'repasse','Entrada B', 0);
+insert into a1_cases (id, tenant_id, module_key, stage_id, client_name, broker_name) values
+  ('c2000000-0000-0000-0000-000000000003','22222222-2222-2222-2222-222222222222',
+   'repasse','c0000000-0000-0000-0000-000000000009','Cliente do outro','Nara Fechada');
+
+set role anon;
+-- Conta só os dois processos deste cenário: a esteira das provas anteriores já
+-- criou outros em a1_cases, e um total fixo apodreceria a cada teste novo.
+select teste_entrar('tk-gestor');
+select checa('o gestor continua vendo os dois processos do cliente dele',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 2);
+select checa('e não vê o do outro cliente',
+  (select count(*) from a1_cases
+    where id = 'c2000000-0000-0000-0000-000000000003') = 0);
+
+-- CADASTRO ANTIGO: sem a chave e sem perfil, ausente vale "vê tudo". É o que a
+-- tela faz, e a política tem de espelhar — API escondendo o que a tela mostra
+-- deixaria o gestor sem saber em qual acreditar.
+select teste_entrar('tk-vera');
+select checa('sem a chave e sem perfil, continua enxergando a carteira (como a tela)',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 2);
+
+-- DECISÃO EXPLÍCITA DO GESTOR: visão completa desligada.
+select teste_entrar('tk-nara');
+select checa('com a visão fechada, vê só o processo no nome dela',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 1);
+select checa('e o processo que ela vê é o dela mesmo',
+  (select client_name from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 'Cliente da Nara');
+select checa('pedindo o da colega pelo id, direto na API, não vem nada',
+  (select count(*) from a1_cases
+    where id = 'c2000000-0000-0000-0000-000000000002') = 0);
+select checa('e o do outro cliente continua fora de alcance',
+  (select count(*) from a1_cases
+    where id = 'c2000000-0000-0000-0000-000000000003') = 0);
+
+-- PERFIL SEM A CHAVE: ausente passa a valer "não vê". Perfil é sempre novo, não
+-- há cadastro antigo para preservar — e foi assim que um corretor com perfil
+-- passou a enxergar a carteira inteira em produção.
+select teste_entrar('tk-gestor');
+insert into a1_perfis (id, tenant_id, nome, permissions, ativo) values
+  ('9f000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Corretor de teste', '{"criar_repasses": true}', true);
+update a1_partners set perfil_id = '9f000000-0000-0000-0000-000000000001'
+ where id = 'bb000000-0000-0000-0000-000000000001';   -- a Vera, que não tinha a chave
+select teste_entrar('tk-vera');
+select checa('perfil que não fala de visão NÃO abre a carteira inteira',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 1);
+select checa('e ela vê o dela, não o da colega',
+  (select client_name from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 'Cliente da Vera');
+
+-- PERFIL QUE DIZ QUE VÊ TUDO, vê tudo. A regra é a marca explícita, não o fato
+-- de existir perfil.
+select teste_entrar('tk-gestor');
+update a1_perfis set permissions = '{"criar_repasses": true, "ver_todos_analistas": true}'
+ where id = '9f000000-0000-0000-0000-000000000001';
+select teste_entrar('tk-vera');
+select checa('perfil com visão completa marcada enxerga a carteira',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 2);
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- DOCUMENTO OBRIGATÓRIO
+--
+-- A verificação que mais importa é a PRIMEIRA, e ela é negativa: sem nenhum
+-- tipo marcado — a situação de todo cliente hoje — a esteira anda igual. Um
+-- recurso que travasse quem nunca pediu por ele seria pior que a falta dele.
+-- ═════════════════════════════════════════════════════════════════════════════
+reset role;
+insert into a1_cases (id, tenant_id, module_key, stage_id, client_name, documents) values
+  ('c1000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'repasse','c0000000-0000-0000-0000-000000000001','Cliente Doc','[]'::jsonb);
+insert into a1_stages (id, tenant_id, module_key, name, position) values
+  ('c0000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'repasse','Análise', 1);
+
+select checa('sem doc_types cadastrado, nada é obrigatório',
+  a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','repasse') = '{}');
+
+-- Lista antiga de strings soltas, gravada por tela de outra época.
+insert into a1_config (tenant_id, key, value) values
+  ('11111111-1111-1111-1111-111111111111','doc_types','["RG","CPF"]');
+select checa('lista de strings soltas não obriga nada',
+  a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','repasse') = '{}');
+
+update a1_config set value = 'isto nao e json'
+ where tenant_id = '11111111-1111-1111-1111-111111111111';
+select checa('JSON inválido não derruba a consulta — devolve vazio',
+  a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','repasse') = '{}');
+
+select checa('e com nada obrigatório o processo avança de etapa',
+  tenta($$update a1_cases set stage_id = 'c0000000-0000-0000-0000-000000000002'
+           where id = 'c1000000-0000-0000-0000-000000000001'$$) is null);
+
+-- Agora o gestor marca o RG como obrigatório.
+update a1_cases set stage_id = 'c0000000-0000-0000-0000-000000000001'
+ where id = 'c1000000-0000-0000-0000-000000000001';
+update a1_config set value = '[{"id":"t1","name":"RG","module":"repasse","active":true,"obrigatorio":true},
+                               {"id":"t2","name":"CPF","module":"repasse","active":true},
+                               {"id":"t3","name":"Antigo","module":"repasse","active":false,"obrigatorio":true},
+                               {"id":"t4","name":"Renda","module":"PRE_ANALISE","active":true,"obrigatorio":true}]'
+ where tenant_id = '11111111-1111-1111-1111-111111111111';
+
+select checa('só o tipo marcado e ativo obriga, e só no módulo dele',
+  a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','repasse') = '{RG}',
+  array_to_string(a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','repasse'), ','));
+select checa('a Pré-análise tem a lista dela',
+  a1_docs_obrigatorios('11111111-1111-1111-1111-111111111111','PRE_ANALISE') = '{Renda}');
+select checa('e o outro cliente não herda obrigação nenhuma',
+  a1_docs_obrigatorios('22222222-2222-2222-2222-222222222222','repasse') = '{}');
+
+select checa('o processo sem o documento não avança',
+  tenta($$update a1_cases set stage_id = 'c0000000-0000-0000-0000-000000000002'
+           where id = 'c1000000-0000-0000-0000-000000000001'$$)
+    like '%documento_obrigatorio_faltando%RG%');
+
+select checa('e o erro diz o nome do que falta, não um código seco',
+  a1_case_docs_faltando('c1000000-0000-0000-0000-000000000001') = '{RG}');
+
+update a1_cases set documents = '[{"id":"d1","type":"RG","name":"rg.pdf"}]'::jsonb
+ where id = 'c1000000-0000-0000-0000-000000000001';
+select checa('com o documento anexado, nada mais falta',
+  a1_case_docs_faltando('c1000000-0000-0000-0000-000000000001') = '{}');
+select checa('e o processo avança',
+  tenta($$update a1_cases set stage_id = 'c0000000-0000-0000-0000-000000000002'
+           where id = 'c1000000-0000-0000-0000-000000000001'$$) is null);
+
+-- Voltar de etapa continua livre: corrigir engano não pode depender de anexar
+-- documento que ainda não existe. O processo está na etapa 2 e volta para a 1
+-- com o dossiê esvaziado — se a trava valesse nos dois sentidos, isto barraria.
+update a1_cases set documents = '[]'::jsonb
+ where id = 'c1000000-0000-0000-0000-000000000001';
+select checa('voltar de etapa sem o documento continua livre',
+  tenta($$update a1_cases set stage_id = 'c0000000-0000-0000-0000-000000000001'
+           where id = 'c1000000-0000-0000-0000-000000000001'$$) is null);
+
+-- Na Pré-análise a trava mora dentro do orquestrador. Precisa de sessão de
+-- verdade: sem ela a1_tenant() é nulo e a função para em 'nao_encontrado'
+-- antes de chegar na regra — o teste passaria pelo motivo errado.
+--
+-- E precisa da pré-análise de volta na situação inicial: as provas anteriores
+-- já a moveram, e de 'Aprovada' a transição desenhada não existe — o teste
+-- falharia por 'transicao_nao_permitida', que não é o que se quer provar aqui.
+-- Só o orquestrador move a esteira, então a reposição pede o mesmo sinal que
+-- ele usa; o navegador não tem como ligá-lo.
+do $$ begin
+  perform set_config('a1.orquestrador','1',true);
+  update a1_pre_analises set situacao_id = '50000000-0000-0000-0000-000000000001'
+   where id = '80000000-0000-0000-0000-000000000001';
+end $$;
+set role anon;
+select teste_entrar('tk-ana');
+select checa('a pré-análise sem o documento obrigatório não transiciona',
+  (select tenta($$select a1_pa_transicionar(
+     '80000000-0000-0000-0000-000000000001'::uuid,
+     '50000000-0000-0000-0000-000000000002'::uuid)$$))
+    like '%documento_obrigatorio_faltando%Renda%');
+
+-- O dossiê é do gestor aqui: a1_pa_guarda_documento recusa quem não tem
+-- 'analisar_credito' — inclusive o superusuário sem sessão, que é como esta
+-- prova estava tentando — e a política de edição ainda exige que a pré-análise
+-- seja visível para quem escreve, o que não vale para a analista de outra
+-- carteira. O gestor atende às duas condições.
+select teste_entrar('tk-gestor');
+insert into a1_pa_documentos (tenant_id, pre_analise_id, tipo, storage_key, status) values
+  ('11111111-1111-1111-1111-111111111111','80000000-0000-0000-0000-000000000001',
+   'Renda','k/renda.pdf','ENVIADO');
+select checa('com o documento enviado, o que faltava zera',
+  a1_pa_docs_faltando('80000000-0000-0000-0000-000000000001') = '{}');
+
+update a1_pa_documentos set status = 'REPROVADO'
+ where pre_analise_id = '80000000-0000-0000-0000-000000000001';
+select checa('documento REPROVADO não conta como entregue',
+  a1_pa_docs_faltando('80000000-0000-0000-0000-000000000001') = '{Renda}');
+reset role;
+
+-- Limpa o cenário para não contaminar quem rodar depois.
+update a1_config set value = '[]'
+ where tenant_id = '11111111-1111-1111-1111-111111111111';
+
 -- =============================================================================
 \o
 \echo ''

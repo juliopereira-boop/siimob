@@ -110,14 +110,34 @@ create table if not exists a1_cases (
   tenant_id uuid, module_key text, stage_id uuid, stage_name text,
   stage_entered_at timestamptz, client_name text, client_cpf text,
   development text, unit text, broker_name text, real_estate_name text,
+  -- manager_name e partner_name faltavam aqui e existem em produção. É por
+  -- esses três nomes que o Repasse sabe de quem é o processo — sem eles, uma
+  -- política escrita sobre o dono não podia nem ser carregada, quanto mais
+  -- provada.
+  manager_name text, partner_name text,
   is_new boolean, new_at timestamptz, payload jsonb default '{}'::jsonb,
   documents jsonb default '[]'::jsonb, created_at timestamptz default now());
+
+-- a1_config guarda as configurações do cliente em JSON dentro de uma coluna
+-- TEXT — inclusive os tipos de documento, que é de onde sai a regra de
+-- documento obrigatório. O andaime não tinha esta tabela, e por isso
+-- a1_docs_obrigatorios caía no seu próprio "exception when others" e devolvia
+-- lista vazia: a prova passaria com a regra desligada, sem provar nada.
+create table if not exists a1_config (
+  tenant_id uuid, key text, value text, primary key (tenant_id, key));
 
 -- a1_cases é a tabela do Repasse que já existe hoje, com RLS por cliente e
 -- acessível ao anon — é assim em produção, e é contra isso que o gatilho
 -- CREATE_REPASS precisa ser testado.
+--
+-- A política se chama cases_tenant_isolation porque é esse o nome dela em
+-- produção. Aqui ela se chamava a1_cases_tenant, e um nome diferente é um
+-- andaime que mente: um arquivo que troque a política de produção pelo nome
+-- não trocaria a daqui, e a prova ficaria verde com as duas valendo ao mesmo
+-- tempo — que é justamente a situação que não pode existir.
 alter table a1_cases enable row level security;
 drop policy if exists a1_cases_tenant on a1_cases;
+drop policy if exists cases_tenant_isolation on a1_cases;
 grant select, insert, update on a1_cases to anon, authenticated;
 
 create or replace function a1_tenant()
@@ -130,7 +150,7 @@ set search_path = public, extensions, pg_temp as $$
 $$;
 grant execute on function a1_tenant() to anon, authenticated;
 
-create policy a1_cases_tenant on a1_cases for all
+create policy cases_tenant_isolation on a1_cases for all
   using (tenant_id = a1_tenant()) with check (tenant_id = a1_tenant());
 
 -- Entrar na pele de alguém: é assim que o PostgREST chega ao banco — papel anon

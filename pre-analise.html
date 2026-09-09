@@ -421,12 +421,54 @@ const TIPOS_DOC_PADRAO = a1DocsPadrao('PRE_ANALISE');
 function lerTiposDoc(cfg){
   let lista = [];
   try { lista = JSON.parse((cfg && cfg[0] && cfg[0].value) || '[]'); } catch { lista = []; }
-  if (!Array.isArray(lista)) return TIPOS_DOC_PADRAO;
+  if (!Array.isArray(lista)) lista = [];
+  // O cru fica guardado: o seletor precisa só dos nomes, mas a regra de
+  // documento obrigatorio precisa da marca, que se perderia no .map(name).
+  G.tiposDocCru = lista;
   const meus = lista
     .filter(t => t && t.module === 'PRE_ANALISE' && t.active !== false && t.name)
     .map(t => String(t.name));
   return meus.length ? meus : TIPOS_DOC_PADRAO;
 }
+
+// Documento obrigatorio: quais faltam nesta pre-analise. Documento REPROVADO ou
+// SUBSTITUIDO nao conta como entregue — o tipo continua faltando. E a mesma
+// conta que a1_pa_docs_faltando faz no banco, que e quem tranca de verdade.
+function docsObrigatoriosFaltando(){
+  const entregues = (G.atualDocs || [])
+    .filter(d => d && !['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].includes(d.status))
+    .map(d => d.tipo);
+  return a1DocsFaltando(G.tiposDocCru || [], 'PRE_ANALISE', entregues);
+}
+
+// ─── Acesso por situação ─────────────────────────────────────────────────────
+//
+// O gestor marca, no cadastro do corretor ou do analista, o que a pessoa pode
+// fazer em cada situação: nada, só ver, ou editar. O mapa é um só para os três
+// módulos (as chaves são uuid, não colidem) e mora em permissions.etapas.
+//
+// A REGRA DE COMPATIBILIDADE, que é o que impede uma regressão: enquanto o mapa
+// não tiver NENHUMA situação DESTE módulo, o módulo não é restrito. Todo
+// parceiro de hoje tem o mapa preenchido só com etapas do Repasse — e passar a
+// exigir marcação aqui tiraria a Pré-análise de todos eles de uma vez. A
+// restrição começa a valer no momento em que o gestor marca a primeira situação
+// da Pré-análise, que é quando ele de fato pediu por ela.
+function etapasDoUsuario(){
+  const p = (G.user && G.user.permissions) || {};
+  return (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : {};
+}
+function moduloRestrito(){
+  if (ehGestor()) return false;
+  if (perm('gerente')) return false;
+  const mapa = etapasDoUsuario();
+  return G.situacoes.some(s => mapa[s.id] === 'ver' || mapa[s.id] === 'editar');
+}
+function nivelNaSituacao(id){
+  if (!moduloRestrito()) return 'editar';
+  const n = etapasDoUsuario()[id];
+  return (n === 'ver' || n === 'editar') ? n : null;
+}
+function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
 
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
@@ -449,6 +491,8 @@ function filtradas(){
   const fc = document.getElementById('f-corretor').value;
   const fe = document.getElementById('f-empr').value;
   return G.lista.filter(p => {
+    // Situação sem nada marcado é invisível para esta pessoa.
+    if (!podeVerSituacao(p.situacao_id)) return false;
     if (fs && p.situacao_id !== fs) return false;
     if (fc && p.corretor_id !== fc) return false;
     if (fe && p.empreendimento_id !== fe) return false;
@@ -870,7 +914,7 @@ function renderDossie(){
 
 function dosDados(){
   const p = G.atual, s = sla(p);
-  const podeEditar = perm('editar_repasses');
+  const podeEditar = perm('editar_repasses') && nivelNaSituacao(p.situacao_id) === 'editar';
   return `
     <div class="fgrid">
       <div class="fg"><label>Empreendimento</label>
@@ -1154,7 +1198,9 @@ function dosComercial(){
 // ─── rodapé: ações e transições possíveis ────────────────────────────────────
 function montarRodapeDossie(){
   const p = G.atual;
-  const podeMover = perm('editar_repasses');
+  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
+  // empurra para a seguinte.
+  const podeMover = perm('editar_repasses') && nivelNaSituacao(p.situacao_id) === 'editar';
 
   // As situações de destino são as arestas que a esteira do cliente permite a
   // partir daqui. A tela não inventa caminho: mostra o que o banco aceita.
@@ -1183,6 +1229,10 @@ function montarRodapeDossie(){
 async function moverSituacao(){
   const p = G.atual, para = document.getElementById('dos-mover').value;
   if (!para) return;
+  // O banco tranca de qualquer jeito; o aviso daqui e que diz O QUE falta, e
+  // chega antes de a pessoa digitar a justificativa a toa.
+  const falta = docsObrigatoriosFaltando();
+  if (falta.length){ toast(a1DocsAvisoFaltando(falta),'error'); return; }
   const just = prompt('Justificativa (opcional):') || null;
   const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
   try {
@@ -1235,6 +1285,10 @@ function traduzErro(j){
     acao_desconhecida:         'Ação desconhecida.',
     modulo_comercial_desabilitado:'O módulo Comercial não está liberado para este cliente.'
   };
+  // O banco manda o nome do que falta junto da mensagem. Repetir o nome e o
+  // que faz o gestor resolver em vez de recarregar a tela.
+  const falta = /documento_obrigatorio_faltando:\s*([^\n"}]*)/.exec(m);
+  if (falta) return a1DocsAvisoFaltando(falta[1].split(',').map(x=>x.trim()).filter(Boolean));
   for (const k in mapa) if (m.includes(k)) return mapa[k];
   return m || 'Não foi possível concluir a operação.';
 }

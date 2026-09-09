@@ -1784,6 +1784,7 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/modulo-shell.js"></script>
+<script src="/js/documentos.js"></script>
 <script src="/js/paineis.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
@@ -1898,9 +1899,10 @@ async function init() {
   try { await a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
 
-  const roleLabel = G.user.role === 'partner'
-    ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
-    : G.user.role;
+  // O rótulo sai de js/modulo-shell.js, o mesmo que a Pré-análise e o Comercial
+  // usam. Aqui havia uma cópia que chamava de "Correspondente" todo parceiro
+  // que não fosse despachante — o corretor aparecia com o papel de outra pessoa.
+  const roleLabel = a1RotuloPapel(G.user);
   document.getElementById('hdr-user').innerHTML   = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
   // Item 1: esconde itens exclusivos do gestor ANTES de qualquer await (evita o "flash" p/ o usuário correspondente)
   // Item 2: mostra o ícone de perfil para o usuário correspondente
@@ -2038,6 +2040,10 @@ function souCorretor(){ return !!G.user && G.user.role === 'partner' && G.user.t
 // não têm, e por isso não são submetidos a essa exigência.
 function usaPermissaoPorEtapa(){
   const p = (G.user && G.user.permissions) || {};
+  // O mapa de etapas basta: quem tem etapa marcada está no modelo novo, mesmo
+  // que a chave alterar_etapa venha de um perfil que não a declara.
+  if (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)
+      && Object.keys(p.etapas).length) return true;
   return 'alterar_etapa' in p;
 }
 function meuNome(){ return ((G.user && G.user.name) || '').trim().toLowerCase(); }
@@ -2046,9 +2052,17 @@ function temVisaoCompleta(){
   if (souGestorUser()) return true;
   const p = (G.user && G.user.permissions) || {};
   if (p.gerente) return true;
-  // Ausente = true para não mudar o que já valia para quem já estava cadastrado;
-  // corretores novos nascem com a chave em false (marcada no cadastro).
-  return ('ver_todos_analistas' in p) ? !!p.ver_todos_analistas : true;
+  if ('ver_todos_analistas' in p) return !!p.ver_todos_analistas;
+  // AUSENTE, E É AQUI QUE MORA O CUIDADO.
+  //
+  // Para quem foi cadastrado antes deste modelo, ausente segue valendo "vê
+  // tudo" — mudar isso tiraria acesso, sem aviso, de gente que trabalha hoje.
+  //
+  // Para quem segue um PERFIL, ausente é "não vê". Um perfil é sempre novo:
+  // não existe cadastro antigo para preservar, e o perfil que não fala de
+  // visão abria a carteira inteira do cliente em silêncio. É o oposto do que
+  // a1_pa_visivel() faz no banco, e das duas quem estava errada era esta.
+  return !(G.user && G.user.perfil_id);
 }
 
 function isMeuProcesso(c){
@@ -2190,6 +2204,10 @@ async function motivoDoErro(res){
     return 'Nome, e-mail, telefone e senha voce mesmo altera. CPF e permissoes so o gestor muda.';
   if (/parceiro_nao_apaga_cadastro/.test(m))
     return 'Apagar cadastro e coisa do gestor.';
+  // O gatilho manda o nome do que falta junto da mensagem. Repetir o nome aqui
+  // e o que faz o gestor resolver em vez de recarregar a tela.
+  const _falta = /documento_obrigatorio_faltando:\s*([^\n"}]*)/.exec(m);
+  if (_falta) return a1DocsAvisoFaltando(_falta[1].split(',').map(x=>x.trim()).filter(Boolean));
   if (res.status === 401 || res.status === 403 || /row-level security/i.test(m))
     return 'Voce nao tem permissao para essa alteracao.';
   return 'Erro ao salvar. Tente novamente.';
@@ -3050,6 +3068,42 @@ function avisoBloqueio(fromId){
     : 'Workflow bloqueado e esta etapa não tem saída desenhada. Ajuste o workflow.', 'error');
 }
 
+// ─── Documento obrigatório ────────────────────────────────────────────────────
+//
+// O gestor marca o tipo em Configurações › Tipos de documento; a partir daí o
+// processo não avança sem ele. Quem TRANCA é o banco
+// (trg_a1_cases_guarda_documento); daqui sai o aviso que diz O QUE falta, que é
+// o que o gestor precisa para resolver.
+//
+// Só avança-a-frente é conferido — a mesma regra do gatilho. Voltar de etapa
+// continua livre: corrigir engano não pode depender de anexar documento que
+// ainda não existe.
+function avancaNoWorkflow(deId, paraId){
+  const a=G.stages.find(s=>s.id===deId), b=G.stages.find(s=>s.id===paraId);
+  if(!a || !b || a.position==null || b.position==null) return false;
+  return b.position > a.position;
+}
+
+// Os documentos NÃO vêm na listagem (a coluna é pesada e ficou fora do select
+// de propósito). Busca só quando existe tipo obrigatório — cliente que não usa
+// o recurso não paga nenhuma requisição a mais.
+async function docsObrigatoriosFaltando(caseId, deId, paraId){
+  if(!avancaNoWorkflow(deId, paraId)) return [];
+  await fetchDocTypes();
+  if(!a1DocsObrigatorios(G.docTypes, 'repasse').length) return [];
+  let docs=null;
+  const _c=G.cases.find(c=>c.id===caseId);
+  if(_c && Array.isArray(_c.documents)) docs=_c.documents;
+  if(docs===null){
+    docs=await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}&select=documents`,{headers:A1.headers()})
+      .then(r=>r.json()).then(a=>(a&&a[0])?a[0].documents:null).catch(()=>null);
+    // Não deu para perguntar: não inventa falta. O gatilho do banco continua
+    // sendo a trava de verdade, e a mensagem dele chega traduzida logo abaixo.
+    if(!Array.isArray(docs)) return [];
+  }
+  return a1DocsFaltando(G.docTypes, 'repasse', docs.map(d=>d && d.type));
+}
+
 async function moveCard(caseId, stageId) {
   const stage=G.stages.find(s=>s.id===stageId);
   if(!stage) return;
@@ -3068,7 +3122,12 @@ async function moveCard(caseId, stageId) {
   if(nivelNaEtapa(_atual) !== 'editar'){
     toast('Nesta etapa você só pode visualizar. Peça ao gestor a permissão de editar aqui.','error'); return;
   }
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:stage.name,stage_entered_at:new Date().toISOString()})});
+  const _falta=await docsObrigatoriosFaltando(caseId, _atual, stageId);
+  if(_falta.length){ toast(a1DocsAvisoFaltando(_falta),'error'); return; }
+  const _res=await fetch(`${A1.rest('a1_cases')}?id=eq.${caseId}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({stage_id:stageId,stage_name:stage.name,stage_entered_at:new Date().toISOString()})});
+  // Antes daqui a tela movia o cartão sem olhar a resposta: o banco podia
+  // recusar e o gestor via o processo na etapa nova até recarregar a página.
+  if(!_res.ok){ toast(await motivoDoErro(_res),'error'); return; }
   await Promise.all([
     fetch(A1.rest('a1_events'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:caseId,type:'stage_change',description:`Movido para: ${stage.name}`,actor_name:G.user.name})}),
     fetch(A1.rest('a1_stage_history'),{method:'POST',headers:A1.headers(),body:JSON.stringify({case_id:caseId,stage_id:stageId,stage_name:stage.name,entered_at:new Date().toISOString()})}),
@@ -3727,6 +3786,13 @@ async function saveCase() {
   const stage=G.stages.find(s=>s.id===stageId);
   const oldStage=G.editingCaseData.stage_id;
   if(stageId!==oldStage && !podeMover(oldStage, stageId)){ avisoBloqueio(oldStage); return; }
+  if(stageId!==oldStage){
+    // Antes de gravar: o histórico de etapa é escrito logo abaixo, e uma
+    // recusa do banco depois disso deixaria uma linha de histórico de um
+    // movimento que não aconteceu.
+    const _falta=await docsObrigatoriosFaltando(id, oldStage, stageId);
+    if(_falta.length){ toast(a1DocsAvisoFaltando(_falta),'error'); return; }
+  }
   const _entDate=document.getElementById('e-ent-date')?.value||null;
   const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||''),data_venda:(v('e-data-venda')||'')};
   const patch={
@@ -3757,7 +3823,7 @@ async function saveCase() {
     toast('Salvo com sucesso','success');
     closeModal('modal-card-bg');
     renderKanban();renderList();renderDashboard();populateFilterOptions();
-  } else toast('Erro ao salvar','error');
+  } else toast(await motivoDoErro(res),'error');
 }
 
 async function archiveCase() {

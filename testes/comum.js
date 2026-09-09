@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { responder, usarExtras, liberarModulos, negarModulos } = require('./fake');
+const { responder, usarExtras, liberarModulos, negarModulos, usarDocTypes } = require('./fake');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 async function abrir(pag, opc = {}) {
   usarExtras(opc.extras === true);
@@ -9,6 +9,8 @@ async function abrir(pag, opc = {}) {
   // Para provar o que some quando um módulo ANTIGO falta:
   // abrir('configuracoes.html', {semModulos:['repasse']}).
   negarModulos(opc.semModulos || []);
+  // Tipos de documento do cliente; sem isto vale a lista antiga de strings.
+  usarDocTypes(opc.docTypes);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];

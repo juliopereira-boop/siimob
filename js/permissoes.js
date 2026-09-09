@@ -24,9 +24,11 @@ const A1_PERMISSOES = [
         + 'torna as outras marcas desnecessárias.',
     lida_em:'a1_perm (SQL), podeEditarProcesso, a1_pa_visivel, a1_co_visivel' },
   { chave:'ver_todos_analistas', modulo:null, rotulo:'Visão completa (vê de todos)',
-    ajuda:'Sem isto a pessoa vê apenas os processos em que ela é a responsável. '
-        + 'É como o coordenador enxerga a equipe.',
-    lida_em:'temVisaoCompleta, a1_pa_visivel, a1_co_visivel' },
+    ajuda:'ABRE A CARTEIRA INTEIRA DO CLIENTE para esta pessoa, em todos os '
+        + 'módulos: ela passa a ver processo de todo mundo, não só o dela. '
+        + 'É como o coordenador enxerga a equipe. Desligado, ela vê apenas os '
+        + 'processos em que é a responsável.',
+    lida_em:'temVisaoCompleta, a1_case_visivel (SQL), a1_pa_visivel, a1_co_visivel' },
   { chave:'ver_dashboard', modulo:null, rotulo:'Ver dashboard',
     ajuda:'Sem isto a aba Dashboard nem aparece para ela.',
     lida_em:'boot de repasse/andamento/listagem, js/modulo-shell.js' },

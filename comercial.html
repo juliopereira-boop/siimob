@@ -290,6 +290,32 @@ function preencherFiltros(){
   document.getElementById('f-corretor').innerHTML = '<option value="">Todos os corretores</option>' +
     G.corretores.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
 }
+// ─── Acesso por situação ─────────────────────────────────────────────────────
+//
+// Mesmo modelo do Repasse e da Pré-análise: o gestor marca, no cadastro da
+// pessoa, o que ela pode fazer em cada situação — nada, só ver, ou editar. O
+// mapa é um só para os três módulos, em permissions.etapas; as chaves são uuid
+// e não colidem entre tabelas.
+//
+// Enquanto o mapa não tiver NENHUMA situação deste módulo, o módulo não é
+// restrito. Sem essa regra, todo parceiro de hoje — que tem o mapa preenchido
+// só com etapas do Repasse — perderia o Comercial inteiro de uma vez.
+function etapasDoUsuario(){
+  const p = (G.user && G.user.permissions) || {};
+  return (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : {};
+}
+function moduloRestrito(){
+  if (ehGestor() || perm('gerente')) return false;
+  const mapa = etapasDoUsuario();
+  return G.situacoes.some(s => mapa[s.id] === 'ver' || mapa[s.id] === 'editar');
+}
+function nivelNaSituacao(id){
+  if (!moduloRestrito()) return 'editar';
+  const n = etapasDoUsuario()[id];
+  return (n === 'ver' || n === 'editar') ? n : null;
+}
+function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
+
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
 function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
@@ -309,6 +335,8 @@ function filtradas(){
   const fs = document.getElementById('f-situacao').value;
   const fc = document.getElementById('f-corretor').value;
   return G.lista.filter(c => {
+    // Situação sem nada marcado é invisível para esta pessoa.
+    if (!podeVerSituacao(c.situacao_id)) return false;
     if (fs && c.situacao_id !== fs) return false;
     if (fc && c.corretor_id !== fc) return false;
     if (G.filtroSla && sla(c).nivel !== G.filtroSla) return false;
@@ -458,7 +486,8 @@ function renderDossie(){
 }
 
 function dosProposta(){
-  const co = G.atual, p = co.proposta || {}, pode = perm('editar_repasses');
+  const co = G.atual, p = co.proposta || {},
+        pode = perm('editar_repasses') && nivelNaSituacao(co.situacao_id) === 'editar';
   const cr = (co.origem_snapshot || {}).credito || {};
   const aprovado = cr.valor_total || 0;
   return `
@@ -558,7 +587,7 @@ function dosOrigem(){
 }
 
 function dosContrato(){
-  const pode = perm('editar_repasses');
+  const pode = perm('editar_repasses') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
   const podeAssinar = ehGestor() || perm('gerente') || perm('analisar_credito');
   const linhas = G.atualContratos.map(c => `
     <div class="linha">
@@ -676,7 +705,10 @@ function dosRepasse(){
 }
 
 function montarRodape(){
-  const co = G.atual, pode = perm('editar_repasses');
+  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
+  // empurra para a seguinte.
+  const co = G.atual,
+        pode = perm('editar_repasses') && nivelNaSituacao(co.situacao_id) === 'editar';
   const destinos = G.transicoes
     .filter(t => t.de_id === null || t.de_id === co.situacao_id)
     .map(t => G.situacoes.find(s => s.id === t.para_id))

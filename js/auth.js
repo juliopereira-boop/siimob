@@ -179,6 +179,7 @@ async function a1RefreshPartnerPerms() {
       return (v && typeof v === 'object') ? v : null;
     };
     let perms = objeto(row.permissions);
+    let veioDoPerfil = false;
 
     // O PERFIL MANDA, QUANDO EXISTE — e a tradução acontece só aqui.
     //
@@ -203,13 +204,30 @@ async function a1RefreshPartnerPerms() {
           // que a1_perm() faz. Divergir aqui daria tela e API discordando.
           if (perfil && perfil.ativo !== false) {
             const pp = objeto(perfil.permissions);
-            if (pp) perms = pp;
+            if (pp) { perms = pp; veioDoPerfil = true; }
           }
         }
       } catch {}                                  // rede fora: fica com o que veio da pessoa
     }
 
     if (!perms) return null;
+
+    // O PERFIL DIZ O QUE A PESSOA PODE FAZER. NÃO DIZ ONDE.
+    //
+    // O mapa de etapas (`etapas` / `etapas_permitidas`) é da PESSOA: é o gestor
+    // dizendo em quais etapas aquele corretor atua. Perfil nenhum carrega isso —
+    // ele descreve um tipo de gente, não a carteira de alguém.
+    //
+    // Trocar o objeto inteiro pelo do perfil jogava esse mapa fora, e a tela
+    // lia "sem mapa" como "sem restrição": um corretor limitado a cinco etapas
+    // passava a enxergar TODAS no instante em que ganhava um perfil. Foi
+    // relatado em produção, com o corretor vendo cartão que não era dele.
+    if (veioDoPerfil) {
+      const doPessoa = objeto(row.permissions) || {};
+      if (doPessoa.etapas !== undefined)             perms.etapas = doPessoa.etapas;
+      if (doPessoa.etapas_permitidas !== undefined)  perms.etapas_permitidas = doPessoa.etapas_permitidas;
+    }
+
     u.permissions = perms;
     u.perfil_id = row.perfil_id || null;
     if (row.type) u.type = row.type;

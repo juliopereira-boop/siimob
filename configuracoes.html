@@ -666,8 +666,8 @@
       </div>
       <div style="overflow-x:auto">
         <table class="pt-table">
-          <thead><tr><th>Nome</th><th>Status</th><th></th></tr></thead>
-          <tbody id="dt-tbody"><tr><td colspan="3" class="pt-empty">Carregando...</td></tr></tbody>
+          <thead><tr><th>Nome</th><th style="width:110px">Obrigatório</th><th style="width:90px">Status</th><th></th></tr></thead>
+          <tbody id="dt-tbody"><tr><td colspan="4" class="pt-empty">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1879,11 +1879,16 @@ function renderDocTypesList(){
   const tb=document.getElementById('dt-tbody'); if(!tb) return;
   pintarDocTypesPadrao();
   const list=(G.docTypes||[]).filter(t=>t.module===(G.docTypeModule||'repasse'));
-  if(!list.length){ tb.innerHTML='<tr><td colspan="3" class="pt-empty">Nenhum tipo cadastrado para este módulo.</td></tr>'; return; }
+  if(!list.length){ tb.innerHTML='<tr><td colspan="4" class="pt-empty">Nenhum tipo cadastrado para este módulo.</td></tr>'; return; }
   tb.innerHTML=list.map(t=>{
     const on=t.active!==false;
+    // A leitura do obrigatório é a mesma do banco: só o texto 'true' obriga.
+    const obr=String(t.obrigatorio)==='true';
     return `<tr>
       <td>${esc(t.name)}</td>
+      <td><label style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;cursor:pointer" title="Sem este documento anexado o processo não avança de etapa.">
+        <input type="checkbox" ${obr?'checked':''} onchange="toggleDocTypeObrigatorio('${t.id}')" style="width:15px;height:15px;accent-color:#3D5CC8;cursor:pointer">
+        ${obr?'Sim':'Não'}</label></td>
       <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${on?'#dcfce7':'#fee2e2'};color:${on?'#166534':'#b91c1c'}">${on?'Ativo':'Inativo'}</span></td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="toggleDocType('${t.id}')">${on?'Desativar':'Ativar'}</button>
@@ -1900,6 +1905,22 @@ async function saveDocType(){
   G.docTypes.push({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,module:mod,active:true});
   await persistDocTypes(); inp.value=''; renderDocTypesList(); showToast('Tipo cadastrado');
 }
+// Marcar como obrigatório é a coisa mais consequente desta tela: a partir daqui
+// nenhum processo do módulo avança de etapa sem este documento. Por isso o
+// aviso diz o que vai acontecer, e não um "salvo com sucesso".
+async function toggleDocTypeObrigatorio(id){
+  const t=(G.docTypes||[]).find(x=>x.id===id); if(!t) return;
+  // Grava booleano, como `active` já faz. A LEITURA é que é tolerante
+  // (String(...)==='true'), porque o mesmo JSON é lido pelo SQL com ->>, que
+  // devolve texto — e por telas antigas que gravaram valores estranhos.
+  const virou = String(t.obrigatorio)!=='true';
+  t.obrigatorio = virou;
+  await persistDocTypes(); renderDocTypesList();
+  showToast(virou
+    ? `"${t.name}" agora é obrigatório: sem ele o processo não avança de etapa.`
+    : `"${t.name}" deixou de ser obrigatório.`, virou?'success':'info');
+}
+
 async function toggleDocType(id){
   const t=(G.docTypes||[]).find(x=>x.id===id); if(!t) return;
   t.active=t.active===false;
@@ -3865,17 +3886,57 @@ function setEtapaNivel(stageId, alvo){
   pintarEtapasCorretor();
 }
 
+// As etapas de TODOS os módulos licenciados, na ordem do processo.
+//
+// O seletor mostrava só as etapas do Repasse. Corretor e analista trabalham
+// também na Pré-análise e no Comercial, e lá o acesso era tudo-ou-nada — a
+// mesma pessoa que o gestor limitava a duas etapas do Repasse enxergava a
+// esteira inteira dos outros dois módulos.
+//
+// A esteira de cada módulo mora em tabela própria (a1_stages, a1_pa_situacoes,
+// a1_co_situacoes) com nomes de coluna diferentes; aqui elas viram a mesma
+// forma. Os ids são uuid, então o mapa continua sendo um só, sem prefixo e sem
+// risco de um id de módulo colidir com o de outro.
+function etapasGrupos(){
+  const g = [];
+  const pa = Array.isArray(G.paSituacoes) ? G.paSituacoes : [];
+  const co = Array.isArray(G.coSituacoes) ? G.coSituacoes : [];
+  if (G.temPA && pa.length)
+    g.push({ chave:'PRE_ANALISE', rotulo:'Pré-análise',
+             etapas: pa.map(x => ({ id:x.id, name:x.nome, color:x.cor })) });
+  if (G.temCO && co.length)
+    g.push({ chave:'COMERCIAL', rotulo:'Comercial',
+             etapas: co.map(x => ({ id:x.id, name:x.nome, color:x.cor })) });
+  g.push({ chave:'repasse', rotulo:'Repasse', etapas: etapasLista() });
+  return g.filter(x => x.etapas.length);
+}
+
+// Busca as esteiras dos módulos novos. Só com a licença — sem ela a política do
+// banco devolveria lista vazia de qualquer jeito, e a consulta seria um
+// round-trip jogado fora em todo cliente que não tem o módulo.
+async function etapasGarantir(){
+  const tarefas = [];
+  if (G.temPA && !Array.isArray(G.paSituacoes))
+    tarefas.push(fetch(`${A1.rest('a1_pa_situacoes')}?ativo=eq.true&select=id,nome,cor,ordem&order=ordem.asc`,
+      {headers:A1.headers()}).then(r=>r.json()).then(a=>{ G.paSituacoes = Array.isArray(a)?a:[]; }).catch(()=>{ G.paSituacoes = []; }));
+  if (G.temCO && !Array.isArray(G.coSituacoes))
+    tarefas.push(fetch(`${A1.rest('a1_co_situacoes')}?ativo=eq.true&select=id,nome,cor,ordem&order=ordem.asc`,
+      {headers:A1.headers()}).then(r=>r.json()).then(a=>{ G.coSituacoes = Array.isArray(a)?a:[]; }).catch(()=>{ G.coSituacoes = []; }));
+  if (tarefas.length) await Promise.all(tarefas);
+}
+
 function coEtapasTodas(nivel){
   CO_ETAPAS = {};
-  if (nivel) etapasLista().forEach(st => { CO_ETAPAS[st.id] = nivel; });
+  if (nivel) etapasGrupos().forEach(g => g.etapas.forEach(st => { CO_ETAPAS[st.id] = nivel; }));
   pintarEtapasCorretor();
 }
 
 function pintarEtapasCorretor(){
   const box = document.getElementById(ETAPAS_PREFIXO + '-etapas-list');
-  const etapas = etapasLista();
   if (!box) return;
-  if (!etapas.length){
+  const grupos = etapasGrupos();
+  const total  = grupos.reduce((n,g) => n + g.etapas.length, 0);
+  if (!total){
     box.innerHTML = '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
     return;
   }
@@ -3887,7 +3948,7 @@ function pintarEtapasCorretor(){
       style="font-size:.7rem;font-weight:700;padding:.22rem .6rem;border-radius:6px;cursor:pointer;
              border:1.5px solid ${cor};background:${bg};color:${tx};min-width:56px">${label}</button>`;
   };
-  box.innerHTML = etapas.map(st => {
+  const linha = st => {
     const n = CO_ETAPAS[st.id] || null;
     return `<div style="display:flex;align-items:center;gap:.55rem;padding:.3rem .1rem">
       <span style="width:9px;height:9px;border-radius:50%;background:${st.color||'#94a3b8'};flex-shrink:0"></span>
@@ -3895,13 +3956,20 @@ function pintarEtapasCorretor(){
       ${btn(st.id,'ver',    n==='ver'||n==='editar', 'Ver')}
       ${btn(st.id,'editar', n==='editar',            'Editar')}
     </div>`;
-  }).join('');
+  };
+  // Com um módulo só, o título do grupo seria enfeite: é o cliente de hoje, e
+  // a tela dele não deve mudar de aparência por causa de um recurso que ele
+  // não tem.
+  box.innerHTML = grupos.map(g => (grupos.length > 1
+    ? `<div data-modulo="${g.chave}" style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin:.5rem 0 .15rem;padding-top:.35rem;border-top:1px solid var(--border)">${esc(g.rotulo)}</div>`
+    : '') + g.etapas.map(linha).join('')).join('');
+
   const nVer = Object.values(CO_ETAPAS).filter(v=>v==='ver').length;
   const nEd  = Object.values(CO_ETAPAS).filter(v=>v==='editar').length;
   const res  = document.getElementById(ETAPAS_PREFIXO + '-etapas-resumo');
   if (res) res.textContent = (nVer+nEd)
-    ? `${nEd} etapa(s) com edição · ${nVer} apenas leitura · ${etapas.length-nVer-nEd} sem acesso`
-    : 'Nenhuma etapa marcada — o corretor entrará e não verá processo nenhum.';
+    ? `${nEd} etapa(s) com edição · ${nVer} apenas leitura · ${total-nVer-nEd} sem acesso`
+    : 'Nenhuma etapa marcada — a pessoa entrará e não verá processo nenhum.';
 }
 
 let EDIT_CORRETOR_ID=null;
@@ -3954,6 +4022,7 @@ async function openCorretor(id){
   } else if (Array.isArray(p.etapas_permitidas)) {
     p.etapas_permitidas.forEach(id => { CO_ETAPAS[id] = 'editar'; });
   }
+  await etapasGarantir();
   pintarEtapasCorretor();
   openModal('modal-corretor-bg');
 }
@@ -5044,13 +5113,15 @@ async function openAnalista(a) {
       .then(r=>r.json()).catch(()=>[]);
     if (!Array.isArray(G.stages)) G.stages = [];
   }
+  await etapasGarantir();
   CO_ETAPAS = {};
   if (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) {
     Object.entries(p.etapas).forEach(([k,v]) => { if (v==='ver'||v==='editar') CO_ETAPAS[k]=v; });
   } else if (!a) {
-    // Analista novo nasce podendo editar em todas as etapas — o gestor restringe
-    // depois se quiser. Analista existente sem configuração segue sem restrição.
-    etapasLista().forEach(st => { CO_ETAPAS[st.id] = 'editar'; });
+    // Analista novo nasce podendo editar em todas as etapas — de todos os
+    // módulos licenciados — e o gestor restringe a partir daí. Analista
+    // existente sem configuração segue sem restrição.
+    etapasGrupos().forEach(g => g.etapas.forEach(st => { CO_ETAPAS[st.id] = 'editar'; }));
   }
   pintarEtapasCorretor();
 
