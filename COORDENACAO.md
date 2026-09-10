@@ -75,7 +75,8 @@ Estado real conferido em **10/09/2026 10:53 BRT**:
 | `2026-09-09_visibilidade_repasse_2_ligar.sql`    | não         | troca `cases_tenant_isolation` por 4 políticas |
 | `2026-09-09_documento_obrigatorio.sql`           | não         | `a1_docs_obrigatorios`, gatilho que barra avanço sem documento |
 | `supabase/sql/p0/restrict-repasse-create.sql`    | **SIM**     | política RESTRICTIVE de INSERT (ver §3) |
-| `2026-09-10_criar_repasse_trava.sql`             | não         | substitui a de cima por uma alinhada com a tela |
+| `2026-09-10_criar_repasse_trava.sql`             | **SIM**     | substitui a de cima por uma alinhada com a tela |
+| `2026-09-10_chaves_dos_modulos.sql`              | não         | faz `pa_*` / `co_*` valerem (ver §3b) |
 
 Consequência prática: **documento obrigatório hoje só existe na tela.** O front
 barra, a API não. Quem chamar o PostgREST direto move o processo sem o
@@ -154,6 +155,40 @@ antes de causá-lo.
 
 ---
 
+## 3b. Chave que ninguém lê é pior que chave ausente
+
+O cadastro grava seis permissões para os módulos novos — `pa_ver`, `pa_criar`,
+`pa_editar`, `co_ver`, `co_editar`, `co_contrato`. Até 10/09 **nenhuma delas era
+lida**: nem pela tela, nem pelas políticas. Pré-análise e Comercial perguntavam
+por `criar_repasses` e `editar_repasses`, que são do Repasse.
+
+O gestor marcava "Criar pré-análise" para um corretor e nenhum botão aparecia.
+Relatado em produção. Quem marca acredita que concedeu; quem desmarca acredita
+que fechou — e as duas coisas eram falsas.
+
+Corrigido na tela (`pre-analise.html`, `comercial.html`) e no banco
+(`sql/2026-09-10_chaves_dos_modulos.sql`, aguarda execução). Agora:
+
+| chave | manda em |
+|---|---|
+| `pa_ver` / `co_ver` | a porta: sem ela o módulo não abre nem lê linha |
+| `pa_criar` | criar pré-análise e cadastrar pessoas |
+| `pa_editar` | alterar dados, anexar documento, mover na esteira |
+| `co_editar` | alterar proposta, mexer em contrato, mover na esteira |
+| `co_contrato` | carimbar ASSINADO (era `analisar_credito`, que é outra coisa) |
+
+Foi seguro trocar porque estes módulos estão licenciados para **um** cliente, o
+de demonstração. Feito depois do primeiro cliente pagante, seria uma migração
+de cadastro com a conta do §3, não uma troca de nome.
+
+**Efeito colateral a tratar:** o "Coordenador teste" do cliente de demonstração
+não tem nenhuma das seis chaves nem `gerente`, e passa a ser recusado nos dois
+módulos. É cadastro, não código.
+
+Ao escrever qualquer regra nova para estes módulos: use a chave do módulo. Se
+copiar um trecho de `repasse.html`, traduza a chave — foi assim que o defeito
+nasceu.
+
 ## 4. Ordem entre `_2_ligar.sql` e a política P0
 
 As duas convivem — políticas RESTRICTIVE fazem `AND` com as PERMISSIVE — mas a
@@ -229,9 +264,15 @@ Toda mudança de regra de acesso precisa de prova SQL, não só de teste de tela
 - **Manutenção LIGADA** desde 09:19 BRT, sem `ate` preenchido. Ninguém entra e
   o sistema **não volta sozinho** — depende de alguém clicar "Reativar" no
   superadmin, ou de `update a1_manutencao set ativa = false;`.
-- `a1_cases_repasse_create_capability` ativa na versão que bloqueia 53
-  parceiros. A substituição está escrita e testada
-  (`sql/2026-09-10_criar_repasse_trava.sql`), **falta rodar antes de reabrir**.
+- `a1_cases_repasse_create_capability` já está na versão alinhada com a tela;
+  os 53 parceiros voltaram a criar repasse, e quem foi desmarcado segue barrado.
+- **Falta rodar `sql/2026-09-10_chaves_dos_modulos.sql`** (§3b). Sem ele, a tela
+  já respeita `pa_criar`/`pa_editar`/`co_editar` e o banco ainda não — a tela
+  fica mais restrita que a API, o que é o lado seguro da divergência, mas é
+  divergência.
+- O botão "Importar PDF" saiu do cabeçalho de repasse/andamento/listagem a
+  pedido do dono. O modal e as funções de leitura de PDF continuam nos
+  arquivos, agora sem porta de entrada — código morto à espera de remoção.
 - O flash do botão "Novo Repasse" foi corrigido no `main`: o botão nasce
   `hidden` e é revelado logo após a confirmação da permissão, antes do
   `loadData()`. `openNewCase()` e `createCase()` recusam por conta própria, e

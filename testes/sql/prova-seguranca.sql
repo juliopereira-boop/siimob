@@ -988,17 +988,20 @@ set role anon;
 
 -- ─── A chave desmarcada barra, que é o pedido ────────────────────────────────
 select teste_entrar('tk-ugo');
-select checa('corretor com criar_repasses:false NÃO cria repasse',
-  tenta_criar_repasse('P0-NEGADO') is not null,
-  coalesce(tenta_criar_repasse('P0-NEGADO'), 'CRIOU — a trava não pegou'));
+do $$ declare e text; begin
+  e := tenta_criar_repasse('P0-NEGADO');
+  perform checa('corretor com criar_repasses:false NÃO cria repasse', e is not null,
+                coalesce(e,'CRIOU — a trava não pegou'));
+end $$;
 select checa('e a1_perm_padrao concorda com a recusa',
   a1_perm_padrao('criar_repasses', true) = false);
 
 -- ─── Quem sempre pôde continua podendo ───────────────────────────────────────
 select teste_entrar('tk-tina');
-select checa('cadastro antigo, SEM a chave, continua criando',
-  tenta_criar_repasse('P0-ANTIGO') is null,
-  coalesce(tenta_criar_repasse('P0-ANTIGO'), ''));
+do $$ declare e text; begin
+  e := tenta_criar_repasse('P0-ANTIGO');
+  perform checa('cadastro antigo, SEM a chave, continua criando', e is null, coalesce(e,''));
+end $$;
 select checa('e a1_perm_padrao devolve o padrão declarado',
   a1_perm_padrao('criar_repasses', true) = true);
 -- A mesma pessoa, com padrão false, seria barrada. É a prova de que o padrão
@@ -1050,6 +1053,130 @@ select checa('sem o módulo Repasse licenciado, nem o autorizado cria',
 reset role;
 insert into a1_tenant_modules (tenant_id, module_key)
 values ('11111111-1111-1111-1111-111111111111','repasse') on conflict do nothing;
+set role anon;
+
+
+-- ═══ AS CHAVES DA PRÉ-ANÁLISE E DO COMERCIAL MANDAM DE VERDADE ══════════════
+--
+-- O defeito: o gestor marcava "Criar pré-análise" e nada acontecia. As seis
+-- chaves pa_*/co_* eram decoração — o cadastro gravava, e tanto a tela quanto
+-- estas políticas perguntavam por criar_repasses / editar_repasses.
+--
+-- Provar que a chave certa PASSA não basta: um teste assim continuaria verde
+-- se as duas chaves valessem. O que fecha o assunto é o par — a chave do
+-- módulo abre E a chave do Repasse, sozinha, não abre mais.
+
+-- Entrar como gestor ANTES de sair do papel anon: a1_partners_trava_poder olha
+-- a sessão do cabeçalho, não o role do Postgres. Com a sessão de um parceiro
+-- ainda pendurada da prova anterior, o gatilho recusa criar cadastro com
+-- permissão dentro — e a recusa está certíssima, é a trava que impede um
+-- corretor de se promover a gerente.
+select teste_entrar('tk-gestor');
+reset role;
+insert into a1_tenant_modules (tenant_id, module_key) values
+  ('11111111-1111-1111-1111-111111111111','PRE_ANALISE'),
+  ('11111111-1111-1111-1111-111111111111','COMERCIAL') on conflict do nothing;
+
+insert into a1_partners (id, tenant_id, name, cpf, type, permissions) values
+  -- Só as chaves do módulo. É o corretor do relato: marcaram "Criar
+  -- pré-análise" para ele e mais nada.
+  ('bd000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Zilda Modulo','10000000031','corretor','{"pa_ver":true,"pa_criar":true,"co_ver":true}'),
+  -- Só as chaves do Repasse. Antes deste arquivo, ele criava pré-análise;
+  -- agora não deve criar mais — é o outro lado da prova.
+  ('bd000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'Alceu Repasse','10000000032','corretor',
+   '{"pa_ver":true,"co_ver":true,"criar_repasses":true,"editar_repasses":true}'),
+  -- Ver e editar, sem criar: mexe no que existe, não abre processo novo.
+  ('bd000000-0000-0000-0000-000000000003','11111111-1111-1111-1111-111111111111',
+   'Bia Edita','10000000033','corretor','{"pa_ver":true,"pa_editar":true,"co_ver":true}'),
+  -- Sem pa_ver: a porta do módulo. Não lê nem o que estaria no nome dele.
+  ('bd000000-0000-0000-0000-000000000004','11111111-1111-1111-1111-111111111111',
+   'Caio Cego','10000000034','corretor','{"pa_criar":true,"pa_editar":true}')
+on conflict (id) do update set permissions = excluded.permissions;
+
+select teste_login_parceiro('tk-zilda','bd000000-0000-0000-0000-000000000001');
+select teste_login_parceiro('tk-alceu','bd000000-0000-0000-0000-000000000002');
+select teste_login_parceiro('tk-bia',  'bd000000-0000-0000-0000-000000000003');
+select teste_login_parceiro('tk-caio', 'bd000000-0000-0000-0000-000000000004');
+
+create or replace function tenta_criar_pa(p_corretor uuid)
+returns text language plpgsql as $$
+begin
+  insert into a1_pre_analises (tenant_id, empreendimento_id, corretor_id)
+  values ('11111111-1111-1111-1111-111111111111',
+          'd0000000-0000-0000-0000-000000000001', p_corretor);
+  return null;
+exception when others then return sqlerrm;
+end $$;
+grant execute on function tenta_criar_pa(uuid) to anon;
+set role anon;
+
+-- ─── pa_criar abre, criar_repasses não abre mais ─────────────────────────────
+-- Verificação com EFEITO COLATERAL chama a função UMA vez e guarda o erro. O
+-- atalho `checa('...', f() is null, coalesce(f(),''))` executa f() DUAS vezes —
+-- e com uma função que insere, o segundo processo aparece na contagem seguinte
+-- e derruba um teste que não tem nada de errado. Aconteceu aqui.
+select teste_entrar('tk-zilda');
+do $$ declare e text; begin
+  e := tenta_criar_pa('bd000000-0000-0000-0000-000000000001');
+  perform checa('com pa_criar, o corretor CRIA pré-análise', e is null, coalesce(e,''));
+end $$;
+
+select teste_entrar('tk-alceu');
+do $$ declare e text; begin
+  e := tenta_criar_pa('bd000000-0000-0000-0000-000000000002');
+  perform checa('só com criar_repasses, NÃO cria mais pré-análise', e is not null,
+                coalesce(e,'CRIOU — a chave do Repasse ainda manda na Pré-análise'));
+end $$;
+
+select teste_entrar('tk-bia');
+select checa('pa_editar sozinha não cria (criar e editar são coisas diferentes)',
+  tenta_criar_pa('bd000000-0000-0000-0000-000000000003') is not null);
+
+-- ─── pa_ver é a porta ────────────────────────────────────────────────────────
+select teste_entrar('tk-zilda');
+select checa('com pa_ver, enxerga a pré-análise que é dela',
+  (select count(*) from a1_pre_analises
+    where corretor_id = 'bd000000-0000-0000-0000-000000000001') = 1);
+
+select teste_entrar('tk-caio');
+select checa('sem pa_ver, não lê pré-análise nenhuma',
+  (select count(*) from a1_pre_analises) = 0);
+-- E não é só a mãe: documento e participante se enxergam por ela.
+select checa('e nem os documentos delas',
+  (select count(*) from a1_pa_documentos) = 0);
+
+-- ─── pa_editar manda no mover ────────────────────────────────────────────────
+select teste_entrar('tk-zilda');
+select checa('sem pa_editar, não move na esteira',
+  tenta($$select a1_pa_transicionar(
+            (select id from a1_pre_analises
+              where corretor_id = 'bd000000-0000-0000-0000-000000000001' limit 1),
+            (select id from a1_pa_situacoes
+              where tenant_id = '11111111-1111-1111-1111-111111111111' limit 1))$$) is not null);
+
+-- ─── Comercial: co_ver é a porta ─────────────────────────────────────────────
+select teste_entrar('tk-caio');
+select checa('sem co_ver, não lê negócio nenhum',
+  (select count(*) from a1_comerciais) = 0);
+
+-- ─── E as chaves velhas não voltam por baixo ─────────────────────────────────
+-- A regressão que mais me preocupa é alguém "restaurar" uma política antiga e
+-- as duas conviverem: políticas permissivas se somam com OU, então a velha
+-- sozinha já reabriria tudo. Aqui a busca é textual, no catálogo do próprio
+-- Postgres — não em como achamos que ficou.
+reset role;
+select checa('nenhuma política da Pré-análise/Comercial ainda cita criar_repasses',
+  (select count(*) from pg_policies
+    where tablename in ('a1_pre_analises','a1_pa_pessoas','a1_pa_documentos',
+                        'a1_pa_participantes','a1_comerciais','a1_co_contratos')
+      and coalesce(qual,'')||coalesce(with_check,'') like '%criar_repasses%') = 0);
+select checa('nem editar_repasses',
+  (select count(*) from pg_policies
+    where tablename in ('a1_pre_analises','a1_pa_pessoas','a1_pa_documentos',
+                        'a1_pa_participantes','a1_comerciais','a1_co_contratos')
+      and coalesce(qual,'')||coalesce(with_check,'') like '%editar_repasses%') = 0);
 set role anon;
 
 -- =============================================================================

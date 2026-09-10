@@ -229,6 +229,19 @@ function sla(co){
   const restam = horas - decorridas;
   return { cls:'sla-'+nivel, pct, nivel, txt: restam >= 0 ? ('faltam '+humano(restam)) : ('há '+humano(-restam)) };
 }
+
+// Tela de recusa do módulo. Diz QUAL permissão falta e ONDE pedi-la — "sem
+// acesso" sozinho manda a pessoa abrir chamado para descobrir o óbvio.
+function semAcessoAoModulo(){
+  const main = document.querySelector('.main') || document.body;
+  main.innerHTML =
+    '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;'
+    + 'border:1px solid #E2E8F0;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
+    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Comercial</div>'
+    + '<div style="font-size:.85rem;color:#475569;line-height:1.55">O seu cadastro não tem a '
+    + 'permissão <b>Ver negócios</b>. Peça ao gestor em Configurações (ou no perfil de '
+    + 'acesso vinculado a você).</div></div>';
+}
 function humano(h){ if (h<1) return Math.max(0,Math.round(h*60))+'min'; if (h<48) return Math.round(h)+'h'; return Math.round(h/24)+'d'; }
 
 // O nome do cliente e os valores vêm do SNAPSHOT gravado quando o Comercial
@@ -246,6 +259,13 @@ async function init(){
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
   try { await a1RequireModule('COMERCIAL'); } catch { return; }
   G.slug = A1.slug;
+
+  // co_ver é a porta do módulo, e até agora ninguém a lia: a chave existia no
+  // cadastro e não fazia nada. Licença do cliente e permissão da pessoa são
+  // duas perguntas — a1RequireModule responde a primeira, esta responde a
+  // segunda. A recusa que vale continua sendo do banco; isto evita a tela
+  // montada e o "por que não aparece nada?".
+  if (!perm('co_ver')) { semAcessoAoModulo(); return; }
   // Quem manda na vista é o endereço, não um botão desta tela: assim o item do
   // menu, o link colado no WhatsApp e o "voltar" do navegador chegam no mesmo
   // lugar. São só duas — Andamento e Listagem —, iguais aos quadros antigos.
@@ -487,7 +507,7 @@ function renderDossie(){
 
 function dosProposta(){
   const co = G.atual, p = co.proposta || {},
-        pode = perm('editar_repasses') && nivelNaSituacao(co.situacao_id) === 'editar';
+        pode = perm('co_editar') && nivelNaSituacao(co.situacao_id) === 'editar';
   const cr = (co.origem_snapshot || {}).credito || {};
   const aprovado = cr.valor_total || 0;
   return `
@@ -587,8 +607,12 @@ function dosOrigem(){
 }
 
 function dosContrato(){
-  const pode = perm('editar_repasses') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
-  const podeAssinar = ehGestor() || perm('gerente') || perm('analisar_credito');
+  const pode = perm('co_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
+  // co_contrato existe exatamente para isto e não era lida por ninguém: quem
+  // vende não carimba o próprio contrato como assinado, senão exigir contrato
+  // assinado numa transição deixa de ser exigência. Era analisar_credito, que
+  // é a decisão de CRÉDITO — outra coisa.
+  const podeAssinar = ehGestor() || perm('gerente') || perm('co_contrato');
   const linhas = G.atualContratos.map(c => `
     <div class="linha">
       <div><div class="nm">Versão ${c.versao}
@@ -708,7 +732,7 @@ function montarRodape(){
   // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
   // empurra para a seguinte.
   const co = G.atual,
-        pode = perm('editar_repasses') && nivelNaSituacao(co.situacao_id) === 'editar';
+        pode = perm('co_editar') && nivelNaSituacao(co.situacao_id) === 'editar';
   const destinos = G.transicoes
     .filter(t => t.de_id === null || t.de_id === co.situacao_id)
     .map(t => G.situacoes.find(s => s.id === t.para_id))
