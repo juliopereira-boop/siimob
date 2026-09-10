@@ -24,7 +24,8 @@ for f in testes/sql/base-falsa.sql \
          sql/2026-09-09_visibilidade_repasse_1_conferir.sql \
          sql/2026-09-09_visibilidade_repasse_2_ligar.sql \
          sql/2026-09-10_corretor_analista_so_o_seu.sql \
-         sql/2026-09-10_modo_manutencao.sql; do
+         sql/2026-09-10_modo_manutencao.sql \
+         sql/2026-09-10_criar_repasse_trava.sql; do
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done

@@ -150,6 +150,23 @@ set search_path = public, extensions, pg_temp as $$
 $$;
 grant execute on function a1_tenant() to anon, authenticated;
 
+-- Produção tem DUAS funções para a mesma pergunta: a1_has_module (antiga,
+-- considera o plano do cliente em a1_plan_modules E a liberação manual) e
+-- a1_tem_modulo (nova, só a liberação manual). Não é engano do andaime — são
+-- duas mesmo, e regras novas escolhem uma ou outra sem critério. Aqui a antiga
+-- delega para a nova: o andaime não modela planos, e para as provas o que
+-- importa é se o cliente tem o módulo liberado.
+create or replace function a1_has_module(p_module_key text)
+returns boolean language sql stable security definer as $$
+  select exists (
+    select 1 from a1_tenant_modules tm
+    where tm.tenant_id = a1_tenant() and tm.module_key = p_module_key
+      and (tm.expires_at is null or tm.expires_at > now())
+  );
+$$;
+grant execute on function a1_has_module(text) to anon, authenticated;
+
+
 create policy cases_tenant_isolation on a1_cases for all
   using (tenant_id = a1_tenant()) with check (tenant_id = a1_tenant());
 

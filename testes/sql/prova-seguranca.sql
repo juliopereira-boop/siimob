@@ -935,6 +935,123 @@ select checa('sem prazo, a chave vale até alguém desligar', a1_manutencao_ativ
 update a1_manutencao set ativa = false, ate = null, mensagem = null;
 select checa('desligada, o sistema volta', a1_manutencao_ativa() = false);
 
+
+-- ═══ CRIAR REPASSE — a trava, e quem ela NÃO pode pegar ═════════════════════
+--
+-- O defeito de origem foi de tela: o botão "Novo Repasse" nascia visível e só
+-- era escondido depois de carregar tudo, então um corretor com a criação
+-- desabilitada clicava e criava. Esconder botão nunca fechou nada — quem chama
+-- a API direto não passa por botão. Esta é a trava de banco.
+--
+-- O risco desta trava não é ela ser fraca demais, é ser forte demais. Ela usa
+-- a1_perm_padrao('criar_repasses', true), e o padrão `true` existe porque 53
+-- parceiros ativos em produção não têm essa chave no cadastro: foram criados
+-- antes de ela existir, e sempre criaram repasse. Uma trava que os pegasse
+-- estaria "funcionando" e derrubando o cliente ao mesmo tempo. Metade das
+-- verificações abaixo defende exatamente essas pessoas.
+
+reset role;
+insert into a1_partners (id, tenant_id, name, cpf, type, permissions) values
+  -- Sem a chave nenhuma: é o caso dos 36 corretores da S T.
+  ('bc000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Tina Antiga','10000000021','corretor','{"editar_repasses":true}'),
+  -- Desmarcado de propósito pelo gestor: o caso que motivou tudo isto.
+  ('bc000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'Ugo Barrado','10000000022','corretor','{"criar_repasses":false}'),
+  -- Marcado.
+  ('bc000000-0000-0000-0000-000000000003','11111111-1111-1111-1111-111111111111',
+   'Vito Liberado','10000000023','corretor','{"criar_repasses":true}'),
+  -- Gerente vale por cima, mesmo com a chave desmarcada.
+  ('bc000000-0000-0000-0000-000000000004','11111111-1111-1111-1111-111111111111',
+   'Wanda Gerente','10000000024','corretor','{"gerente":true,"criar_repasses":false}')
+on conflict (id) do update set permissions = excluded.permissions;
+
+select teste_login_parceiro('tk-tina','bc000000-0000-0000-0000-000000000001');
+select teste_login_parceiro('tk-ugo', 'bc000000-0000-0000-0000-000000000002');
+select teste_login_parceiro('tk-vito','bc000000-0000-0000-0000-000000000003');
+select teste_login_parceiro('tk-wanda','bc000000-0000-0000-0000-000000000004');
+
+-- Auxiliar: tenta criar um repasse com o token de quem está na sessão. Sem
+-- SECURITY DEFINER, de propósito — ela roda como anon e passa pelas políticas,
+-- que é o ponto inteiro da prova.
+create or replace function tenta_criar_repasse(p_nome text)
+returns text language plpgsql as $$
+begin
+  insert into a1_cases (tenant_id, module_key, stage_id, client_name)
+  values ('11111111-1111-1111-1111-111111111111','repasse',
+          'c0000000-0000-0000-0000-000000000001', p_nome);
+  return null;
+exception when others then return sqlerrm;
+end $$;
+grant execute on function tenta_criar_repasse(text) to anon;
+set role anon;
+
+-- ─── A chave desmarcada barra, que é o pedido ────────────────────────────────
+select teste_entrar('tk-ugo');
+select checa('corretor com criar_repasses:false NÃO cria repasse',
+  tenta_criar_repasse('P0-NEGADO') is not null,
+  coalesce(tenta_criar_repasse('P0-NEGADO'), 'CRIOU — a trava não pegou'));
+select checa('e a1_perm_padrao concorda com a recusa',
+  a1_perm_padrao('criar_repasses', true) = false);
+
+-- ─── Quem sempre pôde continua podendo ───────────────────────────────────────
+select teste_entrar('tk-tina');
+select checa('cadastro antigo, SEM a chave, continua criando',
+  tenta_criar_repasse('P0-ANTIGO') is null,
+  coalesce(tenta_criar_repasse('P0-ANTIGO'), ''));
+select checa('e a1_perm_padrao devolve o padrão declarado',
+  a1_perm_padrao('criar_repasses', true) = true);
+-- A mesma pessoa, com padrão false, seria barrada. É a prova de que o padrão
+-- é o que decide o caso dela — e de que fechar sem preencher o cadastro é o
+-- que trancaria 53 pessoas do lado de fora.
+select checa('com padrão false, esse mesmo cadastro seria barrado',
+  a1_perm_padrao('criar_repasses', false) = false);
+
+select teste_entrar('tk-vito');
+select checa('corretor com a chave marcada cria',
+  tenta_criar_repasse('P0-LIBERADO') is null);
+
+select teste_entrar('tk-wanda');
+select checa('gerente cria mesmo com a chave desmarcada',
+  tenta_criar_repasse('P0-GERENTE') is null);
+
+select teste_entrar('tk-gestor');
+select checa('gestor cria',
+  tenta_criar_repasse('P0-GESTOR') is null);
+
+-- ─── A trava é só do Repasse ─────────────────────────────────────────────────
+-- A política diz `module_key <> 'repasse' or ...`. Se alguém trocar isso por
+-- uma condição sem a saída, os outros módulos param junto — e ninguém
+-- relacionaria a queda do Registro a uma política escrita para o Repasse.
+select teste_entrar('tk-ugo');
+select checa('quem não pode criar repasse ainda cria em OUTRO módulo',
+  tenta($$insert into a1_cases (tenant_id, module_key, stage_id, client_name)
+          values ('11111111-1111-1111-1111-111111111111','registro',
+                  'c0000000-0000-0000-0000-000000000001','Registro do Ugo')$$) is null);
+
+-- ─── O isolamento por cliente continua acima de tudo ─────────────────────────
+-- Política restritiva faz AND com as permissivas. Se alguém trocar a de tenant
+-- por esta, a trava de criação passaria a ser a única regra — e um corretor
+-- autorizado criaria processo dentro do cliente do vizinho.
+select teste_entrar('tk-vito');
+select checa('corretor autorizado NÃO cria no cliente do vizinho',
+  tenta($$insert into a1_cases (tenant_id, module_key, stage_id, client_name)
+          values ('22222222-2222-2222-2222-222222222222','repasse',
+                  'c0000000-0000-0000-0000-000000000009','Invasao')$$) is not null);
+
+-- ─── Módulo desligado barra mesmo quem tem a permissão ───────────────────────
+reset role;
+delete from a1_tenant_modules
+ where tenant_id = '11111111-1111-1111-1111-111111111111' and module_key = 'repasse';
+set role anon;
+select teste_entrar('tk-vito');
+select checa('sem o módulo Repasse licenciado, nem o autorizado cria',
+  tenta_criar_repasse('P0-SEM-MODULO') is not null);
+reset role;
+insert into a1_tenant_modules (tenant_id, module_key)
+values ('11111111-1111-1111-1111-111111111111','repasse') on conflict do nothing;
+set role anon;
+
 -- =============================================================================
 \o
 \echo ''

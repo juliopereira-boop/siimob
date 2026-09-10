@@ -194,11 +194,15 @@
     .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
 
     /* ── Spinner ── */
+    /* Nada administrativo pinta antes de a rota ser conferida. Esconder o
+       link de navegação nunca foi autorização: quem digitasse o endereço
+       via a tela inteira montar antes de qualquer decisão. */
+    body.acesso-pendente{visibility:hidden}
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
-<body>
+<body class="acesso-pendente">
 
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
@@ -1623,12 +1627,38 @@ function applyCustomLogo() {
 
 async function init() {
   applyCustomLogo();
-  try { G.user = a1RequireAuth(); } catch { return; }
+  // A tela nasce invisível (body.acesso-pendente) e a decisão de rota vem
+  // ANTES de qualquer await, de propósito: `role` já está no localStorage e
+  // não depende de rede. Se dependesse, uma consulta lenta deixaria o gestor
+  // olhando tela em branco, e uma consulta que falha deixaria para sempre.
+  try { G.user = a1RequireAuth(); }
+  catch { document.body.classList.remove('acesso-pendente'); return; }
+  G.slug = A1.slug;
+
+  // O modulo-shell promete no comentário dele que "se forçar o endereço, a
+  // própria tela o devolve" — só que a tela não devolvia ninguém: escondia o
+  // link e montava tudo para quem digitasse /configuracoes. Esconder link
+  // nunca foi autorização.
+  //
+  // Devolvemos CORRETOR e ANALISTA, que não têm nada a fazer aqui. O
+  // correspondente e o despachante seguem entrando de propósito: esta tela
+  // tem código dedicado a eles (o `isCCA` mais abaixo fixa a empresa do
+  // correspondente no cadastro) e a equipe do correspondente é cadastrada
+  // daqui. Barrar os dois junto fecharia o buraco derrubando quem trabalha.
+  //
+  // A proteção real continua sendo do banco: a1_users e a1_perfis só aceitam
+  // escrita de a1_e_gestor(). Isto evita a tela montada, não o acesso.
+  const _tipoBarrado = G.user.role === 'partner'
+                    && (G.user.type === 'corretor' || G.user.type === 'analista');
+  if (_tipoBarrado) {
+    window.location.replace(`/${G.slug}/repasse`);
+    return;
+  }
+  document.body.classList.remove('acesso-pendente');
   // Permissões vêm do banco a cada carregamento (o localStorage guarda só o
   // retrato do login). Sem isso, mudança de permissão feita pelo gestor só
   // valia depois do usuário deslogar e logar de novo.
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
-  G.slug = A1.slug;
 
   // Cadastro de gestor só aparece para gestor. A proteção real é do banco: a
   // política de a1_users só aceita escrita de quem tem papel owner/admin.

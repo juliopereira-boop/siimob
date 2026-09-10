@@ -75,6 +75,7 @@ Estado real conferido em **10/09/2026 10:53 BRT**:
 | `2026-09-09_visibilidade_repasse_2_ligar.sql`    | não         | troca `cases_tenant_isolation` por 4 políticas |
 | `2026-09-09_documento_obrigatorio.sql`           | não         | `a1_docs_obrigatorios`, gatilho que barra avanço sem documento |
 | `supabase/sql/p0/restrict-repasse-create.sql`    | **SIM**     | política RESTRICTIVE de INSERT (ver §3) |
+| `2026-09-10_criar_repasse_trava.sql`             | não         | substitui a de cima por uma alinhada com a tela |
 
 Consequência prática: **documento obrigatório hoje só existe na tela.** O front
 barra, a API não. Quem chamar o PostgREST direto move o processo sem o
@@ -117,10 +118,27 @@ Os números de produção, hoje:
 (Contagem já considera `gerente`, que vale por cima. Gestores em `a1_users`
 passam por `a1_e_gestor()` e não são afetados.)
 
-`a1_cases_repasse_create_capability` **está aplicada em produção agora** e exige
-`a1_perm('criar_repasses')`. Pela conta acima, 53 parceiros ativos não criam
-mais repasse. A política em si está bem escrita — RESTRICTIVE, com pré-voo e
-rollback. O problema não é a política, é o estado do cadastro.
+`a1_cases_repasse_create_capability` foi aplicada em produção em 10/09 de manhã
+exigindo `a1_perm('criar_repasses')`. Pela conta acima, isso bloqueia 53
+parceiros ativos. A política em si está bem escrita — RESTRICTIVE, com pré-voo e
+rollback — e fecha o buraco certo. O problema não é a política, é que ela e a
+tela discordam sobre chave ausente:
+
+```
+tela  (hasPerm)  →  defaults = { criar_repasses: true }   ausente = PODE
+banco (a1_perm)  →  coalesce(..., false)                  ausente = NÃO PODE
+```
+
+**Correção em `sql/2026-09-10_criar_repasse_trava.sql`** (aguarda execução):
+troca a política por uma que usa `a1_perm_padrao('criar_repasses', true)` —
+mesma trava, mesmo padrão dos dois lados. Quem foi explicitamente desmarcado
+continua barrado; quem nunca teve a chave continua criando.
+
+`a1_perm_padrao(chave, padrao)` existe para as chaves ANTIGAS, que precisam de
+um padrão declarado porque o cadastro de produção foi preenchido antes delas.
+`a1_perm()` continua valendo para chave nova. O padrão vem como argumento de
+propósito: quem escreve a regra é obrigado a decidir o que acontece com cadastro
+antigo.
 
 **Antes de fechar uma chave, faça a conta de quem fica de fora.** Se der um
 número grande, o caminho é um dos dois:
@@ -211,8 +229,14 @@ Toda mudança de regra de acesso precisa de prova SQL, não só de teste de tela
 - **Manutenção LIGADA** desde 09:19 BRT, sem `ate` preenchido. Ninguém entra e
   o sistema **não volta sozinho** — depende de alguém clicar "Reativar" no
   superadmin, ou de `update a1_manutencao set ativa = false;`.
-- `a1_cases_repasse_create_capability` ativa, com o impacto do §3 ainda não
-  observado porque o sistema está fora do ar.
+- `a1_cases_repasse_create_capability` ativa na versão que bloqueia 53
+  parceiros. A substituição está escrita e testada
+  (`sql/2026-09-10_criar_repasse_trava.sql`), **falta rodar antes de reabrir**.
+- O flash do botão "Novo Repasse" foi corrigido no `main`: o botão nasce
+  `hidden` e é revelado logo após a confirmação da permissão, antes do
+  `loadData()`. `openNewCase()` e `createCase()` recusam por conta própria, e
+  `/configuracoes` devolve parceiro antes de montar a tela. Coberto por
+  `testes/t-criar-repasse.js` (18 verificações) e por 11 na prova SQL.
 - Três analistas da S T (JANAILSON, ANDREIA, AMANDA) passaram a enxergar zero
   processos depois do `_so_o_seu.sql`. O Repasse liga parceiro ao processo por
   **texto** (`broker_name` / `manager_name`), não por id — a suspeita é

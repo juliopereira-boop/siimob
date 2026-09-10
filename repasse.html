@@ -414,6 +414,9 @@
     .dist-val{font-size:.75rem;font-weight:700;color:var(--blue);min-width:18px;text-align:right;flex-shrink:0}
 
     /* ── Spinner ── */
+    /* Nasce oculto quem depende de permissão: `hidden` precisa vencer o
+       display das classes do cabeçalho, senão o botão aparece assim mesmo. */
+    [hidden]{display:none!important}
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -435,7 +438,7 @@
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr" id="btn-profile" style="display:none" title="Meu perfil" onclick="openProfile()">👤 Perfil</button>
-      <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
+      <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()" hidden>+ Novo Repasse</button>
       <button class="btn-hdr" onclick="openPdfModal()">Importar PDF</button>
       <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
@@ -1892,7 +1895,12 @@ async function init() {
   // Permissões vêm do banco a cada carregamento (o localStorage guarda só o
   // retrato do login). Sem isso, mudança de permissão feita pelo gestor só
   // valia depois do usuário deslogar e logar de novo.
-  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  const _permsDoBanco = await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  // Gestor não passa por essa consulta; para ele a permissão é sempre certa.
+  G.permsConfirmadas = (G.user.role !== 'partner') || !!_permsDoBanco;
+  // Revelado aqui, e não em applyPartnerRestrictions(): lá é depois do
+  // loadData() inteiro, e quem PODE criar ficaria segundos sem o botão.
+  aplicarBotaoNovoRepasse();
   // inicia o fetch do tenant em paralelo ao check de módulo (economiza 1 round-trip)
   const _tenantP = fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
     .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
@@ -2188,6 +2196,35 @@ function hasPerm(key) {
 }
 
 // ── Perfil próprio do usuário correspondente (edita nome/email/cpf/telefone/senha; NÃO mexe em acessos) ──
+
+// ─── "Novo Repasse": quem pode, e quando o botão aparece ─────────────────────
+// O botão NASCE OCULTO no HTML e só é revelado depois que a permissão foi
+// confirmada. Antes ele nascia visível e era escondido em
+// applyPartnerRestrictions(), que só roda depois do loadData() — as catorze
+// consultas do carregamento inteiro. Não era um piscar de milissegundos: o
+// corretor com a criação desabilitada via o botão por segundos, e clicar nele
+// funcionava. Foi relatado em produção.
+//
+// A proteção de verdade é do banco (política a1_cases_repasse_create_capability,
+// em sql/2026-09-10_criar_repasse_trava.sql). Esconder botão é conveniência;
+// a recusa que vale é a que a API dá.
+function podeCriarRepasse() {
+  // Gestor não depende de consulta nenhuma.
+  if (!G.user || G.user.role !== 'partner') return true;
+  // Parceiro cuja permissão não pôde ser confirmada no banco não ganha o botão.
+  // Rede fora não é autorização — e o localStorage guarda o retrato do login,
+  // que é justamente o que fica velho quando o gestor tira o acesso.
+  if (!G.permsConfirmadas) return false;
+  return hasPerm('criar_repasses');
+}
+
+function aplicarBotaoNovoRepasse() {
+  const pode = podeCriarRepasse();
+  document.querySelectorAll('[onclick="openNewCase()"]').forEach(el => {
+    el.hidden = !pode;
+  });
+}
+
 async function openProfile() {
   profErr('');
   let p = {};
@@ -2268,10 +2305,9 @@ function applyPartnerRestrictions() {
   const regGroup = document.getElementById('tab-registro-group');
   if (regGroup) regGroup.style.display = 'none';
 
-  // Ocultar botão Nova Operação se sem permissão
-  if (!hasPerm('criar_repasses')) {
-    document.querySelectorAll('[onclick="openNewCase()"]').forEach(el => el.style.display = 'none');
-  }
+  // Reaplicado aqui porque as permissões podem ter mudado durante a carga
+  // (o cartão do correspondente fixo, por exemplo, mexe em G.user).
+  aplicarBotaoNovoRepasse();
 
   // Se sem permissão de ver: bloquear dashboard
   if (!hasPerm('ver_dashboard')) {
@@ -3887,6 +3923,10 @@ async function addComment() {
 
 // ─── New case ─────────────────────────────────────────────────────────────────
 async function openNewCase() {
+  // O atalho pelo console, ou o clique num botão que ainda não foi escondido.
+  // A tela recusa aqui para não abrir um formulário que o banco vai rejeitar
+  // depois de a pessoa preencher tudo.
+  if (!podeCriarRepasse()) { toast('Você não tem permissão para criar repasses','error'); return; }
   // reset form
   ['n-name','n-cpf','n-phone','n-email','n-value','n-broker','n-obs'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -4045,6 +4085,10 @@ function onBlocoChange() {
 }
 
 async function createCase() {
+  // Conferido de novo na gravação: entre abrir o formulário e salvar, o gestor
+  // pode ter tirado o acesso — e o caminho até aqui não passa necessariamente
+  // por openNewCase().
+  if (!podeCriarRepasse()) { toast('Você não tem permissão para criar repasses','error'); return; }
   const name=v('n-name');
   if(!name){toast('Informe o nome do cliente','error');return;}
   const devSel  = document.getElementById('n-development');
