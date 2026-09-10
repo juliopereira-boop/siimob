@@ -395,7 +395,7 @@
     <div class="hdr-right">
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr" id="btn-profile" style="display:none" title="Meu perfil" onclick="openProfile()">👤 Perfil</button>
-      <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()">+ Novo Repasse</button>
+      <button id="btn-new-repasse" class="btn-hdr btn-hdr-primary" onclick="openNewCase()" hidden aria-hidden="true">+ Novo Repasse</button>
       <button class="btn-hdr" onclick="openPdfModal()">Importar PDF</button>
       <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
@@ -1623,6 +1623,8 @@ const G = {
   activeTab: 'dashboard',
   editingCaseId: null, editingCaseData: null,
   pdfData: null, flags: [], edges: {},
+  // Privileged actions remain closed until the effective permission is loaded.
+  permissionsReady: false,
   dashFilters: { regional:'', empr:'', parceiro:'', re:'', analista:'', search:'' },
   // analistas de crédito
   analistas: [], analistaFiltered: [], analistaPage: 0, analistaPerPage: 25, editingAnalistaId: null, analistasLoaded: false,
@@ -1723,6 +1725,11 @@ async function init() {
     }
   }
 
+  // All privileged controls fail closed until this point. For partners, the
+  // permissions above are loaded from the canonical partner record first.
+  G.permissionsReady = true;
+  applyPartnerRestrictions();
+
   // Show Registro tab + config section only if module is enabled for this tenant
   fetch(A1.rpc('a1_has_module'), {
     method:'POST', headers:A1.headers(), body:JSON.stringify({p_module_key:'registro'})
@@ -1822,7 +1829,30 @@ async function saveProfile() {
   } finally { btn.disabled=false; btn.textContent='Salvar'; }
 }
 
+function canCreateRepasse() {
+  return G.permissionsReady && hasPerm('criar_repasses');
+}
+
+function requireRepasseCreation() {
+  if (!G.permissionsReady) {
+    toast('Verificando suas permissões. Aguarde um instante.', 'info');
+    return false;
+  }
+  if (!hasPerm('criar_repasses')) {
+    toast('Você não tem permissão para criar repasses.', 'error');
+    return false;
+  }
+  return true;
+}
+
 function applyPartnerRestrictions() {
+  const newRepasseButton = document.getElementById('btn-new-repasse');
+  if (newRepasseButton) {
+    const allowed = canCreateRepasse();
+    newRepasseButton.hidden = !allowed;
+    newRepasseButton.setAttribute('aria-hidden', String(!allowed));
+  }
+
   if (G.user.role !== 'partner') return;
 
   // Ocultar aba de configurações
@@ -1836,11 +1866,6 @@ function applyPartnerRestrictions() {
   // Ocultar tab de Registro (partner nao acessa registro)
   const regGroup = document.getElementById('tab-registro-group');
   if (regGroup) regGroup.style.display = 'none';
-
-  // Ocultar botão Nova Operação se sem permissão
-  if (!hasPerm('criar_repasses')) {
-    document.querySelectorAll('[onclick="openNewCase()"]').forEach(el => el.style.display = 'none');
-  }
 
   // Se sem permissão de ver: bloquear dashboard
   if (!hasPerm('ver_dashboard')) {
@@ -2746,6 +2771,8 @@ async function addComment() {
 
 // ─── New case ─────────────────────────────────────────────────────────────────
 async function openNewCase() {
+  if (!requireRepasseCreation()) return;
+
   // reset form
   ['n-name','n-cpf','n-phone','n-email','n-value','n-broker','n-obs'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -2876,6 +2903,8 @@ function onBlocoChange() {
 }
 
 async function createCase() {
+  if (!requireRepasseCreation()) return;
+
   const name=v('n-name');
   if(!name){toast('Informe o nome do cliente','error');return;}
   const devSel  = document.getElementById('n-development');
