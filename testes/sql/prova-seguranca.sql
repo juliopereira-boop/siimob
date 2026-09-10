@@ -853,6 +853,88 @@ reset role;
 update a1_config set value = '[]'
  where tenant_id = '11111111-1111-1111-1111-111111111111';
 
+
+-- ═══ MODO MANUTENÇÃO — a chave geral ════════════════════════════════════════
+--
+-- A tranca precisa provar três coisas, e a terceira é a que mais me preocupa:
+--   1. ligada, nenhum login passa;
+--   2. desligada (ou vencida), tudo volta ao normal;
+--   3. NINGUÉM além da chave de serviço consegue girá-la.
+--
+-- A terceira é o motivo de a tabela não ter política de escrita. Se um corretor
+-- conseguisse dar um UPDATE nela pela API, teria nas mãos o botão de derrubar a
+-- empresa inteira — e a autorização aqui não é um `if`, é a ausência de
+-- permissão, que não tem como esquecer de conferir.
+
+-- Nasce DESLIGADA. Rodar o arquivo de migração não pode tirar ninguém do ar, e
+-- é exatamente o tipo de coisa que só se descobre em produção se não for
+-- provado aqui.
+select checa('a chave nasce desligada', a1_manutencao_ativa() = false);
+select checa('e o estado devolvido diz o mesmo',
+  (a1_manutencao_estado()->>'ativa')::boolean = false);
+
+-- Fora da manutenção o login segue seu caminho normal. Uso um cliente que não
+-- existe de propósito: a resposta 'tenant_not_found' prova que a função passou
+-- do bloco de manutenção sem parar.
+select checa('fora da manutenção, o login funciona como antes',
+  a1_login('nao-existe','00000000000','x')->>'error' = 'tenant_not_found');
+
+-- ─── Ligada ─────────────────────────────────────────────────────────────────
+update a1_manutencao
+   set ativa = true, inicio = now(), ate = now() + interval '1 hour',
+       mensagem = 'Manutenção preventiva.';
+
+select checa('ligada, a chave responde ativa', a1_manutencao_ativa() = true);
+select checa('o login de gestor é recusado',
+  a1_login('thecred','10000000001','x')->>'error' = 'em_manutencao');
+select checa('o login de parceiro é recusado',
+  a1_partner_login('thecred','10000000001','x')->>'error' = 'em_manutencao');
+
+-- A mensagem viaja junto com a recusa. Sem ela, a tela de login só saberia
+-- dizer "não deu" — e quem digitou a senha certa merece saber por quê.
+select checa('a recusa carrega a mensagem escrita pelo superadmin',
+  a1_login('thecred','10000000001','x')->>'mensagem' = 'Manutenção preventiva.');
+select checa('e carrega a hora prevista de volta',
+  a1_login('thecred','10000000001','x')->>'ate' is not null);
+
+-- A tranca vem ANTES de qualquer conferência de cliente. Um cliente inexistente
+-- durante a manutenção tem que receber 'em_manutencao', não 'tenant_not_found':
+-- se a ordem estivesse invertida, a função ainda consultaria as tabelas que
+-- estão sendo mexidas — que é justamente o que a manutenção quer evitar.
+select checa('a manutenção é conferida antes de procurar o cliente',
+  a1_login('nao-existe','00000000000','x')->>'error' = 'em_manutencao');
+
+-- ─── Quem pode girar a chave ────────────────────────────────────────────────
+set role anon;
+select checa('anon CONSEGUE ler o estado (a tela de login precisa explicar-se)',
+  (select count(*) from a1_manutencao) = 1);
+select checa('mas anon NÃO consegue ligar a chave',
+  tenta('update a1_manutencao set ativa = true') is not null,
+  coalesce(tenta('update a1_manutencao set ativa = true'), 'PASSOU — a API derruba o sistema'));
+select checa('nem desligá-la',
+  tenta('update a1_manutencao set ativa = false') is not null);
+select checa('nem criar uma segunda verdade sobre o assunto',
+  tenta($$insert into a1_manutencao (id, ativa) values (false, true)$$) is not null);
+select checa('nem apagar a linha para se livrar dela',
+  tenta('delete from a1_manutencao') is not null);
+reset role;
+
+-- ─── A volta sozinha ────────────────────────────────────────────────────────
+-- A rede de segurança da chave esquecida numa sexta à noite. Com `ate` no
+-- passado, a chave já não segura ninguém — mesmo com ativa ainda em true.
+update a1_manutencao set ate = now() - interval '1 minute';
+select checa('prazo vencido: a chave para de valer sozinha', a1_manutencao_ativa() = false);
+select checa('e o login volta a funcionar sem ninguém desligar nada',
+  a1_login('nao-existe','00000000000','x')->>'error' = 'tenant_not_found');
+
+-- Sem prazo, ela vale até alguém desligar. É o caso da manutenção sem hora para
+-- acabar, e precisa continuar valendo — `ate` nulo não pode ser lido como vencido.
+update a1_manutencao set ativa = true, ate = null;
+select checa('sem prazo, a chave vale até alguém desligar', a1_manutencao_ativa() = true);
+
+update a1_manutencao set ativa = false, ate = null, mensagem = null;
+select checa('desligada, o sistema volta', a1_manutencao_ativa() = false);
+
 -- =============================================================================
 \o
 \echo ''

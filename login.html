@@ -288,6 +288,18 @@ if (A1.token && A1.slug === slug && A1.user) {
   box.classList.remove('hidden');
 })();
 
+// Manutenção: avisa ANTES de a pessoa digitar. O banco já recusa o login e a
+// mensagem chega traduzida, mas deixar alguém digitar CPF e senha para só
+// então descobrir que o sistema está parado é desperdício do tempo dela.
+(async function () {
+  const est = await a1ManutencaoEstado();
+  if (!est || !est.ativa) return;
+  const box = document.getElementById('error-box');
+  if (!box) return;
+  box.textContent = a1MsgManutencao({ mensagem: est.mensagem, ate: est.ate });
+  box.classList.remove('hidden');
+})();
+
 let activeRole = null; // 'gestor' | 'cca' | 'despachante'
 
 const PANELS_DEF = [

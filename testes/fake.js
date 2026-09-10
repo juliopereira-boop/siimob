@@ -217,6 +217,14 @@ function usarDocTypes(lista) {
             : (typeof lista === 'string' ? lista : JSON.stringify(lista));
 }
 
+// Modo manutenção. Nasce desligado — é assim que o sistema vive 99% do tempo,
+// e todo teste que não fala do assunto tem que ver o sistema no ar.
+let MANUTENCAO = { ativa:false, mensagem:null, ate:null };
+function usarManutencao(estado) {
+  MANUTENCAO = estado == null ? { ativa:false, mensagem:null, ate:null }
+                              : { ativa:false, mensagem:null, ate:null, ...estado };
+}
+
 function responder(url, metodo, corpo0) {
   const u = new URL(url);
   const p = u.pathname;
@@ -232,6 +240,7 @@ function responder(url, metodo, corpo0) {
     return { ok:true, situacao_id:'ps2' };
   if (p.includes('/rpc/a1_pa_executar_acao')) return { ok:true, comercial_id:'co1' };
   if (p.includes('/rpc/a1_co_executar_acao')) return { ok:true, repasse_case_id:'c1' };
+  if (p.includes('/rpc/a1_manutencao_estado')) return MANUTENCAO;
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;
   if (p.includes('/rpc/')) return {ok:true};
@@ -347,4 +356,4 @@ function responder(url, metodo, corpo0) {
   }
   return [];
 }
-module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos, usarDocTypes };
+module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos, usarDocTypes, usarManutencao };

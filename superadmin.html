@@ -519,6 +519,49 @@
     </div>
 
     <div id="satab-plataforma" style="display:none">
+
+      <!-- ══ A chave geral ══
+           Fica no topo da aba porque é a coisa mais pesada que esta tela faz:
+           ligada, ninguém entra no sistema. Só o superadmin continua passando —
+           ele fala com o banco pela service_role key, que não passa por
+           a1_login nem por RLS. Por isso esta chave não tranca quem a girou. -->
+      <div class="panel" id="manut-painel" style="padding:1.25rem;margin-bottom:1.25rem;border-left:4px solid #94A3B8">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Modo Manutenção</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">Com a chave ligada, <strong>ninguém consegue entrar</strong> e quem já está dentro vê o aviso de manutenção no lugar do sistema. Você continua com acesso a esta tela.</div>
+          </div>
+          <div id="manut-selo" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.3rem .6rem;border-radius:999px;background:#F1F5F9;color:#475569">—</div>
+        </div>
+
+        <div id="manut-corpo" style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:.85rem">
+            <div class="form-group" style="margin:0">
+              <label>Mensagem para quem tentar entrar</label>
+              <textarea id="manut-msg" rows="2" placeholder="Manutenção preventiva. O sistema volta às 11h."
+                style="width:100%;resize:vertical"></textarea>
+              <div style="font-size:.67rem;color:var(--t3);margin-top:.3rem">Aparece na tela de login e no aviso de quem já está dentro. Em branco, o sistema usa um texto padrão.</div>
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label>Volta automaticamente em</label>
+              <input type="datetime-local" id="manut-ate" style="width:100%">
+              <!-- A rede de segurança da chave esquecida. Sem `ate`, uma chave
+                   ligada numa sexta à noite se descobre na segunda de manhã,
+                   pelo telefone do cliente. -->
+              <div style="font-size:.67rem;color:var(--t3);margin-top:.3rem">Passada essa hora, o sistema volta sozinho mesmo que ninguém desligue a chave. Deixe em branco para manter desligado até você voltar aqui.</div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 250px;display:flex;flex-direction:column;gap:.6rem">
+            <button id="manut-btn-ligar" class="btn btn-danger" onclick="manutLigar()" style="width:100%">Desligar o sistema</button>
+            <button id="manut-btn-desligar" class="btn btn-primary" onclick="manutDesligar()" style="width:100%;display:none">Reativar o sistema</button>
+            <button class="btn btn-ghost btn-sm" onclick="manutCarregar()" style="width:100%">Recarregar estado</button>
+            <div id="manut-detalhe" style="font-size:.68rem;color:var(--t3);line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
         <div class="section-hdr" style="margin-bottom:1rem">
           <div>
@@ -830,7 +873,7 @@ function switchSaTab(name, el) {
   if (name === 'esteiras')     prepararEsteiras();
   if (name === 'melhorias')    loadFeedback();
   if (name === 'interessados') loadLeads();
-  if (name === 'plataforma')   initLogoUpload();
+  if (name === 'plataforma') { initLogoUpload(); manutCarregar(); }
   if (name === 'monitor')      loadMonitor();
   if (name === 'avisos')       loadAvisos();
   if (name === 'indica')       loadIndicacoes();
@@ -1700,6 +1743,115 @@ async function deleteLead(id, nome) {
     toast('Contato excluído.', 'info');
     loadLeads();
   } catch (e) { toast('Não foi possível excluir: ' + e.message, 'error'); }
+}
+
+// ═══ Modo manutenção — a chave geral ═════════════════════════════════════════
+// O estado mora numa linha só, em a1_manutencao. Quem lê são as duas funções de
+// login (que recusam entrada nova) e a tela de cada usuário (que cobre o
+// sistema com o aviso). Esta tela é a única que ESCREVE: a tabela não tem
+// política de update, então anon e authenticated não conseguem — só a
+// service_role, que é quem o superadmin é.
+//
+// Se esta tela não abrir por qualquer motivo, a saída de emergência é uma linha
+// no editor do Supabase:  update a1_manutencao set ativa = false;
+function manutPintar(m) {
+  const selo   = document.getElementById('manut-selo');
+  const painel = document.getElementById('manut-painel');
+  const det    = document.getElementById('manut-detalhe');
+  if (!selo) return;
+
+  // `ativa` no banco é a intenção; o que vale é ela E o prazo. Uma chave com
+  // `ate` no passado já não segura ninguém, e mostrar "ligada" aqui seria
+  // mentir sobre o estado real do sistema.
+  const venceu  = m && m.ate && new Date(m.ate) <= new Date();
+  const ligada  = !!(m && m.ativa && !venceu);
+
+  selo.textContent = ligada ? 'Sistema desligado' : 'Sistema no ar';
+  selo.style.background = ligada ? '#FEE2E2' : '#DCFCE7';
+  selo.style.color      = ligada ? '#B91C1C' : '#15803D';
+  painel.style.borderLeftColor = ligada ? '#DC2626' : '#94A3B8';
+
+  document.getElementById('manut-btn-ligar').style.display    = ligada ? 'none' : '';
+  document.getElementById('manut-btn-desligar').style.display = ligada ? '' : 'none';
+
+  const partes = [];
+  if (ligada) {
+    partes.push('Ninguém consegue entrar neste momento.');
+    if (m.ate) partes.push(`Volta sozinho em ${new Date(m.ate).toLocaleString('pt-BR')}.`);
+    else       partes.push('Sem hora de volta — só desligando a chave.');
+  } else if (venceu) {
+    partes.push('A última manutenção expirou e o sistema já voltou sozinho.');
+  }
+  if (m && m.ligada_por && ligada) partes.push(`Ligada por ${esc(m.ligada_por)}.`);
+  det.innerHTML = partes.join('<br>');
+}
+
+function manutParaInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function manutCarregar() {
+  try {
+    const r = await fetch(`${saRest('a1_manutencao')}?limit=1`, { headers: saHeaders() });
+    if (!r.ok) throw new Error('sem tabela');
+    const linhas = await r.json();
+    const m = Array.isArray(linhas) && linhas[0] ? linhas[0] : { ativa: false };
+    document.getElementById('manut-msg').value = m.mensagem || '';
+    document.getElementById('manut-ate').value = manutParaInput(m.ate);
+    manutPintar(m);
+  } catch {
+    // Tabela ainda não criada (o SQL não foi rodado). Dizer isso é melhor do
+    // que um selo em branco que parece "no ar" sem ninguém ter conferido.
+    const selo = document.getElementById('manut-selo');
+    if (selo) { selo.textContent = 'Não instalado'; selo.style.background = '#FEF3C7'; selo.style.color = '#92400E'; }
+    document.getElementById('manut-detalhe').textContent =
+      'Rode sql/2026-09-10_modo_manutencao.sql no Supabase para habilitar a chave.';
+  }
+}
+
+async function manutGravar(corpo, aviso) {
+  const r = await fetch(`${saRest('a1_manutencao')}?id=eq.true`, {
+    method: 'PATCH', headers: saHeaders({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify({ ...corpo, atualizado_em: new Date().toISOString() })
+  });
+  if (!r.ok) { toast('Não consegui gravar: ' + (await r.text()).slice(0, 140), 'error'); return; }
+  const linhas = await r.json().catch(() => []);
+  if (Array.isArray(linhas) && linhas[0]) {
+    document.getElementById('manut-msg').value = linhas[0].mensagem || '';
+    document.getElementById('manut-ate').value = manutParaInput(linhas[0].ate);
+    manutPintar(linhas[0]);
+  } else { await manutCarregar(); }
+  toast(aviso, 'success');
+}
+
+async function manutLigar() {
+  const msg = document.getElementById('manut-msg').value.trim();
+  const ate = document.getElementById('manut-ate').value;
+  const ateISO = ate ? new Date(ate).toISOString() : null;
+
+  // Confirmação com a consequência escrita por extenso, e com a hora de volta
+  // quando existir. "Tem certeza?" não informa nada a quem já clicou.
+  const quando = ateISO
+    ? `O sistema volta sozinho em ${new Date(ateISO).toLocaleString('pt-BR')}.`
+    : 'SEM hora de volta — vai ficar fora do ar até você desligar a chave aqui.';
+  if (!confirm(`Desligar o sistema para TODOS os clientes agora?\n\n` +
+               `Ninguém consegue entrar, e quem está dentro passa a ver o aviso de manutenção.\n` +
+               `${quando}\n\nVocê continua com acesso a esta tela.`)) return;
+
+  await manutGravar({
+    ativa: true, mensagem: msg || null, inicio: new Date().toISOString(),
+    ate: ateISO, ligada_por: 'superadmin'
+  }, 'Sistema desligado. Ninguém entra até você reativar.');
+}
+
+async function manutDesligar() {
+  // Zera `ate` junto: uma chave desligada com prazo velho pendurado é lixo que
+  // confunde a próxima leitura.
+  await manutGravar({ ativa: false, ate: null }, 'Sistema no ar novamente.');
 }
 
 // ─── Logo Upload ──────────────────────────────────────────────────────────────

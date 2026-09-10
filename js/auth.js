@@ -36,6 +36,7 @@ async function a1Login(slug, cpf, password) {
       tenant_cancelled:   'Conta cancelada.',
       invalid_credentials:'CPF ou senha incorretos.'
     };
+    if (data.error === 'em_manutencao') throw new Error(a1MsgManutencao(data));
     throw new Error(msgs[data.error] || data.error);
   }
 
@@ -85,7 +86,14 @@ async function a1PartnerLogin(slug, cpf, password) {
     if (data.error === 'max_concurrent') {
       throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
     }
-    throw new Error(data.error);
+    if (data.error === 'em_manutencao') throw new Error(a1MsgManutencao(data));
+    // Parceiro recebe os mesmos nomes de erro do gestor. Sem tradução, a tela
+    // mostrava 'invalid_credentials' cru para quem só errou a senha.
+    const msgsP = {
+      tenant_not_found:   'Empresa não encontrada.',
+      invalid_credentials:'CPF ou senha incorretos.'
+    };
+    throw new Error(msgsP[data.error] || data.error);
   }
 
   localStorage.setItem('a1_token', data.token);
@@ -378,6 +386,99 @@ async function a1Heartbeat(moduleName) {
   } catch { return false; }
 }
 
+// ═══ Modo manutenção ════════════════════════════════════════════════════════
+// A tranca de verdade está no banco: a1_login e a1_partner_login recusam
+// entrada nova enquanto a chave estiver ligada. O que está aqui cuida de quem
+// JÁ estava dentro — a tela cobre o sistema com o aviso, para que ninguém salve
+// por cima do que está sendo mexido.
+//
+// Por que a trava para sessão viva não está no banco: ela teria que morar em
+// a1_sessao(), chamada por TODA política em TODA consulta. Custo alto e
+// permanente para uma janela que dura duas horas por mês.
+
+function a1MsgManutencao(data) {
+  const base = (data && data.mensagem) || 'O sistema está em manutenção no momento.';
+  if (!data || !data.ate) return base;
+  const d = new Date(data.ate);
+  if (isNaN(d)) return base;
+  return `${base} Previsão de volta: ${d.toLocaleString('pt-BR')}.`;
+}
+
+// Devolve o estado, ou NULL quando não deu para perguntar. A diferença importa:
+// "não consegui perguntar" não é "não tem manutenção", e muito menos "tem" —
+// uma falha de rede não pode nem cobrir a tela de quem está trabalhando, nem
+// descobrir a tela de quem deveria estar parado. Null = não mexe em nada.
+// Banco sem a função (SQL ainda não rodado) cai aqui também, e o sistema segue
+// funcionando como antes.
+async function a1ManutencaoEstado() {
+  try {
+    const res = await fetch(A1.rpc('a1_manutencao_estado'), {
+      method: 'POST', headers: A1.headers(), body: JSON.stringify({})
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return (d && typeof d === 'object') ? d : null;
+  } catch { return null; }
+}
+
+function a1TelaManutencao(estado) {
+  if (document.getElementById('a1-manutencao')) return;
+  const msg = (estado && estado.mensagem) ||
+    'Estamos fazendo uma manutenção preventiva no sistema.';
+  let volta = '';
+  if (estado && estado.ate) {
+    const d = new Date(estado.ate);
+    if (!isNaN(d)) volta = `Previsão de volta: <b>${d.toLocaleString('pt-BR')}</b>`;
+  }
+  const el = document.createElement('div');
+  el.id = 'a1-manutencao';
+  el.setAttribute('style',
+    'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;' +
+    'justify-content:center;padding:1.5rem;background:#06322F;color:#EAFBF8;' +
+    "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center");
+  el.innerHTML =
+    '<div style="max-width:520px">' +
+      '<div style="font-size:.7rem;font-weight:700;letter-spacing:.35em;color:#3BF0DE;' +
+           'text-transform:uppercase;margin-bottom:1.5rem">Manutenção</div>' +
+      '<div style="font-size:1.55rem;line-height:1.35;margin-bottom:1rem">' +
+        a1EscapaTexto(msg) + '</div>' +
+      (volta ? `<div style="font-size:.95rem;color:#8FDDD3;margin-bottom:1.5rem">${volta}</div>` : '') +
+      '<div style="font-size:.85rem;line-height:1.6;color:rgba(143,221,211,.75)">' +
+        'Nenhum dado é perdido — tudo volta exatamente como você deixou.<br>' +
+        'Esta tela se atualiza sozinha assim que o sistema voltar.</div>' +
+    '</div>';
+  document.body.appendChild(el);
+}
+
+// Escapa aqui dentro porque auth.js não tem acesso ao esc() das telas, e a
+// mensagem vem do banco: texto de terceiro entrando em innerHTML é injeção.
+function a1EscapaTexto(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+let A1_EM_MANUTENCAO = false;
+
+async function a1ConferirManutencao() {
+  const est = await a1ManutencaoEstado();
+  if (!est) return;                                  // não perguntei: não mexo
+  if (est.ativa && !A1_EM_MANUTENCAO) {
+    A1_EM_MANUTENCAO = true;
+    a1TelaManutencao(est);
+    return;
+  }
+  // Acabou a manutenção: recarrega em vez de só tirar a cobertura. O que estava
+  // na tela foi carregado antes da manutenção e provavelmente está velho.
+  if (!est.ativa && A1_EM_MANUTENCAO) window.location.reload();
+}
+
+// Para as telas que não têm heartbeat (tenant-admin, workflow). Onde há
+// heartbeat, a conferência já anda junto com ele.
+function a1VigiarManutencao() {
+  a1ConferirManutencao();
+  return setInterval(a1ConferirManutencao, 50_000);
+}
+
 // Sessão expirada (7 dias) = toda tentativa de heartbeat falha por RLS. Sem este
 // limite, o setInterval martelava o banco a cada 50s PARA SEMPRE em qualquer aba
 // esquecida aberta com sessão vencida — carga contínua e crescente, sem retorno
@@ -385,6 +486,11 @@ async function a1Heartbeat(moduleName) {
 function a1StartHeartbeat(moduleName) {
   let fails = 0, id = null;
   const bater = async () => {
+    // A chave geral do superadmin. Vai junto do heartbeat porque a batida já
+    // existe: quem está dentro descobre a manutenção em até um ciclo (~50s),
+    // sem um segundo temporizador só para isso.
+    a1ConferirManutencao();
+
     // Se outra pessoa entrou com este mesmo login, o servidor já encerrou esta
     // sessão: quem estava logado cai aqui, em até um ciclo (~50s).
     if (!(await a1TouchSession())) {
