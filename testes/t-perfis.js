@@ -240,8 +240,16 @@ const gravado = (p, re) => p.evaluate(r => {
     checa('o editor agrupa por módulo', grupos.includes('Repasse') && grupos.includes('Pré-análise'), grupos.join('|'));
     checa('e não oferece o módulo que o cliente não tem',
       !grupos.includes('Comercial'), grupos.join('|'));
-    checa('um perfil novo nasce fechado',
-      await p.evaluate(() => [...document.querySelectorAll('#perfil-permissoes .pf-perm')].every(c => !c.checked)));
+    // Perfil novo nasce fechado — com UMA exceção, e ela é deliberada:
+    // 'ver_repasses' não concede nada, ela abre o módulo. Nascendo desmarcada,
+    // o primeiro perfil criado trancaria para fora do Repasse todo mundo que
+    // fosse vinculado a ele, e o gestor não teria como adivinhar a causa. Foi
+    // exatamente o que aconteceu quando a chave nasceu, e é o que esta dupla de
+    // verificações passa a vigiar: a exceção existe, e é só ela.
+    const marcadas = await p.$$eval('#perfil-permissoes .pf-perm',
+      els => els.filter(c => c.checked).map(c => c.dataset.chave));
+    checa('um perfil novo nasce fechado, menos no degrau que abre o módulo',
+      marcadas.join(',') === 'ver_repasses', marcadas.join(',') || '(nenhuma)');
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();

@@ -1978,8 +1978,23 @@ function usaPermissaoPorEtapa(){
 }
 function meuNome(){ return ((G.user && G.user.name) || '').trim().toLowerCase(); }
 
+// Corretor e analista enxergam APENAS o que está vinculado a eles. É regra do
+// dono, e vale em todo o sistema — não é preferência de cadastro. Por isso vem
+// antes de tudo: nem 'gerente' nem 'ver_todos_analistas' abrem a carteira para
+// estes dois tipos, venham do cadastro ou de um perfil. O interruptor também
+// saiu das telas deles, mas quem impõe a regra é isto aqui, não a ausência do
+// campo — um perfil antigo ainda carrega a marca, e ela deixou de valer.
+//
+// Coordenador e correspondente continuam como eram: o coordenador existe
+// justamente para acompanhar a equipe.
+function soVeOSeu(){
+  const t = G.user && G.user.type;
+  return G.user && G.user.role === 'partner' && (t === 'corretor' || t === 'analista');
+}
+
 function temVisaoCompleta(){
   if (souGestorUser()) return true;
+  if (soVeOSeu()) return false;
   const p = (G.user && G.user.permissions) || {};
   if (p.gerente) return true;
   if ('ver_todos_analistas' in p) return !!p.ver_todos_analistas;

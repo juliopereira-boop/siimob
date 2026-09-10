@@ -85,6 +85,20 @@ async function abrirComoClara(pag) {
     checa('o perfil não abre a carteira inteira',
       await p.evaluate(() => temVisaoCompleta()) === false);
 
+    // Regra do dono, dita depois deste relato: corretor e analista veem apenas
+    // o que é deles, em todo o sistema. Ela ganha de qualquer marca — inclusive
+    // de um perfil que diga o contrário, que é como a carteira foi aberta aqui.
+    checa('corretora cai na regra de "só o seu"',
+      await p.evaluate(() => soVeOSeu()) === true);
+    const aindaAbre = await p.evaluate(() => {
+      G.user.permissions = { ...G.user.permissions, ver_todos_analistas: true, gerente: true };
+      return temVisaoCompleta();
+    });
+    checa('nem "visão completa" nem "gerente" abrem a carteira de uma corretora',
+      aindaAbre === false);
+    await p.evaluate(() => { delete G.user.permissions.gerente;
+                             delete G.user.permissions.ver_todos_analistas; });
+
     // A prova que importa: o servidor entregou os processos (a1_cases só tem
     // isolamento por cliente), e mesmo assim nenhum aparece — porque nenhum é
     // dela. Se a tela mostrasse um só, seria o vazamento relatado.
@@ -103,6 +117,27 @@ async function abrirComoClara(pag) {
     checa('o quadro não desenha cartão nenhum', noQuadro === 0, 'cartoes=' + noQuadro);
 
     checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
+    todosErros.push(...erros);
+    await b.close();
+  }
+
+  // ── E quem NÃO pode ser fechado junto ────────────────────────────────────
+  {
+    const { b, p, erros } = await abrirComoClara('repasse.html');
+    console.log('\n== A REGRA É DOS DOIS TIPOS, NÃO DE TODO MUNDO ==');
+    // Mesma pessoa, mesmo perfil — só o tipo muda. Sem esta verificação, fechar
+    // corretor e analista poderia ter fechado correspondente e coordenador
+    // junto, e ninguém notaria até o cliente ligar.
+    const corr = await p.evaluate(() => { G.user.type = 'cca'; return soVeOSeu(); });
+    checa('correspondente não cai na regra de "só o seu"', corr === false);
+    const coord = await p.evaluate(() => { G.user.type = 'coordenador'; return soVeOSeu(); });
+    checa('coordenador também não', coord === false);
+    const veTudo = await p.evaluate(() => {
+      G.user.type = 'coordenador';
+      G.user.permissions = { ...G.user.permissions, ver_todos_analistas: true };
+      return temVisaoCompleta();
+    });
+    checa('e o coordenador com visão completa continua enxergando a equipe', veTudo === true);
     todosErros.push(...erros);
     await b.close();
   }

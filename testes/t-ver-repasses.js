@@ -70,6 +70,47 @@ async function abrirComoParceiro(pag, permissoes) {
     await b.close();
   }
 
+  // ── O PADRÃO É VER. Cadastro novo não pode nascer trancado ───────────────
+  //
+  // Esta é a verificação que faltou quando a chave foi criada: ela nascia
+  // desmarcada nos formulários, e salvar um corretor novo gravava
+  // ver_repasses:false. A pessoa era cadastrada e batia em "Sem acesso ao
+  // Repasse" no primeiro login, sem ninguém entender por quê.
+  {
+    const { b, p, erros } = await abrir('configuracoes.html');
+    console.log('\n== VER O MÓDULO É O PADRÃO, EM TODO CADASTRO NOVO ==');
+
+    await p.evaluate(() => openCfgView('corretores'));
+    await p.waitForTimeout(800);
+    await p.evaluate(() => openCorretor(null));       // corretor NOVO
+    await p.waitForTimeout(700);
+    checa('no corretor novo, "Ver processos" já vem marcada',
+      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_repasses"]')?.checked) === true);
+
+    await p.evaluate(() => openCfgView('correspondentes'));
+    await p.waitForTimeout(900);
+    await p.evaluate(() => openPartnerModal(null));   // correspondente NOVO
+    await p.waitForTimeout(900);
+    checa('no correspondente novo, também',
+      await p.evaluate(() => document.querySelector('.pt-perm[data-key="ver_repasses"]')?.checked) === true);
+
+    await p.evaluate(() => openCfgView('perfis'));
+    await p.waitForTimeout(700);
+    await p.evaluate(() => perfilAbrir(null));        // perfil NOVO
+    await p.waitForTimeout(500);
+    checa('e no perfil novo, que vale para todo mundo que for vinculado a ele',
+      await p.evaluate(() => document.querySelector('.pf-perm[data-chave="ver_repasses"]')?.checked) === true);
+    // O resto do perfil continua nascendo fechado: a exceção é só esta chave.
+    const outras = await p.$$eval('.pf-perm',
+      els => els.filter(e => e.dataset.chave !== 'ver_repasses' && e.checked).map(e => e.dataset.chave));
+    checa('e só ela — o perfil novo continua nascendo fechado no resto',
+      outras.length === 0, outras.join(','));
+
+    checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
+    todosErros.push(...erros);
+    await b.close();
+  }
+
   // ── NÃO-REGRESSÃO: sem a chave, o Repasse continua abrindo ───────────────
   {
     const { b, p, erros } = await abrirComoParceiro('repasse.html',

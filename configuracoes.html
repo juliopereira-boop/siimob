@@ -1298,15 +1298,14 @@
           <div id="an-perm-caixas"></div>
         </div>
 
-        <div class="form-group full" style="margin-top:.25rem">
-          <label id="an-visao-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc">
-            <div>
-              <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Ver todos os processos</div>
-              <div style="font-size:.72rem;color:var(--t3)">Ligado, enxerga os processos de todos os analistas. Desligado, vê apenas os processos em que ele é o analista responsável. Editar continua restrito aos dele.</div>
-            </div>
-            <input type="checkbox" class="an-perm" data-key="ver_todos_analistas" id="an-visao" style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem" onchange="paintAnVisao()">
-          </label>
-        </div>
+        <!-- O cartão "Ver todos os processos" vivia aqui e SAIU.
+             Regra do dono: corretor e analista enxergam apenas o que está
+             vinculado a eles, em todo o sistema. Deixar o interruptor na tela
+             seria oferecer uma escolha que o sistema não honra mais — e uma
+             tela que promete o que a regra nega é pior que a tela sem a opção.
+             Quem impõe isso não é a ausência do campo: é a1_case_visao_completa
+             e a1_pa_visivel / a1_co_visivel, que ignoram a marca para estes
+             dois tipos. Ver sql/2026-09-10_corretor_analista_so_o_seu.sql. -->
 
         <div class="form-group full" style="margin-top:.25rem">
           <label>Acesso por etapa</label>
@@ -3445,7 +3444,10 @@ async function openPartnerModal(id) {
   // analistas — continuam nos cartoes grandes abaixo; o montador as pula.
   permsMontar('pt-perm-caixas', 'pt-perm',
               ['gerente','ver_todos_repasses','ver_todos_analistas']);
-  const PERM_DEFAULTS = { criar_repasses:true, editar_repasses:false, ver_dashboard:false, ver_todos_repasses:false };
+  // Ver o módulo é o padrão — sem isto o correspondente novo nasceria trancado
+  // para fora do Repasse.
+  const PERM_DEFAULTS = { ver_repasses:true, criar_repasses:true, editar_repasses:false,
+                          ver_dashboard:false, ver_todos_repasses:false };
   const savedPerms = p?.permissions || {};
   document.querySelectorAll('.pt-perm').forEach(cb => {
     const k = cb.dataset.key;
@@ -4063,8 +4065,16 @@ async function openCorretor(id){
   const p = c?.permissions || {};
   // Gerente e "compartilhar carteira" ficam de fora: o corretor nunca teve
   // essas duas aqui, e um formulário não é lugar de estrear poder novo.
-  permsMontar('co-perm-caixas', 'co-perm', ['gerente','ver_todos_repasses']);
-  const PADRAO = { criar_repasses:false, editar_repasses:false, alterar_etapa:false, ver_dashboard:false, ver_todos_analistas:false };
+  // 'ver_todos_analistas' entra na lista de fora: corretor vê apenas o que está
+  // vinculado a ele, e o interruptor prometeria o contrário.
+  permsMontar('co-perm-caixas', 'co-perm',
+              ['gerente','ver_todos_repasses','ver_todos_analistas']);
+  // 'ver_repasses' nasce MARCADA, e isso não é detalhe: ela é o degrau que abre
+  // o módulo. Nascendo desmarcada, todo corretor cadastrado a partir daqui
+  // seria salvo com ver_repasses:false e bateria em "Sem acesso ao Repasse" no
+  // primeiro login. Ver o módulo é o padrão; o que se concede é o resto.
+  const PADRAO = { ver_repasses:true, criar_repasses:false, editar_repasses:false,
+                   alterar_etapa:false, ver_dashboard:false };
   document.querySelectorAll('.co-perm').forEach(cb=>{
     const k=cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
@@ -5130,11 +5140,10 @@ function renderAnalistaList() {
     `<button class="pt-pg-btn" ${G.analistaPage===pages-1?'disabled':''} onclick="G.analistaPage++;renderAnalistaList()">Próximo</button>`;
 }
 
-function paintAnVisao(){
-  const on = document.getElementById('an-visao')?.checked;
-  const lbl = document.getElementById('an-visao-label');
-  if (lbl){ lbl.style.borderColor = on ? '#2563eb' : 'var(--border)'; lbl.style.background = on ? '#eff6ff' : '#f8fafc'; }
-}
+// O cartão que esta função pintava saiu da tela: analista não escolhe mais ver
+// tudo. Fica como no-op porque o HTML antigo ainda podia chamá-la, e uma
+// referência quebrada num onchange derruba o formulário inteiro.
+function paintAnVisao(){}
 
 async function openAnalista(a) {
   G.editingAnalistaId = a?.id || null;
@@ -5155,8 +5164,8 @@ async function openAnalista(a) {
   // compartilhar carteira não pertencem a este cadastro.
   permsMontar('an-perm-caixas', 'an-perm',
               ['gerente','ver_todos_repasses','ver_todos_analistas']);
-  const PADRAO = { criar_repasses:false, editar_repasses:true, alterar_etapa:true,
-                   ver_dashboard:true, ver_todos_analistas:false };
+  const PADRAO = { criar_repasses:false, ver_repasses:true, editar_repasses:true,
+                   alterar_etapa:true, ver_dashboard:true };
   document.querySelectorAll('.an-perm').forEach(cb => {
     const k = cb.dataset.key;
     cb.checked = k in p ? !!p[k] : (PADRAO[k] ?? false);
@@ -5897,13 +5906,22 @@ function perfilAbrir(id){
   const p = PERFIS.editando || { nome:'', descricao:'', permissions:{}, ativo:true };
   const grupos = perfisDisponiveis();
 
+  // Perfil NOVO nasce fechado — é de propósito, e está escrito no catálogo. A
+  // única exceção é 'ver_repasses': ela não concede nada, ela abre o módulo.
+  // Um perfil novo que nascesse com ela desmarcada trancaria para fora do
+  // Repasse todo mundo que fosse vinculado a ele, e o gestor não teria como
+  // adivinhar que a caixa desmarcada era a causa.
+  const novo = !PERFIS.editando;
+  const marcada = chave => novo ? chave === 'ver_repasses'
+                                : (p.permissions || {})[chave] === true;
+
   const blocos = [...grupos.entries()].map(([mod, itens]) => `
     <div class="pf-grupo">
       <div class="pf-grupo-titulo">${esc(A1_ROTULO_MODULO[mod] || mod)}</div>
       ${itens.map(i => `
         <label class="pf-item" title="${esc(i.ajuda)}">
           <input type="checkbox" class="pf-perm" data-chave="${esc(i.chave)}"
-                 ${(p.permissions || {})[i.chave] === true ? 'checked' : ''}>
+                 ${marcada(i.chave) ? 'checked' : ''}>
           <span><span class="pf-rotulo">${esc(i.rotulo)}</span>
             <span class="pf-ajuda">${esc(i.ajuda)}</span></span>
         </label>`).join('')}

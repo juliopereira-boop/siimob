@@ -638,14 +638,18 @@ select checa('e não vê o do outro cliente',
   (select count(*) from a1_cases
     where id = 'c2000000-0000-0000-0000-000000000003') = 0);
 
--- CADASTRO ANTIGO: sem a chave e sem perfil, ausente vale "vê tudo". É o que a
--- tela faz, e a política tem de espelhar — API escondendo o que a tela mostra
--- deixaria o gestor sem saber em qual acreditar.
+-- CORRETOR VÊ APENAS O QUE É DELE — regra do dono, e ela ganha de qualquer
+-- marca. A Vera não tem a chave e não tem perfil: pelo modelo antigo do Repasse
+-- a omissão valia "vê tudo", e é exatamente esse caminho que a regra fecha.
 select teste_entrar('tk-vera');
-select checa('sem a chave e sem perfil, continua enxergando a carteira (como a tela)',
+select checa('corretor sem chave nenhuma NÃO enxerga a carteira inteira',
   (select count(*) from a1_cases
     where id in ('c2000000-0000-0000-0000-000000000001',
-                 'c2000000-0000-0000-0000-000000000002')) = 2);
+                 'c2000000-0000-0000-0000-000000000002')) = 1);
+select checa('e o que ele vê é o processo no nome dele',
+  (select client_name from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 'Cliente da Vera');
 
 -- DECISÃO EXPLÍCITA DO GESTOR: visão completa desligada.
 select teste_entrar('tk-nara');
@@ -683,16 +687,52 @@ select checa('e ela vê o dela, não o da colega',
     where id in ('c2000000-0000-0000-0000-000000000001',
                  'c2000000-0000-0000-0000-000000000002')) = 'Cliente da Vera');
 
--- PERFIL QUE DIZ QUE VÊ TUDO, vê tudo. A regra é a marca explícita, não o fato
--- de existir perfil.
+-- PERFIL QUE DIZ QUE VÊ TUDO **NÃO** ABRE A CARTEIRA DE UM CORRETOR. É a prova
+-- mais forte da regra: a marca está lá, explícita, e mesmo assim não vale — o
+-- tipo da pessoa ganha da marca. Sem esta verificação, bastaria alguém montar
+-- um perfil com "visão completa" para desfazer a regra inteira sem perceber.
 select teste_entrar('tk-gestor');
 update a1_perfis set permissions = '{"criar_repasses": true, "ver_todos_analistas": true}'
  where id = '9f000000-0000-0000-0000-000000000001';
 select teste_entrar('tk-vera');
-select checa('perfil com visão completa marcada enxerga a carteira',
+select checa('nem perfil com visão completa marcada abre a carteira do corretor',
+  (select count(*) from a1_cases
+    where id in ('c2000000-0000-0000-0000-000000000001',
+                 'c2000000-0000-0000-0000-000000000002')) = 1);
+
+-- E O QUE NÃO PODE SER FECHADO JUNTO: a regra é dos dois tipos, não de todo
+-- mundo. O coordenador existe para acompanhar a equipe, e o correspondente para
+-- ver o da própria empresa — fechar esses seria trocar um problema por outro.
+-- Duas trocas de chapéu, e as duas são necessárias: quem CRIA gente com
+-- permissão é o gestor (a1_partners_trava_poder recusa qualquer outro, e a
+-- sessão em vigor aqui ainda é a da corretora), e quem cria o usuário-sombra é
+-- o superusuário, porque teste_login_parceiro lê a1_users.
+select teste_entrar('tk-gestor');
+insert into a1_partners (id, tenant_id, name, cpf, type, permissions) values
+  ('bb000000-0000-0000-0000-000000000003','11111111-1111-1111-1111-111111111111',
+   'Selma Coordena','10000000093','coordenador','{"ver_todos_analistas":true}');
+reset role;
+select teste_login_parceiro('tk-selma','bb000000-0000-0000-0000-000000000003');
+set role anon;
+select teste_entrar('tk-selma');
+select checa('coordenador com visão completa continua enxergando a equipe',
   (select count(*) from a1_cases
     where id in ('c2000000-0000-0000-0000-000000000001',
                  'c2000000-0000-0000-0000-000000000002')) = 2);
+
+-- A mesma regra vale na Pré-análise, não só no Repasse: "em todo o sistema".
+select teste_entrar('tk-gestor');
+select checa('o gestor vê as pré-análises das duas corretoras',
+  (select count(*) from a1_pre_analises
+    where id in ('80000000-0000-0000-0000-000000000001',
+                 '80000000-0000-0000-0000-000000000002')) = 2);
+select teste_entrar('tk-ana');
+select checa('na Pré-análise, a corretora também vê só a dela',
+  (select count(*) from a1_pre_analises
+    where id in ('80000000-0000-0000-0000-000000000001',
+                 '80000000-0000-0000-0000-000000000002')) = 1);
+select checa('e a regra vale mesmo com a marca ligada no cadastro dela',
+  a1_ator_so_ve_o_seu() = true);
 
 -- ═════════════════════════════════════════════════════════════════════════════
 -- DOCUMENTO OBRIGATÓRIO
