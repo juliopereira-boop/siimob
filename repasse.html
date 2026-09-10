@@ -1704,10 +1704,27 @@ async function init() {
     const _np = document.getElementById('n-partner-group'); if (_np)  _np.style.display  = 'none';
   }
 
-  // para usuario CCA: busca empresa, permissoes e lista de colegas com visibilidade compartilhada
-  if (G.user.role === 'partner' && G.user.type === 'cca') {
-    const pr = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id,permissions`, {headers:A1.headers()})
+  // Partner permissions must come from the current record, never only from
+  // localStorage. If this request fails, privileged actions stay unavailable.
+  let partnerPermissionsLoaded = G.user.role !== 'partner';
+  let partnerRecord = null;
+  if (G.user.role === 'partner') {
+    partnerRecord = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=empresa_id,permissions`, {headers:A1.headers()})
       .then(r=>r.json()).then(a=>a[0]||null).catch(()=>null);
+    if (partnerRecord) {
+      G.user.permissions = partnerRecord.permissions || {};
+      try {
+        const s = JSON.parse(localStorage.getItem('a1_user')||'{}');
+        s.permissions = G.user.permissions;
+        localStorage.setItem('a1_user', JSON.stringify(s));
+      } catch {}
+      partnerPermissionsLoaded = true;
+    }
+  }
+
+  // para usuario CCA: busca empresa e lista de colegas com visibilidade compartilhada
+  if (G.user.role === 'partner' && G.user.type === 'cca') {
+    const pr = partnerRecord;
     if (pr?.empresa_id) {
       const emp = await fetch(`${A1.rest('a1_corr_empresas')}?id=eq.${pr.empresa_id}&select=name`, {headers:A1.headers()})
         .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
@@ -1719,15 +1736,11 @@ async function init() {
         .filter(c => c.name !== G.user.name && c.permissions?.ver_todos_repasses === true)
         .map(c => c.name);
     }
-    if (pr?.permissions) {
-      G.user.permissions = pr.permissions;
-      try { const s=JSON.parse(localStorage.getItem('a1_user')||'{}'); s.permissions=pr.permissions; localStorage.setItem('a1_user',JSON.stringify(s)); } catch{}
-    }
   }
 
-  // All privileged controls fail closed until this point. For partners, the
-  // permissions above are loaded from the canonical partner record first.
-  G.permissionsReady = true;
+  // All privileged controls fail closed until the current partner record was
+  // fetched successfully. Internal users have no partner permission lookup.
+  G.permissionsReady = partnerPermissionsLoaded;
   applyPartnerRestrictions();
 
   // Show Registro tab + config section only if module is enabled for this tenant
