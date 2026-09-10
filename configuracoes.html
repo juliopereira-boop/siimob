@@ -165,9 +165,11 @@
     /* ── Spinner ── */
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* Fail closed: administrative content only appears after the route check. */
+    body.access-pending{visibility:hidden}
   </style>
 </head>
-<body>
+<body class="access-pending">
 
 <!-- ═══════ HEADER ═══════ -->
 <div class="hdr">
@@ -1003,6 +1005,14 @@ async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
   G.slug = A1.slug;
+
+  // Hiding a navigation link is not authorization. Partners must not access
+  // administrative configuration by entering this URL directly.
+  if (G.user.role === 'partner') {
+    window.location.replace(`/${G.slug}/repasse`);
+    return;
+  }
+  document.body.classList.remove('access-pending');
 
   const roleLabel = G.user.role === 'partner'
     ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
