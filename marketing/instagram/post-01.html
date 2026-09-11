@@ -12,7 +12,7 @@
 
   .luz{position:absolute;inset:0;
     background:
-      radial-gradient(112% 56% at 70% 62%, rgba(20,146,135,.22) 0%, rgba(20,146,135,0) 64%),
+      radial-gradient(108% 54% at 56% 64%, rgba(20,146,135,.24) 0%, rgba(20,146,135,0) 64%),
       radial-gradient(86% 46% at 10% 6%, rgba(51,233,215,.075) 0%, rgba(51,233,215,0) 58%);}
   .grao{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");}
@@ -27,21 +27,29 @@
     font-family:'IS';font-size:89px;line-height:1.05;color:#EAF6F4;letter-spacing:-.012em}
   .manchete .b{color:#33E9D7}
   .legenda{position:absolute;left:88px;top:420px;
-    font-family:'GM';font-size:12px;letter-spacing:.34em;color:#6E9A95}
+    font-family:'GM';font-size:11.5px;letter-spacing:.26em;color:#6E9A95}
 
-  /* ── registro ─────────────────────────────────────────────────── */
+  /* ── a travessia ──────────────────────────────────────────────── */
   .rot{position:absolute;font-family:'GM';font-size:10px;letter-spacing:.26em;color:#4E7F79}
-  .campo{position:absolute;left:88px;top:520px;width:904px;height:480px}
-  .m{position:absolute;height:3px;border-radius:1.5px;background:#33E9D7}
-  .limite{position:absolute;width:1px;
-    background:repeating-linear-gradient(180deg,rgba(190,242,236,.34) 0 3px,rgba(190,242,236,0) 3px 8px)}
-  .cabeca{position:absolute;width:7px;height:7px;border-radius:50%;background:#8FFDF0;
-    box-shadow:0 0 14px rgba(124,251,236,.95),0 0 34px rgba(51,233,215,.45)}
-  .braco{position:absolute;height:1px;background:rgba(51,233,215,.55)}
-  .tq{position:absolute;width:1px;height:9px;background:rgba(51,233,215,.55)}
-  .cota{position:absolute;font-family:'GMB';font-size:13px;letter-spacing:.18em;color:#33E9D7}
+  .campo{position:absolute;left:88px;top:510px;width:904px;height:452px}
 
-  .nota{position:absolute;left:88px;top:1046px;width:760px;
+  .eixo{position:absolute;left:0;bottom:0;width:904px;height:1px;
+    background:linear-gradient(90deg,rgba(51,233,215,.16) 0%,rgba(51,233,215,.44) 50%,rgba(51,233,215,.16) 100%)}
+  .no{position:absolute;bottom:-4.5px;width:10px;height:10px;border-radius:50%;
+    background:#04211E;border:1.5px solid #33E9D7}
+  .tique{position:absolute;bottom:-5px;width:1px;height:10px;background:rgba(51,233,215,.30)}
+  .etapa{position:absolute;font-family:'GMB';font-size:11px;letter-spacing:.22em;color:#8FD6CD}
+
+  .p{position:absolute;width:10px;height:10px;border-radius:50%;background:#33E9D7}
+  .p.aceso{background:#8FFDF0;box-shadow:0 0 14px rgba(124,251,236,.95),0 0 36px rgba(51,233,215,.5)}
+
+  .guia{position:absolute;height:1px;
+    background:repeating-linear-gradient(90deg,rgba(51,233,215,.55) 0 4px,rgba(51,233,215,0) 4px 10px)}
+  .cota{position:absolute;font-family:'GMB';font-size:13px;letter-spacing:.18em;color:#33E9D7}
+  .cota small{display:block;font-family:'GM';font-weight:400;font-size:10px;
+    letter-spacing:.26em;color:#5E938D;margin-top:7px}
+
+  .nota{position:absolute;left:88px;top:1040px;width:820px;
     font-family:'ISI';font-style:italic;font-size:27px;line-height:1.42;color:#9FC7C1}
 
   .arroba{position:absolute;left:88px;top:1224px;font-family:'IS';font-size:27px;color:#D6EDE9}
@@ -72,112 +80,101 @@
   <div class="nome">SIIMOB</div>
 </div>
 
-<div class="ref">FIG. 01<br>INTERVALO MEDIDO</div>
+<div class="ref">FIG. 01<br>A TRAVESSIA</div>
 <div class="fio" style="top:134px"></div>
 
 <div class="manchete">
-  Todo repasse visível.<br>Inclusive o que <span class="b">parou</span>.
+  Do lead ao registro.<br>Inclusive o que <span class="b">parou</span>.
 </div>
-<div class="legenda">GESTÃO DE REPASSE HABITACIONAL</div>
+<div class="legenda">CRM · REPASSE · REGISTRO — UM CADASTRO SÓ</div>
+<div class="rot" style="right:88px;top:421px">CADA PONTO, UM PROCESSO</div>
 
-<div class="rot" id="rotEsq" style="left:88px;top:486px">CADA LINHA, UM PROCESSO &nbsp;·&nbsp; CADA MARCA, UM DIA</div>
-<div class="rot" id="rotLim"></div>
+<div class="campo" id="campo"><div class="eixo"></div></div>
 
-<div class="campo" id="campo">
-  <div class="limite" id="limite"></div>
-</div>
-
-<div class="nota">O sistema conta os dias.<br>Você recebe o nome, a etapa e o valor.</div>
+<div class="nota">Onde a fila engrossa, você vê.<br>Quem está parado nela, o sistema entrega.</div>
 
 <div class="fio" style="top:1186px"></div>
-<div class="arroba">@siimob</div>
+<div class="arroba">@siimobcrm</div>
 <div class="publico">CORRESPONDENTES · CONSTRUTORAS · IMOBILIÁRIAS</div>
 
 <script>
-// ─── O registro ──────────────────────────────────────────────────────────────
-// Vinte processos, uma linha cada, marca a marca. Quase todos param antes do
-// limite aceitável. Um atravessa — e é o único que muda de cor. A descoberta
-// tem de ser do olho, nunca do dedo apontando.
-const campo  = document.getElementById('campo');
-const L = 904, LINHAS = 20, ALTURA_LINHA = 24, PASSO = 14, LARG = 8;
-const LIMITE = 602;          // x do limite aceitável
-const EXC = 12;              // a linha que atravessa
+// ─── A travessia ─────────────────────────────────────────────────────────────
+// Uma coluna por etapa do caminho, do lead ao registro. A altura de cada coluna
+// é a fila parada ali. O desenho diz duas coisas de uma vez: o sistema cobre a
+// jornada inteira, e mostra em que ponto dela a operação está entalada.
+//
+// As etapas do meio não são nomeadas de propósito — elas são desenhadas por
+// cada cliente. Nomear seria prometer um fluxo que não é o dele.
+const campo = document.getElementById('campo');
+const L = 904, COLS = 14;
+const PASSO = L / (COLS - 1);
+const D = 10, VAO = 13;        // diâmetro do ponto e espaçamento vertical
 
-// Comprimentos escolhidos a mão: ritmo irregular o bastante para parecer
-// registro de verdade, controlado o bastante para não virar ruído.
-const COMP = [266, 392, 174, 546, 322, 448, 210, 574, 350, 130,
-              490, 286, 862, 238, 420, 160, 508, 304, 378, 202];
+// A fila em cada etapa. O relevo é o argumento: sobe até o gargalo e desce.
+const FILA = [6, 9, 7, 12, 9, 15, 20, 13, 8, 10, 6, 7, 4, 3];
+const GARGALO = 6;             // a coluna mais alta — e onde está o esquecido
 
-for (let r = 0; r < LINHAS; r++) {
-  const y = r * ALTURA_LINHA;
-  const comp = COMP[r];
-  const n = Math.round(comp / PASSO);
-  const ehExc = (r === EXC);
+const colunas = [];
+for (let c = 0; c < COLS; c++) {
+  const x = Math.round(c * PASSO);
+  const n = FILA[c];
+  let topo = null;
 
   for (let i = 0; i < n; i++) {
-    const x = i * PASSO;
-    const m = document.createElement('div');
-    m.className = 'm';
-    m.style.left = x + 'px';
-    m.style.top  = y + 'px';
-    m.style.width = LARG + 'px';
-
-    if (ehExc && x >= LIMITE) {
-      // O trecho que passou do limite: é isto que o sistema cobra.
-      m.style.opacity = 1;
-      m.style.boxShadow = '0 0 10px rgba(51,233,215,.55)';
-    } else if (ehExc) {
-      m.style.opacity = .52;
-    } else {
-      m.style.opacity = (0.28 + ((r * 7 + i) % 5) * 0.026).toFixed(3);
-    }
-    campo.appendChild(m);
+    const p = document.createElement('div');
+    p.className = 'p';
+    p.style.left = (x - D / 2) + 'px';
+    p.style.bottom = (16 + i * VAO) + 'px';
+    // Os de baixo entraram há mais tempo; o topo da pilha é o mais recente.
+    p.style.opacity = (0.30 + (i / Math.max(n - 1, 1)) * 0.26).toFixed(3);
+    campo.appendChild(p);
+    topo = p;
   }
+  colunas.push(topo);
 
-  if (ehExc) {
-    const c = document.createElement('div');
-    c.className = 'cabeca';
-    c.style.left = (comp - 2) + 'px';
-    c.style.top  = (y - 2) + 'px';
-    campo.appendChild(c);
-  }
+  const ancora = (c === 0 || c === GARGALO || c === COLS - 1);
+  const marca = document.createElement('div');
+  marca.className = ancora ? 'no' : 'tique';
+  marca.style.left = (x - (ancora ? 5 : 0.5)) + 'px';
+  campo.appendChild(marca);
 }
 
-// ─── Limite aceitável ────────────────────────────────────────────────────────
-const lim = document.getElementById('limite');
-lim.style.left = LIMITE + 'px';
-lim.style.top = '-22px';
-lim.style.height = (LINHAS * ALTURA_LINHA + 34) + 'px';
+// ─── O que parou ─────────────────────────────────────────────────────────────
+// No alto da fila maior, um ponto aceso — e a cota que o mede. É a diferença
+// entre ver uma fila e saber QUEM está nela.
+const xP = Math.round(GARGALO * PASSO);
+const yP = 16 + (FILA[GARGALO] - 1) * VAO;
 
-const rotLim = document.getElementById('rotLim');
-rotLim.textContent = 'LIMITE ACEITÁVEL';
-rotLim.style.left = (88 + LIMITE + 12) + 'px';
-rotLim.style.top  = '486px';
+const alvo = colunas[GARGALO];
+alvo.className = 'p aceso';
+alvo.style.opacity = 1;
 
-// ─── A cota do excedente ─────────────────────────────────────────────────────
-const yExc = EXC * ALTURA_LINHA;
-const fim  = COMP[EXC];
-const yBraco = yExc + 30;
-
-const braco = document.createElement('div');
-braco.className = 'braco';
-braco.style.left = LIMITE + 'px';
-braco.style.top  = yBraco + 'px';
-braco.style.width = (fim - LIMITE) + 'px';
-campo.appendChild(braco);
-
-[LIMITE, fim].forEach(x => {
-  const t = document.createElement('div');
-  t.className = 'tq';
-  t.style.left = x + 'px';
-  t.style.top  = (yBraco - 4) + 'px';
-  campo.appendChild(t);
-});
+const guia = document.createElement('div');
+guia.className = 'guia';
+guia.style.left = (xP + 15) + 'px';
+guia.style.bottom = (yP + D / 2) + 'px';
+guia.style.width = (L - xP - 15) + 'px';
+campo.appendChild(guia);
 
 const cota = document.createElement('div');
 cota.className = 'cota';
-cota.style.left = LIMITE + 'px';
-cota.style.top  = (yBraco + 14) + 'px';
-cota.textContent = '17 DIAS PARADO';
+cota.style.right = '0px';
+cota.style.bottom = (yP + D / 2 + 15) + 'px';
+cota.style.textAlign = 'right';
+cota.innerHTML = '17 DIAS<small>PARADO NESTA ETAPA</small>';
 campo.appendChild(cota);
+
+// ─── As âncoras do caminho ───────────────────────────────────────────────────
+const ancoras = [[0, 'LEAD', 'esq'], [GARGALO, 'REPASSE', 'meio'], [COLS - 1, 'REGISTRO', 'dir']];
+ancoras.forEach(([c, texto, lado]) => {
+  const x = Math.round(c * PASSO);
+  const e = document.createElement('div');
+  e.className = 'etapa';
+  e.textContent = texto;
+  e.style.top = '980px';
+  if (lado === 'esq')  e.style.left = '88px';
+  if (lado === 'dir')  e.style.right = '88px';
+  if (lado === 'meio') { e.style.left = (88 + x) + 'px'; e.style.transform = 'translateX(-50%)'; }
+  document.body.appendChild(e);
+});
 </script>
