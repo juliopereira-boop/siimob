@@ -72,6 +72,13 @@
   .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:110px;display:flex;flex-direction:column;gap:.4rem}
   .co-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.6rem .7rem;cursor:pointer;box-shadow:var(--shadow)}
   .co-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  /* Todo cartão arrasta; a mãozinha só aparece para quem pode mover. Gatear o
+     `draggable` pela permissão deixava o cartão morto na mão de quem não pode —
+     que é exatamente o silêncio que originou o defeito. Arrastando, a recusa
+     chega dita: qual permissão falta e onde pedi-la. */
+  .co-card.arrastavel{cursor:grab}
+  .co-card.arrastando{opacity:.45;cursor:grabbing}
+  .k-col-body.sobre{background:#e2e8f0;outline:2px dashed var(--violet);outline-offset:-3px}
   .co-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
   .co-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
   .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
@@ -197,7 +204,7 @@
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
   corretores:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
-  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[]
+  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null
 };
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -336,6 +343,25 @@ function nivelNaSituacao(id){
 }
 function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
 
+// Mexer no negócio — proposta, contrato e mover na esteira — é a MESMA pergunta
+// nos quatro lugares em que ela aparece: a chave do módulo mais o nível na
+// situação atual. Estava copiada nos quatro; quando o quadro passou a arrastar,
+// uma quinta cópia seria a que ficaria para trás na próxima correção.
+function podeEditarNaSituacao(situacaoId){
+  return perm('co_editar') && nivelNaSituacao(situacaoId) === 'editar';
+}
+
+// As arestas que a esteira DO CLIENTE permite a partir daqui. A tela não
+// inventa caminho: quem desenha o fluxo é o gestor, em a1_co_transicoes, e o
+// banco recusa qualquer salto que não esteja lá (transicao_nao_permitida).
+// de_id nulo é a aresta "de qualquer situação".
+function destinosDe(situacaoId){
+  return G.transicoes
+    .filter(t => t.de_id === null || t.de_id === situacaoId)
+    .map(t => G.situacoes.find(s => s.id === t.para_id))
+    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== situacaoId);
+}
+
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
 function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
@@ -438,7 +464,9 @@ function renderAndamento(linhas){
     return `<div class="k-col">
       <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
-      <div class="k-col-body">${dela.map(cartao).join('') ||
+      <div class="k-col-body" data-situacao-id="${esc(s.id)}"
+           ondragover="coDragOver(event)" ondragleave="coDragLeave(event)" ondrop="coDrop(event,this)"
+        >${dela.map(cartao).join('') ||
         '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
     </div>`;
   }).join('');
@@ -447,13 +475,113 @@ function renderAndamento(linhas){
 function cartao(c){
   const s = sla(c);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
-  return `<div class="co-card" style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
+  const mover = podeEditarNaSituacao(c.situacao_id);
+  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}" draggable="true"
+    ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"
+    style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
     <div class="co-name">${esc(tituloDe(c))}</div>
     <div class="co-line">${esc(nomeEmpr(c.empreendimento_id))}${c.unidade?' · un. '+esc(c.unidade):''}</div>
     <div class="chips"><span class="chip val">${esc(brl(valorDe(c)))}</span>
       <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
       ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
   </div>`;
+}
+
+// ══════════ ARRASTAR O CARTÃO ENTRE COLUNAS ══════════
+//
+// Por que isto existe: o quadro do Comercial nasceu só de leitura. O cartão não
+// tinha `draggable`, a coluna não tinha `ondrop`, e quem vinha do Repasse — onde
+// arrastar funciona — puxava o cartão, nada acontecia e não havia erro nenhum
+// para explicar. "Não faz nada" é o pior defeito: não deixa o que consertar.
+// Mover só existia enterrado no rodapé do dossiê, depois de abrir o negócio.
+//
+// O que NÃO se faz aqui, e é o ponto todo:
+//
+//  1. Não se dá PATCH em situacao_id. A esteira mora no Postgres
+//     (a1_co_transicionar) e um gatilho recusa a edição direta — ele distingue o
+//     orquestrador por set_config('a1.orquestrador','1',true), que o navegador
+//     não tem como ligar. Tela que tenta o atalho leva erro e nada anda.
+//  2. Não se move o cartão no DOM antes da resposta. Em repasse.html o moveCard
+//     já teve exatamente esse defeito: o banco recusava, a tela desenhava a
+//     mudança assim mesmo e o gestor via o processo na etapa nova até recarregar
+//     a página. Aqui quem redesenha é carregar(), lendo do servidor, e só depois
+//     de o banco dizer sim.
+function coDragStart(e, el){
+  const co = G.lista.find(c => c.id === el.dataset.id);
+  if (!co){ e.preventDefault(); return; }
+  // Quem não pode mover também arrasta: a recusa sai em moverCartao(), dizendo
+  // qual permissão falta. Bloquear aqui devolveria o cartão em silêncio, que é
+  // indistinguível de "o sistema quebrou" — foi assim que este defeito nasceu.
+  G.arrastando = co.id;
+  el.classList.add('arrastando');
+  if (e.dataTransfer){
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', co.id); } catch {}
+  }
+}
+function coDragEnd(e, el){ el.classList.remove('arrastando'); G.arrastando = null; }
+function coDragOver(e){
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('sobre');
+}
+function coDragLeave(e){ e.currentTarget.classList.remove('sobre'); }
+function coDrop(e, col){
+  e.preventDefault();
+  col.classList.remove('sobre');
+  const id = G.arrastando ||
+    (e.dataTransfer && e.dataTransfer.getData && e.dataTransfer.getData('text/plain')) || '';
+  G.arrastando = null;
+  if (id) moverCartao(id, col.dataset.situacaoId);
+}
+
+async function moverCartao(id, paraId){
+  const co = G.lista.find(c => c.id === id);
+  if (!co || !paraId || co.situacao_id === paraId) return;
+  if (!podeEditarNaSituacao(co.situacao_id)){
+    toast('Nesta situação você só pode acompanhar, não mover. Peça ao gestor a permissão '
+        + '"Editar proposta e mover na esteira" (Configurações › cadastro da pessoa ou perfil de acesso).','error');
+    return;
+  }
+  // Soltar numa coluna que a esteira não liga é o caso mais comum de "não
+  // moveu". Dizer QUAIS destinos existem resolve; "não pode" sozinho manda o
+  // gestor adivinhar qual é o caminho certo.
+  const destinos = destinosDe(co.situacao_id);
+  if (!destinos.some(s => s.id === paraId)){
+    toast(destinos.length
+      ? `A esteira não liga "${nomeSituacao(co.situacao_id)}" a "${nomeSituacao(paraId)}". `
+        + `Daqui dá para ir a: ${destinos.map(s => s.nome).join(', ')}.`
+      : `"${nomeSituacao(co.situacao_id)}" não tem saída desenhada na esteira. `
+        + 'Um gestor desenha o caminho em Configurações › Workflow do Comercial.','error');
+    return;
+  }
+  await transicionar(co, paraId, null);
+}
+
+// O único caminho de transição desta tela — o do arrasto e o do rodapé do
+// dossiê. Duas cópias divergiriam, e a que ficasse para trás seria justamente a
+// que deixa de conferir a resposta.
+async function transicionar(co, para, justificativa){
+  const res = await fetch(A1.rpc('a1_co_transicionar'), {
+    method:'POST', headers:A1.headers(),
+    body: JSON.stringify({ p_comercial:co.id, p_para:para,
+      p_justificativa:justificativa, p_versao_esperada:co.versao })
+  });
+  const j = await res.json().catch(()=>null);
+  if (!res.ok){
+    const cru = (j && (j.message || j.error)) || '';
+    toast(traduzErro(j),'error');
+    // Trava otimista: quem perdeu a corrida está olhando um estado velho. Dizer
+    // "recarregue a tela" e não recarregar é passar a conta para o usuário.
+    if (cru.includes('versao_desatualizada')) await carregar();
+    return false;
+  }
+  // A esteira também recusa devolvendo 200 com ok:false (ação entre módulos
+  // bloqueada). O código curto que vem em `erro` é para o log, não para gente.
+  if (j && j.ok === false){ toast(traduzErro({ message:j.erro }),'error'); return false; }
+  toast(j && j.repasse_case_id ? 'Situação alterada e cartão de Repasse criado.' : 'Situação alterada.','success');
+  await carregar();
+  return true;
 }
 
 // ══════════ DOSSIÊ ══════════
@@ -506,8 +634,7 @@ function renderDossie(){
 }
 
 function dosProposta(){
-  const co = G.atual, p = co.proposta || {},
-        pode = perm('co_editar') && nivelNaSituacao(co.situacao_id) === 'editar';
+  const co = G.atual, p = co.proposta || {}, pode = podeEditarNaSituacao(co.situacao_id);
   const cr = (co.origem_snapshot || {}).credito || {};
   const aprovado = cr.valor_total || 0;
   return `
@@ -607,7 +734,7 @@ function dosOrigem(){
 }
 
 function dosContrato(){
-  const pode = perm('co_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
+  const pode = podeEditarNaSituacao(G.atual.situacao_id);
   // co_contrato existe exatamente para isto e não era lida por ninguém: quem
   // vende não carimba o próprio contrato como assinado, senão exigir contrato
   // assinado numa transição deixa de ser exigência. Era analisar_credito, que
@@ -731,12 +858,8 @@ function dosRepasse(){
 function montarRodape(){
   // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
   // empurra para a seguinte.
-  const co = G.atual,
-        pode = perm('co_editar') && nivelNaSituacao(co.situacao_id) === 'editar';
-  const destinos = G.transicoes
-    .filter(t => t.de_id === null || t.de_id === co.situacao_id)
-    .map(t => G.situacoes.find(s => s.id === t.para_id))
-    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== co.situacao_id);
+  const co = G.atual, pode = podeEditarNaSituacao(co.situacao_id);
+  const destinos = destinosDe(co.situacao_id);
   const sel = document.getElementById('dos-mover');
   sel.innerHTML = destinos.length
     ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
@@ -756,16 +879,7 @@ async function moverSituacao(){
   const just = prompt('Justificativa (opcional):') || null;
   const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
   try {
-    const res = await fetch(A1.rpc('a1_co_transicionar'), {
-      method:'POST', headers:A1.headers(),
-      body: JSON.stringify({ p_comercial:co.id, p_para:para, p_justificativa:just, p_versao_esperada:co.versao })
-    });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    if (j && j.ok === false){ toast(j.erro || 'A esteira barrou a transição.','error'); return; }
-    toast(j && j.repasse_case_id ? 'Situação alterada e cartão de Repasse criado.' : 'Situação alterada.','success');
-    fecharModal('modal-dossie');
-    await carregar();
+    if (await transicionar(co, para, just)) fecharModal('modal-dossie');
   } finally { btn.disabled = false; }
 }
 
@@ -807,23 +921,34 @@ async function mensagemErro(res, padrao){
   } catch { return padrao; }
 }
 
+// O banco recusa com um código curto — quem lê é uma pessoa, e ela precisa
+// saber O QUE FAZER. "Não foi possível" manda abrir chamado para descobrir o
+// óbvio; por isso cada mensagem aqui termina no lugar onde se resolve.
 function traduzErro(j){
   const m = (j && (j.message || j.error)) || '';
   const mapa = {
-    nao_encontrado:          'Negócio não encontrado.',
-    modulo_desabilitado:     'O módulo não está liberado para este cliente.',
+    nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
+    modulo_desabilitado:     'O módulo Comercial não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
     sem_acesso:              'Este negócio não é da sua carteira.',
-    sem_permissao:           'Você não tem permissão para isso.',
-    versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. Recarregue a tela.',
-    transicao_nao_permitida: 'A esteira do cliente não permite essa mudança a partir da situação atual.',
-    papel_nao_autorizado:    'Seu papel não pode fazer essa transição.',
-    contrato_nao_assinado:   'Esta transição exige contrato assinado.',
-    sem_titular:             'Sem titular: o cartão de Repasse exige o nome do cliente.',
-    repasse_sem_etapa:       'O cliente não tem etapa cadastrada no workflow de Repasse.',
-    modulo_repasse_desabilitado:'O módulo Repasse não está liberado para este cliente.',
+    sem_permissao:           'Você não tem a permissão "Editar proposta e mover na esteira". Peça ao gestor '
+                           + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',
+    versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. A tela foi recarregada '
+                           + 'com a situação atual; confira e tente de novo.',
+    transicao_nao_permitida: 'A esteira deste cliente não liga essas duas situações. Um gestor desenha o '
+                           + 'caminho em Configurações › Workflow do Comercial.',
+    papel_nao_autorizado:    'Esta transição está reservada a outros papéis na esteira. Um gestor ajusta quem '
+                           + 'pode fazê-la em Configurações › Workflow do Comercial.',
+    contrato_nao_assinado:   'Esta transição exige contrato assinado. Registre o contrato na aba Contrato e '
+                           + 'peça a quem tem a permissão que o marque como assinado.',
+    sem_titular:             'Sem titular: o cartão de Repasse exige o nome do cliente. Confira os '
+                           + 'participantes na aba Origem.',
+    repasse_sem_etapa:       'O cliente não tem etapa cadastrada no workflow de Repasse. Crie a primeira etapa '
+                           + 'em Configurações › Editor de Workflow.',
+    modulo_repasse_desabilitado:'O módulo Repasse não está liberado para este cliente, então o cartão não pode nascer.',
     acao_desconhecida:       'Ação desconhecida.'
   };
   for (const k in mapa) if (m.includes(k)) return mapa[k];
+  if (/row-level security/i.test(m)) return 'O banco recusou a alteração: você não tem acesso a este negócio.';
   return m || 'Não foi possível concluir a operação.';
 }
 
