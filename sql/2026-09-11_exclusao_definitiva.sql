@@ -440,15 +440,23 @@ begin
     delete from a1_cases          where id = p_id and tenant_id = v_tenant;
 
   elsif p_modulo = 'PRE_ANALISE' then
-    delete from a1_pa_participantes    where pre_analise_id = p_id;
-    delete from a1_pa_documentos       where pre_analise_id = p_id;
-    delete from a1_pa_analises_credito where pre_analise_id = p_id;
-    delete from a1_pa_eventos          where pre_analise_id = p_id;
+    -- O `tenant_id` nas filhas e redundante HOJE: p_id so chega aqui depois de
+    -- ser encontrado com tenant_id = v_tenant, senao a funcao ja levantou "Nao
+    -- achei esse codigo neste cliente". Fica assim mesmo, e de proposito. Se
+    -- alguem um dia afrouxar aquela busca, o pior caso sem esta clausula seria
+    -- apagar as filhas do processo de OUTRO cliente e falhar em silencio na
+    -- mae (0 linhas) - dado do vizinho destruido, que e a regra que este
+    -- sistema nao quebra. Uma clausula por linha e barato demais para nao ter.
+    delete from a1_pa_participantes    where pre_analise_id = p_id and tenant_id = v_tenant;
+    delete from a1_pa_documentos       where pre_analise_id = p_id and tenant_id = v_tenant;
+    delete from a1_pa_analises_credito where pre_analise_id = p_id and tenant_id = v_tenant;
+    delete from a1_pa_eventos          where pre_analise_id = p_id and tenant_id = v_tenant;
     delete from a1_pre_analises        where id = p_id and tenant_id = v_tenant;
 
   else
-    delete from a1_co_contratos where comercial_id = p_id;
-    delete from a1_co_eventos   where comercial_id = p_id;
+    -- Mesma defesa em profundidade das filhas da Pré-análise, acima.
+    delete from a1_co_contratos where comercial_id = p_id and tenant_id = v_tenant;
+    delete from a1_co_eventos   where comercial_id = p_id and tenant_id = v_tenant;
     delete from a1_comerciais   where id = p_id and tenant_id = v_tenant;
   end if;
 
