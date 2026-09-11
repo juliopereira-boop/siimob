@@ -1,0 +1,183 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face{font-family:'IS';src:url('../fontes/InstrumentSerif-Regular.ttf') format('truetype')}
+  @font-face{font-family:'ISI';src:url('../fontes/InstrumentSerif-Italic.ttf') format('truetype')}
+  @font-face{font-family:'GM';src:url('../fontes/GeistMono-Regular.ttf') format('truetype')}
+  @font-face{font-family:'GMB';src:url('../fontes/GeistMono-Bold.ttf') format('truetype')}
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{background:#04211E;position:relative;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+
+  .luz{position:absolute;inset:0;
+    background:
+      radial-gradient(112% 56% at 70% 62%, rgba(20,146,135,.22) 0%, rgba(20,146,135,0) 64%),
+      radial-gradient(86% 46% at 10% 6%, rgba(51,233,215,.075) 0%, rgba(51,233,215,0) 58%);}
+  .grao{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");}
+
+  .marca{position:absolute;left:88px;top:72px;display:flex;align-items:center;gap:15px}
+  .marca .nome{font-family:'GM';font-size:16px;letter-spacing:.44em;color:#D6EDE9;padding-top:3px}
+  .ref{position:absolute;right:88px;top:78px;text-align:right;
+       font-family:'GM';font-size:11px;letter-spacing:.28em;color:#4E7F79;line-height:2}
+  .fio{position:absolute;left:88px;width:904px;height:1px;background:rgba(180,235,228,.13)}
+
+  .manchete{position:absolute;left:88px;top:194px;width:912px;
+    font-family:'IS';font-size:89px;line-height:1.05;color:#EAF6F4;letter-spacing:-.012em}
+  .manchete .b{color:#33E9D7}
+  .legenda{position:absolute;left:88px;top:420px;
+    font-family:'GM';font-size:12px;letter-spacing:.34em;color:#6E9A95}
+
+  /* ── registro ─────────────────────────────────────────────────── */
+  .rot{position:absolute;font-family:'GM';font-size:10px;letter-spacing:.26em;color:#4E7F79}
+  .campo{position:absolute;left:88px;top:520px;width:904px;height:480px}
+  .m{position:absolute;height:3px;border-radius:1.5px;background:#33E9D7}
+  .limite{position:absolute;width:1px;
+    background:repeating-linear-gradient(180deg,rgba(190,242,236,.34) 0 3px,rgba(190,242,236,0) 3px 8px)}
+  .cabeca{position:absolute;width:7px;height:7px;border-radius:50%;background:#8FFDF0;
+    box-shadow:0 0 14px rgba(124,251,236,.95),0 0 34px rgba(51,233,215,.45)}
+  .braco{position:absolute;height:1px;background:rgba(51,233,215,.55)}
+  .tq{position:absolute;width:1px;height:9px;background:rgba(51,233,215,.55)}
+  .cota{position:absolute;font-family:'GMB';font-size:13px;letter-spacing:.18em;color:#33E9D7}
+
+  .nota{position:absolute;left:88px;top:1046px;width:760px;
+    font-family:'ISI';font-style:italic;font-size:27px;line-height:1.42;color:#9FC7C1}
+
+  .arroba{position:absolute;left:88px;top:1224px;font-family:'IS';font-size:27px;color:#D6EDE9}
+  .publico{position:absolute;right:88px;top:1233px;
+    font-family:'GM';font-size:11px;letter-spacing:.24em;color:#4E7F79}
+</style>
+
+<div class="luz"></div>
+<div class="grao"></div>
+
+<div class="marca">
+  <svg width="38" height="38" viewBox="0 0 1280 1280">
+    <defs>
+      <linearGradient id="a" x1="172" y1="530" x2="466" y2="200" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#0F6D65"/><stop offset="55%" stop-color="#1CB3A5"/><stop offset="100%" stop-color="#4DF3E2"/></linearGradient>
+      <linearGradient id="b" x1="820" y1="163" x2="820" y2="455" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#0F6D65"/><stop offset="55%" stop-color="#1CB3A5"/><stop offset="100%" stop-color="#4DF3E2"/></linearGradient>
+      <linearGradient id="c" x1="462" y1="825" x2="462" y2="1115" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#4DF3E2"/><stop offset="45%" stop-color="#1CB3A5"/><stop offset="100%" stop-color="#0F6D65"/></linearGradient>
+      <linearGradient id="d" x1="1108" y1="750" x2="814" y2="1080" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#0F6D65"/><stop offset="55%" stop-color="#1CB3A5"/><stop offset="100%" stop-color="#4DF3E2"/></linearGradient>
+    </defs>
+    <path d="M466 165 A290 290 0 0 0 466 745 Z" fill="url(#a)"/>
+    <rect x="530" y="163" width="580" height="292" rx="146" fill="url(#b)"/>
+    <rect x="172" y="825" width="580" height="290" rx="145" fill="url(#c)"/>
+    <path d="M818 535 A290 290 0 0 1 818 1115 Z" fill="url(#d)"/>
+  </svg>
+  <div class="nome">SIIMOB</div>
+</div>
+
+<div class="ref">FIG. 01<br>INTERVALO MEDIDO</div>
+<div class="fio" style="top:134px"></div>
+
+<div class="manchete">
+  Todo repasse visível.<br>Inclusive o que <span class="b">parou</span>.
+</div>
+<div class="legenda">GESTÃO DE REPASSE HABITACIONAL</div>
+
+<div class="rot" id="rotEsq" style="left:88px;top:486px">CADA LINHA, UM PROCESSO &nbsp;·&nbsp; CADA MARCA, UM DIA</div>
+<div class="rot" id="rotLim"></div>
+
+<div class="campo" id="campo">
+  <div class="limite" id="limite"></div>
+</div>
+
+<div class="nota">O sistema conta os dias.<br>Você recebe o nome, a etapa e o valor.</div>
+
+<div class="fio" style="top:1186px"></div>
+<div class="arroba">@siimob</div>
+<div class="publico">CORRESPONDENTES · CONSTRUTORAS · IMOBILIÁRIAS</div>
+
+<script>
+// ─── O registro ──────────────────────────────────────────────────────────────
+// Vinte processos, uma linha cada, marca a marca. Quase todos param antes do
+// limite aceitável. Um atravessa — e é o único que muda de cor. A descoberta
+// tem de ser do olho, nunca do dedo apontando.
+const campo  = document.getElementById('campo');
+const L = 904, LINHAS = 20, ALTURA_LINHA = 24, PASSO = 14, LARG = 8;
+const LIMITE = 602;          // x do limite aceitável
+const EXC = 12;              // a linha que atravessa
+
+// Comprimentos escolhidos a mão: ritmo irregular o bastante para parecer
+// registro de verdade, controlado o bastante para não virar ruído.
+const COMP = [266, 392, 174, 546, 322, 448, 210, 574, 350, 130,
+              490, 286, 862, 238, 420, 160, 508, 304, 378, 202];
+
+for (let r = 0; r < LINHAS; r++) {
+  const y = r * ALTURA_LINHA;
+  const comp = COMP[r];
+  const n = Math.round(comp / PASSO);
+  const ehExc = (r === EXC);
+
+  for (let i = 0; i < n; i++) {
+    const x = i * PASSO;
+    const m = document.createElement('div');
+    m.className = 'm';
+    m.style.left = x + 'px';
+    m.style.top  = y + 'px';
+    m.style.width = LARG + 'px';
+
+    if (ehExc && x >= LIMITE) {
+      // O trecho que passou do limite: é isto que o sistema cobra.
+      m.style.opacity = 1;
+      m.style.boxShadow = '0 0 10px rgba(51,233,215,.55)';
+    } else if (ehExc) {
+      m.style.opacity = .52;
+    } else {
+      m.style.opacity = (0.28 + ((r * 7 + i) % 5) * 0.026).toFixed(3);
+    }
+    campo.appendChild(m);
+  }
+
+  if (ehExc) {
+    const c = document.createElement('div');
+    c.className = 'cabeca';
+    c.style.left = (comp - 2) + 'px';
+    c.style.top  = (y - 2) + 'px';
+    campo.appendChild(c);
+  }
+}
+
+// ─── Limite aceitável ────────────────────────────────────────────────────────
+const lim = document.getElementById('limite');
+lim.style.left = LIMITE + 'px';
+lim.style.top = '-22px';
+lim.style.height = (LINHAS * ALTURA_LINHA + 34) + 'px';
+
+const rotLim = document.getElementById('rotLim');
+rotLim.textContent = 'LIMITE ACEITÁVEL';
+rotLim.style.left = (88 + LIMITE + 12) + 'px';
+rotLim.style.top  = '486px';
+
+// ─── A cota do excedente ─────────────────────────────────────────────────────
+const yExc = EXC * ALTURA_LINHA;
+const fim  = COMP[EXC];
+const yBraco = yExc + 30;
+
+const braco = document.createElement('div');
+braco.className = 'braco';
+braco.style.left = LIMITE + 'px';
+braco.style.top  = yBraco + 'px';
+braco.style.width = (fim - LIMITE) + 'px';
+campo.appendChild(braco);
+
+[LIMITE, fim].forEach(x => {
+  const t = document.createElement('div');
+  t.className = 'tq';
+  t.style.left = x + 'px';
+  t.style.top  = (yBraco - 4) + 'px';
+  campo.appendChild(t);
+});
+
+const cota = document.createElement('div');
+cota.className = 'cota';
+cota.style.left = LIMITE + 'px';
+cota.style.top  = (yBraco + 14) + 'px';
+cota.textContent = '17 DIAS PARADO';
+campo.appendChild(cota);
+</script>

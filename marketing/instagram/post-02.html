@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face{font-family:'IS';src:url('../fontes/InstrumentSerif-Regular.ttf') format('truetype')}
+  @font-face{font-family:'ISI';src:url('../fontes/InstrumentSerif-Italic.ttf') format('truetype')}
+  @font-face{font-family:'GM';src:url('../fontes/GeistMono-Regular.ttf') format('truetype')}
+  @font-face{font-family:'GMB';src:url('../fontes/GeistMono-Bold.ttf') format('truetype')}
+  @font-face{font-family:'WS';src:url('../fontes/WorkSans-Regular.ttf') format('truetype')}
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{background:#F1EEE6;position:relative;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+
+  /* O claro também é matéria: papel, não tela. */
+  .luz{position:absolute;inset:0;
+    background:
+      radial-gradient(108% 54% at 78% 16%, rgba(20,146,135,.075) 0%, rgba(20,146,135,0) 62%),
+      radial-gradient(90% 60% at 4% 96%, rgba(11,83,78,.055) 0%, rgba(11,83,78,0) 60%);}
+  .grao{position:absolute;inset:0;opacity:.10;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");}
+
+  .marca{position:absolute;left:88px;top:72px;display:flex;align-items:center;gap:15px}
+  .marca .nome{font-family:'GM';font-size:16px;letter-spacing:.44em;color:#0B403A;padding-top:3px}
+  .ref{position:absolute;right:88px;top:78px;text-align:right;
+       font-family:'GM';font-size:11px;letter-spacing:.28em;color:#7C948F;line-height:2}
+  .fio{position:absolute;left:88px;width:904px;height:1px;background:rgba(11,64,58,.16)}
+
+  .manchete{position:absolute;left:88px;top:192px;width:912px;
+    font-family:'IS';font-size:86px;line-height:1.06;color:#062C28;letter-spacing:-.012em}
+  .manchete .b{color:#0E857A}
+  .legenda{position:absolute;left:88px;top:414px;
+    font-family:'GM';font-size:12px;letter-spacing:.30em;color:#7C948F}
+
+  /* ── as quatro entradas ───────────────────────────────────────── */
+  .lista{position:absolute;left:88px;top:470px;width:904px}
+  .item{position:relative;height:121px;padding-top:24px;border-top:1px solid rgba(11,64,58,.16)}
+  .item:last-child{border-bottom:1px solid rgba(11,64,58,.16)}
+  .num{position:absolute;left:0;top:28px;font-family:'GMB';font-size:12px;
+       letter-spacing:.20em;color:#0E857A}
+  .tit{margin-left:74px;font-family:'IS';font-size:35px;line-height:1.12;color:#062C28;letter-spacing:-.005em}
+  .des{margin-left:74px;margin-top:9px;font-family:'WS';font-size:16.5px;line-height:1.5;
+       color:#50706B;max-width:700px}
+
+  /* o pequeno marcador à direita: a mesma língua do FIG. 01, em miniatura */
+  .marc{position:absolute;right:0;top:40px;display:flex;gap:5px;align-items:center}
+  .marc i{display:block;width:7px;height:3px;border-radius:1.5px;background:#0E857A;opacity:.28}
+  .marc i.on{opacity:1;box-shadow:0 0 8px rgba(14,133,122,.45)}
+
+  .fecho{position:absolute;left:88px;top:1010px;width:800px;
+    font-family:'ISI';font-style:italic;font-size:28px;line-height:1.42;color:#3F615C}
+  .fecho b{font-style:italic;font-weight:400;color:#0E857A}
+
+  .arroba{position:absolute;left:88px;top:1224px;font-family:'IS';font-size:27px;color:#0B403A}
+  .publico{position:absolute;right:88px;top:1233px;
+    font-family:'GM';font-size:11px;letter-spacing:.24em;color:#7C948F}
+</style>
+
+<div class="luz"></div>
+<div class="grao"></div>
+
+<div class="marca">
+  <svg width="38" height="38" viewBox="0 0 1280 1280">
+    <defs>
+      <linearGradient id="a" x1="172" y1="530" x2="466" y2="200" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#08433E"/><stop offset="55%" stop-color="#12867C"/><stop offset="100%" stop-color="#22C9B8"/></linearGradient>
+      <linearGradient id="b" x1="820" y1="163" x2="820" y2="455" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#08433E"/><stop offset="55%" stop-color="#12867C"/><stop offset="100%" stop-color="#22C9B8"/></linearGradient>
+      <linearGradient id="c" x1="462" y1="825" x2="462" y2="1115" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#22C9B8"/><stop offset="45%" stop-color="#12867C"/><stop offset="100%" stop-color="#08433E"/></linearGradient>
+      <linearGradient id="d" x1="1108" y1="750" x2="814" y2="1080" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#08433E"/><stop offset="55%" stop-color="#12867C"/><stop offset="100%" stop-color="#22C9B8"/></linearGradient>
+    </defs>
+    <path d="M466 165 A290 290 0 0 0 466 745 Z" fill="url(#a)"/>
+    <rect x="530" y="163" width="580" height="292" rx="146" fill="url(#b)"/>
+    <rect x="172" y="825" width="580" height="290" rx="145" fill="url(#c)"/>
+    <path d="M818 535 A290 290 0 0 1 818 1115 Z" fill="url(#d)"/>
+  </svg>
+  <div class="nome">SIIMOB</div>
+</div>
+
+<div class="ref">FIG. 02<br>SINTOMAS</div>
+<div class="fio" style="top:134px"></div>
+
+<div class="manchete">
+  O dinheiro <span class="b">para</span><br>junto com o processo.
+</div>
+<div class="legenda">QUATRO SINAIS DE QUE O REPASSE TRAVOU</div>
+
+<div class="lista" id="lista"></div>
+
+<div class="fecho">
+  Nenhum deles aparece no relatório do mês.<br><b>Todos aparecem no caixa.</b>
+</div>
+
+<div class="fio" style="top:1186px"></div>
+<div class="arroba">@siimob</div>
+<div class="publico">CORRESPONDENTES · CONSTRUTORAS · IMOBILIÁRIAS</div>
+
+<script>
+// Quatro entradas, mesma estrutura, mesma respiração. O marcador à direita
+// repete a língua do FIG. 01: um traço aceso no meio dos apagados — e ele
+// avança de posição a cada item, como um relógio que ninguém está olhando.
+const ITENS = [
+  ['01', 'Ninguém sabe onde parou.',
+         'O processo está “em análise” — mas em análise desde quando, e esperando o quê?'],
+  ['02', 'A pendência chega tarde.',
+         'Ela só aparece quando o cliente liga. Aí já são semanas perdidas.'],
+  ['03', 'Documento vira caça ao tesouro.',
+         'Espalhado entre e-mail, WhatsApp e a pasta de alguém que hoje não veio.'],
+  ['04', 'A previsão de repasse é um chute.',
+         'Sem saber o que assina neste mês, não dá para planejar nada.'],
+];
+
+const lista = document.getElementById('lista');
+ITENS.forEach(([n, titulo, desc], k) => {
+  const d = document.createElement('div');
+  d.className = 'item';
+
+  const marcas = Array.from({ length: 7 }, (_, i) =>
+    `<i class="${i === k + 2 ? 'on' : ''}"></i>`).join('');
+
+  d.innerHTML =
+    `<div class="num">${n}</div>` +
+    `<div class="marc">${marcas}</div>` +
+    `<div class="tit">${titulo}</div>` +
+    `<div class="des">${desc}</div>`;
+  lista.appendChild(d);
+});
+</script>
