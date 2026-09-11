@@ -86,8 +86,8 @@
 <div class="manchete">
   Do lead ao registro.<br>Inclusive o que <span class="b">parou</span>.
 </div>
-<div class="legenda">CRM · REPASSE · REGISTRO — UM CADASTRO SÓ</div>
-<div class="rot" style="right:88px;top:421px">CADA PONTO, UM PROCESSO</div>
+<div class="legenda">CRM · PRÉ-ANÁLISE · COMERCIAL · REPASSE · REGISTRO</div>
+<div class="rot" style="right:88px;top:421px">UM CADASTRO SÓ</div>
 
 <div class="campo" id="campo"><div class="eixo"></div></div>
 
@@ -111,8 +111,14 @@ const PASSO = L / (COLS - 1);
 const D = 10, VAO = 13;        // diâmetro do ponto e espaçamento vertical
 
 // A fila em cada etapa. O relevo é o argumento: sobe até o gargalo e desce.
-const FILA = [6, 9, 7, 12, 9, 15, 20, 13, 8, 10, 6, 7, 4, 3];
-const GARGALO = 6;             // a coluna mais alta — e onde está o esquecido
+const FILA = [5, 8, 11, 9, 13, 10, 16, 20, 14, 11, 8, 6, 4, 3];
+const GARGALO = 7;             // a coluna mais alta — e onde está o esquecido
+
+// As cinco âncoras do caminho. As colunas entre elas são as etapas que cada
+// cliente desenha — por isso recebem tique, e não nome.
+const ANCORAS = [[0, 'LEAD'], [3, 'PRÉ-ANÁLISE'], [6, 'COMERCIAL'],
+                 [9, 'REPASSE'], [13, 'REGISTRO']];
+const EH_ANCORA = c => ANCORAS.some(([i]) => i === c);
 
 const colunas = [];
 for (let c = 0; c < COLS; c++) {
@@ -132,7 +138,7 @@ for (let c = 0; c < COLS; c++) {
   }
   colunas.push(topo);
 
-  const ancora = (c === 0 || c === GARGALO || c === COLS - 1);
+  const ancora = EH_ANCORA(c);
   const marca = document.createElement('div');
   marca.className = ancora ? 'no' : 'tique';
   marca.style.left = (x - (ancora ? 5 : 0.5)) + 'px';
@@ -161,20 +167,22 @@ cota.className = 'cota';
 cota.style.right = '0px';
 cota.style.bottom = (yP + D / 2 + 15) + 'px';
 cota.style.textAlign = 'right';
-cota.innerHTML = '17 DIAS<small>PARADO NESTA ETAPA</small>';
+cota.innerHTML = '17 DIAS<small>ESTE PROCESSO PAROU AQUI</small>';
 campo.appendChild(cota);
 
 // ─── As âncoras do caminho ───────────────────────────────────────────────────
-const ancoras = [[0, 'LEAD', 'esq'], [GARGALO, 'REPASSE', 'meio'], [COLS - 1, 'REGISTRO', 'dir']];
-ancoras.forEach(([c, texto, lado]) => {
+// A primeira encosta na margem esquerda e a última na direita — as três do
+// meio ficam centradas no próprio nó. É o que mantém a faixa alinhada com a
+// mesma grade de 88px do resto da peça.
+ANCORAS.forEach(([c, texto], i) => {
   const x = Math.round(c * PASSO);
   const e = document.createElement('div');
   e.className = 'etapa';
   e.textContent = texto;
   e.style.top = '980px';
-  if (lado === 'esq')  e.style.left = '88px';
-  if (lado === 'dir')  e.style.right = '88px';
-  if (lado === 'meio') { e.style.left = (88 + x) + 'px'; e.style.transform = 'translateX(-50%)'; }
+  if (i === 0)                       e.style.left = '88px';
+  else if (i === ANCORAS.length - 1) e.style.right = '88px';
+  else { e.style.left = (88 + x) + 'px'; e.style.transform = 'translateX(-50%)'; }
   document.body.appendChild(e);
 });
 </script>
