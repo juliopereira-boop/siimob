@@ -1107,7 +1107,26 @@ const PERM_ROTULO = {
 };
 function faltaPermissao(chave, oQueFalhou){
   const rotulo = PERM_ROTULO[chave] || chave;
-  return (oQueFalhou ? String(oQueFalhou).replace(/\.\s*$/,'') + ': ' : '')
+  const inicio = oQueFalhou ? String(oQueFalhou).replace(/\.\s*$/,'') + ': ' : '';
+
+  // NÃO ACUSAR A PERMISSÃO QUANDO ELA ESTÁ LÁ.
+  //
+  // Esta função nasceu afirmando "falta a permissão X" para todo 401/403 de
+  // RLS, e mandou o dono procurar uma caixa que já estava marcada. O 401 real
+  // era outra coisa: a política de INSERT aceitava, e quem recusava era a de
+  // SELECT no RETURNING que o PostgREST faz por padrão. Meia hora perdida
+  // conferindo cadastro por causa de uma frase confiante e errada.
+  //
+  // Uma mensagem de erro que aponta a causa errada é pior que "erro
+  // desconhecido": a segunda faz a pessoa investigar, a primeira faz ela
+  // investigar o lugar errado. Se a chave está marcada aqui, a tela diz o que
+  // realmente sabe — que o banco recusou e a permissão não é o motivo.
+  if (chave && perm(chave)) {
+    return inicio
+      + `o banco recusou, e NÃO é falta da permissão "${rotulo}" — ela está marcada no seu cadastro. `
+      + 'Avise o suporte com o horário exato; é regra de acesso do servidor, não configuração sua.';
+  }
+  return inicio
     + `falta a permissão "${rotulo}" (${chave}). `
     + 'Peça ao gestor em Configurações — no seu cadastro, ou no perfil de acesso vinculado a você.';
 }

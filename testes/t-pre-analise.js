@@ -185,9 +185,10 @@ async function preencherAssistente(p){
 
   // ── 3. Erro de permissão do banco diz QUAL permissão falta ───────────────
   console.log('\n3. O 401 do banco vira uma frase que resolve o dia');
+  // Quem NÃO tem a chave: a mensagem tem de nomeá-la e dizer onde pedir.
   {
     const { b, p, erros } = await abrir({
-      user:CORRETOR, perms:{ pa_ver:true, pa_criar:true },
+      user:CORRETOR, perms:{ pa_ver:true },          // sem pa_criar
       rotas:[{ re:/a1_pa_pessoas/, metodo:'POST', status:401,
                corpo:{ message:'permission denied for table a1_pa_pessoas' } }]
     });
@@ -197,9 +198,47 @@ async function preencherAssistente(p){
     await p.evaluate(() => passoSeguinte());
     await p.waitForTimeout(800);
     const t = await avisos(p);
-    checa('a mensagem nomeia a permissão que falta', /pa_criar/.test(t), t);
+    checa('sem a chave: a mensagem nomeia a permissão que falta', /pa_criar/.test(t), t);
     checa('em português, não só a chave crua', /Criar pré-análise/i.test(t), t);
     checa('e diz onde pedi-la', /Configura/i.test(t), t);
+    todosErros.push(...erros); await b.close();
+  }
+
+  // Quem TEM a chave e mesmo assim leva 401: a mensagem NÃO pode acusar a
+  // permissão. Foi exatamente isto que aconteceu em produção — a política de
+  // INSERT aceitava, quem recusava era a de SELECT no RETURNING do PostgREST,
+  // e a tela mandou o dono procurar uma caixa que já estava marcada. Frase
+  // confiante e errada é pior que "erro desconhecido": manda investigar o
+  // lugar errado.
+  {
+    const { b, p, erros } = await abrir({
+      user:CORRETOR, perms:{ pa_ver:true, pa_criar:true },
+      rotas:[{ re:/a1_pa_pessoas/, metodo:'POST', status:401,
+               corpo:{ message:'new row violates row-level security policy' } }]
+    });
+    await p.evaluate(() => abrirAssistente());
+    await p.waitForTimeout(400);
+    await preencherAssistente(p);
+    await p.evaluate(() => passoSeguinte());
+    await p.waitForTimeout(800);
+    const t = await avisos(p);
+    checa('com a chave marcada: NÃO acusa falta de permissão', /NÃO é falta da permissão/i.test(t), t);
+    checa('e manda avisar o suporte em vez de mexer no cadastro', /suporte/i.test(t), t);
+    todosErros.push(...erros); await b.close();
+  }
+
+  // O simétrico do de cima: corretor sem pa_editar precisa ver a chave
+  // nomeada, porque para ele a permissão É o motivo e existe o que marcar.
+  {
+    const { b, p, erros } = await abrir({
+      user:CORRETOR, perms:{ pa_ver:true },
+      rotas:[{ re:/rpc\/a1_pa_transicionar/, status:403, corpo:{ message:'sem_permissao' } }] });
+    await p.evaluate(() => { history.replaceState(null,'','?vista=andamento'); aplicarVista(); renderVista(); });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { if (typeof moverCartao === 'function') moverCartao('pa1','ps3'); });
+    await p.waitForTimeout(700);
+    const t = await avisos(p);
+    checa('corretor sem pa_editar vê a permissão nomeada', /pa_editar/.test(t), t);
     todosErros.push(...erros); await b.close();
   }
 
@@ -253,7 +292,11 @@ async function preencherAssistente(p){
     await p.waitForTimeout(700);
     const t = await avisos(p);
     checa('recusa do banco não vira sucesso', !/Situação alterada/.test(t), t);
-    checa('e a mensagem nomeia a permissão de mover', /pa_editar/.test(t), t);
+    // Quem move aqui é GESTOR, e gestor tem tudo. A mensagem certa não é
+    // "falta pa_editar" — é dizer que a permissão não é o motivo, senão manda
+    // o gestor procurar uma caixa que nem existe para ele.
+    checa('e para o gestor a mensagem não acusa falta de permissão',
+      /NÃO é falta da permissão/i.test(t), t);
     checa('o cartão continua na coluna de origem',
       await p.locator('.k-col-body[data-sit="ps2"] .pa-card[data-id="pa1"]').count() === 1);
     // A verificação acima sozinha é fraca: o quadro é redesenhado a partir do

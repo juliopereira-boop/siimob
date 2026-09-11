@@ -1551,6 +1551,108 @@ select checa('e o dono continua sendo ele mesmo',
   (select corretor_id from a1_pre_analises
     where id = 'f1000000-0000-0000-0000-000000000003') = 'b0000000-0000-0000-0000-000000000001');
 
+
+-- ═══ QUEM CADASTRA A PESSOA PRECISA CONSEGUIR RELÊ-LA ═══════════════════════
+--
+-- O 401 que travou o dono. Corretor com pa_criar marcada nao criava
+-- pre-analise, e a tela dizia que faltava pa_criar. Nao faltava: a politica de
+-- INSERT aceitava, e quem recusava era a de SELECT no RETURNING que o
+-- PostgREST manda por padrao (Prefer: return=representation).
+--
+-- POR QUE NENHUMA PROVA PEGOU ISSO ATE AGORA: todas inseriam sem RETURNING.
+-- `insert into ... values (...)` passa; `... returning id` cai. O andaime
+-- reproduzia a tabela, as politicas e a sessao — e nao reproduzia o unico
+-- detalhe que importava, que e COMO o PostgREST escreve. Prova que nao imita o
+-- caminho real do cliente confere outra coisa, com muita confianca.
+
+reset role;
+insert into a1_tenant_modules (tenant_id, module_key)
+values ('11111111-1111-1111-1111-111111111111','PRE_ANALISE') on conflict do nothing;
+-- O caminho do PostgREST: INSERT ... RETURNING, numa unica instrucao. Criada
+-- como dono do banco (anon nao cria funcao), mas SEM security definer: ela roda
+-- como quem chama e passa pelas politicas, que e o ponto da prova.
+create or replace function tenta_criar_pessoa_returning()
+returns text language plpgsql as $$
+declare v_id uuid;
+begin
+  insert into a1_pa_pessoas (tenant_id, tipo, nome, documento)
+  values ('11111111-1111-1111-1111-111111111111','PF','Titular do Corretor','98700000011')
+  returning id into v_id;
+  return null;
+exception when others then return sqlerrm;
+end $$;
+grant execute on function tenta_criar_pessoa_returning() to anon;
+set role anon;
+
+-- Zilda e corretora com pa_criar e sem visao ampla — o cadastro do relato.
+select teste_entrar('tk-zilda');
+
+do $$ declare e text; begin
+  e := tenta_criar_pessoa_returning();
+  perform checa('corretor cadastra pessoa com RETURNING (o jeito do PostgREST)',
+                e is null, coalesce(e,''));
+end $$;
+
+select checa('e relê a pessoa que acabou de cadastrar',
+  (select count(*) from a1_pa_pessoas where nome = 'Titular do Corretor') = 1);
+
+select checa('criado_por foi gravado pelo banco, nao pela tela',
+  (select criado_por from a1_pa_pessoas where nome = 'Titular do Corretor')
+    = 'bd000000-0000-0000-0000-000000000001');
+
+-- A REGRA QUE NAO PODE VOLTAR. a1_pa_pessoas so tem leitura restrita porque um
+-- `for all` ja entregou nome, CPF, telefone e endereco de toda a carteira do
+-- cliente a qualquer corretor. Deixar o criador reler nao pode reabrir aquilo.
+reset role;
+-- Limpar a sessao ANTES da carga administrativa, e isto e a prova viva do
+-- gatilho novo: com o token da Zilda ainda pendurado no cabecalho,
+-- a1_pa_pessoas_guarda_insert reescrevia tenant_id e criado_por das duas linhas
+-- abaixo para os DELA — inclusive a do outro cliente. As tres verificacoes
+-- seguintes falhavam acusando vazamento que nao existia; quem estava errado era
+-- o cenario. Sem sessao, a1_tenant() e a1_ator() devolvem null e o gatilho nao
+-- forca nada, que e exatamente o caminho da importacao por chave de servico.
+select set_config('request.headers','{}',false);
+insert into a1_pa_pessoas (id, tenant_id, tipo, nome, documento, criado_por) values
+  ('ce000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'PF','Cliente da Colega','90000000002','bd000000-0000-0000-0000-000000000003'),
+  ('ce000000-0000-0000-0000-000000000002','22222222-2222-2222-2222-222222222222',
+   'PF','Cliente do Vizinho','90000000003',null);
+set role anon;
+
+select teste_entrar('tk-zilda');
+select checa('NAO le a pessoa que a colega cadastrou',
+  (select count(*) from a1_pa_pessoas where nome = 'Cliente da Colega') = 0,
+  'viu ' || (select count(*) from a1_pa_pessoas where nome = 'Cliente da Colega'));
+select checa('NAO le a pessoa do outro cliente',
+  (select count(*) from a1_pa_pessoas where nome = 'Cliente do Vizinho') = 0,
+  'viu ' || (select count(*) from a1_pa_pessoas where nome = 'Cliente do Vizinho'));
+select checa('a agenda inteira continua fechada: ve so a que cadastrou',
+  (select count(*) from a1_pa_pessoas) = 1,
+  've ' || (select count(*) from a1_pa_pessoas) || ': ' ||
+  coalesce((select string_agg(nome,', ') from a1_pa_pessoas),'—'));
+
+-- E quem nao pode criar continua nao criando: a correcao e de LEITURA, e nao
+-- pode ter afrouxado a escrita de tabela.
+select teste_entrar('tk-bia');     -- pa_editar, sem pa_criar
+do $$ declare e text; begin
+  e := tenta_criar_pessoa_returning();
+  perform checa('sem pa_criar, continua sem cadastrar pessoa', e is not null,
+                coalesce(e,'CRIOU — a correcao de leitura afrouxou a escrita'));
+end $$;
+
+-- Gestor continua enxergando tudo do proprio cliente.
+select teste_entrar('tk-gestor');
+select checa('gestor le as pessoas do cliente dele',
+  (select count(*) from a1_pa_pessoas) >= 2);
+select checa('e nao le a do vizinho',
+  (select count(*) from a1_pa_pessoas where nome = 'Cliente do Vizinho') = 0);
+
+reset role;
+delete from a1_pa_pessoas where nome in ('Titular do Corretor','Cliente da Colega','Cliente do Vizinho');
+delete from a1_tenant_modules
+ where tenant_id = '11111111-1111-1111-1111-111111111111' and module_key = 'PRE_ANALISE';
+set role anon;
+
 -- =============================================================================
 \o
 \echo ''
