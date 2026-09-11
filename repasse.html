@@ -1365,6 +1365,19 @@
                  title="Para corrigir o CPF, fale com o gestor: é ele que liga o seu login ao cadastro."
                  style="background:var(--bg);color:var(--t3);cursor:not-allowed"></div>
         <div class="form-group"><label>Telefone</label><input id="prof-phone" type="tel" placeholder="(00) 00000-0000"></div>
+        <!-- Quem define a imobiliária do corretor é o GESTOR, no cadastro
+             (Configurações › Corretores) — o vínculo mora em
+             a1_partners.extra.imobiliaria_id. Aqui o corretor só CONFERE, por
+             isso o campo é desabilitado.
+             Nasce oculto de propósito: quem não tem vínculo (gestor,
+             correspondente, despachante, corretor ainda sem imobiliária) não
+             ganha campo nenhum. Campo vazio é pior que campo ausente — parece
+             cadastro pela metade que a pessoa poderia preencher, e ela não
+             pode. -->
+        <div class="form-group full" id="prof-imob-group" style="display:none"><label>Imobiliária</label>
+          <input id="prof-imob" type="text" disabled
+                 title="Quem define a sua imobiliária é o gestor, no seu cadastro."
+                 style="background:var(--bg);color:var(--t3);cursor:not-allowed"></div>
         <div class="form-group full"><label>Nova senha <span style="text-transform:none;letter-spacing:0;color:var(--t3);font-weight:400">(deixe em branco para manter a atual)</span></label><input id="prof-password" type="password" autocomplete="new-password" placeholder="••••••"></div>
       </div>
       <div id="prof-err" style="display:none;color:#dc2626;font-size:.78rem;font-weight:500;margin-top:.5rem"></div>
@@ -2228,7 +2241,10 @@ async function openProfile() {
   profErr('');
   let p = {};
   try {
-    p = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=name,email,cpf,phone`, {headers:A1.headers()})
+    // `extra` entra na consulta porque é lá que mora o vínculo com a
+    // imobiliária (extra.imobiliaria_id). Sem ele, o campo abaixo nunca teria
+    // o que mostrar.
+    p = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=name,email,cpf,phone,extra`, {headers:A1.headers()})
       .then(r=>r.json()).then(a=>a[0]||{});
   } catch {}
   document.getElementById('prof-name').value     = p.name  || G.user.name || '';
@@ -2237,6 +2253,36 @@ async function openProfile() {
   document.getElementById('prof-phone').value    = p.phone || '';
   document.getElementById('prof-password').value = '';
   document.getElementById('modal-profile-bg').classList.remove('hidden');
+  // Depois de abrir: a imobiliária custa mais uma consulta, e segurar o modal
+  // por ela faria o corretor esperar pelo que já está pronto. O campo nasce
+  // oculto, então não há piscar de valor errado.
+  mostrarImobiliariaNoPerfil(p);
+}
+
+// Traduz extra.imobiliaria_id para o NOME da imobiliária e mostra o campo.
+// O id é do banco; quem lê é uma pessoa. Mostrar "p1" seria pior que não
+// mostrar nada — o corretor leria um código que não significa coisa alguma.
+// Sem vínculo, ou com um vínculo que não resolve para nome nenhum (imobiliária
+// apagada, por exemplo), o campo simplesmente não aparece.
+async function mostrarImobiliariaNoPerfil(p) {
+  const grupo = document.getElementById('prof-imob-group');
+  const campo = document.getElementById('prof-imob');
+  if (!grupo || !campo) return;
+  grupo.style.display = 'none';
+  campo.value = '';
+  const id = p && p.extra && p.extra.imobiliaria_id;
+  if (!id) return;
+  let nome = '';
+  try {
+    nome = await fetch(`${A1.rest('a1_partners')}?id=eq.${encodeURIComponent(id)}&select=name`, {headers:A1.headers()})
+      .then(r=>r.json()).then(a => (a && a[0] && a[0].name) || '');
+  } catch {}
+  if (!nome) return;
+  // .value, e não innerHTML: nome de cadastro não vira HTML em hipótese
+  // alguma. A "Imob Alfa" da base de teste carrega uma carga de XSS em aspa
+  // justamente para cobrar isso.
+  campo.value = nome;
+  grupo.style.display = '';
 }
 function profErr(m){ const e=document.getElementById('prof-err'); if(e){ e.textContent=m||''; e.style.display=m?'block':'none'; } }
 async function saveProfile() {
