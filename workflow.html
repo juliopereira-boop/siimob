@@ -420,7 +420,7 @@ let WF_USER  = null;    // current logged-in user (holds tenant_id)
 //
 // POR QUE EXISTE UM ADAPTADOR AQUI
 // Repasse e Registro guardam etapas em a1_stages e ligações em a1_stage_edges.
-// Pré-análise e Comercial guardam a MESMA ideia com outros nomes: situações em
+// Pré-análise e Venda guardam a MESMA ideia com outros nomes: situações em
 // a1_pa_situacoes / a1_co_situacoes e transições em a1_pa_transicoes /
 // a1_co_transicoes, com nome em "nome" e não em "name", ordem em "ordem" e não
 // em "position".
@@ -432,10 +432,10 @@ let WF_USER  = null;    // current logged-in user (holds tenant_id)
 // Cada adaptador traduz nos dois sentidos, e o resto do arquivo — arrastar,
 // desenhar seta, conectar — não sabe de que módulo se trata.
 // Na ordem do processo, a mesma da barra e a mesma das abas de tipo de
-// documento: Pré-análise → Comercial → Repasse, e o Registro ao fim.
+// documento: Pré-análise → Venda → Repasse, e o Registro ao fim.
 const WF_MODULES = [
   { key: 'PRE_ANALISE', label: 'Pré-análise', icone: '🔎', drv: 'pa' },
-  { key: 'COMERCIAL',   label: 'Comercial',   icone: '🤝', drv: 'co' },
+  { key: 'COMERCIAL',   label: 'Venda',   icone: '🤝', drv: 'co' },
   { key: 'repasse',     label: 'Repasse',     icone: '🏦', drv: 'stages' },
   { key: 'registro',    label: 'Registro',    icone: '📁', drv: 'stages' },
 ];
@@ -455,7 +455,7 @@ const WF_FLAGS = {
 // efeito — inclusive uma correção manual de status feita para acertar um
 // lançamento errado.
 const WF_ACOES = {
-  pa: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Comercial']],
+  pa: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Venda']],
   co: [['','nenhuma'],['CREATE_REPASS','Criar cartão no Repasse'],
        ['SEND_TO_SIGNATURE','Enviar para assinatura'],
        ['MARK_CONTRACT_SIGNED','Marcar contrato assinado']],

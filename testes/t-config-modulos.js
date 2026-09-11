@@ -1,4 +1,4 @@
-// Configurações dos módulos novos (Pré-análise e Comercial).
+// Configurações dos módulos novos (Pré-análise e Venda).
 //
 // A primeira verificação é NEGATIVA e é a que importa: sem a licença, nada
 // disso pode EXISTIR na tela — nem cartão, nem sub-tela, nem opção de menu, nem
@@ -97,13 +97,15 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     const { b, p, erros, pedidos } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
 
     checa('cartão do registro de integrações', await p.locator('#cfg-card-integra').isVisible());
-    checa('o hub continua com 5 grupos', await p.evaluate(() =>
-      document.querySelectorAll('#cfg-hub .cfg-grupo').length) === 5);
-    // 22 de sempre (21 + Perfis de acesso) + 1 do registro de integrações. Os
-    // workflows dos módulos NÃO entram como cartão: são botões dentro do
-    // Editor de Workflow.
+    // 5 de sempre + "Área de risco", o grupo da Exclusão definitiva, que é
+    // montado por JS e só para gestor.
+    checa('o hub continua com 6 grupos', await p.evaluate(() =>
+      document.querySelectorAll('#cfg-hub .cfg-grupo').length) === 6);
+    // 22 de sempre (21 + Perfis de acesso) + 1 do registro de integrações
+    // + 1 da Exclusão definitiva. Os workflows dos módulos NÃO entram como
+    // cartão: são botões dentro do Editor de Workflow.
     const cards = await p.locator('#cfg-hub .cfg-hub-card:visible').count();
-    checa('22 cartões viram 23', cards === 23, 'n=' + cards);
+    checa('22 cartões viram 24', cards === 24, 'n=' + cards);
     checa('o terceiro módulo dos tipos de documento aparece', await p.evaluate(() =>
       document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none'));
 

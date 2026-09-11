@@ -487,7 +487,7 @@
     </div>
 
     <!-- ══ TAB: Plataforma ══ -->
-    <!-- ══ TAB: Esteiras (Pré-análise e Comercial) ══ -->
+    <!-- ══ TAB: Esteiras (Pré-análise e Venda) ══ -->
     <div id="satab-esteiras" style="display:none">
       <div class="panel" style="padding:1.1rem;margin-bottom:1.25rem">
         <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
@@ -499,7 +499,7 @@
             <label>Módulo</label>
             <select id="est-modulo" onchange="carregarEsteira()">
               <option value="PRE_ANALISE">Pré-análise</option>
-              <option value="COMERCIAL">Comercial</option>
+              <option value="COMERCIAL">Venda</option>
             </select>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="carregarEsteira()">Recarregar</button>
@@ -797,11 +797,11 @@ let CONTRACT_MODS   = [];
 
 // `types`: tipos de cliente para os quais o módulo é ofertável. Ausente = todos.
 const MODULES_DEF = [
-  // A ordem da lista é a ordem do processo — Pré-análise → Comercial → Repasse —
+  // A ordem da lista é a ordem do processo — Pré-análise → Venda → Repasse —
   // e é a mesma da barra de abas e do editor de workflow. Os dois primeiros
   // continuam nascendo desligados para todo cliente; ordem não é licença.
   { key: 'PRE_ANALISE',      name: 'Pré-análise',              desc: 'Entrada do processo: pessoas, dossiê, renda, FGTS, subsídio, correspondente e decisão de crédito. Esteira própria.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: [] },
-  { key: 'COMERCIAL',        name: 'Comercial',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
+  { key: 'COMERCIAL',        name: 'Venda',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
   { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.', types:['correspondente_bancario','imobiliaria','construtora'] },
   { key: 'registro',         name: 'Registro em Cartório',     desc: 'Módulo despachante: ITBI, protocolos, exigências e matrícula atualizada.', types:['correspondente_bancario','imobiliaria','construtora','despachante'] },
   { key: 'crm',              name: 'CRM Básico',               desc: 'Gestão de contatos, leads e clientes com histórico de interações.', types:['imobiliaria','construtora'] },
@@ -817,7 +817,7 @@ const MODULES_DEF = [
   // a política do banco que não entrega linha.
 ];
 
-// Dependência entre módulos. Não é bloqueio: Comercial funciona sozinho para
+// Dependência entre módulos. Não é bloqueio: Venda funciona sozinho para
 // quem já negocia fora do sistema. É aviso — sem Pré-análise, o caminho
 // automático "aprovou → abre o comercial" simplesmente não existe, e é melhor
 // dizer isso na hora de liberar do que o cliente descobrir depois.
@@ -900,7 +900,7 @@ const EST_DEF = {
     nome: 'Pré-análise',
     tabSit: 'a1_pa_situacoes', tabTr: 'a1_pa_transicoes',
     flags: ['INICIAL','APROVADO','REPROVADO','PENDENTE','VENCIDO','CANCELADO','ENCERRADO'],
-    acoes: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Comercial']],
+    acoes: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Venda']],
     requisitos: [['documentos_aprovados','Exigir todos os documentos aprovados']],
     // Ponto de partida inspirado no fluxo de mercado; o cliente ajusta depois.
     padrao: [
@@ -913,7 +913,7 @@ const EST_DEF = {
     ]
   },
   COMERCIAL: {
-    nome: 'Comercial',
+    nome: 'Venda',
     tabSit: 'a1_co_situacoes', tabTr: 'a1_co_transicoes',
     flags: ['INICIAL','CONTRATO_ASSINADO','CANCELADO','ENCERRADO'],
     acoes: [['','nenhuma'],['CREATE_REPASS','Criar cartão no Repasse'],

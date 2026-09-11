@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Comercial — SIIMOB</title>
+<title>Venda — SIIMOB</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -244,14 +244,14 @@ function semAcessoAoModulo(){
   main.innerHTML =
     '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;'
     + 'border:1px solid #E2E8F0;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
-    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Comercial</div>'
+    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Venda</div>'
     + '<div style="font-size:.85rem;color:#475569;line-height:1.55">O seu cadastro não tem a '
     + 'permissão <b>Ver negócios</b>. Peça ao gestor em Configurações (ou no perfil de '
     + 'acesso vinculado a você).</div></div>';
 }
 function humano(h){ if (h<1) return Math.max(0,Math.round(h*60))+'min'; if (h<48) return Math.round(h)+'h'; return Math.round(h/24)+'d'; }
 
-// O nome do cliente e os valores vêm do SNAPSHOT gravado quando o Comercial
+// O nome do cliente e os valores vêm do SNAPSHOT gravado quando a Venda
 // nasceu — não de uma nova leitura da pré-análise. É essa a diferença entre
 // "o que foi aprovado" e "o que está lá agora".
 function tituloDe(co){
@@ -326,7 +326,7 @@ function preencherFiltros(){
 //
 // Enquanto o mapa não tiver NENHUMA situação deste módulo, o módulo não é
 // restrito. Sem essa regra, todo parceiro de hoje — que tem o mapa preenchido
-// só com etapas do Repasse — perderia o Comercial inteiro de uma vez.
+// só com etapas do Repasse — perderia a Venda inteiro de uma vez.
 function etapasDoUsuario(){
   const p = (G.user && G.user.permissions) || {};
   return (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : {};
@@ -409,8 +409,8 @@ function renderVistas(){
 
 // Sem esteira as duas vistas dizem a MESMA coisa. O Andamento é a vista que
 // abre por padrão e ficava só com "não foi configurada", sem dizer a quem pedir.
-const SEM_ESTEIRA = `<div class="vazio"><strong>A esteira do Comercial ainda não foi configurada.</strong><br>
-  Um gestor cria a esteira em <strong>Configurações &rsaquo; Workflow do Comercial</strong>.</div>`;
+const SEM_ESTEIRA = `<div class="vazio"><strong>A esteira da Venda ainda não foi configurada.</strong><br>
+  Um gestor cria a esteira em <strong>Configurações &rsaquo; Workflow da Venda</strong>.</div>`;
 
 function renderListagem(linhas){
   const wrap = document.getElementById('fila-wrap');
@@ -418,7 +418,7 @@ function renderListagem(linhas){
   if (!linhas.length){
     wrap.innerHTML = `<div class="vazio">${G.lista.length
       ? 'Nenhum negócio com esses filtros.'
-      : 'Nenhum negócio ainda. O Comercial nasce a partir de uma pré-análise aprovada.'}</div>`;
+      : 'Nenhum negócio ainda. A Venda nasce a partir de uma pré-análise aprovada.'}</div>`;
     return;
   }
   wrap.innerHTML = `<table class="fila"><thead><tr>
@@ -489,7 +489,7 @@ function cartao(c){
 
 // ══════════ ARRASTAR O CARTÃO ENTRE COLUNAS ══════════
 //
-// Por que isto existe: o quadro do Comercial nasceu só de leitura. O cartão não
+// Por que isto existe: o quadro da Venda nasceu só de leitura. O cartão não
 // tinha `draggable`, a coluna não tinha `ondrop`, e quem vinha do Repasse — onde
 // arrastar funciona — puxava o cartão, nada acontecia e não havia erro nenhum
 // para explicar. "Não faz nada" é o pior defeito: não deixa o que consertar.
@@ -552,7 +552,7 @@ async function moverCartao(id, paraId){
       ? `A esteira não liga "${nomeSituacao(co.situacao_id)}" a "${nomeSituacao(paraId)}". `
         + `Daqui dá para ir a: ${destinos.map(s => s.nome).join(', ')}.`
       : `"${nomeSituacao(co.situacao_id)}" não tem saída desenhada na esteira. `
-        + 'Um gestor desenha o caminho em Configurações › Workflow do Comercial.','error');
+        + 'Um gestor desenha o caminho em Configurações › Workflow da Venda.','error');
     return;
   }
   await transicionar(co, paraId, null);
@@ -928,16 +928,16 @@ function traduzErro(j){
   const m = (j && (j.message || j.error)) || '';
   const mapa = {
     nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
-    modulo_desabilitado:     'O módulo Comercial não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
+    modulo_desabilitado:     'O módulo Venda não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
     sem_acesso:              'Este negócio não é da sua carteira.',
     sem_permissao:           'Você não tem a permissão "Editar proposta e mover na esteira". Peça ao gestor '
                            + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',
     versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. A tela foi recarregada '
                            + 'com a situação atual; confira e tente de novo.',
     transicao_nao_permitida: 'A esteira deste cliente não liga essas duas situações. Um gestor desenha o '
-                           + 'caminho em Configurações › Workflow do Comercial.',
+                           + 'caminho em Configurações › Workflow da Venda.',
     papel_nao_autorizado:    'Esta transição está reservada a outros papéis na esteira. Um gestor ajusta quem '
-                           + 'pode fazê-la em Configurações › Workflow do Comercial.',
+                           + 'pode fazê-la em Configurações › Workflow da Venda.',
     contrato_nao_assinado:   'Esta transição exige contrato assinado. Registre o contrato na aba Contrato e '
                            + 'peça a quem tem a permissão que o marque como assinado.',
     sem_titular:             'Sem titular: o cartão de Repasse exige o nome do cliente. Confira os '

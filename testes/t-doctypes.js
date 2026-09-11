@@ -2,9 +2,9 @@
 //
 // Três coisas, e as três vieram de pedido do dono:
 //
-// 1. A ORDEM das abas é a ordem do processo — Pré-análise → Comercial →
+// 1. A ORDEM das abas é a ordem do processo — Pré-análise → Venda →
 //    Repasse — em todo lugar do sistema em que os módulos aparecem juntos.
-//    Aqui o Comercial não entra: ele guarda contrato, não documento tipado.
+//    Aqui a Venda não entra: ele guarda contrato, não documento tipado.
 // 2. A LISTA PADRÃO deixou de ser invisível. Ela sempre existiu dentro da tela
 //    de Pré-análise: cliente que não configurou nada via uma lista útil em vez
 //    de um seletor vazio. O problema é que ela sumia no instante em que ele
@@ -53,9 +53,9 @@ const idsAbas = p => p.$$eval('#cfg-view-doctypes .dt-mod-btn',
       ordem.indexOf('dt-mod-PRE_ANALISE') < ordem.indexOf('dt-mod-repasse'), ordem.join(' > '));
     checa('e Registro fica depois do Repasse',
       ordem.indexOf('dt-mod-repasse') < ordem.indexOf('dt-mod-registro'), ordem.join(' > '));
-    // O Comercial guarda contrato, não documento tipado: aba dele aqui seria
+    // A Venda guarda contrato, não documento tipado: aba dele aqui seria
     // uma tela de cadastro que nenhuma outra tela lê.
-    checa('o Comercial não tem aba de tipos de documento',
+    checa('a Venda não tem aba de tipos de documento',
       !ordem.includes('dt-mod-COMERCIAL'), ordem.join(' > '));
 
     // A base falsa tem doc_types sem nenhum tipo de Pré-análise: é o cliente

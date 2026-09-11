@@ -1,4 +1,4 @@
-// ─── Painéis executivos de Pré-análise e Comercial ───────────────────────────
+// ─── Painéis executivos de Pré-análise e Venda ───────────────────────────
 //
 // POR QUE ESTE ARQUIVO EXISTE
 // O Dashboard sempre foi o do Repasse. Quando o cliente passa a ter mais de um
@@ -21,7 +21,7 @@
 // CPF, documento, nome de pessoa e renda individual NÃO entram em painel
 // executivo. As consultas daqui pedem só as colunas agregáveis: nenhuma pede
 // pessoa_id, renda_declarada, renda_familiar ou motivo. Do origem_snapshot do
-// Comercial lê-se só o ramo {credito} — o jsonb inteiro carrega nome e renda
+// Venda lê-se só o ramo {credito} — o jsonb inteiro carrega nome e renda
 // analisada dos participantes dentro dele.
 //
 // Depende de: config.js (A1), auth.js (a1HasModule) e das telas que o incluem.
@@ -238,8 +238,8 @@ async function a1PainelPreAnalise(alvo){
 
 async function pnCarregarPA(){
   const h = { headers: A1.headers() };
-  // O Comercial é outro módulo e outra licença: sem ele, a conversão para o
-  // Comercial marcaria 0% numa operação que nem tem a etapa.
+  // A Venda é outro módulo e outra licença: sem ele, a conversão para o
+  // Venda marcaria 0% numa operação que nem tem a etapa.
   const temCo = (await a1HasModule('COMERCIAL')) === true;
 
   // As situações vêm TODAS, inclusive as desativadas: um processo pode estar
@@ -274,7 +274,7 @@ async function pnCarregarPA(){
 }
 
 // Flags que encerram a pré-análise. APROVADO fica FORA desta lista de propósito:
-// a aprovada que ainda não virou Comercial é justamente o caso que precisa
+// a aprovada que ainda não virou Venda é justamente o caso que precisa
 // aparecer, e ela some da fila se for tratada como terminal.
 const PN_PA_TERMINAIS = ['REPROVADO', 'CANCELADO', 'ENCERRADO'];
 
@@ -415,7 +415,7 @@ function pnCalcPA(d){
   const aprovadas = safra.filter(p => { const c = vigente[p.id]; return c && c.status === 'APROVADO'; });
   const elegiveis = aprovadas.filter(p => temTitular[p.id]);
   const viraramCom = safra.filter(p => comPorPa[p.id]);
-  // A taxa conta só o que está DENTRO do denominador. Existe Comercial de
+  // A taxa conta só o que está DENTRO do denominador. Existe Venda de
   // pré-análise que hoje não é elegível — a aprovação foi invalidada depois, ou
   // o titular saiu — e usar a contagem cheia dava mais de 100%, que numa tela
   // executiva vira chamado de bug em vez de leitura de funil.
@@ -472,7 +472,7 @@ function pnDesenharPA(alvo){
     pnKpi({ rotulo:'Pré-análises ativas', valor: c.ativas, cor:'kpi-blue',
       sub:'estoque de agora',
       titulo:'Situação atual com flag fora de REPROVADO, CANCELADO e ENCERRADO; sem situação conta como ativa. '
-           + 'APROVADO fica DENTRO: é o caso aprovado e ainda sem Comercial que precisa aparecer. '
+           + 'APROVADO fica DENTRO: é o caso aprovado e ainda sem Venda que precisa aparecer. '
            + 'É estoque do momento, não do período — o schema não guarda histórico de estoque para comparar com o período anterior.' }),
 
     pnKpi({ rotulo:'Taxa de aprovação', valor: pnPct(c.taxaAprov), cor:'kpi-green',
@@ -506,9 +506,9 @@ function pnDesenharPA(alvo){
   // Conversão só existe com os dois módulos ligados. Sem COMERCIAL, a tabela
   // não devolve linha e o cartão marcaria 0% numa operação que nem tem a etapa.
   if (d.temCo) {
-    kpis.push(pnKpi({ rotulo:'Conversão → Comercial', valor: pnPct(c.conversao), cor:'kpi-green',
+    kpis.push(pnKpi({ rotulo:'Conversão → Venda', valor: pnPct(c.conversao), cor:'kpi-green',
       sub: c.elegiveis ? `${c.elegiveisViraram} de ${c.elegiveis} elegíveis` : 'nenhuma elegível no período',
-      titulo:'pré-análises que viraram Comercial ÷ elegíveis, onde elegível = decisão vigente APROVADO E participante TITULAR — exatamente a regra de a1_pa_pode_criar_comercial. '
+      titulo:'pré-análises que viraram Venda ÷ elegíveis, onde elegível = decisão vigente APROVADO E participante TITULAR — exatamente a regra de a1_pa_pode_criar_comercial. '
            + `Safra criada no período (${per}).` }));
   }
 
@@ -525,11 +525,11 @@ function pnDesenharPA(alvo){
     { nome:'Decisão aprovada e válida', n:f.aprovadas,
       titulo:"status='APROVADO' na maior versão; INVALIDADA não conta",
       tempo:'—', tempoTitulo:'mesma marca de tempo da etapa anterior (decidido_em)' },
-    { nome:'Elegível ao Comercial', n:f.elegiveis,
+    { nome:'Elegível à Venda', n:f.elegiveis,
       titulo:'aprovada e com participante de papel TITULAR (regra de a1_pa_pode_criar_comercial)',
       tempo:'—', tempoTitulo:'elegibilidade é uma regra sobre o estado atual, não um evento com data' }
   ];
-  if (d.temCo) etapas.push({ nome:'Comercial criado', n:f.comerciais,
+  if (d.temCo) etapas.push({ nome:'Venda criada', n:f.comerciais,
     titulo:'a1_comerciais.pre_analise_id preenchido',
     tempo: pnDias(f.p50Handoff), tempoTitulo:"mediana entre a decisão e o evento 'criado_da_pre_analise' em a1_co_eventos" });
 
@@ -586,13 +586,13 @@ function pnNaoCalculavel(itens){
 async function a1PainelComercial(alvo){
   pnCSS();
   const lic = await a1HasModule('COMERCIAL');
-  if (lic !== true) { pnSemLicenca(alvo, 'Comercial', lic === null); return; }
+  if (lic !== true) { pnSemLicenca(alvo, 'Venda', lic === null); return; }
 
-  alvo.innerHTML = pnCarregando('Comercial');
+  alvo.innerHTML = pnCarregando('Venda');
   try {
     if (!PN.co) PN.co = await pnCarregarCO();
   } catch {
-    alvo.innerHTML = pnAviso('Não foi possível carregar o painel Comercial.');
+    alvo.innerHTML = pnAviso('Não foi possível carregar o painel Venda.');
     return;
   }
   pnDesenharCO(alvo);
@@ -812,7 +812,7 @@ function pnDesenharCO(alvo){
 
   const f = c.funil;
   const etapas = [
-    { nome:'Comercial criado', n:f.criados, titulo:'a1_comerciais.criado_em dentro do período', tempo:'—', tempoTitulo:'é a origem da contagem' },
+    { nome:'Venda criada', n:f.criados, titulo:'a1_comerciais.criado_em dentro do período', tempo:'—', tempoTitulo:'é a origem da contagem' },
     { nome:'Proposta preenchida', n:f.proposta, titulo:'proposta contém valor_venda',
       tempo:'—', tempoTitulo:'proposta é jsonb sem carimbo de tempo: não há quando foi preenchida' },
     { nome:'Contrato gerado', n:f.contrato, titulo:'contrato em GERADO, AGUARDANDO_ASSINATURA ou ASSINADO',
@@ -827,7 +827,7 @@ function pnDesenharCO(alvo){
   const fila = c.fila.slice(0, 12);
   const tabela = fila.length ? `<div class="pn-tbl-wrap"><table class="pn-tbl">
     <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Valor</th><th style="text-align:right">Na situação</th></tr></thead>
-    <tbody>${fila.map(l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila do Comercial">
+    <tbody>${fila.map(l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila da Venda">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>
@@ -838,10 +838,10 @@ function pnDesenharCO(alvo){
 
   alvo.innerHTML = `
     <div class="pn-topo">
-      <div class="pn-titulo">Painel Comercial<small>${pnEsc(per)} · dados agregados, sem dado pessoal</small></div>
+      <div class="pn-titulo">Painel Venda<small>${pnEsc(per)} · dados agregados, sem dado pessoal</small></div>
       ${pnSeletorPeriodo('COMERCIAL')}
     </div>
-    ${c.temCancelamento ? '' : pnAviso('A esteira do Comercial não tem situação com flag CANCELADO. Sem ela não há como medir win rate — o denominador ficaria igual ao numerador.')}
+    ${c.temCancelamento ? '' : pnAviso('A esteira da Venda não tem situação com flag CANCELADO. Sem ela não há como medir win rate — o denominador ficaria igual ao numerador.')}
     <div class="kpi-grid" id="pn-kpis-co" style="grid-template-columns:repeat(4,1fr)">${kpis.join('')}</div>
     ${pnPainelBox('Funil — safra criada no período',
       'Volume por etapa e mediana de dias entre os marcos com carimbo de tempo. Proposta preenchida não tem data no schema, por isso fica sem tempo.',
@@ -851,7 +851,7 @@ function pnDesenharCO(alvo){
       `<div class="pn-faixas">${c.faixas.map((n, i) =>
         `<div class="pn-faixa" title="${pnEsc(n + ' comercial(is) ativos há ' + rotFaixas[i] + ' na situação atual')}"><b>${pnEsc(String(n))}</b><span>${pnEsc(rotFaixas[i])}</span></div>`).join('')}</div>`)}
     ${pnPainelBox('Fila por tempo na situação',
-      'Os 12 mais parados. Clique para abrir a fila completa do Comercial.', tabela)}
+      'Os 12 mais parados. Clique para abrir a fila completa da Venda.', tabela)}
     ${pnNaoCalculavel(['Meta, cobertura e forecast — não existe cadastro de meta por cliente, empreendimento ou corretor.',
       'Pipeline ponderado — a1_co_situacoes não tem probabilidade por etapa.',
       'Motivo de perda — não há campo de motivo em a1_comerciais nem catálogo de motivos.',

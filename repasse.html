@@ -446,7 +446,7 @@
     <div class="tab-btn active">Dashboard</div>
 
     <!-- A ordem da barra é a ordem do processo, e vale em todo o sistema:
-         Pré-análise → Comercial → Repasse. Os dois primeiros nascem escondidos e
+         Pré-análise → Venda → Repasse. Os dois primeiros nascem escondidos e
          só aparecem quando o superadmin libera a licença para este cliente. -->
     <div class="tab-group" id="grupo-pre-analise" style="display:none">
       <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
@@ -456,7 +456,7 @@
       </div>
     </div>
     <div class="tab-group" id="grupo-comercial" style="display:none">
-      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <a class="tab-btn" id="link-comercial" href="">Venda <span class="tab-caret">▾</span></a>
       <div class="tab-dd">
         <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
         <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
@@ -1856,7 +1856,7 @@ function applyCustomLogo() {
 // Com um módulo só, o seletor não aparece. É o caso de todos os clientes de
 // hoje, e é proposital: um seletor de uma opção só é ruído, e o Dashboard
 // continua exatamente o que sempre foi.
-const PAINEL_ROTULO = { PRE_ANALISE:'Pré-análise', COMERCIAL:'Comercial', repasse:'Repasse' };
+const PAINEL_ROTULO = { PRE_ANALISE:'Pré-análise', COMERCIAL:'Venda', repasse:'Repasse' };
 const PAINEL_CHAVE_MEM = 'a1_painel_dash';
 
 async function montarSeletorPainel(){
@@ -1919,7 +1919,7 @@ async function init() {
   try { await a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
 
-  // O rótulo sai de js/modulo-shell.js, o mesmo que a Pré-análise e o Comercial
+  // O rótulo sai de js/modulo-shell.js, o mesmo que a Pré-análise e a Venda
   // usam. Aqui havia uma cópia que chamava de "Correspondente" todo parceiro
   // que não fosse despachante — o corretor aparecia com o papel de outra pessoa.
   const roleLabel = a1RotuloPapel(G.user);

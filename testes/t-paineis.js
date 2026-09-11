@@ -1,5 +1,5 @@
 // Seletor de painel do Dashboard e os painéis executivos de Pré-análise e
-// Comercial (js/paineis.js).
+// Venda (js/paineis.js).
 //
 // A primeira seção é a que não se negocia: o cliente que só tem Repasse — que é
 // TODO cliente hoje — precisa ver o Dashboard exatamente como sempre viu. Sem
@@ -98,8 +98,8 @@ function kpi(lista, rotulo) {
 
     checa('o seletor de painel aparece', await p.locator('#seletor-painel').isVisible());
     const ordem = await p.$$eval('#seletor-painel-botoes button', bs => bs.map(x => x.textContent.trim()));
-    checa('com os botões na ordem da jornada: Pré-análise, Comercial, Repasse',
-      JSON.stringify(ordem) === JSON.stringify(['Pré-análise', 'Comercial', 'Repasse']),
+    checa('com os botões na ordem da jornada: Pré-análise, Venda, Repasse',
+      JSON.stringify(ordem) === JSON.stringify(['Pré-análise', 'Venda', 'Repasse']),
       JSON.stringify(ordem));
     checa('e abre no Repasse, que é onde o cliente já trabalhava',
       (await p.locator('#painel-repasse').isVisible())
@@ -118,7 +118,7 @@ function kpi(lista, rotulo) {
     checa('o painel desenha os oito KPIs da Pré-análise', pa.length === 8, 'foram ' + pa.length);
     checa('entradas no período conta as 4 pré-análises', kpi(pa, 'Entradas no período') === '4',
       kpi(pa, 'Entradas no período'));
-    checa('ativas conta as 4 — a aprovada sem Comercial continua na conta',
+    checa('ativas conta as 4 — a aprovada sem Venda continua na conta',
       kpi(pa, 'Pré-análises ativas') === '4', kpi(pa, 'Pré-análises ativas'));
     // 2 aprovadas e 1 reprovada decididas no período; a EM_ANALISE fica fora.
     checa('a taxa de aprovação conta uma decisão por pré-análise',
@@ -135,12 +135,12 @@ function kpi(lista, rotulo) {
     checa('o reenvio mede sobre quem já enviou alguma coisa',
       kpi(pa, 'Reenvio documental') === '33%', kpi(pa, 'Reenvio documental'));
     // 2 elegíveis (aprovada + titular), 1 virou comercial.
-    checa('a conversão para o Comercial usa a regra de a1_pa_pode_criar_comercial',
-      kpi(pa, 'Conversão → Comercial') === '50%', kpi(pa, 'Conversão → Comercial'));
+    checa('a conversão para a Venda usa a regra de a1_pa_pode_criar_comercial',
+      kpi(pa, 'Conversão → Venda') === '50%', kpi(pa, 'Conversão → Venda'));
 
     const funilPA = await p.locator('#pn-funil-pa').textContent();
     checa('o funil da Pré-análise sai na ordem contratada',
-      /Pré-análise criada[\s\S]*Dossiê sem pendência[\s\S]*Decisão de crédito concluída[\s\S]*Decisão aprovada e válida[\s\S]*Elegível ao Comercial[\s\S]*Comercial criado/.test(funilPA));
+      /Pré-análise criada[\s\S]*Dossiê sem pendência[\s\S]*Decisão de crédito concluída[\s\S]*Decisão aprovada e válida[\s\S]*Elegível à Venda[\s\S]*Venda criada/.test(funilPA));
     checa('e o que não tem carimbo de tempo no banco fica sem tempo, não estimado',
       (funilPA.match(/—/g) || []).length >= 3, funilPA.slice(0, 120));
 
@@ -168,13 +168,13 @@ function kpi(lista, rotulo) {
       (await p.evaluate(() => performance.getEntriesByType('resource').length)) === antes);
     checa('e o painel continua de pé', (await p.locator('#pn-kpis-pa .kpi-card').count()) === 8);
 
-    // ── Comercial ──
+    // ── Venda ──
     await p.click('#seletor-painel-botoes button[data-painel="COMERCIAL"]');
     await p.waitForSelector('#pn-kpis-co', { timeout: 5000 });
     await p.waitForTimeout(400);
 
     const co = await lerKpis(p, 'pn-kpis-co');
-    checa('o painel Comercial desenha os oito KPIs', co.length === 8, 'foram ' + co.length);
+    checa('o painel Venda desenha os oito KPIs', co.length === 8, 'foram ' + co.length);
     checa('comerciais ativos conta o negócio aberto', kpi(co, 'Comerciais ativos') === '1',
       kpi(co, 'Comerciais ativos'));
     checa('o pipeline sai em reais, a partir dos centavos do banco',
@@ -220,7 +220,7 @@ function kpi(lista, rotulo) {
   console.log('\n== SÓ UM DOS DOIS MÓDULOS NOVOS ==');
   {
     // Com Pré-análise e Repasse, o seletor tem duas opções e o cartão de
-    // conversão para o Comercial não pode aparecer: sem o módulo, a1_comerciais
+    // conversão para a Venda não pode aparecer: sem o módulo, a1_comerciais
     // não devolve linha e o cartão marcaria 0% numa operação que nem tem a etapa.
     const { b, p, erros } = await abrir('repasse.html', { modulos: ['PRE_ANALISE'] });
     const ordem = await p.$$eval('#seletor-painel-botoes button', bs => bs.map(x => x.textContent.trim()));
@@ -231,9 +231,9 @@ function kpi(lista, rotulo) {
     await p.waitForSelector('#pn-kpis-pa', { timeout: 5000 });
     await p.waitForTimeout(400);
     const pa = await lerKpis(p, 'pn-kpis-pa');
-    checa('sem o Comercial, o cartão de conversão não é desenhado',
+    checa('sem a Venda, o cartão de conversão não é desenhado',
       pa.length === 7 && !pa.some(x => /Conversão/.test(x.rot)), JSON.stringify(pa.map(x => x.rot)));
-    checa('e a tabela do Comercial não é consultada',
+    checa('e a tabela da Venda não é consultada',
       await p.evaluate(() => !performance.getEntriesByType('resource')
         .some(r => /a1_comerciais|a1_co_/.test(r.name))));
     checa('nenhum XSS', (await p.evaluate(() => window.__XSS || 0)) === 0);

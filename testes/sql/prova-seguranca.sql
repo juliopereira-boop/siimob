@@ -1179,6 +1179,378 @@ select checa('nem editar_repasses',
       and coalesce(qual,'')||coalesce(with_check,'') like '%editar_repasses%') = 0);
 set role anon;
 
+-- ═══ EXCLUSÃO DEFINITIVA ════════════════════════════════════════════════════
+--
+-- A exclusão não tem volta, então cada verificação daqui existe para um jeito
+-- concreto de alguém apagar o que não devia:
+--   · parceiro apagando (a tela esconde o botão; o banco é que tem de recusar);
+--   · gestor de um cliente apagando processo do vizinho;
+--   · id errado apagando "o que estiver por perto";
+--   · pré-análise que já virou Comercial sumindo e deixando o outro módulo
+--     apontando para o vazio;
+--   · e a auditoria: se ela não ficar gravada, ou se puder ser editada depois,
+--     a exclusão vira um buraco sem testemunha.
+reset role;
+
+insert into a1_developments (id, tenant_id, name) values
+  ('d0000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Residencial das Provas')
+on conflict (id) do nothing;
+
+-- O processo de Repasse que VAI ser apagado, com filhas de verdade: sem elas a
+-- prova de cascata contaria zero antes e zero depois e não diria nada.
+insert into a1_cases (id, tenant_id, module_key, stage_id, stage_name,
+                      client_name, development, block, unit) values
+  ('ea000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'repasse','c0000000-0000-0000-0000-000000000001','Entrada',
+   'Cliente que Sai','Residencial das Provas','B1','101'),
+  -- Este é o do Comercial: serve para provar a recusa nos dois sentidos.
+  ('eb000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'repasse','c0000000-0000-0000-0000-000000000001','Entrada',
+   'Cliente do Comercial','Residencial das Provas',null,'202');
+insert into a1_stage_history (tenant_id, case_id, stage_name) values
+  ('11111111-1111-1111-1111-111111111111','ea000000-0000-0000-0000-000000000001','Entrada'),
+  ('11111111-1111-1111-1111-111111111111','ea000000-0000-0000-0000-000000000001','Análise');
+insert into a1_events (tenant_id, case_id, type, description) values
+  ('11111111-1111-1111-1111-111111111111','ea000000-0000-0000-0000-000000000001',
+   'comment','comentário que some junto');
+insert into a1_emails (id, tenant_id, case_id, to_email, subject, body) values
+  ('e9000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'ea000000-0000-0000-0000-000000000001','a@x.com','Aviso','corpo');
+
+-- Do cliente VIZINHO. É o registro que ninguém daqui pode enxergar nem apagar.
+insert into a1_cases (id, tenant_id, module_key, stage_id, stage_name, client_name) values
+  ('ec000000-0000-0000-0000-000000000009','22222222-2222-2222-2222-222222222222',
+   'repasse','c0000000-0000-0000-0000-000000000009','Entrada B','Cliente do Vizinho');
+
+-- Pré-análise LIMPA (some inteira) e pré-análise que já virou Comercial.
+insert into a1_pa_pessoas (id, tenant_id, nome, documento) values
+  ('e2000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'Titular que Fica','11122233344');
+insert into a1_pre_analises (id, tenant_id, empreendimento_id, unidade, corretor_id, situacao_id) values
+  ('e3000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001','101','b0000000-0000-0000-0000-000000000001',
+   '50000000-0000-0000-0000-000000000001'),
+  ('e3000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001','202','b0000000-0000-0000-0000-000000000001',
+   '50000000-0000-0000-0000-000000000001');
+insert into a1_pa_participantes (tenant_id, pre_analise_id, pessoa_id, papel) values
+  ('11111111-1111-1111-1111-111111111111','e3000000-0000-0000-0000-000000000001',
+   'e2000000-0000-0000-0000-000000000001','TITULAR');
+insert into a1_pa_documentos (tenant_id, pre_analise_id, tipo, storage_key, status) values
+  ('11111111-1111-1111-1111-111111111111','e3000000-0000-0000-0000-000000000001',
+   'RG','t1/pre-analise/e3/rg.pdf','ENVIADO');
+insert into a1_pa_analises_credito (tenant_id, pre_analise_id, versao, status) values
+  ('11111111-1111-1111-1111-111111111111','e3000000-0000-0000-0000-000000000001',1,'APROVADO');
+
+insert into a1_comerciais (id, tenant_id, codigo, pre_analise_id, empreendimento_id,
+                           unidade, situacao_id, repasse_case_id, origem_snapshot) values
+  ('e4000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'CO-PROVA','e3000000-0000-0000-0000-000000000002',
+   'd0000000-0000-0000-0000-000000000001','202',
+   '60000000-0000-0000-0000-000000000001','eb000000-0000-0000-0000-000000000002',
+   '{"participantes":[{"nome":"Titular do Comercial"}]}'::jsonb);
+insert into a1_co_contratos (tenant_id, comercial_id, versao, status) values
+  ('11111111-1111-1111-1111-111111111111','e4000000-0000-0000-0000-000000000001',1,'GERADO');
+
+set role anon;
+
+-- ─── Procurar mostra a ficha ANTES de qualquer botão ────────────────────────
+select teste_entrar('tk-gestor');
+select checa('gestor acha o repasse pelo id inteiro',
+  (select count(*) from a1_excluir_procurar('ea000000-0000-0000-0000-000000000001')) = 1);
+-- O código que a pessoa copia do cartão é o pedaço curto; se a busca só
+-- aceitasse o uuid inteiro, a tela pediria um dado que ninguém tem à mão.
+select checa('e acha pelo pedaço curto que aparece no cartão',
+  (select registro_id from a1_excluir_procurar('ea000000'))
+  = 'ea000000-0000-0000-0000-000000000001');
+-- Conteúdo, não quantidade: é o nome do cliente e o NOME do empreendimento que
+-- fazem a pessoa reconhecer o processo. Devolver o uuid do empreendimento seria
+-- pedir para ela conferir uma coisa que não sabe ler.
+select checa('a ficha traz cliente, empreendimento e unidade legíveis',
+  (select titulo || ' | ' || empreendimento || ' | ' || unidade
+     from a1_excluir_procurar('ea000000-0000-0000-0000-000000000001'))
+  = 'Cliente que Sai | Residencial das Provas | B1 101');
+select checa('e traz contado o que vai junto (2 no histórico, 1 evento)',
+  (select (filhos->>'historico_de_etapas')::int = 2 and (filhos->>'eventos')::int = 1
+     from a1_excluir_procurar('ea000000-0000-0000-0000-000000000001')));
+select checa('a pré-análise é achada pelo código do cartão',
+  (select modulo from a1_excluir_procurar('e3000000-0000-0000-0000-000000000001'))
+  = 'PRE_ANALISE');
+select checa('o comercial é achado pelo código dele, CO-PROVA',
+  (select registro_id from a1_excluir_procurar('CO-PROVA'))
+  = 'e4000000-0000-0000-0000-000000000001');
+select checa('id que não existe simplesmente não acha nada',
+  (select count(*) from a1_excluir_procurar('ffffffff-ffff-ffff-ffff-ffffffffffff')) = 0);
+-- Prefixo ambíguo devolve TODOS os candidatos. Um `limit 1` aqui escolheria por
+-- sorte qual processo a pessoa vai apagar — e ela nem saberia que havia outro.
+select checa('prefixo que casa com dois registros devolve os dois',
+  (select count(*) from a1_excluir_procurar('e3000000')) = 2);
+-- Prefixo curto casaria com processo demais. Recusar é melhor que devolver 40
+-- linhas numa tela cujo próximo botão apaga para sempre.
+select checa('prefixo curto demais é recusado em vez de casar com tudo',
+  tenta($$select * from a1_excluir_procurar('ea')$$) is not null);
+
+-- ─── Parceiro NÃO apaga, e nem enxerga a ficha ──────────────────────────────
+-- Ana é dona da pré-análise e1000000/e3000000: se a regra fosse "quem edita
+-- pode apagar", ela passaria. É de propósito que o processo seja dela.
+select teste_entrar('tk-ana');
+select checa('corretor não enxerga a ficha nem do processo que é dele',
+  (select count(*) from a1_excluir_procurar('e3000000-0000-0000-0000-000000000001')) = 0);
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('PRE_ANALISE',
+              'e3000000-0000-0000-0000-000000000001','apagar porque sim, motivo longo')$$);
+  perform checa('corretor NÃO apaga pré-análise pelo RPC', e is not null,
+                coalesce(e,'APAGOU — a exclusão definitiva vazou para parceiro'));
+end $blk$;
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'ea000000-0000-0000-0000-000000000001','apagar porque sim, motivo longo')$$);
+  perform checa('corretor NÃO apaga repasse pelo RPC', e is not null,
+                coalesce(e,'APAGOU'));
+end $blk$;
+reset role;
+select checa('e depois das duas tentativas os registros continuam lá',
+  (select count(*) from a1_pre_analises where id = 'e3000000-0000-0000-0000-000000000001') = 1
+  and (select count(*) from a1_cases where id = 'ea000000-0000-0000-0000-000000000001') = 1);
+set role anon;
+
+-- ─── Nem o gestor do cliente vizinho ────────────────────────────────────────
+select teste_entrar('tk-outro');
+select checa('gestor do outro cliente não enxerga a ficha daqui',
+  (select count(*) from a1_excluir_procurar('ea000000-0000-0000-0000-000000000001')) = 0);
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'ea000000-0000-0000-0000-000000000001','limpeza de base do meu cliente')$$);
+  perform checa('gestor do outro cliente NÃO apaga processo daqui', e is not null,
+                coalesce(e,'APAGOU — isolamento por tenant furado na exclusão'));
+end $blk$;
+reset role;
+select checa('e o processo do vizinho continua intacto dos dois lados',
+  (select count(*) from a1_cases where id = 'ea000000-0000-0000-0000-000000000001') = 1
+  and (select count(*) from a1_cases where id = 'ec000000-0000-0000-0000-000000000009') = 1);
+set role anon;
+
+-- ─── Justificativa e id inexistente ─────────────────────────────────────────
+select teste_entrar('tk-gestor');
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'ea000000-0000-0000-0000-000000000001','erro')$$);
+  perform checa('sem justificativa de verdade, não apaga', e is not null, coalesce(e,'APAGOU'));
+end $blk$;
+do $blk$ declare e text; n int; begin
+  select count(*) into n from a1_cases;
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'ffffffff-ffff-ffff-ffff-ffffffffffff','registro duplicado na base')$$);
+  perform checa('id inexistente recusa e não apaga nada por perto', e is not null
+                and n = (select count(*) from a1_cases), coalesce(e,'APAGOU'));
+end $blk$;
+
+-- ─── A recusa que protege o outro módulo ────────────────────────────────────
+select checa('a ficha da pré-análise que virou Comercial já avisa do impedimento',
+  (select impedimento from a1_excluir_procurar('e3000000-0000-0000-0000-000000000002'))
+  like '%CO-PROVA%');
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('PRE_ANALISE',
+              'e3000000-0000-0000-0000-000000000002','cliente desistiu do negócio')$$);
+  perform checa('pré-análise que já gerou Comercial NÃO é apagada', e is not null
+                and e like '%CO-PROVA%', coalesce(e,'APAGOU e deixou o Comercial órfão'));
+end $blk$;
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'eb000000-0000-0000-0000-000000000002','venda cancelada em cartório')$$);
+  perform checa('e o repasse que NASCEU de um Comercial também é recusado',
+                e is not null and e like '%CO-PROVA%',
+                coalesce(e,'APAGOU e deixou o Comercial apontando para o vazio'));
+end $blk$;
+
+-- O par Comercial/repasse já se trancou aqui: a versão anterior recusava os
+-- DOIS lados, e cada mensagem mandava apagar primeiro o que o outro lado
+-- acabara de recusar. Quem aponta é o Comercial, então é ele que sai primeiro
+-- — e cada passo deixa a sua própria justificativa na auditoria.
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('COMERCIAL',
+              'e4000000-0000-0000-0000-000000000001','venda cancelada em cartório')$$);
+  perform checa('o Comercial, para quem ninguém aponta, sai', e is null, coalesce(e,''));
+end $blk$;
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'eb000000-0000-0000-0000-000000000002','venda cancelada em cartório')$$);
+  perform checa('e aí o repasse dele passa a poder sair', e is null, coalesce(e,''));
+end $blk$;
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('PRE_ANALISE',
+              'e3000000-0000-0000-0000-000000000002','venda cancelada em cartório')$$);
+  perform checa('e a pré-análise de origem também', e is null, coalesce(e,''));
+end $blk$;
+
+-- ─── A exclusão de verdade, e o que vai junto ───────────────────────────────
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('PRE_ANALISE',
+              'e3000000-0000-0000-0000-000000000001','duplicidade: mesma unidade lançada duas vezes')$$);
+  perform checa('gestor apaga a pré-análise', e is null, coalesce(e,''));
+end $blk$;
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('repasse',
+              'ea000000-0000-0000-0000-000000000001','duplicidade: mesma unidade lançada duas vezes')$$);
+  perform checa('e apaga o repasse', e is null, coalesce(e,''));
+end $blk$;
+
+reset role;
+select checa('a pré-análise sumiu com participantes, documentos e análises',
+  (select count(*) from a1_pre_analises where id = 'e3000000-0000-0000-0000-000000000001') = 0
+  and (select count(*) from a1_pa_participantes where pre_analise_id = 'e3000000-0000-0000-0000-000000000001') = 0
+  and (select count(*) from a1_pa_documentos   where pre_analise_id = 'e3000000-0000-0000-0000-000000000001') = 0
+  and (select count(*) from a1_pa_analises_credito where pre_analise_id = 'e3000000-0000-0000-0000-000000000001') = 0);
+-- A pessoa é cadastro compartilhado: ela aparece em outras pré-análises e não
+-- pode sumir de carona com uma delas.
+select checa('mas a PESSOA continua no cadastro',
+  (select count(*) from a1_pa_pessoas where id = 'e2000000-0000-0000-0000-000000000001') = 1);
+select checa('o repasse sumiu com histórico de etapas e eventos',
+  (select count(*) from a1_cases where id = 'ea000000-0000-0000-0000-000000000001') = 0
+  and (select count(*) from a1_stage_history where case_id = 'ea000000-0000-0000-0000-000000000001') = 0
+  and (select count(*) from a1_events where case_id = 'ea000000-0000-0000-0000-000000000001') = 0);
+-- E-mail na fila não é apagado: só perde o vínculo. Se um dia virar exclusão,
+-- que seja por decisão escrita, não por efeito colateral desta função.
+select checa('o e-mail na fila continua existindo, só sem vínculo',
+  (select count(*) from a1_emails
+    where id = 'e9000000-0000-0000-0000-000000000001' and case_id is null) = 1);
+set role anon;
+
+-- ─── A auditoria ────────────────────────────────────────────────────────────
+select teste_entrar('tk-gestor');
+select checa('toda exclusão deixou linha na auditoria (5 neste bloco)',
+  (select count(*) from a1_exclusoes) = 5);
+select checa('com a justificativa digitada, palavra por palavra',
+  (select count(*) from a1_exclusoes
+    where justificativa = 'duplicidade: mesma unidade lançada duas vezes') = 2);
+-- O retrato é o que responde "o que tinha nesse cartão" meses depois, quando
+-- não há mais registro nenhum para consultar.
+select checa('e com o retrato do que foi apagado, não só o id',
+  (select retrato->>'client_name' from a1_exclusoes
+    where registro_id = 'ea000000-0000-0000-0000-000000000001') = 'Cliente que Sai');
+select checa('o retrato da pré-análise guarda o titular e o documento enviado',
+  (select retrato #>> '{documentos,0,storage_key}' from a1_exclusoes
+    where registro_id = 'e3000000-0000-0000-0000-000000000001') = 't1/pre-analise/e3/rg.pdf');
+select checa('e quem apagou fica nomeado',
+  (select ator_nome || '/' || ator_papel from a1_exclusoes
+    where registro_id = 'ea000000-0000-0000-0000-000000000001') = 'Gestor/owner');
+
+select teste_entrar('tk-ana');
+select checa('corretor não lê a auditoria de exclusões',
+  (select count(*) from a1_exclusoes) = 0);
+select teste_entrar('tk-outro');
+select checa('e o cliente vizinho também não',
+  (select count(*) from a1_exclusoes) = 0);
+
+-- Se o mesmo gestor que apaga pudesse reescrever a justificativa depois, a
+-- trilha deixaria de valer como trilha.
+select teste_entrar('tk-gestor');
+select checa('a auditoria não se edita',
+  tenta($$update a1_exclusoes set justificativa = 'outro motivo'$$) is not null);
+select checa('nem se apaga',
+  tenta($$delete from a1_exclusoes$$) is not null);
+select checa('e nem se inventa linha nela',
+  tenta($$insert into a1_exclusoes (tenant_id, modulo, registro_id, justificativa)
+          values ('11111111-1111-1111-1111-111111111111','repasse',
+                  'ffffffff-ffff-ffff-ffff-ffffffffffff','forjado')$$) is not null);
+
+-- ─── Sem licença do módulo, a exclusão nem enxerga ──────────────────────────
+-- Mesma regra do resto do sistema: módulo desligado é tabela que não responde.
+reset role;
+insert into a1_pre_analises (id, tenant_id, empreendimento_id, corretor_id, situacao_id) values
+  ('e3000000-0000-0000-0000-00000000000f','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001',
+   '50000000-0000-0000-0000-000000000001');
+delete from a1_tenant_modules
+ where tenant_id = '11111111-1111-1111-1111-111111111111' and module_key = 'PRE_ANALISE';
+set role anon;
+select teste_entrar('tk-gestor');
+select checa('sem licença de Pré-análise, a busca não devolve a pré-análise',
+  (select count(*) from a1_excluir_procurar('e3000000-0000-0000-0000-00000000000f')) = 0);
+do $blk$ declare e text; begin
+  e := tenta($$select a1_excluir_definitivo('PRE_ANALISE',
+              'e3000000-0000-0000-0000-00000000000f','limpeza de base do cliente')$$);
+  perform checa('e a exclusão é recusada por falta de licença', e is not null, coalesce(e,'APAGOU'));
+end $blk$;
+reset role;
+select checa('e a pré-análise do módulo desligado continua lá, intocada',
+  (select count(*) from a1_pre_analises where id = 'e3000000-0000-0000-0000-00000000000f') = 1);
+insert into a1_tenant_modules (tenant_id, module_key)
+values ('11111111-1111-1111-1111-111111111111','PRE_ANALISE') on conflict do nothing;
+set role anon;
+
+-- ─── 22. DE QUEM É A PRÉ-ANÁLISE: O CORRETOR E A IMOBILIÁRIA ─────────────────
+-- sql/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql
+--
+-- O relato: "o gestor não consegue escolher o corretor". A metade da tela era
+-- não haver campo; a metade do banco é que, para o gestor, a1_ator() devolve o
+-- id de a1_users — e o gatilho gravava ESSE uuid em corretor_id, que aponta
+-- para a1_partners. O processo nascia no nome de alguém que não existe como
+-- parceiro: some do filtro por corretor e não tem dono de verdade.
+--
+-- Do outro lado, a imobiliária do corretor: ele está vinculado a uma só
+-- (extra.imobiliaria_id) e não faz sentido gravar outra. A tela passou a
+-- preencher; aqui o banco fecha a porta de trás.
+reset role;
+insert into a1_partners (id, tenant_id, name, cpf, type) values
+  ('b0000000-0000-0000-0000-0000000000f1','11111111-1111-1111-1111-111111111111',
+   'Imob Alfa','10000000091','imobiliaria'),
+  -- Corretor do OUTRO cliente. Sem ele, "corretor de outro cliente é recusado"
+  -- não teria como acontecer e passaria à toa.
+  ('b0000000-0000-0000-0000-0000000000f2','22222222-2222-2222-2222-222222222222',
+   'Corretor de outro cliente','10000000092','corretor')
+on conflict do nothing;
+update a1_partners
+   set extra = jsonb_build_object('imobiliaria_id','b0000000-0000-0000-0000-0000000000f1')
+ where id = 'b0000000-0000-0000-0000-000000000001';
+set role anon;
+
+select teste_entrar('tk-gestor');
+insert into a1_pre_analises (id, tenant_id, empreendimento_id) values
+  ('f1000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001');
+select checa('gestor que não informa corretor deixa a coluna vazia, e não um uuid de mentira',
+  (select corretor_id from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000001') is null,
+  (select corretor_id::text from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000001'));
+select checa('e o id do USUÁRIO dele não vai para a coluna de PARCEIRO',
+  (select corretor_id from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000001')
+  is distinct from 'a0000000-0000-0000-0000-000000000001');
+
+insert into a1_pre_analises (id, tenant_id, empreendimento_id, corretor_id) values
+  ('f1000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001');
+select checa('o gestor manda na carteira: o corretor que ele escolheu é o que fica',
+  (select corretor_id from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000002') = 'b0000000-0000-0000-0000-000000000001');
+
+select checa('corretor de outro cliente é recusado na criação',
+  tenta($$insert into a1_pre_analises (tenant_id, empreendimento_id, corretor_id)
+          values ('11111111-1111-1111-1111-111111111111',
+                  'd0000000-0000-0000-0000-000000000001',
+                  'b0000000-0000-0000-0000-0000000000f2')$$) like '%corretor_de_outro_cliente%');
+select checa('e na troca de dono também',
+  tenta($$update a1_pre_analises set corretor_id = 'b0000000-0000-0000-0000-0000000000f2'
+           where id = 'f1000000-0000-0000-0000-000000000002'$$) like '%corretor_de_outro_cliente%');
+
+-- Ana tem imobiliária no cadastro e manda OUTRA no POST, que é o que um
+-- navegador consegue fazer com a chave pública.
+select teste_entrar('tk-ana');
+insert into a1_pre_analises (id, tenant_id, empreendimento_id, imobiliaria_id) values
+  ('f1000000-0000-0000-0000-000000000003','11111111-1111-1111-1111-111111111111',
+   'd0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002');
+select checa('a imobiliária gravada é a do cadastro do corretor, não a que ele mandou',
+  (select imobiliaria_id from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000003') = 'b0000000-0000-0000-0000-0000000000f1',
+  (select imobiliaria_id::text from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000003'));
+select checa('e o dono continua sendo ele mesmo',
+  (select corretor_id from a1_pre_analises
+    where id = 'f1000000-0000-0000-0000-000000000003') = 'b0000000-0000-0000-0000-000000000001');
+
 -- =============================================================================
 \o
 \echo ''

@@ -25,7 +25,7 @@
 const A1_MODULOS = [
   { chave: 'PRE_ANALISE', rotulo: 'Pré-análise', sempre: false,
     vistas: [['Andamento', 'pre-analise'], ['Listagem', 'pre-analise-listagem']] },
-  { chave: 'COMERCIAL',   rotulo: 'Comercial',   sempre: false,
+  { chave: 'COMERCIAL',   rotulo: 'Venda',   sempre: false,
     vistas: [['Andamento', 'comercial'], ['Listagem', 'comercial-listagem']] },
   { chave: 'repasse',     rotulo: 'Repasse',     sempre: false,
     vistas: [['Andamento', 'andamento'], ['Listagem', 'listagem']] },

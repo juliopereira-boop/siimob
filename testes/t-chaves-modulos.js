@@ -1,4 +1,4 @@
-// As chaves da Pré-análise e do Comercial mandam na tela.
+// As chaves da Pré-análise e da Venda mandam na tela.
 //
 // O relato: o gestor marcou "Criar pré-análise" no cadastro de um corretor e
 // nenhum botão apareceu. A causa não era permissão faltando — era a tela
@@ -98,12 +98,12 @@ const CORRETOR = { pa_ver:true, pa_criar:true, co_ver:true };
   }
   {
     const { b, p, erros } = await abrir('comercial.html', { co_editar:true });
-    checa('sem co_ver, o Comercial recusa', await foiRecusado(p));
+    checa('sem co_ver, a Venda recusa', await foiRecusado(p));
     todosErros.push(...erros); await b.close();
   }
   {
     const { b, p, erros } = await abrir('comercial.html', CORRETOR);
-    checa('com co_ver, o Comercial abre', !(await foiRecusado(p)));
+    checa('com co_ver, a Venda abre', !(await foiRecusado(p)));
     todosErros.push(...erros); await b.close();
   }
 

@@ -76,7 +76,7 @@ const gravado = (p, re) => p.evaluate(r => {
     const ks = await chaves(p, 'co-perm');
     checa('nenhuma permissão de Pré-análise no cadastro',
       !ks.some(k => /^pa_|analisar_credito/.test(k)), ks.join(','));
-    checa('nenhuma de Comercial', !ks.some(k => /^co_/.test(k)), ks.join(','));
+    checa('nenhuma de Venda', !ks.some(k => /^co_/.test(k)), ks.join(','));
     checa('as de Repasse continuam', ks.includes('criar_repasses') && ks.includes('alterar_etapa'));
 
     // O que o catálogo diz que ninguém lê não pode voltar pela porta dos fundos.
@@ -110,7 +110,7 @@ const gravado = (p, re) => p.evaluate(r => {
       const ks = await chaves(p, classe);
       checa(`${quem}: ganhou as permissões de Pré-análise`,
         ks.includes('pa_ver') && ks.includes('pa_criar') && ks.includes('analisar_credito'), ks.join(','));
-      checa(`${quem}: e as de Comercial`,
+      checa(`${quem}: e as de Venda`,
         ks.includes('co_ver') && ks.includes('co_editar'), ks.join(','));
       // Uma chave, uma caixa. Duas caixas para a mesma chave e o formulário
       // passa a ter duas respostas para a mesma pergunta — vence a última lida.
@@ -239,7 +239,7 @@ const gravado = (p, re) => p.evaluate(r => {
       [...document.querySelectorAll('#perfil-permissoes .pf-grupo-titulo')].map(x => x.textContent.trim()));
     checa('o editor agrupa por módulo', grupos.includes('Repasse') && grupos.includes('Pré-análise'), grupos.join('|'));
     checa('e não oferece o módulo que o cliente não tem',
-      !grupos.includes('Comercial'), grupos.join('|'));
+      !grupos.includes('Venda'), grupos.join('|'));
     // Perfil novo nasce fechado — com UMA exceção, e ela é deliberada:
     // 'ver_repasses' não concede nada, ela abre o módulo. Nascendo desmarcada,
     // o primeiro perfil criado trancaria para fora do Repasse todo mundo que

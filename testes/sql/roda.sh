@@ -26,7 +26,9 @@ for f in testes/sql/base-falsa.sql \
          sql/2026-09-10_corretor_analista_so_o_seu.sql \
          sql/2026-09-10_modo_manutencao.sql \
          sql/2026-09-10_criar_repasse_trava.sql \
-         sql/2026-09-10_chaves_dos_modulos.sql; do
+         sql/2026-09-10_chaves_dos_modulos.sql \
+         sql/2026-09-11_exclusao_definitiva.sql \
+         sql/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql; do
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done

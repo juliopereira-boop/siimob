@@ -1,8 +1,8 @@
-// Mover cartão no quadro do Comercial.
+// Mover cartão no quadro da Venda.
 //
 // O relato do dono: "no Repasse eu arrasto o cartão de uma coluna para outra e
-// funciona; no Comercial o cartão não se move". Não era permissão nem esteira —
-// o quadro do Comercial nasceu SÓ DE LEITURA. O cartão não tinha `draggable`, a
+// funciona; na Venda o cartão não se move". Não era permissão nem esteira —
+// o quadro da Venda nasceu SÓ DE LEITURA. O cartão não tinha `draggable`, a
 // coluna não tinha `ondrop`, e mover só existia enterrado no rodapé do dossiê.
 // Arrastar não dava erro nenhum, e é isso que travava: não havia o que
 // consertar, porque não havia sintoma.
@@ -270,7 +270,7 @@ const CORRETOR = perms => ({ id:'p3', tenant_id:'t1', name:'Ana Souza', role:'pa
   }
 
   // ── 5. A permissão certa é co_editar, e o par prova os dois lados ────────
-  console.log('\nMover no Comercial segue co_editar');
+  console.log('\nMover na Venda segue co_editar');
   {
     const { b, p, erros, est } = await abrir({ usuario: CORRETOR({ co_ver:true }) });
     checa('corretor sem co_editar: o cartão não ganha a mãozinha de arrastar',

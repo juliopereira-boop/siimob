@@ -1,4 +1,4 @@
-// Telas dos módulos novos: Pré-análise e Comercial.
+// Telas dos módulos novos: Pré-análise e Venda.
 //
 // A primeira seção é a mesma de sempre e a mais importante: com a licença
 // ausente — que é a situação de todo cliente hoje — as telas não abrem, as
@@ -18,7 +18,7 @@ const { abrir, checa, resumo } = require('./comum');
   }
   {
     const { b, p } = await abrir('comercial.html');
-    checa('sem licença, o Comercial não fica de pé',
+    checa('sem licença, a Venda não fica de pé',
       !/\/comercial/.test(p.url()), p.url());
     await b.close();
   }
@@ -26,7 +26,7 @@ const { abrir, checa, resumo } = require('./comum');
     const { b, p, erros } = await abrir('repasse.html');
     checa('a aba Pré-análise não aparece no sistema do cliente',
       !(await p.locator('#link-pre-analise').isVisible()));
-    checa('nem a aba Comercial',
+    checa('nem a aba Venda',
       !(await p.locator('#link-comercial').isVisible()));
     checa('e nenhuma tabela dos módulos novos é consultada',
       await p.evaluate(() => !performance.getEntriesByType('resource')
@@ -232,8 +232,17 @@ const { abrir, checa, resumo } = require('./comum');
     checa('criou a pré-análise', criouPa.length === 1, JSON.stringify(posts.map(x=>x.url)));
 
     const corpoPa = criouPa.length ? JSON.parse(criouPa[0].body) : {};
-    checa('e NÃO manda corretor_id: quem decide o dono é o banco',
-      !('corretor_id' in corpoPa), JSON.stringify(corpoPa));
+    // Esta linha dizia "NÃO manda corretor_id: quem decide o dono é o banco" —
+    // e era o defeito escrito como regra. Para o GESTOR o banco não tinha como
+    // decidir: a1_ator() devolve o id de a1_users, que não é corretor nenhum, e
+    // o processo nascia no nome de um uuid que nenhuma tela resolve. Quem abre
+    // esta janela aqui é o gestor (a suíte entra como owner), então ele manda o
+    // que escolheu — e aqui não escolheu ninguém, logo null.
+    //
+    // Para o CORRETOR continua valendo o contrário, e é t-pre-analise.js que
+    // prova: a tela não oferece o campo e não manda a chave.
+    checa('o gestor manda o corretor que escolheu — aqui, nenhum',
+      'corretor_id' in corpoPa && corpoPa.corretor_id === null, JSON.stringify(corpoPa));
     checa('nem a situação: a esteira do cliente é que diz onde começa',
       !('situacao_id' in corpoPa), JSON.stringify(corpoPa));
 
@@ -293,10 +302,10 @@ const { abrir, checa, resumo } = require('./comum');
     checa('com a justificativa', /documentos recebidos/.test(hist));
     checa('e avisa que não se apaga', /não\s+se\s+edita\s+e\s+não\s+se\s+apaga/i.test(hist), hist.slice(-160));
 
-    // Este dossiê foi aberto com licença SÓ de Pré-análise. A aba Comercial não
+    // Este dossiê foi aberto com licença SÓ de Pré-análise. A aba Venda não
     // pode nem existir: prometer na tela um módulo que o cliente não comprou é
     // o mesmo erro de deixá-lo carregar.
-    checa('sem a licença do Comercial, o dossiê não tem aba Comercial',
+    checa('sem a licença da Venda, o dossiê não tem aba Venda',
       (await p.locator('#dos-tabs [data-dt="comercial"]').count()) === 0);
     checa('e a tela não consulta a1_comerciais',
       await p.evaluate(() => !performance.getEntriesByType('resource')
@@ -320,7 +329,7 @@ const { abrir, checa, resumo } = require('./comum');
     const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE','COMERCIAL'] });
     // pa1 não tem crédito aprovado — o botão não pode aparecer.
     await p.evaluate(() => abrirDossie('pa1')); await p.waitForTimeout(800);
-    checa('sem crédito aprovado, o botão de habilitar Comercial não aparece',
+    checa('sem crédito aprovado, o botão de habilitar Venda não aparece',
       (await p.locator('#btn-habilitar').count()) === 0);
 
     // pa3 tem aprovação e titular.
@@ -350,7 +359,7 @@ const { abrir, checa, resumo } = require('./comum');
   {
     const { b, p, erros } = await abrir('comercial.html', { modulos:['COMERCIAL'] });
     const corpo = await p.evaluate(() => document.body.innerText);
-    checa('a tela abre', /Comercial/i.test(await p.title()));
+    checa('a tela abre', /Venda/i.test(await p.title()));
     checa('lista o negócio', /1 de 1 negócio/.test(corpo), corpo.slice(0,200));
     checa('o nome do cliente vem do snapshot da aprovação', /Maria Titular/.test(corpo));
     checa('mostra o valor aprovado', /240\.000,00/.test(corpo));
@@ -363,10 +372,10 @@ const { abrir, checa, resumo } = require('./comum');
     checa('o cabeçalho traz as abas do resto do sistema',
       abas.includes('Dashboard') && abas.includes('Repasse') && abas.includes('Configuracoes'),
       JSON.stringify(abas));
-    checa('com o Comercial marcado como a tela atual',
+    checa('com a Venda marcado como a tela atual',
       await p.evaluate(() => {
         const a = document.querySelector('#shell .tab-group > .tab-btn.active');
-        return !!a && /Comercial/.test(a.textContent);
+        return !!a && /Venda/.test(a.textContent);
       }));
     checa('e a Pré-análise, sem licença, continua fora da barra',
       !abas.includes('Pré-análise'), JSON.stringify(abas));
@@ -376,11 +385,11 @@ const { abrir, checa, resumo } = require('./comum');
 
     const menu = await p.evaluate(() => {
       const g = Array.from(document.querySelectorAll('#shell .tab-group'))
-        .find(x => /Comercial/.test(x.querySelector('.tab-btn').textContent));
+        .find(x => /Venda/.test(x.querySelector('.tab-btn').textContent));
       return g ? Array.from(g.querySelectorAll('.dd-item'))
         .map(a => a.textContent.trim() + ' → ' + a.getAttribute('href')) : [];
     });
-    checa('o menu Comercial oferece exatamente Andamento e Listagem',
+    checa('o menu Venda oferece exatamente Andamento e Listagem',
       menu.length === 2 && menu[0] === 'Andamento → /thecred/comercial'
                         && menu[1] === 'Listagem → /thecred/comercial-listagem',
       JSON.stringify(menu));
@@ -594,15 +603,15 @@ const { abrir, checa, resumo } = require('./comum');
     const grade = await p.locator('#est-corpo').textContent();
     checa('a tabela de situações aparece', /Situações de Pré-análise/.test(grade));
     checa('e a de transições também', /Transições permitidas/.test(grade));
-    checa('a ação oferecida na Pré-análise é habilitar o Comercial',
-      /Habilitar Comercial/.test(grade));
+    checa('a ação oferecida na Pré-análise é habilitar a Venda',
+      /Habilitar Venda/.test(grade));
     checa('e o requisito oferecido é exigir documentos aprovados',
       /Exigir todos os documentos aprovados/.test(grade));
 
     await p.selectOption('#est-modulo','COMERCIAL'); await p.waitForTimeout(600);
-    checa('trocando para Comercial, a ação oferecida é criar o cartão no Repasse',
+    checa('trocando para Venda, a ação oferecida é criar o cartão no Repasse',
       /Criar cartão no Repasse/.test(await p.locator('#est-corpo').textContent())
-      || /Criar esteira padrão de Comercial/.test(await p.locator('#est-corpo').textContent()));
+      || /Criar esteira padrão de Venda/.test(await p.locator('#est-corpo').textContent()));
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();

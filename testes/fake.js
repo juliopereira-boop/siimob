@@ -90,7 +90,7 @@ const D = {
      situacao_id:'ps3',situacao_em:new Date(h-5*864e5).toISOString(),versao:2,
      criado_em:new Date(h-20*864e5).toISOString()},
     // pa4 é a única aprovada que ainda NÃO virou comercial. Sem ela o teste do
-    // botão "Habilitar Comercial" não teria como acontecer: pa3 já tem o seu.
+    // botão "Habilitar Venda" não teria como acontecer: pa3 já tem o seu.
     {id:'pa4',tenant_id:'t1',codigo:'PA-004',empreendimento_id:'d1',corretor_id:'p10',
      situacao_id:'ps3',situacao_em:new Date(h-2*864e5).toISOString(),versao:1,
      criado_em:new Date(h-6*864e5).toISOString()}]; })(),

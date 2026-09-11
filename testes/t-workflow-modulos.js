@@ -56,7 +56,7 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     const opcoes = await p.evaluate(() =>
       [...document.querySelectorAll('#module-sel option')].map(o => o.value));
     checa('Pré-análise não é oferecida', !opcoes.includes('PRE_ANALISE'), JSON.stringify(opcoes));
-    checa('Comercial também não', !opcoes.includes('COMERCIAL'));
+    checa('Venda também não', !opcoes.includes('COMERCIAL'));
     checa('e nenhuma tabela de esteira é consultada',
       !pedidos.some(u => /a1_pa_situacoes|a1_co_situacoes/.test(u)),
       pedidos.filter(u => /a1_pa_situacoes|a1_co_situacoes/.test(u))[0] || '');
@@ -102,7 +102,7 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     const { b, p, erros, pedidos } = await abrirWf({ modulos:['PRE_ANALISE','COMERCIAL'], modulo:'PRE_ANALISE' });
     checa('abriu no módulo pedido', await p.evaluate(() => MODULE === 'PRE_ANALISE'));
     checa('buscou a esteira da Pré-análise', pedidos.some(u => /GET .*a1_pa_situacoes/.test(u)));
-    checa('sem encostar na do Comercial', !pedidos.some(u => /a1_co_situacoes/.test(u)));
+    checa('sem encostar na da Venda', !pedidos.some(u => /a1_co_situacoes/.test(u)));
 
     checa('desenha um nó por situação', (await p.locator('.wf-node').count()) === 4);
     checa('e as setas das transições', (await p.locator('#wf-svg path[data-edge]').count()) > 0
@@ -147,7 +147,7 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
       JSON.stringify(corpo));
     checa('SLA vai como número, não texto', corpo && corpo.sla_horas === 36);
     checa('e a flag escolhida', corpo && corpo.flag === 'PENDENTE');
-    checa('nada foi escrito na tabela do Comercial', await p.evaluate(() =>
+    checa('nada foi escrito na tabela da Venda', await p.evaluate(() =>
       !(window.__POSTS || []).some(x => /a1_co_/.test(x.url))));
 
     console.log('\n-- SLA em branco é "sem prazo", não zero --');
@@ -220,7 +220,7 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     await p.evaluate(() => openEdit('cs1')); await p.waitForTimeout(400);
     const flags = await p.evaluate(() =>
       [...document.querySelectorAll('#ep-flag option')].map(o => o.value));
-    checa('as flags agora são as do Comercial',
+    checa('as flags agora são as da Venda',
       flags.includes('CONTRATO_ASSINADO') && !flags.includes('APROVADO'), JSON.stringify(flags));
 
     await p.fill('#ep-name', 'Proposta revisada');

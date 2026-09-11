@@ -118,8 +118,16 @@ const ultimoBilling = g => {
   }
 
   console.log('\n== CLIENTE EM ATRASO: a tarja aparece ==');
+  // O mês CORRENTE entra como pago de propósito, e isso não é detalhe de
+  // cenário: com due_day 10, todo dia 11 em diante o mês corrente também está
+  // vencido, e a tarja passa a dizer "2 mensalidades em aberto". A asserção do
+  // singular ("Mensalidade de agosto") então falhava — não por defeito, mas
+  // porque o teste dependia do dia em que era executado. Passava do dia 1 ao
+  // 10 e reprovava do 11 em diante. Com o mês corrente resolvido, sobra UMA em
+  // aberto em qualquer dia do mês.
   { const { b, p, erros } = await abrirCliente({ due_day: 10, valor:'600,00',
-      paid: { [mesPassado]: { atraso:true, desde:new Date().toISOString() } } });
+      paid: { [mesAtual]:   { paid:true,   date:new Date().toISOString() },
+              [mesPassado]: { atraso:true, desde:new Date().toISOString() } } });
     c('a tarja entra na tela', (await p.locator('#a1-cobranca').count()) === 1);
     const t = await p.locator('#a1-cobranca').textContent();
     c('avisa da suspensão', /Evite a suspensão do seu ambiente SIIMOB/.test(t), t);

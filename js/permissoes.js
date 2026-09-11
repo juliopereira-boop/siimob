@@ -78,7 +78,7 @@ const A1_PERMISSOES = [
         + 'Quem vende não aprova: esta é a marca que separa as duas coisas.',
     lida_em:'a1_pa_analises_credito_escrever (RLS), a1_pa_guarda_documento' },
 
-  // ── Comercial ──────────────────────────────────────────────────────────────
+  // ── Venda ──────────────────────────────────────────────────────────────
   { chave:'co_ver', modulo:'COMERCIAL', rotulo:'Ver negócios',
     ajuda:'Sem isto o módulo não abre para ela, mesmo o cliente tendo a licença.',
     lida_em:'a1_comerciais_ler (RLS), comercial.html' },
@@ -123,7 +123,7 @@ function a1PermissoesPorModulo(tem){
 }
 
 const A1_ROTULO_MODULO = { geral:'Vale em todos os módulos', repasse:'Repasse',
-                           PRE_ANALISE:'Pré-análise', COMERCIAL:'Comercial' };
+                           PRE_ANALISE:'Pré-análise', COMERCIAL:'Venda' };
 
 // As permissões efetivas de alguém: o PERFIL manda, quando existe.
 //

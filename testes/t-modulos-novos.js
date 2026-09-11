@@ -1,4 +1,4 @@
-// Módulos novos: Pré-análise e Comercial.
+// Módulos novos: Pré-análise e Venda.
 //
 // A primeira e mais importante verificação é NEGATIVA: os módulos existem no
 // catálogo do superadmin e não aparecem, não carregam e não mudam nada para
@@ -16,7 +16,7 @@ const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
     const { b, p, erros } = await abrir('repasse.html');
     const txt = await p.evaluate(() => document.body.innerText);
     checa('a palavra "Pré-análise" não aparece na tela do cliente', !/Pré-an[áa]lise/i.test(txt));
-    checa('nem "Comercial" como módulo', !/\bM[óo]dulo Comercial\b/i.test(txt));
+    checa('nem "Venda" como módulo', !/\bM[óo]dulo Venda\b/i.test(txt));
     checa('o pipeline continua carregando', (await p.locator('#kpi-total').textContent()).trim() !== '');
     checa('nenhuma chamada às tabelas novas', await p.evaluate(() =>
       !(window.__POSTS||[]).some(x => /a1_pre_analises|a1_comerciais|a1_pa_/.test(x.url))));
@@ -62,18 +62,18 @@ const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 
     const grade = await p.locator('#mod-grid-wrap').textContent();
     checa('Pré-análise está no catálogo', /Pré-análise/.test(grade), grade.slice(0,120));
-    checa('Comercial está no catálogo', /\bComercial\b/.test(grade));
+    checa('Venda está no catálogo', /\bVenda\b/.test(grade));
 
     // Filtra pela CHAVE, que é única no cartão. Filtrar pelo nome pegava dois:
-    // o aviso de dependência do Comercial cita "Pré-análise".
+    // o aviso de dependência da Venda cita "Pré-análise".
     const cartao = chave => p.locator('.mod-card').filter({ has: p.locator(`.mod-key:text-is("${chave}")`) });
     checa('Pré-análise vem INATIVA', /Inativo/.test(await cartao('PRE_ANALISE').textContent()));
-    checa('Comercial vem INATIVO', /Inativo/.test(await cartao('COMERCIAL').textContent()));
+    checa('Venda vem INATIVO', /Inativo/.test(await cartao('COMERCIAL').textContent()));
     checa('e oferecem o botão Liberar',
       (await cartao('PRE_ANALISE').locator('button:has-text("Liberar")').count()) === 1);
     checa('Repasse, que o cliente já tinha, segue ativo',
       /Ativo/.test(await cartao('repasse').textContent()));
-    checa('avisa que o Comercial depende da Pré-análise para o fluxo automático',
+    checa('avisa que a Venda depende da Pré-análise para o fluxo automático',
       /precisa de/i.test(await cartao('COMERCIAL').textContent()),
       await cartao('COMERCIAL').textContent());
     checa('e a Pré-análise, que não depende de nada, não traz aviso',

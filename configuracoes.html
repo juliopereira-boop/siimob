@@ -162,6 +162,36 @@
                  font-size:.76rem;line-height:1.6;color:var(--t2)}
     .cfg-explica strong{color:var(--t1)}
 
+    /* ── Área de risco (Exclusão definitiva) ──────────────────────────────
+       Vermelho e não azul porque nada aqui é reversível. O resto das
+       Configurações é conserto; isto é perda. A cor é o primeiro aviso, e
+       precisa vir antes de a pessoa ler qualquer texto. */
+    .exc-alerta{background:#FEF2F2;border:1px solid #FCA5A5;border-left:3px solid var(--red);
+                border-radius:var(--radius);padding:.85rem 1rem;margin-bottom:1.25rem;
+                font-size:.78rem;line-height:1.6;color:#7F1D1D;max-width:720px}
+    .exc-alerta strong{color:#991B1B}
+    .exc-ficha{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);
+               padding:1rem 1.1rem;margin-bottom:.75rem;box-shadow:var(--shadow)}
+    .exc-ficha.exc-escolhida{border-color:#FCA5A5;box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+    .exc-linha{display:flex;gap:.5rem;font-size:.79rem;padding:.22rem 0;align-items:baseline}
+    .exc-rot{color:var(--t3);min-width:120px;font-size:.7rem;text-transform:uppercase;
+             letter-spacing:.06em;font-weight:700}
+    .exc-val{color:var(--t1);font-weight:600;flex:1}
+    .exc-pill{display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.06em;
+              padding:.14rem .5rem;border-radius:20px;background:#E0E7FF;color:#3730A3}
+    .exc-cod{font-family:'DM Mono',ui-monospace,monospace;font-size:.74rem;background:#F1F5F9;
+             border:1px solid var(--border);border-radius:4px;padding:.1rem .4rem;color:var(--t2)}
+    .exc-impede{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:.65rem .8rem;
+                font-size:.76rem;line-height:1.55;color:#92400E;margin-top:.7rem}
+    .exc-confirma{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;
+                  padding:.8rem .9rem;margin-top:.7rem;font-size:.78rem;color:#7F1D1D;line-height:1.6}
+    .exc-check{display:flex;gap:.5rem;align-items:flex-start;font-size:.78rem;
+               color:var(--t1);margin-top:.6rem;cursor:pointer}
+    .exc-check input{width:16px;height:16px;margin-top:.12rem;accent-color:#dc2626;cursor:pointer;flex-shrink:0}
+    .btn-danger-forte{background:#dc2626;color:#fff;border:1px solid #b91c1c}
+    .btn-danger-forte:hover{background:#b91c1c}
+    .btn-danger-forte:disabled{background:#FCA5A5;border-color:#FCA5A5;cursor:not-allowed}
+
     /* ── Partner table ── */
     .pt-table{width:100%;border-collapse:collapse;font-size:.78rem}
     .pt-table th{padding:.5rem .875rem;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
@@ -217,7 +247,7 @@
     <a class="tab-btn" id="link-dashboard">Dashboard</a>
 
     <!-- A ordem da barra é a ordem do processo, e vale em todo o sistema:
-         Pré-análise → Comercial → Repasse. Os dois primeiros nascem escondidos e
+         Pré-análise → Venda → Repasse. Os dois primeiros nascem escondidos e
          só aparecem quando o superadmin libera a licença para este cliente. -->
     <div class="tab-group" id="grupo-pre-analise" style="display:none">
       <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
@@ -227,7 +257,7 @@
       </div>
     </div>
     <div class="tab-group" id="grupo-comercial" style="display:none">
-      <a class="tab-btn" id="link-comercial" href="">Comercial <span class="tab-caret">▾</span></a>
+      <a class="tab-btn" id="link-comercial" href="">Venda <span class="tab-caret">▾</span></a>
       <div class="tab-dd">
         <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
         <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
@@ -640,7 +670,7 @@
       <div class="cfg-view-title">Tipos de documento</div>
     </div>
     <!-- A ordem das abas é a ordem do processo, a mesma de todo o sistema:
-         Pré-análise → Comercial → Repasse. O Comercial não tem aba aqui porque
+         Pré-análise → Venda → Repasse. A Venda não tem aba aqui porque
          não tem documento tipado — o que ele guarda é contrato, em
          a1_co_contratos, com fluxo próprio. Aba dele aqui seria uma tela de
          cadastro que nenhuma outra tela lê, e caixa que não faz nada é pior que
@@ -964,7 +994,7 @@
     </div>
   </div>
 
-  <!-- Telas de configuração dos módulos novos (Pré-análise e Comercial).
+  <!-- Telas de configuração dos módulos novos (Pré-análise e Venda).
        Nasce VAZIO de propósito: cartão e sub-tela são montados por
        cfgModsLiberar() só depois de a1HasModule responder que sim. Deixar a
        marcação pronta aqui, escondida, faria a tela existir no DOM de todo
@@ -1716,7 +1746,7 @@ async function init() {
   // nasceu dele. Passou a precisar quando o cadastro de Analista de Crédito
   // virou dependente de módulo: sem Repasse E sem Pré-análise não existe
   // processo para o analista analisar.
-  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); })
+  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); excDefConferir(); })
                         .catch(()=>{});
 
   // Módulos novos: a aba só aparece com a licença liberada. O acesso real aos
@@ -1726,6 +1756,11 @@ async function init() {
   ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
     a1HasModule(mod).then(ok => {
       if (mod === 'PRE_ANALISE') { G.temPAResp = ok; analistaCartaoConferir(); }
+      // O mesmo tri-estado do PRE_ANALISE, agora também para o COMERCIAL: a
+      // Exclusão definitiva precisa saber a diferença entre "não tem" e
+      // "ainda não respondeu" para não anunciar cobertura que não existe.
+      if (mod === 'COMERCIAL') G.temCOResp = ok;
+      excDefConferir();
       if (ok !== true) return;
       // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
       // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
@@ -1818,6 +1853,13 @@ function openCfgView(view) {
     toast('O cadastro de analistas exige o módulo de Repasse ou de Pré-análise.','info');
     return;
   }
+  // Mesma porta para a Área de risco: a sub-tela só é montada para gestor, e
+  // sem ela o roteador esconderia o hub e mostraria uma tela em branco — a
+  // pessoa ficaria presa sem nem o botão de voltar.
+  if (view === 'excdef' && !document.getElementById('cfg-view-excdef')) {
+    toast('A exclusão definitiva é uma área de gestor.','info');
+    return;
+  }
   document.getElementById('cfg-hub').style.display = 'none';
   CFG_VIEWS.forEach(v => {
     const el = document.getElementById(`cfg-view-${v}`);
@@ -1845,6 +1887,9 @@ function openCfgView(view) {
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
   if (view === 'integra')    cfgIntegraCarregar();
+  // Área de risco. Só existe no DOM para gestor e com pelo menos um módulo
+  // licenciado; chegar aqui já significa as duas coisas.
+  if (view === 'excdef')     excDefAbrir();
 }
 
 function closeCfgView() {
@@ -3979,7 +4024,7 @@ function setEtapaNivel(stageId, alvo){
 // As etapas de TODOS os módulos licenciados, na ordem do processo.
 //
 // O seletor mostrava só as etapas do Repasse. Corretor e analista trabalham
-// também na Pré-análise e no Comercial, e lá o acesso era tudo-ou-nada — a
+// também na Pré-análise e na Venda, e lá o acesso era tudo-ou-nada — a
 // mesma pessoa que o gestor limitava a duas etapas do Repasse enxergava a
 // esteira inteira dos outros dois módulos.
 //
@@ -3995,7 +4040,7 @@ function etapasGrupos(){
     g.push({ chave:'PRE_ANALISE', rotulo:'Pré-análise',
              etapas: pa.map(x => ({ id:x.id, name:x.nome, color:x.cor })) });
   if (G.temCO && co.length)
-    g.push({ chave:'COMERCIAL', rotulo:'Comercial',
+    g.push({ chave:'COMERCIAL', rotulo:'Venda',
              etapas: co.map(x => ({ id:x.id, name:x.nome, color:x.cor })) });
   g.push({ chave:'repasse', rotulo:'Repasse', etapas: etapasLista() });
   return g.filter(x => x.etapas.length);
@@ -5800,7 +5845,7 @@ async function saveCartorio() {
   }
 }
 
-// ═══ Configurações dos módulos novos (Pré-análise e Comercial) ═══════════════
+// ═══ Configurações dos módulos novos (Pré-análise e Venda) ═══════════════
 // A regra que manda em tudo o que vem abaixo: sem a licença, NADA disto existe.
 // Não é tela escondida por CSS — o cartão e a sub-tela só são criados depois de
 // a1HasModule responder exatamente `true`. Antes disso não há elemento no DOM,
@@ -5809,9 +5854,9 @@ async function saveCartorio() {
 // O editor em si é o mesmo que já roda no superadmin (renderEsteira), trazido
 // para cá com quatro diferenças: fala com o token da sessão (A1) em vez da
 // chave de serviço, o cliente é o da sessão em vez de um seletor, o módulo é
-// fixo por tela (quem só tem Pré-análise não vê a palavra "Comercial" num
+// fixo por tela (quem só tem Pré-análise não vê a palavra "Venda" num
 // select) e não há DELETE. Esse último é grant, não RLS: a Pré-análise recebeu
-// select/insert/update e o Comercial ganhou delete, então um botão "Apagar"
+// select/insert/update e a Venda ganhou delete, então um botão "Apagar"
 // daria 403 numa tela e funcionaria na outra. Nas duas, remover é desmarcar
 // "Ativa" — a coluna já existe nas quatro tabelas, as filas já buscam com
 // ativo=is.true e a1_pa_transicionar já exige `and ativo`.
@@ -6195,7 +6240,7 @@ function cfgModsLiberar(mod) {
   cfgModsVista('integra', 'Registro de integrações', `
     <div class="cfg-explica">
       Cada vez que uma transição dispara uma ação entre módulos, o resultado fica registrado aqui.
-      É onde está escrito por que uma pré-análise aprovada não virou Comercial — o motivo costuma
+      É onde está escrito por que uma pré-análise aprovada não virou Venda — o motivo costuma
       apontar de volta para um ajuste no workflow.
     </div>
     <div id="integra-corpo"></div>`);
@@ -6237,6 +6282,395 @@ async function cfgIntegraCarregar() {
       }).join('')}
       </tbody></table>
     </div>`;
+}
+
+// ══ Exclusão definitiva ══════════════════════════════════════════════════════
+// O pedido do dono, nas palavras dele: "cada cartão tem um código... só pode
+// excluir se copiar esse código e colocar nessa área de exclusão. Aí vai
+// aparecer as informações. Essa exclusão não tem volta."
+//
+// Daí o desenho em três passos, e nenhum deles é enfeite:
+//   1. cola o código  →  2. o sistema MOSTRA a ficha do que achou  →  3. só
+//   então o botão existe, com justificativa escrita e confirmação explícita.
+// O passo 2 é o que impede apagar o processo errado por um dígito trocado:
+// nunca se apaga algo que a pessoa não viu descrito na tela.
+//
+// A AUTORIZAÇÃO NÃO ESTÁ AQUI. Quem confere gestor, cliente, licença de módulo
+// e dependência entre módulos é a1_excluir_definitivo() no Postgres, e é ela
+// que grava a auditoria antes de apagar. Esta tela é a conversa; a recusa é do
+// banco, e vale igual para quem chamar o RPC direto na API.
+const EXCDEF = { achados: [], escolhido: null, confirmando: false, buscando: false };
+
+const EXC_ICONE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+
+// As chaves são as mesmas que o banco usa (a1_cases, a1_pre_analises e
+// a1_comerciais, nesta ordem); aqui só se traduz para o nome que o gestor lê.
+const EXC_MODULOS = {
+  repasse:     { rotulo:'Repasse' },
+  PRE_ANALISE: { rotulo:'Pré-análise' },
+  COMERCIAL:   { rotulo:'Venda' }
+};
+
+// Nomes legíveis das filhas. Sem isto a tela diria "analises_de_credito: 1",
+// que é nome de coluna, não frase para o gestor decidir se apaga.
+const EXC_FILHOS_ROTULO = {
+  historico_de_etapas:  'movimentações no histórico de etapas',
+  eventos:              'eventos e comentários',
+  emails_sem_vinculo:   'e-mails na fila (não somem; só perdem o vínculo)',
+  participantes:        'participantes (titular e associados)',
+  documentos:           'documentos do dossiê',
+  analises_de_credito:  'análises de crédito',
+  contratos:            'contratos'
+};
+
+function excDefEhGestor(){ return G.user && (G.user.role === 'owner' || G.user.role === 'admin'); }
+
+// Quais dos três módulos este cliente tem. `true` literal: a1HasModule devolve
+// null quando o servidor não respondeu, e "não consegui perguntar" não pode
+// virar "não tem" — nem para mostrar, nem para esconder.
+function excDefModulos(){
+  return [ G.temRepasse === true ? 'repasse' : null,
+           G.temPAResp  === true ? 'PRE_ANALISE' : null,
+           G.temCOResp  === true ? 'COMERCIAL' : null ].filter(Boolean);
+}
+
+// Chamada toda vez que uma licença responde. Monta o cartão assim que HOUVER
+// pelo menos um módulo — e nunca antes: sem módulo nenhum não há o que excluir,
+// e um cartão que abre uma tela vazia é pior que cartão ausente.
+function excDefConferir(){
+  if (!excDefEhGestor()) return;
+  if (!excDefModulos().length) return;
+  excDefMontar();
+  excDefPintarCobertura();
+}
+
+// Cartão e sub-tela nascem por JS, não no HTML escondido. É a mesma regra dos
+// módulos novos: o que não está no DOM ninguém acha com a busca do hub nem com
+// o inspetor. Aqui vale por dois motivos somados — a licença do módulo e o
+// papel: exclusão definitiva é coisa de gestor, e a recusa de verdade é do
+// banco (a1_excluir_definitivo confere a1_e_gestor()).
+function excDefMontar(){
+  if (document.getElementById('cfg-card-excdef')) return;
+  const hub = document.getElementById('cfg-hub');
+  if (!hub) return;
+
+  // O grupo inteiro é criado aqui, e só quando há cartão para pôr dentro. Um
+  // grupo estático vazio deixaria o título "Área de risco" sozinho na tela de
+  // quem não pode usar nada dele.
+  const grupo = document.createElement('div');
+  grupo.className = 'cfg-grupo';
+  grupo.id = 'cfg-grupo-perigo';
+  grupo.innerHTML = `
+    <div class="cfg-section-hdr">Área de risco</div>
+    <div class="cfg-section-sub">O que se faz aqui não tem desfazer.</div>
+    <div class="cfg-cards" id="cfg-cards-perigo"></div>`;
+  hub.appendChild(grupo);
+
+  const card = document.createElement('div');
+  card.className = 'cfg-hub-card';
+  card.id = 'cfg-card-excdef';
+  card.style.borderColor = '#FCA5A5';
+  card.addEventListener('click', () => openCfgView('excdef'));
+  card.innerHTML = `<div class="cfg-hub-icon" style="background:#FEE2E2">${EXC_ICONE}</div>
+                    <div class="cfg-card-label">Exclusão definitiva</div>`;
+  document.getElementById('cfg-cards-perigo').appendChild(card);
+
+  cfgModsVista('excdef', 'Exclusão definitiva', `
+    <div class="exc-alerta">
+      <strong>Isto não tem volta.</strong> O registro é apagado do banco, junto com o que
+      pertence só a ele. Não vai para lixeira, não dá para desfazer e não há backup por tela.
+      O que fica é a linha de auditoria — quem apagou, quando, o retrato do conteúdo e a
+      justificativa que você escrever.
+    </div>
+    <div class="panel" style="padding:1.1rem;max-width:720px;margin-bottom:1.25rem">
+      <label style="display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;
+                    letter-spacing:.06em;color:var(--t3);margin-bottom:.4rem">
+        Código do cartão</label>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <input type="text" id="exc-codigo" placeholder="Cole aqui o código que aparece no cartão"
+               autocomplete="off" spellcheck="false"
+               style="flex:1;min-width:260px;padding:.5rem .7rem;border:1px solid var(--border);
+                      border-radius:8px;font-size:.82rem;font-family:'DM Mono',ui-monospace,monospace"
+               onkeydown="if(event.key==='Enter')excDefProcurar()">
+        <button class="btn btn-primary btn-sm" id="exc-btn-procurar" onclick="excDefProcurar()">Procurar</button>
+      </div>
+      <div id="exc-cobertura" style="font-size:.73rem;color:var(--t3);margin-top:.55rem;line-height:1.5"></div>
+    </div>
+    <div id="exc-resultado" style="max-width:720px"></div>
+    <div id="exc-historico" style="max-width:720px;margin-top:1.75rem"></div>`);
+}
+
+function excDefPintarCobertura(){
+  const el = document.getElementById('exc-cobertura');
+  if (!el) return;
+  const nomes = excDefModulos().map(k => EXC_MODULOS[k].rotulo);
+  el.innerHTML = `Procura em: <strong>${esc(nomes.join(', '))}</strong>. `
+    + `Serve o código inteiro ou o pedaço curto que aparece no cartão.`;
+}
+
+function excDefAbrir(){
+  excDefPintarCobertura();
+  excDefLimpar();
+  excDefHistorico();
+  const el = document.getElementById('exc-codigo');
+  if (el) { el.value = ''; el.focus(); }
+}
+
+function excDefLimpar(){
+  EXCDEF.achados = []; EXCDEF.escolhido = null; EXCDEF.confirmando = false;
+  const r = document.getElementById('exc-resultado');
+  if (r) r.innerHTML = '';
+}
+
+// Erro de banco não vira "Tente novamente": a1_excluir_definitivo escreve as
+// recusas em português, para uma pessoa ler, e é esse texto que interessa.
+async function excDefMotivo(res){
+  let m = '';
+  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  if (m) return m;
+  if (res.status === 401 || res.status === 403) return 'Você não tem permissão para esta exclusão.';
+  return 'O banco recusou a operação e não disse por quê. Nada foi apagado.';
+}
+
+async function excDefProcurar(){
+  const campo = document.getElementById('exc-codigo');
+  const btn   = document.getElementById('exc-btn-procurar');
+  const alvo  = document.getElementById('exc-resultado');
+  if (!campo || !alvo) return;
+  const codigo = (campo.value || '').trim();
+  excDefLimpar();
+  if (!codigo) { toast('Cole o código do cartão.','info'); campo.focus(); return; }
+  if (EXCDEF.buscando) return;
+
+  EXCDEF.buscando = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'Procurando…'; }
+  alvo.innerHTML = `<div style="color:var(--t3);font-size:.8rem;padding:1rem 0">Procurando…</div>`;
+  try {
+    const res = await fetch(A1.rpc('a1_excluir_procurar'),
+      { method:'POST', headers:A1.headers(), body:JSON.stringify({ p_codigo: codigo }) });
+    if (!res.ok) { alvo.innerHTML = excDefErroHtml(await excDefMotivo(res)); return; }
+    const linhas = await res.json().catch(() => []);
+    EXCDEF.achados = Array.isArray(linhas) ? linhas : [];
+    if (!EXCDEF.achados.length) {
+      alvo.innerHTML = excDefErroHtml(
+        'Não achei esse código. Confira se copiou o código inteiro do cartão — '
+      + 'e lembre que a busca só cobre os módulos listados acima.');
+      return;
+    }
+    // Um achado só: já mostra a ficha. Vários: a pessoa escolhe, porque um
+    // prefixo curto pode casar com mais de um processo e escolher por ela
+    // seria escolher no escuro qual registro morre.
+    EXCDEF.escolhido = EXCDEF.achados.length === 1 ? 0 : null;
+    excDefRender();
+  } catch {
+    alvo.innerHTML = excDefErroHtml('Não consegui falar com o servidor. Nada foi apagado.');
+  } finally {
+    EXCDEF.buscando = false;
+    if (btn) { btn.disabled = false; btn.textContent = 'Procurar'; }
+  }
+}
+
+function excDefErroHtml(msg){
+  return `<div class="panel" style="padding:1rem 1.1rem;border-color:#FCA5A5;background:#FEF2F2;
+               color:#7F1D1D;font-size:.79rem;line-height:1.6">${esc(msg)}</div>`;
+}
+
+function excDefEscolher(i){ EXCDEF.escolhido = i; EXCDEF.confirmando = false; excDefRender(); }
+
+function excDefFilhosTexto(filhos){
+  const f = filhos || {};
+  const partes = Object.keys(f)
+    .filter(k => Number(f[k]) > 0)
+    .map(k => `${Number(f[k])} ${EXC_FILHOS_ROTULO[k] || k}`);
+  return partes;
+}
+
+function excDefRender(){
+  const alvo = document.getElementById('exc-resultado');
+  if (!alvo) return;
+  const varios = EXCDEF.achados.length > 1;
+
+  alvo.innerHTML = (varios
+    ? `<div class="exc-alerta" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
+         Esse código casa com <strong>${EXCDEF.achados.length} registros</strong>.
+         Confira qual é o certo antes de seguir.</div>`
+    : '')
+  + EXCDEF.achados.map((r, i) => excDefFichaHtml(r, i, varios)).join('');
+}
+
+function excDefFichaHtml(r, i, varios){
+  const escolhida = EXCDEF.escolhido === i;
+  const mod = EXC_MODULOS[r.modulo] || { rotulo: r.modulo };
+  const quando = r.criado_em ? new Date(r.criado_em).toLocaleString('pt-BR') : '—';
+  const filhos = excDefFilhosTexto(r.filhos);
+
+  const linha = (rot, val) => val
+    ? `<div class="exc-linha"><span class="exc-rot">${rot}</span><span class="exc-val">${esc(String(val))}</span></div>`
+    : '';
+
+  let acao = '';
+  if (r.impedimento) {
+    // A recusa vem do banco e é a mesma que o botão levaria. Mostrá-la já na
+    // ficha evita a pessoa escrever a justificativa inteira para só então
+    // descobrir que este registro não pode sair ainda.
+    acao = `<div class="exc-impede"><strong>Este registro não pode ser excluído agora.</strong><br>${esc(r.impedimento)}</div>`;
+  } else if (!escolhida) {
+    acao = `<div style="margin-top:.8rem"><button class="btn btn-ghost btn-sm"
+              onclick="excDefEscolher(${i})">É este</button></div>`;
+  } else {
+    acao = excDefFormularioHtml(r, i);
+  }
+
+  return `<div class="exc-ficha${escolhida && !r.impedimento ? ' exc-escolhida' : ''}">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;flex-wrap:wrap">
+      <span class="exc-pill">${esc(mod.rotulo)}</span>
+      <span class="exc-cod">${esc(r.codigo || '')}</span>
+      ${varios && escolhida ? '<span style="font-size:.7rem;font-weight:700;color:#dc2626">selecionado</span>' : ''}
+    </div>
+    ${linha('Cliente', r.titulo || '(sem nome no cadastro)')}
+    ${linha('Empreendimento', r.empreendimento)}
+    ${linha('Unidade', r.unidade)}
+    ${linha('Situação', r.situacao)}
+    ${linha('Criado em', quando)}
+    ${linha('Id completo', r.registro_id)}
+    ${filhos.length
+      ? `<div class="exc-linha"><span class="exc-rot">Some junto</span>
+           <span class="exc-val" style="font-weight:500;color:var(--t2)">${esc(filhos.join(' · '))}</span></div>`
+      : `<div class="exc-linha"><span class="exc-rot">Some junto</span>
+           <span class="exc-val" style="font-weight:500;color:var(--t2)">nada além do próprio registro</span></div>`}
+    ${acao}</div>`;
+}
+
+function excDefFormularioHtml(r, i){
+  if (EXCDEF.confirmando) {
+    // Segundo passo: o texto repete QUEM vai sumir, com nome e código. Um
+    // "tem certeza?" genérico não dá à pessoa nada novo para conferir.
+    const quem = [r.titulo, r.empreendimento, r.unidade].filter(Boolean).join(' · ') || r.codigo;
+    return `<div class="exc-confirma">
+        <strong>Confirma apagar para sempre?</strong><br>
+        ${esc((EXC_MODULOS[r.modulo] || {}).rotulo || r.modulo)} · <span class="exc-cod">${esc(r.codigo || '')}</span> — ${esc(quem)}<br>
+        Depois deste clique não há como recuperar.
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="excDefCancelar()">Cancelar</button>
+        <button class="btn btn-sm btn-danger-forte" id="exc-btn-apagar"
+                onclick="excDefExecutar(${i})">Sim, excluir para sempre</button>
+      </div>`;
+  }
+  return `<div style="margin-top:.9rem">
+      <label style="display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;
+                    letter-spacing:.06em;color:var(--t3);margin-bottom:.35rem">
+        Por que está excluindo?</label>
+      <textarea id="exc-justificativa" rows="2" oninput="excDefValidar()"
+        placeholder="Ex.: duplicidade — a mesma unidade foi lançada duas vezes"
+        style="width:100%;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;
+               font-size:.8rem;resize:vertical"></textarea>
+      <div style="font-size:.7rem;color:var(--t3);margin-top:.25rem">
+        Fica gravado na auditoria junto com o seu nome. Mínimo de 10 caracteres.</div>
+      <label class="exc-check">
+        <input type="checkbox" id="exc-ciente" onchange="excDefValidar()">
+        <span>Entendi que esta exclusão <strong>não tem volta</strong> e que conferi os dados acima.</span>
+      </label>
+      <div style="margin-top:.8rem">
+        <button class="btn btn-sm btn-danger-forte" id="exc-btn-excluir" disabled
+                onclick="excDefPedirConfirmacao()">Excluir definitivamente</button>
+      </div>
+    </div>`;
+}
+
+// O botão nasce desligado e só liga com as duas coisas feitas. Não é a
+// proteção — a proteção é o banco — mas é o que impede o clique de reflexo.
+function excDefValidar(){
+  const just  = document.getElementById('exc-justificativa');
+  const marca = document.getElementById('exc-ciente');
+  const btn   = document.getElementById('exc-btn-excluir');
+  if (!btn) return;
+  const ok = !!marca && marca.checked && !!just && just.value.trim().length >= 10;
+  btn.disabled = !ok;
+}
+
+function excDefPedirConfirmacao(){
+  const just = document.getElementById('exc-justificativa');
+  EXCDEF.justificativa = just ? just.value.trim() : '';
+  if (EXCDEF.justificativa.length < 10) { toast('Escreva a justificativa.','info'); return; }
+  EXCDEF.confirmando = true;
+  excDefRender();
+}
+
+function excDefCancelar(){ EXCDEF.confirmando = false; excDefRender(); }
+
+async function excDefExecutar(i){
+  const r = EXCDEF.achados[i];
+  if (!r) return;
+  const btn = document.getElementById('exc-btn-apagar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Excluindo…'; }
+  try {
+    const res = await fetch(A1.rpc('a1_excluir_definitivo'), {
+      method:'POST', headers:A1.headers(),
+      body: JSON.stringify({ p_modulo: r.modulo, p_id: r.registro_id,
+                             p_justificativa: EXCDEF.justificativa || '' })
+    });
+    if (!res.ok) {
+      const msg = await excDefMotivo(res);
+      const alvo = document.getElementById('exc-resultado');
+      if (alvo) alvo.innerHTML = excDefErroHtml(msg);
+      toast('Nada foi apagado.','error');
+      EXCDEF.achados = []; EXCDEF.escolhido = null; EXCDEF.confirmando = false;
+      return;
+    }
+    const alvo = document.getElementById('exc-resultado');
+    if (alvo) alvo.innerHTML = `<div class="panel" style="padding:1rem 1.1rem;font-size:.79rem;
+        line-height:1.6;color:var(--t2)">
+        <strong style="color:var(--t1)">Excluído.</strong>
+        ${esc((EXC_MODULOS[r.modulo]||{}).rotulo || r.modulo)}
+        <span class="exc-cod">${esc(r.codigo || '')}</span> não existe mais.
+        A justificativa e o retrato do que havia ficaram registrados abaixo.</div>`;
+    const campo = document.getElementById('exc-codigo');
+    if (campo) campo.value = '';
+    EXCDEF.achados = []; EXCDEF.escolhido = null; EXCDEF.confirmando = false;
+    EXCDEF.justificativa = '';
+    toast('Registro excluído definitivamente.','success');
+    excDefHistorico();
+  } catch {
+    const alvo = document.getElementById('exc-resultado');
+    if (alvo) alvo.innerHTML = excDefErroHtml('Não consegui falar com o servidor. Confira antes de tentar de novo.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Sim, excluir para sempre'; }
+  }
+}
+
+// A auditoria fica à vista na própria tela: de nada adianta gravar a trilha
+// num lugar onde ninguém olha. E ver a lista crescer é o que deixa claro, para
+// quem apaga, que a exclusão tem testemunha.
+async function excDefHistorico(){
+  const alvo = document.getElementById('exc-historico');
+  if (!alvo) return;
+  const linhas = await fetch(`${A1.rest('a1_exclusoes')}?order=excluido_em.desc&limit=50`,
+    { headers:A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
+  const lista = Array.isArray(linhas) ? linhas : [];
+  if (!lista.length) {
+    alvo.innerHTML = `<div class="cfg-section-hdr">Exclusões já feitas</div>
+      <div class="panel" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.79rem">
+        Nenhuma exclusão definitiva registrada neste cliente.</div>`;
+    return;
+  }
+  alvo.innerHTML = `<div class="cfg-section-hdr">Exclusões já feitas</div>
+    <div class="tbl-wrap"><table class="pt-table"><thead><tr>
+      <th>Quando</th><th>Módulo</th><th>Registro</th><th>Justificativa</th><th>Quem</th>
+    </tr></thead><tbody>
+    ${lista.map(e => {
+      const quando = e.excluido_em ? new Date(e.excluido_em).toLocaleString('pt-BR') : '—';
+      const mod = (EXC_MODULOS[e.modulo] || {}).rotulo || e.modulo;
+      return `<tr>
+        <td style="white-space:nowrap;color:var(--t3);font-size:.72rem">${esc(quando)}</td>
+        <td style="font-weight:600">${esc(mod)}</td>
+        <td><span class="exc-cod">${esc(e.codigo || '')}</span>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">${esc(e.rotulo || '')}</div></td>
+        <td style="font-size:.75rem;color:var(--t2)">${esc(e.justificativa || '')}</td>
+        <td style="font-size:.75rem">${esc(e.ator_nome || '—')}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
 }
 
 // Wire up modal backdrop close

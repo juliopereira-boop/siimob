@@ -2,7 +2,7 @@
 //
 // O seletor "Acesso por etapa", no cadastro de corretor e de analista, só
 // mostrava as etapas do Repasse. A mesma pessoa que o gestor limitava a duas
-// etapas do Repasse enxergava a esteira INTEIRA da Pré-análise e do Comercial —
+// etapas do Repasse enxergava a esteira INTEIRA da Pré-análise e da Venda —
 // o controle existia num módulo e não existia nos outros dois.
 //
 // Aqui se prova: (1) o seletor lista os três, na ordem do processo, e só os
@@ -84,7 +84,7 @@ const PERM_BASE = { ver_repasses:true, editar_repasses:true, alterar_etapa:true,
 
     const txt = await p.$eval('#co-etapas-list', e => e.textContent);
     checa('a situação da Pré-análise está lá', /Em análise/.test(txt));
-    checa('e a do Comercial também',           /Proposta/.test(txt));
+    checa('e a da Venda também',           /Proposta/.test(txt));
 
     // Marcar uma situação da Pré-análise e salvar: o mapa tem de sair com o id
     // dela junto dos ids do Repasse.
@@ -101,7 +101,7 @@ const PERM_BASE = { ver_repasses:true, editar_repasses:true, alterar_etapa:true,
     });
     const mapa = corpo && corpo.permissions && corpo.permissions.etapas;
     checa('gravou a situação da Pré-análise', mapa && mapa.ps2 === 'editar', JSON.stringify(mapa));
-    checa('gravou a do Comercial no nível certo', mapa && mapa.cs1 === 'ver', JSON.stringify(mapa));
+    checa('gravou a da Venda no nível certo', mapa && mapa.cs1 === 'ver', JSON.stringify(mapa));
     checa('e não perdeu a etapa do Repasse que já estava lá',
       mapa && mapa.s1 === 'editar', JSON.stringify(mapa));
 

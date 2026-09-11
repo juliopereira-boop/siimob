@@ -76,6 +76,9 @@
   .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:110px;display:flex;flex-direction:column;gap:.4rem}
   .pa-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.6rem .7rem;cursor:pointer;box-shadow:var(--shadow)}
   .pa-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+  .pa-card[draggable="true"]{cursor:grab}
+  .pa-card.dragging{opacity:.45}
+  .k-col-body.drag-over{background:#e2e8f0;outline:2px dashed var(--violet);outline-offset:-3px}
   .pa-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
   .pa-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
   .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
@@ -228,7 +231,7 @@
       <button class="modal-tab" data-dt="documentos"     onclick="trocarAbaDossie('documentos',this)">Documentos</button>
       <button class="modal-tab" data-dt="checklist"      onclick="trocarAbaDossie('checklist',this)">Checklist</button>
       <button class="modal-tab" data-dt="historico"      onclick="trocarAbaDossie('historico',this)">Histórico</button>
-      <button class="modal-tab" data-dt="comercial"      onclick="trocarAbaDossie('comercial',this)">Comercial</button>
+      <button class="modal-tab" data-dt="comercial"      onclick="trocarAbaDossie('comercial',this)">Venda</button>
     </div>
     <div class="modal-body" id="dos-body"></div>
     <div class="modal-foot">
@@ -348,11 +351,11 @@ async function init(){
   // montada e o "por que não aparece nada?".
   if (!perm('pa_ver')) { semAcessoAoModulo(); return; }
 
-  // Cabeçalho e abas vêm do shell — os mesmos de Dashboard, Repasse e Comercial.
+  // Cabeçalho e abas vêm do shell — os mesmos de Dashboard, Repasse e Venda.
   // O botão de criar entra como ação do cabeçalho, e não como um botão solto
   // desta tela, para não voltarmos a ter duas barras diferentes no produto.
   // O shell devolve quais modulos o cliente TEM. Descartar esse retorno era o
-  // que fazia esta tela anunciar o Comercial — aba no dossie, botao de
+  // que fazia esta tela anunciar a Venda — aba no dossie, botao de
   // habilitar e consulta a a1_comerciais — para cliente que nao comprou o
   // modulo. A tabela nao devolveria linha nenhuma, mas a promessa na tela ja e
   // o problema: o modulo desligado nao pode nem aparecer.
@@ -381,7 +384,11 @@ async function carregar(){
     fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
-    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // `extra` vem junto porque é onde mora a imobiliária do corretor
+    // (extra.imobiliaria_id). Pedir só id,name é o que deixava o assistente
+    // sem como saber de que imobiliária é quem está cadastrando — e o PostgREST
+    // entrega exatamente as colunas pedidas, sem avisar que faltou uma.
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name,extra&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     // Os tipos de documento sao cadastrados em Configuracoes > Tipos de
@@ -397,6 +404,16 @@ async function carregar(){
   G.imobiliarias  = Array.isArray(imob) ? imob : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
   G.tiposDoc = lerTiposDoc(cfg);
+
+  // O cadastro de quem está logado, quando é parceiro. É de lá que sai a
+  // imobiliária dele — e a lista de corretores acima pode nem trazê-lo (o
+  // analista e o correspondente não são type=corretor).
+  G.meuParceiro = null;
+  if (G.user && G.user.role === 'partner' && G.user.id){
+    const meu = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=id,name,extra`, h)
+      .then(r=>r.json()).catch(()=>[]);
+    G.meuParceiro = (Array.isArray(meu) && meu[0]) || null;
+  }
 
   // Os nomes dos clientes vêm dos participantes. Uma consulta só para a fila
   // inteira, em vez de uma por linha.
@@ -493,6 +510,37 @@ function nivelNaSituacao(id){
   return (n === 'ver' || n === 'editar') ? n : null;
 }
 function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
+
+// ─── De quem é o processo ────────────────────────────────────────────────────
+//
+// Quem manda na carteira escolhe o dono do processo; quem não manda é o dono.
+// É a mesma divisão que o banco faz em a1_pa_guarda_insert: para gestor e
+// gerente, corretor_id é o que a tela mandar; para os demais, o gatilho
+// reescreve com a1_ator(). Oferecer o campo a um corretor seria oferecer uma
+// escolha que o banco desfaz no instante seguinte.
+function mandaNaCarteira(){ return ehGestor() || perm('gerente'); }
+
+// A imobiliária do corretor mora em extra.imobiliaria_id — o mesmo lugar em que
+// o pré-cadastro por link sempre a gravou e que o cadastro em Configurações
+// deixa editar. Sem ela, o campo do assistente nascia em branco e o corretor
+// escolhia (ou esquecia) a imobiliária dele mesmo.
+function minhaImobiliaria(){
+  const e = G.meuParceiro && G.meuParceiro.extra;
+  return (e && e.imobiliaria_id) || '';
+}
+function nomeImobiliaria(id){ const i = G.imobiliarias.find(x=>x.id===id); return i ? i.name : ''; }
+
+// Corretor SEM imobiliária no cadastro aparece em qualquer imobiliária, de
+// propósito: hoje quase nenhum tem o vínculo preenchido, e um filtro estrito
+// esvaziaria o seletor no primeiro dia — o gestor concluiria que o sistema
+// quebrou. Quem TEM vínculo só aparece na imobiliária dele.
+function corretoresDaImobiliaria(imobId){
+  if (!imobId) return G.corretores;
+  return G.corretores.filter(c => {
+    const v = c.extra && c.extra.imobiliaria_id;
+    return !v || v === imobId;
+  });
+}
 
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
@@ -618,7 +666,9 @@ function renderAndamento(linhas){
     return `<div class="k-col">
       <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
-      <div class="k-col-body">${dela.map(cartao).join('') ||
+      <div class="k-col-body" data-sit="${esc(s.id)}"
+           ondragover="aoArrastarSobre(event)" ondrop="aoSoltar(event,this)"
+           ondragleave="this.classList.remove('drag-over')">${dela.map(cartao).join('') ||
         '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
     </div>`;
   }).join('');
@@ -627,12 +677,113 @@ function renderAndamento(linhas){
 function cartao(p){
   const t = G.titulares[p.id], s = sla(p);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
-  return `<div class="pa-card" style="border-left-color:${cor}" onclick="abrirDossie('${esc(p.id)}')">
+  // Só é arrastável o cartão que esta pessoa pode de fato mover. Cartão que
+  // arrasta e volta é pior do que cartão que não arrasta: parece falha do
+  // sistema, e não a permissão que o gestor não deu.
+  const arrasta = podeMoverPa(p);
+  return `<div class="pa-card" style="border-left-color:${cor}" data-id="${esc(p.id)}"
+    ${arrasta ? `draggable="true" ondragstart="aoComecarArrasto(event,this)"
+    ondragend="this.classList.remove('dragging')"` : ''}
+    onclick="abrirDossie('${esc(p.id)}')">
     <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
     <div class="pa-line">${esc(nomeEmpr(p.empreendimento_id))}${p.unidade?' · un. '+esc(p.unidade):''}</div>
     <div class="pa-line">${esc(nomeCorretor(p.corretor_id))}</div>
     <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span></div>
   </div>`;
+}
+
+// ─── Mover cartão no quadro ──────────────────────────────────────────────────
+//
+// O quadro da Pré-análise nasceu só de leitura: nenhum cartão era arrastável e
+// nenhuma coluna recebia o soltar. No Repasse o gesto existia, então "não move"
+// aqui parecia defeito de uma tela que na verdade nunca teve a função.
+//
+// QUEM MOVE É SEMPRE a1_pa_transicionar. PATCH direto em situacao_id é recusado
+// pelo gatilho trg_pa_guarda ('situacao_so_muda_por_transicao'), e com razão:
+// pular o orquestrador é pular a aresta da esteira, o papel, o histórico e a
+// ação ligada à transição.
+function podeMoverPa(p){
+  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
+  // empurra para a seguinte.
+  return !!p && perm('pa_editar') && nivelNaSituacao(p.situacao_id) === 'editar';
+}
+
+// As situações de destino são as arestas que a esteira do cliente permite a
+// partir daqui. A tela não inventa caminho: mostra o que o banco aceita.
+function destinosDe(situacaoId){
+  return G.transicoes
+    .filter(t => t.de_id === null || t.de_id === situacaoId)
+    .map(t => G.situacoes.find(s => s.id === t.para_id))
+    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== situacaoId);
+}
+
+function aoComecarArrasto(e, el){
+  el.classList.add('dragging');
+  G.arrastando = el.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  // Sem algum dado no dataTransfer o Chromium cancela o arrasto antes do soltar.
+  try { e.dataTransfer.setData('text/plain', el.dataset.id); } catch {}
+}
+function aoArrastarSobre(e){
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function aoSoltar(e, col){
+  e.preventDefault(); col.classList.remove('drag-over');
+  const id = G.arrastando || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  G.arrastando = null;
+  if (id) moverCartao(id, col.dataset.sit);
+}
+
+async function moverCartao(id, paraId){
+  const p = G.lista.find(x => x.id === id);
+  if (!p || !paraId || p.situacao_id === paraId) return;
+
+  if (!perm('pa_editar')){ toast(faltaPermissao('pa_editar','Mover a pré-análise'),'error'); return; }
+  if (nivelNaSituacao(p.situacao_id) !== 'editar'){
+    toast(`Em "${nomeSituacao(p.situacao_id)}" você só acompanha. Peça ao gestor a permissão de editar nesta situação.`,'error');
+    return;
+  }
+  const destinos = destinosDe(p.situacao_id);
+  if (!destinos.some(s => s.id === paraId)){
+    toast(destinos.length
+      ? `A esteira não liga "${nomeSituacao(p.situacao_id)}" a "${nomeSituacao(paraId)}". Daqui dá para ir para: `
+        + destinos.map(s => s.nome).join(', ') + '.'
+      : `"${nomeSituacao(p.situacao_id)}" não tem saída desenhada. Ajuste em Configurações › Editor de Workflow.`,
+      'error');
+    return;
+  }
+
+  // Documento obrigatório: o banco tranca (a1_pa_transicionar), mas o aviso que
+  // resolve o dia é este — e ele custa uma consulta só quando o cliente de fato
+  // marcou algum tipo como obrigatório. Quem não usa o recurso não paga nada.
+  if (a1DocsObrigatorios(G.tiposDocCru || [], 'PRE_ANALISE').length){
+    const docs = await fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&select=tipo,status`,
+      { headers:A1.headers() }).then(r=>r.json()).catch(()=>null);
+    // Não deu para perguntar: não inventa falta. A trava de verdade é do banco.
+    if (Array.isArray(docs)){
+      const entregues = docs.filter(d => d && !['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].includes(d.status))
+                            .map(d => d.tipo);
+      const falta = a1DocsFaltando(G.tiposDocCru || [], 'PRE_ANALISE', entregues);
+      if (falta.length){ toast(a1DocsAvisoFaltando(falta),'error'); return; }
+    }
+  }
+
+  const res = await fetch(A1.rpc('a1_pa_transicionar'), {
+    method:'POST', headers:A1.headers(),
+    // p_versao_esperada: se alguém moveu este processo enquanto o quadro estava
+    // aberto, a chamada falha em vez de escrever por cima do que o outro fez.
+    body: JSON.stringify({ p_pre_analise:id, p_para:paraId, p_justificativa:null,
+                           p_versao_esperada:p.versao })
+  });
+  const j = await res.json().catch(()=>null);
+  // O cartão só se move na tela DEPOIS de o banco confirmar. O Repasse já teve
+  // o defeito oposto — movia primeiro, e o processo ficava na etapa nova até
+  // alguém recarregar a página e descobrir que nunca tinha saído do lugar.
+  if (!res.ok){ toast(traduzErro(j),'error'); return; }
+  if (j && j.ok === false){ toast(traduzErro({ message:j.erro }),'error'); return; }
+  toast(`Movido para "${nomeSituacao(paraId)}".`,'success');
+  await carregar();
 }
 
 // A vista de painel saiu daqui: os números da Pré-análise passaram a viver no
@@ -642,7 +793,11 @@ function cartao(p){
 // ══════════ ASSISTENTE ══════════
 function abrirAssistente(){
   G.passo = 1;
-  G.rascunho = { empreendimento_id:'', unidade:'', imobiliaria_id:'',
+  // O corretor já entra com a imobiliária dele preenchida: é a única que faz
+  // sentido, e deixá-la em branco fazia o processo nascer sem imobiliária.
+  G.rascunho = { empreendimento_id:'', unidade:'',
+                 imobiliaria_id: mandaNaCarteira() ? '' : minhaImobiliaria(),
+                 corretor_id:'',
                  titular:{ documento:'', nome:'', nascimento:'', telefone:'', email:'', estado_civil:'' },
                  pessoaExistente:null,
                  renda_declarada:'', fonte_renda:'', associados:[] };
@@ -657,7 +812,7 @@ function renderPasso(){
     el.className = 'passo' + (i===n ? ' on' : (i<n ? ' ok' : ''));
   });
   document.getElementById('nova-sub').textContent =
-    `Passo ${n} de 3 — ` + ['o negócio','quem é o titular','renda e associados'][n-1];
+    `Passo ${n} de 3 — ` + ['o negócio e quem atende','quem é o titular','renda e associados'][n-1];
   document.getElementById('nova-voltar').style.visibility = n===1 ? 'hidden' : 'visible';
   document.getElementById('nova-avancar').textContent = n===3 ? 'Criar pré-análise' : 'Avançar';
   document.getElementById('nova-body').innerHTML = [passo1,passo2,passo3][n-1]();
@@ -668,7 +823,7 @@ function passo1(){
   const r = G.rascunho;
   return `
     <div class="aviso i">A unidade aqui é <strong>referência de interesse</strong> e não reserva estoque.
-    A reserva acontece no Comercial, depois da aprovação.</div>
+    A reserva acontece na Venda, depois da aprovação.</div>
     <div class="fgrid">
       <div class="fg full"><label>Empreendimento *</label>
         <select id="w-empr">${G.empreendimentos.length
@@ -677,10 +832,73 @@ function passo1(){
           : '<option value="">Nenhum empreendimento cadastrado</option>'}</select></div>
       <div class="fg"><label>Unidade de interesse</label>
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
-      <div class="fg"><label>Imobiliária</label>
-        <select id="w-imob"><option value="">—</option>${G.imobiliarias.map(i =>
-          `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>
+      ${campoImobiliaria(r)}
+      ${campoCorretor(r)}
     </div>`;
+}
+
+// Imobiliária: o gestor escolhe, o corretor não. O vínculo dele está no
+// cadastro (extra.imobiliaria_id) e o banco o reforça na inserção — deixar o
+// seletor aberto era convidar a gravar a imobiliária de outra pessoa.
+function campoImobiliaria(r){
+  if (!mandaNaCarteira()){
+    const id = minhaImobiliaria();
+    if (id){
+      const nome = nomeImobiliaria(id) || 'Sua imobiliária';
+      return `<div class="fg"><label>Imobiliária</label>
+        <select id="w-imob" disabled><option value="${esc(id)}">${esc(nome)}</option></select>
+        <div class="sub" style="margin-top:.25rem">vem do seu cadastro</div></div>`;
+    }
+    // Sem vínculo no cadastro o campo continua aberto: travar um seletor vazio
+    // impediria o corretor de trabalhar por causa de um cadastro incompleto.
+    return `<div class="fg"><label>Imobiliária</label>
+      <select id="w-imob"><option value="">—</option>${G.imobiliarias.map(i =>
+        `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select>
+      <div class="sub" style="margin-top:.25rem">seu cadastro não tem imobiliária — peça ao gestor para vincular</div></div>`;
+  }
+  return `<div class="fg"><label>Imobiliária</label>
+    <select id="w-imob" onchange="imobiliariaDoPasso1()"><option value="">—</option>${G.imobiliarias.map(i =>
+      `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>`;
+}
+
+// Corretor: só para quem manda na carteira. Este campo não existia, e por isso
+// a pré-análise aberta pelo gestor nascia sem corretor nenhum — sumindo do
+// filtro por corretor e da carteira de quem de fato atendeu o cliente.
+function campoCorretor(r){
+  if (!mandaNaCarteira()) return '';
+  return `<div class="fg"><label>Corretor</label>
+    <select id="w-corretor" onchange="corretorDoPasso1()">${
+      opcoesCorretor(corretoresDaImobiliaria(r.imobiliaria_id), r.corretor_id)}</select></div>`;
+}
+
+function opcoesCorretor(lista, escolhido){
+  return '<option value="">— sem corretor definido —</option>' +
+    lista.map(c => `<option value="${esc(c.id)}" ${c.id===escolhido?' selected':''}>${esc(c.name)}</option>`).join('');
+}
+
+// Os dois campos se ajudam, sem que nenhum mande no outro: escolher a
+// imobiliária encurta a lista de corretores, e escolher um corretor com vínculo
+// acerta a imobiliária. Sem o segundo caminho o processo nasceria com o par
+// errado — corretor de uma imobiliária gravado na conta de outra.
+function imobiliariaDoPasso1(){
+  const si = document.getElementById('w-imob'), sc = document.getElementById('w-corretor');
+  G.rascunho.imobiliaria_id = si ? si.value : '';
+  if (!sc) return;
+  sc.innerHTML = opcoesCorretor(corretoresDaImobiliaria(G.rascunho.imobiliaria_id), sc.value);
+  G.rascunho.corretor_id = sc.value;
+}
+function corretorDoPasso1(){
+  const si = document.getElementById('w-imob'), sc = document.getElementById('w-corretor');
+  if (!sc) return;
+  G.rascunho.corretor_id = sc.value;
+  const c = G.corretores.find(x => x.id === sc.value);
+  const v = c && c.extra && c.extra.imobiliaria_id;
+  if (si && !si.disabled && v && si.value !== v){
+    si.value = v;
+    imobiliariaDoPasso1();
+    sc.value = c.id;
+    G.rascunho.corretor_id = c.id;
+  }
 }
 
 function passo2(){
@@ -744,6 +962,7 @@ function guardarPasso(){
     if (v('w-empr')    !== undefined) r.empreendimento_id = v('w-empr');
     if (v('w-unidade') !== undefined) r.unidade           = v('w-unidade');
     if (v('w-imob')    !== undefined) r.imobiliaria_id    = v('w-imob');
+    if (v('w-corretor')!== undefined) r.corretor_id       = v('w-corretor');
   }
   if (G.passo === 2){
     const t = r.titular;
@@ -816,18 +1035,21 @@ async function criarPreAnalise(){
                       nascimento: r.titular.nascimento || null, estado_civil: r.titular.estado_civil || null,
                       telefone: r.titular.telefone || null, email: r.titular.email || null };
       const res = await fetch(A1.rest('a1_pa_pessoas'), { method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
-      if (!res.ok) throw new Error(await mensagemErro(res, 'Não foi possível cadastrar a pessoa.'));
+      if (!res.ok) throw new Error(await mensagemErro(res, 'Não foi possível cadastrar a pessoa.', 'pa_criar'));
       pessoaId = ((await res.json())[0] || {}).id;
     }
     if (!pessoaId) throw new Error('Não foi possível identificar o titular.');
 
-    // 2. A pré-análise. Dono, cliente e situação inicial quem decide é o banco.
+    // 2. A pré-análise. Cliente e situação inicial quem decide é o banco.
+    // corretor_id vai junto só quando quem cria manda na carteira: para o
+    // corretor, o gatilho reescreve com a1_ator() de qualquer jeito, e mandar
+    // um id seria sugerir uma escolha que ele não tem.
+    const corpoPa = { tenant_id:tid, empreendimento_id:r.empreendimento_id,
+                      unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null };
+    if (mandaNaCarteira()) corpoPa.corretor_id = r.corretor_id || null;
     const resPa = await fetch(A1.rest('a1_pre_analises'), {
-      method:'POST', headers:A1.returnHeaders(),
-      body: JSON.stringify({ tenant_id:tid, empreendimento_id:r.empreendimento_id,
-                             unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null })
-    });
-    if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.'));
+      method:'POST', headers:A1.returnHeaders(), body: JSON.stringify(corpoPa) });
+    if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.', 'pa_criar'));
     const pa = (await resPa.json())[0];
 
     // 3. Participantes.
@@ -854,7 +1076,11 @@ async function criarPreAnalise(){
     }
     const resPart = await fetch(A1.rest('a1_pa_participantes'), {
       method:'POST', headers:A1.headers(), body: JSON.stringify(participantes) });
-    if (!resPart.ok) toast('Pré-análise criada, mas houve erro ao gravar os participantes.','error');
+    // Pré-análise sem titular é uma casca: não tem nome de cliente na fila e
+    // trava o checklist mais adiante. Se esta parte falhar, o aviso tem de dizer
+    // que o processo existe e onde terminar o serviço — não "houve erro".
+    if (!resPart.ok) toast(await mensagemErro(resPart,
+      'A pré-análise foi criada, mas o titular não foi gravado. Abra o dossiê e confira a aba Pessoas.'),'error');
 
     fecharModal('modal-nova');
     toast('Pré-análise criada.','success');
@@ -867,16 +1093,49 @@ async function criarPreAnalise(){
   }
 }
 
-// O PostgREST devolve o motivo em JSON. Mostrar "erro 403" para o operador não
-// ajuda ninguém; mostrar a regra que barrou, sim.
-async function mensagemErro(res, padrao){
-  try {
-    const j = await res.json();
-    const m = j && (j.message || j.hint || j.details);
-    if (res.status === 401 || res.status === 403 || /row-level security/i.test(m||''))
-      return 'Você não tem permissão para isso.';
-    return m || padrao;
-  } catch { return padrao; }
+// ─── Quando o banco diz não ──────────────────────────────────────────────────
+//
+// "Você não tem permissão para isso" manda a pessoa abrir chamado para
+// descobrir o óbvio: o gestor precisa saber QUAL caixa marcar e ONDE. O rótulo
+// aqui é o mesmo que o gestor lê no cadastro (js/permissoes.js), e a chave crua
+// vem junto porque é por ela que se procura no formulário.
+const PERM_ROTULO = {
+  pa_ver:           'Ver pré-análises',
+  pa_criar:         'Criar pré-análise',
+  pa_editar:        'Editar pré-análise',
+  analisar_credito: 'Analisar crédito'
+};
+function faltaPermissao(chave, oQueFalhou){
+  const rotulo = PERM_ROTULO[chave] || chave;
+  return (oQueFalhou ? String(oQueFalhou).replace(/\.\s*$/,'') + ': ' : '')
+    + `falta a permissão "${rotulo}" (${chave}). `
+    + 'Peça ao gestor em Configurações — no seu cadastro, ou no perfil de acesso vinculado a você.';
+}
+
+// O PostgREST devolve o motivo em JSON. Mostrar "erro 401" para o operador não
+// ajuda ninguém; mostrar a regra que barrou e a permissão que resolve, sim.
+// `chave` é a permissão que a política daquela tabela exige — quem chama sabe
+// qual é, e sem ela a mensagem volta a ser um beco sem saída.
+async function mensagemErro(res, padrao, chave){
+  let m = '';
+  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  // Gatilho do dossiê: enviar documento é de todos, dar o veredito não.
+  if (/sem_permissao_para_analisar_documento/.test(m))
+    return faltaPermissao('analisar_credito', 'Aprovar ou reprovar documento');
+  const falta = /documento_obrigatorio_faltando:\s*([^\n"}]*)/.exec(m);
+  if (falta) return a1DocsAvisoFaltando(falta[1].split(',').map(x=>x.trim()).filter(Boolean));
+  if (/situacao_so_muda_por_transicao/.test(m))
+    return 'Situação só muda pela esteira. Arraste o cartão no quadro ou use o botão Mover no dossiê.';
+  if (/redistribuir_carteira_e_do_gestor/.test(m))
+    return 'Passar o processo para outro corretor é do gestor.';
+  if (/corretor_de_outro_cliente/.test(m))
+    return 'Esse corretor não é deste cliente. Recarregue a tela e escolha de novo.';
+  // 42501 e "permission denied" chegam quando o RLS nega; o 401 relatado em
+  // produção vinha daqui — a política pedia uma chave que o corretor não tinha.
+  if (res.status === 401 || res.status === 403 ||
+      /row-level security|permission denied|42501/i.test(m))
+    return chave ? faltaPermissao(chave, padrao) : 'Você não tem permissão para isso.';
+  return m || padrao;
 }
 
 // ══════════ DOSSIÊ ══════════
@@ -895,7 +1154,7 @@ async function abrirDossie(id){
     fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_eventos')}?pre_analise_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[]),
-    // Sem a licenca do Comercial nao se pergunta nada a ele.
+    // Sem a licenca da Venda nao se pergunta nada a ele.
     G.temComercial
       ? fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
       : Promise.resolve([])
@@ -947,11 +1206,16 @@ function dosDados(){
       <div class="fg"><label>Unidade de interesse</label>
         <input id="d-unidade" value="${esc(p.unidade||'')}" ${podeEditar?'':'disabled'}></div>
       <div class="fg"><label>Imobiliária</label>
-        <select id="d-imob" ${podeEditar?'':'disabled'}><option value="">—</option>${G.imobiliarias.map(i =>
+        <select id="d-imob" ${podeEditar && mandaNaCarteira() ? '' : 'disabled'}><option value="">—</option>${G.imobiliarias.map(i =>
           `<option value="${esc(i.id)}" ${i.id===p.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>
       <div class="fg"><label>Validade da pré-análise</label>
         <input id="d-vence" type="date" value="${esc((p.vence_em||'').slice(0,10))}" ${podeEditar?'':'disabled'}></div>
-      <div class="fg"><label>Corretor</label><input value="${esc(nomeCorretor(p.corretor_id))}" disabled></div>
+      <!-- Trocar o corretor é redistribuir carteira: gestor e gerente, e mais
+           ninguém. Quem impõe é o gatilho a1_pa_guarda_update; aqui o campo
+           deixa de ser um <input disabled> que não deixava nem o gestor mexer. -->
+      <div class="fg"><label>Corretor</label>${podeEditar && mandaNaCarteira()
+        ? `<select id="d-corretor">${opcoesCorretor(G.corretores, p.corretor_id)}</select>`
+        : `<input value="${esc(nomeCorretor(p.corretor_id))}" disabled>`}</div>
       <div class="fg"><label>Criada em</label><input value="${esc(dataHoraBR(p.criado_em))}" disabled></div>
       <div class="fg full"><label>Prazo desta etapa</label>
         <div class="sla ${s.cls}" style="padding:.35rem 0">
@@ -970,9 +1234,13 @@ async function salvarDados(){
     imobiliaria_id:    document.getElementById('d-imob').value || null,
     vence_em:          document.getElementById('d-vence').value || null
   };
+  // Só vai no corpo quando o campo existe — mandar corretor_id sem poder
+  // trocá-lo derrubaria o PATCH inteiro em 'redistribuir_carteira_e_do_gestor'.
+  const selCorretor = document.getElementById('d-corretor');
+  if (selCorretor) corpo.corretor_id = selCorretor.value || null;
   const res = await fetch(`${A1.rest('a1_pre_analises')}?id=eq.${p.id}`, {
     method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.'),'error'); return; }
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.','pa_editar'),'error'); return; }
   Object.assign(p, corpo);
   toast('Dados salvos.','success');
   renderVista();
@@ -1067,7 +1335,7 @@ async function salvarCredito(){
   };
   const res = await fetch(A1.rest('a1_pa_analises_credito'), {
     method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.'),'error'); return; }
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.','analisar_credito'),'error'); return; }
   G.atualCred.unshift((await res.json())[0] || corpo);
   toast('Decisão registrada.','success');
   montarRodapeDossie();
@@ -1117,7 +1385,7 @@ async function enviarDoc(){
         tipo: document.getElementById('doc-tipo').value, storage_key: chave,
         nome_arquivo: arq.name, mime: arq.type || null })
     });
-    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o documento.'));
+    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o documento.','pa_editar'));
     G.atualDocs.unshift((await res.json())[0]);
     toast('Documento enviado.','success');
     renderDossie();
@@ -1135,14 +1403,14 @@ async function analisarDoc(id, status){
   const res = await fetch(`${A1.rest('a1_pa_documentos')}?id=eq.${id}`, {
     method:'PATCH', headers:A1.headers(),
     body: JSON.stringify({ status, analisado_em: new Date().toISOString() }) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível analisar o documento.'),'error'); return; }
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível analisar o documento.','analisar_credito'),'error'); return; }
   const d = G.atualDocs.find(x => x.id === id); if (d) d.status = status;
   toast(status === 'APROVADO' ? 'Documento aprovado.' : 'Documento reprovado.','success');
   montarRodapeDossie(); renderDossie();
 }
 
 // O checklist não é decorativo: cada linha é exatamente uma condição que o
-// banco vai conferir na hora de destravar o Comercial.
+// banco vai conferir na hora de destravar a Venda.
 function checklist(){
   const temTitular  = G.atualPart.some(p => p.papel === 'TITULAR');
   const aprovado    = G.atualCred.some(c => c.status === 'APROVADO');
@@ -1188,7 +1456,7 @@ function dosHistorico(){
     apaga — nem pelo gestor, nem pela API.</div>`;
 }
 function rotuloEvento(e){
-  return { transicao:'Mudança de situação', criado_da_pre_analise:'Comercial criado',
+  return { transicao:'Mudança de situação', criado_da_pre_analise:'Venda criada',
            decisao_invalidada:'Decisão de crédito invalidada' }[e] || e;
 }
 
@@ -1196,17 +1464,17 @@ function dosComercial(){
   if (!G.atualCo){
     const c = checklist();
     const faltando = c.filter(i => !i.ok && /titular|crédito/i.test(i.txt));
-    return `<div class="aviso i">Ainda não existe um Comercial para esta pré-análise.</div>
+    return `<div class="aviso i">Ainda não existe uma Venda para esta pré-análise.</div>
       ${faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f=>f.txt).join(', '))}.</div>` : ''}
-      <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O Comercial nasce por
+      <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">A Venda nasce por
       <strong>ação da esteira</strong> — nunca por um cadastro paralelo. É isso que garante que ninguém
       pule a aprovação de crédito. Quando as condições estiverem cumpridas, o botão
-      <strong>Habilitar Comercial</strong> aparece aqui embaixo.</p>`;
+      <strong>Habilitar Venda</strong> aparece aqui embaixo.</p>`;
   }
   const co = G.atualCo, snap = co.origem_snapshot || {};
   const cr = snap.credito || {};
   return `
-    <div class="aviso s">Comercial criado em ${esc(dataHoraBR(co.criado_em))}.</div>
+    <div class="aviso s">Venda criada em ${esc(dataHoraBR(co.criado_em))}.</div>
     <div class="sec-title" style="margin-top:0">Fotografia do que foi aprovado</div>
     <div class="fgrid">
       <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
@@ -1216,22 +1484,17 @@ function dosComercial(){
     </div>
     <div class="aviso i" style="margin-top:.9rem">Esta fotografia não muda se a pré-análise mudar depois.
       O que entrou em negociação foi isto, e é isto que o histórico vai mostrar.</div>
-    <div style="margin-top:1rem"><a class="btn btn-primary btn-sm" href="/${esc(G.slug)}/comercial?id=${esc(co.id)}">Abrir no Comercial ↗</a></div>`;
+    <div style="margin-top:1rem"><a class="btn btn-primary btn-sm" href="/${esc(G.slug)}/comercial?id=${esc(co.id)}">Abrir na Venda ↗</a></div>`;
 }
 
 // ─── rodapé: ações e transições possíveis ────────────────────────────────────
 function montarRodapeDossie(){
   const p = G.atual;
-  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
-  // empurra para a seguinte.
-  const podeMover = perm('pa_editar') && nivelNaSituacao(p.situacao_id) === 'editar';
-
-  // As situações de destino são as arestas que a esteira do cliente permite a
-  // partir daqui. A tela não inventa caminho: mostra o que o banco aceita.
-  const destinos = G.transicoes
-    .filter(t => t.de_id === null || t.de_id === p.situacao_id)
-    .map(t => G.situacoes.find(s => s.id === t.para_id))
-    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== p.situacao_id);
+  // As mesmas duas perguntas do arrastar no quadro, e de propósito num lugar
+  // só: quando as duas portas tinham a própria cópia da regra, uma delas ficava
+  // para trás a cada mudança.
+  const podeMover = podeMoverPa(p);
+  const destinos  = destinosDe(p.situacao_id);
 
   const sel = document.getElementById('dos-mover');
   sel.innerHTML = destinos.length
@@ -1246,8 +1509,8 @@ function montarRodapeDossie(){
     G.atualPart.some(x => x.papel === 'TITULAR') &&
     G.atualCred.some(c => c.status === 'APROVADO');
   acoes.innerHTML = podeHabilitar
-    ? `<button class="btn btn-primary btn-sm" id="btn-habilitar" onclick="habilitarComercial()">Habilitar Comercial</button>`
-    : (jaTem ? `<span class="sub">Comercial já criado.</span>` : '');
+    ? `<button class="btn btn-primary btn-sm" id="btn-habilitar" onclick="habilitarComercial()">Habilitar Venda</button>`
+    : (jaTem ? `<span class="sub">Venda já criado.</span>` : '');
 }
 
 async function moverSituacao(){
@@ -1266,7 +1529,9 @@ async function moverSituacao(){
     });
     const j = await res.json().catch(()=>null);
     if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    if (j && j.ok === false){ toast(j.erro || 'A esteira barrou a transição.','error'); return; }
+    // O orquestrador respondeu 200 e disse "não": o motivo vem em j.erro, com o
+    // mesmo vocabulário das exceções — então passa pelo mesmo tradutor.
+    if (j && j.ok === false){ toast(traduzErro({ message:j.erro }) || 'A esteira barrou a transição.','error'); return; }
     toast('Situação alterada.','success');
     fecharModal('modal-dossie');
     await carregar();
@@ -1281,13 +1546,13 @@ async function habilitarComercial(){
       body: JSON.stringify({ p_pre_analise:G.atual.id, p_acao:'ENABLE_COMMERCIAL' }) });
     const j = await res.json().catch(()=>null);
     if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    if (j && j.ok === false){ toast(j.erro || 'Não foi possível habilitar o Comercial.','error'); return; }
-    toast('Comercial criado.','success');
+    if (j && j.ok === false){ toast(j.erro || 'Não foi possível habilitar a Venda.','error'); return; }
+    toast('Venda criada.','success');
     await abrirDossie(G.atual.id);
     trocarAbaDossie('comercial', document.querySelector('#dos-tabs [data-dt="comercial"]'));
   } finally {
     const b = document.getElementById('btn-habilitar');
-    if (b){ b.disabled = false; b.textContent = 'Habilitar Comercial'; }
+    if (b){ b.disabled = false; b.textContent = 'Habilitar Venda'; }
   }
 }
 
@@ -1299,7 +1564,9 @@ function traduzErro(j){
     nao_encontrado:            'Processo não encontrado.',
     modulo_desabilitado:       'O módulo não está liberado para este cliente.',
     sem_acesso:                'Este processo não é da sua carteira.',
-    sem_permissao:             'Você não tem permissão para isso.',
+    // Mover na esteira é pa_editar — a mesma chave que o cadastro grava. Dizer
+    // só "sem permissão" fazia o gestor procurar no escuro qual caixa marcar.
+    sem_permissao:             faltaPermissao('pa_editar', 'Mover ou agir sobre esta pré-análise'),
     versao_desatualizada:      'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
     transicao_nao_permitida:   'A esteira do cliente não permite essa mudança a partir da situação atual.',
     papel_nao_autorizado:      'Seu papel não pode fazer essa transição.',
@@ -1307,7 +1574,7 @@ function traduzErro(j){
     sem_aprovacao_valida:      'Não há decisão de crédito aprovada e válida.',
     sem_titular:               'A pré-análise não tem titular.',
     acao_desconhecida:         'Ação desconhecida.',
-    modulo_comercial_desabilitado:'O módulo Comercial não está liberado para este cliente.'
+    modulo_comercial_desabilitado:'O módulo Venda não está liberado para este cliente.'
   };
   // O banco manda o nome do que falta junto da mensagem. Repetir o nome e o
   // que faz o gestor resolver em vez de recarregar a tela.

@@ -38,7 +38,14 @@ create table if not exists a1_partners (
   tenant_id uuid references a1_tenants(id),
   name text, cpf text, type text, empresa_id uuid,
   is_active boolean default true, approved boolean default true,
+  -- `extra` faltava aqui e existe em produção (schema.sql). É onde mora o
+  -- vínculo do corretor com a imobiliária (extra.imobiliaria_id) e o
+  -- coordenador dele. Sem a coluna, qualquer regra que a leia estoura na prova
+  -- com "column p.extra does not exist" — e, pior, uma regra que a lesse ERRADO
+  -- passaria sem ser exercitada.
+  extra jsonb not null default '{}'::jsonb,
   permissions jsonb default '{}'::jsonb);
+alter table a1_partners add column if not exists extra jsonb not null default '{}'::jsonb;
 
 -- COMO O LOGIN DE PARCEIRO REALMENTE FUNCIONA, e por que este andaime precisa
 -- reproduzir isso: a1_partner_login não guarda o id do parceiro na sessão. Ele
@@ -109,7 +116,9 @@ create table if not exists a1_cases (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid, module_key text, stage_id uuid, stage_name text,
   stage_entered_at timestamptz, client_name text, client_cpf text,
-  development text, unit text, broker_name text, real_estate_name text,
+  -- `block` existe em produção e faltava aqui. Quem monta o rótulo do cartão
+  -- ("Bloco B1 · un. 101") lê as duas colunas; com só uma, a função nem compila.
+  development text, block text, unit text, broker_name text, real_estate_name text,
   -- manager_name e partner_name faltavam aqui e existem em produção. É por
   -- esses três nomes que o Repasse sabe de quem é o processo — sem eles, uma
   -- política escrita sobre o dono não podia nem ser carregada, quanto mais
@@ -117,6 +126,38 @@ create table if not exists a1_cases (
   manager_name text, partner_name text,
   is_new boolean, new_at timestamptz, payload jsonb default '{}'::jsonb,
   documents jsonb default '[]'::jsonb, created_at timestamptz default now());
+
+-- As filhas de a1_cases e o cadastro de empreendimentos existem em produção
+-- desde sempre e faltavam aqui. Sem elas, uma função que precise contar o
+-- histórico de etapas de um processo — ou dizer o NOME do empreendimento em
+-- vez do uuid — nem compila no andaime, e a prova morre antes de provar.
+-- O `on delete` de cada uma é o de produção de propósito: é justamente a
+-- diferença entre "o histórico vai junto" e "o e-mail só perde o vínculo".
+create table if not exists a1_developments (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references a1_tenants(id),
+  name text, regional text, estado char(2), cidade text);
+
+create table if not exists a1_stage_history (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references a1_tenants(id),
+  case_id uuid references a1_cases(id) on delete cascade,
+  stage_id uuid, stage_name text,
+  entered_at timestamptz default now(), exited_at timestamptz);
+
+create table if not exists a1_events (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references a1_tenants(id),
+  case_id uuid references a1_cases(id) on delete cascade,
+  type text, description text, actor_name text,
+  created_at timestamptz default now());
+
+create table if not exists a1_emails (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references a1_tenants(id),
+  case_id uuid references a1_cases(id) on delete set null,
+  to_email text, subject text, body text,
+  status text default 'pending', created_at timestamptz default now());
 
 -- a1_config guarda as configurações do cliente em JSON dentro de uma coluna
 -- TEXT — inclusive os tipos de documento, que é de onde sai a regra de
@@ -169,6 +210,22 @@ grant execute on function a1_has_module(text) to anon, authenticated;
 
 create policy cases_tenant_isolation on a1_cases for all
   using (tenant_id = a1_tenant()) with check (tenant_id = a1_tenant());
+
+-- As filhas e o cadastro de empreendimentos seguem o mesmo desenho que têm em
+-- produção: RLS por cliente e grant completo para anon. Nascer trancado aqui
+-- faria qualquer prova de isolamento passar sem nada estar sendo protegido.
+do $$
+declare t text;
+begin
+  foreach t in array array['a1_stage_history','a1_events','a1_emails','a1_developments']
+  loop
+    execute format('alter table %I enable row level security', t);
+    execute format('drop policy if exists %I on %I', t || '_tenant_isolation', t);
+    execute format('create policy %I on %I for all using (tenant_id = a1_tenant())'
+                   || ' with check (tenant_id = a1_tenant())', t || '_tenant_isolation', t);
+    execute format('grant select, insert, update, delete on %I to anon, authenticated', t);
+  end loop;
+end $$;
 
 -- Entrar na pele de alguém: é assim que o PostgREST chega ao banco — papel anon
 -- e o token no cabeçalho. Nenhum teste deste diretório consulta como superusuário.
