@@ -446,6 +446,7 @@
           <div class="form-group"><label>Valor do Contrato (R$)</label><input id="md-valor" type="number" step="0.01"></div>
           <div class="form-group"><label>Banco Financiador</label><input id="md-banco" type="text" list="dl-bancos"></div>
           <div class="form-group"><label>Gerente / Responsável</label><input id="md-manager" type="text"></div>
+          <div class="form-group full" id="md-vinculos"></div>
           <div class="form-group full"><label>Observações</label><textarea id="md-obs" rows="3"></textarea></div>
         </div>
         <datalist id="dl-emprs"></datalist>
@@ -566,6 +567,7 @@
 const G = {
   user: null, slug: '',
   stages: [], cases: [],
+  empresas: [], ccas: [], analistas: [],
   filters: { search:'', empr:'', banco:'', itbi:'' },
   dashFilters: { empr:'', banco:'', cartorio:'', search:'' },
   activeCase: null,
@@ -588,7 +590,10 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
-  try { a1RequireModule('registro'); } catch { return; }
+  // SEM await, a promessa não era esperada e o catch nunca pegava nada: a tela
+  // seguia e pedia a1_cases mesmo para cliente sem a licença do Registro. A
+  // regra da casa é que o módulo sem licença não chega nem a existir na tela.
+  try { await a1RequireModule('registro'); } catch { return; }
   G.slug = A1.slug;
 
   document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
@@ -621,14 +626,21 @@ async function init() {
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases] = await Promise.all([
+  const hp = { headers: A1.headers() };
+  const [stages, cases, emps, ccas, anas] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`, { headers: A1.headers() })
       .then(r => r.json()).catch(() => []),
     fetch(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc`, { headers: A1.headers() })
-      .then(r => r.json()).catch(() => [])
+      .then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => [])
   ]);
   G.stages = Array.isArray(stages) ? stages : [];
   G.cases  = Array.isArray(cases)  ? cases  : [];
+  G.empresas  = Array.isArray(emps) ? emps : [];
+  G.ccas      = Array.isArray(ccas) ? ccas : [];
+  G.analistas = Array.isArray(anas) ? anas : [];
 
   // Populate datalists
   const emprs = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
@@ -933,7 +945,7 @@ function renderCard(c, color, now) {
         <span class="badge-days ${dCls}">${days}d</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${c.client_cpf}')">${c.client_cpf}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${esc(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
     ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
     <div class="kc-chips">
       ${itbi === 'pago'    ? '<span class="chip chip-itbi-pago">ITBI Pago</span>'    : ''}
@@ -1068,6 +1080,8 @@ function openCase(id) {
   setField('md-valor',   c.contract_value || '');
   setField('md-banco',   p.banco_name     || '');
   setField('md-manager', c.manager_name   || '');
+  const vinc = document.getElementById('md-vinculos');
+  if (vinc) vinc.innerHTML = camposDeVinculo(c, 'md-');
   setField('md-obs',     c.observations   || '');
 
   // ITBI tab
@@ -1133,6 +1147,9 @@ async function saveCase() {
     block:          val('md-block'),
     contract_value: val('md-valor') || null,
     manager_name:   val('md-manager'),
+    empresa_id:        idOuNulo('md-empresa'),
+    correspondente_id: idOuNulo('md-correspondente'),
+    analista_id:       idOuNulo('md-analista'),
     observations:   val('md-obs'),
     payload
   };
@@ -1287,6 +1304,47 @@ async function saveStage() {
   renderConfigStages();
   closeModal('modal-stage-bg');
   toast('Etapa adicionada.', 'success');
+}
+
+// Cor de etapa entra em atributo style, e vem do banco: é o gestor quem digita
+// no editor de workflow. esc() não serve aqui — dentro de style, `expression`,
+// `url(...)` e o fecha-aspas continuam valendo. Só passa o que TEM FORMA de cor;
+// qualquer outra coisa vira a cor padrão. Cor esquisita é um detalhe visual;
+// cor que executa script é o cartão do vizinho aberto no navegador de quem
+// abriu o quadro.
+function cor(v, padrao){
+  const t = String(v == null ? '' : v).trim();
+  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : (padrao || '#3D5CC8');
+}
+
+// ══════════ VÍNCULOS: empresa correspondente, usuário correspondente, analista ══
+// As três colunas são as mesmas dos outros módulos — empresa_id, correspondente_id
+// e analista_id — para que um processo possa ser seguido de ponta a ponta pelo
+// mesmo vínculo. Aqui eram texto solto (`manager_name`) ou nem existiam.
+function selVinculo(id, lista, selecionado, desabilitado){
+  return `<select id="${id}"${desabilitado ? ' disabled' : ''}>
+    <option value="">— não definido —</option>` +
+    (Array.isArray(lista) ? lista : []).map(x =>
+      `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`
+    ).join('') + '</select>';
+}
+function idOuNulo(id){ const el = document.getElementById(id); return (el && el.value) || null; }
+
+// O Roteamento de Analistas ainda não existe. Quando existir, é AQUI que ele
+// passa a responder — e o campo de analista fica bloqueado, porque quem
+// escolhe passa a ser a regra, não a pessoa.
+function roteamentoDeAnalistasAtivo(){ return false; }
+
+function camposDeVinculo(c, prefixo){
+  const roteia = roteamentoDeAnalistasAtivo();
+  c = c || {};
+  return `<div class="form-group"><label>Empresa correspondente</label>
+      ${selVinculo(prefixo + 'empresa', G.empresas, c.empresa_id, false)}</div>
+    <div class="form-group"><label>Usuário correspondente</label>
+      ${selVinculo(prefixo + 'correspondente', G.ccas, c.correspondente_id, false)}</div>
+    <div class="form-group"><label>Analista</label>
+      ${selVinculo(prefixo + 'analista', G.analistas, c.analista_id, roteia)}
+      ${roteia ? '<div style="font-size:.7rem;color:var(--t3);margin-top:.25rem">definido pelo Roteamento de Analistas</div>' : ''}</div>`;
 }
 
 function populateSelect(id, items, placeholder, selected) {

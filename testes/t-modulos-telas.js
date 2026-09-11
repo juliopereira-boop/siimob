@@ -328,20 +328,26 @@ const { abrir, checa, resumo } = require('./comum');
   {
     const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE','COMERCIAL'] });
     // pa1 não tem crédito aprovado — o botão não pode aparecer.
+    // O botão "Habilitar Comercial" virou "Iniciar venda", com um passo antes de
+    // criar: o dono pediu que o corretor informasse os dados do negócio, e que
+    // o cartão da Pré-análise CONTINUASSE existindo depois. O que este teste
+    // protege é o que não pode mudar: o botão só existe quando o banco
+    // autoriza, e quem cria é a AÇÃO do servidor, nunca um insert da tela.
     await p.evaluate(() => abrirDossie('pa1')); await p.waitForTimeout(800);
     checa('sem crédito aprovado, o botão de habilitar Venda não aparece',
-      (await p.locator('#btn-habilitar').count()) === 0);
+      (await p.locator('#btn-iniciar-venda').count()) === 0);
 
-    // pa3 tem aprovação e titular.
     // pa3 já tem comercial; pa4 é aprovada e ainda não tem.
     await p.evaluate(() => abrirDossie('pa3')); await p.waitForTimeout(800);
     checa('se o comercial já existe, o botão some e a tela diz por quê',
-      (await p.locator('#btn-habilitar').count()) === 0
-      && /já criado/i.test(await p.locator('#dos-acoes').textContent()));
+      (await p.locator('#btn-iniciar-venda').count()) === 0
+      && /já criada/i.test(await p.locator('#dos-acoes').textContent()));
     await p.evaluate(() => abrirDossie('pa4')); await p.waitForTimeout(800);
     checa('com aprovação, titular e sem comercial, o botão aparece',
-      (await p.locator('#btn-habilitar').count()) === 1);
-    await p.click('#btn-habilitar'); await p.waitForTimeout(700);
+      (await p.locator('#btn-iniciar-venda').count()) === 1);
+    await p.click('#btn-iniciar-venda'); await p.waitForTimeout(400);
+    await p.evaluate(() => { document.getElementById('v-venda').value = '250.000,00'; conferirVenda(); });
+    await p.click('#venda-confirmar'); await p.waitForTimeout(700);
     const chamou = await p.evaluate(() => (window.__POSTS||[])
       .filter(x => /rpc\/a1_pa_executar_acao/.test(x.url)));
     checa('e chama a AÇÃO do servidor, não um insert direto', chamou.length === 1);

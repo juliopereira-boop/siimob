@@ -76,7 +76,13 @@ Estado real conferido em **10/09/2026 10:53 BRT**:
 | `2026-09-09_documento_obrigatorio.sql`           | não         | `a1_docs_obrigatorios`, gatilho que barra avanço sem documento |
 | `supabase/sql/p0/restrict-repasse-create.sql`    | **SIM**     | política RESTRICTIVE de INSERT (ver §3) |
 | `2026-09-10_criar_repasse_trava.sql`             | **SIM**     | substitui a de cima por uma alinhada com a tela |
-| `2026-09-10_chaves_dos_modulos.sql`              | não         | faz `pa_*` / `co_*` valerem (ver §3b) |
+| `2026-09-10_chaves_dos_modulos.sql`              | **SIM**     | faz `pa_*` / `co_*` valerem (ver §3b) |
+| `2026-09-11_quem_cadastra_pessoa_rele.sql`       | **SIM**     | quem cadastra a pessoa consegue relê-la (o 401) |
+| `2026-09-11_partes_por_id.sql`                   | **SIM**     | `analista_id`, `correspondente_id`, `empresa_id` |
+| `2026-09-11_registro_arquivar.sql`               | **SIM**     | `a1_cases.archived` — o Registro voltou a funcionar |
+| `2026-09-11_exclusao_definitiva.sql`             | **SIM**     | a única porta de apagar, com ficha e auditoria |
+| `2026-09-12_visibilidade_da_atribuicao_1_...sql` | não         | RELATÓRIO inerte do impacto (rode e leia) |
+| `2026-09-12_visibilidade_da_atribuicao_2_...sql` | não         | LIGA a visibilidade por analista — RLS viva |
 
 Consequência prática: **documento obrigatório hoje só existe na tela.** O front
 barra, a API não. Quem chamar o PostgREST direto move o processo sem o
@@ -188,6 +194,36 @@ módulos. É cadastro, não código.
 Ao escrever qualquer regra nova para estes módulos: use a chave do módulo. Se
 copiar um trecho de `repasse.html`, traduza a chave — foi assim que o defeito
 nasceu.
+
+## 3c. Arquivar apagava. Agora arquiva.
+
+`archiveCase()` nos três painéis do Repasse mandava **DELETE**, dizia "Arquivado"
+e destruía o cartão — sem auditoria e sem volta. `bulkDelete()` na listagem fazia
+o mesmo em lote. Era quase certamente a origem do relato "não consigo excluir
+cartão": conseguia, e não voltava.
+
+Agora é `PATCH {archived:true}`, com trilha em `a1_events`, botão **Arquivados**
+para ver e desarquivar, e a resposta do banco conferida. Apagar de verdade tem
+**um lugar só**: Configurações › Exclusão definitiva, que pede o código do
+cartão, mostra a ficha do que achou e grava auditoria antes de apagar.
+
+Ao mexer nessas telas: nenhum DELETE deve sair delas. `testes/t-arquivar-repasse.js`
+reprova se sair.
+
+## 3d. Vínculo por texto está sendo trocado por id
+
+`a1_cases` liga as pessoas ao processo por **texto** (`partner_name`,
+`broker_name`, `manager_name`). Foi assim que três analistas da S T passaram a
+enxergar zero processos: o nome no cadastro não batia com o gravado.
+
+As colunas por id já existem nas três tabelas (`empresa_id`,
+`correspondente_id`, `analista_id`) e os seletores já gravam o id. **O texto
+continua sendo gravado junto**, porque filtros, relatórios e a visibilidade
+ainda casam por nome — guardar os dois é o que permite migrar sem parar
+ninguém. Cartão antigo cujo nome não existe mais em cadastro algum mantém o
+texto e mostra "(não está mais no cadastro)" no seletor.
+
+Não remova as colunas de texto antes de migrar quem lê por elas.
 
 ## 4. Ordem entre `_2_ligar.sql` e a política P0
 

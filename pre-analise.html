@@ -91,7 +91,13 @@
   .btn-ghost{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
   .btn-sm{padding:.35rem .65rem;font-size:.74rem}
   .btn-danger{background:#fee2e2;color:#b91c1c}
+  /* Verde, e não a cor primária da tela: o dono pediu "um botão verde" e o
+     verde aqui tem função — é o único botão que faz um cartão nascer em outro
+     módulo. Sair da paleta de propósito, num lugar só. */
+  .btn-venda{background:var(--green);color:#fff}
+  .btn-venda:hover:not(:disabled){background:#15803d}
   .btn:disabled{opacity:.45;cursor:not-allowed}
+  .recusa{font-size:.74rem;color:var(--t2);line-height:1.4;max-width:430px}
 
   .modal-bg{position:fixed;inset:0;background:rgba(15,21,32,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:1.5rem}
   .modal-bg.hidden{display:none}
@@ -244,6 +250,31 @@
   </div>
 </div>
 
+<!-- ══════════ INICIAR VENDA — as informações que faltam ══════════
+     O motor já existe no banco (a1_pa_executar_acao → a1_criar_comercial) e ele
+     recebe só o id da pré-análise. O que a Venda mostra na proposta, portanto,
+     ninguém tinha como preencher no nascimento: o cartão chegava lá vazio e o
+     alerta de "venda acima do crédito aprovado" — o aviso mais útil daquela
+     tela — ficava mudo até alguém digitar. É isto que este passo resolve. -->
+<div class="modal-bg hidden" id="modal-venda">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Iniciar venda</div>
+           <div class="modal-sub" id="venda-sub"></div></div>
+      <button class="modal-close" onclick="fecharModal('modal-venda')" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body" id="venda-body"></div>
+    <div class="modal-foot">
+      <div class="recusa">A pré-análise <strong>continua na esteira</strong> depois disto — ela é o
+        registro de por onde o lead passou.</div>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
+        <button class="btn btn-venda" id="venda-confirmar" onclick="confirmarIniciarVenda()">Criar cartão na Venda</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast-wrap"></div>
 
 <script src="/js/config.js"></script>
@@ -257,8 +288,20 @@ const G = {
   user:null, slug:null,
   situacoes:[], transicoes:[], lista:[], pessoas:{},
   corretores:[], imobiliarias:[], empreendimentos:[],
+  // Os três campos de gente que o dono quer vinculativos em todos os módulos:
+  // empresa correspondente (a1_corr_empresas), usuário correspondente
+  // (a1_partners type=cca) e analista (a1_partners type=analista).
+  empresasCorr:[], correspondentes:[], analistas:[],
   filtroSla:'', abaDossie:'dados',
   atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null,
+  // Veredito do banco sobre abrir a venda desta pré-análise: null = ainda não
+  // perguntamos (ou não deu para perguntar), {ok:true} ou {ok:false,motivo}.
+  podeVender:null,
+  // A coluna do selo e a do analista são novas. Enquanto o SQL não rodar no
+  // cliente, a tela tem de continuar inteira — ver seloDaSituacao() e dosDados().
+  temSelo:false, temColunaAnalista:false,
+  // ROTEAMENTO DE ANALISTAS — ainda não existe. Ver roteamentoDeAnalistasAtivo().
+  roteamentoAnalistas:false,
   passo:1, rascunho:{}
 };
 
@@ -380,7 +423,7 @@ async function init(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, pre, corr, imob, empr, cfg] = await Promise.all([
+  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda] = await Promise.all([
     fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
@@ -395,7 +438,25 @@ async function carregar(){
     // documento, na aba deste modulo. Sem esta leitura, o cadastro existia e
     // nao valia nada: a tela oferecia uma lista cravada no HTML, e o gestor
     // configurava no vazio.
-    fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h).then(r=>r.json()).catch(()=>[])
+    fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h).then(r=>r.json()).catch(()=>[]),
+    // ── Os três campos de gente ────────────────────────────────────────────
+    // A EMPRESA CORRESPONDENTE NÃO SAI DE a1_partners. Ela é linha de
+    // a1_corr_empresas, e é para lá que apontam tanto a1_partners.empresa_id
+    // quanto a1_pre_analises.empresa_id — é esse o id que a1_empresa_ator()
+    // compara dentro de a1_pa_visivel(). Alimentar este seletor com parceiros
+    // gravaria um id que a política nunca casa: o correspondente deixaria de
+    // enxergar o processo da própria empresa, e a tela não daria nenhum sinal.
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // Estes dois, sim, são parceiros filtrados por tipo.
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name,empresa_id&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name,empresa_id&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // SONDA DE COLUNA NOVA. O SQL deste sistema é rodado à mão pelo dono, no
+    // editor do Supabase — existe uma janela real entre a tela subir e a coluna
+    // existir. Nessa janela, um PATCH citando analista_id devolve 400 e derruba
+    // o salvamento INTEIRO, levando junto os campos que sempre funcionaram.
+    // Uma pergunta barata, em paralelo com o resto, evita isso. Pode sair daqui
+    // quando todos os clientes tiverem rodado o SQL do analista.
+    fetch(`${A1.rest('a1_pre_analises')}?select=analista_id&limit=1`, h).then(r=>r.ok).catch(()=>false)
   ]);
   G.situacoes     = Array.isArray(sit)  ? sit  : [];
   G.transicoes    = Array.isArray(tr)   ? tr   : [];
@@ -403,6 +464,13 @@ async function carregar(){
   G.corretores    = Array.isArray(corr) ? corr : [];
   G.imobiliarias  = Array.isArray(imob) ? imob : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
+  G.empresasCorr    = Array.isArray(emps) ? emps : [];
+  G.correspondentes = Array.isArray(ccas) ? ccas : [];
+  G.analistas       = Array.isArray(anas) ? anas : [];
+  G.temColunaAnalista = sonda === true;
+  // O PostgREST devolve todas as colunas quando não há `select=`, inclusive as
+  // nulas — então a PRESENÇA da chave é a resposta sobre a coluna existir.
+  G.temSelo = !!G.situacoes.length && ('selo' in G.situacoes[0]);
   G.tiposDoc = lerTiposDoc(cfg);
 
   // O cadastro de quem está logado, quando é parceiro. É de lá que sai a
@@ -542,6 +610,62 @@ function corretoresDaImobiliaria(imobId){
   });
 }
 
+// ─── O SELO DA SITUAÇÃO — onde a esteira começa e onde ela termina ──────────
+//
+// O GATILHO É O SELO, E NUNCA O NOME NEM A FLAG. Cada cliente desenha a própria
+// esteira no Editor de Workflow: renomeia etapa, apaga etapa, cria outra. Uma
+// regra escrita como "a etapa chamada Aprovada libera a venda" — ou, o que dá
+// no mesmo, "a flag APROVADO libera a venda" — morre em silêncio no dia em que
+// alguém renomeia a coluna do quadro. Ninguém vê erro: o botão simplesmente
+// nunca mais aparece, e o fluxo inteiro para sem uma linha de log.
+//
+// Por isso o contrato é estrutural. O gestor marca no editor o que a etapa É:
+//
+//   INICIO         a esteira começa aqui
+//   FIM_POSITIVO   a esteira termina BEM aqui — o processo segue para o
+//                  próximo módulo (é este selo que acende "Iniciar venda")
+//   FIM_NEGATIVO   a esteira termina aqui e o processo encerra
+//   (sem selo)     etapa do meio
+//
+// "Fim" sozinho não serviria: reprovar também é fim de esteira, e reprovada não
+// abre venda nenhuma. É o desfecho que diz o que o fim significa.
+//
+// O SELO NÃO SUBSTITUI A AÇÃO DA TRANSIÇÃO. Quem cria o Comercial continua
+// sendo a ação ENABLE_COMMERCIAL de a1_pa_transicoes — em AUTO, quando a
+// transição entra na etapa; por este botão, quando o modo é CONFIRMAR. O selo
+// responde a outra pergunta: ONDE, na esteira deste cliente, faz sentido
+// oferecer o botão. Ação é efeito e mora na aresta; selo é estrutura e mora no
+// nó. Misturar os dois é o que faz um "status" criar registro em outro módulo
+// sem ninguém pedir.
+const SELO_FIM_POSITIVO = 'FIM_POSITIVO';
+const SELO_FIM_NEGATIVO = 'FIM_NEGATIVO';
+
+// PONTE DE MIGRAÇÃO, COM PRAZO DE VALIDADE. A coluna `selo` está sendo criada;
+// até ela existir no banco do cliente, a esteira antiga só tem a flag. Este
+// mapa é exatamente a carga inicial que o SQL vai gravar — mantê-lo aqui evita
+// que o dia entre a tela subir e o SQL rodar seja um dia sem botão nenhum.
+// APAGAR quando todos os clientes tiverem o selo gravado.
+const SELO_DA_FLAG_LEGADA = {
+  INICIAL:   'INICIO',
+  APROVADO:  SELO_FIM_POSITIVO,
+  REPROVADO: SELO_FIM_NEGATIVO,
+  CANCELADO: SELO_FIM_NEGATIVO,
+  VENCIDO:   SELO_FIM_NEGATIVO,
+  ENCERRADO: SELO_FIM_NEGATIVO
+};
+
+function seloDaSituacao(id){
+  const s = G.situacoes.find(x => x.id === id);
+  if (!s) return null;
+  if (s.selo) return s.selo;
+  // A coluna existe e esta etapa está sem selo: é etapa do meio, de propósito.
+  // Cair na ponte aqui reintroduziria a fragilidade que ela veio consertar.
+  if (G.temSelo) return null;
+  return SELO_DA_FLAG_LEGADA[s.flag] || null;
+}
+function situacaoAbreVenda(id){ return seloDaSituacao(id) === SELO_FIM_POSITIVO; }
+function situacaoEncerra(id){   return seloDaSituacao(id) === SELO_FIM_NEGATIVO; }
+
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
 function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
@@ -645,9 +769,10 @@ function linhaFila(p){
 function renderKpis(){
   const total = G.lista.length;
   const conta = n => G.lista.filter(p => sla(p).nivel === n).length;
-  const aprovadas = G.lista.filter(p => {
-    const s = G.situacoes.find(x=>x.id===p.situacao_id); return s && s.flag === 'APROVADO';
-  }).length;
+  // Pelo selo, e não pela flag: o cliente que chama a etapa de "Deferida"
+  // continua tendo o número certo aqui. Era mais um lugar em que renomear uma
+  // coluna do quadro zerava o indicador sem aviso.
+  const aprovadas = G.lista.filter(p => situacaoAbreVenda(p.situacao_id)).length;
   document.getElementById('kpis').innerHTML = `
     <div class="kpi-card v"><div class="kpi-label">Na esteira</div><div class="kpi-value">${total}</div></div>
     <div class="kpi-card g"><div class="kpi-label">No prazo</div><div class="kpi-value">${conta('ok')}</div></div>
@@ -834,6 +959,7 @@ function passo1(){
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
       ${campoImobiliaria(r)}
       ${campoCorretor(r)}
+      ${camposDeGenteNoAssistente(r)}
     </div>`;
 }
 
@@ -869,6 +995,29 @@ function campoCorretor(r){
   return `<div class="fg"><label>Corretor</label>
     <select id="w-corretor" onchange="corretorDoPasso1()">${
       opcoesCorretor(corretoresDaImobiliaria(r.imobiliaria_id), r.corretor_id)}</select></div>`;
+}
+
+// Empresa correspondente, usuário correspondente e analista já no cadastro: é
+// onde o gestor sabe para quem está mandando. Preenchidos aqui, chegam gravados
+// na criação; deixados em branco, ficam para o dossiê — ou para o Roteamento.
+//
+// A mesma regra do dossiê vale aqui: campo que o banco deste cliente não tem
+// não é desenhado, e campo que o Roteamento decide nasce bloqueado. Melhor
+// campo ausente do que campo que derruba a criação inteira.
+function camposDeGenteNoAssistente(r){
+  const roteia = roteamentoDeAnalistasAtivo();
+  let html = `<div class="fg"><label>Empresa correspondente</label>
+    <select id="w-empresa">${opcoesDe(G.empresasCorr, r.empresa_id, '— sem empresa —')}</select></div>
+    <div class="fg"><label>Usuário correspondente</label>
+    <select id="w-correspondente">${
+      opcoesDe(G.correspondentes, r.correspondente_id, '— sem correspondente —')}</select></div>`;
+  if (G.temColunaAnalista) {
+    html += `<div class="fg"><label>Analista</label>
+      <select id="w-analista" ${roteia ? 'disabled' : ''}>${
+        opcoesDe(G.analistas, r.analista_id, '— sem analista —')}</select>
+      ${roteia ? '<div class="sub" style="margin-top:.25rem">definido pelo Roteamento de Analistas</div>' : ''}</div>`;
+  }
+  return html;
 }
 
 function opcoesCorretor(lista, escolhido){
@@ -963,6 +1112,12 @@ function guardarPasso(){
     if (v('w-unidade') !== undefined) r.unidade           = v('w-unidade');
     if (v('w-imob')    !== undefined) r.imobiliaria_id    = v('w-imob');
     if (v('w-corretor')!== undefined) r.corretor_id       = v('w-corretor');
+    // Só recolhe o que está na tela e habilitado — ver camposDeGenteNoAssistente.
+    [['w-empresa','empresa_id'], ['w-correspondente','correspondente_id'],
+     ['w-analista','analista_id']].forEach(([id, coluna]) => {
+      const el = document.getElementById(id);
+      if (el && !el.disabled) r[coluna] = el.value || null;
+    });
   }
   if (G.passo === 2){
     const t = r.titular;
@@ -1047,6 +1202,13 @@ async function criarPreAnalise(){
     const corpoPa = { tenant_id:tid, empreendimento_id:r.empreendimento_id,
                       unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null };
     if (mandaNaCarteira()) corpoPa.corretor_id = r.corretor_id || null;
+    // Os três campos de gente entram só se o assistente os ofereceu — o
+    // rascunho só tem a chave quando o campo existia e estava habilitado.
+    // Assim a criação continua funcionando no cliente cujo banco ainda não
+    // ganhou a coluna do analista, e o Roteamento não é atropelado.
+    ['empresa_id','correspondente_id','analista_id'].forEach(coluna => {
+      if (coluna in r) corpoPa[coluna] = r[coluna] || null;
+    });
     const resPa = await fetch(A1.rest('a1_pre_analises'), {
       method:'POST', headers:A1.returnHeaders(), body: JSON.stringify(corpoPa) });
     if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.', 'pa_criar'));
@@ -1199,6 +1361,11 @@ async function abrirDossie(id){
     `<span class="sit" style="background:${esc(corSituacao(pa.situacao_id))}">${esc(nomeSituacao(pa.situacao_id))}</span>`;
   montarRodapeDossie();
   renderDossie();
+  // Depois de desenhar: o veredito do banco só muda o botão e a aba Venda, e
+  // esperar por ele deixaria o dossiê em branco por uma requisição inteira.
+  await conferirPodeVender();
+  montarRodapeDossie();
+  if (G.abaDossie === 'comercial') renderDossie();
 }
 
 function trocarAbaDossie(aba, el){
@@ -1235,6 +1402,9 @@ function dosDados(){
       <div class="fg"><label>Corretor</label>${podeEditar && mandaNaCarteira()
         ? `<select id="d-corretor">${opcoesCorretor(G.corretores, p.corretor_id)}</select>`
         : `<input value="${esc(nomeCorretor(p.corretor_id))}" disabled>`}</div>
+      ${campoEmpresa(p, podeEditar)}
+      ${campoCorrespondente(p, podeEditar)}
+      ${campoAnalista(p, podeEditar)}
       <div class="fg"><label>Criada em</label><input value="${esc(dataHoraBR(p.criado_em))}" disabled></div>
       <div class="fg full"><label>Prazo desta etapa</label>
         <div class="sla ${s.cls}" style="padding:.35rem 0">
@@ -1243,6 +1413,64 @@ function dosDados(){
         <div class="sub">na situação desde ${esc(dataHoraBR(p.situacao_em))}</div></div>
     </div>
     ${podeEditar ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarDados()">Salvar dados</button></div>` : ''}`;
+}
+
+// ─── Os três campos de gente ─────────────────────────────────────────────────
+//
+// Empresa correspondente, usuário correspondente e analista acompanham o
+// processo em todos os módulos (menos Lead). Aqui eles são vinculativos de
+// verdade: empresa_id é o que a1_pa_visivel() usa para decidir se o
+// correspondente enxerga o processo, e não um rótulo.
+function opcoesDe(lista, escolhido, vazio){
+  return `<option value="">${esc(vazio)}</option>` + lista.map(x =>
+    `<option value="${esc(x.id)}" ${x.id===escolhido?'selected':''}>${esc(x.name)}</option>`).join('');
+}
+
+// Trocar a empresa é redistribuir carteira, igual a trocar o corretor: o
+// gatilho a1_pa_guarda_update recusa com 'redistribuir_carteira_e_do_gestor'.
+// Deixar o seletor aberto para o corretor derrubaria o PATCH INTEIRO, levando
+// junto os campos que ele pode salvar — e o erro nem falaria de empresa.
+function campoEmpresa(p, podeEditar){
+  const nome = (G.empresasCorr.find(e => e.id === p.empresa_id) || {}).name || '—';
+  if (!(podeEditar && mandaNaCarteira()))
+    return `<div class="fg"><label>Empresa correspondente</label>
+      <select id="d-empresa" disabled>${opcoesDe(G.empresasCorr, p.empresa_id, nome === '—' ? '—' : nome)}</select></div>`;
+  return `<div class="fg"><label>Empresa correspondente</label>
+    <select id="d-empresa">${opcoesDe(G.empresasCorr, p.empresa_id, '— sem empresa —')}</select></div>`;
+}
+
+function campoCorrespondente(p, podeEditar){
+  return `<div class="fg"><label>Usuário correspondente</label>
+    <select id="d-correspondente" ${podeEditar?'':'disabled'}>${
+      opcoesDe(G.correspondentes, p.correspondente_id, '— sem correspondente —')}</select></div>`;
+}
+
+// ROTEAMENTO DE ANALISTAS — a trava que ainda não existe.
+//
+// O dono pediu: quando o Roteamento de Analistas estiver ativo E configurado,
+// quem escolhe o analista é ele, e o campo fica BLOQUEADO na tela. Um campo
+// editável ao lado de um roteador automático é uma briga que ninguém ganha:
+// o operador escolhe, o roteador reescreve, e os dois ficam achando que o outro
+// está errado.
+//
+// A trava nasce DESLIGADA porque a tabela de roteamento ainda não existe, e
+// inventá-la aqui seria escrever contra um contrato que ninguém escreveu.
+// ONDE LIGAR: preencha G.roteamentoAnalistas em carregar(), lendo a
+// configuração do roteamento quando ela existir (ativo E com pelo menos uma
+// regra — "ativo e vazio" tem de continuar deixando escolher à mão, senão o
+// primeiro dia do recurso é um dia sem conseguir atribuir analista nenhum).
+// Nada mais precisa mudar: o campo e o salvamento já obedecem a esta função.
+function roteamentoDeAnalistasAtivo(){ return G.roteamentoAnalistas === true; }
+
+function campoAnalista(p, podeEditar){
+  // Coluna ainda não criada no banco deste cliente: melhor campo ausente do que
+  // campo que derruba o salvamento. Ver a sonda em carregar().
+  if (!G.temColunaAnalista) return '';
+  const roteia = roteamentoDeAnalistasAtivo();
+  return `<div class="fg"><label>Analista</label>
+    <select id="d-analista" ${podeEditar && !roteia ? '' : 'disabled'}>${
+      opcoesDe(G.analistas, p.analista_id, '— sem analista —')}</select>
+    ${roteia ? `<div class="sub" style="margin-top:.25rem">definido pelo Roteamento de Analistas</div>` : ''}</div>`;
 }
 
 async function salvarDados(){
@@ -1257,6 +1485,17 @@ async function salvarDados(){
   // trocá-lo derrubaria o PATCH inteiro em 'redistribuir_carteira_e_do_gestor'.
   const selCorretor = document.getElementById('d-corretor');
   if (selCorretor) corpo.corretor_id = selCorretor.value || null;
+  // Mesma regra para os três campos de gente: só entra no corpo o campo que
+  // ESTÁ na tela e está habilitado. Campo ausente é coluna que o banco deste
+  // cliente ainda não tem (o SQL é rodado à mão, e a tela sobe antes); campo
+  // desabilitado é decisão que não é desta pessoa — o analista sob Roteamento,
+  // por exemplo. Mandar qualquer um dos dois derruba o PATCH inteiro, e o
+  // gestor perde também as alterações que PODIA fazer.
+  [['d-empresa','empresa_id'], ['d-correspondente','correspondente_id'],
+   ['d-analista','analista_id']].forEach(([id, coluna]) => {
+    const el = document.getElementById(id);
+    if (el && !el.disabled) corpo[coluna] = el.value || null;
+  });
   const res = await fetch(`${A1.rest('a1_pre_analises')}?id=eq.${p.id}`, {
     method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.','pa_editar'),'error'); return; }
@@ -1357,6 +1596,9 @@ async function salvarCredito(){
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.','analisar_credito'),'error'); return; }
   G.atualCred.unshift((await res.json())[0] || corpo);
   toast('Decisão registrada.','success');
+  // A decisão de crédito é exatamente o que a1_pa_pode_criar_comercial olha:
+  // sem perguntar de novo, o botão continuaria travado com o motivo velho.
+  await conferirPodeVender();
   montarRodapeDossie();
   renderDossie();
 }
@@ -1481,19 +1723,36 @@ function rotuloEvento(e){
 
 function dosComercial(){
   if (!G.atualCo){
+    const p = G.atual;
+    const abre = situacaoAbreVenda(p.situacao_id);
     const c = checklist();
     const faltando = c.filter(i => !i.ok && /titular|crédito/i.test(i.txt));
-    return `<div class="aviso i">Ainda não existe uma Venda para esta pré-análise.</div>
-      ${faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f=>f.txt).join(', '))}.</div>` : ''}
+    // Onde o botão está, e por que ele não está aqui. Dizer só "ainda não
+    // existe uma Venda" deixa o gestor adivinhando se falta configuração,
+    // permissão ou etapa — três lugares diferentes para procurar.
+    const ondeEstaOBotao = abre
+      ? (G.podeVender && G.podeVender.ok === false
+          ? `<div class="aviso w">O banco ainda não libera: <strong>${esc(G.podeVender.motivo)}</strong>.</div>`
+          : `<div class="aviso s">Esta etapa é o <strong>fim positivo</strong> da esteira: o botão verde
+             <strong>Iniciar venda</strong> está aqui embaixo.</div>`)
+      : (situacaoEncerra(p.situacao_id)
+          ? `<div class="aviso w">Esta etapa <strong>encerra</strong> o processo: a esteira termina aqui e
+             não segue para a Venda.</div>`
+          : `<div class="aviso i">O botão <strong>Iniciar venda</strong> aparece quando o processo chega a
+             uma etapa marcada como <strong>fim positivo</strong> no Editor de Workflow — a etapa em que a
+             análise termina bem. Hoje ele está em <strong>${esc(nomeSituacao(p.situacao_id))}</strong>.</div>`);
+    return `${ondeEstaOBotao}
+      ${abre && faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f=>f.txt).join(', '))}.</div>` : ''}
       <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">A Venda nasce por
       <strong>ação da esteira</strong> — nunca por um cadastro paralelo. É isso que garante que ninguém
-      pule a aprovação de crédito. Quando as condições estiverem cumpridas, o botão
-      <strong>Habilitar Venda</strong> aparece aqui embaixo.</p>`;
+      pule a aprovação de crédito. E, quando ela nascer, <strong>esta pré-análise continua aqui</strong>:
+      o cartão não se muda de módulo, ele fica como registro de por onde o lead passou.</p>`;
   }
   const co = G.atualCo, snap = co.origem_snapshot || {};
   const cr = snap.credito || {};
   return `
-    <div class="aviso s">Venda criada em ${esc(dataHoraBR(co.criado_em))}.</div>
+    <div class="aviso s">Venda criada em ${esc(dataHoraBR(co.criado_em))}.
+      <strong>Esta pré-análise continua na esteira</strong> — é o registro de por onde o lead passou.</div>
     <div class="sec-title" style="margin-top:0">Fotografia do que foi aprovado</div>
     <div class="fgrid">
       <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
@@ -1522,14 +1781,68 @@ function montarRodapeDossie(){
   sel.disabled = !destinos.length || !podeMover;
   document.getElementById('dos-btn-mover').disabled = !destinos.length || !podeMover;
 
+  montarBotaoVenda(podeMover);
+}
+
+// ─── O botão verde ───────────────────────────────────────────────────────────
+//
+// Ele aparece quando três coisas são verdade ao mesmo tempo, e cada uma responde
+// a uma pergunta diferente:
+//
+//   1. o cliente TEM o módulo Venda            (licença — senão nem no DOM entra)
+//   2. a situação atual é o FIM POSITIVO       (estrutura da esteira — o selo)
+//   3. o banco diz que pode                    (regra de negócio — e quando diz
+//                                               que não, devolve a frase pronta)
+//
+// A terceira não é enfeite: a1_pa_pode_criar_comercial é a mesma função que
+// a1_pa_executar_acao consulta antes de criar. Perguntar antes serve para
+// explicar; quem tranca continua sendo o banco.
+function montarBotaoVenda(podeMover){
   const acoes = document.getElementById('dos-acoes');
-  const jaTem = !!G.atualCo;
-  const podeHabilitar = G.temComercial && !jaTem && podeMover &&
-    G.atualPart.some(x => x.papel === 'TITULAR') &&
-    G.atualCred.some(c => c.status === 'APROVADO');
-  acoes.innerHTML = podeHabilitar
-    ? `<button class="btn btn-primary btn-sm" id="btn-habilitar" onclick="habilitarComercial()">Habilitar Venda</button>`
-    : (jaTem ? `<span class="sub">Venda já criado.</span>` : '');
+  if (!acoes) return;
+  const p = G.atual;
+
+  if (G.atualCo){
+    acoes.innerHTML = `<span class="sub">Venda já criada — veja na aba Venda.</span>`;
+    return;
+  }
+  // Sem licença e fora do fim positivo o botão não existe. Não nasce escondido:
+  // o que não está no DOM ninguém acha com o inspetor nem com a busca.
+  if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)){ acoes.innerHTML = ''; return; }
+
+  // Mover e agir na esteira são a mesma permissão (pa_editar) e a mesma trava
+  // por situação. Um botão que o banco vai recusar é pior que botão ausente.
+  if (!podeMover){
+    acoes.innerHTML = `<span class="recusa">${esc(faltaPermissao('pa_editar','Iniciar a venda'))}</span>`;
+    return;
+  }
+
+  const v = G.podeVender;
+  // v === null é "ainda não perguntei" ou "não deu para perguntar" — e isso
+  // NÃO é "não pode". A mesma lição de a1HasModule: quando o servidor não
+  // respondeu, o botão continua de pé e quem recusa é a chamada de verdade.
+  const barrado = v && v.ok === false;
+  acoes.innerHTML =
+    `<button class="btn btn-venda btn-sm" id="btn-iniciar-venda" ${barrado ? 'disabled' : ''}
+             onclick="iniciarVenda()">Iniciar venda</button>`
+    + (barrado ? `<span class="recusa">Ainda não dá: ${esc(v.motivo)}.</span>` : '');
+}
+
+// O veredito do banco, perguntado uma vez por abertura de dossiê e de novo
+// sempre que algo que ele considera mudar (uma decisão de crédito registrada).
+async function conferirPodeVender(){
+  const p = G.atual;
+  G.podeVender = null;
+  if (!p || !G.temComercial || G.atualCo || !situacaoAbreVenda(p.situacao_id)) return;
+  try {
+    const res = await fetch(A1.rpc('a1_pa_pode_criar_comercial'), {
+      method:'POST', headers:A1.headers(), body: JSON.stringify({ p_pre_analise:p.id }) });
+    if (!res.ok) return;                       // não deu para perguntar: segue em branco
+    const j = await res.json().catch(()=>null);
+    // A função devolve TEXT: null quando pode, a frase do que falta quando não.
+    const motivo = (typeof j === 'string' && j.trim()) ? j.trim() : null;
+    G.podeVender = motivo ? { ok:false, motivo } : { ok:true };
+  } catch { /* idem: silêncio vira "não sei", nunca "não pode" */ }
 }
 
 async function moverSituacao(){
@@ -1557,21 +1870,143 @@ async function moverSituacao(){
   } finally { btn.disabled = false; }
 }
 
-async function habilitarComercial(){
-  const btn = document.getElementById('btn-habilitar'); btn.disabled = true; btn.textContent = 'Habilitando…';
+// ══════════ INICIAR VENDA ══════════
+//
+// O QUE ESTE PASSO PERGUNTA, E POR QUE SÓ ISTO
+// a1_criar_comercial recebe um id e mais nada — todo o resto do cartão da Venda
+// ela copia da pré-análise e da decisão de crédito. Então a pergunta que sobra é
+// estreita: o que a tela da Venda mostra e que a pré-análise NÃO tem como saber?
+// Conferindo dosProposta() do comercial.html, a proposta tem cinco campos, e só
+// estes três se decidem no momento de abrir o negócio:
+//
+//   unidade         a pré-análise guarda "unidade de INTERESSE", que por
+//                   desenho não reserva estoque; a unidade vendida é outra
+//                   decisão, e é a que segue para o cartão do Repasse
+//   valor_venda     o número pelo qual o negócio existe
+//   valor_entrada   sem ela o alerta de "venda acima do crédito aprovado" —
+//                   o aviso mais útil da tela da Venda — não tem como fechar
+//
+// Desconto e comissão ficaram de fora de propósito: nenhuma regra os lê, eles se
+// negociam depois, e um campo a mais no caminho de quem só quer abrir a venda é
+// um campo que vai ser preenchido errado com pressa.
+function iniciarVenda(){
+  const p = G.atual;
+  if (!p) return;
+  const cr = ultimoCreditoAprovado();
+  G.rascunhoVenda = { unidade: p.unidade || '', venda:'', entrada:'', obs:'' };
+  document.getElementById('venda-sub').textContent =
+    `${nomeEmpr(p.empreendimento_id)} · ${G.titulares[p.id] ? G.titulares[p.id].nome : 'sem titular'}`;
+  document.getElementById('venda-body').innerHTML = `
+    <div class="aviso i">O cartão nasce na Venda com a fotografia do crédito aprovado.
+      Aqui entram só as informações do negócio que a pré-análise não tem como saber.</div>
+    <div class="fgrid">
+      <div class="fg full"><label>Unidade negociada</label>
+        <input id="v-unidade" value="${esc(G.rascunhoVenda.unidade)}" placeholder="ex.: 101 — Torre A">
+        <div class="sub" style="margin-top:.25rem">na pré-análise a unidade era só interesse; aqui ela é a que vai para o contrato</div></div>
+      <div class="fg"><label>Valor da venda (R$) *</label>
+        <input id="v-venda" inputmode="decimal" oninput="conferirVenda()"></div>
+      <div class="fg"><label>Entrada / recursos próprios (R$)</label>
+        <input id="v-entrada" inputmode="decimal" oninput="conferirVenda()"></div>
+      <div class="fg full"><label>Observações da negociação</label>
+        <textarea id="v-obs" rows="2"></textarea></div>
+    </div>
+    <div id="v-conferencia" style="margin-top:.9rem"></div>
+    <div class="sec-title">Crédito aprovado nesta pré-análise</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total aprovado</label><input value="${esc(brl(cr.valor_total))}" disabled></div>
+    </div>`;
+  document.getElementById('modal-venda').classList.remove('hidden');
+}
+
+function ultimoCreditoAprovado(){
+  return (G.atualCred || []).find(c => c.status === 'APROVADO') || {};
+}
+
+// A mesma conta que conferirProposta() faz em comercial.html, dada aqui ANTES
+// de o cartão nascer. É repetição, e é consciente: sem passo de build não há
+// como as duas telas compartilharem uma função, e descobrir que a venda não
+// cabe no crédito na hora de abrir vale mais do que descobrir na assinatura.
+function conferirVenda(){
+  const el = document.getElementById('v-conferencia'); if (!el) return;
+  const aprovado = Number(ultimoCreditoAprovado().valor_total) || 0;
+  const venda    = paraCentavos(document.getElementById('v-venda').value) || 0;
+  const entrada  = paraCentavos(document.getElementById('v-entrada').value) || 0;
+  if (!venda || !aprovado){ el.innerHTML = ''; return; }
+  const falta = venda - entrada - aprovado;
+  el.innerHTML = falta > 0
+    ? `<div class="aviso w">A venda de ${esc(brl(venda))} menos a entrada de ${esc(brl(entrada))}
+        deixa <strong>${esc(brl(falta))}</strong> acima do crédito aprovado de ${esc(brl(aprovado))}.
+        Dá para seguir — mas alguém vai ter de cobrir essa diferença.</div>`
+    : `<div class="aviso s">Venda coberta pelo crédito aprovado mais a entrada.</div>`;
+}
+
+async function confirmarIniciarVenda(){
+  const p = G.atual;
+  const unidade = (document.getElementById('v-unidade').value || '').trim();
+  const venda   = paraCentavos(document.getElementById('v-venda').value);
+  const entrada = paraCentavos(document.getElementById('v-entrada').value);
+  const obs     = (document.getElementById('v-obs').value || '').trim();
+  if (!venda){
+    toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.','error');
+    return;
+  }
+
+  const btn = document.getElementById('venda-confirmar');
+  btn.disabled = true; btn.textContent = 'Criando…';
   try {
+    // 1. O motor que já existe. Ele valida de novo tudo o que o botão checou na
+    //    tela, cria o Comercial e NÃO encosta na pré-análise — que é o pedido
+    //    central do dono: o cartão fica onde está, como registro do caminho.
     const res = await fetch(A1.rpc('a1_pa_executar_acao'), {
       method:'POST', headers:A1.headers(),
-      body: JSON.stringify({ p_pre_analise:G.atual.id, p_acao:'ENABLE_COMMERCIAL' }) });
+      body: JSON.stringify({ p_pre_analise:p.id, p_acao:'ENABLE_COMMERCIAL' }) });
     const j = await res.json().catch(()=>null);
     if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    if (j && j.ok === false){ toast(j.erro || 'Não foi possível habilitar a Venda.','error'); return; }
-    toast('Venda criada.','success');
-    await abrirDossie(G.atual.id);
+    // 200 com ok:false é o orquestrador dizendo "não" com o motivo na mão. A
+    // frase dele é a informação inteira — trocá-la por "não foi possível"
+    // apagaria justamente o que resolve.
+    if (j && j.ok === false){
+      toast('A venda não foi aberta: ' + (j.erro || 'a esteira barrou a ação.'),'error');
+      G.podeVender = j.erro ? { ok:false, motivo:j.erro } : null;
+      montarRodapeDossie();
+      return;
+    }
+    const comercialId = j && j.comercial_id;
+    fecharModal('modal-venda');
+
+    // 2. As informações do passo, gravadas no cartão que acabou de nascer.
+    //    Separado de propósito: a função do banco não recebe proposta, e
+    //    inventar um parâmetro nela seria mexer no motor para não mexer na tela.
+    if (comercialId){
+      const corpo = { unidade: unidade || null,
+                      proposta: { valor_venda:venda, valor_entrada:entrada,
+                                  observacoes: obs || null } };
+      const rp = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${comercialId}`, {
+        method:'PATCH', headers:A1.headers(), body: JSON.stringify(corpo) });
+      // O cartão EXISTE mesmo que isto falhe. Dizer "erro ao iniciar a venda"
+      // mandaria o corretor clicar de novo num botão que já não está mais lá —
+      // e procurar um problema que não é o dele.
+      if (!rp.ok){
+        toast('A venda foi criada, mas a proposta não foi gravada: '
+          + await mensagemErro(rp, 'abra a Venda e preencha valor e unidade por lá.', 'co_editar'),'error');
+        await carregar();
+        await abrirDossie(p.id);
+        return;
+      }
+    }
+
+    toast('Venda criada. A pré-análise continua na esteira.','success');
+    // Recarrega a fila: é o que mostra, na própria tela, que o processo não
+    // sumiu de onde estava.
+    await carregar();
+    await abrirDossie(p.id);
     trocarAbaDossie('comercial', document.querySelector('#dos-tabs [data-dt="comercial"]'));
   } finally {
-    const b = document.getElementById('btn-habilitar');
-    if (b){ b.disabled = false; b.textContent = 'Habilitar Venda'; }
+    const b = document.getElementById('venda-confirmar');
+    if (b){ b.disabled = false; b.textContent = 'Criar cartão na Venda'; }
   }
 }
 

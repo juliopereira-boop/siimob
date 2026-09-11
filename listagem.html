@@ -439,6 +439,7 @@
       <div class="hdr-user" id="hdr-user"></div>
       <button class="btn-hdr" id="btn-profile" style="display:none" title="Meu perfil" onclick="openProfile()">👤 Perfil</button>
       <button class="btn-hdr btn-hdr-primary" onclick="openNewCase()" hidden>+ Novo Repasse</button>
+      <button class="btn-hdr" id="btn-arquivados" onclick="toggleArquivados()" title="Ver os processos que sairam do quadro">Arquivados</button>
       <button class="btn-hdr" onclick="a1Logout()">Sair</button>
     </div>
   </div>
@@ -739,7 +740,7 @@
           <select id="bulk-corr" style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem"><option value="">Vincular correspondente...</option></select>
           <button class="btn btn-primary btn-sm" onclick="bulkVincCorr()">Vincular</button>
         </span>
-        <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca" onclick="bulkDelete()">Excluir selecionados</button>
+        <button class="btn btn-ghost btn-sm" id="bulk-arquivar" onclick="bulkArquivar()">Arquivar selecionados</button>
         <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Limpar seleção</button>
       </div>
       <div class="tbl-wrap">
@@ -1237,7 +1238,8 @@
     </div>
     <div class="modal-body" id="mc-body"></div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
-      <button class="btn btn-danger btn-sm" onclick="archiveCase()">Arquivar</button>
+      <button class="btn btn-ghost btn-sm" id="mc-arquivar" onclick="archiveCase()" title="Pode ser trazido de volta pelo botão Arquivados">Arquivar (sai da lista)</button>
+      <button class="btn btn-ghost btn-sm" id="mc-desarquivar" onclick="unarchiveCase()" style="display:none">Desarquivar</button>
       <div style="display:flex;gap:.45rem">
         <button class="btn btn-ghost" onclick="closeModal('modal-card-bg')">Cancelar</button>
         <button class="btn btn-primary" onclick="saveCase()">Salvar</button>
@@ -1816,6 +1818,10 @@
 'use strict';
 
 const G = {
+  // Arquivado não é apagado: é um cartão que saiu de vista. O quadro mostra os
+  // ativos, e este interruptor mostra os guardados — sem ele, arquivar seria
+  // apagar com outro nome.
+  verArquivados: false,
   user: null, slug: null, tenant: null,
   stages: [], cases: [], groups: [],
   currentGroup: '__all__',
@@ -2305,7 +2311,7 @@ async function loadData() {
   const [stages, casosRes, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows,
          imobsRows, ccaRows, emprRows, empresasRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.repasse&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,created_at,updated_at`)
+    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.${G.verArquivados?'true':'false'}&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,archived,created_at,updated_at`)
       .catch(()=>({linhas:[],total:0,completo:false,erro:'falha de rede'})),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
@@ -3310,6 +3316,11 @@ async function openCard(id) {
   if(!c) return;
   G.editingCaseId=id;
   G.editingCaseData={...c,payload:{...(c.payload||{})}};
+  // Um cartão arquivado abre com o botão de VOLTAR, não com o de guardar de novo.
+  const bArq = document.getElementById('mc-arquivar');
+  const bDes = document.getElementById('mc-desarquivar');
+  if (bArq) bArq.style.display = c.archived ? 'none' : '';
+  if (bDes) bDes.style.display = c.archived ? '' : 'none';
   // A lista não carrega mais os anexos antigos (base64 dentro da tabela) nem o
   // payload completo — eram megabytes em toda abertura de página. Aqui, ao abrir
   // UM processo, busca o que falta. Também é o que protege a gravação: sem o
@@ -3567,10 +3578,10 @@ function renderModalDet() {
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
     <div class="form-grid">
-      ${G.isCorrTenant ? `<div class="form-group"><label>Correspondente</label><input value="${esc(G.fixedCorr||c.partner_name||'')}" disabled></div>` : `<div class="form-group"><label>Correspondente</label><select id="e-partner">${selOpts(_empresaNames(), c.partner_name)}</select></div>`}
+      ${G.isCorrTenant ? `<div class="form-group"><label>Correspondente</label><input value="${esc(G.fixedCorr||c.partner_name||'')}" disabled></div>` : `<div class="form-group"><label>Correspondente</label><select id="e-partner">${selOptsId(G.empresas, c.empresa_id || c.partner_name)}</select></div>`}
       <div class="form-group"><label>Imobiliaria</label><select id="e-re" onchange="aoTrocarImobiliaria('e')">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
-      <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOpts(_ccaNames(), p.usuario_correspondente||'')}</select></div>
-      <div class="form-group"><label>Analista</label><select id="e-manager">${selOpts(_analistaNames(), c.manager_name)}</select></div>
+      <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOptsId(G.partners, c.correspondente_id || p.usuario_correspondente || '')}</select></div>
+      <div class="form-group"><label>Analista</label><select id="e-manager">${selOptsId(G.analistas, c.analista_id || c.manager_name)}</select></div>
       <div class="form-group"><label>Coordenador</label><select id="e-coordenador" onchange="aoTrocarCoordenador('e')">${selOpts(_coordenadorNames(), _coordenadorDoCorretor(c.broker_name))}</select></div>
       <div class="form-group"><label>Corretor</label>
         <select id="e-broker" onchange="aoTrocarCorretor('e')">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name), c.real_estate_name), c.broker_name)}</select>
@@ -3854,14 +3865,18 @@ async function saveCase() {
     if(_falta.length){ toast(a1DocsAvisoFaltando(_falta),'error'); return; }
   }
   const _entDate=document.getElementById('e-ent-date')?.value||null;
-  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(v('e-usuario')||''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||''),data_venda:(v('e-data-venda')||'')};
+  const payload={...(G.editingCaseData.payload||{}),entrevista_status:document.getElementById('e-ent-status')?.value,agendamento_data:_entDate,entrevista_data:_entDate,usuario_correspondente:(_nomeVinc(G.partners, v('e-usuario')) || (G.editingCaseData.payload||{}).usuario_correspondente || ''),convenio:(v('e-convenio')||''),agencia:(v('e-agencia')||''),modalidade:(v('e-modalidade')||''),data_venda:(v('e-data-venda')||'')};
   const patch={
     client_name:v('e-name'),client_cpf:v('e-cpf'),client_phone:v('e-phone'),client_email:v('e-email'),
     development:v('e-development'),block:v('e-block'),unit:v('e-unit'),
     contract_value:brToNum(v('e-value')),evaluation_expiry:v('e-eval')||null,
-    partner_name:(G.isCorrTenant?(G.fixedCorr||''):v('e-partner')),real_estate_name:v('e-re'),broker_name:v('e-broker'),
-    broker_phone:v('e-broker-phone'),manager_name:v('e-manager'),observations:v('e-obs'),
+    partner_name:(G.isCorrTenant?(G.fixedCorr||''):(_nomeVinc(G.empresas, v('e-partner')) || G.editingCaseData.partner_name || '')),real_estate_name:v('e-re'),broker_name:v('e-broker'),
+    broker_phone:v('e-broker-phone'),manager_name:_nomeVinc(G.analistas, v('e-manager')) || G.editingCaseData.manager_name || '',observations:v('e-obs'),
     stage_id:stageId,stage_name:stage?.name||G.editingCaseData.stage_name,payload,
+    // Os três vínculos por id, ao lado dos nomes que já iam. Ver createCase:
+    // o texto continua indo porque filtros e visibilidade ainda casam por nome.
+    empresa_id:(v('e-partner')||null), correspondente_id:(v('e-usuario')||null),
+    analista_id:(v('e-manager')||null),
   };
   if(stageId!==oldStage){
     patch.stage_entered_at=new Date().toISOString();
@@ -3886,13 +3901,97 @@ async function saveCase() {
   } else toast(await motivoDoErro(res),'error');
 }
 
-async function archiveCase() {
-  if(!confirm('Arquivar este repasse?')) return;
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${G.editingCaseId}`,{method:'DELETE',headers:A1.headers()});
-  G.cases=G.cases.filter(c=>c.id!==G.editingCaseId);
+async function unarchiveCase() {
+  const id = G.editingCaseId;
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify({ archived:false })
+  }).catch(() => null);
+  if (!res || !res.ok) { toast(await motivoDoArquivar(res), 'error'); return; }
+  fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(),
+    body: JSON.stringify({ case_id:id, type:'unarchived',
+      description:'Processo desarquivado', actor_name:G.user.name }) }).catch(()=>{});
+  G.cases = G.cases.filter(c => c.id !== id);
   closeModal('modal-card-bg');
-  renderKanban();renderList();renderDashboard();
-  toast('Arquivado','info');
+  renderKanban(); renderList(); renderDashboard();
+  toast('Desarquivado. Voltou para o quadro.', 'success');
+}
+
+// Alterna entre os ativos e os guardados. Recarrega do servidor em vez de
+// filtrar o que já está em memória: o quadro só trouxe uma das duas metades.
+async function toggleArquivados() {
+  G.verArquivados = !G.verArquivados;
+  const b = document.getElementById('btn-arquivados');
+  if (b) { b.textContent = G.verArquivados ? 'Ver ativos' : 'Arquivados';
+           b.classList.toggle('btn-primary', G.verArquivados);
+           b.classList.toggle('btn-ghost', !G.verArquivados); }
+  await loadData();
+  renderKanban(); renderList(); renderDashboard();
+}
+
+// Resolve o NOME a partir do id escolhido no seletor. Devolve '' quando o id
+// nao esta na lista — o chamador entao mantem o texto que ja estava gravado.
+// Opções que valem por ID. O `escolhido` aceita id OU nome, porque os cartões
+// antigos guardam só o texto — enquanto a migração não termina, abrir um cartão
+// velho tem de mostrar o vínculo que ele tem, não um seletor em branco.
+function selOptsId(lista, escolhido){
+  const arr = Array.isArray(lista) ? lista : [];
+  const achado = arr.find(x => x.id === escolhido) || arr.find(x => x.name === escolhido);
+  // Texto que não casa com cadastro nenhum vira uma opção própria, marcada.
+  // Cartão antigo guarda só o nome, e há nomes em produção que não existem
+  // mais em cadastro algum — apagar em silêncio o que está gravado seria
+  // perder a informação justamente de quem mais precisa dela.
+  const orfao = (!achado && escolhido)
+    ? `<option value="" selected>${esc(escolhido)} (não está mais no cadastro)</option>` : '';
+  return '<option value="">Selecione...</option>' + orfao + arr.map(x =>
+    `<option value="${esc(x.id)}"${achado && x.id === achado.id ? ' selected' : ''}>${esc(x.name)}</option>`
+  ).join('');
+}
+
+function _nomeVinc(lista, id){
+  if (!id) return '';
+  return ((Array.isArray(lista)?lista:[]).find(x => x.id === id) || {}).name || '';
+}
+
+async function archiveCase() {
+  // ARQUIVAR ARQUIVA. Esta função mandava DELETE: o cartão era destruído, sem
+  // auditoria e sem volta, e a tela dizia "Arquivado" — quem clicava achava que
+  // tinha guardado. Era quase certamente a origem do "não consigo excluir
+  // cartão": conseguia, e não voltava.
+  //
+  // Apagar de verdade agora tem um lugar só, com ficha na tela e auditoria:
+  // Configurações › Exclusão definitiva, pelo código do cartão.
+  if (!confirm('Arquivar este repasse?\n\nO cartão sai do quadro e da listagem, mas NÃO É APAGADO: continua no banco e você pode trazê-lo de volta pelo botão Arquivados (desarquivar) a qualquer momento.\n\nPara apagar de verdade, com registro de quem apagou, use Configurações › Exclusão definitiva.')) return;
+  const id = G.editingCaseId;
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify({ archived:true })
+  }).catch(() => null);
+  // Sem conferir a resposta, a recusa do banco virava "Arquivado" na tela e o
+  // cartão reaparecia na próxima carga, sem ninguém ligar uma coisa à outra.
+  if (!res || !res.ok) { toast(await motivoDoArquivar(res), 'error'); return; }
+  // A trilha vai depois do sucesso: evento de algo que não aconteceu é pior
+  // que evento nenhum.
+  fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(),
+    body: JSON.stringify({ case_id:id, type:'archived',
+      description:'Processo arquivado', actor_name:G.user.name }) }).catch(()=>{});
+  G.cases = G.cases.filter(c => c.id !== id);
+  closeModal('modal-card-bg');
+  renderKanban(); renderList(); renderDashboard();
+  toast('Arquivado. Pode ser trazido de volta pelo filtro de arquivados.', 'success');
+}
+
+// A coluna `archived` nasce por SQL que o dono roda à mão. Entre publicar a tela
+// e rodar o arquivo existe uma janela, e nela o erro é exatamente este — dizer
+// qual arquivo resolve poupa a investigação inteira.
+async function motivoDoArquivar(res) {
+  if (!res) return 'Sem resposta do servidor. O processo continua no quadro.';
+  let m = '';
+  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  if (/archived/.test(m) && /column|coluna/i.test(m))
+    return 'O banco deste cliente ainda não tem a coluna `archived`. '
+         + 'Rode sql/2026-09-11_registro_arquivar.sql no Supabase — até lá, arquivar não funciona.';
+  if (res.status === 401 || res.status === 403 || /row-level security|permission denied/i.test(m))
+    return 'O banco recusou o arquivamento para o seu acesso. Fale com o gestor.';
+  return m || 'Não foi possível arquivar. O processo continua no quadro.';
 }
 
 async function addComment() {
@@ -3939,8 +4038,11 @@ async function openNewCase() {
   // correspondentes (empresas)
   if (!G.empresasLoaded) await loadEmpresas();
   const partnerSel = document.getElementById('n-partner');
+  // O VALOR passa a ser o id; o nome continua sendo o rótulo. Vincular por
+  // texto foi o que fez três analistas da S T sumirem da própria carteira
+  // quando o nome no cadastro não batia com o gravado no processo.
   partnerSel.innerHTML='<option value="">Selecione...</option>'+
-    G.empresas.filter(e=>e.is_active).map(e=>`<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
+    G.empresas.filter(e=>e.is_active).map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
   if (isCCA && G.user.empresa_name) {
     partnerSel.value = G.user.empresa_name;
     partnerSel.disabled = true;
@@ -3961,7 +4063,7 @@ async function openNewCase() {
   // analistas e usuarios correspondentes — filtrados por empresa selecionada
   if (!G.analistasLoaded) await loadAnalistas();
   if (!G.partnersLoaded) await loadPartners();
-  { const us=document.getElementById('n-usuario'); if(us) us.innerHTML='<option value="">Selecione...</option>'+(Array.isArray(G.partners)?G.partners:[]).map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join(''); }
+  { const us=document.getElementById('n-usuario'); if(us) us.innerHTML='<option value="">Selecione...</option>'+(Array.isArray(G.partners)?G.partners:[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join(''); }
   // se CCA: empresa já fixada, filtra imediatamente; caso contrário deixa vazio até selecionar empresa
   if (isCCA && G.user.empresa_name) {
     await onNovoRepasseEmpresaChange();
@@ -3969,7 +4071,7 @@ async function openNewCase() {
     // sem empresa selecionada: lista todos os analistas ativos (comportamento anterior)
     const managerSel = document.getElementById('n-manager');
     managerSel.innerHTML='<option value="">Selecione...</option>'+
-      G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+      G.analistas.filter(a=>a.is_active!==false).map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
     managerSel.disabled = false;
   }
 
@@ -4079,12 +4181,19 @@ async function createCase() {
   const dev     = G.empreendimentos.find(d=>d.id===devSel.value);
   const block   = document.getElementById('n-block').value;
   const unit    = document.getElementById('n-unit').value;
-  const partner = G.isCorrTenant ? (G.fixedCorr||'') : document.getElementById('n-partner').value;
+  // Os seletores agora valem por id; o NOME continua sendo gravado junto,
+  // porque filtros, relatórios e a visibilidade do Repasse ainda casam por
+  // texto. Guardar os dois é o que permite migrar sem parar ninguém.
+  const nomeDe = (lista, id) => ((Array.isArray(lista)?lista:[]).find(x => x.id === id) || {}).name || '';
+  const empresaId = G.isCorrTenant ? '' : (document.getElementById('n-partner')||{}).value || '';
+  const usuarioId = (document.getElementById('n-usuario')||{}).value || '';
+  const analistaId = (document.getElementById('n-manager')||{}).value || '';
+  const partner = G.isCorrTenant ? (G.fixedCorr||'') : nomeDe(G.empresas, empresaId);
   const re      = document.getElementById('n-re').value;
-  const manager = document.getElementById('n-manager').value;
+  const manager = nomeDe(G.analistas, analistaId);
   const stageId = document.getElementById('n-stage').value;
   const stage   = G.stages.find(s=>s.id===stageId);
-  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,payload:{regional:(v('n-regional')||''),usuario_correspondente:(v('n-usuario')||''),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),data_venda:(v('n-data-venda')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
+  const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,empresa_id:empresaId||null,correspondente_id:usuarioId||null,analista_id:analistaId||null,payload:{regional:(v('n-regional')||''),usuario_correspondente:nomeDe(G.partners, usuarioId),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),data_venda:(v('n-data-venda')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
     const data = await res.json().catch(()=>null);
@@ -4321,14 +4430,23 @@ async function bulkPatch(patch){
 async function bulkVincEmpr(){ const v=document.getElementById('bulk-empr').value; if(!v){toast('Escolha um empreendimento','error');return;} await bulkPatch({development:v}); toast('Empreendimento vinculado','success'); }
 async function bulkVincCorr(){ const v=document.getElementById('bulk-corr').value; if(!v){toast('Escolha um correspondente','error');return;} await bulkPatch({partner_name:v}); toast('Correspondente vinculado','success'); }
 function toggleDupView(){ G.dupOnly=!G.dupOnly; const b=document.getElementById('btn-dup'); if(b){ b.classList.toggle('btn-primary',G.dupOnly); b.classList.toggle('btn-ghost',!G.dupOnly); b.textContent=G.dupOnly?'Ver todos':'CPFs duplicados'; } clearSelection(); renderList(); }
-async function bulkDelete(){
-  const ids=[...(G.selCases||[])]; if(!ids.length){toast('Selecione ao menos um processo','error');return;}
-  if(!confirm(`Excluir ${ids.length} processo(s)? Esta ação não pode ser desfeita.`)) return;
-  const res=await fetch(`${A1.rest('a1_cases')}?id=in.(${ids.join(',')})`,{method:'DELETE',headers:A1.headers()}).catch(()=>null);
-  if(res&&!res.ok){ toast('Erro ao excluir. Tente novamente.','error'); return; }
+async function bulkArquivar(){
+  // Era bulkDelete: DELETE em lote, atrás de um confirm de uma linha, sem
+  // auditoria e sem volta. O mesmo defeito do "Arquivar", só que em escala —
+  // um clique podia destruir dezenas de processos de uma vez.
+  const ids=[...(G.selCases||[])];
+  if(!ids.length){ toast('Selecione ao menos um processo','error'); return; }
+  if(!confirm(`Arquivar ${ids.length} processo(s)?\n\n`
+    + `Eles saem do quadro e da listagem, mas NÃO SÃO APAGADOS: continuam no banco `
+    + `e podem ser trazidos de volta pelo botão Arquivados (desarquivar).\n\n`
+    + `Para apagar de verdade, com registro de quem apagou, use `
+    + `Configurações › Exclusão definitiva — um processo por vez, de propósito.`)) return;
+  const res=await fetch(`${A1.rest('a1_cases')}?id=in.(${ids.join(',')})`,
+    {method:'PATCH',headers:A1.headers(),body:JSON.stringify({archived:true})}).catch(()=>null);
+  if(!res||!res.ok){ toast(await motivoDoArquivar(res),'error'); return; }
   G.cases=G.cases.filter(c=>!G.selCases.has(c.id));
   clearSelection(); renderList(); renderKanban(); renderDashboard(); populateFilterOptions();
-  toast('Processos excluídos','success');
+  toast(`${ids.length} processo(s) arquivado(s).`,'success');
 }
 
 function renderList() {

@@ -29,7 +29,11 @@ for f in testes/sql/base-falsa.sql \
          sql/2026-09-10_chaves_dos_modulos.sql \
          sql/2026-09-11_exclusao_definitiva.sql \
          sql/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql \
-         sql/2026-09-11_quem_cadastra_pessoa_rele.sql; do
+         sql/2026-09-11_quem_cadastra_pessoa_rele.sql \
+         sql/2026-09-11_partes_por_id.sql \
+         sql/2026-09-11_registro_arquivar.sql \
+         sql/2026-09-12_visibilidade_da_atribuicao_1_conferir.sql \
+         sql/2026-09-12_visibilidade_da_atribuicao_2_ligar.sql; do
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done

@@ -1,0 +1,93 @@
+-- =============================================================================
+-- a1_cases.archived — o "Arquivar" do Registro, que nunca funcionou
+--
+-- POR QUE ESTE ARQUIVO EXISTE
+--
+-- registro.html e registro-listagem.html falam de uma coluna que NÃO EXISTE no
+-- banco. Três lugares, e os três quebram — não só o botão de arquivar:
+--
+--   1. LISTAR.  `a1_cases?module_key=eq.registro&archived=eq.false&...`
+--      O PostgREST não conhece a coluna e responde 400. A tela do Registro
+--      abre VAZIA, sempre, mesmo com processo cadastrado.
+--   2. CRIAR.   O corpo do POST inclui `archived: false`. Mesma 400: o
+--      Registro não consegue criar processo nenhum.
+--   3. ARQUIVAR. O PATCH manda `{archived:true}`. Mesma 400.
+--
+-- Ou seja: o módulo Registro está inteiro fora do ar, não só o arquivamento.
+-- Ninguém notou porque NENHUM cliente tem a licença dele hoje — o que também
+-- quer dizer que rodar isto não muda nada para ninguém que esteja trabalhando
+-- agora. Só devolve o chão para quando o módulo for liberado.
+--
+-- POR QUE EM a1_cases E NÃO NUMA TABELA DO REGISTRO
+-- Porque o Registro é a mesma tabela do Repasse, separada por `module_key`. A
+-- coluna serve aos dois, e é ela que permite trocar o "Arquivar" do Repasse —
+-- que hoje manda DELETE e destrói o cartão sem auditoria — por um arquivamento
+-- de verdade, reversível.
+--
+-- O QUE ESTE ARQUIVO **NÃO** FAZ
+--  · Não arquiva nada. Toda linha existente nasce com archived = false, que é
+--    exatamente o estado em que ela já estava.
+--  · Não esconde nada de ninguém. Nenhuma política de RLS é tocada: quem filtra
+--    arquivado é a CONSULTA da tela, não o banco. Fosse no RLS, o cartão
+--    arquivado sumiria também do relatório, da auditoria e da exclusão
+--    definitiva — e "sumiu do banco" é justamente o que se está tentando parar
+--    de fazer.
+--  · Não faz o Repasse filtrar arquivados. repasse.html, andamento.html e
+--    listagem.html hoje não conhecem a coluna e vão continuar mostrando tudo;
+--    quem passa a filtrar é a tela, quando ela trocar o DELETE pelo PATCH.
+--  · Não revoga o DELETE de a1_cases. Isso é outro arquivo
+--    (sql/2026-09-12_repasse_sem_delete.sql), de propósito: fechar a porta
+--    antes de existir a porta boa deixaria o Repasse sem nenhuma.
+--
+-- Em Postgres 11+ acrescentar coluna com DEFAULT não reescreve a tabela: é
+-- instantâneo mesmo com a tabela em uso. Pode rodar de novo sem problema.
+-- =============================================================================
+
+set search_path = public, extensions, pg_temp;
+
+-- `not null default false` e não um boolean nulo: as telas comparam com
+-- `archived=eq.false`, e no PostgREST/SQL um NULL não casa nem com `eq.false`
+-- nem com `eq.true`. Cartão com archived nulo sumiria das duas listas, e o
+-- cliente ligaria dizendo que o processo evaporou.
+alter table a1_cases add column if not exists archived boolean not null default false;
+
+-- O índice atende exatamente a consulta que as duas telas do Registro fazem
+-- (module_key = 'registro' e archived = false), e serve igual ao Repasse quando
+-- ele passar a filtrar. Parcial porque a lista de trabalho é sempre a dos NÃO
+-- arquivados — o arquivo morto se consulta uma vez por mês e pode varrer.
+create index if not exists idx_cases_ativos
+  on a1_cases (tenant_id, module_key, created_at desc) where not archived;
+
+-- =============================================================================
+-- COMO CONFERIR, logo depois de rodar
+--
+-- 1. A coluna existe, é boolean, não aceita nulo e vale false:
+--
+--      select column_name, data_type, is_nullable, column_default
+--        from information_schema.columns
+--       where table_name = 'a1_cases' and column_name = 'archived';
+--
+--    Esperado: boolean | NO | false
+--
+-- 2. NENHUM processo foi arquivado por este arquivo:
+--
+--      select count(*) filter (where archived) as arquivados,
+--             count(*) filter (where not archived) as ativos
+--        from a1_cases;
+--
+--    Esperado agora: arquivados = 0 e ativos = o total de hoje (330 no Repasse).
+--
+-- 3. O caminho do Registro, do jeito que a tela faz. Numa sessão de gestor de
+--    um cliente que tenha a licença:
+--
+--      -- listar (era isto que devolvia 400)
+--      select count(*) from a1_cases where module_key = 'registro' and archived = false;
+--
+--      -- arquivar e desarquivar, que é o ponto: dá para voltar atrás
+--      update a1_cases set archived = true  where id = '<id do cartão>';
+--      update a1_cases set archived = false where id = '<id do cartão>';
+--
+-- 4. E o índice:
+--
+--      select indexname from pg_indexes where indexname = 'idx_cases_ativos';
+-- =============================================================================

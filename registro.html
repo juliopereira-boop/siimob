@@ -446,6 +446,7 @@
           <div class="form-group"><label>Valor do Contrato (R$)</label><input id="md-valor" type="number" step="0.01"></div>
           <div class="form-group"><label>Banco Financiador</label><input id="md-banco" type="text" list="dl-bancos"></div>
           <div class="form-group"><label>Gerente / Responsável</label><input id="md-manager" type="text"></div>
+          <div class="form-group full" id="md-vinculos"></div>
           <div class="form-group full"><label>Observações</label><textarea id="md-obs" rows="3"></textarea></div>
         </div>
         <datalist id="dl-emprs"></datalist>
@@ -520,6 +521,7 @@
         <div class="form-group"><label>Unidade</label><input id="n-unit" type="text"></div>
         <div class="form-group"><label>Valor do Contrato (R$)</label><input id="n-valor" type="number" step="0.01"></div>
         <div class="form-group"><label>Banco Financiador</label><input id="n-banco" type="text" list="dl-bancos"></div>
+        <div class="form-group full" id="n-vinculos"></div>
         <div class="form-group"><label>Etapa inicial</label><select id="n-stage"><option value="">Selecione</option></select></div>
         <div class="form-group full"><label>Observações</label><textarea id="n-obs" rows="2"></textarea></div>
       </div>
@@ -566,6 +568,7 @@
 const G = {
   user: null, slug: '',
   stages: [], cases: [],
+  empresas: [], ccas: [], analistas: [],
   filters: { search:'', empr:'', banco:'', itbi:'' },
   dashFilters: { empr:'', banco:'', cartorio:'', search:'' },
   activeCase: null,
@@ -588,7 +591,10 @@ function applyCustomLogo() {
 async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
-  try { a1RequireModule('registro'); } catch { return; }
+  // SEM await, a promessa não era esperada e o catch nunca pegava nada: a tela
+  // seguia e pedia a1_cases mesmo para cliente sem a licença do Registro. A
+  // regra da casa é que o módulo sem licença não chega nem a existir na tela.
+  try { await a1RequireModule('registro'); } catch { return; }
   G.slug = A1.slug;
 
   document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
@@ -601,8 +607,10 @@ async function init() {
   document.getElementById('link-config').href             = `/${G.slug}/configuracoes`;
 
   await loadData();
-  renderKanban();
-  renderList();
+  // Os filtros pertencem à carga, não à aba: quem entra direto no quadro ou na
+  // listagem tem de encontrá-los prontos.
+  popularFiltros();
+  if (!avisarLeitura()) { renderKanban(); renderList(); }
   // Kanban is the default view — hide dashboard, show kanban
   const tabDash = document.getElementById('tab-dashboard');
   if (tabDash) tabDash.style.display = 'none';
@@ -617,16 +625,59 @@ async function init() {
   });
 }
 
+// ══════════ VÍNCULOS: empresa correspondente, usuário correspondente, analista ══
+// As três colunas são as mesmas dos outros módulos — empresa_id, correspondente_id
+// e analista_id — para que um processo possa ser seguido de ponta a ponta pelo
+// mesmo vínculo. Aqui eram texto solto (`manager_name`) ou nem existiam.
+function selVinculo(id, lista, selecionado, desabilitado){
+  return `<select id="${id}"${desabilitado ? ' disabled' : ''}>
+    <option value="">— não definido —</option>` +
+    (Array.isArray(lista) ? lista : []).map(x =>
+      `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`
+    ).join('') + '</select>';
+}
+function idOuNulo(id){ const el = document.getElementById(id); return (el && el.value) || null; }
+
+// O Roteamento de Analistas ainda não existe. Quando existir, é AQUI que ele
+// passa a responder — e o campo de analista fica bloqueado, porque quem
+// escolhe passa a ser a regra, não a pessoa.
+function roteamentoDeAnalistasAtivo(){ return false; }
+
+function camposDeVinculo(c, prefixo){
+  const roteia = roteamentoDeAnalistasAtivo();
+  c = c || {};
+  return `<div class="form-group"><label>Empresa correspondente</label>
+      ${selVinculo(prefixo + 'empresa', G.empresas, c.empresa_id, false)}</div>
+    <div class="form-group"><label>Usuário correspondente</label>
+      ${selVinculo(prefixo + 'correspondente', G.ccas, c.correspondente_id, false)}</div>
+    <div class="form-group"><label>Analista</label>
+      ${selVinculo(prefixo + 'analista', G.analistas, c.analista_id, roteia)}
+      ${roteia ? '<div style="font-size:.7rem;color:var(--t3);margin-top:.25rem">definido pelo Roteamento de Analistas</div>' : ''}</div>`;
+}
+
 // ─── Data ──────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, cases] = await Promise.all([
-    fetch(`${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`, { headers: A1.headers() })
+  const h = { headers: A1.headers() };
+  const [stages, cases, emps, ccas, anas] = await Promise.all([
+    fetch(`${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`, h)
       .then(r => r.json()).catch(() => []),
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc`, { headers: A1.headers() })
-      .then(r => r.json()).catch(() => [])
+    // A resposta é guardada INTEIRA, e não só o corpo: quando a coluna archived
+    // não existe o PostgREST devolve 400, e `.catch(()=>[])` transformava isso
+    // em "nenhum processo" — a tela mentia com toda a confiança. Ver avisarLeitura().
+    fetch(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc`, h)
+      .then(async r => r.ok ? r.json() : { __erro: await r.text() }).catch(() => ({ __erro:'rede' })),
+    // Os três cadastros de vínculo, na mesma carga da tela: um seletor por vez
+    // faria o despachante esperar em cada processo que abre.
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, h).then(r => r.json()).catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, h).then(r => r.json()).catch(() => [])
   ]);
   G.stages = Array.isArray(stages) ? stages : [];
   G.cases  = Array.isArray(cases)  ? cases  : [];
+  G.erroLeitura = Array.isArray(cases) ? '' : ((cases && cases.__erro) || 'rede');
+  G.empresas  = Array.isArray(emps) ? emps : [];
+  G.ccas      = Array.isArray(ccas) ? ccas : [];
+  G.analistas = Array.isArray(anas) ? anas : [];
 
   // Populate datalists
   const emprs = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
@@ -635,6 +686,25 @@ async function loadData() {
   populateDL('dl-emprs', emprs);
   populateDL('dl-bancos', bancos);
   populateDL('dl-cartorios', cartorios);
+}
+
+// Quadro vazio por falta de processo e quadro vazio por consulta recusada são
+// a mesma tela e problemas opostos. Dizer qual é dos dois — e qual arquivo
+// resolve — é a diferença entre cinco minutos e uma tarde.
+function avisarLeitura() {
+  const alvo = document.getElementById('rg-kanban');
+  if (!alvo || !G.erroLeitura) return false;
+  const semColuna = /archived/.test(G.erroLeitura);
+  alvo.innerHTML = `<div style="max-width:560px;margin:2rem auto;background:#FFFBEB;
+      border:1px solid #FDE68A;border-radius:10px;padding:1.25rem;color:#92400E">
+    <div style="font-weight:800;margin-bottom:.4rem">Os processos não puderam ser lidos</div>
+    <div style="font-size:.82rem;line-height:1.55">${semColuna
+      ? 'O banco deste cliente ainda não tem a coluna <b>archived</b> em a1_cases. '
+        + 'Rode <b>sql/2026-09-11_registro_arquivar.sql</b> no Supabase — até lá o Registro não abre.'
+      : 'O servidor recusou a consulta. Recarregue; se continuar, avise o suporte.'}</div>
+    <div style="font-size:.7rem;margin-top:.6rem;opacity:.75">${esc(String(G.erroLeitura).slice(0,200))}</div>
+  </div>`;
+  return true;
 }
 
 function populateDL(id, items) {
@@ -705,28 +775,36 @@ function applyListFilter() {
   renderList();
 }
 
+// Os filtros nasciam DENTRO de renderDashboard, que só roda quando alguém abre
+// a aba Dashboard. Quem entrava direto no quadro ou na listagem — que é o
+// caminho normal — encontrava "Todos os empreendimentos" e mais nada, e a
+// regra da casa (todo cadastro reflete no filtro) parecia quebrada por falta
+// de cadastro. Não era: era a ordem das telas.
+function popularFiltros() {
+  const todos = G.cases || [];
+  const allEmprs     = [...new Set(todos.map(c => c.development).filter(Boolean))];
+  const allBancos    = [...new Set(todos.map(c => c.payload?.banco_name).filter(Boolean))];
+  const allCartorios = [...new Set(todos.map(c => c.payload?.cartorio_name).filter(Boolean))];
+  populateSelect('dg-empr',     allEmprs,     'Todos empreendimentos',     G.dashFilters.empr);
+  populateSelect('dg-banco',    allBancos,    'Todos os bancos',           G.dashFilters.banco);
+  populateSelect('dg-cartorio', allCartorios, 'Todos os cartórios',        G.dashFilters.cartorio);
+  populateSelect('rg-filter-empr',  allEmprs,  'Todos os empreendimentos', G.filters.empr);
+  populateSelect('rg-filter-banco', allBancos, 'Todos os bancos',          G.filters.banco);
+  populateSelect('rg-list-stage',   G.stages.map(s => s.name), 'Todas as etapas', '');
+  // Percorrer as options em JS, e não montar um seletor CSS com o nome da
+  // etapa: nome com aspas faz querySelector lançar SyntaxError, e a exceção
+  // abortava a população INTEIRA — os filtros seguintes ficavam vazios.
+  const selEtapa = document.getElementById('rg-list-stage');
+  if (selEtapa) [...selEtapa.options].forEach(o => { if (o.value) o.selected = false; });
+}
+
 // ─── Dashboard ──────────────────────────────────────────────────────────────────
 function renderDashboard() {
   const cases = dashCases();
   const now = new Date();
   const thisMonth = now.toISOString().slice(0, 7);
 
-  // Populate dash filter selects
-  const allEmprs    = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
-  const allBancos   = [...new Set(G.cases.map(c => c.payload?.banco_name).filter(Boolean))];
-  const allCartorios = [...new Set(G.cases.map(c => c.payload?.cartorio_name).filter(Boolean))];
-  populateSelect('dg-empr',    allEmprs,    'Todos empreendimentos', G.dashFilters.empr);
-  populateSelect('dg-banco',   allBancos,   'Todos os bancos',       G.dashFilters.banco);
-  populateSelect('dg-cartorio',allCartorios,'Todos os cartórios',    G.dashFilters.cartorio);
-
-  // Also populate kanban filter selects
-  populateSelect('rg-filter-empr', allEmprs,  'Todos os empreendimentos', G.filters.empr);
-  populateSelect('rg-filter-banco',allBancos, 'Todos os bancos',          G.filters.banco);
-  populateSelect('rg-list-stage',  G.stages.map(s=>s.name), 'Todas as etapas', '');
-  G.stages.forEach(s => {
-    const opt = document.querySelector(`#rg-list-stage option[value="${s.name}"]`);
-    if (opt) opt.selected = false;
-  });
+  popularFiltros();
 
   const finalStageIds = new Set(G.stages.filter(s => s.is_final).map(s => s.id));
   const andamento  = cases.filter(c => !finalStageIds.has(c.stage_id));
@@ -819,7 +897,7 @@ function renderDonutChart(stageData, svgEl, legendEl, total) {
     const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
     const pct   = total ? Math.round(item.count / total * 100) : 0;
     return `<div class="donut-leg-row">
-      <div class="donut-leg-dot" style="background:${color}"></div>
+      <div class="donut-leg-dot" style="background:${cor(color)}"></div>
       <div class="donut-leg-name">${esc(item.stage.name)}</div>
       <div class="donut-leg-count">${item.count}</div>
       <div class="donut-leg-pct">${pct}%</div>
@@ -841,7 +919,7 @@ function renderFunil(stageData, total) {
     const isGarg  = !item.stage.is_final && item === nonFinalData[gargaloIdx];
     return `<div class="funil-row2">
       <div class="funil2-name" style="color:${color}">${esc(item.stage.name)}</div>
-      <div class="funil2-bar-wrap"><div class="funil2-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="funil2-bar-wrap"><div class="funil2-bar" style="width:${pct}%;background:${cor(color)}"></div></div>
       <div class="funil2-count">${item.count}</div>
       <div class="funil2-pct">${pctTot}%</div>
       <div class="funil2-badges">${isGarg ? '<span class="badge-gargalo">GARGALO</span>' : ''}</div>
@@ -866,7 +944,7 @@ function renderDistList(elId, items, color) {
     <div class="dist-row">
       <div class="dist-num">${i+1}</div>
       <div class="dist-name">${esc(name)}</div>
-      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(count/max*100)}%;background:${color}"></div></div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(count/max*100)}%;background:${cor(color)}"></div></div>
       <div class="dist-val">${count}</div>
     </div>`).join('') || '<div style="color:var(--t3);font-size:.75rem">Sem dados.</div>';
 }
@@ -895,11 +973,11 @@ function renderKanban() {
     total += stageCases.length;
     const color = stage.color || '#3D5CC8';
     return `<div class="k-col">
-      <div class="k-col-header" style="background:${color}">
+      <div class="k-col-header" style="background:${cor(color)}">
         <span>${esc(stage.name)}</span>
         <span class="k-col-count">${stageCases.length}</span>
       </div>
-      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${stage.id}')">
+      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${esc(stage.id)}')">
         ${stageCases.map(c => renderCard(c, color, now)).join('') ||
           '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'}
       </div>
@@ -918,11 +996,11 @@ function renderCard(c, color, now) {
   const itbi = p.itbi_status || '';
   const exig = p.exig_desc;
 
-  return `<div class="k-card" style="border-left-color:${color}"
+  return `<div class="k-card" style="border-left-color:${cor(color)}"
     draggable="true"
-    ondragstart="onDragStart(event,'${c.id}')"
+    ondragstart="onDragStart(event,'${esc(c.id)}')"
     ondragend="onDragEnd(event)"
-    onclick="openCase('${c.id}')">
+    onclick="openCase('${esc(c.id)}')">
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
@@ -931,7 +1009,7 @@ function renderCard(c, color, now) {
         <span class="badge-days ${dCls}">${days}d</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${c.client_cpf}')">${c.client_cpf}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${esc(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
     ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
     <div class="kc-chips">
       ${itbi === 'pago'    ? '<span class="chip chip-itbi-pago">ITBI Pago</span>'    : ''}
@@ -1021,12 +1099,12 @@ function renderList() {
         const itbiCls = itbi==='pago'?'itbi-pill-pago':itbi==='vencido'?'itbi-pill-venc':'itbi-pill-pend';
         const st   = G.stages.find(s => s.id === c.stage_id);
         const stClr= st?.color || '#8896a7';
-        return `<tr onclick="openCase('${c.id}')" style="cursor:pointer">
+        return `<tr onclick="openCase('${esc(c.id)}')" style="cursor:pointer">
           <td><span class="tbl-name">${esc(c.client_name)}</span></td>
           <td><span class="tbl-cpf">${esc(c.client_cpf||'—')}</span></td>
           <td>${esc(c.development||'—')}${c.unit?' · '+esc(c.unit):''}</td>
           <td><span style="display:inline-flex;align-items:center;gap:.3rem">
-            <span style="width:7px;height:7px;border-radius:50%;background:${stClr};display:inline-block"></span>
+            <span style="width:7px;height:7px;border-radius:50%;background:${cor(stClr)};display:inline-block"></span>
             ${esc(c.stage_name||'—')}</span></td>
           <td>${esc(p.banco_name||'—')}</td>
           <td>${esc(p.cartorio_name||'—')}</td>
@@ -1066,6 +1144,10 @@ function openCase(id) {
   setField('md-valor',   c.contract_value || '');
   setField('md-banco',   p.banco_name     || '');
   setField('md-manager', c.manager_name   || '');
+  // Os seletores são REMONTADOS com o processo aberto, e não só preenchidos:
+  // é o que faz o dossiê abrir já marcando o vínculo que está gravado.
+  const vinc = document.getElementById('md-vinculos');
+  if (vinc) vinc.innerHTML = camposDeVinculo(c, 'md-');
   setField('md-obs',     c.observations   || '');
 
   // ITBI tab
@@ -1131,6 +1213,9 @@ async function saveCase() {
     block:          val('md-block'),
     contract_value: val('md-valor') || null,
     manager_name:   val('md-manager'),
+    empresa_id:        idOuNulo('md-empresa'),
+    correspondente_id: idOuNulo('md-correspondente'),
+    analista_id:       idOuNulo('md-analista'),
     observations:   val('md-obs'),
     payload
   };
@@ -1158,16 +1243,38 @@ async function changeStage() {
 
 async function archiveCase() {
   if (!G.activeCase) return;
-  if (!confirm('Arquivar este processo?')) return;
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${G.activeCase.id}`, {
+  if (!confirm('Arquivar este processo? Ele sai do quadro e da listagem, e pode ser trazido de volta.')) return;
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${G.activeCase.id}`, {
     method:'PATCH', headers:A1.headers(), body:JSON.stringify({archived:true})
-  });
+  }).catch(() => null);
+  // A resposta não era conferida: o cartão sumia da tela e o gestor ouvia
+  // "Arquivado." mesmo quando o banco recusava. Na volta seguinte ele estava
+  // lá de novo, e ninguém liga uma coisa à outra.
+  if (!res || !res.ok) {
+    toast(await motivoDoArquivar(res), 'error');
+    return;
+  }
   G.cases = G.cases.filter(c => c.id !== G.activeCase.id);
   closeModal('modal-det-bg');
   renderKanban();
   renderList();
   renderDashboard();
   toast('Arquivado.', 'success');
+}
+
+// A coluna `archived` é criada por SQL que o dono roda à mão. Entre publicar a
+// tela e rodar o arquivo existe uma janela, e nela o erro é ESTE — dizer qual
+// arquivo resolve poupa a investigação inteira.
+async function motivoDoArquivar(res) {
+  if (!res) return 'Sem resposta do servidor. Verifique a conexão e tente de novo.';
+  let m = '';
+  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  if (/archived/.test(m) && /column|coluna/i.test(m))
+    return 'O banco deste cliente ainda não tem a coluna `archived`. '
+         + 'Rode sql/2026-09-11_registro_arquivar.sql no Supabase — até lá, arquivar não funciona.';
+  if (res.status === 401 || res.status === 403 || /row-level security|permission denied/i.test(m))
+    return 'O banco recusou o arquivamento para o seu acesso. Fale com o gestor.';
+  return m || 'Não foi possível arquivar. O processo continua no quadro.';
 }
 
 async function loadEvents(caseId) {
@@ -1197,6 +1304,10 @@ function openNewModal() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  // Montados a cada abertura, e não uma vez no carregamento: assim um cadastro
+  // novo de analista aparece sem o despachante ter de recarregar a página.
+  const vinc = document.getElementById('n-vinculos');
+  if (vinc) vinc.innerHTML = camposDeVinculo(null, 'n-');
   const sel = document.getElementById('n-stage');
   sel.innerHTML = G.stages.map(s =>
     `<option value="${s.id}" ${s.is_initial?'selected':''}>${esc(s.name)}</option>`
@@ -1224,6 +1335,13 @@ async function createCase() {
     unit:           val('n-unit')  || null,
     contract_value: val('n-valor') || null,
     manager_name:   val('n-manager') || null,
+    // O formulário sempre teve o campo Telefone e o corpo nunca o levou: o
+    // despachante digitava e o dado sumia no envio. client_phone existe na
+    // tabela desde sempre.
+    client_phone:   val('n-phone') || null,
+    empresa_id:        idOuNulo('n-empresa'),
+    correspondente_id: idOuNulo('n-correspondente'),
+    analista_id:       idOuNulo('n-analista'),
     observations:   val('n-obs')   || null,
     stage_id:       stage?.id,
     stage_name:     stage?.name,
@@ -1285,6 +1403,17 @@ async function saveStage() {
   renderConfigStages();
   closeModal('modal-stage-bg');
   toast('Etapa adicionada.', 'success');
+}
+
+// Cor de etapa entra em atributo style, e vem do banco: é o gestor quem digita
+// no editor de workflow. esc() não serve aqui — dentro de style, `expression`,
+// `url(...)` e o fecha-aspas continuam valendo. Só passa o que TEM FORMA de cor;
+// qualquer outra coisa vira a cor padrão. Cor esquisita é um detalhe visual;
+// cor que executa script é o cartão do vizinho aberto no navegador de quem
+// abriu o quadro.
+function cor(v, padrao){
+  const t = String(v == null ? '' : v).trim();
+  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : (padrao || '#3D5CC8');
 }
 
 function populateSelect(id, items, placeholder, selected) {

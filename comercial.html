@@ -204,7 +204,9 @@
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
   corretores:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
-  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null
+  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null,
+  // Os três campos de vínculo — ver o bloco "OS TRÊS CAMPOS DE VÍNCULO" abaixo.
+  empresas:[], ccas:[], analistas:[]
 };
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -261,6 +263,54 @@ function tituloDe(co){
 }
 function valorDe(co){ const c = (co.origem_snapshot || {}).credito || {}; return c.valor_total || 0; }
 
+// ══════════ OS TRÊS CAMPOS DE VÍNCULO ══════════
+//
+// Empresa correspondente, usuário correspondente e analista. É a mesma pergunta
+// em todo módulo (menos Lead): de quem é este processo. Guardamos o **id**,
+// nunca o nome. O Repasse liga parceiro ao processo por `broker_name` /
+// `manager_name` — texto — e foi assim que três analistas da S T passaram a
+// enxergar zero processos quando a regra "só o seu" entrou: bastou a grafia
+// divergir. Id não tem grafia.
+//
+// De onde vem cada lista:
+//
+//   empresa_id        →  a1_corr_empresas          (cadastro "Empresa correspondente")
+//   correspondente_id →  a1_partners type=cca      (o usuário do correspondente)
+//   analista_id       →  a1_partners type=analista
+//
+// A empresa NÃO sai de a1_partners, e isso é deliberado: `a1_partners.empresa_id`
+// tem chave estrangeira para `a1_corr_empresas`, e é essa empresa que
+// `a1_co_visivel(corretor_id, empresa_id)` compara com `a1_empresa_ator()` para
+// decidir se o correspondente enxerga o negócio. Apontar este campo para outra
+// tabela deixaria o correspondente sem ver a carteira da própria empresa — e
+// sem nada falhar na tela, que é o pior jeito de errar.
+function selVinculo(id, lista, selecionado, desabilitado){
+  return `<select id="${id}"${desabilitado ? ' disabled' : ''}>
+    <option value="">— não definido —</option>
+    ${lista.map(x => `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
+  </select>`;
+}
+// uuid não aceita string vazia. Sem isto, "— não definido —" vira '' e o banco
+// responde 22P02 "invalid input syntax for type uuid" — erro que não diz nada
+// para quem só queria tirar o analista do processo.
+function idOuNulo(id){ const el = document.getElementById(id); return (el && el.value) || null; }
+
+// ══════════ ROTEAMENTO DE ANALISTAS ══════════
+//
+// Ainda NÃO EXISTE — não há tabela, não há tela. Quando existir e estiver
+// **ativo e configurado** para o cliente, quem escolhe o analista é ele, e o
+// campo fica BLOQUEADO aqui: escolher à mão passaria por cima da distribuição,
+// que é justamente o que o roteamento veio impedir.
+//
+// ONDE LIGAR: troque o `false` abaixo pela leitura do estado do roteamento
+// deste cliente (ativo **e** com ao menos uma regra — ativo e vazio não
+// distribui nada e travaria o campo à toa). Nada mais precisa mudar: o dossiê
+// já pergunta por esta função ao desenhar o campo.
+//
+// Nasce desligada de propósito. Ligada sem roteamento por trás, o campo ficaria
+// morto e ninguém conseguiria atribuir analista a negócio nenhum.
+function roteamentoDeAnalistasAtivo(){ return false; }
+
 async function init(){
   try { G.user = a1RequireAuth(); } catch { return; }
   await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
@@ -295,18 +345,27 @@ function aplicarVista(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, co, corr, empr] = await Promise.all([
+  const [sit, tr, co, corr, empr, emps, ccas, anas] = await Promise.all([
     fetch(`${A1.rest('a1_co_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_comerciais')}?order=criado_em.desc`),
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // Os três cadastros que alimentam os campos de vínculo. Vêm com a carga da
+    // tela para o dossiê abrir pronto — e não um seletor por vez, que é o que
+    // faz o gestor esperar em cada negócio que abre.
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
   ]);
   G.situacoes = Array.isArray(sit) ? sit : [];
   G.transicoes = Array.isArray(tr) ? tr : [];
   G.lista = (co && Array.isArray(co.linhas)) ? co.linhas : [];
   G.corretores = Array.isArray(corr) ? corr : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
+  G.empresas  = Array.isArray(emps) ? emps : [];
+  G.ccas      = Array.isArray(ccas) ? ccas : [];
+  G.analistas = Array.isArray(anas) ? anas : [];
   preencherFiltros();
   renderVistas();
 }
@@ -654,6 +713,7 @@ function dosProposta(){
         <textarea id="p-obs" rows="3" ${pode?'':'disabled'}>${esc(p.observacoes || '')}</textarea></div>
     </div>
     <div id="p-conferencia" style="margin-top:.9rem"></div>
+    ${secaoVinculos(co, pode)}
     <div class="sec-title">Crédito aprovado na origem</div>
     <div class="fgrid">
       <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
@@ -662,6 +722,30 @@ function dosProposta(){
       <div class="fg"><label>Total aprovado</label><input value="${esc(brl(aprovado))}" disabled></div>
     </div>
     ${pode ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarProposta()">Salvar proposta</button></div>` : ''}`;
+}
+
+// Quem responde por este negócio. Três seletores, três colunas de a1_comerciais.
+//
+// A empresa só o gestor troca: o gatilho a1_comerciais_trava (2026-09-04) recusa
+// mudança em corretor_id/empresa_id de quem não é gestor com
+// `redistribuir_carteira_e_do_gestor` — redistribuir carteira é decisão de
+// gestão, não de quem está no negócio. Desenhar o campo aberto e deixar o banco
+// recusar depois seria prometer o que não se cumpre.
+function secaoVinculos(co, pode){
+  const podeEmpresa  = pode && (ehGestor() || perm('gerente'));
+  const roteando     = roteamentoDeAnalistasAtivo();
+  return `
+    <div class="sec-title">Quem responde por este negócio</div>
+    <div class="fgrid">
+      <div class="fg"><label>Empresa correspondente</label>
+        ${selVinculo('p-empresa', G.empresas, co.empresa_id, !podeEmpresa)}
+        ${pode && !podeEmpresa ? '<div class="sub" style="margin-top:.25rem">Trocar a empresa é do gestor: é ela que decide quem enxerga o negócio.</div>' : ''}</div>
+      <div class="fg"><label>Usuário correspondente</label>
+        ${selVinculo('p-correspondente', G.ccas, co.correspondente_id, !pode)}</div>
+      <div class="fg"><label>Analista</label>
+        ${selVinculo('p-analista', G.analistas, co.analista_id, !pode || roteando)}
+        ${roteando ? '<div class="sub" style="margin-top:.25rem">Quem escolhe o analista é o <strong>Roteamento de Analistas</strong>, não este campo.</div>' : ''}</div>
+    </div>`;
 }
 
 // O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
@@ -689,10 +773,19 @@ async function salvarProposta(){
     comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
     observacoes:   document.getElementById('p-obs').value || null
   };
+  // Os três vínculos vão no MESMO salvamento. Botão próprio para eles seria mais
+  // um lugar de onde sair sem salvar: o gestor troca o analista, fecha o dossiê
+  // e jura que trocou.
+  const corpo = {
+    proposta,
+    empresa_id:        idOuNulo('p-empresa'),
+    correspondente_id: idOuNulo('p-correspondente'),
+    analista_id:       idOuNulo('p-analista')
+  };
   const res = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${co.id}`, {
-    method:'PATCH', headers:A1.headers(), body:JSON.stringify({ proposta }) });
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar a proposta.'),'error'); return; }
-  co.proposta = proposta;
+  Object.assign(co, corpo);
   toast('Proposta salva.','success');
   renderVistas();
 }
@@ -917,6 +1010,15 @@ async function mensagemErro(res, padrao){
       return 'O vínculo com o Repasse é criado pela ação, não à mão.';
     if (/sem_permissao_para_marcar_contrato_assinado/.test(m||''))
       return 'Você não tem permissão para marcar contrato como assinado.';
+    if (/redistribuir_carteira_e_do_gestor/.test(m||''))
+      return 'Trocar a empresa correspondente ou o corretor do negócio é do gestor — '
+           + 'é isso que decide quem enxerga o negócio. Peça a um gestor, ou a permissão "Gerente".';
+    // A coluna que falta é o caso mais mudo de todos: o PostgREST recusa, a tela
+    // diz "não foi possível" e ninguém descobre que é SQL que não foi rodado.
+    const _col = /(?:Could not find the '|column a1_comerciais\.)([a-z_]+)'?/.exec(m || '');
+    if (_col && /PGRST204|does not exist|schema cache/i.test(m))
+      return `O banco ainda não tem a coluna "${_col[1]}" em a1_comerciais. Rode o SQL do módulo `
+           + 'Venda (pasta sql/) antes de usar esta tela — sem a coluna nada aqui salva.';
     return m || padrao;
   } catch { return padrao; }
 }
