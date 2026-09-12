@@ -208,6 +208,8 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
   for (const pag of PAGINAS) {
     const { b, p, erros, casos, pedidos, urls } = await abrir(pag);
 
+    checa(`${pag}: Arquivados não fica no cabeçalho global`,
+          await p.evaluate(() => !document.querySelector('.hdr #btn-arquivados')));
     checa(`${pag}: a lista pede só os ativos`,
           urls.some(u => /a1_cases\?.*archived=eq\.false/.test(u)));
     checa(`${pag}: o arquivado não aparece por padrão`, !(await idsNaTela(p)).includes('c9'));

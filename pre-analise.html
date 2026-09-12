@@ -81,6 +81,12 @@
   .k-col-body.drag-over{background:#e2e8f0;outline:2px dashed var(--violet);outline-offset:-3px}
   .pa-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
   .pa-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
+  .card-doc{display:inline-flex;align-items:center;gap:.28rem;margin:.04rem 0 .3rem;padding:0;border:0;background:transparent;color:var(--violet);font:600 .68rem 'DM Mono',monospace;cursor:pointer}
+  .card-doc:hover{text-decoration:underline}
+  .card-meta{display:grid;gap:.14rem;margin:.28rem 0}
+  .card-meta .label{display:inline-block;min-width:5.1rem;color:var(--t3);font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .card-stage{margin-top:.38rem;padding-top:.34rem;border-top:1px solid var(--border);font-size:.64rem;color:var(--t3)}
+
   .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
   .chip.val{background:#dcfce7;color:#166534;font-family:'DM Mono',monospace}
   .chip.w{background:#fef9c3;color:#854d0e}.chip.r{background:#fee2e2;color:#b91c1c}
@@ -337,6 +343,22 @@ function cpfValido(cpf){
   return true;
 }
 
+function copiarDocumento(event, documento){
+  event.preventDefault(); event.stopPropagation();
+  const valor = soDigitos(documento);
+  if (!valor) return;
+  const ok = () => toast('CPF copiado.','success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(valor).then(ok).catch(() => copiarDocumentoFallback(valor, ok));
+  } else copiarDocumentoFallback(valor, ok);
+}
+function copiarDocumentoFallback(valor, ok){
+  const campo = document.createElement('textarea');
+  campo.value = valor; campo.setAttribute('readonly','');
+  campo.style.position = 'fixed'; campo.style.opacity = '0';
+  document.body.appendChild(campo); campo.select();
+  try { document.execCommand('copy'); ok(); } finally { campo.remove(); }
+}
 function ehGestor(){ return G.user && G.user.role !== 'partner'; }
 function perm(chave){
   if (ehGestor()) return true;
@@ -597,6 +619,7 @@ function minhaImobiliaria(){
   return (e && e.imobiliaria_id) || '';
 }
 function nomeImobiliaria(id){ const i = G.imobiliarias.find(x=>x.id===id); return i ? i.name : ''; }
+function nomeAnalista(id){ const a = G.analistas.find(x=>x.id===id); return a ? a.name : ''; }
 
 // Corretor SEM imobiliária no cadastro aparece em qualquer imobiliária, de
 // propósito: hoje quase nenhum tem o vínculo preenchido, e um filtro estrito
@@ -802,18 +825,27 @@ function renderAndamento(linhas){
 function cartao(p){
   const t = G.titulares[p.id], s = sla(p);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
-  // Só é arrastável o cartão que esta pessoa pode de fato mover. Cartão que
-  // arrasta e volta é pior do que cartão que não arrasta: parece falha do
-  // sistema, e não a permissão que o gestor não deu.
   const arrasta = podeMoverPa(p);
+  const documento = t && t.documento ? soDigitos(t.documento) : '';
+  const desde = p.situacao_em || p.criado_em;
+  const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
   return `<div class="pa-card" style="border-left-color:${cor}" data-id="${esc(p.id)}"
     ${arrasta ? `draggable="true" ondragstart="aoComecarArrasto(event,this)"
     ondragend="this.classList.remove('dragging')"` : ''}
     onclick="abrirDossie('${esc(p.id)}')">
     <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
-    <div class="pa-line">${esc(nomeEmpr(p.empreendimento_id))}${p.unidade?' · un. '+esc(p.unidade):''}</div>
-    <div class="pa-line">${esc(nomeCorretor(p.corretor_id))}</div>
-    <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span></div>
+    ${documento
+      ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+      : '<div class="pa-line">CPF não informado</div>'}
+    <div class="pa-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(p.empreendimento_id))}${p.unidade?' · un. '+esc(p.unidade):''}</div>
+    <div class="card-meta">
+      <div class="pa-line"><span class="label">Imobiliária</span>${esc(nomeImobiliaria(p.imobiliaria_id) || 'Não informada')}</div>
+      <div class="pa-line"><span class="label">Corretor</span>${esc(nomeCorretor(p.corretor_id))}</div>
+      <div class="pa-line"><span class="label">Analista</span>${esc(nomeAnalista(p.analista_id) || 'Não informado')}</div>
+    </div>
+    <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
+      <span class="chip">${esc(decorrido)} na etapa</span></div>
+    <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
   </div>`;
 }
 
