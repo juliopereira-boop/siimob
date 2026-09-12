@@ -86,3 +86,34 @@ alter table public.a1_pa_situacoes add constraint a1_pa_situacoes_selo_check
 alter table public.a1_co_situacoes drop constraint if exists a1_co_situacoes_selo_check;
 alter table public.a1_co_situacoes add constraint a1_co_situacoes_selo_check
   check (selo is null or selo in ('INICIO','VENDIDO','FIM_NEGATIVO'));
+
+
+-- Ao registrar aprovação de crédito, avança para o fim positivo e deixa trilha.
+-- A função não é endpoint público: só o trigger a executa.
+create or replace function public.a1_pa_avancar_credito_aprovado()
+returns trigger language plpgsql security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare v_para uuid; v_de uuid;
+begin
+  if new.status <> 'APROVADO' then return new; end if;
+  select situacao_id into v_de from public.a1_pre_analises
+   where id = new.pre_analise_id and tenant_id = new.tenant_id;
+  select id into v_para from public.a1_pa_situacoes
+   where tenant_id = new.tenant_id and ativo and selo = 'FIM_POSITIVO'
+   order by ordem limit 1;
+  if v_para is null or v_de is null or v_para = v_de then return new; end if;
+  perform set_config('a1.orquestrador', '1', true);
+  update public.a1_pre_analises set situacao_id = v_para, versao = versao + 1,
+    atualizado_em = now() where id = new.pre_analise_id and tenant_id = new.tenant_id;
+  insert into public.a1_pa_eventos
+    (tenant_id, pre_analise_id, evento, de_situacao, para_situacao, ator_id, detalhe)
+  values (new.tenant_id, new.pre_analise_id, 'transicao_automatica_credito', v_de, v_para,
+    a1_ator(), jsonb_build_object('motivo','Decisão de crédito aprovada','analise_credito_id',new.id));
+  return new;
+end;
+$$;
+revoke all on function public.a1_pa_avancar_credito_aprovado() from public;
+drop trigger if exists a1_pa_avancar_credito_aprovado on public.a1_pa_analises_credito;
+create trigger a1_pa_avancar_credito_aprovado after insert on public.a1_pa_analises_credito
+for each row execute function public.a1_pa_avancar_credito_aprovado();
