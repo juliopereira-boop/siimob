@@ -157,6 +157,8 @@
     <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderVistas()" style="min-width:220px">
     <select id="f-situacao" onchange="renderVistas()"><option value="">Todas as situações</option></select>
     <select id="f-corretor" onchange="renderVistas()"><option value="">Todos os corretores</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVistas()">
+    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVistas()">
     <div class="seg" role="group" aria-label="Filtro de prazo">
       <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
       <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
@@ -495,7 +497,12 @@ function filtradas(){
   const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
   const fs = document.getElementById('f-situacao').value;
   const fc = document.getElementById('f-corretor').value;
+  const inicio = document.getElementById('f-inicio').value;
+  const fim = document.getElementById('f-fim').value;
   return G.lista.filter(c => {
+    const dataCriacao = c.criado_em ? c.criado_em.slice(0,10) : '';
+    if (inicio && (!dataCriacao || dataCriacao < inicio)) return false;
+    if (fim && (!dataCriacao || dataCriacao > fim)) return false;
     // Situação sem nada marcado é invisível para esta pessoa.
     if (!podeVerSituacao(c.situacao_id)) return false;
     if (fs && c.situacao_id !== fs) return false;
