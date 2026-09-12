@@ -84,34 +84,19 @@ const modalAberto = p => p.evaluate(() => {
     todosErros.push(...erros); await b.close();
   }
 
-  // ── 2. Quem PODE não perde o botão ───────────────────────────────────────
-  console.log('\nQuem pode criar continua com o botão');
-  {
-    const { b, p, erros } = await abrirComo('repasse.html', 'parceiro',
-      { permissoes: { criar_repasses:true } });
+  // ── 2. Criar Repasse não é atalho do cabeçalho ──────────────────────────
+  // A abertura parte do fluxo de Venda. Por isso não há exceção por perfil:
+  // mesmo quem tem a permissão não recebe um botão solto no topo.
+  console.log('\nO cabeçalho não oferece Novo Repasse');
+  for (const [rotulo, papel, opts] of [
+    ['corretor com a chave marcada', 'parceiro', { permissoes: { criar_repasses:true } }],
+    ['corretor sem a chave no cadastro', 'parceiro', { permissoes: {} }],
+    ['gestor', 'gestor', {}],
+    ['gerente', 'parceiro', { permissoes: { gerente:true, criar_repasses:false } }],
+  ]) {
+    const { b, p, erros } = await abrirComo('repasse.html', papel, opts);
     await p.waitForTimeout(1800);
-    checa('corretor com a chave marcada vê o botão', await botaoVisivel(p));
-    todosErros.push(...erros); await b.close();
-  }
-  {
-    // O caso dos 53. Cadastro antigo, sem a chave: ausente vale "pode".
-    const { b, p, erros } = await abrirComo('repasse.html', 'parceiro', { permissoes: {} });
-    await p.waitForTimeout(1800);
-    checa('corretor SEM a chave no cadastro vê o botão (ausente = pode)', await botaoVisivel(p));
-    todosErros.push(...erros); await b.close();
-  }
-  {
-    const { b, p, erros } = await abrirComo('repasse.html', 'gestor');
-    await p.waitForTimeout(1800);
-    checa('gestor vê o botão', await botaoVisivel(p));
-    todosErros.push(...erros); await b.close();
-  }
-  {
-    // Gerente vale por cima, igual a a1_perm no banco.
-    const { b, p, erros } = await abrirComo('repasse.html', 'parceiro',
-      { permissoes: { gerente:true, criar_repasses:false } });
-    await p.waitForTimeout(1800);
-    checa('gerente vê o botão mesmo com a chave desmarcada', await botaoVisivel(p));
+    checa(`${rotulo}: não vê Novo Repasse no cabeçalho`, !(await botaoVisivel(p)));
     todosErros.push(...erros); await b.close();
   }
 
@@ -132,7 +117,7 @@ const modalAberto = p => p.evaluate(() => {
   {
     const { b, p, erros } = await abrirComo('repasse.html', 'gestor', { bancoMudo:true });
     await p.waitForTimeout(1800);
-    checa('gestor não depende dessa consulta e mantém o botão', await botaoVisivel(p));
+    checa('gestor também não recebe o atalho no cabeçalho', !(await botaoVisivel(p)));
     todosErros.push(...erros); await b.close();
   }
 
