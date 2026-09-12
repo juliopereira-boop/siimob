@@ -1714,12 +1714,13 @@ async function salvarCredito(){
     method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
   if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.','analisar_credito'),'error'); return; }
   G.atualCred.unshift((await res.json())[0] || corpo);
-  toast('Decisão registrada.','success');
-  // A decisão de crédito é exatamente o que a1_pa_pode_criar_comercial olha:
-  // sem perguntar de novo, o botão continuaria travado com o motivo velho.
-  await conferirPodeVender();
-  montarRodapeDossie();
-  renderDossie();
+  // A aprovação pode ter avançado a etapa automaticamente no banco. Recarregar
+  // evita que o dossiê diga "Aprovada" enquanto o quadro ainda mostra a coluna anterior.
+  await carregar();
+  await abrirDossie(p.id);
+  toast(document.getElementById('c-status')?.value === 'APROVADO'
+    ? 'Decisão registrada e processo avançado conforme o selo do workflow.'
+    : 'Decisão registrada.','success');
 }
 
 function dosDocumentos(){
