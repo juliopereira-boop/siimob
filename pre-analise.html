@@ -2020,7 +2020,7 @@ function iniciarVenda(){
   const p = G.atual;
   if (!p) return;
   const cr = ultimoCreditoAprovado();
-  G.rascunhoVenda = { unidade: p.unidade || '', venda:'', entrada:'', obs:'' };
+  G.rascunhoVenda = { unidade: p.unidade || '', venda:'', entrada:'', obs:'', condicoes:[] };
   document.getElementById('venda-sub').textContent =
     `${nomeEmpr(p.empreendimento_id)} · ${G.titulares[p.id] ? G.titulares[p.id].nome : 'sem titular'}`;
   document.getElementById('venda-body').innerHTML = `
@@ -2032,8 +2032,12 @@ function iniciarVenda(){
         <div class="sub" style="margin-top:.25rem">na pré-análise a unidade era só interesse; aqui ela é a que vai para o contrato</div></div>
       <div class="fg"><label>Valor da venda (R$) *</label>
         <input id="v-venda" inputmode="decimal" oninput="conferirVenda()"></div>
-      <div class="fg"><label>Entrada / recursos próprios (R$)</label>
-        <input id="v-entrada" inputmode="decimal" oninput="conferirVenda()"></div>
+      <div class="fg"><label>Recursos próprios nas condições (R$)</label>
+        <input id="v-entrada" inputmode="decimal" disabled></div>
+      <div class="fg full"><label>Condições de pagamento</label>
+        <div id="v-condicoes"></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoVenda()">+ Adicionar condição</button>
+        <div class="sub" style="margin-top:.35rem">Ato, parcelas mensais, semestrais e anuais formam os recursos próprios da proposta.</div></div>
       <div class="fg full"><label>Observações da negociação</label>
         <textarea id="v-obs" rows="2"></textarea></div>
     </div>
@@ -2046,6 +2050,8 @@ function iniciarVenda(){
       <div class="fg"><label>Total aprovado</label><input value="${esc(brl(cr.valor_total))}" disabled></div>
     </div>`;
   document.getElementById('modal-venda').classList.remove('hidden');
+  renderCondicoesVenda();
+  conferirVenda();
 }
 
 function ultimoCreditoAprovado(){
@@ -2056,29 +2062,64 @@ function ultimoCreditoAprovado(){
 // de o cartão nascer. É repetição, e é consciente: sem passo de build não há
 // como as duas telas compartilharem uma função, e descobrir que a venda não
 // cabe no crédito na hora de abrir vale mais do que descobrir na assinatura.
+function condicoesVendaDaTela(){
+  return [...document.querySelectorAll('#v-condicoes .condicao-venda')].map(l => ({
+    tipo: l.querySelector('[data-campo="tipo"]').value,
+    quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0
+  }));
+}
+function totalCondicoesVenda(condicoes){
+  return condicoes.reduce((total, c) => total + c.quantidade * c.valor, 0);
+}
+function renderCondicoesVenda(){
+  const area = document.getElementById('v-condicoes'); if (!area) return;
+  const condicoes = G.rascunhoVenda.condicoes || [];
+  area.innerHTML = condicoes.map((c, i) => `
+    <div class="fgrid condicao-venda" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" onchange="sincronizarCondicoesVenda()">
+        ${['ATO','MENSAL','SEMESTRAL','ANUAL'].map(t => `<option value="${t}" ${c.tipo===t?'selected':''}>${({ATO:'Ato',MENSAL:'Parcelas mensais',SEMESTRAL:'Parcelas semestrais',ANUAL:'Parcelas anuais'})[t]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" oninput="sincronizarCondicoesVenda()"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" oninput="mascaraMoeda(this);sincronizarCondicoesVenda()"></div>
+      <div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoVenda(${i})">Remover</button></div>
+    </div>`).join('') || '<div class="sub">Nenhuma condição adicionada. Use o botão + para montar a proposta.</div>';
+}
+function sincronizarCondicoesVenda(){
+  G.rascunhoVenda.condicoes = condicoesVendaDaTela();
+  conferirVenda();
+}
+function adicionarCondicaoVenda(){
+  G.rascunhoVenda.condicoes = condicoesVendaDaTela();
+  G.rascunhoVenda.condicoes.push({tipo:'ATO', quantidade:1, valor:0});
+  renderCondicoesVenda(); conferirVenda();
+}
+function removerCondicaoVenda(indice){
+  G.rascunhoVenda.condicoes = condicoesVendaDaTela().filter((_, i) => i !== indice);
+  renderCondicoesVenda(); conferirVenda();
+}
 function conferirVenda(){
   const el = document.getElementById('v-conferencia'); if (!el) return;
   const aprovado = Number(ultimoCreditoAprovado().valor_total) || 0;
   const vendaEl = document.getElementById('v-venda');
   const entradaEl = document.getElementById('v-entrada');
   mascaraMoeda(vendaEl);
-  mascaraMoeda(entradaEl);
-  const venda    = paraCentavos(vendaEl.value) || 0;
-  const entrada  = paraCentavos(entradaEl.value) || 0;
+  const venda = paraCentavos(vendaEl.value) || 0;
+  const entrada = totalCondicoesVenda(condicoesVendaDaTela());
+  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
   const falta = venda - entrada - aprovado;
   el.innerHTML = falta > 0
-    ? `<div class="aviso w">A venda de ${esc(brl(venda))} menos a entrada de ${esc(brl(entrada))}
-        deixa <strong>${esc(brl(falta))}</strong> acima do crédito aprovado de ${esc(brl(aprovado))}.
-        Dá para seguir — mas alguém vai ter de cobrir essa diferença.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado mais a entrada.</div>`;
+    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições já lançadas.</div>`
+    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
 }
 
 async function confirmarIniciarVenda(){
   const p = G.atual;
   const unidade = (document.getElementById('v-unidade').value || '').trim();
   const venda   = paraCentavos(document.getElementById('v-venda').value);
-  const entrada = paraCentavos(document.getElementById('v-entrada').value);
+  const condicoes = condicoesVendaDaTela();
+  const entrada = totalCondicoesVenda(condicoes);
   const obs     = (document.getElementById('v-obs').value || '').trim();
   if (!venda){
     toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.','error');
@@ -2114,7 +2155,7 @@ async function confirmarIniciarVenda(){
     if (comercialId){
       const corpo = { unidade: unidade || null,
                       proposta: { valor_venda:venda, valor_entrada:entrada,
-                                  observacoes: obs || null } };
+                                  condicoes_pagamento:condicoes, observacoes: obs || null } };
       const rp = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${comercialId}`, {
         method:'PATCH', headers:A1.headers(), body: JSON.stringify(corpo) });
       // O cartão EXISTE mesmo que isto falhe. Dizer "erro ao iniciar a venda"
