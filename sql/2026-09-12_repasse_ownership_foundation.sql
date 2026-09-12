@@ -104,7 +104,7 @@ begin
   perform a1_integra_registrar(v_co.tenant_id,'CREATE_REPASS','COMERCIAL',
     p_comercial,'REPASSE',v_case,'OK',null,null,'{}'::jsonb);
   return v_case;
-end $function$
+end $function$;
 
 
 revoke all on function public.a1_criar_repasse_do_comercial(uuid) from public, anon;
