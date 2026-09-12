@@ -1970,6 +1970,10 @@ async function conferirPodeVender(){
 
 async function moverSituacao(){
   const p = G.atual, para = document.getElementById('dos-mover').value;
+  if (!podeMoverPa(p)){
+    toast(faltaPermissao('pa_mover', 'Mover esta pré-análise na esteira'),'error');
+    return;
+  }
   if (!para) return;
   // O banco tranca de qualquer jeito; o aviso daqui e que diz O QUE falta, e
   // chega antes de a pessoa digitar a justificativa a toa.
@@ -2055,8 +2059,12 @@ function ultimoCreditoAprovado(){
 function conferirVenda(){
   const el = document.getElementById('v-conferencia'); if (!el) return;
   const aprovado = Number(ultimoCreditoAprovado().valor_total) || 0;
-  const venda    = paraCentavos(document.getElementById('v-venda').value) || 0;
-  const entrada  = paraCentavos(document.getElementById('v-entrada').value) || 0;
+  const vendaEl = document.getElementById('v-venda');
+  const entradaEl = document.getElementById('v-entrada');
+  mascaraMoeda(vendaEl);
+  mascaraMoeda(entradaEl);
+  const venda    = paraCentavos(vendaEl.value) || 0;
+  const entrada  = paraCentavos(entradaEl.value) || 0;
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
   const falta = venda - entrada - aprovado;
   el.innerHTML = falta > 0
@@ -2143,7 +2151,7 @@ function traduzErro(j){
     sem_acesso:                'Este processo não é da sua carteira.',
     // Mover na esteira é pa_editar — a mesma chave que o cadastro grava. Dizer
     // só "sem permissão" fazia o gestor procurar no escuro qual caixa marcar.
-    sem_permissao:             faltaPermissao('pa_editar', 'Mover ou agir sobre esta pré-análise'),
+    sem_permissao:             faltaPermissao('pa_mover', 'Mover ou agir sobre esta pré-análise'),
     versao_desatualizada:      'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
     transicao_nao_permitida:   'A esteira do cliente não permite essa mudança a partir da situação atual.',
     papel_nao_autorizado:      'Seu papel não pode fazer essa transição.',
