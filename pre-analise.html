@@ -1564,12 +1564,81 @@ function dosPessoas(){
       </div>`;
     }).join('');
   const soma = G.atualPart.reduce((a,p) => a + (Number(p.renda_declarada)||0), 0);
+  const podeEditarPessoas = perm('pa_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
   return `${linhas || '<div class="sub">Nenhum participante.</div>'}
     <div class="linha" style="background:#fafbfc"><div class="nm">Renda familiar declarada</div>
       <div class="nm">${esc(brl(soma))}</div></div>
+    ${podeEditarPessoas ? `
+      <div style="margin-top:.8rem">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="abrirAdicionarPessoa()">+ Adicionar pessoa</button>
+      </div>
+      <div id="pa-adicionar-pessoa" style="display:none;margin-top:.75rem;padding:.8rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
+        <div class="sec-title" style="margin-top:0">Nova pessoa vinculada</div>
+        <div class="fgrid">
+          <div class="fg"><label>CPF</label><input id="pa-pessoa-doc" placeholder="000.000.000-00"></div>
+          <div class="fg"><label>Nome completo *</label><input id="pa-pessoa-nome"></div>
+          <div class="fg"><label>Telefone</label><input id="pa-pessoa-tel"></div>
+          <div class="fg"><label>Renda declarada (R$)</label><input id="pa-pessoa-renda" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+          <div class="fg"><label>Fonte da renda</label><input id="pa-pessoa-fonte" placeholder="ex.: CLT"></div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.75rem">
+          <button class="btn btn-primary btn-sm" type="button" onclick="salvarPessoaAdicional()">Vincular pessoa</button>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('pa-adicionar-pessoa').style.display='none'">Cancelar</button>
+        </div>
+      </div>` : ''}
     <div class="aviso w" style="margin-top:.9rem">Mexer em participante depois de uma aprovação
     <strong>invalida a decisão de crédito</strong>. É proposital: aprovar com um número e negociar
     com outro é como o processo cai lá na frente.</div>`;
+}
+
+function abrirAdicionarPessoa(){
+  const el = document.getElementById('pa-adicionar-pessoa');
+  if (el) el.style.display = '';
+}
+
+async function salvarPessoaAdicional(){
+  const pa = G.atual;
+  if (!pa || !perm('pa_editar') || nivelNaSituacao(pa.situacao_id) !== 'editar'){
+    toast('Você não tem permissão para editar pessoas nesta etapa.','error'); return;
+  }
+  const nome = (document.getElementById('pa-pessoa-nome').value || '').trim();
+  const documento = soDigitos(document.getElementById('pa-pessoa-doc').value);
+  if (!nome){ toast('Informe o nome da pessoa.','error'); return; }
+  if (documento && documento.length === 11 && !cpfValido(documento)){
+    toast('CPF inválido.','error'); return;
+  }
+  try {
+    let pessoaId = null;
+    if (documento){
+      const existentes = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${documento}&select=id`,
+        { headers:A1.headers() }).then(x => x.ok ? x.json() : []);
+      pessoaId = (existentes[0] || {}).id || null;
+    }
+    if (!pessoaId){
+      const resPessoa = await fetch(A1.rest('a1_pa_pessoas'), {
+        method:'POST', headers:A1.returnHeaders(),
+        body:JSON.stringify({ tenant_id:G.user.tenant_id, tipo:'PF', documento:documento || null,
+          nome, telefone:(document.getElementById('pa-pessoa-tel').value || '').trim() || null })
+      });
+      if (!resPessoa.ok) throw new Error(await mensagemErro(resPessoa,'Não foi possível cadastrar a pessoa.','pa_editar'));
+      pessoaId = ((await resPessoa.json())[0] || {}).id;
+    }
+    if (!pessoaId) throw new Error('Não foi possível identificar a pessoa.');
+    if (G.atualPart.some(pt => pt.pessoa_id === pessoaId)){
+      toast('Esta pessoa já está vinculada à pré-análise.','warn'); return;
+    }
+    const resVinculo = await fetch(A1.rest('a1_pa_participantes'), {
+      method:'POST', headers:A1.headers(),
+      body:JSON.stringify({ tenant_id:G.user.tenant_id, pre_analise_id:pa.id, pessoa_id:pessoaId,
+        papel:'ASSOCIADO', renda_declarada:paraCentavos(document.getElementById('pa-pessoa-renda').value),
+        fonte_renda:(document.getElementById('pa-pessoa-fonte').value || '').trim() || null })
+    });
+    if (!resVinculo.ok) throw new Error(await mensagemErro(resVinculo,'Não foi possível vincular a pessoa.','pa_editar'));
+    toast('Pessoa vinculada.','success');
+    await abrirDossie(pa.id);
+  } catch (e) {
+    toast(e.message || 'Não foi possível vincular a pessoa.','error');
+  }
 }
 
 function dosCredito(){
