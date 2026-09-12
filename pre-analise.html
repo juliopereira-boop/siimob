@@ -321,6 +321,7 @@ const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 // como se acerta a soma do subsídio com o FGTS por um centavo e depois se
 // discute com o banco de quem é o erro.
 function brl(cent){ return _brl.format((Number(cent)||0)/100); }
+function valorEmReais(cent){ return (Number(cent||0)/100).toFixed(2).replace('.',','); }
 function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
 function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
 function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
@@ -952,7 +953,7 @@ function abrirAssistente(){
   G.passo = 1;
   // O corretor já entra com a imobiliária dele preenchida: é a única que faz
   // sentido, e deixá-la em branco fazia o processo nascer sem imobiliária.
-  G.rascunho = { empreendimento_id:'', unidade:'',
+  G.rascunho = { empreendimento_id:'', unidade:'', valor_avaliacao_inicial:'',
                  imobiliaria_id: mandaNaCarteira() ? '' : minhaImobiliaria(),
                  corretor_id:'',
                  titular:{ documento:'', nome:'', nascimento:'', telefone:'', email:'', estado_civil:'' },
@@ -989,6 +990,8 @@ function passo1(){
           : '<option value="">Nenhum empreendimento cadastrado</option>'}</select></div>
       <div class="fg"><label>Unidade de interesse</label>
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
+      <div class="fg"><label>Valor de avaliação (R$)</label>
+        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal"></div>
       ${campoImobiliaria(r)}
       ${campoCorretor(r)}
       ${camposDeGenteNoAssistente(r)}
@@ -1142,6 +1145,7 @@ function guardarPasso(){
   if (G.passo === 1){
     if (v('w-empr')    !== undefined) r.empreendimento_id = v('w-empr');
     if (v('w-unidade') !== undefined) r.unidade           = v('w-unidade');
+    if (v('w-aval')    !== undefined) r.valor_avaliacao_inicial = v('w-aval');
     if (v('w-imob')    !== undefined) r.imobiliaria_id    = v('w-imob');
     if (v('w-corretor')!== undefined) r.corretor_id       = v('w-corretor');
     // Só recolhe o que está na tela e habilitado — ver camposDeGenteNoAssistente.
@@ -1232,7 +1236,9 @@ async function criarPreAnalise(){
     // corretor, o gatilho reescreve com a1_ator() de qualquer jeito, e mandar
     // um id seria sugerir uma escolha que ele não tem.
     const corpoPa = { tenant_id:tid, empreendimento_id:r.empreendimento_id,
-                      unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null };
+                      unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null,
+                      valor_avaliacao_inicial: r.valor_avaliacao_inicial
+                        ? paraCentavos(r.valor_avaliacao_inicial) : null };
     if (mandaNaCarteira()) corpoPa.corretor_id = r.corretor_id || null;
     // Os três campos de gente entram só se o assistente os ofereceu — o
     // rascunho só tem a chave quando o campo existia e estava habilitado.
@@ -1562,6 +1568,8 @@ function dosPessoas(){
 
 function dosCredito(){
   const podeAnalisar = perm('analisar_credito');
+  const avaliacaoInicial = G.atual && G.atual.valor_avaliacao_inicial != null
+    ? Number(G.atual.valor_avaliacao_inicial) : null;
   const hist = G.atualCred.map(c => `
     <div class="linha">
       <div><div class="nm">Versão ${c.versao}
@@ -1592,7 +1600,10 @@ function dosCredito(){
       <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" oninput="somarCredito()"></div>
       <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" oninput="somarCredito()"></div>
       <div class="fg"><label>Total (soma)</label><input id="c-total" disabled></div>
-      <div class="fg"><label>Valor de avaliação (R$)</label><input id="c-aval" inputmode="decimal"></div>
+      <div class="fg"><label>Valor de avaliação (R$)</label>
+        <input id="c-aval" value="${avaliacaoInicial == null ? '' : esc(valorEmReais(avaliacaoInicial))}"
+          inputmode="decimal" ${avaliacaoInicial == null ? '' : 'disabled'}>
+        ${avaliacaoInicial == null ? '' : '<div class="sub" style="margin-top:.25rem">informado na abertura da pré-análise</div>'}</div>
       <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal"></div>
       <div class="fg"><label>Prazo (meses)</label><input id="c-prazo" type="number" min="1" max="480"></div>
       <div class="fg"><label>Motivo / condicionante</label><input id="c-motivo"></div>
