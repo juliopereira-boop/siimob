@@ -70,9 +70,12 @@ const A1_PERMISSOES = [
   { chave:'pa_criar', modulo:'PRE_ANALISE', rotulo:'Criar pré-análise',
     ajuda:'Usar o assistente de nova pré-análise e cadastrar pessoas.',
     lida_em:'a1_pre_analises_criar (RLS), a1_pa_pessoas_criar (RLS)' },
-  { chave:'pa_editar', modulo:'PRE_ANALISE', rotulo:'Editar e mover na esteira',
-    ajuda:'Alterar dados e mover o processo pelas transições que a esteira permite.',
-    lida_em:'a1_pre_analises_editar (RLS), a1_pa_transicionar' },
+  { chave:'pa_editar', modulo:'PRE_ANALISE', rotulo:'Editar pré-análises',
+    ajuda:'Alterar dados, pessoas e documentos do processo que ela enxerga.',
+    lida_em:'a1_pre_analises_editar (RLS), pre-analise.html' },
+  { chave:'pa_mover', modulo:'PRE_ANALISE', rotulo:'Mover na esteira',
+    ajuda:'Mover a pré-análise pelas transições liberadas no workflow.',
+    lida_em:'a1_pa_transicionar (SQL), pre-analise.html' },
   { chave:'analisar_credito', modulo:'PRE_ANALISE', rotulo:'Analisar crédito e documentos',
     ajuda:'Registrar a decisão de crédito e aprovar ou reprovar documentos. '
         + 'Quem vende não aprova: esta é a marca que separa as duas coisas.',
@@ -82,9 +85,12 @@ const A1_PERMISSOES = [
   { chave:'co_ver', modulo:'COMERCIAL', rotulo:'Ver negócios',
     ajuda:'Sem isto o módulo não abre para ela, mesmo o cliente tendo a licença.',
     lida_em:'a1_comerciais_ler (RLS), comercial.html' },
-  { chave:'co_editar', modulo:'COMERCIAL', rotulo:'Editar proposta e mover na esteira',
-    ajuda:'Alterar a proposta e mover pelas transições que a esteira permite.',
-    lida_em:'a1_comerciais_editar (RLS), a1_co_transicionar' },
+  { chave:'co_editar', modulo:'COMERCIAL', rotulo:'Editar proposta',
+    ajuda:'Alterar dados e proposta da venda que ela enxerga.',
+    lida_em:'a1_comerciais_editar (RLS), comercial.html' },
+  { chave:'co_mover', modulo:'COMERCIAL', rotulo:'Mover na esteira',
+    ajuda:'Mover a venda pelas transições liberadas no workflow.',
+    lida_em:'a1_co_transicionar (SQL), comercial.html' },
   { chave:'co_contrato', modulo:'COMERCIAL', rotulo:'Marcar contrato como assinado',
     ajuda:'Se quem vende pudesse carimbar sozinho, exigir contrato assinado numa '
         + 'transição deixaria de ser exigência.',
@@ -97,11 +103,11 @@ const A1_PERMISSOES = [
 const A1_PERFIS_MODELO = [
   { nome:'Corretor',      permissoes:['ver_repasses','criar_repasses','pa_ver','pa_criar','co_ver'] },
   { nome:'Analista',      permissoes:['ver_repasses','editar_repasses','alterar_etapa','ver_todos_analistas',
-                                      'pa_ver','pa_editar','analisar_credito','co_ver'] },
+                                      'pa_ver','pa_editar','pa_mover','analisar_credito','co_ver'] },
   { nome:'Coordenador',   permissoes:['ver_repasses','ver_dashboard','ver_todos_analistas','pa_ver','co_ver'] },
   { nome:'Correspondente',permissoes:['ver_repasses','criar_repasses','editar_repasses','alterar_etapa',
-                                      'pa_ver','pa_criar','pa_editar','analisar_credito',
-                                      'co_ver','co_editar'] },
+                                      'pa_ver','pa_criar','pa_editar','pa_mover','analisar_credito',
+                                      'co_ver','co_editar','co_mover'] },
 ];
 
 // As permissões que valem para um cliente, dado o que ele tem licenciado.
