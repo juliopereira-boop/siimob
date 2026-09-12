@@ -125,13 +125,13 @@ begin
 end $function$
 
 
-revoke all on function public.a1_evento_nome_ator() from public;
-revoke all on function public.a1_pa_auditar_credito() from public;
-revoke all on function public.a1_pa_auditar_documento() from public;
-revoke all on function public.a1_pa_auditar_participante() from public;
-revoke all on function public.a1_pa_auditar_alteracao() from public;
-revoke all on function public.a1_co_auditar_alteracao() from public;
-revoke all on function public.a1_co_auditar_contrato() from public;
+revoke all on function public.a1_evento_nome_ator() from public, anon, authenticated;
+revoke all on function public.a1_pa_auditar_credito() from public, anon, authenticated;
+revoke all on function public.a1_pa_auditar_documento() from public, anon, authenticated;
+revoke all on function public.a1_pa_auditar_participante() from public, anon, authenticated;
+revoke all on function public.a1_pa_auditar_alteracao() from public, anon, authenticated;
+revoke all on function public.a1_co_auditar_alteracao() from public, anon, authenticated;
+revoke all on function public.a1_co_auditar_contrato() from public, anon, authenticated;
 
 drop trigger if exists trg_pa_auditar_credito on public.a1_pa_analises_credito;
 create trigger trg_pa_auditar_credito after insert on public.a1_pa_analises_credito for each row execute function public.a1_pa_auditar_credito();
