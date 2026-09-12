@@ -319,6 +319,12 @@
           </div>
           <div class="cfg-card-label">Tipos de documento</div>
         </div>
+        <div class="cfg-hub-card" onclick="openCfgView('checklist')">
+          <div class="cfg-hub-icon" style="background:#dbeafe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div class="cfg-card-label">Checklist operacional</div>
+        </div>
         <div class="cfg-hub-card" onclick="openCfgView('comissao')">
           <div class="cfg-hub-icon" style="background:#d1fae5">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -705,6 +711,27 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- ─── Sub-view: Checklist operacional ─── -->
+  <div id="cfg-view-checklist" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configurações</button>
+      <div class="cfg-view-title">Checklist operacional</div>
+    </div>
+    <div style="font-size:.78rem;color:var(--t3);margin:-.4rem 0 .9rem">Itens desta lista aparecem no dossiê de cada processo. Quem pode editar a etapa pode marcá-los; cada marca entra no histórico.</div>
+    <div class="panel" style="padding:1rem;margin-bottom:1rem">
+      <div class="pt-toolbar">
+        <select id="cl-module" style="min-width:160px"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option><option value="REPASSE">Repasse</option></select>
+        <input type="text" id="cl-name" placeholder="Novo item de checklist" style="flex:1" onkeydown="if(event.key==='Enter')saveChecklistItem()">
+        <label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;white-space:nowrap"><input id="cl-obrigatorio" type="checkbox"> Obrigatório</label>
+        <button class="btn btn-primary btn-sm" onclick="saveChecklistItem()">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="panel" style="overflow-x:auto"><table class="pt-table">
+      <thead><tr><th>Item</th><th>Módulo</th><th style="width:110px">Obrigatório</th><th style="width:90px">Status</th><th></th></tr></thead>
+      <tbody id="cl-tbody"><tr><td colspan="5" class="pt-empty">Carregando...</td></tr></tbody>
+    </table></div>
   </div>
 
   <!-- ─── Sub-view: Analistas de Crédito ─── -->
@@ -1805,7 +1832,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['perfis','wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['perfis','wf','flags','regionais','empreendimentos','imobiliarias','doctypes','checklist','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
 
 
 // Busca do hub: esconde card por card e some com o grupo que ficar vazio, para
@@ -1871,6 +1898,7 @@ function openCfgView(view) {
   if (view === 'empreendimentos') loadEmpreendimentos();
   if (view === 'imobiliarias') loadImobs();
   if (view === 'doctypes') initDocTypesView();
+  if (view === 'checklist') loadChecklistItems();
   if (view === 'comissao') loadCommission();
   if (view === 'analistas') loadAnalistas();
   if (view === 'corretores') loadCorretores();
@@ -1898,6 +1926,53 @@ function closeCfgView() {
     if (el) el.style.display = 'none';
   });
   document.getElementById('cfg-hub').style.display = '';
+}
+
+// ── Checklist operacional ───────────────────────────────────────────────────
+function nomeModuloChecklist(mod){ return ({PRE_ANALISE:'Pré-análise',COMERCIAL:'Venda',REPASSE:'Repasse'})[mod] || mod; }
+async function loadChecklistItems(){
+  const tb=document.getElementById('cl-tbody'); if(!tb) return;
+  tb.innerHTML='<tr><td colspan="5" class="pt-empty">Carregando...</td></tr>';
+  const rows=await fetch(`${A1.rest('a1_checklist_itens')}?order=module_key.asc,ordem.asc,nome.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
+  G.checklistItems=Array.isArray(rows)?rows:[];
+  renderChecklistItems();
+}
+function renderChecklistItems(){
+  const tb=document.getElementById('cl-tbody'); if(!tb) return;
+  const list=G.checklistItems||[];
+  if(!list.length){tb.innerHTML='<tr><td colspan="5" class="pt-empty">Nenhum item configurado.</td></tr>';return;}
+  tb.innerHTML=list.map(i=>`<tr>
+    <td>${esc(i.nome)}</td><td>${esc(nomeModuloChecklist(i.module_key))}</td>
+    <td><label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem"><input type="checkbox" ${i.obrigatorio?'checked':''} onchange="toggleChecklistObrigatorio('${i.id}')">${i.obrigatorio?'Sim':'Não'}</label></td>
+    <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${i.ativo===false?'#fee2e2':'#dcfce7'};color:${i.ativo===false?'#b91c1c':'#166534'}">${i.ativo===false?'Inativo':'Ativo'}</span></td>
+    <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="toggleChecklistAtivo('${i.id}')">${i.ativo===false?'Ativar':'Desativar'}</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteChecklistItem('${i.id}')">Excluir</button></td>
+  </tr>`).join('');
+}
+async function saveChecklistItem(){
+  const nome=(document.getElementById('cl-name').value||'').trim();
+  if(!nome){showToast('Informe o item do checklist','error');return;}
+  const module_key=document.getElementById('cl-module').value;
+  if((G.checklistItems||[]).some(i=>i.module_key===module_key&&i.nome.toLowerCase()===nome.toLowerCase())){showToast('Este item já existe no módulo','error');return;}
+  const ordem=(G.checklistItems||[]).filter(i=>i.module_key===module_key).length;
+  const body={tenant_id:G.user.tenant_id,module_key,nome,obrigatorio:document.getElementById('cl-obrigatorio').checked,ordem};
+  const res=await fetch(A1.rest('a1_checklist_itens'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+  if(!res.ok){showToast('Não foi possível cadastrar o item','error');return;}
+  document.getElementById('cl-name').value='';document.getElementById('cl-obrigatorio').checked=false;
+  await loadChecklistItems();showToast('Item de checklist cadastrado');
+}
+async function patchChecklistItem(id,body){
+  const res=await fetch(`${A1.rest('a1_checklist_itens')}?id=eq.${id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify(body)});
+  if(!res.ok){showToast('Não foi possível atualizar o item','error');return;}
+  const item=(G.checklistItems||[]).find(i=>i.id===id);if(item)Object.assign(item,body);renderChecklistItems();
+}
+function toggleChecklistObrigatorio(id){const i=(G.checklistItems||[]).find(x=>x.id===id);if(i)patchChecklistItem(id,{obrigatorio:!i.obrigatorio});}
+function toggleChecklistAtivo(id){const i=(G.checklistItems||[]).find(x=>x.id===id);if(i)patchChecklistItem(id,{ativo:i.ativo===false});}
+async function deleteChecklistItem(id){
+  if(!confirm('Excluir este item de checklist?'))return;
+  const res=await fetch(`${A1.rest('a1_checklist_itens')}?id=eq.${id}`,{method:'DELETE',headers:A1.headers()});
+  if(!res.ok){showToast('Não foi possível excluir o item','error');return;}
+  G.checklistItems=(G.checklistItems||[]).filter(i=>i.id!==id);renderChecklistItems();showToast('Item removido','info');
 }
 
 // ── Tipos de documento ───────────────────────────────────────────────────────
