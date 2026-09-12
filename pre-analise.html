@@ -179,6 +179,8 @@
     <select id="f-situacao" onchange="renderVista()"><option value="">Todas as situações</option></select>
     <select id="f-corretor" onchange="renderVista()"><option value="">Todos os corretores</option></select>
     <select id="f-empr"     onchange="renderVista()"><option value="">Todos os empreendimentos</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVista()">
+    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVista()">
     <div class="seg" role="group" aria-label="Filtro de prazo">
       <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
       <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
@@ -716,7 +718,12 @@ function filtradas(){
   const fs = document.getElementById('f-situacao').value;
   const fc = document.getElementById('f-corretor').value;
   const fe = document.getElementById('f-empr').value;
+  const inicio = document.getElementById('f-inicio').value;
+  const fim = document.getElementById('f-fim').value;
   return G.lista.filter(p => {
+    const dataCriacao = p.criado_em ? p.criado_em.slice(0,10) : '';
+    if (inicio && (!dataCriacao || dataCriacao < inicio)) return false;
+    if (fim && (!dataCriacao || dataCriacao > fim)) return false;
     // Situação sem nada marcado é invisível para esta pessoa.
     if (!podeVerSituacao(p.situacao_id)) return false;
     if (fs && p.situacao_id !== fs) return false;
