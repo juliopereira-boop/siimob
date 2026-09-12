@@ -1070,7 +1070,8 @@ function dosHistorico(){
 }
 function rotuloEvento(e){
   return { transicao:'Mudança de situação', criado_da_pre_analise:'Criado a partir da pré-análise',
-           repasse_criado:'Cartão de Repasse criado' }[e] || e;
+           repasse_criado:'Cartão de Repasse criado', dados_atualizados:'Dados da venda atualizados',
+           contrato_registrado:'Contrato registrado', contrato_status_alterado:'Situação do contrato alterada' }[e] || e;
 }
 
 function dosRepasse(){
