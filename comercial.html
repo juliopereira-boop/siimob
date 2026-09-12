@@ -185,6 +185,7 @@
       <button class="modal-tab active" data-dt="proposta" onclick="trocarAbaDossie('proposta',this)">Proposta</button>
       <button class="modal-tab" data-dt="origem"    onclick="trocarAbaDossie('origem',this)">Origem</button>
       <button class="modal-tab" data-dt="contrato"  onclick="trocarAbaDossie('contrato',this)">Contrato</button>
+      <button class="modal-tab" data-dt="documentos" onclick="trocarAbaDossie('documentos',this)">Documentos</button>
       <button class="modal-tab" data-dt="historico" onclick="trocarAbaDossie('historico',this)">Histórico</button>
       <button class="modal-tab" data-dt="repasse"   onclick="trocarAbaDossie('repasse',this)">Repasse</button>
     </div>
@@ -210,7 +211,7 @@
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
   corretores:[], imobiliarias:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
-  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null,
+  abaDossie:'proposta', atual:null, atualContratos:[], atualDocs:[], atualEv:[], arrastando:null,
   // Os três campos de vínculo — ver o bloco "OS TRÊS CAMPOS DE VÍNCULO" abaixo.
   empresas:[], ccas:[], analistas:[]
 };
@@ -721,11 +722,15 @@ async function abrirDossie(id){
   document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
 
   const h = { headers:A1.headers() };
-  const [ct, ev] = await Promise.all([
+  const [ct, docs, ev] = await Promise.all([
     fetch(`${A1.rest('a1_co_contratos')}?comercial_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
+    co.pre_analise_id
+      ? fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${co.pre_analise_id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[])
+      : Promise.resolve([]),
     fetch(`${A1.rest('a1_co_eventos')}?comercial_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[])
   ]);
   G.atualContratos = Array.isArray(ct) ? ct : [];
+  G.atualDocs = Array.isArray(docs) ? docs : [];
   G.atualEv = Array.isArray(ev) ? ev : [];
 
   document.getElementById('dos-titulo').textContent = tituloDe(co);
@@ -746,7 +751,7 @@ function trocarAbaDossie(aba, el){
 
 function renderDossie(){
   const f = { proposta:dosProposta, origem:dosOrigem, contrato:dosContrato,
-              historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
+              documentos:dosDocumentos, historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
   document.getElementById('dos-body').innerHTML = f ? f() : '';
   // O alerta de "venda acima do crédito" tem de aparecer ao ABRIR a proposta
   // já salva, não só quando alguém digita. Ligado só ao oninput, ele ficava
@@ -969,6 +974,26 @@ async function marcarAssinado(id){
 async function baixarContrato(id){
   const c = G.atualContratos.find(x => x.id === id); if (!c || !c.storage_key) return;
   const url = await A1.storageSignedUrl('case-documents', c.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
+function dosDocumentos(){
+  const linhas = G.atualDocs.map(d => `
+    <div class="linha">
+      <div><div class="nm">${esc(d.tipo)}</div>
+        <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · enviado em ${esc(dataHoraBR(d.criado_em))}</div></div>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span class="pill ${d.status==='APROVADO'?'ok':d.status==='REPROVADO'?'no':'wt'}">${esc(d.status)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${esc(d.id)}')">Abrir</button>
+      </div>
+    </div>`).join('');
+  return `
+    <div class="aviso i">Estes documentos pertencem à Pré-análise de origem. Eles seguem disponíveis aqui sem cópia duplicada, mantendo o histórico e a versão original.</div>
+    ${linhas || '<div class="sub">Nenhum documento foi enviado na Pré-análise.</div>'}`;
+}
+async function baixarDocumentoOrigem(id){
+  const d = G.atualDocs.find(x => x.id === id); if (!d) return;
+  const url = await A1.storageSignedUrl('case-documents', d.storage_key, 60);
   if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
 }
 
