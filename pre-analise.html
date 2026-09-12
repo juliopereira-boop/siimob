@@ -1859,7 +1859,11 @@ function dosHistorico(){
 }
 function rotuloEvento(e){
   return { transicao:'Mudança de situação', criado_da_pre_analise:'Venda criada',
-           decisao_invalidada:'Decisão de crédito invalidada' }[e] || e;
+           decisao_invalidada:'Decisão de crédito invalidada',
+           decisao_credito_registrada:'Decisão de crédito registrada',
+           documento_enviado:'Documento enviado', documento_status_alterado:'Documento analisado',
+           participante_adicionado:'Pessoa adicionada', participante_removido:'Pessoa removida',
+           dados_atualizados:'Dados atualizados', transicao_automatica_credito:'Avanço automático por aprovação' }[e] || e;
 }
 
 function dosComercial(){
