@@ -73,3 +73,16 @@ begin
   where n.nspname = 'public' and p.proname = 'a1_co_transicionar' limit 1;
   execute replace(v_def, $old$a1_perm('co_editar')$old$, $new$a1_perm('co_mover')$new$);
 end $do$;
+
+-- Selos editáveis de workflow: a automação usa o significado da etapa,
+-- não seu nome, que o gestor pode alterar.
+alter table public.a1_pa_situacoes add column if not exists selo text null;
+alter table public.a1_co_situacoes add column if not exists selo text null;
+
+alter table public.a1_pa_situacoes drop constraint if exists a1_pa_situacoes_selo_check;
+alter table public.a1_pa_situacoes add constraint a1_pa_situacoes_selo_check
+  check (selo is null or selo in ('INICIO','FIM_POSITIVO','FIM_NEGATIVO'));
+
+alter table public.a1_co_situacoes drop constraint if exists a1_co_situacoes_selo_check;
+alter table public.a1_co_situacoes add constraint a1_co_situacoes_selo_check
+  check (selo is null or selo in ('INICIO','VENDIDO','FIM_NEGATIVO'));
