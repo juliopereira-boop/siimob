@@ -721,7 +721,7 @@ async function abrirDossie(id){
     co = (Array.isArray(r) && r[0]) || null;
     if (!co){ toast('Negócio não encontrado ou fora da sua carteira.','error'); return; }
   }
-  G.atual = co; G.abaDossie = 'proposta';
+  G.atual = co; G.abaDossie = 'proposta'; G.condicoesProposta = null;
   document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.dt === 'proposta'));
   document.getElementById('modal-dossie').classList.remove('hidden');
