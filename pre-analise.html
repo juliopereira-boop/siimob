@@ -1801,11 +1801,11 @@ function checklist(){
       obs: temTitular ? '' : 'sem titular o cartão de Repasse não tem nome de cliente' },
     { ok: G.atualPart.some(p => Number(p.renda_declarada) > 0), txt:'Renda declarada informada',
       obs:'usada na composição de renda' },
-    { ok: aprovado, txt:'Decisão de crédito aprovada e válida',
-      obs: invalidada ? 'havia uma aprovação, mas um dado material mudou e ela foi invalidada' : '' },
     { ok: G.atualDocs.length > 0, txt:'Documentos enviados', obs: G.atualDocs.length + ' arquivo(s)' },
     { ok: docsPend === 0 && G.atualDocs.length > 0, txt:'Documentos analisados',
-      obs: docsPend ? docsPend + ' pendente(s)' : '' }
+      obs: docsPend ? docsPend + ' pendente(s)' : '' },
+    { ok: aprovado, txt:'Decisão de crédito aprovada e válida',
+      obs: invalidada ? 'havia uma aprovação, mas um dado material mudou e ela foi invalidada' : '' }
   ];
 }
 
