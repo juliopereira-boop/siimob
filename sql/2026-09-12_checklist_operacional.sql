@@ -67,10 +67,10 @@ as $fn$
 declare v_ok boolean := false; v_edita boolean := false; v_tenant uuid := a1_tenant();
 begin
   if p_modulo = 'PRE_ANALISE' then
-    select a1_pa_visivel(corretor_id,empresa_id,analista_id,correspondente_id), a1_perm('pa_editar')
+    select a1_pa_visivel(corretor_id,empresa_id,analista_id,correspondente_id), (a1_e_gestor() or a1_perm('pa_editar'))
       into v_ok,v_edita from public.a1_pre_analises where id=p_processo and tenant_id=v_tenant;
   elsif p_modulo = 'COMERCIAL' then
-    select a1_co_visivel(corretor_id,empresa_id,analista_id,correspondente_id), a1_perm('co_editar')
+    select a1_co_visivel(corretor_id,empresa_id,analista_id,correspondente_id), (a1_e_gestor() or a1_perm('co_editar'))
       into v_ok,v_edita from public.a1_comerciais where id=p_processo and tenant_id=v_tenant;
   end if;
   if coalesce(v_ok,false) is not true then raise exception 'sem_acesso'; end if;
