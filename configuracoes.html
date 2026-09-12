@@ -722,7 +722,7 @@
     <div style="font-size:.78rem;color:var(--t3);margin:-.4rem 0 .9rem">Itens desta lista aparecem no dossiê de cada processo. Quem pode editar a etapa pode marcá-los; cada marca entra no histórico.</div>
     <div class="panel" style="padding:1rem;margin-bottom:1rem">
       <div class="pt-toolbar">
-        <select id="cl-module" style="min-width:160px"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option><option value="REPASSE">Repasse</option></select>
+        <select id="cl-module" style="min-width:160px"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option></select>
         <input type="text" id="cl-name" placeholder="Novo item de checklist" style="flex:1" onkeydown="if(event.key==='Enter')saveChecklistItem()">
         <label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;white-space:nowrap"><input id="cl-obrigatorio" type="checkbox"> Obrigatório</label>
         <button class="btn btn-primary btn-sm" onclick="saveChecklistItem()">+ Adicionar</button>
@@ -1929,7 +1929,7 @@ function closeCfgView() {
 }
 
 // ── Checklist operacional ───────────────────────────────────────────────────
-function nomeModuloChecklist(mod){ return ({PRE_ANALISE:'Pré-análise',COMERCIAL:'Venda',REPASSE:'Repasse'})[mod] || mod; }
+function nomeModuloChecklist(mod){ return ({PRE_ANALISE:'Pré-análise',COMERCIAL:'Venda'})[mod] || mod; }
 async function loadChecklistItems(){
   const tb=document.getElementById('cl-tbody'); if(!tb) return;
   tb.innerHTML='<tr><td colspan="5" class="pt-empty">Carregando...</td></tr>';
