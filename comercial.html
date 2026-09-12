@@ -157,6 +157,8 @@
     <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderVistas()" style="min-width:220px">
     <select id="f-situacao" onchange="renderVistas()"><option value="">Todas as situações</option></select>
     <select id="f-corretor" onchange="renderVistas()"><option value="">Todos os corretores</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVistas()">
+    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVistas()">
     <div class="seg" role="group" aria-label="Filtro de prazo">
       <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
       <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
@@ -185,6 +187,7 @@
       <button class="modal-tab active" data-dt="proposta" onclick="trocarAbaDossie('proposta',this)">Proposta</button>
       <button class="modal-tab" data-dt="origem"    onclick="trocarAbaDossie('origem',this)">Origem</button>
       <button class="modal-tab" data-dt="contrato"  onclick="trocarAbaDossie('contrato',this)">Contrato</button>
+      <button class="modal-tab" data-dt="documentos" onclick="trocarAbaDossie('documentos',this)">Documentos</button>
       <button class="modal-tab" data-dt="historico" onclick="trocarAbaDossie('historico',this)">Histórico</button>
       <button class="modal-tab" data-dt="repasse"   onclick="trocarAbaDossie('repasse',this)">Repasse</button>
     </div>
@@ -210,7 +213,7 @@
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
   corretores:[], imobiliarias:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
-  abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null,
+  abaDossie:'proposta', atual:null, atualContratos:[], atualDocs:[], atualEv:[], arrastando:null,
   // Os três campos de vínculo — ver o bloco "OS TRÊS CAMPOS DE VÍNCULO" abaixo.
   empresas:[], ccas:[], analistas:[]
 };
@@ -222,6 +225,12 @@ function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
 const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function brl(cent){ return _brl.format((Number(cent)||0)/100); }
 function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
+function mascaraMoeda(el){
+  const digitos = String(el && el.value || '').replace(/\D/g,'');
+  el.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR',{
+    minimumFractionDigits:2, maximumFractionDigits:2
+  }) : '';
+}
 function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
 function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function mascaraDoc(d){ d=soDigitos(d);
@@ -488,7 +497,12 @@ function filtradas(){
   const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
   const fs = document.getElementById('f-situacao').value;
   const fc = document.getElementById('f-corretor').value;
+  const inicio = document.getElementById('f-inicio').value;
+  const fim = document.getElementById('f-fim').value;
   return G.lista.filter(c => {
+    const dataCriacao = c.criado_em ? c.criado_em.slice(0,10) : '';
+    if (inicio && (!dataCriacao || dataCriacao < inicio)) return false;
+    if (fim && (!dataCriacao || dataCriacao > fim)) return false;
     // Situação sem nada marcado é invisível para esta pessoa.
     if (!podeVerSituacao(c.situacao_id)) return false;
     if (fs && c.situacao_id !== fs) return false;
@@ -583,12 +597,12 @@ function renderAndamento(linhas){
 function cartao(c){
   const s = sla(c);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
-  const mover = podeEditarNaSituacao(c.situacao_id);
+  const mover = podeMoverComercial(c);
   const documento = soDigitos(documentoDe(c));
   const desde = c.situacao_em || c.criado_em;
   const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
-  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}" draggable="true"
-    ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"
+  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}"
+    ${mover ? 'draggable="true" ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"' : ''}
     style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
     <div class="co-name">${esc(tituloDe(c))}</div>
     ${documento
@@ -630,9 +644,7 @@ function cartao(c){
 function coDragStart(e, el){
   const co = G.lista.find(c => c.id === el.dataset.id);
   if (!co){ e.preventDefault(); return; }
-  // Quem não pode mover também arrasta: a recusa sai em moverCartao(), dizendo
-  // qual permissão falta. Bloquear aqui devolveria o cartão em silêncio, que é
-  // indistinguível de "o sistema quebrou" — foi assim que este defeito nasceu.
+  if (!podeMoverComercial(co)){ e.preventDefault(); return; }
   G.arrastando = co.id;
   el.classList.add('arrastando');
   if (e.dataTransfer){
@@ -659,9 +671,8 @@ function coDrop(e, col){
 async function moverCartao(id, paraId){
   const co = G.lista.find(c => c.id === id);
   if (!co || !paraId || co.situacao_id === paraId) return;
-  if (!podeEditarNaSituacao(co.situacao_id)){
-    toast('Nesta situação você só pode acompanhar, não mover. Peça ao gestor a permissão '
-        + '"Editar proposta e mover na esteira" (Configurações › cadastro da pessoa ou perfil de acesso).','error');
+  if (!podeMoverComercial(co)){
+    toast('Você não tem a permissão "Mover na esteira" da Venda, ou esta etapa é apenas de acompanhamento.','error');
     return;
   }
   // Soltar numa coluna que a esteira não liga é o caso mais comum de "não
@@ -714,18 +725,22 @@ async function abrirDossie(id){
     co = (Array.isArray(r) && r[0]) || null;
     if (!co){ toast('Negócio não encontrado ou fora da sua carteira.','error'); return; }
   }
-  G.atual = co; G.abaDossie = 'proposta';
+  G.atual = co; G.abaDossie = 'proposta'; G.condicoesProposta = null;
   document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.dt === 'proposta'));
   document.getElementById('modal-dossie').classList.remove('hidden');
   document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
 
   const h = { headers:A1.headers() };
-  const [ct, ev] = await Promise.all([
+  const [ct, docs, ev] = await Promise.all([
     fetch(`${A1.rest('a1_co_contratos')}?comercial_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
+    co.pre_analise_id
+      ? fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${co.pre_analise_id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[])
+      : Promise.resolve([]),
     fetch(`${A1.rest('a1_co_eventos')}?comercial_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[])
   ]);
   G.atualContratos = Array.isArray(ct) ? ct : [];
+  G.atualDocs = Array.isArray(docs) ? docs : [];
   G.atualEv = Array.isArray(ev) ? ev : [];
 
   document.getElementById('dos-titulo').textContent = tituloDe(co);
@@ -746,12 +761,15 @@ function trocarAbaDossie(aba, el){
 
 function renderDossie(){
   const f = { proposta:dosProposta, origem:dosOrigem, contrato:dosContrato,
-              historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
+              documentos:dosDocumentos, historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
   document.getElementById('dos-body').innerHTML = f ? f() : '';
   // O alerta de "venda acima do crédito" tem de aparecer ao ABRIR a proposta
   // já salva, não só quando alguém digita. Ligado só ao oninput, ele ficava
   // invisível justamente para quem abre o negócio para conferir.
-  if (G.abaDossie === 'proposta') conferirProposta();
+  if (G.abaDossie === 'proposta') {
+    renderCondicoesProposta();
+    conferirProposta();
+  }
 }
 
 function dosProposta(){
@@ -762,18 +780,20 @@ function dosProposta(){
     <div class="fgrid">
       <div class="fg"><label>Valor da venda (R$)</label>
         <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
-      <div class="fg"><label>Entrada / recursos próprios (R$)</label>
-        <input id="p-entrada" value="${p.valor_entrada != null ? esc((p.valor_entrada/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this);conferirProposta()"></div>
+      <div class="fg"><label>Recursos próprios nas condições (R$)</label>
+        <input id="p-entrada" value="" inputmode="decimal" disabled></div>
       <div class="fg"><label>Desconto concedido (R$)</label>
         <input id="p-desc" value="${p.desconto != null ? esc((p.desconto/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'}></div>
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this)"></div>
       <div class="fg"><label>Comissão (%)</label>
         <input id="p-com" type="number" step="0.01" min="0" max="100" value="${esc(p.comissao_pct != null ? p.comissao_pct : '')}" ${pode?'':'disabled'}></div>
       <div class="fg full"><label>Observações da negociação</label>
         <textarea id="p-obs" rows="3" ${pode?'':'disabled'}>${esc(p.observacoes || '')}</textarea></div>
     </div>
+    <div class="sec-title">Condições de pagamento</div>
+    <div id="p-condicoes"></div>
+    ${pode ? '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoProposta()">+ Adicionar condição</button>' : ''}
     <div id="p-conferencia" style="margin-top:.9rem"></div>
     ${secaoVinculos(co, pode)}
     <div class="sec-title">Crédito aprovado na origem</div>
@@ -799,6 +819,8 @@ function secaoVinculos(co, pode){
   return `
     <div class="sec-title">Quem responde por este negócio</div>
     <div class="fgrid">
+      <div class="fg"><label>Imobiliária</label><input value="${esc(nomeImobiliaria(co.imobiliaria_id) || 'Não informada')}" disabled></div>
+      <div class="fg"><label>Corretor</label><input value="${esc(nomeCorretor(co.corretor_id) || 'Não informado')}" disabled></div>
       <div class="fg"><label>Empresa correspondente</label>
         ${selVinculo('p-empresa', G.empresas, co.empresa_id, !podeEmpresa)}
         ${pode && !podeEmpresa ? '<div class="sub" style="margin-top:.25rem">Trocar a empresa é do gestor: é ela que decide quem enxerga o negócio.</div>' : ''}</div>
@@ -812,25 +834,73 @@ function secaoVinculos(co, pode){
 
 // O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
 // descobrir na negociação do que na assinatura.
+function condicoesPropostaDaTela(){
+  return [...document.querySelectorAll('#p-condicoes .condicao-proposta')].map(l => ({
+    tipo: l.querySelector('[data-campo="tipo"]').value,
+    quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0
+  }));
+}
+function condicoesAtuaisProposta(){
+  const p = G.atual.proposta || {};
+  if (Array.isArray(G.condicoesProposta)) return G.condicoesProposta;
+  if (Array.isArray(p.condicoes_pagamento)) return p.condicoes_pagamento;
+  return p.valor_entrada ? [{tipo:'ATO',quantidade:1,valor:p.valor_entrada}] : [];
+}
+function totalCondicoesProposta(condicoes){
+  return condicoes.reduce((total, c) => total + c.quantidade * c.valor, 0);
+}
+function renderCondicoesProposta(){
+  const area = document.getElementById('p-condicoes'); if (!area) return;
+  const pode = podeEditarNaSituacao(G.atual.situacao_id);
+  const condicoes = condicoesAtuaisProposta();
+  area.innerHTML = condicoes.map((c, i) => `
+    <div class="fgrid condicao-proposta" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode?'':'disabled'} onchange="sincronizarCondicoesProposta()">
+        ${['ATO','MENSAL','SEMESTRAL','ANUAL'].map(t => `<option value="${t}" ${c.tipo===t?'selected':''}>${({ATO:'Ato',MENSAL:'Parcelas mensais',SEMESTRAL:'Parcelas semestrais',ANUAL:'Parcelas anuais'})[t]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode?'':'disabled'} oninput="sincronizarCondicoesProposta()"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" ${pode?'':'disabled'} oninput="mascaraMoeda(this);sincronizarCondicoesProposta()"></div>
+      ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoProposta(${i})">Remover</button></div>` : ''}
+    </div>`).join('') || '<div class="sub">Nenhuma condição registrada.</div>';
+}
+function sincronizarCondicoesProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  conferirProposta();
+}
+function adicionarCondicaoProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  G.condicoesProposta.push({tipo:'ATO',quantidade:1,valor:0});
+  renderCondicoesProposta(); conferirProposta();
+}
+function removerCondicaoProposta(indice){
+  G.condicoesProposta = condicoesPropostaDaTela().filter((_,i) => i !== indice);
+  renderCondicoesProposta(); conferirProposta();
+}
 function conferirProposta(){
   const el = document.getElementById('p-conferencia'); if (!el) return;
   const cr = (G.atual.origem_snapshot || {}).credito || {};
   const aprovado = Number(cr.valor_total) || 0;
-  const venda   = paraCentavos(document.getElementById('p-venda').value) || 0;
-  const entrada = paraCentavos(document.getElementById('p-entrada').value) || 0;
+  const vendaEl = document.getElementById('p-venda');
+  const entradaEl = document.getElementById('p-entrada');
+  mascaraMoeda(vendaEl);
+  const venda = paraCentavos(vendaEl.value) || 0;
+  const entrada = totalCondicoesProposta(condicoesPropostaDaTela());
+  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
   const falta = venda - entrada - aprovado;
   el.innerHTML = falta > 0
-    ? `<div class="aviso w">A venda de ${esc(brl(venda))} menos a entrada de ${esc(brl(entrada))}
-        deixa <strong>${esc(brl(falta))}</strong> acima do crédito aprovado de ${esc(brl(aprovado))}.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado mais a entrada.</div>`;
+    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições lançadas.</div>`
+    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
 }
 
 async function salvarProposta(){
   const co = G.atual;
+  const condicoes = condicoesPropostaDaTela();
   const proposta = {
     valor_venda:   paraCentavos(document.getElementById('p-venda').value),
-    valor_entrada: paraCentavos(document.getElementById('p-entrada').value),
+    valor_entrada: totalCondicoesProposta(condicoes),
+    condicoes_pagamento: condicoes,
     desconto:      paraCentavos(document.getElementById('p-desc').value),
     comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
     observacoes:   document.getElementById('p-obs').value || null
@@ -972,6 +1042,26 @@ async function baixarContrato(id){
   if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
 }
 
+function dosDocumentos(){
+  const linhas = G.atualDocs.map(d => `
+    <div class="linha">
+      <div><div class="nm">${esc(d.tipo)}</div>
+        <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · enviado em ${esc(dataHoraBR(d.criado_em))}</div></div>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span class="pill ${d.status==='APROVADO'?'ok':d.status==='REPROVADO'?'no':'wt'}">${esc(d.status)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${esc(d.id)}')">Abrir</button>
+      </div>
+    </div>`).join('');
+  return `
+    <div class="aviso i">Estes documentos pertencem à Pré-análise de origem. Eles seguem disponíveis aqui sem cópia duplicada, mantendo o histórico e a versão original.</div>
+    ${linhas || '<div class="sub">Nenhum documento foi enviado na Pré-análise.</div>'}`;
+}
+async function baixarDocumentoOrigem(id){
+  const d = G.atualDocs.find(x => x.id === id); if (!d) return;
+  const url = await A1.storageSignedUrl('case-documents', d.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
 function dosHistorico(){
   if (!G.atualEv.length) return '<div class="sub">Sem histórico ainda.</div>';
   return `<div class="timeline">${G.atualEv.map(e => {
@@ -989,7 +1079,8 @@ function dosHistorico(){
 }
 function rotuloEvento(e){
   return { transicao:'Mudança de situação', criado_da_pre_analise:'Criado a partir da pré-análise',
-           repasse_criado:'Cartão de Repasse criado' }[e] || e;
+           repasse_criado:'Cartão de Repasse criado', dados_atualizados:'Dados da venda atualizados',
+           contrato_registrado:'Contrato registrado', contrato_status_alterado:'Situação do contrato alterada' }[e] || e;
 }
 
 function dosRepasse(){
@@ -1010,17 +1101,21 @@ function dosRepasse(){
     cliente configurou no workflow de Repasse, com o nome do titular e os valores aprovados.</p>`;
 }
 
+function podeMoverComercial(co){
+  return !!co && perm('co_mover') && nivelNaSituacao(co.situacao_id) === 'editar';
+}
 function montarRodape(){
-  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
-  // empurra para a seguinte.
-  const co = G.atual, pode = podeEditarNaSituacao(co.situacao_id);
+  const co = G.atual, pode = podeMoverComercial(co);
   const destinos = destinosDe(co.situacao_id);
   const sel = document.getElementById('dos-mover');
   sel.innerHTML = destinos.length
     ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
     : '<option value="">nenhuma transição disponível</option>';
   sel.disabled = !destinos.length || !pode;
-  document.getElementById('dos-btn-mover').disabled = !destinos.length || !pode;
+  sel.style.display = pode ? '' : 'none';
+  const btnMover = document.getElementById('dos-btn-mover');
+  btnMover.disabled = !destinos.length || !pode;
+  btnMover.style.display = pode ? '' : 'none';
 
   const acoes = document.getElementById('dos-acoes');
   acoes.innerHTML = co.repasse_case_id
@@ -1029,7 +1124,12 @@ function montarRodape(){
 }
 
 async function moverSituacao(){
-  const co = G.atual, para = document.getElementById('dos-mover').value;
+  const co = G.atual;
+  if (!podeMoverComercial(co)){
+    toast('Você não tem a permissão "Mover na esteira" da Venda.','error');
+    return;
+  }
+  const para = document.getElementById('dos-mover').value;
   if (!para) return;
   const just = prompt('Justificativa (opcional):') || null;
   const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
@@ -1094,7 +1194,7 @@ function traduzErro(j){
     nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
     modulo_desabilitado:     'O módulo Venda não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
     sem_acesso:              'Este negócio não é da sua carteira.',
-    sem_permissao:           'Você não tem a permissão "Editar proposta e mover na esteira". Peça ao gestor '
+    sem_permissao:           'Você não tem a permissão "Mover na esteira" da Venda. Peça ao gestor '
                            + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',
     versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. A tela foi recarregada '
                            + 'com a situação atual; confira e tente de novo.',
