@@ -81,6 +81,12 @@
   .k-col-body.sobre{background:#e2e8f0;outline:2px dashed var(--violet);outline-offset:-3px}
   .co-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
   .co-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
+  .card-doc{display:inline-flex;align-items:center;gap:.28rem;margin:.04rem 0 .3rem;padding:0;border:0;background:transparent;color:var(--violet);font:600 .68rem 'DM Mono',monospace;cursor:pointer}
+  .card-doc:hover{text-decoration:underline}
+  .card-meta{display:grid;gap:.14rem;margin:.28rem 0}
+  .card-meta .label{display:inline-block;min-width:5.1rem;color:var(--t3);font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .card-stage{margin-top:.38rem;padding-top:.34rem;border-top:1px solid var(--border);font-size:.64rem;color:var(--t3)}
+
   .chip{font-size:.62rem;font-weight:700;padding:.12rem .42rem;border-radius:4px;background:#eef2ff;color:#3730A3}
   .chip.val{background:#dcfce7;color:#166534;font-family:'DM Mono',monospace}
   .chip.w{background:#fef9c3;color:#854d0e}.chip.r{background:#fee2e2;color:#b91c1c}
@@ -203,7 +209,7 @@
 <script>
 const G = {
   user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
-  corretores:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
+  corretores:[], imobiliarias:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
   abaDossie:'proposta', atual:null, atualContratos:[], atualEv:[], arrastando:null,
   // Os três campos de vínculo — ver o bloco "OS TRÊS CAMPOS DE VÍNCULO" abaixo.
   empresas:[], ccas:[], analistas:[]
@@ -222,6 +228,22 @@ function mascaraDoc(d){ d=soDigitos(d);
   if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
   if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
   return d; }
+function copiarDocumento(event, documento){
+  event.preventDefault(); event.stopPropagation();
+  const valor = soDigitos(documento);
+  if (!valor) return;
+  const ok = () => toast('CPF copiado.','success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(valor).then(ok).catch(() => copiarDocumentoFallback(valor, ok));
+  } else copiarDocumentoFallback(valor, ok);
+}
+function copiarDocumentoFallback(valor, ok){
+  const campo = document.createElement('textarea');
+  campo.value = valor; campo.setAttribute('readonly','');
+  campo.style.position = 'fixed'; campo.style.opacity = '0';
+  document.body.appendChild(campo); campo.select();
+  try { document.execCommand('copy'); ok(); } finally { campo.remove(); }
+}
 function ehGestor(){ return G.user && G.user.role !== 'partner'; }
 function perm(chave){ if (ehGestor()) return true;
   const p = (G.user && G.user.permissions) || {};
@@ -256,10 +278,17 @@ function humano(h){ if (h<1) return Math.max(0,Math.round(h*60))+'min'; if (h<48
 // O nome do cliente e os valores vêm do SNAPSHOT gravado quando a Venda
 // nasceu — não de uma nova leitura da pré-análise. É essa a diferença entre
 // "o que foi aprovado" e "o que está lá agora".
-function tituloDe(co){
+function titularDe(co){
   const s = co.origem_snapshot || {};
-  const p = (s.participantes || []).find(x => x.papel === 'TITULAR') || (s.participantes || [])[0];
-  return (p && p.nome) || G.titulares[co.id] || 'Sem titular';
+  return (s.participantes || []).find(x => x.papel === 'TITULAR') || (s.participantes || [])[0] || {};
+}
+function tituloDe(co){
+  const p = titularDe(co);
+  return p.nome || (G.titulares[co.id] && G.titulares[co.id].nome) || 'Sem titular';
+}
+function documentoDe(co){
+  const p = titularDe(co);
+  return p.documento || (G.titulares[co.id] && G.titulares[co.id].documento) || '';
 }
 function valorDe(co){ const c = (co.origem_snapshot || {}).credito || {}; return c.valor_total || 0; }
 
@@ -345,11 +374,12 @@ function aplicarVista(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, co, corr, empr, emps, ccas, anas] = await Promise.all([
+  const [sit, tr, co, corr, imob, empr, emps, ccas, anas] = await Promise.all([
     fetch(`${A1.rest('a1_co_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_comerciais')}?order=criado_em.desc`),
     fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     // Os três cadastros que alimentam os campos de vínculo. Vêm com a carga da
     // tela para o dossiê abrir pronto — e não um seletor por vez, que é o que
@@ -362,12 +392,29 @@ async function carregar(){
   G.transicoes = Array.isArray(tr) ? tr : [];
   G.lista = (co && Array.isArray(co.linhas)) ? co.linhas : [];
   G.corretores = Array.isArray(corr) ? corr : [];
+  G.imobiliarias = Array.isArray(imob) ? imob : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
   G.empresas  = Array.isArray(emps) ? emps : [];
   G.ccas      = Array.isArray(ccas) ? ccas : [];
   G.analistas = Array.isArray(anas) ? anas : [];
+  await carregarTitulares();
   preencherFiltros();
   renderVistas();
+}
+
+async function carregarTitulares(){
+  G.titulares = {};
+  const preIds = [...new Set(G.lista.map(c => c.pre_analise_id).filter(Boolean))];
+  if (!preIds.length) return;
+  const partesResp = await A1.buscarTudo(`${A1.rest('a1_pa_participantes')}?pre_analise_id=in.(${preIds.join(',')})&papel=eq.TITULAR&select=pre_analise_id,pessoa_id`);
+  const partes = Array.isArray(partesResp && partesResp.linhas) ? partesResp.linhas : [];
+  const pessoaIds = [...new Set(partes.map(p => p.pessoa_id).filter(Boolean))];
+  if (!pessoaIds.length) return;
+  const pessoasResp = await A1.buscarTudo(`${A1.rest('a1_pa_pessoas')}?id=in.(${pessoaIds.join(',')})&select=id,nome,documento`);
+  const pessoas = Array.isArray(pessoasResp && pessoasResp.linhas) ? pessoasResp.linhas : [];
+  const porPessoa = Object.fromEntries(pessoas.map(p => [p.id, p]));
+  const porPre = Object.fromEntries(partes.map(p => [p.pre_analise_id, porPessoa[p.pessoa_id]]).filter(([, p]) => !!p));
+  G.lista.forEach(c => { if (porPre[c.pre_analise_id]) G.titulares[c.id] = porPre[c.pre_analise_id]; });
 }
 
 function preencherFiltros(){
@@ -424,6 +471,8 @@ function destinosDe(situacaoId){
 function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
 function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
 function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
+function nomeImobiliaria(id){ const i = G.imobiliarias.find(x=>x.id===id); return i ? i.name : ''; }
+function nomeAnalista(id){ const a = G.analistas.find(x=>x.id===id); return a ? a.name : ''; }
 function nomeEmpr(id){ const e = G.empreendimentos.find(x=>x.id===id); return e ? e.name : '—'; }
 
 function filtrarSla(n){
@@ -535,14 +584,27 @@ function cartao(c){
   const s = sla(c);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
   const mover = podeEditarNaSituacao(c.situacao_id);
+  const documento = soDigitos(documentoDe(c));
+  const desde = c.situacao_em || c.criado_em;
+  const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
   return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}" draggable="true"
     ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"
     style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
     <div class="co-name">${esc(tituloDe(c))}</div>
-    <div class="co-line">${esc(nomeEmpr(c.empreendimento_id))}${c.unidade?' · un. '+esc(c.unidade):''}</div>
+    ${documento
+      ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+      : '<div class="co-line">CPF não informado</div>'}
+    <div class="co-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(c.empreendimento_id))}${c.unidade?' · un. '+esc(c.unidade):''}</div>
+    <div class="card-meta">
+      <div class="co-line"><span class="label">Imobiliária</span>${esc(nomeImobiliaria(c.imobiliaria_id) || 'Não informada')}</div>
+      <div class="co-line"><span class="label">Corretor</span>${esc(nomeCorretor(c.corretor_id))}</div>
+      <div class="co-line"><span class="label">Analista</span>${esc(nomeAnalista(c.analista_id) || 'Não informado')}</div>
+    </div>
     <div class="chips"><span class="chip val">${esc(brl(valorDe(c)))}</span>
       <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
+      <span class="chip">${esc(decorrido)} na etapa</span>
       ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
+    <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
   </div>`;
 }
 
