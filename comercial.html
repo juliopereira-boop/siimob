@@ -1094,17 +1094,21 @@ function dosRepasse(){
     cliente configurou no workflow de Repasse, com o nome do titular e os valores aprovados.</p>`;
 }
 
+function podeMoverComercial(co){
+  return !!co && perm('co_mover') && nivelNaSituacao(co.situacao_id) === 'editar';
+}
 function montarRodape(){
-  // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
-  // empurra para a seguinte.
-  const co = G.atual, pode = podeEditarNaSituacao(co.situacao_id);
+  const co = G.atual, pode = podeMoverComercial(co);
   const destinos = destinosDe(co.situacao_id);
   const sel = document.getElementById('dos-mover');
   sel.innerHTML = destinos.length
     ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
     : '<option value="">nenhuma transição disponível</option>';
   sel.disabled = !destinos.length || !pode;
-  document.getElementById('dos-btn-mover').disabled = !destinos.length || !pode;
+  sel.style.display = pode ? '' : 'none';
+  const btnMover = document.getElementById('dos-btn-mover');
+  btnMover.disabled = !destinos.length || !pode;
+  btnMover.style.display = pode ? '' : 'none';
 
   const acoes = document.getElementById('dos-acoes');
   acoes.innerHTML = co.repasse_case_id
@@ -1113,7 +1117,12 @@ function montarRodape(){
 }
 
 async function moverSituacao(){
-  const co = G.atual, para = document.getElementById('dos-mover').value;
+  const co = G.atual;
+  if (!podeMoverComercial(co)){
+    toast('Você não tem a permissão "Mover na esteira" da Venda.','error');
+    return;
+  }
+  const para = document.getElementById('dos-mover').value;
   if (!para) return;
   const just = prompt('Justificativa (opcional):') || null;
   const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
@@ -1178,7 +1187,7 @@ function traduzErro(j){
     nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
     modulo_desabilitado:     'O módulo Venda não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
     sem_acesso:              'Este negócio não é da sua carteira.',
-    sem_permissao:           'Você não tem a permissão "Editar proposta e mover na esteira". Peça ao gestor '
+    sem_permissao:           'Você não tem a permissão "Mover na esteira" da Venda. Peça ao gestor '
                            + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',
     versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. A tela foi recarregada '
                            + 'com a situação atual; confira e tente de novo.',
