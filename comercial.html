@@ -223,6 +223,12 @@ function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
 const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function brl(cent){ return _brl.format((Number(cent)||0)/100); }
 function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
+function mascaraMoeda(el){
+  const digitos = String(el && el.value || '').replace(/\D/g,'');
+  el.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR',{
+    minimumFractionDigits:2, maximumFractionDigits:2
+  }) : '';
+}
 function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
 function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function mascaraDoc(d){ d=soDigitos(d);
@@ -756,7 +762,10 @@ function renderDossie(){
   // O alerta de "venda acima do crédito" tem de aparecer ao ABRIR a proposta
   // já salva, não só quando alguém digita. Ligado só ao oninput, ele ficava
   // invisível justamente para quem abre o negócio para conferir.
-  if (G.abaDossie === 'proposta') conferirProposta();
+  if (G.abaDossie === 'proposta') {
+    renderCondicoesProposta();
+    conferirProposta();
+  }
 }
 
 function dosProposta(){
@@ -767,18 +776,20 @@ function dosProposta(){
     <div class="fgrid">
       <div class="fg"><label>Valor da venda (R$)</label>
         <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
-      <div class="fg"><label>Entrada / recursos próprios (R$)</label>
-        <input id="p-entrada" value="${p.valor_entrada != null ? esc((p.valor_entrada/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'} oninput="conferirProposta()"></div>
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this);conferirProposta()"></div>
+      <div class="fg"><label>Recursos próprios nas condições (R$)</label>
+        <input id="p-entrada" value="" inputmode="decimal" disabled></div>
       <div class="fg"><label>Desconto concedido (R$)</label>
         <input id="p-desc" value="${p.desconto != null ? esc((p.desconto/100).toFixed(2).replace('.',',')) : ''}"
-               inputmode="decimal" ${pode?'':'disabled'}></div>
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this)"></div>
       <div class="fg"><label>Comissão (%)</label>
         <input id="p-com" type="number" step="0.01" min="0" max="100" value="${esc(p.comissao_pct != null ? p.comissao_pct : '')}" ${pode?'':'disabled'}></div>
       <div class="fg full"><label>Observações da negociação</label>
         <textarea id="p-obs" rows="3" ${pode?'':'disabled'}>${esc(p.observacoes || '')}</textarea></div>
     </div>
+    <div class="sec-title">Condições de pagamento</div>
+    <div id="p-condicoes"></div>
+    ${pode ? '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoProposta()">+ Adicionar condição</button>' : ''}
     <div id="p-conferencia" style="margin-top:.9rem"></div>
     ${secaoVinculos(co, pode)}
     <div class="sec-title">Crédito aprovado na origem</div>
@@ -817,25 +828,73 @@ function secaoVinculos(co, pode){
 
 // O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
 // descobrir na negociação do que na assinatura.
+function condicoesPropostaDaTela(){
+  return [...document.querySelectorAll('#p-condicoes .condicao-proposta')].map(l => ({
+    tipo: l.querySelector('[data-campo="tipo"]').value,
+    quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0
+  }));
+}
+function condicoesAtuaisProposta(){
+  const p = G.atual.proposta || {};
+  if (Array.isArray(G.condicoesProposta)) return G.condicoesProposta;
+  if (Array.isArray(p.condicoes_pagamento)) return p.condicoes_pagamento;
+  return p.valor_entrada ? [{tipo:'ATO',quantidade:1,valor:p.valor_entrada}] : [];
+}
+function totalCondicoesProposta(condicoes){
+  return condicoes.reduce((total, c) => total + c.quantidade * c.valor, 0);
+}
+function renderCondicoesProposta(){
+  const area = document.getElementById('p-condicoes'); if (!area) return;
+  const pode = podeEditarNaSituacao(G.atual.situacao_id);
+  const condicoes = condicoesAtuaisProposta();
+  area.innerHTML = condicoes.map((c, i) => `
+    <div class="fgrid condicao-proposta" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode?'':'disabled'} onchange="sincronizarCondicoesProposta()">
+        ${['ATO','MENSAL','SEMESTRAL','ANUAL'].map(t => `<option value="${t}" ${c.tipo===t?'selected':''}>${({ATO:'Ato',MENSAL:'Parcelas mensais',SEMESTRAL:'Parcelas semestrais',ANUAL:'Parcelas anuais'})[t]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode?'':'disabled'} oninput="sincronizarCondicoesProposta()"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" ${pode?'':'disabled'} oninput="mascaraMoeda(this);sincronizarCondicoesProposta()"></div>
+      ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoProposta(${i})">Remover</button></div>` : ''}
+    </div>`).join('') || '<div class="sub">Nenhuma condição registrada.</div>';
+}
+function sincronizarCondicoesProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  conferirProposta();
+}
+function adicionarCondicaoProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  G.condicoesProposta.push({tipo:'ATO',quantidade:1,valor:0});
+  renderCondicoesProposta(); conferirProposta();
+}
+function removerCondicaoProposta(indice){
+  G.condicoesProposta = condicoesPropostaDaTela().filter((_,i) => i !== indice);
+  renderCondicoesProposta(); conferirProposta();
+}
 function conferirProposta(){
   const el = document.getElementById('p-conferencia'); if (!el) return;
   const cr = (G.atual.origem_snapshot || {}).credito || {};
   const aprovado = Number(cr.valor_total) || 0;
-  const venda   = paraCentavos(document.getElementById('p-venda').value) || 0;
-  const entrada = paraCentavos(document.getElementById('p-entrada').value) || 0;
+  const vendaEl = document.getElementById('p-venda');
+  const entradaEl = document.getElementById('p-entrada');
+  mascaraMoeda(vendaEl);
+  const venda = paraCentavos(vendaEl.value) || 0;
+  const entrada = totalCondicoesProposta(condicoesPropostaDaTela());
+  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
   const falta = venda - entrada - aprovado;
   el.innerHTML = falta > 0
-    ? `<div class="aviso w">A venda de ${esc(brl(venda))} menos a entrada de ${esc(brl(entrada))}
-        deixa <strong>${esc(brl(falta))}</strong> acima do crédito aprovado de ${esc(brl(aprovado))}.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado mais a entrada.</div>`;
+    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições lançadas.</div>`
+    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
 }
 
 async function salvarProposta(){
   const co = G.atual;
+  const condicoes = condicoesPropostaDaTela();
   const proposta = {
     valor_venda:   paraCentavos(document.getElementById('p-venda').value),
-    valor_entrada: paraCentavos(document.getElementById('p-entrada').value),
+    valor_entrada: totalCondicoesProposta(condicoes),
+    condicoes_pagamento: condicoes,
     desconto:      paraCentavos(document.getElementById('p-desc').value),
     comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
     observacoes:   document.getElementById('p-obs').value || null
