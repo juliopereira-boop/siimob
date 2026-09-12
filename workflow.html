@@ -313,6 +313,11 @@
   <div id="ep-esteira" style="display:none">
     <label>Classificação</label>
     <select id="ep-flag"></select>
+    <label>Selo da etapa</label>
+    <select id="ep-selo"></select>
+    <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
+      O selo define o papel da etapa no fluxo; não depende do nome dela.
+    </div>
     <label>Prazo desta etapa, em horas</label>
     <input type="number" id="ep-sla" min="0" max="8760" placeholder="sem prazo">
     <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
@@ -454,6 +459,13 @@ const WF_FLAGS = {
 // nenhuma: presa ao estado, qualquer caminho que chegasse ali dispararia o
 // efeito — inclusive uma correção manual de status feita para acertar um
 // lançamento errado.
+const WF_SELOS = {
+  pa: [['','Sem selo'],['INICIO','Início'],['FIM_POSITIVO','Fim positivo — libera Venda'],
+       ['FIM_NEGATIVO','Fim negativo — encerra']],
+  co: [['','Sem selo'],['INICIO','Início'],['VENDIDO','Vendido — cria Repasse'],
+       ['FIM_NEGATIVO','Fim negativo — encerra']],
+};
+
 const WF_ACOES = {
   pa: [['','nenhuma'],['ENABLE_COMMERCIAL','Habilitar Venda']],
   co: [['','nenhuma'],['CREATE_REPASS','Criar cartão no Repasse'],
@@ -500,7 +512,7 @@ function adaptadorEsteira(tabelaNo, tabelaLigacao, tipo){
         is_initial: l.flag === 'INICIAL',
         is_final:   FINAIS.includes(l.flag),
         is_pending: l.flag === 'PENDENTE',
-        flag: l.flag || '', sla_horas: l.sla_horas, ativo: l.ativo !== false,
+        flag: l.flag || '', selo: l.selo || '', sla_horas: l.sla_horas, ativo: l.ativo !== false,
       }));
     },
     listarLigacoes: async () => {
@@ -516,7 +528,8 @@ function adaptadorEsteira(tabelaNo, tabelaLigacao, tipo){
     },
     paraTela: n => n,
     doFormulario: v => ({ nome: v.nome, cor: v.cor, ordem: v.ordem,
-                          flag: v.flag || null, sla_horas: v.sla, ativo: v.ativa !== false }),
+                          flag: v.flag || null, selo: v.selo || null,
+                          sla_horas: v.sla, ativo: v.ativa !== false }),
     novaLigacao: (de, para) => ({ de_id: de, para_id: para, papeis: [], requisitos: {},
                                   acao: null, acao_modo: 'CONFIRMAR', ativo: true }),
   };
@@ -920,10 +933,14 @@ function pintarCamposDoModulo(){
   document.getElementById('ep-propriedades').style.display = esteira ? 'none' : '';
   if (esteira) {
     const sel = document.getElementById('ep-flag');
-    const atual = sel.value;
+    const selo = document.getElementById('ep-selo');
+    const atual = sel.value, seloAtual = selo.value;
     sel.innerHTML = (WF_FLAGS[drv().tipo] || [])
       .map(([v, r]) => `<option value="${esc(v)}">${esc(r)}</option>`).join('');
+    selo.innerHTML = (WF_SELOS[drv().tipo] || [])
+      .map(([v, r]) => `<option value="${esc(v)}">${esc(r)}</option>`).join('');
     sel.value = atual;
+    selo.value = seloAtual;
   }
 }
 
@@ -932,6 +949,7 @@ function openNewStage() {
   fecharTransicao();
   pintarCamposDoModulo();
   document.getElementById('ep-flag').value = '';
+  document.getElementById('ep-selo').value = '';
   document.getElementById('ep-sla').value  = '';
   document.getElementById('ep-name').value    = '';
   document.getElementById('ep-group').value   = '';
@@ -952,6 +970,7 @@ function openEdit(stageId) {
   fecharTransicao();
   pintarCamposDoModulo();
   document.getElementById('ep-flag').value = editingStage.flag || '';
+  document.getElementById('ep-selo').value = editingStage.selo || '';
   document.getElementById('ep-sla').value  = editingStage.sla_horas == null ? '' : editingStage.sla_horas;
   document.getElementById('ep-name').value     = editingStage.name;
   document.getElementById('ep-group').value    = editingStage.group_key || '';
@@ -988,10 +1007,11 @@ async function saveStage() {
 
   const d = drv();
   const flag = ehEsteira() ? (document.getElementById('ep-flag').value || null) : null;
+  const selo = ehEsteira() ? (document.getElementById('ep-selo').value || null) : null;
   const slaCampo = document.getElementById('ep-sla');
   const sla = ehEsteira() ? (slaCampo.value === '' ? null : parseInt(slaCampo.value, 10)) : null;
   const payload = d.doFormulario({ nome: name, cor: color, ordem: position, grupo: group,
-    inicial: is_initial, final: is_final, pendente: is_pending, flag, sla, ativa: true });
+    inicial: is_initial, final: is_final, pendente: is_pending, flag, selo, sla, ativa: true });
 
   if (editingStage) {
     const res = await fetch(`${A1.rest(d.tabelaNo)}?id=eq.${editingStage.id}`, {
@@ -999,7 +1019,7 @@ async function saveStage() {
     });
     if (!res.ok) { epErro('Não foi possível salvar. Confira se você é gestor deste cliente.'); return; }
     Object.assign(editingStage, { name, color, position, group_key: group,
-      is_initial, is_final, is_pending, flag: flag || '', sla_horas: sla });
+      is_initial, is_final, is_pending, flag: flag || '', selo: selo || '', sla_horas: sla });
     toast('Etapa atualizada', 'success');
   } else {
     const extra = ehEsteira() ? {} : { module_key: MODULE };
@@ -1012,7 +1032,7 @@ async function saveStage() {
     const [criada] = await res.json();
     stages.push(ehEsteira()
       ? { id: criada.id, name, color, position, pos_x: criada.pos_x, pos_y: criada.pos_y,
-          is_initial, is_final, is_pending, flag: flag || '', sla_horas: sla, ativo: true }
+          is_initial, is_final, is_pending, flag: flag || '', selo: selo || '', sla_horas: sla, ativo: true }
       : criada);
     toast('Etapa criada', 'success');
   }
