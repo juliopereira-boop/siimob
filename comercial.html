@@ -819,6 +819,8 @@ function secaoVinculos(co, pode){
   return `
     <div class="sec-title">Quem responde por este negócio</div>
     <div class="fgrid">
+      <div class="fg"><label>Imobiliária</label><input value="${esc(nomeImobiliaria(co.imobiliaria_id) || 'Não informada')}" disabled></div>
+      <div class="fg"><label>Corretor</label><input value="${esc(nomeCorretor(co.corretor_id) || 'Não informado')}" disabled></div>
       <div class="fg"><label>Empresa correspondente</label>
         ${selVinculo('p-empresa', G.empresas, co.empresa_id, !podeEmpresa)}
         ${pode && !podeEmpresa ? '<div class="sub" style="margin-top:.25rem">Trocar a empresa é do gestor: é ela que decide quem enxerga o negócio.</div>' : ''}</div>
