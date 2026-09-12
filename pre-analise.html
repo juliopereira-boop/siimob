@@ -301,7 +301,7 @@ const G = {
   // (a1_partners type=cca) e analista (a1_partners type=analista).
   empresasCorr:[], correspondentes:[], analistas:[],
   filtroSla:'', abaDossie:'dados',
-  atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null,
+  atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null, atualChecklist:[],
   // Veredito do banco sobre abrir a venda desta pré-análise: null = ainda não
   // perguntamos (ou não deu para perguntar), {ok:true} ou {ok:false,motivo}.
   podeVender:null,
@@ -1381,7 +1381,7 @@ async function abrirDossie(id){
   document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
 
   const h = { headers:A1.headers() };
-  const [part, cred, docs, ev, co] = await Promise.all([
+  const [part, cred, docs, ev, co, checklistOperacional] = await Promise.all([
     fetch(`${A1.rest('a1_pa_participantes')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[]),
@@ -1390,12 +1390,17 @@ async function abrirDossie(id){
     G.temComercial
       ? fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
       : Promise.resolve([])
+    ,
+    fetch(A1.rpc('a1_checklist_listar'), {method:'POST',headers:A1.headers(),
+      body:JSON.stringify({p_modulo:'PRE_ANALISE',p_processo:id})})
+      .then(r=>r.ok?r.json():[]).catch(()=>[])
   ]);
   G.atualPart = Array.isArray(part) ? part : [];
   G.atualCred = Array.isArray(cred) ? cred : [];
   G.atualDocs = Array.isArray(docs) ? docs : [];
   G.atualEv   = Array.isArray(ev)   ? ev   : [];
   G.atualCo   = (Array.isArray(co) && co[0]) || null;
+  G.atualChecklist = Array.isArray(checklistOperacional) ? checklistOperacional : [];
 
   const faltam = G.atualPart.map(p => p.pessoa_id).filter(pid => pid && !G.pessoas[pid]);
   if (faltam.length){
@@ -1839,12 +1844,34 @@ function checklist(){
 }
 
 function dosChecklist(){
-  return checklist().map(i => `
+  const podeMarcar = perm('pa_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
+  const padrao = checklist().map(i => `
     <div class="linha">
       <div><div class="nm">${i.ok ? '✓' : '○'} ${esc(i.txt)}</div>
         ${i.obs ? `<div class="mt">${esc(i.obs)}</div>` : ''}</div>
       <span class="pill ${i.ok?'ok':'wt'}">${i.ok?'ok':'falta'}</span>
     </div>`).join('');
+  const operacional = (G.atualChecklist || []).map(i => `
+    <div class="linha">
+      <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar?'pointer':'default'}">
+        <input type="checkbox" ${i.concluido?'checked':''} ${podeMarcar?'':'disabled'}
+          onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
+        <div><div class="nm">${esc(i.nome)} ${i.obrigatorio?'<span class="pill wt" style="margin-left:.35rem">obrigatório</span>':''}</div>
+          ${i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
+      </label>
+      <span class="pill ${i.concluido?'ok':'wt'}">${i.concluido?'feito':'pendente'}</span>
+    </div>`).join('');
+  return `${padrao}${operacional ? `<div class="sec-title" style="margin-top:1rem">Checklist operacional</div>${operacional}` : ''}`;
+}
+async function marcarChecklistOperacional(itemId, concluido){
+  const res = await fetch(A1.rpc('a1_checklist_marcar'), {method:'POST',headers:A1.headers(),
+    body:JSON.stringify({p_modulo:'PRE_ANALISE',p_processo:G.atual.id,p_item:itemId,p_concluido:concluido})});
+  if (!res.ok){ toast('Não foi possível atualizar o checklist.','error'); renderDossie(); return; }
+  const item=(G.atualChecklist||[]).find(i=>i.id===itemId);
+  if(item){ item.concluido=concluido; item.concluido_em=concluido?new Date().toISOString():null; }
+  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),ator_nome:(G.user||{}).name||null});
+  renderDossie();
+  toast('Checklist atualizado.','success');
 }
 
 function dosHistorico(){
@@ -1870,7 +1897,7 @@ function rotuloEvento(e){
            decisao_credito_registrada:'Decisão de crédito registrada',
            documento_enviado:'Documento enviado', documento_status_alterado:'Documento analisado',
            participante_adicionado:'Pessoa adicionada', participante_removido:'Pessoa removida',
-           dados_atualizados:'Dados atualizados', transicao_automatica_credito:'Avanço automático por aprovação' }[e] || e;
+           dados_atualizados:'Dados atualizados', checklist_atualizado:'Checklist atualizado', transicao_automatica_credito:'Avanço automático por aprovação' }[e] || e;
 }
 
 function dosComercial(){
