@@ -1664,6 +1664,7 @@ function dosCredito(){
   const prox = (G.atualCred[0] ? G.atualCred[0].versao : 0) + 1;
   return `
     ${hist ? `<div class="sec-title" style="margin-top:0">Decisões anteriores</div>${hist}` : ''}
+    ${G.atualCred.some(c => c.status === 'APROVADO') ? `<div style="margin-bottom:.9rem"><button type="button" class="btn btn-ghost btn-sm" onclick="gerarFichaAprovacao()">Ficha de aprovação (PDF)</button></div>` : ''}
     <div class="sec-title">Nova decisão — versão ${prox}</div>
     <div class="aviso i">Decisão não se edita: cada análise cria uma versão nova, e a anterior fica no histórico.
       O total tem de fechar com a soma de financiado + subsídio + FGTS.</div>
@@ -1686,6 +1687,25 @@ function dosCredito(){
       <div class="fg full"><label>Justificativa</label><textarea id="c-just" rows="2"></textarea></div>
     </div>
     <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarCredito()">Registrar decisão</button></div>`;
+}
+
+function gerarFichaAprovacao(){
+  const analise = G.atualCred.find(c => c.status === 'APROVADO');
+  const pa = G.atual;
+  if (!analise || !pa){ toast('Não há decisão aprovada para gerar a ficha.','error'); return; }
+  const titular = G.titulares[pa.id] || {};
+  const win = window.open('', '_blank', 'noopener,noreferrer');
+  if (!win){ toast('O navegador bloqueou a janela do PDF. Libere pop-ups para o SIIMOB e tente novamente.','error'); return; }
+  const linha = (r,v) => '<div class="linha"><span>'+esc(r)+'</span><strong>'+esc(v)+'</strong></div>';
+  const estilo = '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#10233f;margin:0;background:#f5f7fb}.pagina{width:210mm;min-height:297mm;margin:auto;background:#fff;padding:20mm}.cab{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #3d5cc8;padding-bottom:12px;margin-bottom:20px}.marca{font-size:22px;font-weight:800;color:#3d5cc8}h1{font-size:22px;margin:0 0 4px}.sub{font-size:12px;color:#64748b}.sec{font-size:12px;font-weight:800;color:#3d5cc8;text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px}.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}.campo{border:1px solid #dbe2ef;border-radius:6px;padding:9px}.rot{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700}.val{font-size:14px;font-weight:700;margin-top:3px}.linha{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #e6ebf3;padding:9px 0;font-size:13px}.resultado{margin:18px 0;padding:12px;border-radius:7px;background:#ecfdf3;color:#166534;font-weight:800}footer{position:fixed;bottom:14mm;font-size:10px;color:#64748b}@media print{body{background:#fff}.pagina{margin:0}.nao-imprimir{display:none}}';
+  const campo = (r,v) => '<div class="campo"><div class="rot">'+esc(r)+'</div><div class="val">'+esc(v)+'</div></div>';
+  const html = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha de aprovação - '+esc(titular.nome || pa.codigo || 'SIIMOB')+'</title><style>'+estilo+'</style></head><body><main class="pagina">'+
+    '<header class="cab"><div class="marca">SIIMOB</div><div class="sub">Ficha de aprovação de crédito</div></header><h1>Ficha de aprovação</h1><div class="sub">Emitida em '+esc(dataHoraBR(new Date().toISOString()))+'</div>'+
+    '<div class="sec">Cliente e negócio</div><div class="grade">'+campo('Titular',titular.nome || 'Não informado')+campo('CPF',titular.documento ? mascaraDoc(titular.documento) : 'Não informado')+campo('Empreendimento',nomeEmpr(pa.empreendimento_id))+campo('Unidade de interesse',pa.unidade || 'Não informada')+'</div>'+
+    '<div class="sec">Decisão de crédito</div><div class="resultado">APROVADO · versão '+esc(analise.versao)+'</div>'+
+    linha('Renda familiar considerada',brl(analise.renda_familiar))+linha('Valor financiado',brl(analise.valor_aprovado))+linha('Subsídio',brl(analise.valor_subsidio))+linha('FGTS',brl(analise.valor_fgts))+linha('Total aprovado',brl(analise.valor_total))+linha('Valor de avaliação',brl(analise.valor_avaliacao))+linha('Prestação',analise.prestacao ? brl(analise.prestacao) : '—')+linha('Prazo',analise.prazo_meses ? analise.prazo_meses+' meses' : '—')+
+    (analise.motivo ? '<div class="sec">Condicionante</div><div class="campo">'+esc(analise.motivo)+'</div>' : '')+(analise.justificativa ? '<div class="sec">Justificativa</div><div class="campo">'+esc(analise.justificativa)+'</div>' : '')+'<footer>SIIMOB · documento gerado a partir da decisão registrada no sistema</footer><button class="nao-imprimir" onclick="window.print()" style="margin-top:24px;padding:10px 14px">Salvar/Imprimir PDF</button></main></body></html>';
+  win.document.write(html); win.document.close(); win.focus(); win.print();
 }
 
 function somarCredito(){
