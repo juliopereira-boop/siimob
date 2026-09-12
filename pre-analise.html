@@ -322,6 +322,12 @@ const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 // discute com o banco de quem é o erro.
 function brl(cent){ return _brl.format((Number(cent)||0)/100); }
 function valorEmReais(cent){ return (Number(cent||0)/100).toFixed(2).replace('.',','); }
+function mascaraMoeda(el){
+  const digitos = String(el && el.value || '').replace(/\D/g,'');
+  el.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR',{
+    minimumFractionDigits:2, maximumFractionDigits:2
+  }) : '';
+}
 function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
 function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
 function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
@@ -863,7 +869,7 @@ function cartao(p){
 function podeMoverPa(p){
   // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
   // empurra para a seguinte.
-  return !!p && perm('pa_editar') && nivelNaSituacao(p.situacao_id) === 'editar';
+  return !!p && perm('pa_mover') && nivelNaSituacao(p.situacao_id) === 'editar';
 }
 
 // As situações de destino são as arestas que a esteira do cliente permite a
@@ -897,7 +903,7 @@ async function moverCartao(id, paraId){
   const p = G.lista.find(x => x.id === id);
   if (!p || !paraId || p.situacao_id === paraId) return;
 
-  if (!perm('pa_editar')){ toast(faltaPermissao('pa_editar','Mover a pré-análise'),'error'); return; }
+  if (!perm('pa_mover')){ toast(faltaPermissao('pa_mover','Mover a pré-análise'),'error'); return; }
   if (nivelNaSituacao(p.situacao_id) !== 'editar'){
     toast(`Em "${nomeSituacao(p.situacao_id)}" você só acompanha. Peça ao gestor a permissão de editar nesta situação.`,'error');
     return;
@@ -991,7 +997,7 @@ function passo1(){
       <div class="fg"><label>Unidade de interesse</label>
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
       <div class="fg"><label>Valor de avaliação (R$)</label>
-        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal"></div>
+        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
       ${campoImobiliaria(r)}
       ${campoCorretor(r)}
       ${camposDeGenteNoAssistente(r)}
@@ -1112,7 +1118,7 @@ function passo3(){
   return `
     <div class="fgrid">
       <div class="fg"><label>Renda declarada do titular (R$)</label>
-        <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal"></div>
+        <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
       <div class="fg"><label>Fonte da renda</label>
         <select id="w-fonte">${['','CLT','Autônomo','Servidor público','Aposentado','Empresário','Informal']
           .map(o => `<option ${o===r.fonte_renda?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
@@ -1568,6 +1574,7 @@ function dosPessoas(){
 
 function dosCredito(){
   const podeAnalisar = perm('analisar_credito');
+  const rendaDeclarada = G.atualPart.reduce((s, pt) => s + (Number(pt.renda_declarada) || 0), 0);
   const avaliacaoInicial = G.atual && G.atual.valor_avaliacao_inicial != null
     ? Number(G.atual.valor_avaliacao_inicial) : null;
   const hist = G.atualCred.map(c => `
@@ -1595,16 +1602,16 @@ function dosCredito(){
       <div class="fg"><label>Resultado</label>
         <select id="c-status"><option value="APROVADO">Aprovado</option><option value="PENDENTE">Pendente</option>
           <option value="REPROVADO">Reprovado</option><option value="EM_ANALISE">Em análise</option></select></div>
-      <div class="fg"><label>Renda familiar considerada (R$)</label><input id="c-renda" inputmode="decimal"></div>
-      <div class="fg"><label>Valor financiado (R$)</label><input id="c-fin" inputmode="decimal" oninput="somarCredito()"></div>
-      <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" oninput="somarCredito()"></div>
-      <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" oninput="somarCredito()"></div>
+      <div class="fg"><label>Renda familiar considerada (R$)</label><input id="c-renda" value="${esc(valorEmReais(rendaDeclarada))}" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+      <div class="fg"><label>Valor financiado (R$)</label><input id="c-fin" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
+      <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
+      <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
       <div class="fg"><label>Total (soma)</label><input id="c-total" disabled></div>
       <div class="fg"><label>Valor de avaliação (R$)</label>
         <input id="c-aval" value="${avaliacaoInicial == null ? '' : esc(valorEmReais(avaliacaoInicial))}"
-          inputmode="decimal" ${avaliacaoInicial == null ? '' : 'disabled'}>
+          inputmode="decimal" oninput="mascaraMoeda(this)" ${avaliacaoInicial == null ? '' : 'disabled'}>
         ${avaliacaoInicial == null ? '' : '<div class="sub" style="margin-top:.25rem">informado na abertura da pré-análise</div>'}</div>
-      <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal"></div>
+      <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
       <div class="fg"><label>Prazo (meses)</label><input id="c-prazo" type="number" min="1" max="480"></div>
       <div class="fg"><label>Motivo / condicionante</label><input id="c-motivo"></div>
       <div class="fg full"><label>Justificativa</label><textarea id="c-just" rows="2"></textarea></div>
@@ -1822,7 +1829,10 @@ function montarRodapeDossie(){
     ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
     : '<option value="">nenhuma transição disponível</option>';
   sel.disabled = !destinos.length || !podeMover;
-  document.getElementById('dos-btn-mover').disabled = !destinos.length || !podeMover;
+  sel.style.display = podeMover ? '' : 'none';
+  const btnMover = document.getElementById('dos-btn-mover');
+  btnMover.disabled = !destinos.length || !podeMover;
+  btnMover.style.display = podeMover ? '' : 'none';
 
   montarBotaoVenda(podeMover);
 }
@@ -1853,10 +1863,9 @@ function montarBotaoVenda(podeMover){
   // o que não está no DOM ninguém acha com o inspetor nem com a busca.
   if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)){ acoes.innerHTML = ''; return; }
 
-  // Mover e agir na esteira são a mesma permissão (pa_editar) e a mesma trava
-  // por situação. Um botão que o banco vai recusar é pior que botão ausente.
+  // Abrir a Venda é uma ação da esteira: exige a permissão própria de mover.
   if (!podeMover){
-    acoes.innerHTML = `<span class="recusa">${esc(faltaPermissao('pa_editar','Iniciar a venda'))}</span>`;
+    acoes.innerHTML = '';
     return;
   }
 
