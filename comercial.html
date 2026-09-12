@@ -590,12 +590,12 @@ function renderAndamento(linhas){
 function cartao(c){
   const s = sla(c);
   const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
-  const mover = podeEditarNaSituacao(c.situacao_id);
+  const mover = podeMoverComercial(c);
   const documento = soDigitos(documentoDe(c));
   const desde = c.situacao_em || c.criado_em;
   const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
-  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}" draggable="true"
-    ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"
+  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}"
+    ${mover ? 'draggable="true" ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"' : ''}
     style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
     <div class="co-name">${esc(tituloDe(c))}</div>
     ${documento
@@ -637,9 +637,7 @@ function cartao(c){
 function coDragStart(e, el){
   const co = G.lista.find(c => c.id === el.dataset.id);
   if (!co){ e.preventDefault(); return; }
-  // Quem não pode mover também arrasta: a recusa sai em moverCartao(), dizendo
-  // qual permissão falta. Bloquear aqui devolveria o cartão em silêncio, que é
-  // indistinguível de "o sistema quebrou" — foi assim que este defeito nasceu.
+  if (!podeMoverComercial(co)){ e.preventDefault(); return; }
   G.arrastando = co.id;
   el.classList.add('arrastando');
   if (e.dataTransfer){
@@ -666,9 +664,8 @@ function coDrop(e, col){
 async function moverCartao(id, paraId){
   const co = G.lista.find(c => c.id === id);
   if (!co || !paraId || co.situacao_id === paraId) return;
-  if (!podeEditarNaSituacao(co.situacao_id)){
-    toast('Nesta situação você só pode acompanhar, não mover. Peça ao gestor a permissão '
-        + '"Editar proposta e mover na esteira" (Configurações › cadastro da pessoa ou perfil de acesso).','error');
+  if (!podeMoverComercial(co)){
+    toast('Você não tem a permissão "Mover na esteira" da Venda, ou esta etapa é apenas de acompanhamento.','error');
     return;
   }
   // Soltar numa coluna que a esteira não liga é o caso mais comum de "não
