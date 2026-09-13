@@ -1,6 +1,7 @@
 -- Todo Repasse criado a partir da Venda já nasce com os vínculos técnicos
 -- da carteira. Isso prepara a proteção de acesso por ID sem depender de nomes
--- digitados no cartão e não altera os repasses legados.
+-- digitados no cartão. assigned_user_id referencia a1_users, por isso o
+-- corretor é convertido do parceiro para o usuário de login correspondente e não altera os repasses legados.
 
 CREATE OR REPLACE FUNCTION public.a1_criar_repasse_do_comercial(p_comercial uuid)
  RETURNS uuid
@@ -74,7 +75,11 @@ begin
   values (v_co.tenant_id, 'repasse', v_stage.id, v_stage.name, now(),
       v_nome, coalesce(v_doc,''),
       nullif(v_snap#>>'{pre_analise,empreendimento_id}',''), v_co.unidade,
-      v_co.corretor_id, v_co.analista_id, v_co.correspondente_id, v_co.empresa_id,
+      (select u.id from a1_users u
+        join a1_partners p on p.tenant_id=u.tenant_id and p.cpf=u.cpf
+       where p.id=v_co.corretor_id and u.tenant_id=v_co.tenant_id
+       order by u.id limit 1),
+      v_co.analista_id, v_co.correspondente_id, v_co.empresa_id,
       -- Com tenant_id no filtro: a função roda com privilégio de dono, então
       -- sem ele um corretor_id apontado para outro cliente traria o nome de lá.
       (select name from a1_partners
