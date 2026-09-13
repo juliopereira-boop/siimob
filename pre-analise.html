@@ -2148,13 +2148,16 @@ function conferirVenda(){
   const entradaEl = document.getElementById('v-entrada');
   mascaraMoeda(vendaEl);
   const venda = paraCentavos(vendaEl.value) || 0;
+  const esperado = Math.max(0, venda - aprovado);
   const entrada = totalCondicoesVenda(condicoesVendaDaTela());
-  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  entradaEl.value = venda ? (esperado/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
-  const falta = venda - entrada - aprovado;
-  el.innerHTML = falta > 0
-    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições já lançadas.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
+  const diferenca = entrada - esperado;
+  el.innerHTML = diferenca > 0
+    ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
+    : diferenca < 0
+      ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
+      : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
 }
 
 async function confirmarIniciarVenda(){
@@ -2162,7 +2165,7 @@ async function confirmarIniciarVenda(){
   const unidade = (document.getElementById('v-unidade').value || '').trim();
   const venda   = paraCentavos(document.getElementById('v-venda').value);
   const condicoes = condicoesVendaDaTela();
-  const entrada = totalCondicoesVenda(condicoes);
+  const entrada = Math.max(0, venda - (Number(ultimoCreditoAprovado().valor_total) || 0));
   const obs     = (document.getElementById('v-obs').value || '').trim();
   if (!venda){
     toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.','error');
