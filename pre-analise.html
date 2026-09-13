@@ -451,7 +451,7 @@ async function init(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda] = await Promise.all([
+  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda, resumoChecklist] = await Promise.all([
     fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
@@ -485,6 +485,8 @@ async function carregar(){
     // Uma pergunta barata, em paralelo com o resto, evita isso. Pode sair daqui
     // quando todos os clientes tiverem rodado o SQL do analista.
     fetch(`${A1.rest('a1_pre_analises')}?select=analista_id&limit=1`, h).then(r=>r.ok).catch(()=>false)
+    ,
+    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'PRE_ANALISE'})}).then(r=>r.ok?r.json():{}).catch(()=>{})
   ]);
   G.situacoes     = Array.isArray(sit)  ? sit  : [];
   G.transicoes    = Array.isArray(tr)   ? tr   : [];
@@ -496,6 +498,7 @@ async function carregar(){
   G.correspondentes = Array.isArray(ccas) ? ccas : [];
   G.analistas       = Array.isArray(anas) ? anas : [];
   G.temColunaAnalista = sonda === true;
+  G.resumoChecklist = (resumoChecklist && typeof resumoChecklist==='object') ? resumoChecklist : {};
   // O PostgREST devolve todas as colunas quando não há `select=`, inclusive as
   // nulas — então a PRESENÇA da chave é a resposta sobre a coluna existir.
   G.temSelo = !!G.situacoes.length && ('selo' in G.situacoes[0]);
@@ -858,6 +861,7 @@ function cartao(p){
     </div>
     <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
       <span class="chip">${esc(decorrido)} na etapa</span></div>
+    ${(G.resumoChecklist||{})[p.id] && (G.resumoChecklist||{})[p.id].total ? `<div class="card-stage">Checklist: ${esc((G.resumoChecklist||{})[p.id].concluidos)}/${esc((G.resumoChecklist||{})[p.id].total)}</div>` : ''}
     <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
   </div>`;
 }
