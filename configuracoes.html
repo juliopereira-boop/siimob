@@ -1774,20 +1774,22 @@ async function init() {
   // nasceu dele. Passou a precisar quando o cadastro de Analista de Crédito
   // virou dependente de módulo: sem Repasse E sem Pré-análise não existe
   // processo para o analista analisar.
-  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); excDefConferir(); })
+  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); excDefConferir(); if (PERFIS && PERFIS.lista.length) perfisRender(); })
                         .catch(()=>{});
 
   // Módulos novos: a aba só aparece com a licença liberada. O acesso real aos
   // dados continua barrado por RLS mesmo que alguém force o link na barra.
   // O `ok !== true` é literal de propósito: a1HasModule devolve null quando o
   // servidor não respondeu, e "não consegui perguntar" não pode virar "não tem".
-  ['PRE_ANALISE','COMERCIAL'].forEach(mod => {
+  ['PRE_ANALISE','COMERCIAL','crm','registro'].forEach(mod => {
     a1HasModule(mod).then(ok => {
       if (mod === 'PRE_ANALISE') { G.temPAResp = ok; analistaCartaoConferir(); }
       // O mesmo tri-estado do PRE_ANALISE, agora também para o COMERCIAL: a
       // Exclusão definitiva precisa saber a diferença entre "não tem" e
       // "ainda não respondeu" para não anunciar cobertura que não existe.
       if (mod === 'COMERCIAL') G.temCOResp = ok;
+      if (mod === 'crm') G.temCRM = ok === true;
+      if (mod === 'registro') G.temRegistro = ok === true;
       excDefConferir();
       if (ok !== true) return;
       // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
@@ -1809,6 +1811,11 @@ async function init() {
       // permissões dos módulos que o cliente comprou.
       if (mod === 'PRE_ANALISE') G.temPA = true;
       if (mod === 'COMERCIAL')   G.temCO = true;
+      // CRM e Registro não ganham abas nesta tela, mas precisam alimentar o
+      // catálogo de permissões: assim só aparecem nos perfis se licenciados.
+      if (mod === 'crm')          G.temCRM = true;
+      if (mod === 'registro')     G.temRegistro = true;
+      if (PERFIS && PERFIS.lista.length) perfisRender();
       cfgModsLiberar(mod);
     }).catch(()=>{});
   });
@@ -6009,7 +6016,13 @@ async function perfisCarregar(){
 // Quais permissões existem para ESTE cliente. Um módulo não liberado não
 // aparece — do mesmo jeito que a aba dele não aparece.
 function perfisDisponiveis(){
-  return a1PermissoesPorModulo({ PRE_ANALISE: !!G.temPA, COMERCIAL: !!G.temCO, repasse: true });
+  return a1PermissoesPorModulo({
+    crm: !!G.temCRM,
+    PRE_ANALISE: !!G.temPA,
+    COMERCIAL: !!G.temCO,
+    repasse: G.temRepasse === true,
+    registro: !!G.temRegistro
+  });
 }
 
 function perfisRender(){
