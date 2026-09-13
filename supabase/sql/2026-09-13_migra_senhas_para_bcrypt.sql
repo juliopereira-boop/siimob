@@ -109,6 +109,8 @@ end $$;
 
 revoke all on function public.a1_login(text,text,text) from public;
 revoke all on function public.a1_partner_login(text,text,text) from public;
+revoke all on function public.a1_login(text,text,text) from authenticated;
+revoke all on function public.a1_partner_login(text,text,text) from authenticated;
 grant execute on function public.a1_login(text,text,text) to anon;
 grant execute on function public.a1_partner_login(text,text,text) to anon;
 
