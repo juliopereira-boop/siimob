@@ -1942,6 +1942,11 @@ async function init() {
     .then(r=>r.json()).then(a=>a[0]||{}).catch(()=>({}));
   try { await a1RequireModule('repasse'); } catch { return; }
   G.slug = A1.slug;
+  // Calculado antes de carregar quaisquer cards: assim um painel não autorizado
+  // nunca é desenhado por um instante enquanto a permissão chega do servidor.
+  const _dashLicencas = await a1DashboardsDoCliente();
+  G.dashboardsPermitidos = A1_ORDEM_PAINEIS.filter(m => a1PodeVerDashboardModulo(G.user, m, _dashLicencas));
+  G.permiteDashboard = a1PodeVerAlgumDashboard(G.user, _dashLicencas);
 
   // O rótulo sai de js/modulo-shell.js, o mesmo que a Pré-análise e a Venda
   // usam. Aqui havia uma cópia que chamava de "Correspondente" todo parceiro
@@ -1963,8 +1968,6 @@ async function init() {
     if (!hasPerm('ver_repasses')) { semAcessoAoRepasse(); return; }
     // Dashboard é autorizado pela chave do respectivo módulo. A chave genérica
     // antiga não pode decidir por Pré-análise/Venda/Repasse.
-    const _dashLicencas = await a1DashboardsDoCliente();
-    G.permiteDashboard = a1PodeVerAlgumDashboard(G.user, _dashLicencas);
     if (!G.permiteDashboard) {
       const _dl = document.getElementById('link-dashboard'); if (_dl) _dl.style.display = 'none';
       if (/\/(repasse|dashboard)\/?$/.test(location.pathname)) { window.location.replace(`/${G.slug}/andamento`); return; }
@@ -2051,9 +2054,6 @@ async function init() {
     }).catch(()=>{});
   });
 
-  montarSeletorPainel();
-
-
   await loadData();
   if (G.isCorrTenant && G.fixedCorr) {
     const _un = G.cases.filter(c => !c.partner_name);
@@ -2064,7 +2064,10 @@ async function init() {
     }
   }
   applyPartnerRestrictions();
-  renderDashboard();
+  // O painel de Repasse só é renderizado quando está explicitamente permitido.
+  // Os painéis de Pré-análise/Venda são montados por montarSeletorPainel().
+  if (G.dashboardsPermitidos.includes('repasse')) renderDashboard();
+  await montarSeletorPainel();
   renderPipeline();
   renderList();
   loadFlags();
