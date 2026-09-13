@@ -2621,6 +2621,10 @@ function caseRepasseValue(c){
   if(vr){ const t=brNum(vr.valor_divida)+brNum(vr.valor_subsidio)+brNum(vr.valor_fgts); if(t>0) return t; }
   return caseUnitValue(c);
 }
+function caseFinanciado(c){
+  const vr=c.payload&&c.payload.valores;
+  return brNum(vr && (vr.valor_aprovado ?? vr.valor_divida));
+}
 function caseIsFinal(c){ return !!(stageMap()[c.stage_id]&&stageMap()[c.stage_id].is_final); }
 function caseIsSigned(c){ return !!(c.payload&&c.payload.valores&&c.payload.valores.data_assinatura) || caseIsFinal(c); }
 function caseSignDate(c){ return (c.payload&&c.payload.valores&&c.payload.valores.data_assinatura) || (caseIsFinal(c)?c.stage_entered_at:null); }
@@ -3078,7 +3082,7 @@ function renderKanban() {
       </div>
       <div class="k-col-fin">
         <span>VGV <b style="color:var(--blue)">${fmtBRLShort(lista.reduce((a,c)=>a+caseUnitValue(c),0))}</b></span>
-        <span>Repasse <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a,c)=>a+caseRepasseValue(c),0))}</b></span>
+        <span>Financiado <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a,c)=>a+caseFinanciado(c),0))}</b></span>
       </div>
       <div class="k-col-body" data-stage-id="${s.id}" data-render="${primeiros.length}"
            onscroll="onColScroll(this)"
