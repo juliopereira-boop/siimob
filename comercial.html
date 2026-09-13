@@ -581,9 +581,11 @@ function renderAndamento(linhas){
   if (!G.situacoes.length){ el.innerHTML = SEM_ESTEIRA; return; }
   el.innerHTML = G.situacoes.map(s => {
     const dela = linhas.filter(c => c.situacao_id === s.id);
+    const vgv = dela.reduce((total,c) => total + valorDe(c), 0);
     return `<div class="k-col">
       <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
+      <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">VGV: <strong>${esc(brl(vgv))}</strong></div>
       <div class="k-col-body" data-situacao-id="${esc(s.id)}"
            ondragover="coDragOver(event)" ondragleave="coDragLeave(event)" ondrop="coDrop(event,this)"
         >${dela.map(cartao).join('') ||

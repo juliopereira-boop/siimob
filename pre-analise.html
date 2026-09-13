@@ -822,9 +822,11 @@ function renderAndamento(linhas){
   if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
   el.innerHTML = G.situacoes.map(s => {
     const dela = linhas.filter(p => p.situacao_id === s.id);
+    const avaliacao = dela.reduce((total,p) => total + (Number(p.valor_avaliacao_inicial) || 0), 0);
     return `<div class="k-col">
       <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
+      <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">Avaliação: <strong>${esc(brl(avaliacao))}</strong></div>
       <div class="k-col-body" data-sit="${esc(s.id)}"
            ondragover="aoArrastarSobre(event)" ondrop="aoSoltar(event,this)"
            ondragleave="this.classList.remove('drag-over')">${dela.map(cartao).join('') ||
