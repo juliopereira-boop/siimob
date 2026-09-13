@@ -146,8 +146,14 @@ async function a1MontarShell(alvo, opcoes){
   // Dashboard só aparece se há pelo menos um módulo licenciado cujo painel
   // esteja liberado para aquela pessoa.
   if (a1PodeVerAlgumDashboard(user, dashboards)){
-    abas.push(`<a class="tab-btn${o.ativo === 'dashboard' ? ' active' : ''}"
-                  href="/${a1Esc(slug)}/dashboard">Dashboard</a>`);
+    // O destino abre o primeiro painel permitido. CRM e Registro têm tela
+    // própria; Pré-análise, Venda e Repasse compartilham o painel unificado.
+    const preferencia = ['repasse', 'PRE_ANALISE', 'COMERCIAL', 'crm', 'registro'];
+    const destino = preferencia.find(m => a1PodeVerDashboardModulo(user, m, dashboards));
+    const href = destino === 'crm' ? `/${a1Esc(slug)}/crm?tab=dash`
+      : destino === 'registro' ? `/${a1Esc(slug)}/registro?tab=dashboard`
+      : `/${a1Esc(slug)}/dashboard?painel=${encodeURIComponent(destino)}`;
+    abas.push(`<a class="tab-btn${o.ativo === 'dashboard' ? ' active' : ''}" href="${href}">Dashboard</a>`);
   }
 
   A1_MODULOS.forEach(m => {
