@@ -29,9 +29,23 @@ const A1_PERMISSOES = [
         + 'É como o coordenador enxerga a equipe. Desligado, ela vê apenas os '
         + 'processos em que é a responsável.',
     lida_em:'temVisaoCompleta, a1_case_visivel (SQL), a1_pa_visivel, a1_co_visivel' },
-  { chave:'ver_dashboard', modulo:null, rotulo:'Ver dashboard',
-    ajuda:'Sem isto a aba Dashboard nem aparece para ela.',
-    lida_em:'boot de repasse/andamento/listagem, js/modulo-shell.js' },
+  // Cada dashboard é uma permissão própria. Só aparece na criação de
+  // perfil quando o cliente tem o respectivo módulo licenciado.
+  { chave:'ver_dashboard_lead', modulo:'crm', rotulo:'Ver dashboard de Leads',
+    ajuda:'Acessar os indicadores do funil de Leads.',
+    lida_em:'js/modulo-shell.js, crm.html' },
+  { chave:'ver_dashboard_pre_analise', modulo:'PRE_ANALISE', rotulo:'Ver dashboard de Pré-análise',
+    ajuda:'Acessar os indicadores da esteira de Pré-análise.',
+    lida_em:'js/modulo-shell.js, repasse.html' },
+  { chave:'ver_dashboard_venda', modulo:'COMERCIAL', rotulo:'Ver dashboard de Venda',
+    ajuda:'Acessar os indicadores da esteira de Venda.',
+    lida_em:'js/modulo-shell.js, repasse.html' },
+  { chave:'ver_dashboard_repasse', modulo:'repasse', rotulo:'Ver dashboard de Repasse',
+    ajuda:'Acessar os indicadores da esteira de Repasse.',
+    lida_em:'js/modulo-shell.js, repasse.html' },
+  { chave:'ver_dashboard_registro', modulo:'registro', rotulo:'Ver dashboard de Registro',
+    ajuda:'Acessar os indicadores da esteira de Registro.',
+    lida_em:'js/modulo-shell.js, registro.html' },
 
   // ── Repasse ────────────────────────────────────────────────────────────────
   //
@@ -131,8 +145,8 @@ function a1PermissoesPorModulo(tem){
   return grupos;
 }
 
-const A1_ROTULO_MODULO = { geral:'Vale em todos os módulos', repasse:'Repasse',
-                           PRE_ANALISE:'Pré-análise', COMERCIAL:'Venda' };
+const A1_ROTULO_MODULO = { geral:'Vale em todos os módulos', crm:'Leads', repasse:'Repasse',
+                           registro:'Registro', PRE_ANALISE:'Pré-análise', COMERCIAL:'Venda' };
 
 // As permissões efetivas de alguém: o PERFIL manda, quando existe.
 //
