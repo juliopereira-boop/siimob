@@ -9,12 +9,14 @@
   <meta name="theme-color" content="#0B534E">
   <script src="/js/config.js"></script>
   <script>
-    // Dashboard was merged into repasse.html — redirect there.
+    // Pré-análise, Venda e Repasse usam o painel unificado. O parâmetro vem
+    // do shell, que já decidiu o primeiro painel permitido para o perfil.
     const slug = (function() {
       const m = location.pathname.match(/^\/([^/]+)/);
       return m ? m[1] : null;
     })();
-    if (slug) location.replace('/' + slug + '/repasse');
+    const painel = new URLSearchParams(location.search).get('painel');
+    if (slug) location.replace('/' + slug + '/repasse' + (painel ? '?painel=' + encodeURIComponent(painel) : ''));
     else location.replace('/');
   </script>
 </head>
