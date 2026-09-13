@@ -2230,7 +2230,10 @@ function hasPerm(key) {
 function podeCriarRepasse() {
   // Gestor não depende de consulta nenhuma.
   if (!G.user || G.user.role !== 'partner') return true;
-  // Parceiro cuja permissão não pôde ser confirmada no banco não ganha o botão.
+  // A criação manual é operação da retaguarda: somente Analista e
+  // Correspondente (CCA), sempre com a permissão marcada positivamente.
+  const tipo = String(G.user.type || '').toLowerCase();
+  if (!['analista','cca'].includes(tipo)) return false;
   // Rede fora não é autorização — e o localStorage guarda o retrato do login,
   // que é justamente o que fica velho quando o gestor tira o acesso.
   if (!G.permsConfirmadas) return false;
