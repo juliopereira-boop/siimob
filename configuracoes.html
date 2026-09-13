@@ -1774,7 +1774,7 @@ async function init() {
   // nasceu dele. Passou a precisar quando o cadastro de Analista de Crédito
   // virou dependente de módulo: sem Repasse E sem Pré-análise não existe
   // processo para o analista analisar.
-  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); excDefConferir(); })
+  a1HasModule('repasse').then(ok => { G.temRepasse = ok; analistaCartaoConferir(); excDefConferir(); if (PERFIS && PERFIS.lista.length) perfisRender(); })
                         .catch(()=>{});
 
   // Módulos novos: a aba só aparece com a licença liberada. O acesso real aos
@@ -6020,7 +6020,7 @@ function perfisDisponiveis(){
     crm: !!G.temCRM,
     PRE_ANALISE: !!G.temPA,
     COMERCIAL: !!G.temCO,
-    repasse: G.temRepasse !== false,
+    repasse: G.temRepasse === true,
     registro: !!G.temRegistro
   });
 }
