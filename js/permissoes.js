@@ -50,7 +50,7 @@ const A1_PERMISSOES = [
         + 'pessoa. Com isto e mais nada, ela acompanha sem poder alterar.',
     lida_em:'hasPerm nas telas do Repasse (boot e barra de abas)' },
   { chave:'criar_repasses', modulo:'repasse', rotulo:'Criar processos',
-    ajuda:'Abrir novo processo.',
+    ajuda:'Criar um Repasse manualmente no módulo. Só analista, correspondente e gestor podem usar, com esta marca ativa.',
     lida_em:'a1_perm (SQL), telas do Repasse' },
   { chave:'editar_repasses', modulo:'repasse', rotulo:'Editar processos',
     ajuda:'Alterar os dados de um processo que ela enxerga.',
@@ -104,7 +104,7 @@ const A1_PERMISSOES = [
 // explicitamente liberado fica fechado, e um perfil novo que já nascesse podendo
 // tudo seria o contrário disso.
 const A1_PERFIS_MODELO = [
-  { nome:'Corretor',      permissoes:['ver_repasses','criar_repasses','pa_ver','pa_criar','co_ver'] },
+  { nome:'Corretor',      permissoes:['ver_repasses','pa_ver','pa_criar','co_ver'] },
   { nome:'Analista',      permissoes:['ver_repasses','editar_repasses','alterar_etapa','ver_todos_analistas',
                                       'pa_ver','pa_editar','pa_mover','analisar_credito','co_ver'] },
   { nome:'Coordenador',   permissoes:['ver_repasses','ver_dashboard','ver_todos_analistas','pa_ver','co_ver'] },
