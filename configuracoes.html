@@ -722,7 +722,8 @@
     <div style="font-size:.78rem;color:var(--t3);margin:-.4rem 0 .9rem">Itens desta lista aparecem no dossiê de cada processo. Quem pode editar a etapa pode marcá-los; cada marca entra no histórico.</div>
     <div class="panel" style="padding:1rem;margin-bottom:1rem">
       <div class="pt-toolbar">
-        <select id="cl-module" style="min-width:160px"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option></select>
+        <select id="cl-module" style="min-width:140px" onchange="atualizarAcoesChecklist()"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option></select>
+        <select id="cl-auto" style="min-width:180px"></select>
         <input type="text" id="cl-name" placeholder="Novo item de checklist" style="flex:1" onkeydown="if(event.key==='Enter')saveChecklistItem()">
         <label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;white-space:nowrap"><input id="cl-obrigatorio" type="checkbox"> Obrigatório</label>
         <button class="btn btn-primary btn-sm" onclick="saveChecklistItem()">+ Adicionar</button>
@@ -1930,7 +1931,15 @@ function closeCfgView() {
 
 // ── Checklist operacional ───────────────────────────────────────────────────
 function nomeModuloChecklist(mod){ return ({PRE_ANALISE:'Pré-análise',COMERCIAL:'Venda'})[mod] || mod; }
+function atualizarAcoesChecklist(){
+  const mod=document.getElementById('cl-module')?.value, sel=document.getElementById('cl-auto'); if(!sel)return;
+  const opcoes=mod==='PRE_ANALISE'
+    ? [['MANUAL','Preenchimento manual'],['DOCUMENTO_ENVIADO','Documento enviado'],['CREDITO_ANALISADO','Crédito analisado'],['CREDITO_APROVADO','Crédito aprovado']]
+    : [['MANUAL','Preenchimento manual'],['CONTRATO_ASSINADO','Contrato assinado'],['REPASSE_CRIADO','Repasse criado']];
+  sel.innerHTML=opcoes.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('');
+}
 async function loadChecklistItems(){
+  atualizarAcoesChecklist();
   const tb=document.getElementById('cl-tbody'); if(!tb) return;
   tb.innerHTML='<tr><td colspan="5" class="pt-empty">Carregando...</td></tr>';
   const rows=await fetch(`${A1.rest('a1_checklist_itens')}?order=module_key.asc,ordem.asc,nome.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]);
@@ -1942,7 +1951,7 @@ function renderChecklistItems(){
   const list=G.checklistItems||[];
   if(!list.length){tb.innerHTML='<tr><td colspan="5" class="pt-empty">Nenhum item configurado.</td></tr>';return;}
   tb.innerHTML=list.map(i=>`<tr>
-    <td>${esc(i.nome)}</td><td>${esc(nomeModuloChecklist(i.module_key))}</td>
+    <td>${esc(i.nome)}</td><td>${esc(nomeModuloChecklist(i.module_key))}<div style="font-size:.66rem;color:var(--t3);margin-top:.15rem">${esc(i.acao_automatica||'MANUAL').replaceAll('_',' ')}</div></td>
     <td><label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem"><input type="checkbox" ${i.obrigatorio?'checked':''} onchange="toggleChecklistObrigatorio('${i.id}')">${i.obrigatorio?'Sim':'Não'}</label></td>
     <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${i.ativo===false?'#fee2e2':'#dcfce7'};color:${i.ativo===false?'#b91c1c':'#166534'}">${i.ativo===false?'Inativo':'Ativo'}</span></td>
     <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="toggleChecklistAtivo('${i.id}')">${i.ativo===false?'Ativar':'Desativar'}</button>
@@ -1955,7 +1964,7 @@ async function saveChecklistItem(){
   const module_key=document.getElementById('cl-module').value;
   if((G.checklistItems||[]).some(i=>i.module_key===module_key&&i.nome.toLowerCase()===nome.toLowerCase())){showToast('Este item já existe no módulo','error');return;}
   const ordem=(G.checklistItems||[]).filter(i=>i.module_key===module_key).length;
-  const body={tenant_id:G.user.tenant_id,module_key,nome,obrigatorio:document.getElementById('cl-obrigatorio').checked,ordem};
+  const body={tenant_id:G.user.tenant_id,module_key,nome,acao_automatica:document.getElementById('cl-auto').value||'MANUAL',obrigatorio:document.getElementById('cl-obrigatorio').checked,ordem};
   const res=await fetch(A1.rest('a1_checklist_itens'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
   if(!res.ok){showToast('Não foi possível cadastrar o item','error');return;}
   document.getElementById('cl-name').value='';document.getElementById('cl-obrigatorio').checked=false;
