@@ -1871,13 +1871,29 @@ async function montarSeletorPainel(){
   const botoes = document.getElementById('seletor-painel-botoes');
   if (!caixa || !botoes || typeof A1_ORDEM_PAINEIS === 'undefined') return;
 
-  const tem = await Promise.all(A1_ORDEM_PAINEIS.map(m => a1HasModule(m).catch(() => null)));
-  const disponiveis = A1_ORDEM_PAINEIS.filter((m, i) => tem[i] === true);
-  if (disponiveis.length < 2) return;                 // um módulo só: sem seletor
+  // Licença e permissão são duas barreiras diferentes. A anterior só escondia
+  // botões; esta lista é a fonte única para o seletor e para trocarPainel().
+  const licencas = await a1DashboardsDoCliente();
+  const disponiveis = A1_ORDEM_PAINEIS.filter(m =>
+    a1PodeVerDashboardModulo(G.user, m, licencas)
+  );
+  G.dashboardsPermitidos = disponiveis;
+  G.permiteDashboard = disponiveis.length > 0;
 
-  let escolhido = 'repasse';
+  if (!disponiveis.length) {
+    caixa.style.display = 'none';
+    document.getElementById('painel-repasse')?.style && (document.getElementById('painel-repasse').style.display = 'none');
+    const modulo = document.getElementById('painel-modulo');
+    if (modulo) { modulo.style.display = ''; modulo.innerHTML = '<div class="empty-state">Seu perfil não tem acesso a nenhum dashboard licenciado.</div>'; }
+    return;
+  }
+
+  let escolhido = new URLSearchParams(location.search).get('painel') || 'repasse';
   try { const g = sessionStorage.getItem(PAINEL_CHAVE_MEM);
-        if (g && disponiveis.includes(g)) escolhido = g; } catch {}
+        if (!new URLSearchParams(location.search).get('painel') && g && disponiveis.includes(g)) escolhido = g; } catch {}
+  if (!disponiveis.includes(escolhido)) escolhido = disponiveis[0];
+
+  if (disponiveis.length < 2) { caixa.style.display = 'none'; trocarPainel(escolhido); return; }
 
   botoes.innerHTML = disponiveis.map(m =>
     `<button type="button" data-painel="${esc(m)}" onclick="trocarPainel('${esc(m)}')"
@@ -1888,6 +1904,7 @@ async function montarSeletorPainel(){
 }
 
 function trocarPainel(qual){
+  if (!Array.isArray(G.dashboardsPermitidos) || !G.dashboardsPermitidos.includes(qual)) return;
   try { sessionStorage.setItem(PAINEL_CHAVE_MEM, qual); } catch {}
   document.querySelectorAll('#seletor-painel-botoes button').forEach(b => {
     const on = b.dataset.painel === qual;
@@ -1944,10 +1961,12 @@ async function init() {
     // omissão. Tem de vir ANTES de desenhar qualquer coisa: aviso que aparece
     // depois do quadro é o quadro tendo sido mostrado.
     if (!hasPerm('ver_repasses')) { semAcessoAoRepasse(); return; }
-    // Dashboard só aparece se o gestor liberou (ver_dashboard) — reflete o cadastro de permissões.
-    if (!hasPerm('ver_dashboard')) {
+    // Dashboard é autorizado pela chave do respectivo módulo. A chave genérica
+    // antiga não pode decidir por Pré-análise/Venda/Repasse.
+    const _dashLicencas = await a1DashboardsDoCliente();
+    G.permiteDashboard = a1PodeVerAlgumDashboard(G.user, _dashLicencas);
+    if (!G.permiteDashboard) {
       const _dl = document.getElementById('link-dashboard'); if (_dl) _dl.style.display = 'none';
-      // Se está na própria tela de Dashboard, manda para o Andamento ANTES de renderizar (sem flash).
       if (/\/(repasse|dashboard)\/?$/.test(location.pathname)) { window.location.replace(`/${G.slug}/andamento`); return; }
     }
   }
@@ -2364,8 +2383,8 @@ function applyPartnerRestrictions() {
   // (o cartão do correspondente fixo, por exemplo, mexe em G.user).
   aplicarBotaoNovoRepasse();
 
-  // Se sem permissão de ver: bloquear dashboard
-  if (!hasPerm('ver_dashboard')) {
+  // A autorização é calculada no boot a partir das permissões específicas.
+  if (G.permiteDashboard === false) {
     const dashBtn = document.querySelector('.tab-btn[onclick*="dashboard"]');
     if (dashBtn) dashBtn.style.display = 'none';
   }
