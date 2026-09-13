@@ -2111,7 +2111,8 @@ function condicoesVendaDaTela(){
   return [...document.querySelectorAll('#v-condicoes .condicao-venda')].map(l => ({
     tipo: l.querySelector('[data-campo="tipo"]').value,
     quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
-    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0,
+    vencimento_inicial: l.querySelector('[data-campo="vencimento"]')?.value || null
   }));
 }
 function totalCondicoesVenda(condicoes){
@@ -2127,6 +2128,7 @@ function renderCondicoesVenda(){
       </select></div>
       <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" oninput="sincronizarCondicoesVenda()"></div>
       <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" oninput="mascaraMoeda(this);sincronizarCondicoesVenda()"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial||'')}" onchange="sincronizarCondicoesVenda()"></div>
       <div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoVenda(${i})">Remover</button></div>
     </div>`).join('') || '<div class="sub">Nenhuma condição adicionada. Use o botão + para montar a proposta.</div>';
 }
