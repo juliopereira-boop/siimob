@@ -2210,7 +2210,7 @@ function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
   if (p.gerente) return true; // Gerente = acesso total, como o gestor
-  const defaults = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
+  const defaults = { ver_repasses:true, criar_repasses:false, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
   return key in p ? !!p[key] : (defaults[key] ?? false);
 }
 
