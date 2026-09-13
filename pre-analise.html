@@ -250,10 +250,7 @@
     <div class="modal-body" id="dos-body"></div>
     <div class="modal-foot">
       <div id="dos-acoes" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
-      <div style="display:flex;gap:.45rem;align-items:center">
-        <select id="dos-mover" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
-        <button class="btn btn-primary btn-sm" id="dos-btn-mover" onclick="moverSituacao()">Mover</button>
-      </div>
+
     </div>
   </div>
 </div>
@@ -1946,24 +1943,10 @@ function dosComercial(){
 
 // ─── rodapé: ações e transições possíveis ────────────────────────────────────
 function montarRodapeDossie(){
-  const p = G.atual;
-  // As mesmas duas perguntas do arrastar no quadro, e de propósito num lugar
-  // só: quando as duas portas tinham a própria cópia da regra, uma delas ficava
-  // para trás a cada mudança.
-  const podeMover = podeMoverPa(p);
-  const destinos  = destinosDe(p.situacao_id);
-
-  const sel = document.getElementById('dos-mover');
-  sel.innerHTML = destinos.length
-    ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
-    : '<option value="">nenhuma transição disponível</option>';
-  sel.disabled = !destinos.length || !podeMover;
-  sel.style.display = podeMover ? '' : 'none';
-  const btnMover = document.getElementById('dos-btn-mover');
-  btnMover.disabled = !destinos.length || !podeMover;
-  btnMover.style.display = podeMover ? '' : 'none';
-
-  montarBotaoVenda(podeMover);
+  // A mudança de etapa continua no quadro. O seletor no rodapé foi removido:
+  // duas portas para a mesma ação confundiam o fluxo e permitiam tentar mover
+  // fora do contexto visual da esteira.
+  montarBotaoVenda();
 }
 
 // ─── O botão verde ───────────────────────────────────────────────────────────
@@ -1979,7 +1962,7 @@ function montarRodapeDossie(){
 // A terceira não é enfeite: a1_pa_pode_criar_comercial é a mesma função que
 // a1_pa_executar_acao consulta antes de criar. Perguntar antes serve para
 // explicar; quem tranca continua sendo o banco.
-function montarBotaoVenda(podeMover){
+function montarBotaoVenda(){
   const acoes = document.getElementById('dos-acoes');
   if (!acoes) return;
   const p = G.atual;
@@ -1992,8 +1975,10 @@ function montarBotaoVenda(podeMover){
   // o que não está no DOM ninguém acha com o inspetor nem com a busca.
   if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)){ acoes.innerHTML = ''; return; }
 
-  // Abrir a Venda é uma ação da esteira: exige a permissão própria de mover.
-  if (!podeMover){
+  // Iniciar venda é uma capacidade separada de editar e mover. A mesma
+  // regra é aplicada pela função SQL; esta checagem só evita oferecer um botão
+  // que o banco necessariamente recusará.
+  if (!perm('pa_iniciar_venda')){
     acoes.innerHTML = '';
     return;
   }
@@ -2076,7 +2061,7 @@ async function moverSituacao(){
 // um campo que vai ser preenchido errado com pressa.
 function iniciarVenda(){
   const p = G.atual;
-  if (!p) return;
+  if (!p || !perm('pa_iniciar_venda')) { toast('Você não tem a permissão "Iniciar venda".','error'); return; }
   const cr = ultimoCreditoAprovado();
   G.rascunhoVenda = { unidade: p.unidade || '', venda:'', entrada:'', obs:'', condicoes:[] };
   document.getElementById('venda-sub').textContent =
@@ -2163,13 +2148,16 @@ function conferirVenda(){
   const entradaEl = document.getElementById('v-entrada');
   mascaraMoeda(vendaEl);
   const venda = paraCentavos(vendaEl.value) || 0;
+  const esperado = Math.max(0, venda - aprovado);
   const entrada = totalCondicoesVenda(condicoesVendaDaTela());
-  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  entradaEl.value = venda ? (esperado/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
-  const falta = venda - entrada - aprovado;
-  el.innerHTML = falta > 0
-    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições já lançadas.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
+  const diferenca = entrada - esperado;
+  el.innerHTML = diferenca > 0
+    ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
+    : diferenca < 0
+      ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
+      : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
 }
 
 async function confirmarIniciarVenda(){
@@ -2177,7 +2165,7 @@ async function confirmarIniciarVenda(){
   const unidade = (document.getElementById('v-unidade').value || '').trim();
   const venda   = paraCentavos(document.getElementById('v-venda').value);
   const condicoes = condicoesVendaDaTela();
-  const entrada = totalCondicoesVenda(condicoes);
+  const entrada = Math.max(0, venda - (Number(ultimoCreditoAprovado().valor_total) || 0));
   const obs     = (document.getElementById('v-obs').value || '').trim();
   if (!venda){
     toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.','error');

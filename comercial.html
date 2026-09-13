@@ -195,10 +195,7 @@
     <div class="modal-body" id="dos-body"></div>
     <div class="modal-foot">
       <div id="dos-acoes" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
-      <div style="display:flex;gap:.45rem;align-items:center">
-        <select id="dos-mover" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
-        <button class="btn btn-primary btn-sm" id="dos-btn-mover" onclick="moverSituacao()">Mover</button>
-      </div>
+
     </div>
   </div>
 </div>
@@ -891,13 +888,16 @@ function conferirProposta(){
   const entradaEl = document.getElementById('p-entrada');
   mascaraMoeda(vendaEl);
   const venda = paraCentavos(vendaEl.value) || 0;
+  const esperado = Math.max(0, venda - aprovado);
   const entrada = totalCondicoesProposta(condicoesPropostaDaTela());
-  entradaEl.value = entrada ? (entrada/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  entradaEl.value = venda ? (esperado/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   if (!venda || !aprovado){ el.innerHTML = ''; return; }
-  const falta = venda - entrada - aprovado;
-  el.innerHTML = falta > 0
-    ? `<div class="aviso w">Faltam <strong>${esc(brl(falta))}</strong> para compor a venda: valor do imóvel menos crédito aprovado e condições lançadas.</div>`
-    : `<div class="aviso s">Venda coberta pelo crédito aprovado e pelas condições lançadas.</div>`;
+  const diferenca = entrada - esperado;
+  el.innerHTML = diferenca > 0
+    ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
+    : diferenca < 0
+      ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
+      : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
 }
 
 async function salvarProposta(){
@@ -905,7 +905,7 @@ async function salvarProposta(){
   const condicoes = condicoesPropostaDaTela();
   const proposta = {
     valor_venda:   paraCentavos(document.getElementById('p-venda').value),
-    valor_entrada: totalCondicoesProposta(condicoes),
+    valor_entrada: Math.max(0, (paraCentavos(document.getElementById('p-venda').value)||0) - (Number(((co.origem_snapshot||{}).credito||{}).valor_total)||0)),
     condicoes_pagamento: condicoes,
     desconto:      paraCentavos(document.getElementById('p-desc').value),
     comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
@@ -1137,22 +1137,11 @@ function podeMoverComercial(co){
   return !!co && perm('co_mover') && nivelNaSituacao(co.situacao_id) === 'editar';
 }
 function montarRodape(){
-  const co = G.atual, pode = podeMoverComercial(co);
-  const destinos = destinosDe(co.situacao_id);
-  const sel = document.getElementById('dos-mover');
-  sel.innerHTML = destinos.length
-    ? destinos.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('')
-    : '<option value="">nenhuma transição disponível</option>';
-  sel.disabled = !destinos.length || !pode;
-  sel.style.display = pode ? '' : 'none';
-  const btnMover = document.getElementById('dos-btn-mover');
-  btnMover.disabled = !destinos.length || !pode;
-  btnMover.style.display = pode ? '' : 'none';
-
+  const co = G.atual;
   const acoes = document.getElementById('dos-acoes');
   acoes.innerHTML = co.repasse_case_id
     ? '<span class="sub">Repasse já criado.</span>'
-    : (pode ? `<button class="btn btn-primary btn-sm" id="btn-repasse" onclick="criarRepasse()">Criar Repasse</button>` : '');
+    : (podeMoverComercial(co) ? '<span class="sub">A criação de Repasse ocorre pelo selo VENDIDO da esteira.</span>' : '');
 }
 
 async function moverSituacao(){

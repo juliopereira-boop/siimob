@@ -76,6 +76,9 @@ const A1_PERMISSOES = [
   { chave:'pa_mover', modulo:'PRE_ANALISE', rotulo:'Mover na esteira',
     ajuda:'Mover a pré-análise pelas transições liberadas no workflow.',
     lida_em:'a1_pa_transicionar (SQL), pre-analise.html' },
+  { chave:'pa_iniciar_venda', modulo:'PRE_ANALISE', rotulo:'Iniciar venda',
+    ajuda:'Criar a Venda a partir de uma pré-análise na etapa com selo de fim positivo.',
+    lida_em:'a1_pa_executar_acao (SQL), pre-analise.html' },
   { chave:'analisar_credito', modulo:'PRE_ANALISE', rotulo:'Analisar crédito e documentos',
     ajuda:'Registrar a decisão de crédito e aprovar ou reprovar documentos. '
         + 'Quem vende não aprova: esta é a marca que separa as duas coisas.',
