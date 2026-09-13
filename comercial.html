@@ -843,7 +843,8 @@ function condicoesPropostaDaTela(){
   return [...document.querySelectorAll('#p-condicoes .condicao-proposta')].map(l => ({
     tipo: l.querySelector('[data-campo="tipo"]').value,
     quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
-    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0,
+    vencimento_inicial: l.querySelector('[data-campo="vencimento"]')?.value || null
   }));
 }
 function condicoesAtuaisProposta(){
@@ -866,6 +867,7 @@ function renderCondicoesProposta(){
       </select></div>
       <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode?'':'disabled'} oninput="sincronizarCondicoesProposta()"></div>
       <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" ${pode?'':'disabled'} oninput="mascaraMoeda(this);sincronizarCondicoesProposta()"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial||'')}" ${pode?'':'disabled'} onchange="sincronizarCondicoesProposta()"></div>
       ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoProposta(${i})">Remover</button></div>` : ''}
     </div>`).join('') || '<div class="sub">Nenhuma condição registrada.</div>';
 }
@@ -875,7 +877,7 @@ function sincronizarCondicoesProposta(){
 }
 function adicionarCondicaoProposta(){
   G.condicoesProposta = condicoesPropostaDaTela();
-  G.condicoesProposta.push({tipo:'ATO',quantidade:1,valor:0});
+  G.condicoesProposta.push({tipo:'ATO',quantidade:1,valor:0,vencimento_inicial:null});
   renderCondicoesProposta(); conferirProposta();
 }
 function removerCondicaoProposta(indice){
