@@ -115,6 +115,7 @@ const PN_CSS = `
 .pn-faixa{flex:1;min-width:88px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.55rem .65rem}
 .pn-faixa b{display:block;font-size:1.05rem;font-weight:800}
 .pn-faixa span{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
+.pn-rank-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.pn-rank-grid h4{margin:0 0:.5rem;font-size:.75rem;color:var(--t3);text-transform:uppercase}.pn-rank-linha{display:flex;align-items:center;gap:.45rem;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.78rem}.pn-rank-pos{color:var(--violet);width:1.3rem}.pn-rank-nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.pn-rank-meta{text-align:right;display:flex;flex-direction:column}.pn-rank-meta small{font-size:.67rem;color:var(--t3);white-space:nowrap}@media(max-width:900px){.pn-rank-grid{grid-template-columns:1fr}}
 .pn-tbl-wrap{overflow:auto}
 table.pn-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
 table.pn-tbl th{padding:.5rem .8rem;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--border);white-space:nowrap}
@@ -248,12 +249,14 @@ async function pnCarregarPA(){
   const pedidos = [
     fetch(`${A1.rest('a1_pa_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem&order=ordem.asc`, h)
       .then(r => r.json()).catch(() => []),
-    A1.buscarTudo(`${A1.rest('a1_pre_analises')}?select=id,codigo,unidade,criado_em,situacao_id,situacao_em,vence_em,empreendimento_id&order=criado_em.desc`),
+    A1.buscarTudo(`${A1.rest('a1_pre_analises')}?select=id,codigo,unidade,criado_em,situacao_id,situacao_em,vence_em,empreendimento_id,corretor_id,imobiliaria_id,empresa_id,correspondente_id,analista_id&order=criado_em.desc`),
     A1.buscarTudo(`${A1.rest('a1_pa_analises_credito')}?select=pre_analise_id,versao,status,criado_em,decidido_em`),
     A1.buscarTudo(`${A1.rest('a1_pa_documentos')}?select=pre_analise_id,tipo,status,versao`),
     // Só o vínculo: pessoa_id e renda ficam de fora porque isto é tela executiva.
     A1.buscarTudo(`${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&select=pre_analise_id`),
-    fetch(`${A1.rest('a1_developments')}?select=id,name`, h).then(r => r.json()).catch(() => [])
+    fetch(`${A1.rest('a1_developments')}?select=id,name`, h).then(r => r.json()).catch(() => []),
+    A1.buscarTudo(`${A1.rest('a1_partners')}?select=id,name,type,extra`),
+    A1.buscarTudo(`${A1.rest('a1_corr_empresas')}?select=id,name`)
   ];
   if (temCo) {
     pedidos.push(A1.buscarTudo(`${A1.rest('a1_comerciais')}?select=id,pre_analise_id,criado_em`));
@@ -268,8 +271,10 @@ async function pnCarregarPA(){
     docs:      pnLinhas(r[3]),
     titulares: pnLinhas(r[4]),
     empr:      pnLinhas(r[5]),
-    com:       temCo ? pnLinhas(r[6]) : [],
-    coEventos: temCo ? pnLinhas(r[7]) : []
+    parceiros: pnLinhas(r[6]),
+    empresas:  pnLinhas(r[7]),
+    com:       temCo ? pnLinhas(r[8]) : [],
+    coEventos: temCo ? pnLinhas(r[9]) : []
   };
 }
 
@@ -456,6 +461,14 @@ function pnCalcPA(d){
   };
 }
 
+// ─── Rankings governados ───────────────────────────────────────────────────
+// Gestor, gerente e coordenador veem o time. Os demais veem somente a própria linha.
+function pnPodeVerRanking(){ const u=A1.user||{}; return u.role!=='partner'||u.type==='coordenador'||u.permissions?.gerente===true; }
+function pnRank(linhas,chave,nomes,valorFn,okFn){const m={};linhas.forEach(x=>{const id=x[chave];if(!id)return;const r=m[id]||(m[id]={id,nome:nomes[id]||'Não vinculado',total:0,fechados:0,decisoes:0,valor:0});const ok=okFn(x);r.total++;if(ok===true)r.fechados++;if(ok===true||ok===false)r.decisoes++;r.valor+=Number(valorFn(x))||0;});return Object.values(m).map(r=>({...r,taxa:r.decisoes?r.fechados/r.decisoes:null})).sort((a,b)=>b.valor-a.valor||b.fechados-a.fechados||b.total-a.total).slice(0,8);}
+function pnRankHtml(lista,fmt,sub){if(!lista.length)return '<div class="pn-vazio">Sem dados vinculados no período.</div>';return '<div class="pn-rank">'+lista.map((r,i)=>'<div class="pn-rank-linha"><b class="pn-rank-pos">'+(i+1)+'.</b><span class="pn-rank-nome">'+pnEsc(r.nome)+'</span><span class="pn-rank-meta"><b>'+pnEsc(fmt(r))+'</b><small>'+pnEsc(sub(r))+'</small></span></div>').join('')+'</div>';}
+function pnRankBox(titulo,descricao,grupos,pessoal){if(!pnPodeVerRanking())return pnPainelBox('Minha performance',descricao,pnRankHtml(pessoal||[],r=>r.total+' processo(s)',r=>r.taxa==null?'sem decisão':pnPct(r.taxa)+' aprovação'));return pnPainelBox(titulo,descricao,'<div class="pn-rank-grid">'+grupos.map(g=>'<div><h4>'+pnEsc(g.nome)+'</h4>'+pnRankHtml(g.lista,g.fmt,g.sub)+'</div>').join('')+'</div>');}
+function pnBlocoRankingsPA(d){const nomes={};(d.parceiros||[]).forEach(p=>nomes[p.id]=p.name||'Sem nome');(d.empresas||[]).forEach(e=>nomes[e.id]=e.name||'Sem empresa');const dec={};(d.credito||[]).forEach(x=>{const a=dec[x.pre_analise_id];if(!a||(x.versao||0)>(a.versao||0))dec[x.pre_analise_id]=x;});const base=(d.pre||[]).filter(x=>!PN.dias||pnMs(x.criado_em)>=pnInicio()).map(x=>({...x,_dec:dec[x.id]}));const ok=x=>!x._dec?null:(x._dec.status==='APROVADO'?true:(x._dec.status==='REPROVADO'?false:null));const rank=k=>pnRank(base,k,nomes,()=>0,ok),fmt=r=>r.total+' pré-análise(s)',sub=r=>(r.taxa==null?'sem decisão':pnPct(r.taxa)+' aprovação')+' · '+r.fechados+' aprovada(s)';const u=A1.user||{},own=rank(u.type==='analista'?'analista_id':u.type==='cca'?'correspondente_id':'corretor_id').filter(r=>r.id===u.id);return pnRankBox('Rankings de Pré-análise','Ordenado por volume no período; aprovação considera somente decisões aprovadas ou reprovadas.',[{nome:'Empresa correspondente',lista:rank('empresa_id'),fmt,sub},{nome:'Usuário correspondente',lista:rank('correspondente_id'),fmt,sub},{nome:'Analista',lista:rank('analista_id'),fmt,sub}],own);}
+function pnBlocoRankingsCO(d){const nomes={},porId={};(d.parceiros||[]).forEach(p=>{nomes[p.id]=p.name||'Sem nome';porId[p.id]=p;});const ct={};(d.contratos||[]).forEach(x=>{const a=ct[x.comercial_id];if(!a||(x.versao||0)>(a.versao||0))ct[x.comercial_id]=x;});const base=(d.com||[]).filter(x=>!PN.dias||pnMs(x.criado_em)>=pnInicio()).map(x=>({...x,_ok:ct[x.id]?.status==='ASSINADO'}));const rank=k=>pnRank(base,k,nomes,x=>x._ok?pnValorCO(x):0,x=>x._ok),fmt=r=>pnBRL(r.valor),sub=r=>r.fechados+' assinado(s) · '+r.total+' venda(s)';const coords=base.map(x=>({...x,_coord:porId[x.corretor_id]?.extra?.coordenador_id||null})),rankCoord=pnRank(coords,'_coord',nomes,x=>x._ok?pnValorCO(x):0,x=>x._ok);const u=A1.user||{},own=rank('corretor_id').filter(r=>r.id===u.id);return pnRankBox('Rankings de Vendas','Ordenado por VGV de contratos assinados no período.',[{nome:'Corretores',lista:rank('corretor_id'),fmt,sub},{nome:'Imobiliárias',lista:rank('imobiliaria_id'),fmt,sub},{nome:'Coordenadores',lista:rankCoord,fmt,sub}],own);}
 function pnDesenharPA(alvo){
   const d = PN.pa, c = pnCalcPA(d), per = pnRotuloPeriodo();
   const rota = pnRota('pre-analise');
@@ -557,6 +570,7 @@ function pnDesenharPA(alvo){
     ${pnPainelBox('Funil — safra criada no período',
       'Volume por etapa e mediana de dias entre os marcos que têm carimbo de tempo no banco. Onde não há carimbo, o tempo fica em branco em vez de estimado.',
       `<div id="pn-funil-pa">${pnFunil(etapas)}</div>`)}
+    ${pnBlocoRankingsPA(d)}
     ${pareto.length ? pnPainelBox('O que trava o dossiê',
       'Documentos em PENDENTE_ENVIO ou REPROVADO, por tipo. Sem recorte por pessoa: quem trava é o tipo de documento, e nome de cliente não sobe para painel executivo.',
       `<div class="pn-faixas">${pareto.map(([t, n]) =>
@@ -606,15 +620,16 @@ async function pnCarregarCO(){
     // origem_snapshot NÃO vem inteiro: dentro dele moram nome e renda analisada
     // dos participantes, e arrastar isso para uma tela executiva seria vazar
     // dado pessoal por descuido de projeção. Só o ramo {credito} interessa.
-    A1.buscarTudo(`${A1.rest('a1_comerciais')}?select=id,codigo,criado_em,situacao_id,situacao_em,proposta,repasse_case_id,empreendimento_id,unidade,pre_analise_id,credito:origem_snapshot->credito&order=criado_em.desc`),
+    A1.buscarTudo(`${A1.rest('a1_comerciais')}?select=id,codigo,criado_em,situacao_id,situacao_em,proposta,repasse_case_id,empreendimento_id,unidade,pre_analise_id,corretor_id,imobiliaria_id,empresa_id,correspondente_id,analista_id,credito:origem_snapshot->credito&order=criado_em.desc`),
     A1.buscarTudo(`${A1.rest('a1_co_contratos')}?select=comercial_id,versao,status,assinado_em,criado_em`),
     A1.buscarTudo(`${A1.rest('a1_co_eventos')}?select=comercial_id,evento,para_situacao,criado_em`),
     fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true&select=para_id,acao`, h).then(x => x.json()).catch(() => []),
-    fetch(`${A1.rest('a1_developments')}?select=id,name`, h).then(x => x.json()).catch(() => [])
+    fetch(`${A1.rest('a1_developments')}?select=id,name`, h).then(x => x.json()).catch(() => []),
+    A1.buscarTudo(`${A1.rest('a1_partners')}?select=id,name,type,extra`)
   ]);
   return {
     situacoes: pnLinhas(r[0]), com: pnLinhas(r[1]), contratos: pnLinhas(r[2]),
-    eventos: pnLinhas(r[3]), transicoes: pnLinhas(r[4]), empr: pnLinhas(r[5])
+    eventos: pnLinhas(r[3]), transicoes: pnLinhas(r[4]), empr: pnLinhas(r[5]), parceiros: pnLinhas(r[6])
   };
 }
 
@@ -850,6 +865,7 @@ function pnDesenharCO(alvo){
       'Tempo na situação atual dos comerciais ativos. Faixa cheia à direita é fila parada, não volume de trabalho.',
       `<div class="pn-faixas">${c.faixas.map((n, i) =>
         `<div class="pn-faixa" title="${pnEsc(n + ' comercial(is) ativos há ' + rotFaixas[i] + ' na situação atual')}"><b>${pnEsc(String(n))}</b><span>${pnEsc(rotFaixas[i])}</span></div>`).join('')}</div>`)}
+    ${pnBlocoRankingsCO(d)}
     ${pnPainelBox('Fila por tempo na situação',
       'Os 12 mais parados. Clique para abrir a fila completa da Venda.', tabela)}
     ${pnNaoCalculavel(['Meta, cobertura e forecast — não existe cadastro de meta por cliente, empreendimento ou corretor.',
