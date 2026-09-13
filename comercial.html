@@ -381,7 +381,7 @@ function aplicarVista(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, co, corr, imob, empr, emps, ccas, anas] = await Promise.all([
+  const [sit, tr, co, corr, imob, empr, emps, ccas, anas, resumoChecklist] = await Promise.all([
     fetch(`${A1.rest('a1_co_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_comerciais')}?order=criado_em.desc`),
@@ -394,6 +394,8 @@ async function carregar(){
     fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+    ,
+    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'COMERCIAL'})}).then(r=>r.ok?r.json():{}).catch(()=>{})
   ]);
   G.situacoes = Array.isArray(sit) ? sit : [];
   G.transicoes = Array.isArray(tr) ? tr : [];
@@ -404,6 +406,7 @@ async function carregar(){
   G.empresas  = Array.isArray(emps) ? emps : [];
   G.ccas      = Array.isArray(ccas) ? ccas : [];
   G.analistas = Array.isArray(anas) ? anas : [];
+  G.resumoChecklist = (resumoChecklist && typeof resumoChecklist==='object') ? resumoChecklist : {};
   await carregarTitulares();
   preencherFiltros();
   renderVistas();
@@ -618,6 +621,7 @@ function cartao(c){
       <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
       <span class="chip">${esc(decorrido)} na etapa</span>
       ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
+    ${(G.resumoChecklist||{})[c.id] && (G.resumoChecklist||{})[c.id].total ? `<div class="card-stage">Checklist: ${esc((G.resumoChecklist||{})[c.id].concluidos)}/${esc((G.resumoChecklist||{})[c.id].total)}</div>` : ''}
     <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
   </div>`;
 }
