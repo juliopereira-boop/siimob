@@ -1075,10 +1075,10 @@ function dosChecklist(){
   return itens.map(i => `
     <div class="linha">
       <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar?'pointer':'default'}">
-        <input type="checkbox" ${i.concluido?'checked':''} ${podeMarcar?'':'disabled'}
+        <input type="checkbox" ${i.concluido?'checked':''} ${podeMarcar && !i.automatico?'':'disabled'}
           onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
         <div><div class="nm">${esc(i.nome)} ${i.obrigatorio?'<span class="pill wt" style="margin-left:.35rem">obrigatório</span>':''}</div>
-          ${i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
+          ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : (i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : '')}</div>
       </label>
       <span class="pill ${i.concluido?'ok':'wt'}">${i.concluido?'feito':'pendente'}</span>
     </div>`).join('');
