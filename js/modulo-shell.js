@@ -37,6 +37,34 @@ const A1_MODULOS = [
 // separado, porque a lista dele não tem Registro — que não desenha painel.
 const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
 
+// Dashboard é uma permissão por módulo, não uma chave genérica. A tela de
+// perfis só oferece cada marca quando a licença correspondente existe.
+const A1_DASHBOARD_PERMISSOES = {
+  crm: 'ver_dashboard_lead',
+  PRE_ANALISE: 'ver_dashboard_pre_analise',
+  COMERCIAL: 'ver_dashboard_venda',
+  repasse: 'ver_dashboard_repasse',
+  registro: 'ver_dashboard_registro'
+};
+
+async function a1DashboardsDoCliente(){
+  const chaves = Object.keys(A1_DASHBOARD_PERMISSOES);
+  const respostas = await Promise.all(chaves.map(m => a1HasModule(m).catch(() => null)));
+  return Object.fromEntries(chaves.map((m, i) => [m, respostas[i] === true]));
+}
+
+function a1PodeVerDashboardModulo(user, modulo, licencas){
+  if (!licencas || licencas[modulo] !== true) return false;
+  if (!user || user.role !== 'partner') return true;
+  const perms = user.permissions || {};
+  return perms.gerente === true || perms[A1_DASHBOARD_PERMISSOES[modulo]] === true;
+}
+
+function a1PodeVerAlgumDashboard(user, licencas){
+  return Object.keys(A1_DASHBOARD_PERMISSOES)
+    .some(modulo => a1PodeVerDashboardModulo(user, modulo, licencas));
+}
+
 // Como a pessoa se chama no cabeçalho. Fica aqui, num lugar só, porque o
 // Repasse tinha a SUA cópia disto — e a cópia dizia "Correspondente" para
 // qualquer parceiro que não fosse despachante. O mesmo corretor aparecia como
@@ -110,13 +138,14 @@ async function a1MontarShell(alvo, opcoes){
     document.head.appendChild(st);
   }
 
-  const tem = await a1ModulosDoCliente();
+  const [tem, dashboards] = await Promise.all([a1ModulosDoCliente(), a1DashboardsDoCliente()]);
   const papel = a1RotuloPapel(user);
 
   const abas = [];
 
-  // Dashboard: o parceiro só vê se o gestor liberou.
-  if (!ehParceiro || (user.permissions || {}).ver_dashboard === true){
+  // Dashboard só aparece se há pelo menos um módulo licenciado cujo painel
+  // esteja liberado para aquela pessoa.
+  if (a1PodeVerAlgumDashboard(user, dashboards)){
     abas.push(`<a class="tab-btn${o.ativo === 'dashboard' ? ' active' : ''}"
                   href="/${a1Esc(slug)}/dashboard">Dashboard</a>`);
   }
