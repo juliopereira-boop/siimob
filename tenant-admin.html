@@ -157,7 +157,7 @@ async function init() {
 
 async function loadUsers() {
   const users = await fetch(
-    `${A1.rest('a1_users')}?role=not.eq.partner&order=created_at.asc`,
+    `${A1.rest('a1_users')}?role=not.eq.partner&order=created_at.asc&select=id,name,cpf,email,role,is_active,created_at,last_seen`,
     { headers: A1.headers() }
   ).then(r => r.json());
 
