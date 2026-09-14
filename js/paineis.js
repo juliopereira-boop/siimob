@@ -46,9 +46,18 @@
 // ─── Estado ──────────────────────────────────────────────────────────────────
 // Os dados brutos ficam guardados aqui para a troca de período não render outra
 // rodada de consultas: o recorte é aritmética sobre linhas que já estão na mão.
-const PN = { dias: 90, pa: null, co: null };
+// `dias` é a janela rápida. `de`/`ate` são o recorte manual em datas (texto
+// AAAA-MM-DD, como o input type=date devolve) e, quando preenchidos, MANDAM
+// sobre `dias` — quem digitou uma data quer aquela data, não "os últimos 90".
+// `empr` é o filtro de empreendimento: o único recorte que não é tempo e não
+// expõe ninguém. Filtro por pessoa não entra aqui de propósito — seria um jeito
+// oblíquo de montar o ranking nominal que o corte de agregado acabou de fechar.
+const PN = { dias: 90, de: '', ate: '', empr: '', pa: null, co: null };
 
 const PN_PERIODOS = [[30, '30 dias'], [90, '90 dias'], [180, '180 dias'], [365, '12 meses'], [0, 'Tudo']];
+// Sentinela do recorte manual. -1 e não 0 porque 0 já significa "todo o
+// histórico" — dois sentidos no mesmo valor é como um seletor passa a mentir.
+const PN_PERSONALIZADO = -1;
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
 // A aspa SIMPLES entra aqui junto com as outras, e nao e capricho: os valores
@@ -129,6 +138,9 @@ const PN_CSS = `
 .pn-funil-pct{font-size:.68rem;color:var(--t3);text-align:right}
 .pn-funil-t{font-size:.68rem;color:var(--t3);text-align:right;font-family:'DM Mono',monospace;white-space:nowrap}
 .pn-faixas{display:flex;gap:.4rem;flex-wrap:wrap}
+.pn-filtros{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.pn-filtro-data{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--t3)}
+.pn-filtro-data input{font:inherit;padding:.3rem .4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:inherit}
 .pn-faixa{flex:1;min-width:88px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.55rem .65rem}
 .pn-faixa b{display:block;font-size:1.05rem;font-weight:800}
 .pn-faixa span{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
@@ -203,25 +215,128 @@ function pnAviso(texto, tipo){
   return `<div class="pn-aviso ${tipo === 'info' ? 'i' : ''}">${pnEsc(texto)}</div>`;
 }
 
-function pnSeletorPeriodo(painel){
-  return `<select class="pn-periodo" onchange="pnTrocarPeriodo(this.value,'${pnEsc(painel)}')" aria-label="Período">` +
-    PN_PERIODOS.map(([d, r]) =>
-      `<option value="${d}"${d === PN.dias ? ' selected' : ''}>${pnEsc(r)}</option>`).join('') +
-    '</select>';
+// A barra de filtros. As datas só aparecem no recorte manual: dois campos de
+// data sempre visíveis, e desligados, convidam a preencher o que não vai valer.
+function pnSeletorPeriodo(painel, empreendimentos){
+  const opt = (v, r, sel) => `<option value="${pnEsc(String(v))}"${sel ? ' selected' : ''}>${pnEsc(r)}</option>`;
+  const periodo = `<select class="pn-periodo" onchange="pnTrocarPeriodo(this.value,'${pnEsc(painel)}')" aria-label="Período">`
+    + PN_PERIODOS.map(([d, r]) => opt(d, r, d === PN.dias)).join('')
+    + opt(PN_PERSONALIZADO, 'Escolher datas', pnPersonalizado())
+    + '</select>';
+  const datas = pnPersonalizado()
+    ? `<label class="pn-filtro-data">de <input type="date" value="${pnEsc(PN.de)}" max="${pnEsc(PN.ate)}"
+         onchange="pnTrocarData('de',this.value,'${pnEsc(painel)}')" aria-label="Data inicial"></label>
+       <label class="pn-filtro-data">até <input type="date" value="${pnEsc(PN.ate)}" min="${pnEsc(PN.de)}"
+         onchange="pnTrocarData('ate',this.value,'${pnEsc(painel)}')" aria-label="Data final"></label>`
+    : '';
+  // O seletor de empreendimento só nasce se houver mais de um: com um só, ele é
+  // um controle que não muda nada.
+  const lista = (empreendimentos || []).filter(e => e && e.id && e.name);
+  const empr = lista.length > 1
+    ? `<select class="pn-periodo" onchange="pnTrocarEmpreendimento(this.value,'${pnEsc(painel)}')" aria-label="Empreendimento">`
+      + opt('', 'Todos os empreendimentos', !PN.empr)
+      + lista.slice().sort((a,b) => String(a.name).localeCompare(String(b.name), 'pt-BR'))
+             .map(e => opt(e.id, e.name, e.id === PN.empr)).join('')
+      + '</select>'
+    : '';
+  return `<div class="pn-filtros">${periodo}${datas}${empr}</div>`;
 }
 
-function pnTrocarPeriodo(dias, painel){
-  PN.dias = Number(dias) || 0;
+function pnRedesenhar(painel){
   const alvo = document.getElementById('painel-modulo');
   if (!alvo) return;
   if (painel === 'PRE_ANALISE') pnDesenharPA(alvo); else pnDesenharCO(alvo);
 }
 
+function pnTrocarPeriodo(dias, painel){
+  const n = Number(dias);
+  PN.dias = isNaN(n) ? 0 : n;
+  // Sair do recorte manual limpa as datas: deixá-las guardadas faria o painel
+  // voltar sozinho a um recorte que a pessoa abandonou, na próxima vez que ela
+  // escolhesse "Escolher datas".
+  if (!pnPersonalizado()) { PN.de = ''; PN.ate = ''; }
+  pnRedesenhar(painel);
+}
+
+function pnTrocarData(qual, valor, painel){
+  const v = String(valor || '');
+  PN[qual === 'de' ? 'de' : 'ate'] = v;
+  // Datas invertidas não viram painel vazio com cara de "não há nada": a outra
+  // ponta acompanha, e a pessoa vê um dia só em vez de um erro.
+  if (PN.de && PN.ate && PN.de > PN.ate) { if (qual === 'de') PN.ate = PN.de; else PN.de = PN.ate; }
+  pnRedesenhar(painel);
+}
+
+function pnTrocarEmpreendimento(id, painel){ PN.empr = String(id || ''); pnRedesenhar(painel); }
+
+// Painel filtrado que não diz que está filtrado é como um número errado se
+// instala: alguém lê "18 vendas" e leva para a reunião como o total do cliente.
+function pnRotuloEmpreendimento(empreendimentos){
+  if (!PN.empr) return '';
+  const e = (empreendimentos || []).find(x => x && x.id === PN.empr);
+  return ' · ' + (e ? e.name : 'empreendimento filtrado');
+}
+
+// Recorte por empreendimento. Filtrar só a lista principal deixaria documentos,
+// contratos e eventos dos processos EXCLUÍDOS entrando nas contas que os leem
+// por id — a taxa de reprovação por tipo, por exemplo, contaria documento de
+// processo que sumiu da tela. Por isso o filtro leva junto todo mundo que
+// aponta para os sobreviventes.
+function pnFiltrarPorEmpreendimento(d, principal, chave, dependentes){
+  if (!PN.empr) return d;
+  const vivos = {};
+  const linhas = (d[principal] || []).filter(x => x.empreendimento_id === PN.empr);
+  linhas.forEach(x => { vivos[x.id] = true; });
+  const out = { ...d, [principal]: linhas };
+  Object.keys(dependentes).forEach(k => {
+    out[k] = (d[k] || []).filter(x => vivos[x[dependentes[k]]]);
+  });
+  return out;
+}
+
+function pnPersonalizado(){ return PN.dias === PN_PERSONALIZADO; }
+
+// Um recorte manual só vale quando tem pelo menos uma ponta. Enquanto a pessoa
+// ainda está preenchendo a primeira data, a outra ponta fica aberta em vez de
+// zerar o painel — tela que pisca vazia entre dois cliques parece defeito.
+function pnData(txt, fimDoDia){
+  const t = Date.parse(String(txt || '') + (fimDoDia ? 'T23:59:59.999' : 'T00:00:00'));
+  return isNaN(t) ? null : t;
+}
+function pnInicio(){
+  if (pnPersonalizado()) return pnData(PN.de, false) ?? 0;
+  return PN.dias ? Date.now() - PN.dias * 864e5 : 0;
+}
+// Toda janela rápida termina AGORA; só o recorte manual pode ter fim no passado.
+// Antes desta entrega não existia limite superior nenhum, e um período de 30
+// dias contava também o que viesse com data no futuro.
+function pnFim(){
+  if (pnPersonalizado()) return pnData(PN.ate, true) ?? Date.now();
+  return Date.now();
+}
+// Existe recorte de tempo? É o que decide se a safra do funil é o período ou o
+// histórico inteiro.
+function pnTemCorte(){ return pnPersonalizado() ? !!(PN.de || PN.ate) : PN.dias > 0; }
+// O tamanho da janela, em ms. É a régua do "vs. período anterior": comparar 90
+// dias com um recorte manual de 12 dias daria um crescimento inventado.
+function pnJanela(){
+  if (!pnTemCorte()) return null;
+  return pnPersonalizado() ? Math.max(864e5, pnFim() - pnInicio()) : PN.dias * 864e5;
+}
 function pnRotuloPeriodo(){
+  if (pnPersonalizado()){
+    if (PN.de && PN.ate) return 'de ' + pnDataBR(PN.de) + ' a ' + pnDataBR(PN.ate);
+    if (PN.de)  return 'a partir de ' + pnDataBR(PN.de);
+    if (PN.ate) return 'até ' + pnDataBR(PN.ate);
+    return 'todo o histórico';
+  }
   const p = PN_PERIODOS.find(x => x[0] === PN.dias);
   return PN.dias ? ('últimos ' + (p ? p[1] : PN.dias + ' dias')) : 'todo o histórico';
 }
-function pnInicio(){ return PN.dias ? Date.now() - PN.dias * 864e5 : 0; }
+function pnDataBR(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || '');
+}
 
 // Quando a licença não está confirmada, o painel não busca nada. Esconder é
 // conveniência; quem forçar continua barrado pelo RLS — mas uma consulta a
@@ -360,23 +475,30 @@ function pnCalcPA(d){
     if (['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].indexOf(x.status) < 0) o.tipos.push(x.tipo);
   });
 
-  const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio; };
+  // As DUAS pontas. Antes só havia piso: um período de 30 dias também abraçava
+  // tudo que tivesse data no futuro, e o recorte manual não teria fim nenhum.
+  const fim = pnFim();
+  const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio && t <= fim; };
   const flagDe = p => { const s = sitPorId[p.situacao_id]; return s ? (s.flag || null) : null; };
   const ativa = p => !p.situacao_id || PN_PA_TERMINAIS.indexOf(flagDe(p)) < 0;
 
   // ── Entradas, com a série semanal ──
   const entradas = d.pre.filter(p => noPeriodo(p.criado_em));
-  const semanas = Math.max(1, Math.min(26, Math.ceil((PN.dias || 180) / 7)));
+  // A série é ancorada no FIM da janela, não em agora: com recorte manual
+  // terminando no mês passado, contar a partir de hoje jogaria todas as barras
+  // para fora do gráfico e a faixa apareceria vazia.
+  const janela = pnJanela();
+  const semanas = Math.max(1, Math.min(26, Math.ceil((janela ? janela / 864e5 : 180) / 7)));
   const serie = new Array(semanas).fill(0);
   entradas.forEach(p => {
-    const idx = semanas - 1 - Math.floor((Date.now() - pnMs(p.criado_em)) / (7 * 864e5));
+    const idx = semanas - 1 - Math.floor((fim - pnMs(p.criado_em)) / (7 * 864e5));
     if (idx >= 0 && idx < semanas) serie[idx]++;
   });
   // Período anterior, do mesmo tamanho: crescer ou encolher só significa algo
   // contra a régua anterior.
-  const anterior = PN.dias
+  const anterior = janela
     ? d.pre.filter(p => { const t = pnMs(p.criado_em);
-        return t != null && t >= inicio - PN.dias * 864e5 && t < inicio; }).length
+        return t != null && t >= inicio - janela && t < inicio; }).length
     : null;
 
   // ── Ativas ──
@@ -494,7 +616,7 @@ function pnCalcPA(d){
     .slice(0, 6);
 
   // ── Funil, sobre a safra criada no período ──
-  const safra = PN.dias ? entradas : d.pre;
+  const safra = pnTemCorte() ? entradas : d.pre;
   const semPendencia = safra.filter(p => !doc[p.id] || doc[p.id].pendente === 0);
   const concluidas = safra.filter(p => {
     const c = vigente[p.id]; return c && (c.status === 'APROVADO' || c.status === 'REPROVADO');
@@ -695,9 +817,10 @@ function pnBlocoRankingsPA(d){
   (d.credito || []).forEach(x => { const a = dec[x.pre_analise_id]; if (!a || (x.versao||0) > (a.versao||0)) dec[x.pre_analise_id] = x; });
   const naJanela = (iso,ini,fim) => { const t = pnMs(iso); return t != null && t >= ini && (fim == null || t < fim); };
   const marcar = x => ({ ...x, _dec: dec[x.id] });
-  const base    = (d.pre || []).filter(x => !PN.dias || naJanela(x.criado_em, pnInicio(), null)).map(marcar);
-  const anterior = PN.dias
-    ? (d.pre || []).filter(x => naJanela(x.criado_em, pnInicio() - PN.dias * 864e5, pnInicio())).map(marcar)
+  const janela = pnJanela();
+  const base    = (d.pre || []).filter(x => !janela || naJanela(x.criado_em, pnInicio(), pnFim() + 1)).map(marcar);
+  const anterior = janela
+    ? (d.pre || []).filter(x => naJanela(x.criado_em, pnInicio() - janela, pnInicio())).map(marcar)
     : null;
 
   const ok  = x => !x._dec ? null : (x._dec.status === 'APROVADO' ? true : (x._dec.status === 'REPROVADO' ? false : null));
@@ -745,9 +868,10 @@ function pnBlocoRankingsCO(d){
   const meuTime = !pnEhGestor() && u.type === 'coordenador';
   const daEquipe = x => !meuTime || x._coord === u.id;
 
-  const base = (d.com || []).filter(x => !PN.dias || naJanela(x.criado_em, pnInicio(), null)).map(marcar).filter(daEquipe);
-  const anterior = PN.dias
-    ? (d.com || []).filter(x => naJanela(x.criado_em, pnInicio() - PN.dias * 864e5, pnInicio())).map(marcar).filter(daEquipe)
+  const janela = pnJanela();
+  const base = (d.com || []).filter(x => !janela || naJanela(x.criado_em, pnInicio(), pnFim() + 1)).map(marcar).filter(daEquipe);
+  const anterior = janela
+    ? (d.com || []).filter(x => naJanela(x.criado_em, pnInicio() - janela, pnInicio())).map(marcar).filter(daEquipe)
     : null;
 
   const valor = x => x._ok ? pnValorCO(x) : 0;
@@ -790,7 +914,13 @@ function pnBlocoRankingsCO(d){
 }
 
 function pnDesenharPA(alvo){
-  const d = PN.pa, c = pnCalcPA(d), per = pnRotuloPeriodo();
+  // O filtro é aplicado ANTES do cálculo e vale para tudo que vem depois —
+  // cartões, funil, fila e rankings leem o mesmo recorte. Um quadro filtrado ao
+  // lado de um ranking do cliente inteiro seria a mesma tela dizendo duas
+  // coisas, e ninguém descobriria qual está certa.
+  const d = pnFiltrarPorEmpreendimento(PN.pa, 'pre', 'id',
+    { credito:'pre_analise_id', docs:'pre_analise_id', titulares:'pre_analise_id', com:'pre_analise_id' });
+  const c = pnCalcPA(d), per = pnRotuloPeriodo();
   const rota = pnRota('pre-analise');
 
   const kpis = [
@@ -909,8 +1039,8 @@ function pnDesenharPA(alvo){
 
   alvo.innerHTML = `
     <div class="pn-topo">
-      <div class="pn-titulo">Painel de Pré-análise<small>${pnEsc(per)} · dados agregados, sem dado pessoal</small></div>
-      ${pnSeletorPeriodo('PRE_ANALISE')}
+      <div class="pn-titulo">Painel de Pré-análise<small>${pnEsc(per + pnRotuloEmpreendimento(PN.pa.empr))} · dados agregados, sem dado pessoal</small></div>
+      ${pnSeletorPeriodo('PRE_ANALISE', PN.pa.empr)}
     </div>
     <div class="kpi-grid" id="pn-kpis-pa" style="grid-template-columns:repeat(4,1fr)">${kpis.join('')}</div>
     ${pnPainelBox('Funil — safra criada no período',
@@ -1010,7 +1140,8 @@ function pnCalcCO(d){
   const inicio = pnInicio();
   const sitPorId = {}; d.situacoes.forEach(s => { sitPorId[s.id] = s; });
   const emprPorId = {}; d.empr.forEach(e => { emprPorId[e.id] = e.name; });
-  const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio; };
+  const fim = pnFim();
+  const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio && t <= fim; };
   const flagDe = co => { const s = sitPorId[co.situacao_id]; return s ? (s.flag || null) : null; };
 
   const ativos = d.com.filter(co => !co.situacao_id || PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0);
@@ -1158,7 +1289,7 @@ function pnCalcCO(d){
   d.eventos.forEach(e => { if (e.evento === 'repasse_criado') nascimentoRepasse[e.comercial_id] = e.criado_em; });
 
   // ── Funil ──
-  const safra = PN.dias ? d.com.filter(co => noPeriodo(co.criado_em)) : d.com;
+  const safra = pnTemCorte() ? d.com.filter(co => noPeriodo(co.criado_em)) : d.com;
   const comProposta = safra.filter(co => (co.proposta || {}).valor_venda != null);
   const comContrato = safra.filter(co => ctPorCom[co.id] && PN_CT_GERADO.indexOf(ctPorCom[co.id].status) >= 0);
   const comAssinado = safra.filter(co => ctPorCom[co.id] && ctPorCom[co.id].status === 'ASSINADO');
@@ -1201,7 +1332,9 @@ function pnCalcCO(d){
 }
 
 function pnDesenharCO(alvo){
-  const d = PN.co, c = pnCalcCO(d), per = pnRotuloPeriodo();
+  const d = pnFiltrarPorEmpreendimento(PN.co, 'com', 'id',
+    { contratos:'comercial_id', eventos:'comercial_id' });
+  const c = pnCalcCO(d), per = pnRotuloPeriodo();
   const rota = pnRota('comercial');
 
   const kpis = [
@@ -1315,8 +1448,8 @@ function pnDesenharCO(alvo){
 
   alvo.innerHTML = `
     <div class="pn-topo">
-      <div class="pn-titulo">Painel Venda<small>${pnEsc(per)} · dados agregados, sem dado pessoal</small></div>
-      ${pnSeletorPeriodo('COMERCIAL')}
+      <div class="pn-titulo">Painel Venda<small>${pnEsc(per + pnRotuloEmpreendimento(PN.co.empr))} · dados agregados, sem dado pessoal</small></div>
+      ${pnSeletorPeriodo('COMERCIAL', PN.co.empr)}
     </div>
     ${c.temCancelamento ? '' : pnAviso('A esteira da Venda não tem situação com flag CANCELADO. Sem ela não há como medir win rate — o denominador ficaria igual ao numerador.')}
     <div class="kpi-grid" id="pn-kpis-co" style="grid-template-columns:repeat(4,1fr)">${kpis.join('')}</div>

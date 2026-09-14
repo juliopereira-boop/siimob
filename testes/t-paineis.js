@@ -171,6 +171,53 @@ function kpi(lista, rotulo) {
       (await p.evaluate(() => performance.getEntriesByType('resource').length)) === antes);
     checa('e o painel continua de pé', (await p.locator('#pn-kpis-pa .kpi-card').count()) === 9);
 
+    // ── Recorte manual de datas ──────────────────────────────────────────────
+    // A janela rápida só tinha PISO: "últimos 30 dias" também abraçava o que
+    // tivesse data no futuro, e o recorte manual não teria fim nenhum. Estas
+    // asserções guardam as DUAS pontas.
+    const janela = async (de, ate) => p.evaluate(([d1, d2]) => {
+      PN.dias = PN_PERSONALIZADO; PN.de = d1; PN.ate = d2;
+      pnDesenharPA(document.getElementById('painel-modulo'));
+      return { rotulo: document.querySelector('#painel-modulo .pn-titulo small').textContent,
+               entradas: (document.querySelector('#pn-kpis-pa .kpi-value') || {}).textContent };
+    }, [de, ate]);
+
+    checa('o seletor oferece escolher datas',
+      (await p.$$eval('#painel-modulo .pn-periodo option', o => o.map(x => x.textContent)))
+        .includes('Escolher datas'));
+
+    // Uma janela que termina antes de tudo que existe tem de dar zero. Se der o
+    // total, é porque o limite superior não está sendo aplicado — que era
+    // exatamente o estado anterior.
+    const passado = await janela('2020-01-01', '2020-01-31');
+    checa('a ponta de cima corta: janela no passado não traz entrada nenhuma',
+      passado.entradas === '0', JSON.stringify(passado));
+    checa('e o título diz o recorte em data brasileira',
+      /de 01\/01\/2020 a 31\/01\/2020/.test(passado.rotulo), passado.rotulo);
+
+    // Só a ponta de baixo: fim fica aberto até agora.
+    const soDe = await janela('2020-01-01', '');
+    checa('só com a data inicial, o fim fica aberto e tudo volta',
+      soDe.entradas === '4' && /a partir de 01\/01\/2020/.test(soDe.rotulo), JSON.stringify(soDe));
+
+    // Datas invertidas não podem virar painel vazio com cara de "não há nada".
+    const invertida = await p.evaluate(() => {
+      PN.dias = PN_PERSONALIZADO; PN.de = '2026-01-01'; PN.ate = '';
+      pnTrocarData('ate', '2025-06-01', 'PRE_ANALISE');
+      return { de: PN.de, ate: PN.ate };
+    });
+    checa('data final antes da inicial arrasta a outra ponta em vez de zerar',
+      invertida.de === invertida.ate, JSON.stringify(invertida));
+
+    // Voltar para uma janela rápida tem de LIMPAR as datas: guardá-las faria o
+    // painel voltar sozinho a um recorte abandonado.
+    const limpou = await p.evaluate(() => {
+      pnTrocarPeriodo('90', 'PRE_ANALISE');
+      return { dias: PN.dias, de: PN.de, ate: PN.ate };
+    });
+    checa('sair do recorte manual limpa as datas guardadas',
+      limpou.dias === 90 && !limpou.de && !limpou.ate, JSON.stringify(limpou));
+
     // ── Venda ──
     await p.click('#seletor-painel-botoes button[data-painel="COMERCIAL"]');
     await p.waitForSelector('#pn-kpis-co', { timeout: 5000 });
@@ -357,6 +404,33 @@ function kpi(lista, rotulo) {
       permissions:{ ver_todos_analistas:true, ver_consolidado_financeiro:true } });
     checa('coordenador sem equipe não herda o time de outro coordenador',
       !/Ana Souza/.test(coordVazio.texto), coordVazio.texto.slice(0, 300));
+
+    // ── Filtro de empreendimento ─────────────────────────────────────────────
+    // Filtrar só a lista principal deixaria contratos e eventos dos processos
+    // EXCLUÍDOS entrando nas contas que os leem por id. E painel filtrado que
+    // não avisa é como um número errado se instala: alguém lê o total e leva
+    // para a reunião como o do cliente inteiro.
+    const filtrado = await p.evaluate(() => {
+      const alvo = document.getElementById('painel-modulo');
+      const id = (PN.co.empr[0] || {}).id;
+      PN.empr = 'nao-existe-este-empreendimento';
+      pnDesenharCO(alvo);
+      const vazio = { kpi: (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent,
+                      titulo: alvo.querySelector('.pn-titulo small').textContent,
+                      html: alvo.innerHTML };
+      PN.empr = id; pnDesenharCO(alvo);
+      const um = (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent;
+      PN.empr = ''; pnDesenharCO(alvo);
+      return { vazio, um, todos: (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent };
+    });
+    checa('empreendimento sem negócio nenhum zera o painel inteiro',
+      filtrado.vazio.kpi === '0', JSON.stringify(filtrado));
+    checa('e o filtro carrega junto contratos e eventos, não só a lista principal',
+      !/CO-001/.test(filtrado.vazio.html), 'sobrou linha de processo filtrado fora');
+    checa('o título avisa que o painel está filtrado',
+      /·\s*empreendimento filtrado/.test(filtrado.vazio.titulo), filtrado.vazio.titulo);
+    checa('e tirar o filtro traz tudo de volta',
+      filtrado.um === '1' && filtrado.todos === '1', JSON.stringify(filtrado));
 
     // ── Voltar para o Repasse ──
     await p.click('#seletor-painel-botoes button[data-painel="repasse"]');
