@@ -3614,7 +3614,7 @@ async function openPartnerModal(id) {
   // Ver o módulo é o padrão — sem isto o correspondente novo nasceria trancado
   // para fora do Repasse.
   const PERM_DEFAULTS = { ver_repasses:true, criar_repasses:true, editar_repasses:false,
-                          ver_dashboard:false, ver_todos_repasses:false };
+                          ver_todos_repasses:false };
   const savedPerms = p?.permissions || {};
   document.querySelectorAll('.pt-perm').forEach(cb => {
     const k = cb.dataset.key;
@@ -4534,7 +4534,7 @@ async function loadGestores(){
 function renderGestores(){
   const tb=document.getElementById('gestor-tbody'); if(!tb)return;
   if(!GESTORES.length){tb.innerHTML='<tr><td colspan="7" class="pt-empty">Nenhum gestor cadastrado.</td></tr>';return;}
-  tb.innerHTML=GESTORES.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.cpf||'—')}</td><td>${esc(u.email||'—')}</td><td>${u.role==='owner'?'Proprietário':'Gestor'}</td><td>${u.is_active!==false?'Ativo':'Inativo'}</td><td>${idChip(u.id)}</td><td><button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button></td></tr>`).join('');
+  tb.innerHTML=GESTORES.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.cpf||'—')}</td><td>${esc(u.email||'—')}</td><td>${u.role==='owner'?'Proprietário':'Gestor'}</td><td>${u.is_active!==false?'Ativo':'Inativo'}</td><td>${idChip(u.id)}</td><td><button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button> ${u.id===G.user.id?'':`<button class="btn btn-danger btn-sm" onclick="deleteGestor('${u.id}')">Excluir</button>`}</td></tr>`).join('');
 }
 let EDIT_GESTOR_ID=null;
 const GE_DASHBOARDS=[['ver_dashboard_lead','crm','Leads'],['ver_dashboard_pre_analise','PRE_ANALISE','Pré-análise'],['ver_dashboard_venda','COMERCIAL','Venda'],['ver_dashboard_repasse','repasse','Repasse'],['ver_dashboard_registro','registro','Registro']];
