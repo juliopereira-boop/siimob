@@ -11,11 +11,20 @@
 // chegaram a incluí-lo, e era peso morto em duas telas que já são pesadas.
 //
 // O QUE ESTE ARQUIVO NÃO FAZ, DE PROPÓSITO
-// Não existe meta, probabilidade por etapa, motivo estruturado de perda nem
-// registro de atividade no schema de hoje. Então não há previsão, cobertura,
-// pipeline ponderado nem Pareto de motivo. Onde o número não existe, o painel
-// mostra um traço e diz o que falta cadastrar — um KPI inventado só é descoberto
-// depois de alguém tomar decisão com ele.
+// Não existe meta, probabilidade por etapa nem motivo estruturado de perda no
+// schema de hoje. Então não há previsão, cobertura, pipeline ponderado nem
+// Pareto de motivo. Onde o número não existe, o painel mostra um traço e diz o
+// que falta cadastrar — um KPI inventado só é descoberto depois de alguém tomar
+// decisão com ele.
+//
+// Este comentário já declarou impossíveis três coisas que passaram a existir e
+// hoje estão calculadas: o catálogo de documento obrigatório (a1_config
+// doc_types, 09-09) sustenta a completude do dossiê; analisado_em sustenta o
+// tempo de conferência e a reprovação POR TIPO com denominador; e o par de
+// eventos consecutivos sustenta o tempo por etapa histórico, que aponta o
+// gargalo onde situacao_em só apontava a fila. Quando uma coluna nova chegar,
+// é aqui que se apaga a linha — comentário que envelhece manda imprimir traço
+// em número que o banco já sabe dar.
 //
 // PRIVACIDADE
 // CPF, documento, nome de pessoa e renda individual NÃO entram em painel
@@ -23,6 +32,14 @@
 // pessoa_id, renda_declarada, renda_familiar ou motivo. Do origem_snapshot do
 // Venda lê-se só o ramo {credito} — o jsonb inteiro carrega nome e renda
 // analisada dos participantes dentro dele.
+//
+// OS DOIS CORTES
+// Corte de LINHA (quais processos entram na conta) é do RLS e chega pronto.
+// Corte de AGREGADO (posso ver soma em R$ do cliente inteiro e nome de terceiro
+// num ranking) é `ver_consolidado_financeiro`, e mora neste arquivo. Confundir
+// os dois foi o que deixou papel operacional lendo o VGV consolidado da
+// operação. Veja o bloco "Rankings e corte de agregado" — todo KPI novo em R$
+// nasce com pnPodeVerConsolidado() decidindo o que é desenhado.
 //
 // Depende de: config.js (A1), auth.js (a1HasModule) e das telas que o incluem.
 
@@ -251,20 +268,33 @@ async function pnCarregarPA(){
       .then(r => r.json()).catch(() => []),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?select=id,codigo,unidade,criado_em,situacao_id,situacao_em,vence_em,empreendimento_id,corretor_id,imobiliaria_id,empresa_id,correspondente_id,analista_id&order=criado_em.desc`),
     A1.buscarTudo(`${A1.rest('a1_pa_analises_credito')}?select=pre_analise_id,versao,status,criado_em,decidido_em`),
-    A1.buscarTudo(`${A1.rest('a1_pa_documentos')}?select=pre_analise_id,tipo,status,versao`),
+    // criado_em e analisado_em entram para o tempo de conferência documental —
+    // o SLA do analista, que é diário e não aparecia em lugar nenhum.
+    A1.buscarTudo(`${A1.rest('a1_pa_documentos')}?select=pre_analise_id,tipo,status,versao,criado_em,analisado_em`),
     // Só o vínculo: pessoa_id e renda ficam de fora porque isto é tela executiva.
     A1.buscarTudo(`${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&select=pre_analise_id`),
     fetch(`${A1.rest('a1_developments')}?select=id,name`, h).then(r => r.json()).catch(() => []),
     A1.buscarTudo(`${A1.rest('a1_partners')}?select=id,name,type,extra`),
-    A1.buscarTudo(`${A1.rest('a1_corr_empresas')}?select=id,name`)
+    A1.buscarTudo(`${A1.rest('a1_corr_empresas')}?select=id,name`),
+    // O catálogo de tipos de documento. O comentário do topo deste arquivo dizia
+    // que ele não existia — passou a existir em 2026-09-09_documento_obrigatorio,
+    // e sem esta leitura a completude do dossiê continuava impressa como traço
+    // num número que o banco já sabe calcular.
+    fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h).then(r => r.json()).catch(() => [])
   ];
+  // Estes dois entram DEPOIS do catálogo, que é a posição 8. Trocar a ordem aqui
+  // desalinharia a leitura de r[] lá embaixo em silêncio.
   if (temCo) {
     pedidos.push(A1.buscarTudo(`${A1.rest('a1_comerciais')}?select=id,pre_analise_id,criado_em`));
     pedidos.push(A1.buscarTudo(`${A1.rest('a1_co_eventos')}?select=comercial_id,evento,criado_em`));
   }
   const r = await Promise.all(pedidos);
+  // O índice do catálogo é FIXO no começo da lista opcional: os dois pedidos de
+  // Venda entram DEPOIS dele, então ele nunca escorrega quando a licença muda.
+  let tipos = [];
+  try { tipos = JSON.parse((pnLinhas(r[8])[0] || {}).value || '[]'); } catch { tipos = []; }
   return {
-    temCo,
+    temCo, tipos: Array.isArray(tipos) ? tipos : [],
     situacoes: pnLinhas(r[0]),
     pre:       pnLinhas(r[1]),
     credito:   pnLinhas(r[2]),
@@ -273,8 +303,8 @@ async function pnCarregarPA(){
     empr:      pnLinhas(r[5]),
     parceiros: pnLinhas(r[6]),
     empresas:  pnLinhas(r[7]),
-    com:       temCo ? pnLinhas(r[8]) : [],
-    coEventos: temCo ? pnLinhas(r[9]) : []
+    com:       temCo ? pnLinhas(r[9])  : [],
+    coEventos: temCo ? pnLinhas(r[10]) : []
   };
 }
 
@@ -319,11 +349,15 @@ function pnCalcPA(d){
   // Documentos por pré-análise, já classificados.
   const doc = {};
   d.docs.forEach(x => {
-    const o = doc[x.pre_analise_id] || (doc[x.pre_analise_id] = { total:0, pendente:0, reenvio:0, enviados:0 });
+    const o = doc[x.pre_analise_id] || (doc[x.pre_analise_id] = { total:0, pendente:0, reenvio:0, enviados:0, tipos:[] });
     o.total++;
     if (x.status === 'PENDENTE_ENVIO' || x.status === 'REPROVADO') o.pendente++;
     if ((x.versao || 1) > 1 || x.status === 'SUBSTITUIDO') o.reenvio++;
     if (x.status !== 'PENDENTE_ENVIO') o.enviados++;
+    // Entregue é o que o banco considera entregue em a1_pa_docs_faltando: nem
+    // REPROVADO, nem SUBSTITUIDO, nem PENDENTE_ENVIO. Repetir a regra com outro
+    // critério aqui faria a tela discordar de quem tranca de verdade.
+    if (['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].indexOf(x.status) < 0) o.tipos.push(x.tipo);
   });
 
   const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio; };
@@ -353,6 +387,14 @@ function pnCalcPA(d){
     .filter(c => (c.status === 'APROVADO' || c.status === 'REPROVADO') && noPeriodo(c.decidido_em));
   const aprovadasNoPeriodo = decididas.filter(c => c.status === 'APROVADO').length;
   const taxaAprov = decididas.length ? aprovadasNoPeriodo / decididas.length : null;
+
+  // ── Aprovação de primeira (first-pass yield) ──
+  // Decisão vigente na versão 1 significa que o dossiê fechou sem nova rodada.
+  // É o que separa correspondente que aprova BEM de correspondente que aprova na
+  // terceira tentativa — a taxa de aprovação sozinha dá o mesmo número para os
+  // dois, e quem paga a diferença é o prazo do cliente.
+  const dePrimeira = decididas.filter(c => (c.versao || 1) === 1).length;
+  const taxaPrimeira = decididas.length ? dePrimeira / decididas.length : null;
 
   // ── SLA: o relógio é o da SITUAÇÃO, não o da criação ──
   let vencidos = 0, emRisco = 0, semPrazo = 0;
@@ -411,6 +453,46 @@ function pnCalcPA(d){
     paretoTipo[x.tipo || '—'] = (paretoTipo[x.tipo || '—'] || 0) + 1;
   });
 
+  // ── Completude do dossiê, agora que o catálogo existe ──
+  // a1DocsFaltando é a MESMA função que pre-analise.html usa antes de mover, e a
+  // mesma regra de a1_pa_docs_faltando no banco. Cliente que não marcou nenhum
+  // tipo como obrigatório não tem denominador: o painel diz isso em vez de
+  // imprimir 100% de dossiê completo sobre exigência nenhuma.
+  const obrigatorios = a1DocsObrigatorios(d.tipos || [], 'PRE_ANALISE');
+  const completas = obrigatorios.length
+    ? ativas.filter(p => !a1DocsFaltando(d.tipos || [], 'PRE_ANALISE', (doc[p.id] || {}).tipos || []).length).length
+    : null;
+  const completude = obrigatorios.length && ativas.length ? completas / ativas.length : null;
+
+  // ── Tempo de conferência documental ──
+  // analisado_em − criado_em do DOCUMENTO. É o relógio do analista, e ele corre
+  // em horas, não em dias: publicar só o tempo até a decisão de crédito escondia
+  // a fila que se forma antes dela.
+  const tConf = [];
+  d.docs.forEach(x => {
+    if (!x.analisado_em || !noPeriodo(x.analisado_em)) return;
+    const a = pnMs(x.analisado_em), c0 = pnMs(x.criado_em);
+    if (a != null && c0 != null && a >= c0) tConf.push((a - c0) / 36e5);
+  });
+
+  // ── Reprovação documental POR TIPO, com denominador ──
+  // O Pareto acima soma pendente + reprovado sem base: um tipo aparece no topo
+  // só por ser o mais exigido. Com denominador a leitura vira decisão — "a
+  // certidão X reprova 40% das vezes, o problema é a orientação, não o cliente".
+  const porTipo = {};
+  d.docs.forEach(x => {
+    if (!x.analisado_em || !noPeriodo(x.analisado_em)) return;
+    const t = x.tipo || '—';
+    const o = porTipo[t] || (porTipo[t] = { tipo:t, analisados:0, reprovados:0 });
+    o.analisados++;
+    if (x.status === 'REPROVADO') o.reprovados++;
+  });
+  const reprovaTipo = Object.values(porTipo)
+    .filter(o => o.analisados >= 5)   // mesma régua do ranking: abaixo disso é acaso
+    .map(o => ({ ...o, taxa: o.reprovados / o.analisados }))
+    .sort((a,b) => b.taxa - a.taxa || b.analisados - a.analisados)
+    .slice(0, 6);
+
   // ── Funil, sobre a safra criada no período ──
   const safra = PN.dias ? entradas : d.pre;
   const semPendencia = safra.filter(p => !doc[p.id] || doc[p.id].pendente === 0);
@@ -442,6 +524,10 @@ function pnCalcPA(d){
     entradas: entradas.length, anterior, serie,
     ativas: ativas.length,
     taxaAprov, decididas: decididas.length,
+    taxaPrimeira, dePrimeira,
+    obrigatorios: obrigatorios.length, completude, completas,
+    p50Conf: pnPercentil(tConf, 0.5), p90Conf: pnPercentil(tConf, 0.9), conferidos: tConf.length,
+    reprovaTipo,
     vencidos, emRisco, comPrazo, semPrazo,
     p50Dec: pnPercentil(tDecisao, 0.5), p90Dec: pnPercentil(tDecisao, 0.9),
     p50Tot: pnPercentil(tTotal, 0.5),
@@ -461,19 +547,248 @@ function pnCalcPA(d){
   };
 }
 
-// ─── Rankings governados ───────────────────────────────────────────────────
-// Gestor, gerente e coordenador veem o time. Os demais veem somente a própria linha.
-function pnPodeVerRanking(){ const u=A1.user||{}; return u.role!=='partner'||u.type==='coordenador'||u.permissions?.gerente===true; }
-// O desempate depois do valor e o VOLUME, nao os fechados. A Pre-analise nao
-// tem dinheiro: la valorFn devolve 0 para todo mundo, entao o primeiro criterio
-// empata sempre e quem manda e o segundo. Com fechados na frente, o quadro dizia
-// "Ordenado por volume no periodo" e coroava quem tinha MENOS processos e mais
-// aprovacoes — o gestor premiava a pessoa errada lendo a legenda ao pe da letra.
-function pnRank(linhas,chave,nomes,valorFn,okFn){const m={};linhas.forEach(x=>{const id=x[chave];if(!id)return;const r=m[id]||(m[id]={id,nome:nomes[id]||'Não vinculado',total:0,fechados:0,decisoes:0,valor:0});const ok=okFn(x);r.total++;if(ok===true)r.fechados++;if(ok===true||ok===false)r.decisoes++;r.valor+=Number(valorFn(x))||0;});return Object.values(m).map(r=>({...r,taxa:r.decisoes?r.fechados/r.decisoes:null})).sort((a,b)=>b.valor-a.valor||b.total-a.total||b.fechados-a.fechados).slice(0,8);}
-function pnRankHtml(lista,fmt,sub){if(!lista.length)return '<div class="pn-vazio">Sem dados vinculados no período.</div>';return '<div class="pn-rank">'+lista.map((r,i)=>'<div class="pn-rank-linha"><b class="pn-rank-pos">'+(i+1)+'.</b><span class="pn-rank-nome">'+pnEsc(r.nome)+'</span><span class="pn-rank-meta"><b>'+pnEsc(fmt(r))+'</b><small>'+pnEsc(sub(r))+'</small></span></div>').join('')+'</div>';}
-function pnRankBox(titulo,descricao,grupos,pessoal){if(!pnPodeVerRanking())return pnPainelBox('Minha performance',descricao,pnRankHtml(pessoal||[],r=>r.total+' processo(s)',r=>r.taxa==null?'sem decisão':pnPct(r.taxa)+' aprovação'));return pnPainelBox(titulo,descricao,'<div class="pn-rank-grid">'+grupos.map(g=>'<div><h4>'+pnEsc(g.nome)+'</h4>'+pnRankHtml(g.lista,g.fmt,g.sub)+'</div>').join('')+'</div>');}
-function pnBlocoRankingsPA(d){const nomes={};(d.parceiros||[]).forEach(p=>nomes[p.id]=p.name||'Sem nome');(d.empresas||[]).forEach(e=>nomes[e.id]=e.name||'Sem empresa');const dec={};(d.credito||[]).forEach(x=>{const a=dec[x.pre_analise_id];if(!a||(x.versao||0)>(a.versao||0))dec[x.pre_analise_id]=x;});const base=(d.pre||[]).filter(x=>!PN.dias||pnMs(x.criado_em)>=pnInicio()).map(x=>({...x,_dec:dec[x.id]}));const ok=x=>!x._dec?null:(x._dec.status==='APROVADO'?true:(x._dec.status==='REPROVADO'?false:null));const rank=k=>pnRank(base,k,nomes,()=>0,ok),fmt=r=>r.total+' pré-análise(s)',sub=r=>(r.taxa==null?'sem decisão':pnPct(r.taxa)+' aprovação')+' · '+r.fechados+' aprovada(s)';const u=A1.user||{},own=rank(u.type==='analista'?'analista_id':u.type==='cca'?'correspondente_id':'corretor_id').filter(r=>r.id===u.id);return pnRankBox('Rankings de Pré-análise','Ordenado por volume no período; aprovação considera somente decisões aprovadas ou reprovadas.',[{nome:'Empresa correspondente',lista:rank('empresa_id'),fmt,sub},{nome:'Usuário correspondente',lista:rank('correspondente_id'),fmt,sub},{nome:'Analista',lista:rank('analista_id'),fmt,sub}],own);}
-function pnBlocoRankingsCO(d){const nomes={},porId={};(d.parceiros||[]).forEach(p=>{nomes[p.id]=p.name||'Sem nome';porId[p.id]=p;});const ct={};(d.contratos||[]).forEach(x=>{const a=ct[x.comercial_id];if(!a||(x.versao||0)>(a.versao||0))ct[x.comercial_id]=x;});const base=(d.com||[]).filter(x=>!PN.dias||pnMs(x.criado_em)>=pnInicio()).map(x=>({...x,_ok:ct[x.id]?.status==='ASSINADO'}));const rank=k=>pnRank(base,k,nomes,x=>x._ok?pnValorCO(x):0,x=>x._ok),fmt=r=>pnBRL(r.valor),sub=r=>r.fechados+' assinado(s) · '+r.total+' venda(s)';const coords=base.map(x=>({...x,_coord:porId[x.corretor_id]?.extra?.coordenador_id||null})),rankCoord=pnRank(coords,'_coord',nomes,x=>x._ok?pnValorCO(x):0,x=>x._ok);const u=A1.user||{},own=rank('corretor_id').filter(r=>r.id===u.id);return pnRankBox('Rankings de Vendas','Ordenado por VGV de contratos assinados no período.',[{nome:'Corretores',lista:rank('corretor_id'),fmt,sub},{nome:'Imobiliárias',lista:rank('imobiliaria_id'),fmt,sub},{nome:'Coordenadores',lista:rankCoord,fmt,sub}],own);}
+// ─── Rankings e corte de agregado ──────────────────────────────────────────
+//
+// São DOIS cortes, e confundi-los foi o erro que este bloco conserta.
+//
+//   Corte de LINHA — quais processos entram na conta. É do RLS (a1_pa_visivel /
+//   a1_co_visivel) e já está feito quando o dado chega aqui. Não se mexe.
+//
+//   Corte de AGREGADO — posso ver soma de dinheiro do cliente inteiro e nome de
+//   terceiro num quadro de classificação. ISTO NÃO EXISTIA. O painel somava em
+//   reais tudo que o RLS entregasse, e `ver_todos_analistas` entrega a carteira
+//   inteira — que é justamente o que o perfil-modelo Analista liga. Na prática:
+//   analista com perfil padrão abria o painel e lia o VGV contratado e o
+//   pipeline em reais da operação inteira do cliente. Papel operacional lendo
+//   número de dono.
+//
+// A régua agora é `ver_consolidado_financeiro`. Sem ela o painel não esconde o
+// painel: troca cada número em R$ pela mesma informação em quantidade. A pessoa
+// continua enxergando o próprio trabalho; o caixa é que para de aparecer.
+function pnEhGestor(){ const u = A1.user || {}; return u.role !== 'partner' || u.permissions?.gerente === true; }
+
+// Coordenador saiu do ranking INTEIRO. Ele tem visão completa da carteira, então
+// o RLS lhe entrega tudo — e o quadro listava nominalmente corretores de OUTRO
+// coordenador. Ele continua vendo ranking: o da equipe dele, filtrado abaixo.
+function pnPodeVerRanking(){ const u = A1.user || {}; return pnEhGestor() || u.type === 'coordenador'; }
+
+function pnPodeVerConsolidado(){
+  const u = A1.user || {};
+  if (pnEhGestor()) return true;
+  return u.permissions?.ver_consolidado_financeiro === true;
+}
+
+// Dinheiro na tela só com o corte de agregado. Para os demais, traço — e o
+// motivo escrito no title, senão o número vira "o painel quebrou".
+const PN_SEM_CONSOLIDADO = 'Valores consolidados em R$ dependem da permissão "Ver valores consolidados (R$)". '
+  + 'Sem ela o painel mostra quantidade, não soma — os mesmos processos, sem o caixa do cliente.';
+function pnDinheiro(cent){ return pnPodeVerConsolidado() ? pnBRL(cent) : '—'; }
+
+const PN_RANK_MIN  = 5;  // abaixo disto a posição é sorteio, não classificação
+const PN_RANK_TOPO = 8;  // a lista para no 8º: nunca se publica quem está embaixo
+
+function pnRank(linhas,chave,nomes,valorFn,okFn){
+  const m = {};
+  linhas.forEach(x => {
+    const id = x[chave]; if (!id) return;
+    const r = m[id] || (m[id] = { id, nome: nomes[id] || 'Não vinculado', total:0, fechados:0, decisoes:0, valor:0 });
+    const ok = okFn(x);
+    r.total++;
+    if (ok === true) r.fechados++;
+    if (ok === true || ok === false) r.decisoes++;
+    r.valor += Number(valorFn(x)) || 0;
+  });
+  // Devolve a lista INTEIRA, ordenada. Quem corta em 8 é quem desenha: fatiar
+  // aqui fazia "Minha performance" ficar vazia para quem está em 9º — e é
+  // exatamente quem mais precisa de ver a própria linha.
+  //
+  // O desempate depois do valor é o VOLUME, não os fechados. A Pré-análise não
+  // tem dinheiro: lá valorFn devolve 0 para todo mundo, o primeiro critério
+  // empata sempre e manda o segundo. Com fechados na frente, o quadro dizia
+  // "ordenado por volume no período" e coroava quem tinha MENOS processos e
+  // mais aprovações — o gestor premiava a pessoa errada lendo a legenda ao pé
+  // da letra.
+  return Object.values(m)
+    .map(r => ({ ...r, taxa: r.decisoes ? r.fechados / r.decisoes : null }))
+    .sort((a,b) => b.valor - a.valor || b.total - a.total || b.fechados - a.fechados);
+}
+
+function pnRankHtml(lista,fmt,sub){
+  const topo = (lista || []).slice(0, PN_RANK_TOPO);
+  if (!topo.length) return '<div class="pn-vazio">Sem dados vinculados no período.</div>';
+  return '<div class="pn-rank">' + topo.map((r,i) => {
+    // Ordenar três pessoas por taxa é sorteio com cara de mérito. Abaixo do
+    // mínimo a linha aparece sem colocação, e diz por quê.
+    const magro = r.total < PN_RANK_MIN;
+    const dica  = magro ? 'Amostra pequena: ' + r.total + ' processo(s) no período. Abaixo de '
+                        + PN_RANK_MIN + ' a posição não separa mérito de acaso, então esta linha '
+                        + 'aparece sem colocação.' : '';
+    return '<div class="pn-rank-linha"' + (dica ? ' title="' + pnEsc(dica) + '"' : '') + '>'
+      + '<b class="pn-rank-pos">' + pnEsc(magro ? '·' : (i+1) + '.') + '</b>'
+      + '<span class="pn-rank-nome">' + pnEsc(r.nome) + '</span>'
+      + '<span class="pn-rank-meta"><b>' + pnEsc(fmt(r)) + '</b><small>'
+      + pnEsc(sub(r) + (magro ? ' · amostra pequena' : '')) + '</small></span></div>';
+  }).join('') + '</div>';
+}
+
+// Mediana do time, anonimizada. É a régua que substitui o ranking para quem não
+// pode ver nome de terceiro: dá referência sem expor colega nenhum.
+function pnMedianaDe(lista,campo){
+  return pnPercentil((lista || []).map(r => Number(r[campo]) || 0), 0.5);
+}
+
+function pnFaixa(rotulo,valor,dica){
+  return '<div class="pn-faixa" title="' + pnEsc(dica || '') + '"><b>' + pnEsc(String(valor))
+       + '</b><span>' + pnEsc(rotulo) + '</span></div>';
+}
+
+// "Minha performance" era uma linha só: n processos e x% de aprovação. Quem
+// recebe isso não tem o que fazer com o número — não há régua. A pesquisa sobre
+// classificação diz o mesmo: número solto, ou ranking em que a pessoa não
+// aparece, não corrige rota, desengaja. Agora vêm três réguas: o próprio
+// período anterior, a mediana anônima do time e a taxa.
+function pnMinhaPerformance(o){
+  const eu = o.eu, antes = o.antes;
+  if (!eu) return '<div class="pn-vazio">' + pnEsc(o.vazio) + '</div>';
+  const caixas = [ pnFaixa(o.unidade, eu.total, 'Processos com você como responsável, criados no período.') ];
+  if (antes != null) {
+    const d = antes === 0 ? null : Math.round(((eu.total - antes) / antes) * 100);
+    caixas.push(pnFaixa('vs. período anterior',
+      d == null ? '—' : (d >= 0 ? '+' : '') + d + '%',
+      antes === 0 ? 'Você não teve processo no período anterior, então não há base de comparação.'
+                  : 'Mesma janela imediatamente anterior: ' + antes + ' processo(s). A comparação é com você mesmo, não com o time.'));
+  }
+  if (o.mediana != null) {
+    caixas.push(pnFaixa('mediana do time', Math.round(o.mediana),
+      'Mediana de processos por pessoa no período, sobre quem tem vínculo. É anônima de propósito: '
+      + 'serve de régua sem expor o resultado nominal de ninguém.'));
+  }
+  caixas.push(pnFaixa(o.rotuloTaxa, eu.taxa == null ? '—' : pnPct(eu.taxa),
+    eu.decisoes ? o.dicaTaxa + ' Base: ' + eu.decisoes + ' decisão(ões).'
+                : 'Nenhum processo seu teve decisão no período.'));
+  return '<div class="pn-faixas">' + caixas.join('') + '</div>';
+}
+
+function pnRankBox(titulo,descricao,grupos,pessoal){
+  if (!pnPodeVerRanking()) return pnPainelBox('Minha performance', pessoal.descricao || descricao, pnMinhaPerformance(pessoal));
+  return pnPainelBox(titulo, descricao,
+    '<div class="pn-rank-grid">' + grupos.map(g =>
+      '<div><h4>' + pnEsc(g.nome) + '</h4>' + pnRankHtml(g.lista, g.fmt, g.sub) + '</div>').join('') + '</div>');
+}
+
+// A chave pela qual a pessoa aparece no próprio painel. `despachante` cai fora
+// de propósito: ele não é corretor, não é analista e não é correspondente —
+// mandá-lo para `corretor_id`, como fazia o ramo `else` de antes, produzia um
+// bloco vazio com o rótulo "Minha performance", que lê como "você não produziu
+// nada". Nulo aqui vira uma frase honesta: este painel não mede o seu papel.
+function pnChavePessoalPA(u){
+  return u.type === 'analista' ? 'analista_id'
+       : u.type === 'cca'      ? 'correspondente_id'
+       : u.type === 'corretor' ? 'corretor_id' : null;
+}
+
+function pnBlocoRankingsPA(d){
+  const nomes = {};
+  (d.parceiros || []).forEach(p => nomes[p.id] = p.name || 'Sem nome');
+  (d.empresas  || []).forEach(e => nomes[e.id] = e.name || 'Sem empresa');
+  const dec = {};
+  (d.credito || []).forEach(x => { const a = dec[x.pre_analise_id]; if (!a || (x.versao||0) > (a.versao||0)) dec[x.pre_analise_id] = x; });
+  const naJanela = (iso,ini,fim) => { const t = pnMs(iso); return t != null && t >= ini && (fim == null || t < fim); };
+  const marcar = x => ({ ...x, _dec: dec[x.id] });
+  const base    = (d.pre || []).filter(x => !PN.dias || naJanela(x.criado_em, pnInicio(), null)).map(marcar);
+  const anterior = PN.dias
+    ? (d.pre || []).filter(x => naJanela(x.criado_em, pnInicio() - PN.dias * 864e5, pnInicio())).map(marcar)
+    : null;
+
+  const ok  = x => !x._dec ? null : (x._dec.status === 'APROVADO' ? true : (x._dec.status === 'REPROVADO' ? false : null));
+  const rank = (k,linhas) => pnRank(linhas || base, k, nomes, () => 0, ok);
+  const fmt = r => r.total + ' pré-análise(s)';
+  const sub = r => (r.taxa == null ? 'sem decisão' : pnPct(r.taxa) + ' aprovação') + ' · ' + r.fechados + ' aprovada(s)';
+
+  // Coordenador não ranqueia usuário correspondente — não é a equipe dele e não
+  // é o nível dele. Empresa e analista, sim: é com esses dois que ele negocia
+  // prazo. Gestor e gerente veem os três.
+  const grupos = [{ nome:'Empresa correspondente', lista: rank('empresa_id'), fmt, sub }];
+  if (pnEhGestor()) grupos.push({ nome:'Usuário correspondente', lista: rank('correspondente_id'), fmt, sub });
+  grupos.push({ nome:'Analista', lista: rank('analista_id'), fmt, sub });
+
+  const u = A1.user || {}, chave = pnChavePessoalPA(u);
+  const lista = chave ? rank(chave) : [];
+  const pessoal = {
+    unidade:'minhas pré-análises', rotuloTaxa:'minha aprovação',
+    dicaTaxa:'aprovadas ÷ (aprovadas + reprovadas) entre as suas, pela decisão de maior versão.',
+    descricao:'O seu resultado no período, com o seu próprio período anterior e a mediana anônima do time como régua.',
+    eu:     chave ? lista.find(r => r.id === u.id) || null : null,
+    antes:  chave && anterior ? (rank(chave, anterior).find(r => r.id === u.id) || { total:0 }).total : null,
+    mediana: chave ? pnMedianaDe(lista, 'total') : null,
+    vazio:  chave ? 'Nenhuma pré-análise vinculada a você no período.'
+                  : 'Este painel mede corretor, analista e usuário correspondente. O seu papel não entra nessa conta — o que não quer dizer que você não produziu.'
+  };
+  return pnRankBox('Rankings de Pré-análise',
+    'Ordenado por volume no período; aprovação considera somente decisões aprovadas ou reprovadas. '
+    + 'Linha com menos de ' + PN_RANK_MIN + ' processos aparece sem colocação.', grupos, pessoal);
+}
+
+function pnBlocoRankingsCO(d){
+  const nomes = {}, porId = {};
+  (d.parceiros || []).forEach(p => { nomes[p.id] = p.name || 'Sem nome'; porId[p.id] = p; });
+  const ct = {};
+  (d.contratos || []).forEach(x => { const a = ct[x.comercial_id]; if (!a || (x.versao||0) > (a.versao||0)) ct[x.comercial_id] = x; });
+  const naJanela = (iso,ini,fim) => { const t = pnMs(iso); return t != null && t >= ini && (fim == null || t < fim); };
+  const marcar = x => ({ ...x, _ok: ct[x.id]?.status === 'ASSINADO', _coord: porId[x.corretor_id]?.extra?.coordenador_id || null });
+
+  const u = A1.user || {};
+  // Coordenador vê a EQUIPE dele. O RLS lhe entrega a carteira inteira do
+  // cliente por causa da visão completa, então sem este filtro o quadro listava
+  // nominalmente corretor de outro coordenador — e ninguém ranqueia o time do
+  // vizinho. Gestor e gerente continuam vendo todos.
+  const meuTime = !pnEhGestor() && u.type === 'coordenador';
+  const daEquipe = x => !meuTime || x._coord === u.id;
+
+  const base = (d.com || []).filter(x => !PN.dias || naJanela(x.criado_em, pnInicio(), null)).map(marcar).filter(daEquipe);
+  const anterior = PN.dias
+    ? (d.com || []).filter(x => naJanela(x.criado_em, pnInicio() - PN.dias * 864e5, pnInicio())).map(marcar).filter(daEquipe)
+    : null;
+
+  const valor = x => x._ok ? pnValorCO(x) : 0;
+  const rank = (k,linhas) => pnRank(linhas || base, k, nomes, valor, x => x._ok);
+  // Sem o corte de agregado o quadro deixa de ser em reais e passa a ser em
+  // contratos. A ordem de baixo continua a mesma — o que muda é o que se lê.
+  const fmt = r => pnPodeVerConsolidado() ? pnBRL(r.valor) : r.fechados + ' assinado(s)';
+  const sub = r => pnPodeVerConsolidado() ? r.fechados + ' assinado(s) · ' + r.total + ' venda(s)'
+                                          : r.total + ' venda(s) no período';
+
+  const grupos = [{ nome:'Corretores', lista: rank('corretor_id'), fmt, sub },
+                  { nome:'Imobiliárias', lista: rank('imobiliaria_id'), fmt, sub }];
+  // Ninguém ranqueia o próprio nível ao lado dos pares: o quadro de
+  // coordenadores é de gestor e gerente.
+  if (pnEhGestor()) grupos.push({ nome:'Coordenadores', lista: rank('_coord'), fmt, sub });
+
+  const chave = u.type === 'corretor' ? 'corretor_id' : null;
+  const lista = chave ? rank(chave) : [];
+  const pessoal = {
+    unidade:'minhas vendas', rotuloTaxa:'minha conversão',
+    dicaTaxa:'vendas suas com contrato assinado ÷ vendas suas no período.',
+    descricao:'O seu resultado no período, com o seu próprio período anterior e a mediana anônima do time como régua.',
+    eu:     chave ? lista.find(r => r.id === u.id) || null : null,
+    antes:  chave && anterior ? (rank(chave, anterior).find(r => r.id === u.id) || { total:0 }).total : null,
+    mediana: chave ? pnMedianaDe(lista, 'total') : null,
+    vazio:  chave ? 'Nenhuma venda vinculada a você no período.'
+                  : 'Este painel mede o corretor da venda. O seu papel não entra nessa conta — o que não quer dizer que você não produziu.'
+  };
+  // A taxa do corretor é conversão, não aprovação: pnRank conta `fechados` sobre
+  // `decisoes`, e aqui okFn nunca devolve false — só true. Sem isto a caixa
+  // marcaria sempre 100%.
+  if (pessoal.eu) pessoal.eu = { ...pessoal.eu, decisoes: pessoal.eu.total,
+                                 taxa: pessoal.eu.total ? pessoal.eu.fechados / pessoal.eu.total : null };
+
+  return pnRankBox(meuTime ? 'Rankings da minha equipe' : 'Rankings de Vendas',
+    (pnPodeVerConsolidado() ? 'Ordenado por VGV de contratos assinados no período. '
+                            : 'Ordenado por contratos assinados no período — valores em R$ dependem da permissão de consolidado. ')
+    + (meuTime ? 'Somente os corretores vinculados a você. ' : '')
+    + 'Linha com menos de ' + PN_RANK_MIN + ' processos aparece sem colocação.', grupos, pessoal);
+}
+
 function pnDesenharPA(alvo){
   const d = PN.pa, c = pnCalcPA(d), per = pnRotuloPeriodo();
   const rota = pnRota('pre-analise');
@@ -497,6 +812,12 @@ function pnDesenharPA(alvo){
       sub: c.decididas ? c.decididas + ' decisões' : 'sem decisão com data no período',
       titulo: `aprovadas ÷ (aprovadas + reprovadas), uma decisão por pré-análise (a de maior versão), período por decidido_em (${per}). `
             + 'EM_ANALISE, PENDENTE e INVALIDADA ficam fora dos dois lados: INVALIDADA é aprovação derrubada por mudança de renda, participante ou valor — contá-la como reprovação inventaria uma recusa que nunca houve.' }),
+
+    pnKpi({ rotulo:'Aprovação de primeira', valor: pnPct(c.taxaPrimeira), cor:'kpi-green',
+      sub: c.decididas ? c.dePrimeira + ' de ' + c.decididas + ' sem nova rodada' : 'sem decisão no período',
+      titulo:'decisões vigentes cuja versão é 1 ÷ decisões concluídas do período. Mede RETRABALHO de crédito: '
+           + 'aprovar na terceira tentativa dá a mesma taxa de aprovação que aprovar na primeira, e não é o mesmo prazo para o cliente. '
+           + 'Versão > 1 significa que a análise foi refeita — renda, participante ou valor mudaram depois da primeira decisão.' }),
 
     pnKpi({ rotulo:'SLA vencido', valor: pnPct(c.comPrazo ? c.vencidos / c.comPrazo : null), cor:'kpi-red',
       sub: `${c.vencidos} vencidos · ${c.emRisco} em risco`,
@@ -554,6 +875,26 @@ function pnDesenharPA(alvo){
   const pareto = Object.keys(c.paretoTipo).map(k => [k, c.paretoTipo[k]])
     .sort((a, b) => b[1] - a[1]).slice(0, 6);
 
+  // A saúde do dossiê em três medidas, na ordem em que a pessoa age: quanto está
+  // completo, quanto tempo a conferência leva, e qual tipo reprova mais.
+  const faixasDossie = [
+    c.obrigatorios
+      ? pnFaixa('dossiê completo', pnPct(c.completude),
+          c.completas + ' de ' + c.ativas + ' ativa(s) sem nenhum dos ' + c.obrigatorios
+          + ' tipo(s) obrigatório(s) faltando. Entregue segue a regra do banco (a1_pa_docs_faltando): '
+          + 'REPROVADO, SUBSTITUIDO e PENDENTE_ENVIO não contam como entregues.')
+      : pnFaixa('dossiê completo', '—',
+          'Nenhum tipo está marcado como obrigatório em Configurações › Tipos de documento, na aba '
+          + 'Pré-análise. Sem exigência cadastrada não há denominador — e imprimir 100% de dossiê '
+          + 'completo sobre exigência nenhuma seria número errado com cara de verdade.'),
+    pnFaixa('conferência (P50)', c.p50Conf == null ? '—' : pnHoras(c.p50Conf),
+      c.conferidos
+        ? 'Mediana de (analisado_em − criado_em) por documento, sobre os ' + c.conferidos
+          + ' documento(s) conferidos no período. P90: ' + pnHoras(c.p90Conf) + '. '
+          + 'É o relógio do analista, e corre em horas: o tempo até a decisão de crédito esconde esta fila.'
+        : 'Nenhum documento foi conferido no período — analisado_em em branco.')
+  ];
+
   const fila = c.fila.slice(0, 12);
   const tabela = fila.length ? `<div class="pn-tbl-wrap"><table class="pn-tbl">
     <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Na situação</th><th style="text-align:right">SLA</th></tr></thead>
@@ -576,15 +917,26 @@ function pnDesenharPA(alvo){
       'Volume por etapa e mediana de dias entre os marcos que têm carimbo de tempo no banco. Onde não há carimbo, o tempo fica em branco em vez de estimado.',
       `<div id="pn-funil-pa">${pnFunil(etapas)}</div>`)}
     ${pnBlocoRankingsPA(d)}
-    ${pareto.length ? pnPainelBox('O que trava o dossiê',
-      'Documentos em PENDENTE_ENVIO ou REPROVADO, por tipo. Sem recorte por pessoa: quem trava é o tipo de documento, e nome de cliente não sobe para painel executivo.',
-      `<div class="pn-faixas">${pareto.map(([t, n]) =>
-        `<div class="pn-faixa" title="${pnEsc(n + ' documento(s) de ' + t + ' pendentes ou reprovados')}"><b>${pnEsc(String(n))}</b><span>${pnEsc(t)}</span></div>`).join('')}</div>`) : ''}
+    ${pnPainelBox('Saúde do dossiê',
+      'Completude sobre o catálogo de obrigatórios e tempo de conferência. Sem recorte por pessoa: quem trava é o tipo de documento, e nome de cliente não sobe para painel executivo.',
+      `<div class="pn-faixas">${faixasDossie.join('')}</div>`
+      + (c.reprovaTipo.length ? `<h4 style="margin:1rem 0 .5rem;font-size:.75rem;color:var(--t3);text-transform:uppercase">Tipos que mais reprovam</h4>
+        <div class="pn-rank">${c.reprovaTipo.map(o => `<div class="pn-rank-linha" title="${pnEsc(
+          o.reprovados + ' reprovado(s) de ' + o.analisados + ' conferido(s) no período. Com denominador a leitura vira decisão: '
+          + 'taxa alta num tipo muito exigido aponta orientação ruim ao cliente, não cliente relapso.')}">
+          <span class="pn-rank-nome">${pnEsc(o.tipo)}</span>
+          <span class="pn-rank-meta"><b>${pnEsc(pnPct(o.taxa))}</b><small>${pnEsc(o.reprovados + ' de ' + o.analisados + ' conferidos')}</small></span>
+        </div>`).join('')}</div>`
+        : `<div class="pn-vazio" style="margin-top:.75rem">Nenhum tipo teve 5 ou mais documentos conferidos no período — abaixo disso a taxa por tipo é acaso, não padrão.</div>`)
+      + (pareto.length ? `<h4 style="margin:1rem 0 .5rem;font-size:.75rem;color:var(--t3);text-transform:uppercase">Fila aberta por tipo</h4>
+        <div class="pn-faixas">${pareto.map(([t, n]) =>
+          `<div class="pn-faixa" title="${pnEsc(n + ' documento(s) de ' + t + ' pendentes ou reprovados agora. Isto é FILA, não taxa: um tipo aparece no topo por ser o mais exigido.')}"><b>${pnEsc(String(n))}</b><span>${pnEsc(t)}</span></div>`).join('')}</div>` : ''))}
     ${pnPainelBox('Fila por tempo na situação',
       'As 12 mais paradas, do relógio da situação atual. Clique para abrir a fila completa da Pré-análise.', tabela)}
     ${pnNaoCalculavel(['Meta e cobertura de pipeline — não existe cadastro de meta por cliente, empreendimento ou corretor.',
       'Origem e campanha do lead — a1_pre_analises guarda lead_id, mas não tem coluna de origem.',
-      'Completude no primeiro envio — não há catálogo de documento obrigatório para servir de denominador.'])}
+      'Aprovação e prazo por banco — a decisão de crédito não guarda a instituição da proposta.',
+      'Motivo de reprovação agrupado — a1_pa_analises_credito.motivo é texto livre, e agrupar texto digitado gera número errado com cara de verdade.'])}
   `;
 }
 
@@ -700,6 +1052,69 @@ function pnCalcCO(d){
   const win = (temCancelamento && (assinados.length + cancelados))
     ? assinados.length / (assinados.length + cancelados) : null;
 
+  // ── Vendas líquidas e distrato ──
+  // O win rate acima conta cancelado pela situação ATUAL. Quem cancelou e foi
+  // reaberto depois some da conta, e o número sobe sozinho. Para vendas líquidas
+  // o carimbo certo é o EVENTO: entrou numa situação cancelada dentro do
+  // período, conta — tenha voltado ou não. É assim que a ABRAINC mede, e é a
+  // diferença entre "vendemos 40" e "vendemos 40 e perdemos 6".
+  const sitCancelada = {};
+  d.situacoes.forEach(s2 => { if (s2.flag === 'CANCELADO') sitCancelada[s2.id] = true; });
+  const cancelouNoPeriodo = {};
+  d.eventos.forEach(e => {
+    if (!e.para_situacao || !sitCancelada[e.para_situacao] || !noPeriodo(e.criado_em)) return;
+    const t = pnMs(e.criado_em);
+    if (!cancelouNoPeriodo[e.comercial_id] || t > cancelouNoPeriodo[e.comercial_id]) cancelouNoPeriodo[e.comercial_id] = t;
+  });
+  const perdidos = Object.keys(cancelouNoPeriodo).length;
+  const liquidas = assinados.length - perdidos;
+
+  // Distrato é outra coisa: é cancelamento DEPOIS do contrato assinado. Hoje os
+  // dois moravam no mesmo balaio do win rate, e proposta perdida no meio da
+  // esteira pesava igual a negócio desfeito com contrato na mão — que é o que
+  // custa dinheiro, prazo de obra e crédito já aprovado.
+  const distratos = Object.keys(cancelouNoPeriodo).filter(id => {
+    const ct = ctPorCom[id];
+    const a = ct && ct.status === 'ASSINADO' ? pnMs(ct.assinado_em) : null;
+    return a != null && cancelouNoPeriodo[id] > a;
+  }).length;
+  const taxaDistrato = assinados.length ? distratos / assinados.length : null;
+
+  // ── Cobertura de responsável ──
+  // O KPI que sustenta todos os rankings, e o mais barato de todos. Com 40% dos
+  // ativos sem corretor vinculado, o ranking de corretores não está medindo
+  // desempenho: está medindo quem preencheu o cadastro.
+  const semCorretor = ativos.filter(co => !co.corretor_id).length;
+  const semImob     = ativos.filter(co => !co.imobiliaria_id).length;
+  const cobertura   = ativos.length ? (ativos.length - semCorretor) / ativos.length : null;
+
+  // ── Tempo por etapa, do HISTÓRICO ──
+  // situacao_em diz há quanto tempo o caso está parado ONDE ESTÁ — aponta a
+  // fila. Só o par de eventos consecutivos diz quanto tempo cada etapa consome
+  // de quem já passou por ela, que é o que aponta o GARGALO. Intervalo aberto
+  // (a etapa atual, que ainda não terminou) fica de fora: contá-lo como duração
+  // encurtaria toda etapa onde há caso parado agora.
+  const porComercial = {};
+  d.eventos.forEach(e => {
+    if (!e.para_situacao || !e.criado_em) return;
+    (porComercial[e.comercial_id] || (porComercial[e.comercial_id] = [])).push(e);
+  });
+  const duracoes = {};
+  Object.keys(porComercial).forEach(id => {
+    const lista = porComercial[id].slice().sort((a,b) => pnMs(a.criado_em) - pnMs(b.criado_em));
+    for (let i = 0; i < lista.length - 1; i++) {
+      const ini = pnMs(lista[i].criado_em), fim = pnMs(lista[i+1].criado_em);
+      if (ini == null || fim == null || fim < ini) continue;
+      if (!noPeriodo(lista[i+1].criado_em)) continue;   // a etapa TERMINOU no período
+      (duracoes[lista[i].para_situacao] || (duracoes[lista[i].para_situacao] = [])).push((fim - ini) / 36e5);
+    }
+  });
+  const tempoEtapa = d.situacoes
+    .filter(s2 => (duracoes[s2.id] || []).length)
+    .map(s2 => ({ nome: s2.nome, cor: s2.cor || '#64748b', n: duracoes[s2.id].length,
+                  p50: pnPercentil(duracoes[s2.id], 0.5), p90: pnPercentil(duracoes[s2.id], 0.9) }))
+    .sort((a,b) => b.p50 - a.p50);
+
   // Aging: situacao_em é escrito pelo gatilho a1_co_guarda_update e o navegador
   // não consegue alterá-lo, então este relógio é confiável.
   const aging = [], faixas = [0, 0, 0, 0, 0];
@@ -769,6 +1184,8 @@ function pnCalcCO(d){
     assinados: assinados.length, valorAssinado, ticket,
     p50Ciclo: pnPercentil(ciclo, 0.5), p90Ciclo: pnPercentil(ciclo, 0.9),
     win, temCancelamento, cancelados,
+    liquidas, perdidos, distratos, taxaDistrato,
+    cobertura, semCorretor, semImob, tempoEtapa,
     p50Aging: pnPercentil(aging, 0.5), p90Aging: pnPercentil(aging, 0.9),
     estourados, comPrazo, semPrazo, faixas,
     convRepasse: baseRepasse ? viraramRepasse / baseRepasse : null,
@@ -792,18 +1209,40 @@ function pnDesenharCO(alvo){
       titulo:'situação atual com flag fora de CANCELADO e ENCERRADO; sem situação conta como ativo. '
            + 'CONTRATO_ASSINADO continua ativo: o negócio só termina quando o Repasse nasce, e é esse intervalo que revela handoff perdido.' }),
 
-    pnKpi({ rotulo:'Pipeline bruto', valor: pnBRL(c.pipeline), cor:'kpi-violet', sub:'soma dos ativos, não é previsão',
-      titulo:'Σ de proposta.valor_venda dos comerciais ativos, com o valor_total do crédito capturado no snapshot como reserva. '
-           + 'É soma de valores abertos, NÃO previsão: não há probabilidade por etapa no cadastro da esteira. Valores em centavos, formatados em reais.' }),
+    pnKpi({ rotulo: pnPodeVerConsolidado() ? 'Pipeline bruto' : 'Negócios em aberto',
+      valor: pnPodeVerConsolidado() ? pnBRL(c.pipeline) : c.ativos,
+      cor:'kpi-violet',
+      sub: pnPodeVerConsolidado() ? 'soma dos ativos, não é previsão' : 'sem valores consolidados',
+      titulo: pnPodeVerConsolidado()
+        ? 'Σ de proposta.valor_venda dos comerciais ativos, com o valor_total do crédito capturado no snapshot como reserva. '
+          + 'É soma de valores abertos, NÃO previsão: não há probabilidade por etapa no cadastro da esteira. Valores em centavos, formatados em reais.'
+        : PN_SEM_CONSOLIDADO + ' Aqui isso significa a quantidade de negócios ativos no lugar da soma deles em reais.' }),
 
-    pnKpi({ rotulo:'Contratos assinados', valor: c.assinados, cor:'kpi-green', sub: pnBRL(c.valorAssinado),
+    pnKpi({ rotulo:'Contratos assinados', valor: c.assinados, cor:'kpi-green',
+      sub: pnPodeVerConsolidado() ? pnBRL(c.valorAssinado) : 'quantidade, sem valor consolidado',
       titulo: `contratos com status ASSINADO e assinado_em no período (${per}), um por comercial (a maior versão). `
             + 'O valor vem do comercial: a1_co_contratos não tem coluna de valor. Marcar ASSINADO já exige gestor, gerente ou permissão de análise de crédito.' }),
 
-    pnKpi({ rotulo:'Ticket médio', valor: c.ticket == null ? '—' : pnBRL(c.ticket), cor:'kpi-green',
+    // Ticket médio É dinheiro: não existe versão dele em quantidade. Sem o corte
+    // de agregado o cartão sai da grade, em vez de virar um traço mudo ocupando
+    // espaço — e o motivo fica no cartão de pipeline, que continua na tela.
+    ...(pnPodeVerConsolidado() ? [pnKpi({ rotulo:'Ticket médio', valor: c.ticket == null ? '—' : pnBRL(c.ticket), cor:'kpi-green',
       sub: c.assinados ? 'n = ' + c.assinados : 'sem contrato assinado no período',
       titulo:'valor somado dos contratos assinados ÷ nº de contratos assinados no período. '
-           + 'O n vai junto de propósito: com poucos contratos no mês, o ticket balança demais para virar sinal de gestão.' }),
+           + 'O n vai junto de propósito: com poucos contratos no mês, o ticket balança demais para virar sinal de gestão.' })] : []),
+
+    pnKpi({ rotulo:'Vendas líquidas', valor: c.liquidas, cor:'kpi-green',
+      sub: c.perdidos ? c.perdidos + ' perdida(s) no período' : 'nenhuma perda no período',
+      titulo:'contratos assinados no período − negócios que ENTRARAM numa situação com flag CANCELADO no período. '
+           + 'É o número da ABRAINC, e não o de vendas brutas: venda bruta sozinha mente para cima. '
+           + 'O carimbo da perda é o EVENTO de entrada na situação, não a situação atual — quem cancelou e foi reaberto depois continua contando, '
+           + 'senão o número sobe sozinho quando alguém corrige um cartão. Pode ficar negativo: mês em que se perde mais do que se assina existe, e esconder isso seria o próprio problema.' }),
+
+    pnKpi({ rotulo:'Cobertura de responsável', valor: pnPct(c.cobertura), cor:'kpi-blue',
+      sub: c.semCorretor ? c.semCorretor + ' ativo(s) sem corretor' : 'todos os ativos vinculados',
+      titulo:'ativos COM corretor_id ÷ ativos. É o KPI que sustenta todos os rankings: com parte dos negócios sem vínculo, '
+           + 'o quadro de corretores deixa de medir desempenho e passa a medir quem preencheu o cadastro. '
+           + (c.semImob ? c.semImob + ' ativo(s) também estão sem imobiliária.' : 'Todos os ativos têm imobiliária vinculada.') }),
 
     pnKpi({ rotulo:'Ciclo comercial', valor: pnDias(c.p50Ciclo), cor:'kpi-amber',
       sub: c.p90Ciclo == null ? 'sem contrato assinado no período' : 'P90 ' + pnDias(c.p90Ciclo),
@@ -843,16 +1282,34 @@ function pnDesenharCO(alvo){
       tempo: pnDias(f.p50Repasse), tempoTitulo:"mediana entre a assinatura e o evento 'repasse_criado' em a1_co_eventos" }
   ];
 
+  // Distrato separado da proposta perdida: são perdas de custo muito diferente,
+  // e somá-las num win rate só apagava a distinção.
+  const faixasPerda = [
+    pnFaixa('perdidas no período', c.perdidos,
+      'Negócios que entraram numa situação com flag CANCELADO dentro do período, pelo evento de entrada. Inclui proposta perdida e distrato.'),
+    pnFaixa('distratos', c.distratos,
+      'Subconjunto das perdidas: cancelamento que ocorreu DEPOIS do contrato assinado. É o que custa crédito já aprovado, prazo de obra e unidade de volta ao estoque.'),
+    pnFaixa('taxa de distrato', pnPct(c.taxaDistrato),
+      c.assinados ? 'distratos ÷ contratos assinados no período (n = ' + c.assinados + '). É como a ABRAINC calcula.'
+                  : 'Sem contrato assinado no período não há denominador.')
+  ];
+
   const rotFaixas = ['0–7 dias', '8–15 dias', '16–30 dias', '31–60 dias', '> 60 dias'];
   const fila = c.fila.slice(0, 12);
+  // A fila respeita o RLS: cada linha aqui é processo que a pessoa já pode
+  // abrir. O que não respeitava nada era a coluna Valor — ela punha o preço de
+  // cada negócio na frente de quem não tem o corte de agregado. A coluna sai
+  // inteira: esconder a soma e deixar as parcelas é esconder mal.
+  const comValor = pnPodeVerConsolidado();
   const tabela = fila.length ? `<div class="pn-tbl-wrap"><table class="pn-tbl">
-    <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Valor</th><th style="text-align:right">Na situação</th></tr></thead>
+    <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th>${
+      comValor ? '<th style="text-align:right">Valor</th>' : ''}<th style="text-align:right">Na situação</th></tr></thead>
     <tbody>${fila.map(l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila da Venda">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>
       <td><span class="pn-sit" style="background:${pnEsc(l.cor)}">${pnEsc(l.sit)}</span></td>
-      <td style="text-align:right">${pnEsc(pnBRL(l.valor))}</td>
+      ${comValor ? `<td style="text-align:right">${pnEsc(pnBRL(l.valor))}</td>` : ''}
       <td style="text-align:right" class="pn-${pnEsc(l.nivel)}">${pnEsc(pnHoras(l.horas))}</td>
     </tr>`).join('')}</tbody></table></div>` : '<div class="pn-vazio">Nenhum comercial ativo.</div>';
 
@@ -870,12 +1327,23 @@ function pnDesenharCO(alvo){
       'Tempo na situação atual dos comerciais ativos. Faixa cheia à direita é fila parada, não volume de trabalho.',
       `<div class="pn-faixas">${c.faixas.map((n, i) =>
         `<div class="pn-faixa" title="${pnEsc(n + ' comercial(is) ativos há ' + rotFaixas[i] + ' na situação atual')}"><b>${pnEsc(String(n))}</b><span>${pnEsc(rotFaixas[i])}</span></div>`).join('')}</div>`)}
+    ${pnPainelBox('Perdas do período',
+      'Proposta perdida e distrato têm custos diferentes e por isso aparecem separados. O carimbo é o evento de entrada na situação cancelada, não a situação atual.',
+      `<div class="pn-faixas">${faixasPerda.join('')}</div>`)}
+    ${c.tempoEtapa.length ? pnPainelBox('Onde o tempo se perde',
+      'Mediana de permanência em cada etapa, sobre quem JÁ SAIU dela no período. A fila por tempo na situação, mais abaixo, mostra onde os casos estão parados agora — esta tabela mostra qual etapa consome o prazo de quem passa.',
+      `<div class="pn-rank">${c.tempoEtapa.map(e => `<div class="pn-rank-linha" title="${pnEsc(
+        e.n + ' passagem(ns) concluída(s) por esta etapa no período. P90: ' + pnHoras(e.p90) + '. '
+        + 'Só intervalos FECHADOS entram: a etapa em que um caso ainda está agora não tem duração, e contá-la encurtaria a mediana de toda etapa com fila.')}">
+        <span class="pn-rank-nome"><span class="pn-sit" style="background:${pnEsc(e.cor)}">${pnEsc(e.nome)}</span></span>
+        <span class="pn-rank-meta"><b>${pnEsc(pnDias(e.p50))}</b><small>${pnEsc(e.n + ' passagem(ns)')}</small></span>
+      </div>`).join('')}</div>`) : ''}
     ${pnBlocoRankingsCO(d)}
     ${pnPainelBox('Fila por tempo na situação',
       'Os 12 mais parados. Clique para abrir a fila completa da Venda.', tabela)}
     ${pnNaoCalculavel(['Meta, cobertura e forecast — não existe cadastro de meta por cliente, empreendimento ou corretor.',
       'Pipeline ponderado — a1_co_situacoes não tem probabilidade por etapa.',
       'Motivo de perda — não há campo de motivo em a1_comerciais nem catálogo de motivos.',
-      'Taxa e tempo de assinatura — o contrato guarda só o status atual, sem carimbo de envio para assinatura.'])}
+      'VSO e estoque em meses — a1_developments guarda as unidades como texto de identificação, sem preço nem reserva, então a absorção sairia estimada.'])}
   `;
 }

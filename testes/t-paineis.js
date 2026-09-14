@@ -115,7 +115,10 @@ function kpi(lista, rotulo) {
     checa('e mostra o painel do módulo', await p.locator('#painel-modulo').isVisible());
 
     const pa = await lerKpis(p, 'pn-kpis-pa');
-    checa('o painel desenha os oito KPIs da Pré-análise', pa.length === 8, 'foram ' + pa.length);
+    // Nove desde que a aprovação de PRIMEIRA entrou ao lado da taxa de aprovação:
+    // as duas dão o mesmo número para quem aprova na primeira e para quem aprova
+    // na terceira, e é a diferença entre elas que é o retrabalho de crédito.
+    checa('o painel desenha os nove KPIs da Pré-análise', pa.length === 9, 'foram ' + pa.length);
     checa('entradas no período conta as 4 pré-análises', kpi(pa, 'Entradas no período') === '4',
       kpi(pa, 'Entradas no período'));
     checa('ativas conta as 4 — a aprovada sem Venda continua na conta',
@@ -166,7 +169,7 @@ function kpi(lista, rotulo) {
     await p.selectOption('#painel-modulo .pn-periodo', '30'); await p.waitForTimeout(500);
     checa('trocar o período redesenha sem ir ao servidor de novo',
       (await p.evaluate(() => performance.getEntriesByType('resource').length)) === antes);
-    checa('e o painel continua de pé', (await p.locator('#pn-kpis-pa .kpi-card').count()) === 8);
+    checa('e o painel continua de pé', (await p.locator('#pn-kpis-pa .kpi-card').count()) === 9);
 
     // ── Venda ──
     await p.click('#seletor-painel-botoes button[data-painel="COMERCIAL"]');
@@ -174,7 +177,10 @@ function kpi(lista, rotulo) {
     await p.waitForTimeout(400);
 
     const co = await lerKpis(p, 'pn-kpis-co');
-    checa('o painel Venda desenha os oito KPIs', co.length === 8, 'foram ' + co.length);
+    // Dez para quem tem o corte de agregado: entraram vendas líquidas (bruto
+    // sozinho mente para cima) e cobertura de responsável (o KPI que diz se os
+    // rankings estão medindo desempenho ou preenchimento de cadastro).
+    checa('o painel Venda desenha os dez KPIs', co.length === 10, 'foram ' + co.length);
     checa('comerciais ativos conta o negócio aberto', kpi(co, 'Comerciais ativos') === '1',
       kpi(co, 'Comerciais ativos'));
     checa('o pipeline sai em reais, a partir dos centavos do banco',
@@ -273,9 +279,84 @@ function kpi(lista, rotulo) {
     });
     checa('corretor comum vê "Minha performance" no lugar do ranking do time',
       /Minha performance/.test(soMeu) && !/Rankings de Vendas/.test(soMeu), soMeu.slice(0, 160));
-    checa('e a própria linha dele continua sendo mostrada', /Ana Souza/.test(soMeu));
+    // O bloco deixou de repetir o nome da pessoa de volta para ela — isso não
+    // informava nada — e passou a trazer as três réguas que faltavam: o próprio
+    // período anterior, a mediana ANÔNIMA do time e a conversão. Ranking em que
+    // a pessoa não aparece, ou número solto sem régua, não corrige rota.
+    checa('e ele recebe o próprio número, com régua em vez do próprio nome',
+      /minhas vendas/.test(soMeu) && /vs\. período anterior/.test(soMeu)
+      && /mediana do time/.test(soMeu) && !/Ana Souza/.test(soMeu), soMeu.slice(0, 300));
     checa('mas o quadro do time volta assim que o gestor redesenha',
       /Rankings de Vendas/.test(await p.locator('#painel-modulo').textContent()));
+
+    // ── O corte de AGREGADO ──────────────────────────────────────────────────
+    // A regra que estas asserções guardam é a que o dono escreveu: papel
+    // operacional não lê o caixa consolidado do cliente. O corte de LINHA já era
+    // do RLS; este é outro, e não existia — o painel somava em reais tudo que o
+    // RLS entregasse, e `ver_todos_analistas` (que é o perfil-modelo Analista)
+    // entrega a carteira inteira. Na prática o analista abria o painel e lia o
+    // VGV e o pipeline da operação toda.
+    //
+    // O painel não some para quem não tem a marca: ele troca soma por
+    // quantidade. Esconder o painel puniria quem precisa dele para trabalhar.
+    const comoParceiro = async (u) => p.evaluate(user => {
+      const alvo = document.getElementById('painel-modulo');
+      const orig = localStorage.getItem('a1_user');
+      localStorage.setItem('a1_user', JSON.stringify(user));
+      pnDesenharCO(alvo);
+      const r = { texto: alvo.textContent.replace(/\s+/g, ' '), html: alvo.innerHTML,
+                  kpis: Array.from(alvo.querySelectorAll('.kpi-card .kpi-label')).map(x => x.textContent.trim()) };
+      if (orig != null) localStorage.setItem('a1_user', orig);
+      pnDesenharCO(alvo);
+      return r;
+    }, u);
+
+    // O analista com o perfil-modelo: visão completa ligada, consolidado não.
+    const analista = await comoParceiro({ id:'p2', role:'partner', type:'analista',
+      permissions:{ ver_todos_analistas:true } });
+    checa('analista com visão completa NÃO lê o pipeline em reais',
+      !/R\$/.test(analista.texto), analista.texto.slice(0, 240));
+    checa('o cartão vira contagem de negócios, não some da tela',
+      analista.kpis.includes('Negócios em aberto') && !analista.kpis.includes('Pipeline bruto'),
+      JSON.stringify(analista.kpis));
+    checa('e o ticket médio, que só existe em dinheiro, sai da grade',
+      !analista.kpis.includes('Ticket médio'), JSON.stringify(analista.kpis));
+    // O que não pode aparecer é VALOR FORMATADO. A frase que explica a permissão
+    // cita "R$" de propósito — procurar a sigla solta reprovaria a explicação.
+    checa('a fila perde a coluna Valor inteira, não só o cabeçalho',
+      !/<th[^>]*>\s*Valor\s*<\/th>/.test(analista.html)
+      && !/R\$\s?[\d.]/.test(analista.html), analista.html.slice(0, 200));
+    checa('e o painel diz por que, em vez de parecer quebrado',
+      /Ver valores consolidados/.test(analista.html), 'sem o motivo escrito');
+
+    // A mesma pessoa COM a marca volta a ver o consolidado. Se isto falhar, a
+    // permissão não está sendo lida — e uma marca que não muda nada é pior que
+    // marca ausente.
+    const analistaCom = await comoParceiro({ id:'p2', role:'partner', type:'analista',
+      permissions:{ ver_todos_analistas:true, ver_consolidado_financeiro:true } });
+    checa('com a permissão marcada, o consolidado volta',
+      /R\$\s?260\.000/.test(analistaCom.texto) && analistaCom.kpis.includes('Pipeline bruto'),
+      analistaCom.texto.slice(0, 240));
+
+    // Coordenador: ranking SIM, mas da equipe dele. Ele tem visão completa, então
+    // o RLS lhe entrega a carteira toda — sem este filtro o quadro listava
+    // nominalmente corretor de outro coordenador. E ninguém ranqueia o próprio
+    // nível ao lado dos pares: o quadro de coordenadores é de gestor e gerente.
+    const coord = await comoParceiro({ id:'p7', role:'partner', type:'coordenador',
+      permissions:{ ver_todos_analistas:true, ver_consolidado_financeiro:true } });
+    checa('coordenador vê ranking, e o quadro diz que é o da equipe dele',
+      /Rankings da minha equipe/.test(coord.texto), coord.texto.slice(0, 240));
+    checa('e o ranking de coordenadores não aparece para um coordenador',
+      !/Coordenadores/.test(coord.texto), coord.texto.slice(0, 300));
+    checa('o corretor vinculado a ele continua no quadro',
+      /Ana Souza/.test(coord.texto), coord.texto.slice(0, 300));
+
+    // Coordenador SEM corretor vinculado: o quadro fica vazio em vez de mostrar
+    // o time do vizinho. Esta é a asserção que pega o filtro sendo removido.
+    const coordVazio = await comoParceiro({ id:'p99', role:'partner', type:'coordenador',
+      permissions:{ ver_todos_analistas:true, ver_consolidado_financeiro:true } });
+    checa('coordenador sem equipe não herda o time de outro coordenador',
+      !/Ana Souza/.test(coordVazio.texto), coordVazio.texto.slice(0, 300));
 
     // ── Voltar para o Repasse ──
     await p.click('#seletor-painel-botoes button[data-painel="repasse"]');
@@ -309,7 +390,7 @@ function kpi(lista, rotulo) {
     await p.waitForTimeout(400);
     const pa = await lerKpis(p, 'pn-kpis-pa');
     checa('sem a Venda, o cartão de conversão não é desenhado',
-      pa.length === 7 && !pa.some(x => /Conversão/.test(x.rot)), JSON.stringify(pa.map(x => x.rot)));
+      pa.length === 8 && !pa.some(x => /Conversão/.test(x.rot)), JSON.stringify(pa.map(x => x.rot)));
     checa('e a tabela da Venda não é consultada',
       await p.evaluate(() => !performance.getEntriesByType('resource')
         .some(r => /a1_comerciais|a1_co_/.test(r.name))));

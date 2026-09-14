@@ -29,6 +29,22 @@ const A1_PERMISSOES = [
         + 'É como o coordenador enxerga a equipe. Desligado, ela vê apenas os '
         + 'processos em que é a responsável.',
     lida_em:'temVisaoCompleta, a1_case_visivel (SQL), a1_pa_visivel, a1_co_visivel' },
+  // O corte de LINHA (quais processos eu vejo) é do RLS e não se mexe nele.
+  // Esta chave é o corte de AGREGADO, que é outra coisa e não existia: o painel
+  // somava em reais tudo que o RLS entregasse, e `ver_todos_analistas` entrega a
+  // carteira inteira do cliente. Resultado: o analista com o perfil-modelo abria
+  // o painel e lia o VGV e o pipeline consolidados da operação inteira — papel
+  // operacional vendo número de dono. Não era vazamento entre clientes; era
+  // exposição de dinheiro consolidado a quem precisa do processo, não do caixa.
+  // Sem esta marca o painel troca cada número em R$ por contagem: "18 negócios
+  // ativos" no lugar de "R$ 12,4 mi em pipeline". A pessoa continua trabalhando;
+  // o consolidado é que para de aparecer.
+  { chave:'ver_consolidado_financeiro', modulo:null, rotulo:'Ver valores consolidados (R$)',
+    ajuda:'Mostra as SOMAS EM DINHEIRO nos painéis: VGV contratado, pipeline, '
+        + 'ticket médio e comissão estimada. Desligado, a pessoa vê os mesmos '
+        + 'painéis em quantidade de processos, sem valor. Não muda quais '
+        + 'processos ela enxerga — isso é a Visão completa.',
+    lida_em:'js/paineis.js (pnPodeVerConsolidado)' },
   // Cada dashboard é uma permissão própria. Só aparece na criação de
   // perfil quando o cliente tem o respectivo módulo licenciado.
   { chave:'ver_dashboard_lead', modulo:'crm', rotulo:'Ver dashboard de Leads',
@@ -121,7 +137,7 @@ const A1_PERFIS_MODELO = [
   { nome:'Corretor',      permissoes:['ver_repasses','pa_ver','pa_criar','co_ver'] },
   { nome:'Analista',      permissoes:['ver_repasses','editar_repasses','alterar_etapa','ver_todos_analistas',
                                       'pa_ver','pa_editar','pa_mover','analisar_credito','co_ver'] },
-  { nome:'Coordenador',   permissoes:['ver_repasses','ver_todos_analistas','pa_ver','co_ver',
+  { nome:'Coordenador',   permissoes:['ver_repasses','ver_todos_analistas','ver_consolidado_financeiro','pa_ver','co_ver',
                                       'ver_dashboard_lead','ver_dashboard_pre_analise','ver_dashboard_venda',
                                       'ver_dashboard_repasse','ver_dashboard_registro'] },
   { nome:'Correspondente',permissoes:['ver_repasses','criar_repasses','editar_repasses','alterar_etapa',
