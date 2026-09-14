@@ -1,39 +1,24 @@
--- Migração segura de posse dos repasses legados.
--- Só preenche responsável quando há exatamente um corretor ativo do MESMO tenant
--- com o mesmo nome normalizado. Casos sem correspondência ficam sem atribuição.
-with candidatos as (
-  select c.id, min(p.id) as parceiro_id
-  from public.a1_cases c
-  join public.a1_partners p
-    on p.tenant_id = c.tenant_id
-   and p.type = 'corretor'
-   and coalesce(p.is_active, true)
-   and coalesce(p.approved, true)
-   and lower(trim(p.name)) = lower(trim(c.broker_name))
-  where c.module_key = 'repasse'
-    and c.assigned_user_id is null
-    and nullif(trim(c.broker_name), '') is not null
-  group by c.id
-  having count(*) = 1
-)
-update public.a1_cases c
-set assigned_user_id = candidatos.parceiro_id,
-    updated_at = now()
-from candidatos
-where c.id = candidatos.id;
-
--- Protege a leitura/edição direta no PostgREST. INSERT continua submetido à
--- policy específica de criar repasse; os RPCs controlados continuam funcionando.
+-- Escopo de Repasse sem violar a FK de assigned_user_id.
+-- O corretor é uma entidade a1_partners; assigned_user_id referencia a1_users
+-- e por isso não pode receber o ID de parceiro. Casos legados continuam sem
+-- atribuição artificial, mas o corretor só os lê/edita se o nome vinculado
+-- corresponder ao seu parceiro ativo no mesmo tenant.
 create policy a1_cases_repasse_scope_select
 on public.a1_cases as restrictive for select to anon, authenticated
 using (
   module_key <> 'repasse'
   or a1_e_gestor()
   or a1_case_visao_completa()
-  or assigned_user_id = a1_ator()
   or analista_id = a1_ator()
   or correspondente_id = a1_ator()
   or (empresa_id is not null and empresa_id = a1_empresa_ator())
+  or exists (
+    select 1 from public.a1_partners p
+    where p.id = a1_ator()
+      and p.tenant_id = a1_cases.tenant_id
+      and p.type = 'corretor'
+      and lower(trim(p.name)) = lower(trim(coalesce(a1_cases.broker_name,'')))
+  )
 );
 
 create policy a1_cases_repasse_scope_update
@@ -42,17 +27,29 @@ using (
   module_key <> 'repasse'
   or a1_e_gestor()
   or a1_case_visao_completa()
-  or assigned_user_id = a1_ator()
   or analista_id = a1_ator()
   or correspondente_id = a1_ator()
   or (empresa_id is not null and empresa_id = a1_empresa_ator())
+  or exists (
+    select 1 from public.a1_partners p
+    where p.id = a1_ator()
+      and p.tenant_id = a1_cases.tenant_id
+      and p.type = 'corretor'
+      and lower(trim(p.name)) = lower(trim(coalesce(a1_cases.broker_name,'')))
+  )
 )
 with check (
   module_key <> 'repasse'
   or a1_e_gestor()
   or a1_case_visao_completa()
-  or assigned_user_id = a1_ator()
   or analista_id = a1_ator()
   or correspondente_id = a1_ator()
   or (empresa_id is not null and empresa_id = a1_empresa_ator())
+  or exists (
+    select 1 from public.a1_partners p
+    where p.id = a1_ator()
+      and p.tenant_id = a1_cases.tenant_id
+      and p.type = 'corretor'
+      and lower(trim(p.name)) = lower(trim(coalesce(a1_cases.broker_name,'')))
+  )
 );
