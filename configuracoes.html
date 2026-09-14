@@ -1310,6 +1310,7 @@
           <select id="ge-role"><option value="admin">Gestor</option><option value="owner">Gestor (proprietário)</option></select>
         </div>
         <div class="form-group full"><label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem"><input type="checkbox" id="ge-active" checked> Ativo</label></div>
+        <div class="form-group full" style="padding-top:.65rem;border-top:1px solid var(--border)"><label>Dashboards liberados</label><div id="ge-dashboard-checks" style="display:flex;gap:.55rem;flex-wrap:wrap"></div></div>
       </div>
       <div style="font-size:.73rem;color:var(--t3);margin-top:.6rem">O gestor tem acesso completo ao painel, incluindo configurações e cadastro de outros gestores.</div>
     </div>
@@ -4520,86 +4521,50 @@ let GESTORES = [];
 function souGestor(){ return G.user && (G.user.role === 'owner' || G.user.role === 'admin'); }
 
 async function loadGestores(){
-  if(!souGestor()){
-    document.getElementById('gestor-tbody').innerHTML =
-      '<tr><td colspan="6" style="padding:2rem;text-align:center;color:#b45309">Somente um gestor pode ver e cadastrar outros gestores.</td></tr>';
-    return;
-  }
-  GESTORES = await fetch(`${A1.rest('a1_users')}?role=in.(owner,admin)&order=created_at.asc&select=id,name,cpf,email,role,is_active,created_at`,{headers:A1.headers()})
-    .then(r=>r.json()).catch(()=>[]);
-  if(!Array.isArray(GESTORES)) GESTORES=[];
+  if(!souGestor()){ document.getElementById('gestor-tbody').innerHTML='<tr><td colspan="6" class="pt-empty">Somente gestor.</td></tr>'; return; }
+  const [usuarios,marcas]=await Promise.all([
+    fetch(`${A1.rest(a1_users')}?role=in.(owner,admin)&order=created_at.asc&select=id,name,cpf,email,role,is_active,created_at`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest(a1_user_permissions')}?select=user_id,permission`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
+  ]);
+  GESTORES=Array.isArray(usuarios)?usuarios:[];
+  const por={}; (Array.isArray(marcas)?marcas:[]).forEach(x=>{(por[x.user_id] ||= []).push(x.permission);});
+  GESTORES.forEach(u=>u.dashboard_permissions=por[u.id]||[]);
   renderGestores();
 }
-
 function renderGestores(){
-  const tb=document.getElementById('gestor-tbody'); if(!tb) return;
-  if(!GESTORES.length){ tb.innerHTML='<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum gestor cadastrado.</td></tr>'; return; }
-  tb.innerHTML=GESTORES.map(u=>`<tr>
-    <td><b>${esc(u.name)}</b></td>
-    <td style="color:var(--t2)">${esc(u.cpf||'—')}</td>
-    <td style="color:var(--t2);font-size:.78rem">${esc(u.email||'—')}</td>
-    <td>${u.role==='owner'?'<span style="color:#7c3aed;font-weight:700;font-size:.75rem">Proprietário</span>':'<span style="font-size:.75rem">Gestor</span>'}</td>
-    <td>${u.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
-    <td>${idChip(u.id)}</td>
-    <td style="white-space:nowrap">
-      <button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button>
-      ${u.id===G.user.id?'<span style="font-size:.7rem;color:var(--t3);margin-left:.3rem">você</span>'
-        :`<button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteGestor('${u.id}')">Excluir</button>`}
-    </td></tr>`).join('');
+  const tb=document.getElementById('gestor-tbody'); if(!tb)return;
+  if(!GESTORES.length){tb.innerHTML='<tr><td colspan="7" class="pt-empty">Nenhum gestor cadastrado.</td></tr>';return;}
+  tb.innerHTML=GESTORES.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.cpf||'—')}</td><td>${esc(u.email||'—')}</td><td>${u.role==='owner'?'Proprietário':'Gestor'}</td><td>${u.is_active!==false?'Ativo':'Inativo'}</td><td>${idChip(u.id)}</td><td><button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button></td></tr>`).join('');
 }
-
 let EDIT_GESTOR_ID=null;
-function openGestor(id){
-  if(!souGestor()){ toast('Somente um gestor pode cadastrar outro gestor.','error'); return; }
-  const u = id ? GESTORES.find(x=>x.id===id) : null;
-  EDIT_GESTOR_ID = u ? u.id : null;
-  document.getElementById('gestor-modal-title').textContent = u ? 'Editar gestor' : 'Novo gestor';
-  document.getElementById('ge-name').value  = u?.name  || '';
-  document.getElementById('ge-cpf').value   = u?.cpf   || '';
-  document.getElementById('ge-email').value = u?.email || '';
-  document.getElementById('ge-password').value='';
-  document.getElementById('ge-pw-hint').textContent = u ? '(deixe vazio para manter a atual)' : '*';
-  document.getElementById('ge-role').value  = u?.role  || 'admin';
-  document.getElementById('ge-active').checked = u ? u.is_active!==false : true;
-  openModal('modal-gestor-bg');
+const GE_DASHBOARDS=[['ver_dashboard_lead','crm','Leads'],['ver_dashboard_pre_analise','PRE_ANALISE','Pré-análise'],['ver_dashboard_venda','COMERCIAL','Venda'],['ver_dashboard_repasse','repasse','Repasse'],['ver_dashboard_registro','registro','Registro']];
+async function geMontarDashboards(u){
+  const box=document.getElementById('ge-dashboard-checks');if(!box)return;
+  const marcadas=new Set(u?.dashboard_permissions||[]);
+  box.innerHTML=GE_DASHBOARDS.map(([k,m,l])=>`<label data-modulo="${m}" style="display:none;align-items:center;gap:.25rem;font-size:.78rem"><input class="ge-dashboard-perm" type="checkbox" value="${k}" ${marcadas.has(k)?'checked':''}> ${l}</label>`).join('');
+  const tem=await Promise.all(GE_DASHBOARDS.map(([,m])=>a1HasModule(m).catch(()=>false)));
+  [...box.children].forEach((el,i)=>el.style.display=tem[i]===true?'flex':'none');
 }
-
+function openGestor(id){
+  if(!souGestor()){toast('Somente gestor.','error');return;}
+  const u=id?GESTORES.find(x=>x.id===id):null; EDIT_GESTOR_ID=u?.id||null;
+  document.getElementById('gestor-modal-title').textContent=u?'Editar gestor':'Novo gestor';
+  document.getElementById('ge-name').value=u?.name||'';document.getElementById('ge-cpf').value=u?.cpf||'';document.getElementById('ge-email').value=u?.email||'';document.getElementById('ge-password').value='';document.getElementById('ge-role').value=u?.role||'admin';document.getElementById('ge-active').checked=u?u.is_active!==false:true;
+  openModal('modal-gestor-bg');geMontarDashboards(u);
+}
 async function saveGestor(){
-  if(!souGestor()){ toast('Somente um gestor pode cadastrar outro gestor.','error'); return; }
-  const name=document.getElementById('ge-name').value.trim();
-  const cpf=document.getElementById('ge-cpf').value.replace(/\D/g,'');
-  const pw=document.getElementById('ge-password').value;
-  if(!name){ toast('Informe o nome','error'); return; }
-  if(cpf.length!==11){ toast('O CPF deve ter 11 dígitos — é o login do gestor','error'); return; }
-  if(!EDIT_GESTOR_ID && pw.length<6){ toast('Defina uma senha de ao menos 6 caracteres','error'); return; }
-  if(pw && pw.length<6){ toast('A senha deve ter ao menos 6 caracteres','error'); return; }
-
-  const payload={
-    tenant_id:G.user.tenant_id, name, cpf,
-    email:document.getElementById('ge-email').value.trim(),
-    role:document.getElementById('ge-role').value,
-    is_active:document.getElementById('ge-active').checked
-  };
-  if(pw) payload.password_hash=await sha256(pw+'::a1');
-
-  const btn=document.getElementById('ge-save-btn'); btn.disabled=true; btn.textContent='Salvando...';
-  try{
-    let res;
-    if(EDIT_GESTOR_ID){
-      res=await fetch(`${A1.rest('a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(payload)});
-    } else {
-      res=await fetch(A1.rest('a1_users'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(payload)});
-    }
-    if(!res.ok){
-      const e=await res.json().catch(()=>({}));
-      const msg=(e.message||'').includes('unique') ? 'Já existe um usuário com este CPF.' : (e.message||('HTTP '+res.status));
-      throw new Error(msg);
-    }
-    toast(EDIT_GESTOR_ID?'Gestor atualizado':'Gestor cadastrado','success');
-    closeModal('modal-gestor-bg');
-    loadGestores();
-  }catch(e){ toast('Erro ao salvar: '+e.message,'error'); }
-  finally{ btn.disabled=false; btn.textContent='Salvar'; }
+  if(!souGestor())return;const name=document.getElementById('ge-name').value.trim(),cpf=document.getElementById('ge-cpf').value.replace(/\D/g,''),pw=document.getElementById('ge-password').value;
+  if(!name||cpf.length!==11||(!EDIT_GESTOR_ID&&pw.length<6)){toast('Informe nome, CPF e senha válida.','error');return;}
+  const body={tenant_id:G.user.tenant_id,name,cpf,email:document.getElementById('ge-email').value.trim(),role:document.getElementById('ge-role').value,is_active:document.getElementById('ge-active').checked};if(pw)body.password_hash=await sha256(pw+'::a1');
+  const res=EDIT_GESTOR_ID?await fetch(`${A1.rest(a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(body)}):await fetch(A1.rest('a1_users'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+  if(!res.ok){toast('Erro ao salvar gestor.','error');return;}
+  const id=EDIT_GESTOR_ID||((await res.json().catch(()=>[]))[0]||{}).id;if(!id){toast('Gestor salvo; não foi possível salvar dashboards.','error');return;}
+  const keys=['dashboard_access_configured',...GE_DASHBOARDS.map(x=>x[0])];
+  await fetch(`${A1.rest(a1_user_permissions')}?user_id=eq.${id}&permission=in.(${keys.join(',')})`,{method:'DELETE',headers:A1.headers()});
+  const selected=[...document.querySelectorAll('.ge-dashboard-perm:checked')].map(x=>x.value);
+  const p=await fetch(A1.rest('a1_user_permissions'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(['dashboard_access_configured',...selected].map(permission=>({user_id:id,permission})) )});
+  if(!p.ok){toast('Gestor salvo, mas dashboards não foram gravados.','error');return;}
+  toast('Gestor e dashboards atualizados','success');closeModal('modal-gestor-bg');loadGestores();
 }
 
 async function deleteGestor(id){
