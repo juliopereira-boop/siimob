@@ -49,13 +49,29 @@ const A1_DASHBOARD_PERMISSOES = {
 
 async function a1DashboardsDoCliente(){
   const chaves = Object.keys(A1_DASHBOARD_PERMISSOES);
-  const respostas = await Promise.all(chaves.map(m => a1HasModule(m).catch(() => null)));
-  return Object.fromEntries(chaves.map((m, i) => [m, respostas[i] === true]));
+  const licencas = await Promise.all(chaves.map(m => a1HasModule(m).catch(() => null)));
+  const user = A1.user || {};
+  // Gestor tem sua autorização consultada no banco; não confiamos em um retrato
+  // no localStorage para decidir que dashboard pode aparecer.
+  if (user.role && user.role !== 'partner') {
+    const permissoes = await Promise.all(chaves.map(async (m, i) => {
+      if (licencas[i] !== true) return false;
+      try {
+        const r = await fetch(A1.rpc('a1_perm'), {
+          method:'POST', headers:A1.headers(),
+          body:JSON.stringify({p_chave:A1_DASHBOARD_PERMISSOES[m]})
+        });
+        return r.ok && (await r.json()) === true;
+      } catch { return false; }
+    }));
+    return Object.fromEntries(chaves.map((m,i) => [m, permissoes[i] === true]));
+  }
+  return Object.fromEntries(chaves.map((m, i) => [m, licencas[i] === true]));
 }
 
 function a1PodeVerDashboardModulo(user, modulo, licencas){
-  if (!licencas || licencas[modulo] !== true) return false;
-  if (!user || user.role !== 'partner') return true;
+  if (!licencas || licencas[modulo] !== true || !user) return false;
+  if (user.role !== 'partner') return true;
   const perms = user.permissions || {};
   return perms.gerente === true || perms[A1_DASHBOARD_PERMISSOES[modulo]] === true;
 }
