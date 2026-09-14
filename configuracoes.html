@@ -4556,7 +4556,7 @@ async function saveGestor(){
   if(!souGestor())return;const name=document.getElementById('ge-name').value.trim(),cpf=document.getElementById('ge-cpf').value.replace(/\D/g,''),pw=document.getElementById('ge-password').value;
   if(!name||cpf.length!==11||(!EDIT_GESTOR_ID&&pw.length<6)){toast('Informe nome, CPF e senha válida.','error');return;}
   const body={tenant_id:G.user.tenant_id,name,cpf,email:document.getElementById('ge-email').value.trim(),role:document.getElementById('ge-role').value,is_active:document.getElementById('ge-active').checked};if(pw)body.password_hash=await sha256(pw+'::a1');
-  const res=EDIT_GESTOR_ID?await fetch(`${A1.rest(a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(body)}):await fetch(A1.rest('a1_users'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+  const res=EDIT_GESTOR_ID?await fetch(`${A1.rest(a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(body)}):await fetch(`${A1.rest('a1_users')}?select=id`,{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
   if(!res.ok){toast('Erro ao salvar gestor.','error');return;}
   const id=EDIT_GESTOR_ID||((await res.json().catch(()=>[]))[0]||{}).id;if(!id){toast('Gestor salvo; não foi possível salvar dashboards.','error');return;}
   const keys=['dashboard_access_configured',...GE_DASHBOARDS.map(x=>x[0])];
