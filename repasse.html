@@ -2393,24 +2393,23 @@ function applyPartnerRestrictions() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadData() {
-  const [stages, casosRes, edgeRows, cfgRows, analistasRows, corretoresRows, conveniosRows, agenciasRows, coordsRows, modalidadesRows,
-         imobsRows, ccaRows, emprRows, empresasRows] = await Promise.all([
+  const [stages, casosRes, edgeRows, cfgRows, parceirosRows, emprRows, empresasRows] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.repasse&order=position.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.${G.verArquivados?'true':'false'}&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,evaluation_expiry,assigned_user_id,partner_name,broker_name,broker_phone,real_estate_name,manager_name,payload,observations,is_new,new_at,manual_override,archived,created_at,updated_at`)
       .catch(()=>({linhas:[],total:0,completo:false,erro:'falha de rede'})),
     fetch(`${A1.rest('a1_stage_edges')}?select=from_id,to_id`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_config')}?key=in.(regionais,commission,wf_lock_repasse)&select=key,value`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.analista&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.convenio&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.agencia&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.coordenador&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.modalidade&order=name.asc`,  { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    // Estas quatro alimentam os filtros. Só nome e situação — são listas curtas
-    // e sem elas um cadastro recém-criado não aparecia para filtrar até existir
-    // um processo usando ele.
-    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=name,is_active&order=name.asc`, { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=name,is_active&order=name.asc`,         { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    // OITO consultas a a1_partners viraram UMA. Elas diferiam só pelo `type`, e o
+    // navegador abre no máximo seis conexões por servidor: as duas últimas
+    // ficavam esperando na fila as outras terminarem, atrasando a tela toda por
+    // nada. Uma leitura só, agrupada por tipo aqui embaixo, é o mesmo dado com
+    // um sétimo das idas ao servidor — e a1_partners é tabela pequena, de
+    // dezenas de linhas, não de dezenas de milhares.
+    fetch(`${A1.rest('a1_partners')}?type=in.(analista,corretor,convenio,agencia,coordenador,modalidade,imobiliaria,cca)&order=name.asc`,
+      { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    // Empreendimentos e empresas correspondentes fecham os filtros. Imobiliária e
+    // correspondente vêm na leitura de parceiros acima — sem elas, cadastro
+    // recém-criado não aparecia para filtrar até existir processo usando ele.
     fetch(`${A1.rest('a1_developments')}?select=name&order=name.asc`,                            { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_corr_empresas')}?select=name,is_active&order=name.asc`,                 { headers: A1.headers() }).then(r=>r.json()).catch(()=>[]),
   ]);
@@ -2423,14 +2422,19 @@ async function loadData() {
   G.casosTotal = (casosRes && casosRes.total != null) ? casosRes.total : cases.length;
   G.casosCompleto = !casosRes || casosRes.completo !== false;
   avisarCargaIncompleta(casosRes && casosRes.erro);
-  if (Array.isArray(analistasRows) && analistasRows.length) G.analistas = analistasRows; // popula o filtro de Analista
-  G.corretores = Array.isArray(corretoresRows) ? corretoresRows : [];
-  G.convenios  = Array.isArray(conveniosRows)  ? conveniosRows  : [];
-  G.agencias   = Array.isArray(agenciasRows)   ? agenciasRows   : [];
-  G.coordenadores = Array.isArray(coordsRows) ? coordsRows : [];
-  G.modalidades   = Array.isArray(modalidadesRows) ? modalidadesRows : [];
-  G.imobsFiltro   = Array.isArray(imobsRows)    ? imobsRows    : [];
-  G.ccasFiltro    = Array.isArray(ccaRows)      ? ccaRows      : [];
+  // A leitura única de parceiros, separada por tipo aqui. A ordem por nome veio
+  // do banco, então cada fatia já sai ordenada.
+  const _parc = Array.isArray(parceirosRows) ? parceirosRows : [];
+  const _porTipo = t => _parc.filter(x => x && x.type === t);
+  const _analistas = _porTipo('analista');
+  if (_analistas.length) G.analistas = _analistas;        // popula o filtro de Analista
+  G.corretores    = _porTipo('corretor');
+  G.convenios     = _porTipo('convenio');
+  G.agencias      = _porTipo('agencia');
+  G.coordenadores = _porTipo('coordenador');
+  G.modalidades   = _porTipo('modalidade');
+  G.imobsFiltro   = _porTipo('imobiliaria');
+  G.ccasFiltro    = _porTipo('cca');
   G.emprFiltro    = Array.isArray(emprRows)     ? emprRows     : [];
   G.empresasFiltro= Array.isArray(empresasRows) ? empresasRows : [];
   // Garante que TODO processo apareça no pipeline: processos com etapa inválida

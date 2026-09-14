@@ -277,6 +277,11 @@ function responder(url, metodo, corpo0) {
 
   const t = p.split('/rest/v1/')[1] || '';
   const filtroTipo = (qs.match(/type=eq\.([a-z_]+)/)||[])[1];
+  // As telas de Repasse deixaram de pedir a1_partners oito vezes, uma por tipo,
+  // e passaram a pedir UMA com type=in.(...). Sem modelar isto aqui, o falso
+  // devolveria a tabela inteira e os filtros da tela ficariam verdes por acaso.
+  const filtroTipos = ((qs.match(/type=in\.\(([^)]*)\)/)||[])[1]||'')
+    .split(',').map(x=>x.trim()).filter(Boolean);
   if (t === 'a1_tenants') return D.tenants;
   if (t === 'a1_stages') return D.stages;
   if (t === 'a1_cases') {
@@ -364,6 +369,7 @@ function responder(url, metodo, corpo0) {
   if (t === 'a1_partners') {
     let r = D.partners;
     if (filtroTipo) r = r.filter(x=>x.type===filtroTipo);
+    if (filtroTipos.length) r = r.filter(x=>filtroTipos.includes(x.type));
     if (/approved=eq\.false/.test(qs)) r = r.filter(x=>x.approved===false);
     if (/approved=eq\.true/.test(qs))  r = r.filter(x=>x.approved!==false);
     const id = (qs.match(/id=eq\.([a-z0-9-]+)/)||[])[1];
