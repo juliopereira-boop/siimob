@@ -126,19 +126,68 @@ const modalAberto = p => p.evaluate(() => {
     todosErros.push(...erros); await b.close();
   }
 
-  // ── 2. Criar Repasse não é atalho do cabeçalho ──────────────────────────
-  // A abertura parte do fluxo de Venda. Por isso não há exceção por perfil:
-  // mesmo quem tem a permissão não recebe um botão solto no topo.
-  console.log('\nO cabeçalho não oferece Novo Repasse');
-  for (const [rotulo, papel, opts] of [
-    ['corretor com a chave marcada', 'parceiro', { permissoes: { criar_repasses:true } }],
-    ['corretor sem a chave no cadastro', 'parceiro', { permissoes: {} }],
-    ['gestor', 'gestor', {}],
-    ['gerente', 'parceiro', { permissoes: { gerente:true, criar_repasses:false } }],
+  // ── 2. Quem PODE criar precisa ter por onde ──────────────────────────────
+  //
+  // Este trecho provava o contrário: que NINGUÉM via o botão, gestor incluído.
+  // A expectativa nasceu quando 05a1c6d tirou os atalhos de Repasse do
+  // cabeçalho global — decisão certa, atalho de um módulo não pertence ao topo
+  // de um sistema de vários. Só que o Arquivados foi remontado dentro do módulo
+  // e o Novo Repasse não foi. O teste então carimbou a ausência como regra, e
+  // por isso ficou verde enquanto analista e correspondente perdiam a única
+  // porta de entrada da criação manual — sem nada no cadastro ter mudado.
+  //
+  // É o erro que este repositório já pagou três vezes: o teste mentindo junto
+  // com a tela. A regra de verdade é a do dono, e é a mesma do banco
+  // (a1_cases_repasse_create_capability): gestor, analista e correspondente.
+  //
+  // Por conteúdo e não por contagem: cada linha diz QUEM é e o que espera.
+  console.log('\nO botão existe, e só para quem a política deixa criar');
+  for (const [rotulo, papel, opts, esperado] of [
+    ['gestor',                          'gestor',         {}, true],
+    ['analista com a chave marcada',    'parceiro',       { tipo:'analista', permissoes: { criar_repasses:true } }, true],
+    ['correspondente com a chave',      'correspondente', { permissoes: { criar_repasses:true } }, true],
+    // O inverso, que é o que o dono proibiu: a criação manual é da retaguarda.
+    ['analista SEM a chave',            'parceiro',       { tipo:'analista', permissoes: { criar_repasses:false } }, false],
+    ['correspondente SEM a chave',      'correspondente', { permissoes: {} }, false],
+    ['corretor com a chave marcada',    'parceiro',       { tipo:'corretor', permissoes: { criar_repasses:true } }, false],
+    ['coordenador com a chave marcada', 'parceiro',       { tipo:'coordenador', permissoes: { criar_repasses:true } }, false],
+    // `gerente` é marca de PARCEIRO, e a política não a aceita aqui: ela exige
+    // a1_e_gestor() (que é papel fora de 'partner') OU tipo analista/cca. Um
+    // gerente que seja corretor continua sem criar manualmente — e a tela tem de
+    // concordar com o banco, senão o formulário abre para ser recusado no fim.
+    // O gerente que é correspondente já está coberto duas linhas acima: quem o
+    // deixa entrar é o TIPO dele, não a marca.
+    ['gerente que é corretor',          'parceiro',       { tipo:'corretor', permissoes: { gerente:true } }, false],
   ]) {
-    const { b, p, erros } = await abrirComo('repasse.html', papel, opts);
+    for (const pag of ['repasse.html','listagem.html','andamento.html']) {
+      const { b, p, erros } = await abrirComo(pag, papel, opts);
+      // O primeiro paint só é invariante para quem NÃO pode: esse não vê o botão
+      // em instante nenhum, que era o defeito relatado. Para quem pode, aparecer
+      // cedo é o comportamento desejado — exigir o contrário transformaria a
+      // trava em atraso.
+      if (!esperado) {
+        checa(`${pag} · ${rotulo}: não aparece em instante nenhum`, !(await botaoVisivel(p)));
+      }
+      await p.waitForTimeout(1800);
+      checa(`${pag} · ${rotulo}: ${esperado ? 'vê' : 'não vê'} Novo Repasse`,
+        (await botaoVisivel(p)) === esperado);
+      todosErros.push(...erros); await b.close();
+    }
+  }
+
+  // O botão tem de estar DENTRO do módulo Repasse, ao lado de Arquivados — não
+  // solto no cabeçalho global, que foi justamente o que 05a1c6d corrigiu.
+  console.log('\nE ele mora dentro do módulo, não no cabeçalho');
+  {
+    const { b, p, erros } = await abrirComo('repasse.html', 'gestor', {});
     await p.waitForTimeout(1800);
-    checa(`${rotulo}: não vê Novo Repasse no cabeçalho`, !(await botaoVisivel(p)));
+    const onde = await p.evaluate(() => {
+      const el = document.querySelector('[onclick="openNewCase()"]');
+      if (!el) return 'ausente';
+      if (el.closest('.hdr, header, #hdr, .hdr-right')) return 'cabeçalho';
+      return el.closest('#tab-repasse') ? 'módulo Repasse' : 'outro lugar';
+    });
+    checa('fica no módulo Repasse', onde === 'módulo Repasse', onde);
     todosErros.push(...erros); await b.close();
   }
 
@@ -157,9 +206,13 @@ const modalAberto = p => p.evaluate(() => {
     todosErros.push(...erros); await b.close();
   }
   {
+    // O espelho da verificação acima, e é ele que impede a trava de virar
+    // exagero: o gestor NÃO passa pela consulta de permissão de parceiro, então
+    // o banco mudo não pode tirar dele o botão. Antes daqui saía o contrário —
+    // "gestor também não recebe" — porque o botão não existia para ninguém.
     const { b, p, erros } = await abrirComo('repasse.html', 'gestor', { bancoMudo:true });
     await p.waitForTimeout(1800);
-    checa('gestor também não recebe o atalho no cabeçalho', !(await botaoVisivel(p)));
+    checa('gestor continua com o botão mesmo com o banco mudo', await botaoVisivel(p));
     todosErros.push(...erros); await b.close();
   }
 

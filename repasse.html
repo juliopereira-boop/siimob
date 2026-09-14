@@ -690,6 +690,20 @@
       <div class="regional-tabs" id="regional-tabs"></div>
       <div style="display:flex;align-items:center;gap:.5rem">
         <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Andamento</span>
+        <!-- O "+ Novo Repasse" voltou. Ele era um atalho no cabeçalho global e
+             saiu em 05a1c6d junto com o de Arquivados, porque atalho de Repasse
+             não pertence ao topo de um sistema de vários módulos. Só que o
+             Arquivados foi remontado AQUI dentro e este não: sobrou a trava
+             (aplicarBotaoNovoRepasse) mirando um elemento que deixou de
+             existir, e a criação manual ficou alcançável apenas pelo import de
+             PDF. Analista e correspondente perderam a porta de entrada sem que
+             nada no cadastro tivesse mudado.
+             Nasce `hidden` de propósito: era o defeito relatado antes — o botão
+             aparecia por segundos para quem não podia, porque quem escondia
+             rodava depois de catorze consultas. Quem revela é
+             aplicarBotaoNovoRepasse(), e só para quem passa na mesma regra do
+             banco. -->
+        <button class="btn btn-primary btn-sm" onclick="openNewCase()" hidden>+ Novo Repasse</button>
         <button class="btn btn-ghost btn-sm" id="btn-arquivados" onclick="toggleArquivados()" title="Ver processos arquivados">Arquivados</button>
       </div>
     </div>

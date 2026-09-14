@@ -679,6 +679,20 @@
       <div class="regional-tabs" id="regional-tabs"></div>
       <div style="display:flex;align-items:center;gap:.5rem">
         <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Andamento</span>
+        <!-- O "+ Novo Repasse" voltou. Ele era um atalho no cabeçalho global e
+             saiu em 05a1c6d junto com o de Arquivados, porque atalho de Repasse
+             não pertence ao topo de um sistema de vários módulos. Só que o
+             Arquivados foi remontado AQUI dentro e este não: sobrou a trava
+             (aplicarBotaoNovoRepasse) mirando um elemento que deixou de
+             existir, e a criação manual ficou alcançável apenas pelo import de
+             PDF. Analista e correspondente perderam a porta de entrada sem que
+             nada no cadastro tivesse mudado.
+             Nasce `hidden` de propósito: era o defeito relatado antes — o botão
+             aparecia por segundos para quem não podia, porque quem escondia
+             rodava depois de catorze consultas. Quem revela é
+             aplicarBotaoNovoRepasse(), e só para quem passa na mesma regra do
+             banco. -->
+        <button class="btn btn-primary btn-sm" onclick="openNewCase()" hidden>+ Novo Repasse</button>
         <button class="btn btn-ghost btn-sm" id="btn-arquivados" onclick="toggleArquivados()" title="Ver processos arquivados">Arquivados</button>
       </div>
     </div>
@@ -2155,7 +2169,13 @@ function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
   if (p.gerente) return true; // Gerente = acesso total, como o gestor
-  const defaults = { ver_repasses:true, criar_repasses:true, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
+  // criar_repasses AUSENTE vale NÃO PODE, e isto tem de ser igual nas três telas.
+  // A política do banco usa a1_perm(), que trata chave ausente como negativa; se
+  // aqui o padrão fosse `true`, um correspondente sem a chave veria o botão,
+  // preencheria o formulário inteiro e só então o banco recusaria a gravação.
+  // repasse.html já estava assim; andamento e listagem ficaram para trás — a
+  // mesma dívida da triplicação que já mordeu em ver_dashboard.
+  const defaults = { ver_repasses:true, criar_repasses:false, editar_repasses:false, ver_dashboard:false, baixar_documentos:false, editar_perfil:true, ver_todos_repasses:false, ver_todos_analistas:true };
   return key in p ? !!p[key] : (defaults[key] ?? false);
 }
 
@@ -2175,7 +2195,17 @@ function hasPerm(key) {
 function podeCriarRepasse() {
   // Gestor não depende de consulta nenhuma.
   if (!G.user || G.user.role !== 'partner') return true;
-  // Parceiro cuja permissão não pôde ser confirmada no banco não ganha o botão.
+  // A criação manual é operação da retaguarda: somente Analista e
+  // Correspondente (CCA), sempre com a permissão marcada positivamente.
+  //
+  // Esta linha faltava aqui e em listagem.html — estava só em repasse.html. É a
+  // dívida da triplicação: a política do banco
+  // (a1_cases_repasse_create_capability) exige o tipo desde 2026-09-13, e sem
+  // ela estas duas telas ofereceriam o botão a um corretor com a chave marcada
+  // para o banco recusar a gravação depois. Botão que mente é pior que botão
+  // ausente: a pessoa preenche o formulário inteiro antes de descobrir.
+  const tipo = String(G.user.type || '').toLowerCase();
+  if (!['analista','cca'].includes(tipo)) return false;
   // Rede fora não é autorização — e o localStorage guarda o retrato do login,
   // que é justamente o que fica velho quando o gestor tira o acesso.
   if (!G.permsConfirmadas) return false;
