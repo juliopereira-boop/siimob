@@ -390,11 +390,14 @@ function waLead(){ const l=G.editingData||{}; waTo(l.client_phone,G.editingId); 
 
 // ─── New lead ────────────────────────────────────────────────────────────────
 function openNewLead(){
+  const souCorretor = G.user?.role === 'partner' && G.user?.type === 'corretor';
   ['n-name','n-phone','n-email','n-source','n-broker','n-bairro','n-dorms','n-vagas','n-preco-min','n-preco-max','n-value','n-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['n-finalidade','n-tipo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('n-fgts').checked=false; document.getElementById('n-permuta').checked=false;
   const ps=document.getElementById('n-pipe'); ps.innerHTML=pipeKeys().map(k=>`<option value="${k}">${esc(pipeLabel(k))}</option>`).join(''); ps.value=G.pipe;
   fillPipeStages('n-pipe','n-stage');
+  const broker = document.getElementById('n-broker');
+  if (broker) { broker.value = souCorretor ? G.user.name : ''; broker.disabled = souCorretor; }
   document.getElementById('modal-new').classList.remove('hidden');
 }
 function fillPipeStages(pipeSelId,stageSelId){
@@ -411,7 +414,7 @@ async function createLead(){
   const name=val('n-name'); if(!name){ toast('Informe o nome do lead','error'); return; }
   const stageId=document.getElementById('n-stage').value; const st=G.stages.find(s=>s.id===stageId);
   const body={ tenant_id:G.user.tenant_id, module_key:'crm', client_name:name, client_phone:val('n-phone'), client_email:val('n-email'),
-    development:val('n-bairro')?val('n-bairro'):'', partner_name:val('n-source'), broker_name:val('n-broker'),
+    development:val('n-bairro')?val('n-bairro'):'', partner_name:val('n-source'), broker_name:(G.user?.role==='partner' && G.user?.type==='corretor') ? G.user.name : val('n-broker'),
     contract_value:parseFloat(val('n-value'))||null, observations:val('n-obs'),
     stage_id:stageId||null, stage_name:st?st.name:null, is_new:true, payload:{ qual:qualFromForm('n-') } };
   const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
@@ -535,7 +538,7 @@ async function patchLead(patch, eventDesc){
 async function saveLead(){
   if(!document.getElementById('e-name')){ toast('Abra a aba Dados para salvar o cadastro','info'); return; }
   const patch={ client_name:val('e-name'), client_phone:val('e-phone'), client_email:val('e-email'),
-    partner_name:val('e-source'), broker_name:val('e-broker'), development:val('e-interest'), contract_value:parseFloat(val('e-value'))||null, observations:val('e-obs') };
+    partner_name:val('e-source'), broker_name:(G.user?.role==='partner' && G.user?.type==='corretor') ? G.user.name : val('e-broker'), development:val('e-interest'), contract_value:parseFloat(val('e-value'))||null, observations:val('e-obs') };
   if(await patchLead(patch,'Cadastro do lead atualizado')){ closeModal('modal-lead'); populateFilters(); renderFunil(); toast('Lead salvo','success'); }
 }
 async function saveQual(){
