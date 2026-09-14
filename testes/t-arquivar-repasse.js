@@ -133,6 +133,27 @@ const deletes  = pedidos => pedidos.filter(x => x.m === 'DELETE' && /a1_cases/.t
 const patchArq = (pedidos, valor) => pedidos.filter(x =>
   x.m === 'PATCH' && /a1_cases/.test(x.u) && new RegExp(`"archived"\\s*:\\s*${valor}`).test(x.corpo || ''));
 const idsNaTela   = p => p.evaluate(() => (G.cases || []).map(c => c.id));
+// Visível de verdade, não só presente no DOM — um botão dentro de uma aba
+// escondida existe, responde ao querySelector e não pode ser clicado.
+const visivel = (p, sel) => p.evaluate(s => {
+  const el = document.querySelector(s);
+  return !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+}, sel);
+// repasse.html abre no Dashboard e guarda o quadro em #tab-repasse; em
+// andamento.html e listagem.html o quadro já é a tela. Lá a aba "Repasse" da
+// barra de cima é um LINK para /slug/andamento (outra página), então dentro de
+// repasse.html o único caminho até #tab-repasse é switchTab() — é assim que
+// t-board.js também chega nele. Clicar na aba levaria o teste para outro
+// arquivo e ele deixaria de conferir a cópia que quer conferir.
+const irParaOQuadro = async p => {
+  const precisa = await p.evaluate(() => {
+    const t = document.getElementById('tab-repasse');
+    return !!t && getComputedStyle(t).display === 'none';
+  });
+  if (!precisa) return;
+  await p.evaluate(() => switchTab('repasse', document.querySelector('.tab-btn')));
+  await p.waitForTimeout(700);
+};
 const desenhado   = p => p.evaluate(() => (document.getElementById('kanban-board')?.innerHTML || '') +
                                           (document.getElementById('cases-tbody')?.innerHTML || ''));
 const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-wrap .toast')]
@@ -214,6 +235,17 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
           urls.some(u => /a1_cases\?.*archived=eq\.false/.test(u)));
     checa(`${pag}: o arquivado não aparece por padrão`, !(await idsNaTela(p)).includes('c9'));
     checa(`${pag}: e o ativo aparece`, (await idsNaTela(p)).includes('c1'));
+
+    // Arquivados DEIXOU de ser atalho do cabeçalho e virou botão do módulo
+    // Repasse (a verificação logo acima é justamente o que guarda essa
+    // decisão). Em repasse.html o quadro mora na aba Repasse, que não é a que
+    // abre: quem chega pela página cai no Dashboard. Então o caminho de
+    // verdade tem esse passo, e o teste precisa dá-lo — sem isto ele clicava
+    // num botão dentro de um #tab-repasse escondido, o clique nunca acontecia
+    // e a suíte acusava um defeito de arquivamento que não existe.
+    await irParaOQuadro(p);
+    checa(`${pag}: o botão Arquivados está à vista dentro do Repasse`,
+          await visivel(p, '#btn-arquivados'));
 
     await p.click('#btn-arquivados').catch(() => {});
     await p.waitForTimeout(900);

@@ -9,6 +9,10 @@
 // gestor; o corretor confere. Por isso o campo é somente leitura e o salvamento
 // não pode mandar imobiliária nenhuma.
 //
+// Desde 2026-09-14 o salvamento nem passa mais por a1_partners: é o RPC
+// a1_atualizar_meu_perfil, e a tabela só aceita escrita de gestor. Ver a nota
+// no meio do arquivo — o que se confere agora é a AUSÊNCIA do PATCH.
+//
 // Duas coisas que este teste existe para não deixar apodrecer:
 //
 // 1. O campo mostra NOME, não id. Guardar 'p1' e mostrar 'p1' seria pior que
@@ -111,16 +115,33 @@ const textoDoModal = p => p.evaluate(() => {
       // "Sem poder alterar" também significa que o salvamento não manda o
       // vínculo de volta. Se um dia o campo virar editável sem querer, é aqui
       // que o teste grita antes de o corretor se mudar sozinho de imobiliária.
+      //
+      // MUDOU A REGRA, E PARA MELHOR: até 2026-09-14 o corretor salvava o
+      // próprio perfil com um PATCH direto em a1_partners, e era isso que este
+      // trecho conferia. Agora a política partners_manager_write só deixa
+      // GESTOR escrever na tabela, e a autoedição passa pelo RPC
+      // a1_atualizar_meu_perfil — que aceita nome, e-mail, telefone e senha, e
+      // mais nada (supabase/sql/2026-09-14_restringe_gestao_de_parceiros.sql).
+      //
+      // A decisão nova que estas verificações passam a proteger: o corretor não
+      // tem porta de escrita na própria linha. Antes, "não manda imobiliária"
+      // dependia de a tela lembrar de não mandar; agora nem existe requisição
+      // em que a imobiliária caberia — e a ausência do PATCH é o que prova isso.
       await p.evaluate(() => { window.__POSTS = []; });
       await p.click('#prof-save-btn');
       await p.waitForTimeout(700);
-      const corpo = await p.evaluate(() => {
-        const x = (window.__POSTS || []).find(y => /a1_partners/.test(y.url) && y.m === 'PATCH');
+      const rpc = await p.evaluate(() => {
+        const x = (window.__POSTS || []).find(y => /a1_atualizar_meu_perfil/.test(y.url) && y.m === 'POST');
         return x ? x.body : null;
       });
-      checa('salvar o perfil continua mandando o nome', corpo && /Carla Dias/.test(corpo), String(corpo));
+      const patchDireto = await p.evaluate(() =>
+        (window.__POSTS || []).filter(y => /a1_partners/.test(y.url) && y.m !== 'GET').map(y => y.m + ' ' + y.url));
+      checa('salvar o perfil passa pelo RPC a1_atualizar_meu_perfil', !!rpc, String(rpc));
+      checa('e continua mandando o nome', rpc && /Carla Dias/.test(rpc), String(rpc));
+      checa('nenhuma escrita direta em a1_partners sai da tela',
+            patchDireto.length === 0, patchDireto.join(' / '));
       checa('e não manda imobiliária nenhuma',
-            corpo && !/imobiliaria|extra/i.test(corpo), String(corpo));
+            rpc && !/imobiliaria|extra/i.test(rpc), String(rpc));
 
       checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
       todosErros.push(...erros);

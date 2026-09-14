@@ -200,6 +200,83 @@ function kpi(lista, rotulo) {
       !NOMES.some(n => htmlCO.includes(n)) && !CAMPOS.some(cp => htmlCO.includes(cp)));
     checa('nem CPF', !CPFS.some(c => htmlCO.includes(c)) && !/\b\d{11}\b/.test(htmlCO));
 
+    // ── Rankings governados (bloco novo) ──
+    // A decisão que estas asserções guardam: o quadro completo é de gestor,
+    // coordenador e gerente; todo o resto vê só a própria linha, sob o título
+    // "Minha performance". Antes desta entrega não havia ranking nenhum aqui.
+    const grade = await p.locator('#painel-modulo').textContent();
+    checa('a Venda ganha o quadro de rankings', /Rankings de Vendas/.test(grade));
+    checa('com os três recortes contratados',
+      /Corretores/.test(grade) && /Imobiliárias/.test(grade) && /Coordenadores/.test(grade),
+      grade.slice(0, 200));
+    // Conteúdo, não contagem: "tem três colunas" continuaria verde com as três
+    // vazias, que é exatamente como um ranking quebra sem fazer barulho.
+    checa('o corretor do negócio aberto aparece no ranking de corretores',
+      /Ana Souza/.test(grade), grade.slice(0, 200));
+    // O coordenador NÃO é coluna do comercial: sai do extra.coordenador_id do
+    // corretor. Se esse pulo se perder, a coluna fica vazia e nada acusa.
+    checa('e o coordenador vem pelo vínculo do corretor, não por coluna do negócio',
+      /Marcos Lima/.test(grade), grade.slice(0, 200));
+    // O negócio da base não tem imobiliária vinculada: o quadro tem de assumir a
+    // falta, e não desenhar um primeiro lugar que não existe.
+    checa('sem vínculo de imobiliária, o quadro assume a falta',
+      /Sem dados vinculados no período/.test(grade));
+
+    // A ordem é a que a legenda promete. Provado na própria função, com linhas
+    // sintéticas, porque a base de teste tem um comercial só — com ele não há
+    // como ordenar nada, e a asserção passaria sem provar coisa alguma.
+    const ordemVolume = await p.evaluate(() => pnRank(
+      [{ k:'a' }, { k:'a' }, { k:'a' }, { k:'b' }, { k:'b' }].map((x, i) => ({ ...x, ok: i >= 3 })),
+      'k', { a:'Volumosa', b:'Poucas' }, () => 0, x => x.ok).map(r => r.nome));
+    checa('sem dinheiro em jogo, o ranking ordena por VOLUME, como diz a legenda',
+      JSON.stringify(ordemVolume) === JSON.stringify(['Volumosa', 'Poucas']), JSON.stringify(ordemVolume));
+    const ordemValor = await p.evaluate(() => pnRank(
+      [{ k:'a', v:10 }, { k:'b', v:1 }, { k:'b', v:1 }, { k:'b', v:1 }],
+      'k', { a:'Cara', b:'Barata' }, x => x.v, () => null).map(r => r.nome));
+    checa('e onde há VGV o dinheiro continua mandando na frente do volume',
+      JSON.stringify(ordemValor) === JSON.stringify(['Cara', 'Barata']), JSON.stringify(ordemValor));
+
+    // A1.user só tem getter: quem troca a pessoa é o localStorage.
+    const quemVe = await p.evaluate(() => {
+      const orig = localStorage.getItem('a1_user');
+      const casos = {
+        gestor:      { id:'u1', role:'owner' },
+        coordenador: { id:'p7', role:'partner', type:'coordenador' },
+        gerente:     { id:'p3', role:'partner', type:'corretor', permissions:{ gerente:true } },
+        corretor:    { id:'p3', role:'partner', type:'corretor', permissions:{} },
+        analista:    { id:'p2', role:'partner', type:'analista', permissions:{} }
+      };
+      const r = {};
+      for (const k in casos) {
+        localStorage.setItem('a1_user', JSON.stringify(casos[k]));
+        r[k] = pnPodeVerRanking();
+      }
+      if (orig != null) localStorage.setItem('a1_user', orig);
+      return r;
+    });
+    checa('gestor, coordenador e gerente veem o ranking do time',
+      quemVe.gestor === true && quemVe.coordenador === true && quemVe.gerente === true,
+      JSON.stringify(quemVe));
+    checa('corretor e analista comuns NÃO veem o ranking do time',
+      quemVe.corretor === false && quemVe.analista === false, JSON.stringify(quemVe));
+
+    // E o desenho obedece à regra: redesenhado como corretor comum, o quadro
+    // inteiro vira "Minha performance" — sem consultar nada de novo.
+    const soMeu = await p.evaluate(() => {
+      const orig = localStorage.getItem('a1_user'), alvo = document.getElementById('painel-modulo');
+      localStorage.setItem('a1_user', JSON.stringify({ id:'p3', role:'partner', type:'corretor', permissions:{} }));
+      pnDesenharCO(alvo);
+      const t = alvo.textContent;
+      if (orig != null) localStorage.setItem('a1_user', orig);
+      pnDesenharCO(alvo);
+      return t;
+    });
+    checa('corretor comum vê "Minha performance" no lugar do ranking do time',
+      /Minha performance/.test(soMeu) && !/Rankings de Vendas/.test(soMeu), soMeu.slice(0, 160));
+    checa('e a própria linha dele continua sendo mostrada', /Ana Souza/.test(soMeu));
+    checa('mas o quadro do time volta assim que o gestor redesenha',
+      /Rankings de Vendas/.test(await p.locator('#painel-modulo').textContent()));
+
     // ── Voltar para o Repasse ──
     await p.click('#seletor-painel-botoes button[data-painel="repasse"]');
     await p.waitForTimeout(400);

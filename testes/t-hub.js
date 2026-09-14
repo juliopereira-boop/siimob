@@ -12,9 +12,37 @@ const { abrir, checa, resumo } = require('./comum');
   // montado por JS e só existe para gestor — por isso não está no HTML.
   checa('6 grupos', grupos.length === 6, 'n='+grupos.length);
   checa('todo grupo tem explicação', grupos.every(g=>g.sub.length > 10));
-  // 21 de sempre + Perfis de acesso, que entrou em "Usuários e acesso",
-  // + Exclusão definitiva, na Área de risco.
-  checa('23 cards no total', grupos.reduce((a,g)=>a+g.cards.length,0) === 23);
+  // Aqui havia uma CONTAGEM ("23 cards no total"), e ela apodreceu exatamente
+  // como a skill avisa: entrou o cartão do Checklist operacional — decisão
+  // legítima, com sub-tela e tudo — e o número passou a acusar um defeito que
+  // não existia, enquanto NÃO diria qual cartão mudou.
+  //
+  // A lista abaixo diz QUAIS cartões o hub tem. Ela protege a mesma coisa que
+  // a contagem protegia (cartão que some sem ninguém notar, cartão que aparece
+  // sem dono) e, quando muda, a falha mostra o nome — quem lê decide se foi
+  // decisão ou descuido. Cartão de módulo licenciado não entra: sem licença ele
+  // nem chega ao DOM, e é t-config-modulos.js que vigia isso.
+  const CARTOES = [
+    // Workflow e etapas
+    'Editor de Workflow', 'Flags de Etapa', 'Tipos de documento',
+    'Checklist operacional', 'Configuração de Comissão',
+    // Usuários e acesso
+    'Perfis de acesso', 'Usuários Gestores', 'Analistas de Crédito', 'Corretores',
+    'Validação de corretores', 'Coordenadores', 'Correspondentes / CCA',
+    // Empreendimentos e parceiros
+    'Empreendimentos', 'Regionais', 'Imobiliárias', 'Despachantes',
+    // Cadastros do repasse
+    'Convênios', 'Modalidades de Imóvel', 'Agências', 'Bancos', 'Cartórios',
+    // Ferramentas e suporte
+    'Importar base', 'Sugerir melhoria',
+    // Área de risco
+    'Exclusão definitiva',
+  ];
+  const naTela  = grupos.flatMap(g => g.cards);
+  const faltam  = CARTOES.filter(c => !naTela.includes(c));
+  const sobram  = naTela.filter(c => !CARTOES.includes(c));
+  checa('o hub tem exatamente os cartões previstos', !faltam.length && !sobram.length,
+        `faltam: ${faltam.join(', ') || '—'} | sobram: ${sobram.join(', ') || '—'}`);
   checa('nenhum card órfão fora de grupo',
     (await p.locator('#cfg-hub .cfg-hub-card').count()) === (await p.locator('#cfg-hub .cfg-grupo .cfg-hub-card').count()));
 
@@ -27,10 +55,14 @@ const { abrir, checa, resumo } = require('./comum');
   await p.fill('#cfg-busca','zzzzz'); await p.waitForTimeout(250);
   checa('avisa quando não acha nada', await p.locator('#cfg-busca-vazio').isVisible());
   await p.fill('#cfg-busca',''); await p.waitForTimeout(250);
-  checa('limpar devolve tudo', (await p.locator('#cfg-hub .cfg-hub-card:not(.oculto)').count()) === 23);
+  checa('limpar devolve tudo',
+    (await p.locator('#cfg-hub .cfg-hub-card:not(.oculto)').count()) === naTela.length,
+    'esperado=' + naTela.length);
 
   console.log('\n== AS TELAS CONTINUAM ABRINDO ==');
-  const VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas',
+  // 'checklist' entrou junto com o cartão dele: cartão que o hub mostra e que
+  // não abre é a pior versão da caixa decorativa — a que o gestor clica.
+  const VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','checklist','comissao','analistas',
                  'corretores','precad','gestores','convenios','modalidades','coordenadores','agencias',
                  'correspondentes','despachantes','bancos','cartorios'];
   let ruins = [];
@@ -38,7 +70,7 @@ const { abrir, checa, resumo } = require('./comum');
     await p.evaluate(x => openCfgView(x), v); await p.waitForTimeout(200);
     if (!(await p.locator(`#cfg-view-${v}`).isVisible())) ruins.push(v);
   }
-  checa('as 19 telas abrem', ruins.length === 0, ruins.join(','));
+  checa(`as ${VIEWS.length} telas abrem`, ruins.length === 0, ruins.join(','));
   await p.evaluate(() => closeCfgView()); await p.waitForTimeout(200);
   checa('voltar mostra o hub', await p.locator('#cfg-hub').isVisible());
   checa('nenhum XSS', (await p.evaluate(()=>window.__XSS||0)) === 0);

@@ -37,9 +37,20 @@ const { abrir, checa, resumo } = require('./comum');
   }
   {
     const { b, p, erros } = await abrir('configuracoes.html');
+    // Sem licença nenhuma dos módulos novos, nem a aba da Pré-análise nem a da
+    // Venda podem aparecer. É a regra nº 4 do dono: módulo novo nasce desligado
+    // para todo mundo, e um que apareça sozinho é bug grave.
+    //
+    // Quando isto falha só do lado da Venda, o suspeito é o laço de licenças de
+    // configuracoes.html: ele percorre ['PRE_ANALISE','COMERCIAL','crm',
+    // 'registro'] e resolve o destino com `mod === 'PRE_ANALISE' ? 'pre-analise'
+    // : 'comercial'` — então 'crm' e 'registro', que são licenciados, caem no
+    // ramo do comercial e acendem a aba Venda de um cliente que não a comprou.
+    const vistas = await p.evaluate(() => ['link-pre-analise','link-comercial']
+      .filter(id => { const e = document.getElementById(id);
+        return e && e.offsetParent !== null; }));
     checa('Configurações abre e não mostra as abas novas',
-      !(await p.locator('#link-pre-analise').isVisible())
-      && !(await p.locator('#link-comercial').isVisible()));
+      vistas.length === 0, 'abas acesas sem licença: ' + JSON.stringify(vistas));
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
   }
@@ -311,12 +322,14 @@ const { abrir, checa, resumo } = require('./comum');
       await p.evaluate(() => !performance.getEntriesByType('resource')
         .some(r => /a1_comerciais/.test(r.name))));
 
-    // Os destinos vêm das arestas da esteira, não de uma lista fixa.
-    const destinos = await p.evaluate(() =>
-      Array.from(document.querySelectorAll('#dos-mover option')).map(o => o.textContent));
-    checa('só oferece as transições que a esteira permite a partir daqui',
-      destinos.length === 2 && destinos.includes('Aprovada') && destinos.includes('Reprovada'),
-      JSON.stringify(destinos));
+    // O seletor de situação do rodapé saiu de propósito: mover a pré-análise é
+    // gesto do quadro, arrastando o cartão. Duas portas para a mesma ação
+    // deixavam empurrar o processo sem ver a esteira, e a do rodapé era a que
+    // ninguém olhava antes de clicar. Quem prova que os destinos continuam
+    // vindo das arestas (e não de uma lista fixa) é t-pre-analise.js, no quadro.
+    checa('o rodapé do dossiê não oferece uma segunda porta para a esteira',
+      await p.evaluate(() => !document.getElementById('dos-mover')
+                          && !document.getElementById('dos-btn-mover')));
 
     checa('nenhum XSS', await p.evaluate(() => window.__XSS === 0));
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
@@ -413,10 +426,18 @@ const { abrir, checa, resumo } = require('./comum');
     await p.evaluate(() => abrirDossie('co1')); await p.waitForTimeout(800);
     checa('o dossiê abre na proposta',
       (await p.locator('#p-venda').count()) === 1);
-    // Venda 260k, entrada 5k, aprovado 240k → faltam 15k.
-    checa('avisa quando a venda passa do que o crédito cobre',
-      /acima do crédito aprovado/i.test(await p.locator('#p-conferencia').textContent()),
-      await p.locator('#p-conferencia').textContent());
+    // Venda 260k, aprovado 240k → o comprador precisa pôr 20k de recursos
+    // próprios; as condições da proposta somam 5k. A conferência deixou de
+    // dizer "venda acima do crédito" e passou a dizer QUANTO falta nas
+    // condições para fechar — mesma aritmética, com o número que resolve.
+    const conf = await p.locator('#p-conferencia').textContent();
+    checa('avisa quando as condições não cobrem os recursos próprios',
+      /Faltam/i.test(conf) && /15\.000,00/.test(conf), conf);
+    // E o campo dos recursos próprios é conta, não digitação: 260k − 240k.
+    checa('e mostra os recursos próprios necessários, calculados',
+      await p.evaluate(() => { const e = document.getElementById('p-entrada');
+        return !!e && e.disabled === true && e.value === '20.000,00'; }),
+      await p.evaluate(() => (document.getElementById('p-entrada')||{}).value));
 
     await p.click('#dos-tabs [data-dt="origem"]'); await p.waitForTimeout(250);
     const orig = await p.locator('#dos-body').textContent();
@@ -437,13 +458,30 @@ const { abrir, checa, resumo } = require('./comum');
     checa('explica que exigir contrato assinado é opção do cliente',
       /opção do cliente/i.test(rp));
 
-    checa('o botão de criar Repasse está no rodapé',
-      (await p.locator('#btn-repasse').count()) === 1);
-    await p.click('#btn-repasse'); await p.waitForTimeout(700);
-    const acao = await p.evaluate(() => (window.__POSTS||[])
-      .filter(x => /rpc\/a1_co_executar_acao/.test(x.url)));
-    checa('criar Repasse chama a ação do servidor', acao.length === 1);
-    checa('nenhum insert direto em a1_cases',
+    // O botão "Criar Repasse" do rodapé saiu. A criação deixou de ser um
+    // clique à parte e passou a acontecer DENTRO da transição, quando o
+    // negócio chega à situação marcada com o selo VENDIDO — a mesma transação
+    // de a1_co_transicionar, que recusa a mudança se o Repasse não estiver
+    // apto. Com dois caminhos era possível carimbar a venda como vendida e
+    // deixar o Repasse para depois; agora não é.
+    checa('não existe mais um botão de criar Repasse à parte',
+      (await p.locator('#btn-repasse').count()) === 0);
+    checa('e a aba Repasse explica que o cartão nasce do selo VENDIDO',
+      /selo\s+VENDIDO/i.test(rp), rp.slice(0, 200));
+
+    // A prova de que a tela usa o que a esteira devolve, e não o que ela
+    // supõe: com repasse_case_id na resposta, o aviso diz que o cartão nasceu.
+    // Sem isto, "a esteira criou" e "a tela achou que criou" seriam a mesma
+    // coisa para quem lê o toast.
+    await p.route(/rpc\/a1_co_transicionar/, r => r.fulfill({ status:200,
+      contentType:'application/json',
+      body: JSON.stringify({ ok:true, situacao_id:'cs2', repasse_case_id:'c1' }) }));
+    await p.evaluate(() => { window.__POSTS = []; fecharModal('modal-dossie'); moverCartao('co1','cs2'); });
+    await p.waitForTimeout(900);
+    const avisoRp = await p.evaluate(() => document.getElementById('toast-wrap').innerText);
+    checa('quando a esteira cria o Repasse junto, a tela diz que criou',
+      /Repasse criado/i.test(avisoRp), avisoRp);
+    checa('e o Repasse nasce pela esteira, nunca por insert direto em a1_cases',
       await p.evaluate(() => !(window.__POSTS||[])
         .some(x => /a1_cases/.test(x.url) && x.m === 'POST')));
 
@@ -495,11 +533,16 @@ const { abrir, checa, resumo } = require('./comum');
 
   console.log('\n== A ESTEIRA NÃO SE MOVE POR EDIÇÃO DIRETA ==');
   {
+    // Pelo quadro, que é o único lugar de onde se move desde que o seletor do
+    // rodapé saiu. O que se protege aqui não é o gesto, é o caminho: a esteira
+    // anda por a1_pa_transicionar, e os gatilhos do banco recusam PATCH em
+    // situacao_id justamente para que não exista um segundo caminho.
     const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE'] });
-    await p.evaluate(() => abrirDossie('pa1')); await p.waitForTimeout(800);
-    await p.evaluate(() => { document.getElementById('dos-mover').value = 'ps3'; });
-    await p.evaluate(() => { window.prompt = () => 'porque sim'; });
-    await p.click('#dos-btn-mover'); await p.waitForTimeout(700);
+    await p.evaluate(() => { window.prompt = () => 'porque sim';
+      history.replaceState(null,'','?vista=andamento'); aplicarVista(); renderVista(); });
+    await p.waitForTimeout(400);
+    await p.evaluate(() => moverCartao('pa1','ps3'));
+    await p.waitForTimeout(700);
     const posts = await p.evaluate(() => window.__POSTS || []);
     checa('mover situação chama a função de transição',
       posts.some(x => /rpc\/a1_pa_transicionar/.test(x.url)));

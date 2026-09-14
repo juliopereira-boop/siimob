@@ -39,8 +39,17 @@ const D = {
     {id:'p3',tenant_id:'t1',type:'corretor',name:'Ana Souza',cpf:'33333333333',is_active:true,approved:true,permissions:{etapas:{s1:'editar'}},extra:{coordenador_id:'p7'}},
     // Vinculada ao perfil "Corretor". Existe para provar que o cadastro abre
     // seguindo o perfil, e não as marcas soltas — que aqui dizem o contrário
-    // de propósito: criar_repasses:false enquanto o perfil diz true.
-    {id:'p30',tenant_id:'t1',type:'corretor',name:'Clara Perfil',cpf:'55566677788',is_active:true,approved:true,perfil_id:'pf1',permissions:{criar_repasses:false,ver_dashboard:true,etapas:{s1:'editar'}}},
+    // de propósito: criar_repasses:false enquanto o perfil diz true. A segunda
+    // marca é o espelho disso: ver_dashboard_repasse:true na PESSOA e ausente
+    // no perfil, para o teste poder exigir a caixa desmarcada mesmo com a marca
+    // dizendo sim.
+    //
+    // A marca era 'ver_dashboard', a chave global. Ela deixou de existir quando
+    // o dashboard virou uma permissão por módulo, e a migração
+    // (supabase/sql/2026-09-13_migra_dashboard_por_modulo.sql) fez nas linhas
+    // reais exatamente o que está feito aqui. Mantê-la seria guardar no andaime
+    // uma chave que o catálogo já não tem — caixa que o formulário nem monta.
+    {id:'p30',tenant_id:'t1',type:'corretor',name:'Clara Perfil',cpf:'55566677788',is_active:true,approved:true,perfil_id:'pf1',permissions:{criar_repasses:false,ver_dashboard_repasse:true,etapas:{s1:'editar'}}},
     {id:'p4',tenant_id:'t1',type:'corretor',name:'Bruno '+XSS,cpf:'44444444444',is_active:true,approved:false,permissions:{},created_at:'2026-08-25T10:00:00Z',extra:{origem:'pre-cadastro',imobiliaria_nome:'Imob Alfa',enviado_em:'2026-08-25T10:00:00Z'}},
     {id:'p5',tenant_id:'t1',type:'convenio',name:'Convênio Alfa',is_active:true,approved:true},
     {id:'p6',tenant_id:'t1',type:'agencia',name:'Centro',is_active:true,approved:true,extra:{numero:'1234'}},
@@ -240,6 +249,13 @@ function responder(url, metodo, corpo0) {
     return { ok:true, situacao_id:'ps2' };
   if (p.includes('/rpc/a1_pa_executar_acao')) return { ok:true, comercial_id:'co1' };
   if (p.includes('/rpc/a1_co_executar_acao')) return { ok:true, repasse_case_id:'c1' };
+  // a1_perm() no banco começa com "when a1_e_gestor() then true": para quem não
+  // é parceiro a resposta é sempre sim, sem consultar perfil nem marca. E o
+  // navegador só chama esta RPC para gestor (js/modulo-shell.js) — o parceiro é
+  // resolvido pelas permissões já carregadas na sessão. Sem esta linha a RPC
+  // caía no {ok:true} genérico lá embaixo, que não é `true`, e o dono do cliente
+  // ficava sem NENHUM dashboard: o andaime é que mentia, não a tela.
+  if (p.includes('/rpc/a1_perm')) return true;
   if (p.includes('/rpc/a1_manutencao_estado')) return MANUTENCAO;
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;

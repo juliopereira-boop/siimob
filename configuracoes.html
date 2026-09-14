@@ -1793,6 +1793,14 @@ async function init() {
       if (mod === 'registro') G.temRegistro = ok === true;
       excDefConferir();
       if (ok !== true) return;
+      // SÓ estes dois têm aba nesta tela. O laço também percorre `crm` e
+      // `registro`, que entram apenas para alimentar o catálogo de permissões
+      // — e o ternário abaixo, que só distingue PRE_ANALISE do RESTO, jogava
+      // os dois em 'comercial': cliente com licença de CRM ou Registro via a
+      // aba VENDA acesa, com link e submenu, sem ter comprado o módulo. O dado
+      // seguia protegido pelo RLS; o que vazava era a promessa. Regra do dono:
+      // sem licença o elemento não pode nem existir no DOM.
+      if (mod !== 'PRE_ANALISE' && mod !== 'COMERCIAL') return;
       // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
       // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
       // a Listagem so se alcancava entrando no Andamento primeiro.
@@ -2294,8 +2302,12 @@ function applyPartnerRestrictions() {
     document.querySelectorAll('[onclick="openNewCase()"]').forEach(el => el.style.display = 'none');
   }
 
-  // Se sem permissão de ver: bloquear dashboard
-  if (!hasPerm('ver_dashboard')) {
+  // A chave global `ver_dashboard` foi aposentada por
+  // 2026-09-13_migra_dashboard_por_modulo, que a APAGA das linhas. Este trecho
+  // só roda para parceiro — e parceiro é devolvido antes de chegar aqui —,
+  // então era inerte; fica alinhado com as outras telas para não sobrar uma
+  // quarta verdade sobre a mesma permissão.
+  if (!hasPerm('ver_dashboard_repasse')) {
     const dashBtn = document.querySelector('.tab-btn[onclick*="dashboard"]');
     if (dashBtn) dashBtn.style.display = 'none';
   }

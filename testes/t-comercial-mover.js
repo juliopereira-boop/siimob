@@ -18,9 +18,11 @@
 //      quando não vale a mensagem diz PARA ONDE dá para ir;
 //   4. p_versao_esperada vai junto, e quando ela fica para trás a tela recarrega
 //      o estado em vez de mandar o usuário recarregar;
-//   5. a permissão certa é co_editar — e o falso positivo mora aqui: para o
-//      corretor com co_editar:false NÃO mover é o comportamento correto. Por
-//      isso cada verificação vem em par.
+//   5. a permissão certa é co_mover — e o falso positivo mora aqui: para o
+//      corretor sem ela NÃO mover é o comportamento correto. Por isso cada
+//      verificação vem em par. (Mover deixou de ser co_editar: virou chave
+//      própria no catálogo e em a1_co_transicionar, porque quem corrige a
+//      proposta não é necessariamente quem empurra o negócio na esteira.)
 //
 // Sobre o andaime: o dublê de Supabase da suíte (testes/fake.js) responde
 // SEMPRE {ok:true} para a1_co_transicionar e não mexe em linha nenhuma. Com ele
@@ -269,25 +271,38 @@ const CORRETOR = perms => ({ id:'p3', tenant_id:'t1', name:'Ana Souza', role:'pa
     todosErros.push(...erros); await b.close();
   }
 
-  // ── 5. A permissão certa é co_editar, e o par prova os dois lados ────────
-  console.log('\nMover na Venda segue co_editar');
+  // ── 5. A permissão certa é co_mover, e o par prova os dois lados ─────────
+  console.log('\nMover na Venda segue co_mover');
   {
-    const { b, p, erros, est } = await abrir({ usuario: CORRETOR({ co_ver:true }) });
-    checa('corretor sem co_editar: o cartão não ganha a mãozinha de arrastar',
+    // co_editar marcado de propósito: editar a proposta NÃO dá direito de
+    // empurrar o negócio. Se a tela voltasse a ler co_editar aqui, este
+    // cenário passaria a arrastar e o teste reprova.
+    const { b, p, erros, est } = await abrir({ usuario: CORRETOR({ co_ver:true, co_editar:true }) });
+    checa('corretor com co_editar mas sem co_mover: o cartão não ganha a mãozinha de arrastar',
       await p.evaluate(() => { const c = document.querySelector('.co-card[data-id="co1"]');
         return !!c && !c.classList.contains('arrastavel'); }));
     await arrastar(p, 'co1', 'cs2');
     await p.waitForTimeout(700);
     checa('e o arrasto não chega na esteira', (await transicoesPedidas(p)).length === 0);
     checa('o banco não mudou', est.comerciais[0].situacao_id === 'cs1');
+
+    // Sem `draggable` não há dragstart, então o arrasto acima morre antes de
+    // qualquer aviso — e é por isso que a recusa precisa ser provada chamando
+    // moverCartao à mão. Se a trava morasse só no desenho do cartão, quem
+    // abrisse o console moveria o negócio à vontade.
+    await p.evaluate(() => moverCartao('co1','cs2'));
+    await p.waitForTimeout(700);
+    checa('chamar moverCartao à mão também não chega na esteira',
+      (await transicoesPedidas(p)).length === 0);
+    checa('e o banco continua em Proposta', est.comerciais[0].situacao_id === 'cs1');
     const t = await avisos(p);
-    checa('o aviso nomeia a permissão que falta',
-      t.includes('Editar proposta e mover na esteira'), t);
+    checa('o aviso nomeia a permissão que falta, com o rótulo do cadastro',
+      t.includes('Mover na esteira'), t);
     todosErros.push(...erros); await b.close();
   }
   {
-    const { b, p, erros, est } = await abrir({ usuario: CORRETOR({ co_ver:true, co_editar:true }) });
-    checa('corretor COM co_editar: o cartão ganha a mãozinha de arrastar',
+    const { b, p, erros, est } = await abrir({ usuario: CORRETOR({ co_ver:true, co_mover:true }) });
+    checa('corretor COM co_mover: o cartão ganha a mãozinha de arrastar',
       await p.evaluate(() => { const c = document.querySelector('.co-card[data-id="co1"]');
         return !!c && c.classList.contains('arrastavel'); }));
     await arrastar(p, 'co1', 'cs2');
@@ -309,20 +324,43 @@ const CORRETOR = perms => ({ id:'p3', tenant_id:'t1', name:'Ana Souza', role:'pa
     todosErros.push(...erros); await b.close();
   }
 
-  // ── 6. O rodapé do dossiê continua funcionando pelo mesmo caminho ────────
-  console.log('\nO seletor do dossiê usa a mesma esteira');
+  // ── 6. O dossiê NÃO é uma segunda porta para a esteira ───────────────────
+  //
+  // O rodapé do dossiê tinha um seletor de situação. Ele saiu de propósito
+  // ("Remove seletor inferior de movimento na venda"): duas portas para a mesma
+  // ação deixavam empurrar o negócio fora do contexto visual da esteira, e a do
+  // rodapé era justamente a que ninguém olhava antes de clicar.
+  //
+  // Este bloco protege as duas metades da decisão: a porta fechada continua
+  // fechada, E fechá-la não levou o arrastar junto — senão não haveria como
+  // mover o negócio em lugar nenhum, que é exatamente o relato do dono que
+  // originou este arquivo.
+  console.log('\nO dossiê não abre uma segunda porta para a esteira');
   {
     const { b, p, erros, est } = await abrir();
     await p.evaluate(() => { window.prompt = () => null; abrirDossie('co1'); });
-    await p.waitForTimeout(500);
-    checa('o seletor oferece só o destino desenhado',
-      await p.evaluate(() => { const s = document.getElementById('dos-mover');
-        return s.options.length === 1 && s.options[0].value === 'cs2'; }));
-    await p.evaluate(() => moverSituacao());
+    await p.waitForTimeout(600);
+    checa('o dossiê abriu', await p.evaluate(() =>
+      !document.getElementById('modal-dossie').classList.contains('hidden')));
+    checa('e o rodapé não tem seletor nem botão de mover',
+      await p.evaluate(() => !document.getElementById('dos-mover')
+                          && !document.getElementById('dos-btn-mover')));
+    // Rodapé vazio sem explicação mandaria o gestor procurar o botão que saiu.
+    const rodape = await p.evaluate(() => document.getElementById('dos-acoes').innerText);
+    checa('em vez disso, diz de onde vem o cartão de Repasse',
+      /selo VENDIDO/i.test(rodape), rodape);
+    checa('abrir o dossiê não move nada sozinho',
+      (await transicoesPedidas(p)).length === 0 && est.comerciais[0].situacao_id === 'cs1');
+
+    await p.evaluate(() => fecharModal('modal-dossie'));
+    await p.waitForTimeout(300);
+    await arrastar(p, 'co1', 'cs2');
     await p.waitForTimeout(900);
-    checa('moveu pelo rodapé também', est.comerciais[0].situacao_id === 'cs2');
-    checa('o dossiê fechou depois do sucesso',
-      await p.evaluate(() => document.getElementById('modal-dossie').classList.contains('hidden')));
+    checa('e o quadro continua sendo a porta que funciona',
+      est.comerciais[0].situacao_id === 'cs2');
+    checa('o cartão passou a ser desenhado na coluna nova',
+      (await colunaDoCartao(p, 'Maria Titular')).startsWith('Contrato assinado'),
+      await colunaDoCartao(p, 'Maria Titular'));
     checa('nada de XSS', await p.evaluate(() => window.__XSS) === 0);
     todosErros.push(...erros); await b.close();
   }

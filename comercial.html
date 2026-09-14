@@ -772,8 +772,8 @@ function renderDossie(){
   const f = { proposta:dosProposta, origem:dosOrigem, contrato:dosContrato,
               documentos:dosDocumentos, checklist:dosChecklist, historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
   document.getElementById('dos-body').innerHTML = f ? f() : '';
-  // O alerta de "venda acima do crédito" tem de aparecer ao ABRIR a proposta
-  // já salva, não só quando alguém digita. Ligado só ao oninput, ele ficava
+  // A conferência dos recursos próprios tem de aparecer ao ABRIR a proposta já
+  // salva, não só quando alguém digita. Ligada só ao oninput, ela ficava
   // invisível justamente para quem abre o negócio para conferir.
   if (G.abaDossie === 'proposta') {
     renderCondicoesProposta();
@@ -790,7 +790,7 @@ function dosProposta(){
       <div class="fg"><label>Valor da venda (R$)</label>
         <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda/100).toFixed(2).replace('.',',')) : ''}"
                inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this);conferirProposta()"></div>
-      <div class="fg"><label>Recursos próprios nas condições (R$)</label>
+      <div class="fg"><label>Recursos próprios necessários (R$)</label>
         <input id="p-entrada" value="" inputmode="decimal" disabled></div>
       <div class="fg"><label>Desconto concedido (R$)</label>
         <input id="p-desc" value="${p.desconto != null ? esc((p.desconto/100).toFixed(2).replace('.',',')) : ''}"
@@ -1136,9 +1136,12 @@ function dosRepasse(){
   return `<div class="aviso i">Ainda não existe cartão de Repasse para este negócio.</div>
     ${assinado ? '<div class="aviso s">Há contrato assinado.</div>'
                : '<div class="aviso w">Não há contrato assinado. Exigir contrato assinado antes do repasse é <strong>opção do cliente</strong>, marcada na transição da esteira — não é regra fixa do sistema.</div>'}
-    <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">Quando a esteira permitir, o botão
-    <strong>Criar Repasse</strong> aparece no rodapé. O cartão nasce na etapa inicial que o próprio
-    cliente configurou no workflow de Repasse, com o nome do titular e os valores aprovados.</p>`;
+    <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O cartão de Repasse nasce sozinho
+    quando o negócio chega à situação marcada com o selo <strong>VENDIDO</strong> na esteira da Venda
+    — é só arrastar o cartão para lá no Andamento. Ele nasce na etapa inicial que o próprio cliente
+    configurou no workflow de Repasse, com o nome do titular e os valores aprovados. Se o Repasse
+    ainda não estiver apto, a esteira recusa a mudança e explica o motivo, em vez de deixar uma venda
+    vendida sem repasse correspondente.</p>`;
 }
 
 function podeMoverComercial(co){
@@ -1152,40 +1155,15 @@ function montarRodape(){
     : (podeMoverComercial(co) ? '<span class="sub">A criação de Repasse ocorre pelo selo VENDIDO da esteira.</span>' : '');
 }
 
-async function moverSituacao(){
-  const co = G.atual;
-  if (!podeMoverComercial(co)){
-    toast('Você não tem a permissão "Mover na esteira" da Venda.','error');
-    return;
-  }
-  const para = document.getElementById('dos-mover').value;
-  if (!para) return;
-  const just = prompt('Justificativa (opcional):') || null;
-  const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
-  try {
-    if (await transicionar(co, para, just)) fecharModal('modal-dossie');
-  } finally { btn.disabled = false; }
-}
-
-async function criarRepasse(){
-  const btn = document.getElementById('btn-repasse'); btn.disabled = true; btn.textContent = 'Criando…';
-  try {
-    const res = await fetch(A1.rpc('a1_co_executar_acao'), {
-      method:'POST', headers:A1.headers(),
-      body: JSON.stringify({ p_comercial:G.atual.id, p_acao:'CREATE_REPASS' }) });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    if (j && j.ok === false){ toast(j.erro || 'Não foi possível criar o Repasse.','error'); return; }
-    toast('Cartão de Repasse criado.','success');
-    G.atual.repasse_case_id = j.repasse_case_id;
-    await carregar();
-    montarRodape();
-    trocarAbaDossie('repasse', document.querySelector('#dos-tabs [data-dt="repasse"]'));
-  } finally {
-    const b = document.getElementById('btn-repasse');
-    if (b){ b.disabled = false; b.textContent = 'Criar Repasse'; }
-  }
-}
+// O rodapé do dossiê não move e não cria mais nada — e as duas funções que
+// faziam isso saíram junto com os controles que as chamavam. moverSituacao()
+// lia um #dos-mover removido de propósito (duas portas para a mesma ação
+// deixavam mover o negócio fora do contexto visual da esteira) e criarRepasse()
+// lia um #btn-repasse que deixou de existir quando a criação do Repasse passou
+// a ser consequência do selo VENDIDO, dentro da mesma transação da esteira.
+// Ambas ficaram lendo null: função morta que estoura é pior que função ausente.
+// Quem move o negócio é o arrastar do quadro (moverCartao → transicionar), e é
+// a própria a1_co_transicionar que devolve o repasse_case_id quando cria.
 
 async function mensagemErro(res, padrao){
   try {

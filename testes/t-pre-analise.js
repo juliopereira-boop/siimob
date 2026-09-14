@@ -227,8 +227,14 @@ async function preencherAssistente(p){
     todosErros.push(...erros); await b.close();
   }
 
-  // O simétrico do de cima: corretor sem pa_editar precisa ver a chave
-  // nomeada, porque para ele a permissão É o motivo e existe o que marcar.
+  // O simétrico do de cima: corretor sem a chave precisa vê-la nomeada, porque
+  // para ele a permissão É o motivo e existe o que marcar.
+  //
+  // A chave aqui é pa_mover, e não pa_editar: mover na esteira virou permissão
+  // própria (js/permissoes.js + a1_pa_transicionar, que passou a exigir
+  // a1_perm('pa_mover')). Quem corrige o cadastro de um processo não
+  // necessariamente pode empurrá-lo adiante — e quem já tinha pa_editar ganhou
+  // pa_mover na migração, então ninguém perdeu poder no caminho.
   {
     const { b, p, erros } = await abrir({
       user:CORRETOR, perms:{ pa_ver:true },
@@ -238,7 +244,12 @@ async function preencherAssistente(p){
     await p.evaluate(() => { if (typeof moverCartao === 'function') moverCartao('pa1','ps3'); });
     await p.waitForTimeout(700);
     const t = await avisos(p);
-    checa('corretor sem pa_editar vê a permissão nomeada', /pa_editar/.test(t), t);
+    checa('corretor sem pa_mover vê a permissão nomeada', /pa_mover/.test(t), t);
+    // E em português. PERM_ROTULO já ficou para trás uma vez: a chave nova
+    // entrou no catálogo e não no mapa da tela, e a frase saiu com o
+    // identificador cru duas vezes — inútil para quem procura a caixa.
+    checa('e com o rótulo que o gestor lê no cadastro, não só a chave crua',
+      /Mover na esteira/i.test(t), t);
     todosErros.push(...erros); await b.close();
   }
 
@@ -321,19 +332,48 @@ async function preencherAssistente(p){
     todosErros.push(...erros); await b.close();
   }
 
-  // A trava que NÃO pode sumir: sem pa_editar ninguém move, e o aviso diz o
+  // A trava que NÃO pode sumir: sem pa_mover ninguém move, e o aviso diz o
   // porquê. O "Corretor teste" do cliente de demonstração está exatamente aqui.
-  console.log('\n4c. Sem pa_editar, mover continua proibido');
+  //
+  // O par (sem / com) é o que faz a prova valer. Só o lado negativo passaria
+  // trivialmente numa tela que tivesse travado o arrastar para todo mundo — e
+  // é justamente isso que a separação de pa_editar e pa_mover poderia ter
+  // causado sem ninguém perceber.
+  console.log('\n4c. Mover na esteira segue pa_mover — e só pa_mover');
   {
-    const { b, p, erros } = await abrir({ user:CORRETOR, perms:{ pa_ver:true, pa_criar:true, pa_editar:false } });
+    // pa_editar marcado de propósito: editar o cadastro NÃO dá direito de
+    // empurrar o processo. Se a tela voltasse a ler pa_editar aqui, este
+    // cenário passaria a arrastar e o teste reprova.
+    const { b, p, erros } = await abrir({
+      user:CORRETOR, perms:{ pa_ver:true, pa_criar:true, pa_editar:true, pa_mover:false } });
     await p.evaluate(() => { history.replaceState(null,'','?vista=andamento'); aplicarVista(); renderVista(); });
     await p.waitForTimeout(400);
-    checa('os cartões não são arrastáveis', await p.locator('.pa-card[draggable="true"]').count() === 0);
+    checa('com pa_editar mas sem pa_mover, os cartões não são arrastáveis',
+      await p.locator('.pa-card[draggable="true"]').count() === 0);
     await p.evaluate(() => { window.__POSTS = []; if (typeof moverCartao === 'function') moverCartao('pa1','ps3'); });
     await p.waitForTimeout(500);
     checa('e chamar a mão não manda nada ao banco',
       (await posts(p, /rpc\/a1_pa_transicionar/, 'POST')).length === 0);
-    checa('o aviso nomeia pa_editar', /pa_editar/.test(await avisos(p)), await avisos(p));
+    const t = await avisos(p);
+    checa('o aviso nomeia pa_mover', /pa_mover/.test(t), t);
+    checa('e o rótulo em português junto', /Mover na esteira/i.test(t), t);
+    todosErros.push(...erros); await b.close();
+  }
+  {
+    // O outro lado: com pa_mover e SEM pa_editar o cartão anda. É o corretor
+    // que só empurra o processo pela esteira sem poder mexer no cadastro.
+    const { b, p, erros } = await abrir({
+      user:CORRETOR, perms:{ pa_ver:true, pa_mover:true, pa_editar:false } });
+    await p.evaluate(() => { history.replaceState(null,'','?vista=andamento'); aplicarVista(); renderVista(); });
+    await p.waitForTimeout(400);
+    checa('com pa_mover, o cartão ganha a mãozinha de arrastar',
+      await p.locator('.pa-card[data-id="pa1"][draggable="true"]').count() === 1);
+    await p.evaluate(() => { window.__POSTS = []; moverCartao('pa1','ps3'); });
+    await p.waitForTimeout(700);
+    const chamadas = await posts(p, /rpc\/a1_pa_transicionar/, 'POST');
+    checa('e o movimento chega na esteira, com processo e destino certos',
+      chamadas.length === 1 && chamadas[0].p_pre_analise === 'pa1' && chamadas[0].p_para === 'ps3',
+      JSON.stringify(chamadas));
     todosErros.push(...erros); await b.close();
   }
 

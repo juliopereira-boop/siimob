@@ -148,8 +148,12 @@ const gravado = (p, re) => p.evaluate(r => {
       await p.evaluate(() => document.getElementById('co-perfil').value) === 'pf1');
     checa('a caixa segue o perfil, não a marca solta',
       await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked) === true);
+    // A chave é 'ver_dashboard_repasse' e não a antiga 'ver_dashboard' global:
+    // o dashboard virou uma permissão POR MÓDULO, e a chave global saiu do
+    // catálogo. Clara tem a marca própria dizendo sim, e o perfil dela não a
+    // concede — é esse par que dá sentido ao "mesmo a marca dizendo sim".
     checa('e o que o perfil não dá fica desmarcado, mesmo a marca dizendo sim',
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard"]').checked) === false);
+      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked) === false);
     checa('as caixas ficam travadas — clicar não prometeria nada',
       await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => c.disabled)));
     checa('e a tela diz de onde vem a permissão',
@@ -162,7 +166,7 @@ const gravado = (p, re) => p.evaluate(r => {
     const g = await gravado(p, /a1_partners/);
     checa('grava o vínculo com o perfil', g && g.perfil_id === 'pf1', JSON.stringify(g && g.perfil_id));
     checa('e preserva as marcas próprias, sem copiar as do perfil',
-      g && g.permissions.criar_repasses === false && g.permissions.ver_dashboard === true,
+      g && g.permissions.criar_repasses === false && g.permissions.ver_dashboard_repasse === true,
       JSON.stringify(g && g.permissions));
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
@@ -184,7 +188,7 @@ const gravado = (p, re) => p.evaluate(r => {
       await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => !c.disabled)));
     checa('e mostram de novo o que o gestor tinha marcado',
       await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked) === false &&
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard"]').checked) === true);
+      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked) === true);
 
     await p.evaluate(() => saveCorretor());
     await p.waitForTimeout(500);
@@ -303,6 +307,38 @@ const gravado = (p, re) => p.evaluate(r => {
     })(RAIZ);
     const corpo = arquivos.map(a => fs.readFileSync(a, 'utf8')).join('\n');
 
+    // ── Leitura por INDIREÇÃO ────────────────────────────────────────────────
+    //
+    // As cinco permissões de dashboard (uma por módulo) não aparecem escritas
+    // em nenhum `hasPerm('...')`: quem as lê é A1_DASHBOARD_PERMISSOES, em
+    // js/modulo-shell.js, um mapa módulo→chave que a tela indexa
+    // (`perms[A1_DASHBOARD_PERMISSOES[modulo]]`) e manda para o banco
+    // (`p_chave: A1_DASHBOARD_PERMISSOES[m]`). É leitura de verdade — some a
+    // marca, some a aba do Dashboard — só que dinâmica.
+    //
+    // Achar o leitor era a saída certa, e não afrouxar a guarda: ela continua
+    // exigindo que a chave chegue a uma EXPRESSÃO DE LEITURA. A diferença é
+    // que agora ela segue um salto. Um mapa que ninguém indexa não vale nada
+    // aqui, e chave largada num objeto qualquer continua órfã — só conta o
+    // mapa que de fato indexa permissão ou pergunta ao a1_perm.
+    const mapasLeitores = new Set();
+    for (const m of corpo.matchAll(/(?:perm|perms|permissions)\s*\??\[\s*([A-Za-z_$][\w$]*)\s*\[/g))
+      mapasLeitores.add(m[1]);
+    for (const m of corpo.matchAll(/p_chave\s*:\s*([A-Za-z_$][\w$]*)\s*\[/g))
+      mapasLeitores.add(m[1]);
+
+    const lidasPorIndireacao = new Set();
+    for (const nome of mapasLeitores) {
+      // A declaração do mapa, até o fecho do literal: só as chaves que estão
+      // DENTRO dele contam.
+      const decl = new RegExp(`(?:const|let|var)\\s+${nome}\\s*=\\s*([\\[{][\\s\\S]*?[\\]}])\\s*;`).exec(corpo);
+      if (!decl) continue;
+      for (const s of decl[1].matchAll(/['"]([a-z_]+)['"]/g)) lidasPorIndireacao.add(s[1]);
+    }
+    checa('a guarda enxerga o mapa que lê permissão por indireção',
+      mapasLeitores.size >= 1 && lidasPorIndireacao.size >= 1,
+      'mapas: ' + [...mapasLeitores].join(', '));
+
     for (const k of catalogo) {
       const leituras = [
         new RegExp(`hasPerm\\(\\s*['"]${k}['"]`),        // telas
@@ -312,7 +348,8 @@ const gravado = (p, re) => p.evaluate(r => {
         new RegExp(`\\bp\\.${k}\\b|\\bperm\\.${k}\\b`),
         new RegExp(`\\[['"]${k}['"]\\]`),
       ];
-      checa(`'${k}' é lida por alguém`, leituras.some(re => re.test(corpo)));
+      checa(`'${k}' é lida por alguém`,
+        leituras.some(re => re.test(corpo)) || lidasPorIndireacao.has(k));
     }
   }
 

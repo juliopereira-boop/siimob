@@ -258,9 +258,10 @@
 <!-- ══════════ INICIAR VENDA — as informações que faltam ══════════
      O motor já existe no banco (a1_pa_executar_acao → a1_criar_comercial) e ele
      recebe só o id da pré-análise. O que a Venda mostra na proposta, portanto,
-     ninguém tinha como preencher no nascimento: o cartão chegava lá vazio e o
-     alerta de "venda acima do crédito aprovado" — o aviso mais útil daquela
-     tela — ficava mudo até alguém digitar. É isto que este passo resolve. -->
+     ninguém tinha como preencher no nascimento: o cartão chegava lá vazio e a
+     conferência dos recursos próprios — o aviso mais útil daquela tela, que diz
+     quanto falta nas condições para fechar o que o crédito não cobre — ficava
+     muda até alguém digitar. É isto que este passo resolve. -->
 <div class="modal-bg hidden" id="modal-venda">
   <div class="modal">
     <div class="modal-hdr">
@@ -1315,11 +1316,18 @@ async function criarPreAnalise(){
 // descobrir o óbvio: o gestor precisa saber QUAL caixa marcar e ONDE. O rótulo
 // aqui é o mesmo que o gestor lê no cadastro (js/permissoes.js), e a chave crua
 // vem junto porque é por ela que se procura no formulário.
+// Chave nova no catálogo tem de entrar AQUI junto. Quando `pa_mover` e
+// `pa_iniciar_venda` se separaram de `pa_editar`, este mapa ficou para trás e a
+// frase saía "falta a permissão "pa_mover" (pa_mover)" — o identificador cru
+// duas vezes, e nenhuma palavra que o gestor ache no formulário. O rótulo é
+// justamente a ponte entre o erro e a caixa que resolve.
 const PERM_ROTULO = {
   pa_ver:           'Ver pré-análises',
   pa_criar:         'Criar pré-análise',
-  pa_editar:        'Editar pré-análise',
-  analisar_credito: 'Analisar crédito'
+  pa_editar:        'Editar pré-análises',
+  pa_mover:         'Mover na esteira',
+  pa_iniciar_venda: 'Iniciar venda',
+  analisar_credito: 'Analisar crédito e documentos'
 };
 function faltaPermissao(chave, oQueFalhou){
   const rotulo = PERM_ROTULO[chave] || chave;
@@ -2017,34 +2025,11 @@ async function conferirPodeVender(){
   } catch { /* idem: silêncio vira "não sei", nunca "não pode" */ }
 }
 
-async function moverSituacao(){
-  const p = G.atual, para = document.getElementById('dos-mover').value;
-  if (!podeMoverPa(p)){
-    toast(faltaPermissao('pa_mover', 'Mover esta pré-análise na esteira'),'error');
-    return;
-  }
-  if (!para) return;
-  // O banco tranca de qualquer jeito; o aviso daqui e que diz O QUE falta, e
-  // chega antes de a pessoa digitar a justificativa a toa.
-  const falta = docsObrigatoriosFaltando();
-  if (falta.length){ toast(a1DocsAvisoFaltando(falta),'error'); return; }
-  const just = prompt('Justificativa (opcional):') || null;
-  const btn = document.getElementById('dos-btn-mover'); btn.disabled = true;
-  try {
-    const res = await fetch(A1.rpc('a1_pa_transicionar'), {
-      method:'POST', headers:A1.headers(),
-      body: JSON.stringify({ p_pre_analise:p.id, p_para:para, p_justificativa:just, p_versao_esperada:p.versao })
-    });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok){ toast(traduzErro(j),'error'); return; }
-    // O orquestrador respondeu 200 e disse "não": o motivo vem em j.erro, com o
-    // mesmo vocabulário das exceções — então passa pelo mesmo tradutor.
-    if (j && j.ok === false){ toast(traduzErro({ message:j.erro }) || 'A esteira barrou a transição.','error'); return; }
-    toast('Situação alterada.','success');
-    fecharModal('modal-dossie');
-    await carregar();
-  } finally { btn.disabled = false; }
-}
+// A mudança de etapa da Pré-análise acontece SÓ no quadro, arrastando o cartão
+// (moverCartao). A função moverSituacao() que existia aqui lia um seletor
+// #dos-mover que saiu do rodapé do dossiê: ficou lendo null, e um botão morto
+// que estoura é pior que um botão ausente. Se um dia voltar uma segunda porta,
+// ela tem de nascer junto com o controle no HTML.
 
 // ══════════ INICIAR VENDA ══════════
 //
@@ -2059,8 +2044,12 @@ async function moverSituacao(){
 //                   desenho não reserva estoque; a unidade vendida é outra
 //                   decisão, e é a que segue para o cartão do Repasse
 //   valor_venda     o número pelo qual o negócio existe
-//   valor_entrada   sem ela o alerta de "venda acima do crédito aprovado" —
-//                   o aviso mais útil da tela da Venda — não tem como fechar
+//   condições       ato, parcelas mensais, semestrais e anuais. São elas que a
+//                   pessoa negocia; os recursos próprios NECESSÁRIOS não se
+//                   digitam — são venda menos crédito aprovado, conta que a
+//                   tela faz e grava em valor_entrada. Perguntar a entrada
+//                   separada das condições deixava as duas discordarem, e era
+//                   a soma das condições que ia para a cobrança.
 //
 // Desconto e comissão ficaram de fora de propósito: nenhuma regra os lê, eles se
 // negociam depois, e um campo a mais no caminho de quem só quer abrir a venda é
@@ -2081,7 +2070,7 @@ function iniciarVenda(){
         <div class="sub" style="margin-top:.25rem">na pré-análise a unidade era só interesse; aqui ela é a que vai para o contrato</div></div>
       <div class="fg"><label>Valor da venda (R$) *</label>
         <input id="v-venda" inputmode="decimal" oninput="conferirVenda()"></div>
-      <div class="fg"><label>Recursos próprios nas condições (R$)</label>
+      <div class="fg"><label>Recursos próprios necessários (R$)</label>
         <input id="v-entrada" inputmode="decimal" disabled></div>
       <div class="fg full"><label>Condições de pagamento</label>
         <div id="v-condicoes"></div>
@@ -2244,8 +2233,10 @@ function traduzErro(j){
     nao_encontrado:            'Processo não encontrado.',
     modulo_desabilitado:       'O módulo não está liberado para este cliente.',
     sem_acesso:                'Este processo não é da sua carteira.',
-    // Mover na esteira é pa_editar — a mesma chave que o cadastro grava. Dizer
-    // só "sem permissão" fazia o gestor procurar no escuro qual caixa marcar.
+    // Mover na esteira é pa_mover, chave própria desde que se separou de
+    // pa_editar: quem corrige um cadastro não necessariamente empurra o
+    // processo adiante. Dizer só "sem permissão" fazia o gestor procurar no
+    // escuro qual caixa marcar — por isso a frase nomeia a chave certa.
     sem_permissao:             faltaPermissao('pa_mover', 'Mover ou agir sobre esta pré-análise'),
     versao_desatualizada:      'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
     transicao_nao_permitida:   'A esteira do cliente não permite essa mudança a partir da situação atual.',

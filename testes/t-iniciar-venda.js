@@ -108,6 +108,22 @@ const preencher = async (p, sel, v) => { if (await existe(p, sel)) await p.fill(
 
 const dossie = async (p, id) => { await p.evaluate(i => abrirDossie(i), id); await p.waitForTimeout(800); };
 
+// Os recursos próprios DEIXARAM de ser um campo digitável. O passo pergunta as
+// condições de pagamento (ato, mensais, semestrais, anuais) e a própria tela faz
+// a conta: recursos próprios necessários = venda − crédito aprovado, gravados em
+// proposta.valor_entrada. Digitar a entrada solta de novo faria a tela guardar
+// um número que as condições contradizem — que era o defeito.
+const condicao = async (p, valorTexto, tipo = 'ATO', quantidade = 1) => {
+  await p.evaluate(() => adicionarCondicaoVenda());
+  await p.waitForTimeout(200);
+  const linha = p.locator('#v-condicoes .condicao-venda').last();
+  await linha.locator('[data-campo="tipo"]').selectOption(tipo);
+  await linha.locator('[data-campo="quantidade"]').fill(String(quantidade));
+  await linha.locator('[data-campo="valor"]').fill(valorTexto);
+  await p.evaluate(() => sincronizarCondicoesVenda());
+  await p.waitForTimeout(200);
+};
+
 (async () => {
   const todosErros = [];
 
@@ -282,7 +298,7 @@ const dossie = async (p, id) => { await p.evaluate(i => abrirDossie(i), id); awa
       (await posts(p, /rpc\/a1_pa_executar_acao/, 'POST')).length === 0);
 
     await preencher(p, '#v-venda', '250.000,00');
-    await preencher(p, '#v-entrada', '30.000,00');
+    await condicao(p, '100.000,00');
     await p.evaluate(() => confirmarIniciarVenda());
     await p.waitForTimeout(1400);
 
@@ -341,12 +357,29 @@ const dossie = async (p, id) => { await p.evaluate(i => abrirDossie(i), id); awa
     checa('e o aviso diz qual campo falta', /valor da venda/i.test(await avisos(p)), await avisos(p));
 
     await preencher(p, '#v-venda', '250.000,00');
-    await preencher(p, '#v-entrada', '30.000,00');
     await preencher(p, '#v-obs', 'cliente quer entrega em 2027');
-    // O alerta que a tela da Venda dá ao abrir a proposta, dado aqui antes de
-    // criar: 250.000 - 30.000 passa dos 150.000 aprovados.
-    checa('avisa quando a venda passa do crédito aprovado',
-      /acima do crédito/i.test(await texto(p, '#v-conferencia')), await texto(p, '#v-conferencia'));
+
+    // Os recursos próprios são conta da tela, não campo de digitação: 250.000
+    // de venda menos 150.000 aprovados = 100.000. O campo existe só para
+    // mostrar o número, e é ele que fecha (ou não) com as condições.
+    checa('os recursos próprios necessários são calculados, não digitados',
+      !(await ligado(p, '#v-entrada')));
+    checa('e mostram venda menos crédito aprovado',
+      (await valorDe(p, '#v-entrada')) === '100.000,00', await valorDe(p, '#v-entrada'));
+
+    // Condições que NÃO fecham a conta: 30.000 para 100.000 necessários. O
+    // aviso tem de dizer quanto falta — é ele que impede abrir a venda com uma
+    // proposta que não paga o imóvel.
+    await condicao(p, '30.000,00');
+    checa('avisa quando as condições não cobrem os recursos próprios',
+      /Faltam/i.test(await texto(p, '#v-conferencia'))
+      && /70\.000,00/.test(await texto(p, '#v-conferencia')), await texto(p, '#v-conferencia'));
+
+    // E quando fecham exatamente, diz isso — senão "sem aviso" e "aviso que não
+    // apareceu" viram a mesma coisa para quem olha.
+    await condicao(p, '70.000,00');
+    checa('e confirma quando as condições fecham exatamente',
+      /fecham exatamente/i.test(await texto(p, '#v-conferencia')), await texto(p, '#v-conferencia'));
 
     await p.evaluate(() => { window.__POSTS = []; confirmarIniciarVenda(); });
     await p.waitForTimeout(1400);
@@ -360,8 +393,16 @@ const dossie = async (p, id) => { await p.evaluate(i => abrirDossie(i), id); awa
     // Centavos, inteiro — é como o resto do sistema guarda dinheiro.
     checa('com o valor da venda em centavos',
       patch && patch.proposta && patch.proposta.valor_venda === 25000000, JSON.stringify(patch));
-    checa('com a entrada', patch && patch.proposta && patch.proposta.valor_entrada === 3000000,
+    // valor_entrada é derivado: venda − crédito aprovado, em centavos.
+    checa('com os recursos próprios calculados a partir do crédito aprovado',
+      patch && patch.proposta && patch.proposta.valor_entrada === 10000000,
       JSON.stringify(patch));
+    // E as condições vão junto, discriminadas — é o que a cobrança vai ler.
+    checa('e com as condições de pagamento discriminadas',
+      patch && patch.proposta && Array.isArray(patch.proposta.condicoes_pagamento)
+      && patch.proposta.condicoes_pagamento.length === 2
+      && patch.proposta.condicoes_pagamento.reduce((t,c) => t + c.quantidade * c.valor, 0) === 10000000,
+      JSON.stringify(patch && patch.proposta && patch.proposta.condicoes_pagamento));
     checa('e com a observação da negociação',
       patch && patch.proposta && /entrega em 2027/.test(patch.proposta.observacoes || ''), JSON.stringify(patch));
     todosErros.push(...erros); await b.close();

@@ -58,10 +58,18 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
   (window.__POSTS || []).filter(x => new RegExp(r).test(x.url) && (!m || x.m === m)),
   [re.source, metodo || null]);
 
+const rotulosDosCartoes = p =>
+  p.locator('#cfg-hub .cfg-hub-card:visible .cfg-card-label').allTextContents()
+   .then(l => l.map(x => x.trim()));
+
 (async () => {
+  // O hub sem licença nenhuma, para comparar com o hub licenciado logo abaixo.
+  let CARTOES_SEM_LICENCA = [];
+
   console.log('== SEM LICENÇA, NADA DISSO EXISTE ==');
   {
     const { b, p, erros, pedidos } = await abrirConfig();
+    CARTOES_SEM_LICENCA = await rotulosDosCartoes(p);
 
     checa('o cartão do registro de integrações nem chega ao DOM',
       (await p.locator('#cfg-card-integra').count()) === 0);
@@ -101,11 +109,21 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     // montado por JS e só para gestor.
     checa('o hub continua com 6 grupos', await p.evaluate(() =>
       document.querySelectorAll('#cfg-hub .cfg-grupo').length) === 6);
-    // 22 de sempre (21 + Perfis de acesso) + 1 do registro de integrações
-    // + 1 da Exclusão definitiva. Os workflows dos módulos NÃO entram como
-    // cartão: são botões dentro do Editor de Workflow.
-    const cards = await p.locator('#cfg-hub .cfg-hub-card:visible').count();
-    checa('22 cartões viram 24', cards === 24, 'n=' + cards);
+    // Antes isto era uma contagem ("22 cartões viram 24"), e ela apodreceu: um
+    // cartão novo e legítimo do próprio Repasse (Checklist operacional) fez o
+    // número acusar defeito sem dizer qual cartão mudou.
+    //
+    // A pergunta que importa não é quantos, é QUAIS a licença acrescenta. O
+    // hub licenciado tem de ser o hub sem licença MAIS o Registro de
+    // integrações, e nada além — nem cartão de workflow por módulo, nem cartão
+    // que a licença faça sumir. Assim o teste continua pegando o que pegava
+    // (módulo que vaza cartão a mais) e para de acusar cartão alheio.
+    const cards   = await rotulosDosCartoes(p);
+    const novos   = cards.filter(c => !CARTOES_SEM_LICENCA.includes(c));
+    const sumiram = CARTOES_SEM_LICENCA.filter(c => !cards.includes(c));
+    checa('a licença acrescenta o Registro de integrações, e só ele',
+      novos.join(' | ') === 'Registro de integrações' && sumiram.length === 0,
+      `novos: ${novos.join(', ') || '—'} | sumiram: ${sumiram.join(', ') || '—'}`);
     checa('o terceiro módulo dos tipos de documento aparece', await p.evaluate(() =>
       document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none'));
 
