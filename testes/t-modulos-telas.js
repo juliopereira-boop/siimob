@@ -379,7 +379,16 @@ const { abrir, checa, resumo } = require('./comum');
     const { b, p, erros } = await abrir('comercial.html', { modulos:['COMERCIAL'] });
     const corpo = await p.evaluate(() => document.body.innerText);
     checa('a tela abre', /Venda/i.test(await p.title()));
-    checa('lista o negócio', /1 de 1 negócio/.test(corpo), corpo.slice(0,200));
+    // Dois negócios desde que o cenário ganhou o CO-002, que é ganho PELO SELO e
+    // sem contrato cadastrado — o caso real dos três clientes. A contagem
+    // continua aqui porque é o rodapé "X de Y" da própria tela que está sendo
+    // verificado; o que ela NÃO pode virar é prova de quem está na lista, e por
+    // isso as duas linhas seguintes conferem os nomes.
+    checa('lista os dois negócios', /2 de 2 negócios/.test(corpo), corpo.slice(0,200));
+    // Pelo que o cartão mostra de verdade: a unidade. O CO-002 não tem titular
+    // (nasceu sem pré-análise), então procurar nome não distinguiria os dois.
+    checa('o que veio da pré-análise está lá', /un\. 101/.test(corpo), corpo.slice(0,300));
+    checa('e o ganho pelo selo também', /un\. 304/.test(corpo), corpo.slice(0,300));
     checa('o nome do cliente vem do snapshot da aprovação', /Maria Titular/.test(corpo));
     checa('mostra o valor aprovado', /240\.000,00/.test(corpo));
 
@@ -508,8 +517,15 @@ const { abrir, checa, resumo } = require('./comum');
         const a = document.querySelector('#shell .dd-item.active');
         return !!a && a.textContent.trim() === 'Listagem';
       }));
-    checa('a tabela mostra que o repasse ainda não foi criado',
-      (await p.locator('table.fila tbody .pill.wt').count()) === 1);
+    // Era `=== 1` e apodreceu no instante em que o cenário ganhou um segundo
+    // negócio — sem dizer QUAL linha mudou, que é o defeito de toda asserção por
+    // contagem. Nenhum dos dois tem repasse vinculado, e é isso que a tabela
+    // precisa dizer: a pergunta é quantas linhas SEM repasse existem entre as
+    // que estão à vista, não um número fixo.
+    const _linhas = await p.locator('table.fila tbody tr').count();
+    const _semRepasse = await p.locator('table.fila tbody .pill.wt').count();
+    checa('a tabela mostra que o repasse ainda não foi criado, em toda linha',
+      _linhas > 0 && _semRepasse === _linhas, `linhas=${_linhas} sem repasse=${_semRepasse}`);
 
     // Busca e filtro são da tela, não de uma aba: precisam valer aqui também.
     await p.fill('#f-busca', 'Maria'); await p.waitForTimeout(250);

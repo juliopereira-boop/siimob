@@ -1168,7 +1168,16 @@ function pnCalcCO(d){
   const noPeriodo = iso => { const t = pnMs(iso); return t != null && t >= inicio && t <= fim; };
   const flagDe = co => { const s = sitPorId[co.situacao_id]; return s ? (s.flag || null) : null; };
 
-  const ativos = d.com.filter(co => !co.situacao_id || PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0);
+  // ATIVO É O QUE AINDA CORRE. Negócio em etapa com selo de fim saiu daqui: ele
+  // não está no pipeline, está GANHO (ou perdido). Antes, "Contrato assinado"
+  // continuava contando como ativo — a justificativa era revelar o handoff
+  // perdido para o Repasse —, e o efeito era o pipeline bruto somar como aberto
+  // um dinheiro que já foi fechado. O handoff perdido tem cartão próprio
+  // (Conversão → Repasse); pipeline é promessa, e promessa cumprida sai da conta.
+  const ativos = d.com.filter(co =>
+    (!co.situacao_id || PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0) && !pnEncerrada(sitPorId[co.situacao_id]));
+  // Quantos saíram por selo — o cartão de aging explica a diferença com isto.
+  const encerrados = d.com.filter(co => pnEncerrada(sitPorId[co.situacao_id])).length;
   const pipeline = ativos.reduce((s, co) => s + pnValorCO(co), 0);
 
   // Um contrato por comercial: o de maior versão. As versões antigas são
@@ -1180,17 +1189,60 @@ function pnCalcCO(d){
   });
   const comPorId = {}; d.com.forEach(co => { comPorId[co.id] = co; });
 
-  const assinados = Object.keys(ctPorCom).map(k => ctPorCom[k])
-    .filter(ct => ct.status === 'ASSINADO' && noPeriodo(ct.assinado_em));
+  // ── QUANDO A VENDA FOI GANHA ──────────────────────────────────────────────
+  //
+  // Isto media SÓ o documento: a1_co_contratos com status ASSINADO. E o cliente
+  // que arrasta o cartão para "Contrato assinado" sem cadastrar o contrato no
+  // sistema — que é o que os três clientes fazem hoje — aparecia com TUDO
+  // zerado: contratos 0, VGV R$ 0, ticket traço, ciclo traço, vendas líquidas 0.
+  // O funil chegava ao absurdo de mostrar "Contrato assinado: 0" e, uma linha
+  // abaixo, "Repasse criado: 1" — funil que alarga no fim não é funil, é defeito
+  // à vista, e foi assim que o dono percebeu.
+  //
+  // Quem manda é o SELO, como em toda automação deste sistema: a etapa marcada
+  // VENDIDO é o fim da jornada da Venda, tenha o documento sido cadastrado ou
+  // não. O contrato continua valendo, e vale MAIS: quando existe, é dele a data,
+  // porque assinatura tem dia certo e arrastar cartão não tem.
+  //
+  // A ordem de preferência da data, da mais confiável para a menos:
+  //   1. assinado_em do contrato — o carimbo do documento
+  //   2. o evento de entrada na situação selada VENDIDO — o carimbo da esteira
+  //   3. situacao_em da situação atual, se ela for selada — a reserva para o que
+  //      foi migrado ou vinculado à mão, sem evento nenhum
+  const entrouVendido = {};
+  const sitVendida = {};
+  d.situacoes.forEach(s2 => { if (s2.selo === 'VENDIDO') sitVendida[s2.id] = true; });
+  d.eventos.forEach(e => {
+    if (!e.para_situacao || !sitVendida[e.para_situacao]) return;
+    const t = pnMs(e.criado_em);
+    if (t == null) return;
+    if (entrouVendido[e.comercial_id] == null || t < entrouVendido[e.comercial_id]) entrouVendido[e.comercial_id] = t;
+  });
+  const vendaEm = co => {
+    const ct = ctPorCom[co.id];
+    if (ct && ct.status === 'ASSINADO' && pnMs(ct.assinado_em) != null) return pnMs(ct.assinado_em);
+    if (entrouVendido[co.id] != null) return entrouVendido[co.id];
+    if (sitVendida[co.situacao_id]) return pnMs(co.situacao_em) || pnMs(co.criado_em);
+    return null;
+  };
+
+  const vendidos = d.com.map(co => ({ co, em: vendaEm(co) }))
+    .filter(x => x.em != null && x.em >= inicio && x.em <= fim);
   // a1_co_contratos não tem coluna de valor: o dinheiro mora no comercial.
-  const valorAssinado = assinados.reduce((s, ct) => s + pnValorCO(comPorId[ct.comercial_id] || {}), 0);
-  const ticket = assinados.length ? valorAssinado / assinados.length : null;
+  const valorAssinado = vendidos.reduce((s, x) => s + pnValorCO(x.co), 0);
+  const ticket = vendidos.length ? valorAssinado / vendidos.length : null;
+  const assinados = vendidos;   // o resto do arquivo lê por .length
+  // Quantos foram reconhecidos pela esteira e não pelo documento: é o número que
+  // explica a diferença entre este painel e um relatório de contratos.
+  const vendidosSemContrato = vendidos.filter(x => {
+    const ct = ctPorCom[x.co.id];
+    return !(ct && ct.status === 'ASSINADO');
+  }).length;
 
   const ciclo = [];
-  assinados.forEach(ct => {
-    const co = comPorId[ct.comercial_id];
-    const a = pnMs(ct.assinado_em), n = co ? pnMs(co.criado_em) : null;
-    if (a != null && n != null) ciclo.push((a - n) / 36e5);
+  vendidos.forEach(x => {
+    const n = pnMs(x.co.criado_em);
+    if (n != null) ciclo.push((x.em - n) / 36e5);
   });
 
   // Win rate: sem uma situação com flag CANCELADO cadastrada na esteira, o
@@ -1273,14 +1325,10 @@ function pnCalcCO(d){
   // Aging: situacao_em é escrito pelo gatilho a1_co_guarda_update e o navegador
   // não consegue alterá-lo, então este relógio é confiável.
   const aging = [], faixas = [0, 0, 0, 0, 0];
-  let estourados = 0, semPrazo = 0, encerrados = 0;
+  let estourados = 0, semPrazo = 0;
   const fila = [];
   ativos.forEach(co => {
     const s = sitPorId[co.situacao_id];
-    // Mesma regra da Pré-análise, e é aqui que o defeito aparecia: "Contrato
-    // assinado" (selo VENDIDO) seguia acumulando dias no aging e subindo na
-    // fila dos mais parados. Venda assinada não está parada — está ganha.
-    if (pnEncerrada(s)) { encerrados++; return; }
     const desde = pnMs(co.situacao_em) || pnMs(co.criado_em);
     const horas = desde ? (Date.now() - desde) / 36e5 : 0;
     const dias = horas / 24;
@@ -1295,7 +1343,7 @@ function pnCalcCO(d){
       unidade: co.unidade || '', sit: s ? s.nome : 'sem situação', cor: (s && s.cor) || '#64748b',
       horas, nivel, valor: pnValorCO(co) });
   });
-  const comPrazo = ativos.length - encerrados - semPrazo;
+  const comPrazo = ativos.length - semPrazo;
 
   // Conversão para Repasse: o denominador vem do HISTÓRICO, não da situação
   // atual. Quem já passou pela etapa de CREATE_REPASS e seguiu adiante continua
@@ -1320,7 +1368,9 @@ function pnCalcCO(d){
   const safra = pnTemCorte() ? d.com.filter(co => noPeriodo(co.criado_em)) : d.com;
   const comProposta = safra.filter(co => (co.proposta || {}).valor_venda != null);
   const comContrato = safra.filter(co => ctPorCom[co.id] && PN_CT_GERADO.indexOf(ctPorCom[co.id].status) >= 0);
-  const comAssinado = safra.filter(co => ctPorCom[co.id] && ctPorCom[co.id].status === 'ASSINADO');
+  // Mesma regra do KPI acima: o selo reconhece a venda, o documento refina. Sem
+  // isto, esta linha marcava 0 com dois negócios na etapa selada VENDIDO.
+  const comAssinado = safra.filter(co => vendaEm(co) != null);
   const comRepasse  = safra.filter(co => co.repasse_case_id);
 
   const dtContrato = [], dtAssinatura = [], dtRepasse = [];
@@ -1329,18 +1379,25 @@ function pnCalcCO(d){
     if (a != null && n != null) dtContrato.push((a - n) / 36e5);
   });
   comAssinado.forEach(co => {
-    const a = pnMs(ctPorCom[co.id].assinado_em), g = pnMs(ctPorCom[co.id].criado_em);
+    // Só quem tem o documento entra nesta mediana: ela mede o tempo ENTRE gerar
+    // e assinar o contrato, e quem foi reconhecido pelo selo não tem contrato
+    // para medir. Incluí-lo com a data da esteira misturaria duas coisas.
+    const ct = ctPorCom[co.id];
+    if (!ct || ct.status !== 'ASSINADO') return;
+    const a = pnMs(ct.assinado_em), g = pnMs(ct.criado_em);
     if (a != null && g != null) dtAssinatura.push((a - g) / 36e5);
   });
   comRepasse.forEach(co => {
     const r = pnMs(nascimentoRepasse[co.id]);
-    const a = ctPorCom[co.id] ? pnMs(ctPorCom[co.id].assinado_em) : null;
+    // Aqui o marco é a VENDA, não o documento: o handoff começa quando o negócio
+    // é ganho, e ele é ganho no selo.
+    const a = vendaEm(co);
     if (r != null && a != null) dtRepasse.push((r - a) / 36e5);
   });
 
   return {
     ativos: ativos.length, pipeline,
-    assinados: assinados.length, valorAssinado, ticket,
+    assinados: vendidos.length, vendidosSemContrato, valorAssinado, ticket,
     p50Ciclo: pnPercentil(ciclo, 0.5), p90Ciclo: pnPercentil(ciclo, 0.9),
     win, temCancelamento, cancelados,
     liquidas, perdidos, distratos, taxaDistrato,
@@ -1379,22 +1436,27 @@ function pnDesenharCO(alvo){
           + 'É soma de valores abertos, NÃO previsão: não há probabilidade por etapa no cadastro da esteira. Valores em centavos, formatados em reais.'
         : PN_SEM_CONSOLIDADO + ' Aqui isso significa a quantidade de negócios ativos no lugar da soma deles em reais.' }),
 
-    pnKpi({ rotulo:'Contratos assinados', valor: c.assinados, cor:'kpi-green',
+    pnKpi({ rotulo:'Vendas ganhas', valor: c.assinados, cor:'kpi-green',
       sub: pnPodeVerConsolidado() ? pnBRL(c.valorAssinado) : 'quantidade, sem valor consolidado',
-      titulo: `contratos com status ASSINADO e assinado_em no período (${per}), um por comercial (a maior versão). `
-            + 'O valor vem do comercial: a1_co_contratos não tem coluna de valor. Marcar ASSINADO já exige gestor, gerente ou permissão de análise de crédito.' }),
+      titulo: `Negócios GANHOS no período (${per}). Quem reconhece a venda é o SELO da esteira: a etapa marcada VENDIDO é o fim da jornada da Venda, `
+            + 'tenha o contrato sido cadastrado no sistema ou não. O documento continua valendo e vale mais — quando existe, é dele a data, porque assinatura tem dia certo e arrastar cartão não tem. '
+            + 'Ordem da data: assinado_em do contrato, depois o evento de entrada na situação selada, depois situacao_em como reserva para o que foi migrado sem evento. '
+            + 'O valor vem do comercial: a1_co_contratos não tem coluna de valor. '
+            + (c.vendidosSemContrato
+               ? c.vendidosSemContrato + ' venda(s) deste período foram reconhecidas pela esteira, sem contrato cadastrado — é essa a diferença entre este número e um relatório de contratos.'
+               : 'Todas as vendas do período têm contrato cadastrado.') }),
 
     // Ticket médio É dinheiro: não existe versão dele em quantidade. Sem o corte
     // de agregado o cartão sai da grade, em vez de virar um traço mudo ocupando
     // espaço — e o motivo fica no cartão de pipeline, que continua na tela.
     ...(pnPodeVerConsolidado() ? [pnKpi({ rotulo:'Ticket médio', valor: c.ticket == null ? '—' : pnBRL(c.ticket), cor:'kpi-green',
-      sub: c.assinados ? 'n = ' + c.assinados : 'sem contrato assinado no período',
+      sub: c.assinados ? 'n = ' + c.assinados : 'nenhuma venda ganha no período',
       titulo:'valor somado dos contratos assinados ÷ nº de contratos assinados no período. '
            + 'O n vai junto de propósito: com poucos contratos no mês, o ticket balança demais para virar sinal de gestão.' })] : []),
 
     pnKpi({ rotulo:'Vendas líquidas', valor: c.liquidas, cor:'kpi-green',
       sub: c.perdidos ? c.perdidos + ' perdida(s) no período' : 'nenhuma perda no período',
-      titulo:'contratos assinados no período − negócios que ENTRARAM numa situação com flag CANCELADO no período. '
+      titulo:'vendas ganhas no período (pelo selo ou pelo contrato) − negócios que ENTRARAM numa situação com flag CANCELADO no período. '
            + 'É o número da ABRAINC, e não o de vendas brutas: venda bruta sozinha mente para cima. '
            + 'O carimbo da perda é o EVENTO de entrada na situação, não a situação atual — quem cancelou e foi reaberto depois continua contando, '
            + 'senão o número sobe sozinho quando alguém corrige um cartão. Pode ficar negativo: mês em que se perde mais do que se assina existe, e esconder isso seria o próprio problema.' }),
@@ -1406,14 +1468,14 @@ function pnDesenharCO(alvo){
            + (c.semImob ? c.semImob + ' ativo(s) também estão sem imobiliária.' : 'Todos os ativos têm imobiliária vinculada.') }),
 
     pnKpi({ rotulo:'Ciclo comercial', valor: pnDias(c.p50Ciclo), cor:'kpi-amber',
-      sub: c.p90Ciclo == null ? 'sem contrato assinado no período' : 'P90 ' + pnDias(c.p90Ciclo),
-      titulo:'P50 e P90 de (assinado_em − criado_em do comercial), em dias, sobre os contratos assinados no período. '
+      sub: c.p90Ciclo == null ? 'nenhuma venda ganha no período' : 'P90 ' + pnDias(c.p90Ciclo),
+      titulo:'P50 e P90 de (data da venda ganha − criado_em do comercial), em dias, sobre as vendas ganhas no período — a data da venda segue a mesma ordem do cartão "Vendas ganhas". '
            + 'A média não é publicada: é ela que esconde a fila de casos parados. Percentil calculado no navegador.' }),
 
     pnKpi({ rotulo:'Win rate', valor: c.temCancelamento ? pnPct(c.win) : '—', cor:'kpi-green',
       sub: c.temCancelamento ? (c.assinados + c.cancelados) + ' encerrados' : 'esteira sem situação de cancelamento',
       titulo: c.temCancelamento
-        ? 'assinados ÷ (assinados + cancelados). Cancelado = situação atual com flag CANCELADO.'
+        ? 'vendas ganhas ÷ (ganhas + cancelados). Ganha segue o selo, como no cartão "Vendas ganhas"; cancelado = situação atual com flag CANCELADO.'
         : 'Esta esteira não tem nenhuma situação com flag CANCELADO cadastrada. Sem ela o denominador vira o próprio numerador e a taxa daria 100% — um número bonito e falso. Cadastre a situação de cancelamento em Configurações.' }),
 
     pnKpi({ rotulo:'Aging do pipeline', valor: pnDias(c.p50Aging), cor:'kpi-amber',
@@ -1440,7 +1502,8 @@ function pnDesenharCO(alvo){
       tempo:'—', tempoTitulo:'proposta é jsonb sem carimbo de tempo: não há quando foi preenchida' },
     { nome:'Contrato gerado', n:f.contrato, titulo:'contrato em GERADO, AGUARDANDO_ASSINATURA ou ASSINADO',
       tempo: pnDias(f.p50Contrato), tempoTitulo:'mediana de (criado_em do contrato − criado_em do comercial)' },
-    { nome:'Contrato assinado', n:f.assinado, titulo:"contrato com status ASSINADO",
+    { nome:'Venda ganha', n:f.assinado,
+      titulo:'contrato com status ASSINADO, OU o negócio tendo alcançado a etapa marcada com o selo VENDIDO. Era só o documento, e por isso esta linha marcava zero com negócios parados na etapa de fim — um funil que alarga na linha seguinte.',
       tempo: pnDias(f.p50Assinatura), tempoTitulo:'mediana de (assinado_em − criado_em do contrato)' },
     { nome:'Repasse criado', n:f.repasse, titulo:'a1_comerciais.repasse_case_id preenchido',
       tempo: pnDias(f.p50Repasse), tempoTitulo:"mediana entre a assinatura e o evento 'repasse_criado' em a1_co_eventos" }
@@ -1454,8 +1517,8 @@ function pnDesenharCO(alvo){
     pnFaixa('distratos', c.distratos,
       'Subconjunto das perdidas: cancelamento que ocorreu DEPOIS do contrato assinado. É o que custa crédito já aprovado, prazo de obra e unidade de volta ao estoque.'),
     pnFaixa('taxa de distrato', pnPct(c.taxaDistrato),
-      c.assinados ? 'distratos ÷ contratos assinados no período (n = ' + c.assinados + '). É como a ABRAINC calcula.'
-                  : 'Sem contrato assinado no período não há denominador.')
+      c.assinados ? 'distratos ÷ vendas ganhas no período (n = ' + c.assinados + '). É como a ABRAINC calcula.'
+                  : 'Sem venda ganha no período não há denominador.')
   ];
 
   const rotFaixas = ['0–7 dias', '8–15 dias', '16–30 dias', '31–60 dias', '> 60 dias'];

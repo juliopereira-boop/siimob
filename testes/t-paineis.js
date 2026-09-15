@@ -234,8 +234,33 @@ function kpi(lista, rotulo) {
       /R\$\s?260\.000/.test(kpi(co, 'Pipeline bruto')), kpi(co, 'Pipeline bruto'));
     checa('e é rotulado como soma de valores abertos, não previsão',
       /não é previsão/.test((co.find(x => x.rot === 'Pipeline bruto') || {}).sub || ''));
-    checa('sem contrato assinado, o ticket médio é um traço e não um zero',
-      kpi(co, 'Ticket médio') === '—', kpi(co, 'Ticket médio'));
+    // ANTES ISTO PROVAVA O CONTRÁRIO: "sem contrato assinado, o ticket é um
+    // traço". A premissa era que só o DOCUMENTO reconhece a venda — e é
+    // exatamente o que estava errado. O cenário tem um negócio (CO-002) na etapa
+    // marcada com selo VENDIDO e SEM contrato nenhum cadastrado, que é o que os
+    // três clientes reais fazem: arrastam o cartão e nunca preenchem o
+    // documento. Para eles, o painel inteiro lia zero enquanto o quadro mostrava
+    // centenas de milhares em negócios fechados.
+    checa('venda ganha pelo SELO entra no ticket, sem contrato cadastrado',
+      /R\$\s?212\.000/.test(kpi(co, 'Ticket médio')), kpi(co, 'Ticket médio'));
+    checa('e conta como venda ganha', kpi(co, 'Vendas ganhas') === '1', kpi(co, 'Vendas ganhas'));
+    checa('com o valor dela somado', /R\$\s?212\.000/.test(
+      (co.find(x => x.rot === 'Vendas ganhas') || {}).sub || ''),
+      (co.find(x => x.rot === 'Vendas ganhas') || {}).sub);
+    // O cartão precisa DIZER que reconheceu pela esteira: é a diferença entre
+    // este painel e um relatório de contratos, e quem compara os dois merece
+    // achar a explicação sem perguntar.
+    const _tituloGanhas = await p.evaluate(() => {
+      const c = [...document.querySelectorAll('#pn-kpis-co .kpi-card')]
+        .find(x => (x.querySelector('.kpi-label')||{}).textContent.trim() === 'Vendas ganhas');
+      return c ? c.getAttribute('title') || '' : '';
+    });
+    checa('e o cartão avisa que foi a esteira que reconheceu',
+      /reconhecidas pela esteira/.test(_tituloGanhas), _tituloGanhas.slice(0, 160));
+    // Ganho não é aberto: o negócio da etapa selada sai do pipeline, senão o
+    // "valor em aberto" soma dinheiro que já foi fechado.
+    checa('e sai do pipeline, que conta só o que ainda corre',
+      kpi(co, 'Comerciais ativos') === '1', kpi(co, 'Comerciais ativos'));
     // A esteira do cliente falso não tem situação com flag CANCELADO.
     checa('sem situação de cancelamento na esteira, o win rate não inventa 100%',
       kpi(co, 'Win rate') === '—', kpi(co, 'Win rate'));
@@ -245,8 +270,15 @@ function kpi(lista, rotulo) {
       kpi(co, 'Aging do pipeline') === '2d', kpi(co, 'Aging do pipeline'));
     checa('e aponta o SLA estourado',
       /1 com SLA estourado/.test((co.find(x => x.rot === 'Aging do pipeline') || {}).sub || ''));
-    checa('ninguém passou pela etapa de criar repasse: a conversão é um traço',
-      kpi(co, 'Conversão → Repasse') === '—', kpi(co, 'Conversão → Repasse'));
+    // CO-002 alcançou a situação de destino da transição com ação CREATE_REPASS e
+    // NÃO tem repasse vinculado: 0 de 1. É o caso que este cartão existe para
+    // revelar — o repasse que deveria ter nascido e não nasceu — e o cenário
+    // anterior (ninguém passou pela etapa) nunca chegava a exercitá-lo.
+    checa('o negócio que chegou à etapa de repasse e não virou repasse aparece',
+      kpi(co, 'Conversão → Repasse') === '0,0%', kpi(co, 'Conversão → Repasse'));
+    checa('e o rodapé mostra a base', /0 de 1/.test(
+      (co.find(x => x.rot === 'Conversão → Repasse') || {}).sub || ''),
+      (co.find(x => x.rot === 'Conversão → Repasse') || {}).sub);
 
     const htmlCO = await p.locator('#painel-modulo').innerHTML();
     checa('o snapshot de origem não vaza participante para a tela executiva',

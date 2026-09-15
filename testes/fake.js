@@ -147,7 +147,10 @@ const D = {
      ator_nome:'Julio '+XSS,detalhe:{justificativa:'documentos recebidos '+XSS},criado_em:'2026-08-25T11:00:00Z'}],
   co_situacoes: [
     {id:'cs1',tenant_id:'t1',nome:'Proposta',flag:'INICIAL',ordem:0,cor:'#6366f1',sla_horas:24,ativo:true},
-    {id:'cs2',tenant_id:'t1',nome:'Contrato assinado '+XSS,flag:'CONTRATO_ASSINADO',ordem:1,cor:'#22c55e',sla_horas:null,ativo:true}],
+    // O SELO importa: 'Contrato assinado' é o fim da jornada da Venda, e é por
+    // ele que o painel reconhece a venda ganha — não pelo documento. Sem o selo
+    // aqui, o andaime nunca exercitaria a regra que os clientes reais usam.
+    {id:'cs2',tenant_id:'t1',nome:'Contrato assinado '+XSS,flag:'CONTRATO_ASSINADO',selo:'VENDIDO',ordem:1,cor:'#22c55e',sla_horas:null,ativo:true}],
   co_transicoes: [
     {id:'ct1',tenant_id:'t1',de_id:'cs1',para_id:'cs2',papeis:[],requisitos:{contrato_assinado:true},
      acao:'CREATE_REPASS',acao_modo:'AUTO',ativo:true}],
@@ -160,13 +163,24 @@ const D = {
        pre_analise:{id:'pa3',codigo:'PA-003',unidade:'101'},
        credito:{versao:1,valor_aprovado:20000000,valor_subsidio:3000000,valor_fgts:1000000,
                 valor_total:24000000,prestacao:150000,prazo_meses:360},
-       participantes:[{pessoa_id:'pe1',nome:'Maria Titular '+XSS,papel:'TITULAR',renda_analisada:450000}]}}]; })(),
+       participantes:[{pessoa_id:'pe1',nome:'Maria Titular '+XSS,papel:'TITULAR',renda_analisada:450000}]}},
+    // Ganho PELO SELO, sem contrato nenhum cadastrado: é o que os três clientes
+    // reais fazem — arrastam o cartão para a etapa de fim e nunca preenchem o
+    // documento. Antes de o selo mandar, este negócio não existia para nenhum
+    // KPI de dinheiro: contratos 0, VGV R$ 0, ticket traço, ciclo traço.
+    {id:'co2',tenant_id:'t1',codigo:'CO-002',pre_analise_id:null,empreendimento_id:'d1',unidade:'304',
+     corretor_id:'p3',situacao_id:'cs2',situacao_em:new Date(h-24*36e5).toISOString(),versao:1,
+     proposta:{valor_venda:21200000},repasse_case_id:null,
+     criado_em:new Date(h-9*864e5).toISOString(),
+     origem_snapshot:{capturado_em:'2026-09-06T10:00:00Z',avulsa:true}}]; })(),
   co_contratos: [
     {id:'cc1',tenant_id:'t1',comercial_id:'co1',versao:1,status:'AGUARDANDO_ASSINATURA',
      provedor:'Clicksign '+XSS,storage_key:'t1/comercial/co1/ct.pdf',criado_em:'2026-08-28T10:00:00Z'}],
   co_eventos: [
     {id:1,tenant_id:'t1',comercial_id:'co1',evento:'criado_da_pre_analise',para_situacao:'cs1',
-     ator_nome:'Julio',detalhe:{},criado_em:'2026-08-22T10:00:00Z'}],
+     ator_nome:'Julio',detalhe:{},criado_em:'2026-08-22T10:00:00Z'},
+    {id:2,tenant_id:'t1',comercial_id:'co2',evento:'situacao_alterada',para_situacao:'cs2',
+     ator_nome:'Julio',detalhe:{},criado_em:new Date(Date.now()-24*36e5).toISOString()}],
   integra_eventos: [],
 
   stage_edges: [{from_id:'s1',to_id:'s2'},{from_id:'s2',to_id:'s3'}],
