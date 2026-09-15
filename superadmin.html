@@ -1973,6 +1973,15 @@ async function loadAllModules() {
   const data = await fetch(saRest('a1_tenant_modules') + '?order=unlocked_at.desc', { headers: saHeaders() }).then(r => r.json());
   ALL_MODULES = Array.isArray(data) ? data : [];
   renderAllModulesTable();
+  // A coluna "Módulos ativos" da lista de clientes lê ALL_MODULES, e as duas
+  // cargas saem JUNTAS num Promise.all. Clientes são três linhas e chegavam
+  // primeiro: a tabela desenhava com ALL_MODULES ainda vazio e todo cliente
+  // saía "nenhum" — inclusive os que têm Pré-análise e Venda ligadas. Não era
+  // licença faltando, era ordem de chegada.
+  //
+  // Redesenhar aqui conserta os dois lados: a corrida da carga inicial e a
+  // coluna que também não acompanhava depois de ligar ou revogar um módulo.
+  if (TENANTS.length) renderTenantsTable(TENANTS);
 }
 
 async function loadPlans() {
