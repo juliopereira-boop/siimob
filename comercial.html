@@ -174,6 +174,38 @@
 </div>
 
 <!-- ══════════ DOSSIÊ COMERCIAL ══════════ -->
+<!-- ══════════ VENDA AVULSA ══════════
+     Só existe quando a regra-mãe "Permitir criar venda avulsa" está ligada em
+     Configurações › Configurações Gerais. Desligada, o botão nem é montado: a
+     venda continua nascendo só de uma pré-análise aprovada, que é como o
+     sistema sempre funcionou.
+     Os campos são os mínimos para o cartão existir e ser reconhecido no quadro.
+     Titular, crédito e condições NÃO entram aqui de propósito: venda avulsa não
+     tem pré-análise por trás, então não há nada aprovado para copiar, e pedir
+     esses números na abertura seria convidar a inventá-los. Eles se preenchem no
+     dossiê, onde já existe o lugar certo para cada um. -->
+<div class="modal-bg hidden" id="modal-venda-avulsa">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Nova venda</div>
+           <div class="modal-sub">Sem pré-análise por trás — o crédito e as condições entram depois, no dossiê.</div></div>
+      <button class="modal-close" onclick="fecharModal('modal-venda-avulsa')" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label>Empreendimento</label>
+        <select id="va-empr"></select></div>
+      <div class="fg"><label>Unidade</label>
+        <input id="va-unidade" placeholder="ex.: 101"></div>
+      <div class="fg"><label>Valor da venda (R$)</label>
+        <input id="va-valor" inputmode="decimal" placeholder="opcional"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-venda-avulsa')">Cancelar</button>
+      <button class="btn btn-primary" id="va-salvar" onclick="criarVendaAvulsa()">Criar venda</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg hidden" id="modal-dossie">
   <div class="modal">
     <div class="modal-hdr">
@@ -205,6 +237,7 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/modulo-shell.js"></script>
+<script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -363,8 +396,16 @@ async function init(){
   // menu, o link colado no WhatsApp e o "voltar" do navegador chegam no mesmo
   // lugar. São só duas — Andamento e Listagem —, iguais aos quadros antigos.
   G.vista = a1VistaDaURL();
+  // A regra-mãe do cliente é lida ANTES de montar o shell, porque é ela que
+  // decide se o botão de criar chega a existir. Sem licença ou sem a regra, o
+  // elemento não nasce no DOM — não nasce escondido.
+  G.geral = await a1GeralCarregar();
+  const _podeVendaAvulsa = a1GeralPermite(G.geral, 'criar_venda_avulsa') && perm('co_editar');
   G.modulos = await a1MontarShell(document.getElementById('shell'),
-    { ativo:'COMERCIAL', vista:G.vista }) || {};
+    { ativo:'COMERCIAL', vista:G.vista,
+      acoes: _podeVendaAvulsa
+        ? '<button class="btn-hdr btn-hdr-primary" id="btn-venda-avulsa" onclick="abrirVendaAvulsa()">+ Nova Venda</button>'
+        : '' }) || {};
   aplicarVista();
   a1StartHeartbeat('comercial');
   await carregar();
@@ -1200,6 +1241,9 @@ function traduzErro(j){
   const mapa = {
     nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
     modulo_desabilitado:     'O módulo Venda não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
+    venda_avulsa_desligada:  'A criação avulsa de venda está desligada em Configurações › Configurações Gerais.',
+    esteira_sem_situacao_inicial: 'A esteira da Venda não tem situação inicial cadastrada. Configure o workflow antes.',
+    empreendimento_fora_do_cliente: 'Esse empreendimento não é deste cliente.',
     sem_acesso:              'Este negócio não é da sua carteira.',
     sem_permissao:           'Você não tem a permissão "Mover na esteira" da Venda. Peça ao gestor '
                            + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',

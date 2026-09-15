@@ -287,6 +287,7 @@
 <script src="/js/auth.js"></script>
 <script src="/js/modulo-shell.js"></script>
 <script src="/js/documentos.js"></script>
+<script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -443,7 +444,13 @@ async function init(){
   // pa_criar, e não criar_repasses: a chave do Repasse decidia o botão da
   // Pré-análise. O gestor marcava "Criar pré-análise" no cadastro e nada
   // acontecia — a tela perguntava outra coisa. Relatado em produção.
-  if (!perm('pa_criar')) document.getElementById('btn-nova').style.display = 'none';
+  // Duas travas, nesta ordem. A REGRA DO CLIENTE vem antes: se a operação
+  // decidiu que pré-análise não nasce solta, o botão some para todo mundo,
+  // inclusive para quem tem a chave — e inclusive para o gestor. Só depois vale
+  // a permissão da pessoa.
+  G.geral = await a1GeralCarregar();
+  const _podeCriarPa = a1GeralPermite(G.geral, 'criar_pre_analise_avulsa') && perm('pa_criar');
+  if (!_podeCriarPa) document.getElementById('btn-nova').style.display = 'none';
 
   aplicarVista();
   a1StartHeartbeat('pre-analise');
@@ -967,6 +974,12 @@ async function moverCartao(id, paraId){
 
 // ══════════ ASSISTENTE ══════════
 function abrirAssistente(){
+  // O console e o atalho não passam por botão. A mesma regra vale aqui, senão
+  // esconder o botão seria decoração.
+  if (!a1GeralPermite(G.geral, 'criar_pre_analise_avulsa')) {
+    toast('A criação avulsa de pré-análise está desligada em Configurações › Configurações Gerais.','error');
+    return;
+  }
   G.passo = 1;
   // O corretor já entra com a imobiliária dele preenchida: é a única que faz
   // sentido, e deixá-la em branco fazia o processo nascer sem imobiliária.

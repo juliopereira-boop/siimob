@@ -8,9 +8,14 @@ const { abrir, checa, resumo } = require('./comum');
     cards: [...g.querySelectorAll('.cfg-hub-card .cfg-card-label')].map(c=>c.textContent.trim())
   })));
   grupos.forEach(g => { console.log(`\n  [${g.titulo}] ${g.sub}`); g.cards.forEach(c=>console.log('     · '+c)); });
-  // 5 de sempre + "Área de risco", o grupo da Exclusão definitiva. Ele é
-  // montado por JS e só existe para gestor — por isso não está no HTML.
-  checa('6 grupos', grupos.length === 6, 'n='+grupos.length);
+  // 5 de sempre + "Regras gerais" (as configurações-mãe do cliente) + "Área de
+  // risco", o grupo da Exclusão definitiva. Este último é montado por JS e só
+  // existe para gestor — por isso não está no HTML.
+  checa('7 grupos', grupos.length === 7, 'n='+grupos.length);
+  // Regras gerais vem PRIMEIRO, e isso é decisão de leitura: o que está lá vale
+  // acima de qualquer permissão dos cadastros que vêm depois. Se um grupo novo
+  // furar a fila, esta linha avisa.
+  checa('e "Regras gerais" abre o hub', grupos[0].titulo === 'Regras gerais', grupos[0].titulo);
   checa('todo grupo tem explicação', grupos.every(g=>g.sub.length > 10));
   // Aqui havia uma CONTAGEM ("23 cards no total"), e ela apodreceu exatamente
   // como a skill avisa: entrou o cartão do Checklist operacional — decisão
@@ -23,6 +28,8 @@ const { abrir, checa, resumo } = require('./comum');
   // decisão ou descuido. Cartão de módulo licenciado não entra: sem licença ele
   // nem chega ao DOM, e é t-config-modulos.js que vigia isso.
   const CARTOES = [
+    // Regras gerais
+    'Configurações Gerais',
     // Workflow e etapas
     'Editor de Workflow', 'Flags de Etapa', 'Tipos de documento',
     'Checklist operacional', 'Configuração de Comissão',

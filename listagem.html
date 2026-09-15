@@ -1826,6 +1826,7 @@
 <!-- js/paineis.js NÃO entra aqui: os painéis executivos vivem no seletor da aba
      Dashboard, que só existe em repasse.html. Eram 47 KB baixados e analisados
      à toa numa tela que já tem 330 KB. -->
+<script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1880,7 +1881,12 @@ async function init() {
   // Permissões vêm do banco a cada carregamento (o localStorage guarda só o
   // retrato do login). Sem isso, mudança de permissão feita pelo gestor só
   // valia depois do usuário deslogar e logar de novo.
-  const _permsDoBanco = await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  // As duas leituras que decidem o botão de criar saem JUNTAS: a permissão da
+  // pessoa e a regra-mãe do cliente. Em série seriam duas idas ao servidor antes
+  // de qualquer pixel.
+  const [_permsDoBanco, _geral] = await Promise.all([a1RefreshPartnerPerms(), a1GeralCarregar()]);
+  G.user = A1.user || G.user;
+  G.geral = _geral;
   // Gestor não passa por essa consulta; para ele a permissão é sempre certa.
   G.permsConfirmadas = (G.user.role !== 'partner') || !!_permsDoBanco;
   // Revelado aqui, e não em applyPartnerRestrictions(): lá é depois do
@@ -2193,6 +2199,11 @@ function hasPerm(key) {
 // em sql/2026-09-10_criar_repasse_trava.sql). Esconder botão é conveniência;
 // a recusa que vale é a que a API dá.
 function podeCriarRepasse() {
+  // A REGRA DO CLIENTE VEM ANTES DE TUDO, inclusive do gestor. Se a operação
+  // decidiu que repasse não nasce solto, ninguém cria manualmente — ele passa a
+  // vir só do selo VENDIDO da esteira da Venda. Regra-mãe que o gestor pudesse
+  // furar não seria regra, seria sugestão.
+  if (!a1GeralPermite(G.geral, 'criar_repasse_avulso')) return false;
   // Gestor não depende de consulta nenhuma.
   if (!G.user || G.user.role !== 'partner') return true;
   // A criação manual é operação da retaguarda: somente Analista e
@@ -3077,7 +3088,11 @@ function stageDays(c){
 }
 
 function renderCard(c, stage) {
-  const days=stageDays(c), dc=days>14?'alert':days>7?'warn':'';
+  // Etapa final não alarma. O cartão marcava vermelho aos 14 dias em QUALQUER
+  // etapa, inclusive nas de fim: um processo concluído há um mês aparecia com a
+  // mesma tarja de quem está travado. Concluído não é atrasado — e é isso que o
+  // is_final da etapa existe para dizer.
+  const days=stageDays(c), dc=caseIsFinal(c)?'':(days>14?'alert':days>7?'warn':'');
   const ent=c.payload?.entrevista_status||'pendente';
   const since=c.stage_entered_at||c.created_at;
   return `<div class="k-card" style="border-left-color:${stage.color}"

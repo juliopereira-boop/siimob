@@ -379,7 +379,7 @@ async function pnCarregarPA(){
   // parado numa situação que o gestor tirou da esteira ontem, e sem a linha
   // dela a flag não resolve e o processo entraria como ativo por engano.
   const pedidos = [
-    fetch(`${A1.rest('a1_pa_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem&order=ordem.asc`, h)
+    fetch(`${A1.rest('a1_pa_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem,selo&order=ordem.asc`, h)
       .then(r => r.json()).catch(() => []),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?select=id,codigo,unidade,criado_em,situacao_id,situacao_em,vence_em,empreendimento_id,corretor_id,imobiliaria_id,empresa_id,correspondente_id,analista_id&order=criado_em.desc`),
     A1.buscarTudo(`${A1.rest('a1_pa_analises_credito')}?select=pre_analise_id,versao,status,criado_em,decidido_em`),
@@ -426,6 +426,23 @@ async function pnCarregarPA(){
 // Flags que encerram a pré-análise. APROVADO fica FORA desta lista de propósito:
 // a aprovada que ainda não virou Venda é justamente o caso que precisa
 // aparecer, e ela some da fila se for tratada como terminal.
+// O SELO É A AUTORIDADE SOBRE O FIM DA JORNADA.
+//
+// O nome da etapa e a flag mudam de cliente para cliente — cada um desenha a
+// própria esteira e pode tirar "Aprovada" do caminho amanhã. O SELO não: ele é
+// estrutural, e é por isso que o dono o criou. INICIO abre, FIM_POSITIVO e
+// FIM_NEGATIVO fecham, e VENDIDO fecha a jornada da Venda (dali em diante quem
+// conta o tempo é o Repasse).
+//
+// O DEFEITO QUE ISTO CONSERTA: "Contrato assinado" carrega selo VENDIDO e não
+// tem sla_horas. Mesmo assim o negócio continuava entrando no aging, nas faixas
+// de tempo e na fila dos "mais parados", com o relógio correndo para sempre. O
+// painel dizia que um contrato ASSINADO estava parado há N dias — e assinado é
+// o fim da venda, não um atraso. Relógio que não para em etapa de fim
+// transforma o melhor resultado do mês na pior linha do quadro.
+const PN_SELOS_FIM = ['FIM_POSITIVO', 'FIM_NEGATIVO', 'VENDIDO'];
+function pnEncerrada(s){ return !!s && PN_SELOS_FIM.indexOf(s.selo) >= 0; }
+
 const PN_PA_TERMINAIS = ['REPROVADO', 'CANCELADO', 'ENCERRADO'];
 
 function pnCalcPA(d){
@@ -523,6 +540,10 @@ function pnCalcPA(d){
   const fila = [];
   ativas.forEach(p => {
     const s = sitPorId[p.situacao_id];
+    // Etapa com selo de fim não tem prazo a estourar: a jornada acabou ali. Ela
+    // sai do SLA e da fila dos parados, e não entra no denominador — senão a
+    // taxa de vencidos cairia só por haver processo encerrado no estoque.
+    if (pnEncerrada(s)) return;
     const horas = s && s.sla_horas;
     const desde = pnMs(p.situacao_em) || pnMs(p.criado_em);
     const decorridas = desde ? (Date.now() - desde) / 36e5 : 0;
@@ -547,7 +568,10 @@ function pnCalcPA(d){
   });
   // Denominador do SLA: só quem tem prazo cadastrado. Situação sem sla_horas
   // fora dos dois lados — senão o denominador mente para baixo.
-  const comPrazo = ativas.length - semPrazo;
+  // O denominador é só quem AINDA corre: ativas menos as encerradas por selo,
+  // menos as sem prazo cadastrado.
+  const encerradasPorSelo = ativas.filter(p => pnEncerrada(sitPorId[p.situacao_id])).length;
+  const comPrazo = ativas.length - encerradasPorSelo - semPrazo;
 
   // ── Tempo até decisão ──
   const tDecisao = [], tTotal = [];
@@ -1102,7 +1126,7 @@ async function a1PainelComercial(alvo){
 async function pnCarregarCO(){
   const h = { headers: A1.headers() };
   const r = await Promise.all([
-    fetch(`${A1.rest('a1_co_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem&order=ordem.asc`, h)
+    fetch(`${A1.rest('a1_co_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem,selo&order=ordem.asc`, h)
       .then(x => x.json()).catch(() => []),
     // origem_snapshot NÃO vem inteiro: dentro dele moram nome e renda analisada
     // dos participantes, e arrastar isso para uma tela executiva seria vazar
@@ -1249,10 +1273,14 @@ function pnCalcCO(d){
   // Aging: situacao_em é escrito pelo gatilho a1_co_guarda_update e o navegador
   // não consegue alterá-lo, então este relógio é confiável.
   const aging = [], faixas = [0, 0, 0, 0, 0];
-  let estourados = 0, semPrazo = 0;
+  let estourados = 0, semPrazo = 0, encerrados = 0;
   const fila = [];
   ativos.forEach(co => {
     const s = sitPorId[co.situacao_id];
+    // Mesma regra da Pré-análise, e é aqui que o defeito aparecia: "Contrato
+    // assinado" (selo VENDIDO) seguia acumulando dias no aging e subindo na
+    // fila dos mais parados. Venda assinada não está parada — está ganha.
+    if (pnEncerrada(s)) { encerrados++; return; }
     const desde = pnMs(co.situacao_em) || pnMs(co.criado_em);
     const horas = desde ? (Date.now() - desde) / 36e5 : 0;
     const dias = horas / 24;
@@ -1267,7 +1295,7 @@ function pnCalcCO(d){
       unidade: co.unidade || '', sit: s ? s.nome : 'sem situação', cor: (s && s.cor) || '#64748b',
       horas, nivel, valor: pnValorCO(co) });
   });
-  const comPrazo = ativos.length - semPrazo;
+  const comPrazo = ativos.length - encerrados - semPrazo;
 
   // Conversão para Repasse: o denominador vem do HISTÓRICO, não da situação
   // atual. Quem já passou pela etapa de CREATE_REPASS e seguiu adiante continua
@@ -1318,7 +1346,7 @@ function pnCalcCO(d){
     liquidas, perdidos, distratos, taxaDistrato,
     cobertura, semCorretor, semImob, tempoEtapa,
     p50Aging: pnPercentil(aging, 0.5), p90Aging: pnPercentil(aging, 0.9),
-    estourados, comPrazo, semPrazo, faixas,
+    estourados, comPrazo, semPrazo, encerrados, faixas,
     convRepasse: baseRepasse ? viraramRepasse / baseRepasse : null,
     baseRepasse, viraramRepasse, repasseForaDaBase,
     funil: {
@@ -1390,8 +1418,11 @@ function pnDesenharCO(alvo){
 
     pnKpi({ rotulo:'Aging do pipeline', valor: pnDias(c.p50Aging), cor:'kpi-amber',
       sub: `P90 ${pnDias(c.p90Aging)} · ${c.estourados} com SLA estourado`,
-      titulo:'P50 e P90 de (agora − situacao_em) sobre os ativos. situacao_em é escrito por gatilho no banco, o navegador não altera. '
-           + `${c.semPrazo} ativo(s) em situação sem sla_horas ficam fora da fatia de estourado.` }),
+      titulo:'P50 e P90 de (agora − situacao_em) sobre os ativos que AINDA CORREM. situacao_em é escrito por gatilho no banco, o navegador não altera. '
+           + `${c.semPrazo} ativo(s) em situação sem sla_horas ficam fora da fatia de estourado. `
+           + (c.encerrados
+              ? `${c.encerrados} negócio(s) estão em etapa com selo de fim (FIM_POSITIVO, FIM_NEGATIVO ou VENDIDO) e saíram desta conta: contrato assinado é fim da venda, não atraso — o relógio para no selo.`
+              : 'Nenhum negócio está parado em etapa de fim.') }),
 
     pnKpi({ rotulo:'Conversão → Repasse', valor: pnPct(c.convRepasse), cor:'kpi-violet',
       sub: c.baseRepasse ? `${c.viraramRepasse} de ${c.baseRepasse}` : 'nenhum passou pela etapa de criar repasse',

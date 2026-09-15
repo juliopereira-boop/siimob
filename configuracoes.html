@@ -295,6 +295,22 @@
       <span id="cfg-busca-vazio" style="display:none;font-size:.78rem;color:var(--t3)">Nada com esse nome.</span>
     </div>
 
+    <!-- Este grupo vem PRIMEIRO de propósito: o que está aqui vale acima de
+         qualquer permissão de perfil ou de pessoa, e quem abre Configurações
+         precisa ler a regra da casa antes dos cadastros que ela governa. -->
+    <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Regras gerais</div>
+      <div class="cfg-section-sub">Valem para o cliente inteiro, acima das permissões de cada um.</div>
+      <div class="cfg-cards">
+        <div class="cfg-hub-card" onclick="openCfgView('geral')">
+          <div class="cfg-hub-icon" style="background:#fef3c7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <div class="cfg-card-label">Configurações Gerais</div>
+        </div>
+      </div>
+    </div>
+
     <div class="cfg-grupo">
       <div class="cfg-section-hdr">Workflow e etapas</div>
       <div class="cfg-section-sub">Como o processo anda e o que cada etapa exige.</div>
@@ -473,6 +489,25 @@
           </div>
           <div class="cfg-card-label">Sugerir melhoria</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cfg-view-geral" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="btn btn-ghost btn-sm" onclick="closeCfgView()">← Voltar</button>
+      <div class="cfg-view-title">Configurações Gerais</div>
+    </div>
+    <div class="card" style="padding:1.25rem;max-width:760px">
+      <div style="font-size:.82rem;color:var(--t2);line-height:1.55;margin-bottom:1.1rem">
+        Estas regras valem para <strong>o cliente inteiro</strong> e mandam acima das permissões.
+        Desligada, ninguém cria — nem o gestor, nem quem tem a marca no perfil. Ligada, nada é
+        concedido: continua valendo a permissão de cada um.
+      </div>
+      <div id="geral-lista"></div>
+      <div style="display:flex;gap:.6rem;align-items:center;margin-top:1.2rem">
+        <button class="btn btn-primary" onclick="geralSalvar()">Salvar</button>
+        <span id="geral-aviso" style="font-size:.78rem;color:var(--t3)"></span>
       </div>
     </div>
   </div>
@@ -1650,6 +1685,7 @@
 <script src="/js/auth.js"></script>
 <script src="/js/documentos.js"></script>
 <script src="/js/permissoes.js"></script>
+<script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -1849,7 +1885,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['perfis','wf','flags','regionais','empreendimentos','imobiliarias','doctypes','checklist','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['geral','perfis','wf','flags','regionais','empreendimentos','imobiliarias','doctypes','checklist','comissao','analistas','corretores','precad','gestores','convenios','modalidades','coordenadores','agencias','correspondentes','despachantes','bancos','cartorios'];
 
 
 // Busca do hub: esconde card por card e some com o grupo que ficar vazio, para
@@ -1909,6 +1945,7 @@ function openCfgView(view) {
     const el = document.getElementById(`cfg-view-${v}`);
     if (el) el.style.display = v === view ? '' : 'none';
   });
+  if (view === 'geral') geralCarregarTela();
   if (view === 'perfis') perfisCarregar();
   if (view === 'flags') loadFlags();
   if (view === 'regionais') loadRegionaisCfg();
@@ -1943,6 +1980,49 @@ function closeCfgView() {
     if (el) el.style.display = 'none';
   });
   document.getElementById('cfg-hub').style.display = '';
+}
+
+// ── Configurações Gerais ────────────────────────────────────────────────────
+// As regras-mãe do cliente. O catálogo, os padrões e a leitura moram em
+// js/geral.js, porque os módulos precisam da MESMA verdade: se esta tela
+// guardasse a sua interpretação, a Venda e o Repasse leriam outra coisa e a
+// regra valeria diferente em cada aba.
+const GERAL_CAMPOS = [
+  { chave:'criar_pre_analise_avulsa', rotulo:'Permitir criar pré-análise avulsa',
+    ajuda:'Deixa abrir uma pré-análise direto, sem partir de um Lead. Desligada, a pré-análise só nasce de um Lead — e o botão de criar some do módulo para todo mundo.' },
+  { chave:'criar_venda_avulsa', rotulo:'Permitir criar venda avulsa',
+    ajuda:'Deixa abrir uma venda direto, sem partir de uma pré-análise aprovada. Ligada, o botão de criar venda aparece no módulo Venda para quem tem a permissão.' },
+  { chave:'criar_repasse_avulso', rotulo:'Permitir criar repasse avulso',
+    ajuda:'Deixa abrir um repasse direto, sem uma venda por trás. Desligada, o repasse só nasce do selo VENDIDO da esteira da Venda, e o botão some do módulo Repasse.' }
+];
+
+async function geralCarregarTela(){
+  G.geral = await a1GeralCarregar();
+  const alvo = document.getElementById('geral-lista'); if(!alvo) return;
+  alvo.innerHTML = GERAL_CAMPOS.map(c => `
+    <label style="display:flex;gap:.7rem;align-items:flex-start;padding:.85rem 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" id="geral-${esc(c.chave)}" ${G.geral[c.chave] ? 'checked' : ''} style="margin-top:.2rem;width:1rem;height:1rem;flex:none">
+      <span>
+        <span style="display:block;font-size:.85rem;font-weight:700">${esc(c.rotulo)}</span>
+        <span style="display:block;font-size:.76rem;color:var(--t3);line-height:1.5;margin-top:.2rem">${esc(c.ajuda)}</span>
+      </span>
+    </label>`).join('');
+  const av = document.getElementById('geral-aviso'); if (av) av.textContent = '';
+}
+
+async function geralSalvar(){
+  const valor = {};
+  GERAL_CAMPOS.forEach(c => { const el = document.getElementById('geral-'+c.chave); valor[c.chave] = !!(el && el.checked); });
+  const res = await fetch(A1.rest('a1_config'), { method:'POST', headers:A1.upsertHeaders(),
+    body: JSON.stringify({ tenant_id:G.user.tenant_id, key:'geral', value: JSON.stringify(valor) }) });
+  if (res.ok) {
+    G.geral = a1GeralNormalizar(valor);
+    showToast('Configurações gerais salvas');
+    // O aviso existe porque a mudança não alcança quem já está com o módulo
+    // aberto noutra aba: o botão de criar é decidido no boot daquela tela.
+    const av = document.getElementById('geral-aviso');
+    if (av) av.textContent = 'Quem já está com um módulo aberto precisa recarregar para ver a mudança.';
+  } else showToast('Erro ao salvar','error');
 }
 
 // ── Checklist operacional ───────────────────────────────────────────────────
