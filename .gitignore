@@ -2,3 +2,6 @@ node_modules/
 package-lock.json
 testes/*.png
 .DS_Store
+# Saída do Playwright. Nasce a cada `npm test` e não descreve o projeto:
+# versionar isso faria toda rodada de teste sujar o git status de quem clonou.
+test-results/
