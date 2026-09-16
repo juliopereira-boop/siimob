@@ -1911,7 +1911,7 @@ async function montarSeletorPainel(){
   if (disponiveis.length < 2) { caixa.style.display = 'none'; trocarPainel(escolhido); return; }
 
   botoes.innerHTML = disponiveis.map(m =>
-    `<button type="button" data-painel="${esc(m)}" onclick="trocarPainel('${esc(m)}')"
+    `<button type="button" data-painel="${esc(m)}" onclick="trocarPainel('${escJs(m)}')"
        style="border:none;background:none;padding:.45rem .95rem;font-size:.78rem;font-weight:700;color:var(--t3);cursor:pointer;font-family:inherit">${esc(PAINEL_ROTULO[m] || m)}</button>`
   ).join('');
   caixa.style.display = '';
@@ -2574,6 +2574,13 @@ function closeCfgView() {
   );
 }
 
+// CÓDIGO PARADO. switchView não é chamada em lugar nenhum DESTE arquivo — e ela
+// é a única chamadora de switchTab. As duas ficaram de quando esta tela tinha
+// abas próprias; hoje a navegação é por página. Fica no lugar porque apagar
+// codigo de tela em producao sem necessidade e risco de graça, mas NÃO SE
+// CONSERTA AQUI: o que roda de verdade e o switchView de andamento.html e
+// listagem.html, onde ele ainda e chamado. Mexer so nesta copia cria uma
+// verdade a mais sobre a mesma navegacao, e nenhuma delas roda.
 function switchView(view) {
   G.currentView = view;
   document.querySelectorAll('.dd-item').forEach(d=>d.classList.remove('active'));
@@ -3063,7 +3070,7 @@ function renderPipeline() {
 function renderRegionalTabs() {
   const tabs=[{key:'__all__',label:'Todos'},...G.groups.map(g=>({key:g,label:g}))];
   document.getElementById('regional-tabs').innerHTML = tabs.map(t=>
-    `<div class="reg-tab ${G.currentGroup===t.key?'active':''}" onclick="selectGroup('${esc(t.key)}')">${esc(t.label)}</div>`
+    `<div class="reg-tab ${G.currentGroup===t.key?'active':''}" onclick="selectGroup('${escJs(t.key)}')">${esc(t.label)}</div>`
   ).join('');
 }
 
@@ -5839,7 +5846,30 @@ function clearFilters(){
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function stageMap(){return Object.fromEntries(G.stages.map(s=>[s.id,s]));}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// `String(s||'')` apagava o ZERO e o FALSE: esc(0) devolvia string vazia, e
+// qualquer unidade "0", contagem 0 ou marca false saía em branco na tela. Os
+// arquivos mais novos (comercial, pre-analise, crm, importar, indica, avisos)
+// já usam a forma abaixo; estes três ficaram para trás.
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ESCAPE PARA DENTRO DE STRING JS, que é outro problema e precisa de outra função.
+//
+// `onclick="f('${esc(x)}')"` NÃO está protegido por esc(). Escapar a aspa como
+// entidade HTML não resolve: o parser decodifica `&#39;` de volta para `'` ANTES
+// de o JavaScript ler o atributo, e a string se quebra do mesmo jeito. Uma
+// regional chamada `a'); alert(1);//` — e regional é texto que o gestor digita
+// em Configurações — executa.
+//
+// A ordem importa: primeiro escapa para JS (a contrabarra antes da aspa, senão
+// a contrabarra nova seria escapada de novo), depois escapa para atributo HTML.
+// superadmin.html já fazia isto à mão em 6 lugares; aqui vira função com nome.
+// A quebra de linha também: dentro de literal de string JS ela é ERRO DE
+// SINTAXE, e o onclick inteiro deixa de compilar — o botão vira enfeite que não
+// faz nada, em silêncio. Nome com quebra de linha chega por colagem e por
+// importação de planilha, que é de onde vêm os cadastros de despachante e banco.
+// U+2028/U+2029 são quebras para o JS mesmo não sendo \n.
+function escJs(s){ return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+  .replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029')); }
 function fmtDateHour(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function fmtCpf(cpf){const d=cpf.replace(/\D/g,'');return d.length===11?`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`:cpf;}
 function maskValor(el){
@@ -5953,7 +5983,7 @@ function renderDespachantes() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(d.id)}
-          <button class="btn-icon" onclick="editDespachante('${esc(d.id)}')">✏️</button>
+          <button class="btn-icon" onclick="editDespachante('${escJs(d.id)}')">✏️</button>
         </div>
       </div>`).join('');
 }
@@ -5989,7 +6019,7 @@ function renderBancos() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(b.id)}
-          <button class="btn-icon" onclick="editBanco('${esc(b.id)}')">✏️</button>
+          <button class="btn-icon" onclick="editBanco('${escJs(b.id)}')">✏️</button>
         </div>
       </div>`).join('');
 }
@@ -6025,7 +6055,7 @@ function renderCartorios() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(c.id)}
-          <button class="btn-icon" onclick="editCartorio('${esc(c.id)}')">✏️</button>
+          <button class="btn-icon" onclick="editCartorio('${escJs(c.id)}')">✏️</button>
         </div>
       </div>`).join('');
 }

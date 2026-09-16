@@ -2600,7 +2600,10 @@ async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // String(str||'') engole o zero e o false: `esc(0)` devolvia string vazia, e a
+  // tela mostrava um campo em branco onde o dado era 0. O teste tem de ser por
+  // ausencia, nao por valor falsy.
+  return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function setEl(id, v) { const el = document.getElementById(id); if(el) el.textContent = v; }
 
@@ -2920,7 +2923,11 @@ async function loadFeedback() {
     </div>`).join('');
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// SEGUNDA definicao de esc neste arquivo (a primeira esta la em cima). Sao
+// declaracoes de funcao no mesmo escopo global: esta aqui VENCE, e e ela que
+// roda em todo o arquivo. As duas estao corrigidas para nao engolir 0/false;
+// se um dia forem unificadas, e esta que fica.
+function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 async function setFeedbackStatus(id, status) {
   const res = await fetch(`${saRest('a1_feedback')}?id=eq.${id}`, {

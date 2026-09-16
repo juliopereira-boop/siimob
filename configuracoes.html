@@ -2310,8 +2310,9 @@ function openModal(id) {
 }
 
 function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // `if (!s) return ''` engolia o zero e o false: esc(0) devolvia vazio, e o
+  // campo aparecia em branco onde o dado era 0. O teste e por ausencia.
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
@@ -2362,6 +2363,14 @@ function hasPerm(key) {
   return key in p ? !!p[key] : (defaults[key] ?? false);
 }
 
+// ATENCAO: DAQUI ATE O FIM DESTE BLOCO HA UMA COPIA CONGELADA DO QUADRO DO
+// REPASSE — hasPerm, applyPartnerRestrictions e o que vem junto nasceram em
+// repasse.html e foram copiados para ca. applyPartnerRestrictions NAO e chamada
+// em lugar nenhum deste arquivo: e codigo parado, mantido so para nao quebrar
+// quem eventualmente o chame de fora. NAO COPIE DAQUI e nao corrija so aqui —
+// a verdade viva sobre permissao de parceiro esta em repasse.html/andamento.html/
+// listagem.html, e uma correcao feita so neste ponto vira a quinta versao da
+// mesma regra.
 function applyPartnerRestrictions() {
   if (G.user.role !== 'partner') return;
 
@@ -2444,6 +2453,13 @@ function switchTab(tab, el) {
   }
 }
 
+// CÓDIGO PARADO. switchView não é chamada em lugar nenhum DESTE arquivo — e ela
+// é a única chamadora de switchTab. As duas ficaram de quando esta tela tinha
+// abas próprias; hoje a navegação é por página. Fica no lugar porque apagar
+// codigo de tela em producao sem necessidade e risco de graça, mas NÃO SE
+// CONSERTA AQUI: o que roda de verdade e o switchView de andamento.html e
+// listagem.html, onde ele ainda e chamado. Mexer so nesta copia cria uma
+// verdade a mais sobre a mesma navegacao, e nenhuma delas roda.
 function switchView(view) {
   G.currentView = view;
   document.querySelectorAll('.dd-item').forEach(d=>d.classList.remove('active'));

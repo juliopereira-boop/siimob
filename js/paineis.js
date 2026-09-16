@@ -440,8 +440,23 @@ async function pnCarregarPA(){
 // painel dizia que um contrato ASSINADO estava parado há N dias — e assinado é
 // o fim da venda, não um atraso. Relógio que não para em etapa de fim
 // transforma o melhor resultado do mês na pior linha do quadro.
-const PN_SELOS_FIM = ['FIM_POSITIVO', 'FIM_NEGATIVO', 'VENDIDO'];
-function pnEncerrada(s){ return !!s && PN_SELOS_FIM.indexOf(s.selo) >= 0; }
+// O vocabulário de selo é POR MÓDULO, e o banco impõe isso em dois CHECK
+// diferentes: a Pré-análise aceita INICIO/FIM_POSITIVO/FIM_NEGATIVO, a Venda
+// aceita INICIO/VENDIDO/FIM_NEGATIVO. Fundir os dois numa lista só — como esta
+// linha fazia — funciona enquanto os conjuntos não colidem, e nada garante que
+// continuem não colidindo: no dia em que a Venda ganhar um FIM_POSITIVO com
+// outro sentido, a Pré-análise passa a encerrar por um selo que não é dela.
+// Separado, cada módulo pergunta pelo seu.
+const PN_SELOS_FIM = { PRE_ANALISE: ['FIM_POSITIVO', 'FIM_NEGATIVO'],
+                       COMERCIAL:   ['VENDIDO', 'FIM_NEGATIVO'] };
+function pnEncerrada(s, modulo){
+  if (!s || !s.selo) return false;
+  const lista = PN_SELOS_FIM[modulo];
+  // Módulo não informado seria a fusão de volta pela porta dos fundos: melhor
+  // não encerrar nada do que encerrar pelo selo do módulo errado.
+  if (!lista) return false;
+  return lista.indexOf(s.selo) >= 0;
+}
 
 const PN_PA_TERMINAIS = ['REPROVADO', 'CANCELADO', 'ENCERRADO'];
 
@@ -543,7 +558,7 @@ function pnCalcPA(d){
     // Etapa com selo de fim não tem prazo a estourar: a jornada acabou ali. Ela
     // sai do SLA e da fila dos parados, e não entra no denominador — senão a
     // taxa de vencidos cairia só por haver processo encerrado no estoque.
-    if (pnEncerrada(s)) return;
+    if (pnEncerrada(s, 'PRE_ANALISE')) return;
     const horas = s && s.sla_horas;
     const desde = pnMs(p.situacao_em) || pnMs(p.criado_em);
     const decorridas = desde ? (Date.now() - desde) / 36e5 : 0;
@@ -570,7 +585,7 @@ function pnCalcPA(d){
   // fora dos dois lados — senão o denominador mente para baixo.
   // O denominador é só quem AINDA corre: ativas menos as encerradas por selo,
   // menos as sem prazo cadastrado.
-  const encerradasPorSelo = ativas.filter(p => pnEncerrada(sitPorId[p.situacao_id])).length;
+  const encerradasPorSelo = ativas.filter(p => pnEncerrada(sitPorId[p.situacao_id], 'PRE_ANALISE')).length;
   const comPrazo = ativas.length - encerradasPorSelo - semPrazo;
 
   // ── Tempo até decisão ──
@@ -1175,9 +1190,14 @@ function pnCalcCO(d){
   // um dinheiro que já foi fechado. O handoff perdido tem cartão próprio
   // (Conversão → Repasse); pipeline é promessa, e promessa cumprida sai da conta.
   const ativos = d.com.filter(co =>
-    (!co.situacao_id || PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0) && !pnEncerrada(sitPorId[co.situacao_id]));
+    (!co.situacao_id || PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0) && !pnEncerrada(sitPorId[co.situacao_id], 'COMERCIAL'));
   // Quantos saíram por selo — o cartão de aging explica a diferença com isto.
-  const encerrados = d.com.filter(co => pnEncerrada(sitPorId[co.situacao_id])).length;
+  // Só quem saiu POR SELO. Varrendo d.com inteiro, um negócio numa etapa que tem
+  // flag CANCELADO E selo FIM_NEGATIVO — combinação que a esteira dos clientes
+  // usa hoje na etapa "Cancelado" — era contado aqui e o título do aging o
+  // apresentava ao gestor como fim de venda. Cancelado não é venda encerrada.
+  const encerrados = d.com.filter(co =>
+    PN_CO_TERMINAIS.indexOf(flagDe(co)) < 0 && pnEncerrada(sitPorId[co.situacao_id], 'COMERCIAL')).length;
   const pipeline = ativos.reduce((s, co) => s + pnValorCO(co), 0);
 
   // Um contrato por comercial: o de maior versão. As versões antigas são
@@ -1209,21 +1229,50 @@ function pnCalcCO(d){
   //   2. o evento de entrada na situação selada VENDIDO — o carimbo da esteira
   //   3. situacao_em da situação atual, se ela for selada — a reserva para o que
   //      foi migrado ou vinculado à mão, sem evento nenhum
-  const entrouVendido = {};
   const sitVendida = {};
   d.situacoes.forEach(s2 => { if (s2.selo === 'VENDIDO') sitVendida[s2.id] = true; });
+
+  // A ENTRADA MAIS RECENTE, não a primeira. Cartão arrastado para o fim, puxado
+  // de volta e arrastado de novo tem dois eventos; o que vale é o último, como
+  // já vale para o cancelamento logo abaixo. Com o primeiro, uma venda ganha
+  // ontem podia ser datada por uma tentativa de três meses atrás e sumir do
+  // período — ou aparecer no mês errado.
+  const entrouVendido = {};
   d.eventos.forEach(e => {
     if (!e.para_situacao || !sitVendida[e.para_situacao]) return;
     const t = pnMs(e.criado_em);
     if (t == null) return;
-    if (entrouVendido[e.comercial_id] == null || t < entrouVendido[e.comercial_id]) entrouVendido[e.comercial_id] = t;
+    if (entrouVendido[e.comercial_id] == null || t > entrouVendido[e.comercial_id]) entrouVendido[e.comercial_id] = t;
   });
+
+  // DUAS PERGUNTAS DIFERENTES, E CONFUNDI-LAS CONTAVA O MESMO DINHEIRO DUAS VEZES.
+  //
+  // `vendaEm` responde "este negócio está ganho AGORA?". Exige o estado atual:
+  // contrato assinado (fato que não desacontece) ou o cartão ESTANDO numa etapa
+  // selada VENDIDO. Antes bastava ter passado por lá um dia — então o cartão
+  // arrastado por engano e devolvido continuava "ganho" para sempre E voltava
+  // para `ativos`, somando no Pipeline bruto e no VGV ao mesmo tempo. Sem jeito
+  // de desfazer pela tela.
+  //
+  // `entrouVendido` responde "este negócio já esteve ganho?". É fato histórico,
+  // e é ele que sustenta o distrato: negócio desfeito saiu da etapa selada, logo
+  // `vendaEm` devolve null para ele — e sem a memória do evento não haveria como
+  // saber que houve venda antes do cancelamento.
   const vendaEm = co => {
     const ct = ctPorCom[co.id];
     if (ct && ct.status === 'ASSINADO' && pnMs(ct.assinado_em) != null) return pnMs(ct.assinado_em);
-    if (entrouVendido[co.id] != null) return entrouVendido[co.id];
-    if (sitVendida[co.situacao_id]) return pnMs(co.situacao_em) || pnMs(co.criado_em);
-    return null;
+    if (!sitVendida[co.situacao_id]) return null;
+    return entrouVendido[co.id] ?? (pnMs(co.situacao_em) || pnMs(co.criado_em));
+  };
+  // "Já esteve ganho", para o distrato. O contrato assinado também conta aqui:
+  // é a forma mais forte de ter estado ganho.
+  const jaVendidoEm = co => {
+    const ct = ctPorCom[co.id];
+    const doDoc = (ct && ct.status === 'ASSINADO') ? pnMs(ct.assinado_em) : null;
+    const doSelo = entrouVendido[co.id] ?? (sitVendida[co.situacao_id] ? (pnMs(co.situacao_em) || null) : null);
+    if (doDoc == null) return doSelo;
+    if (doSelo == null) return doDoc;
+    return Math.min(doDoc, doSelo);
   };
 
   const vendidos = d.com.map(co => ({ co, em: vendaEm(co) }))
@@ -1280,9 +1329,18 @@ function pnCalcCO(d){
   // dois moravam no mesmo balaio do win rate, e proposta perdida no meio da
   // esteira pesava igual a negócio desfeito com contrato na mão — que é o que
   // custa dinheiro, prazo de obra e crédito já aprovado.
+  // O marco é a VENDA, não o documento. O denominador já passou a ser por selo;
+  // deixar o numerador exigindo contrato ASSINADO fazia a taxa afirmar 0,0% —
+  // com o rodapé dizendo "é como a ABRAINC calcula" — para o cliente que vende
+  // pela esteira e nunca cadastra contrato. Número falso com cara de verdade, e
+  // pior que traço.
+  //
+  // Aqui é `jaVendidoEm` e não `vendaEm`: o negócio distratado está numa etapa
+  // CANCELADO agora, então não é venda ganha hoje. O que interessa é que ELE JÁ
+  // FOI, antes do cancelamento.
   const distratos = Object.keys(cancelouNoPeriodo).filter(id => {
-    const ct = ctPorCom[id];
-    const a = ct && ct.status === 'ASSINADO' ? pnMs(ct.assinado_em) : null;
+    const co = comPorId[id];
+    const a = co ? jaVendidoEm(co) : null;
     return a != null && cancelouNoPeriodo[id] > a;
   }).length;
   const taxaDistrato = assinados.length ? distratos / assinados.length : null;
@@ -1367,7 +1425,13 @@ function pnCalcCO(d){
   // ── Funil ──
   const safra = pnTemCorte() ? d.com.filter(co => noPeriodo(co.criado_em)) : d.com;
   const comProposta = safra.filter(co => (co.proposta || {}).valor_venda != null);
-  const comContrato = safra.filter(co => ctPorCom[co.id] && PN_CT_GERADO.indexOf(ctPorCom[co.id].status) >= 0);
+  // O funil alargava UMA LINHA ACIMA, pelo mesmo motivo que já alargava embaixo:
+  // esta linha exigia o documento e a de baixo aceitava o selo. Para o cliente
+  // que não cadastra contrato saía "Contrato gerado: 0" seguido de
+  // "Venda ganha: 2". Quem chegou ao fim passou pelo meio — o funil é uma
+  // sequência, e cada degrau tem de conter o seguinte.
+  const comContrato = safra.filter(co =>
+    (ctPorCom[co.id] && PN_CT_GERADO.indexOf(ctPorCom[co.id].status) >= 0) || vendaEm(co) != null);
   // Mesma regra do KPI acima: o selo reconhece a venda, o documento refina. Sem
   // isto, esta linha marcava 0 com dois negócios na etapa selada VENDIDO.
   const comAssinado = safra.filter(co => vendaEm(co) != null);
@@ -1375,7 +1439,16 @@ function pnCalcCO(d){
 
   const dtContrato = [], dtAssinatura = [], dtRepasse = [];
   comContrato.forEach(co => {
-    const a = pnMs(ctPorCom[co.id].criado_em), n = pnMs(co.criado_em);
+    // ctPorCom pode não existir: desde que esta linha passou a aceitar o SELO,
+    // entra aqui o negócio reconhecido pela esteira, que não tem documento
+    // nenhum — e era exatamente o caso dos três clientes. Sem esta guarda, o
+    // painel de Venda inteiro morria com TypeError para quem arrasta o cartão e
+    // não cadastra contrato. A mediana continua sendo só de quem TEM contrato:
+    // ela mede quanto tempo se leva para gerar o documento, e não há documento
+    // para medir em quem não o gerou.
+    const ct = ctPorCom[co.id];
+    if (!ct) return;
+    const a = pnMs(ct.criado_em), n = pnMs(co.criado_em);
     if (a != null && n != null) dtContrato.push((a - n) / 36e5);
   });
   comAssinado.forEach(co => {
@@ -1424,8 +1497,8 @@ function pnDesenharCO(alvo){
 
   const kpis = [
     pnKpi({ rotulo:'Comerciais ativos', valor: c.ativos, cor:'kpi-blue', sub:'estoque de agora',
-      titulo:'situação atual com flag fora de CANCELADO e ENCERRADO; sem situação conta como ativo. '
-           + 'CONTRATO_ASSINADO continua ativo: o negócio só termina quando o Repasse nasce, e é esse intervalo que revela handoff perdido.' }),
+      titulo:'situação atual com flag fora de CANCELADO e ENCERRADO, E fora de etapa com selo de fim. '
+           + 'Negócio ganho ou perdido não está no pipeline: promessa cumprida sai da conta. O handoff perdido para o Repasse tem cartão próprio (Conversão → Repasse).' }),
 
     pnKpi({ rotulo: pnPodeVerConsolidado() ? 'Pipeline bruto' : 'Negócios em aberto',
       valor: pnPodeVerConsolidado() ? pnBRL(c.pipeline) : c.ativos,
@@ -1451,8 +1524,8 @@ function pnDesenharCO(alvo){
     // espaço — e o motivo fica no cartão de pipeline, que continua na tela.
     ...(pnPodeVerConsolidado() ? [pnKpi({ rotulo:'Ticket médio', valor: c.ticket == null ? '—' : pnBRL(c.ticket), cor:'kpi-green',
       sub: c.assinados ? 'n = ' + c.assinados : 'nenhuma venda ganha no período',
-      titulo:'valor somado dos contratos assinados ÷ nº de contratos assinados no período. '
-           + 'O n vai junto de propósito: com poucos contratos no mês, o ticket balança demais para virar sinal de gestão.' })] : []),
+      titulo:'valor somado das vendas ganhas ÷ nº de vendas ganhas no período — ganha segue a mesma regra do cartão "Vendas ganhas": o selo reconhece, o contrato refina a data. '
+           + 'O n vai junto de propósito: com poucas vendas no mês, o ticket balança demais para virar sinal de gestão.' })] : []),
 
     pnKpi({ rotulo:'Vendas líquidas', valor: c.liquidas, cor:'kpi-green',
       sub: c.perdidos ? c.perdidos + ' perdida(s) no período' : 'nenhuma perda no período',

@@ -1483,7 +1483,10 @@ function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // String(str||'') engole o zero e o false: `esc(0)` devolvia string vazia, e a
+  // tela mostrava um campo em branco onde o dado era 0. O teste tem de ser por
+  // ausencia, nao por valor falsy.
+  return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function val(id) {
   const el = document.getElementById(id);
