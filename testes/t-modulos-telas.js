@@ -5,6 +5,19 @@
 // abas não aparecem e as tabelas não são consultadas.
 const { abrir, checa, resumo } = require('./comum');
 
+// As abas de módulo do casco (js/modulo-shell.js). Elas deixaram de ser HTML
+// fixo com id por tela — `#link-pre-analise` e companhia não existem mais —, e
+// isso é o ponto: o id repetido em seis arquivos era a dívida. O que identifica
+// uma aba agora é o rótulo e o destino.
+const abasDoCasco = p => p.$$eval('.sb-mod',
+  els => els.map(e => ({ rot: e.textContent.replace(/\s+/g,' ').trim(),
+                         href: e.getAttribute('href'),
+                         atual: e.classList.contains('ativo') })));
+const temAba = (abas, re) => abas.some(a => re.test(a.rot));
+// Vistas da sub-barra (Andamento, Listagem, Dashboard do módulo ativo).
+const vistasDoCasco = p => p.$$eval('.sb-sub-item',
+  els => els.map(e => e.textContent.replace(/\s+/g,' ').trim()));
+
 (async () => {
   const todosErros = [];
 
@@ -24,10 +37,12 @@ const { abrir, checa, resumo } = require('./comum');
   }
   {
     const { b, p, erros } = await abrir('repasse.html');
+    // Conteúdo, não ausência de id: `#link-pre-analise` sumiu do HTML, então
+    // perguntar se ele está visível passaria mesmo com a aba acesa.
+    const _abas = await abasDoCasco(p);
     checa('a aba Pré-análise não aparece no sistema do cliente',
-      !(await p.locator('#link-pre-analise').isVisible()));
-    checa('nem a aba Venda',
-      !(await p.locator('#link-comercial').isVisible()));
+      !temAba(_abas, /Pré-análise/), JSON.stringify(_abas.map(a => a.rot)));
+    checa('nem a aba Venda', !temAba(_abas, /Venda/), JSON.stringify(_abas.map(a => a.rot)));
     checa('e nenhuma tabela dos módulos novos é consultada',
       await p.evaluate(() => !performance.getEntriesByType('resource')
         .some(r => /a1_pre_analises|a1_comerciais|a1_pa_|a1_co_/.test(r.name))));
@@ -46,21 +61,26 @@ const { abrir, checa, resumo } = require('./comum');
     // 'registro'] e resolve o destino com `mod === 'PRE_ANALISE' ? 'pre-analise'
     // : 'comercial'` — então 'crm' e 'registro', que são licenciados, caem no
     // ramo do comercial e acendem a aba Venda de um cliente que não a comprou.
-    const vistas = await p.evaluate(() => ['link-pre-analise','link-comercial']
-      .filter(id => { const e = document.getElementById(id);
-        return e && e.offsetParent !== null; }));
+    const acesas = (await abasDoCasco(p)).map(a => a.rot)
+      .filter(r => /Pré-análise|Venda|Leads/.test(r));
     checa('Configurações abre e não mostra as abas novas',
-      vistas.length === 0, 'abas acesas sem licença: ' + JSON.stringify(vistas));
+      acesas.length === 0, 'abas acesas sem licença: ' + JSON.stringify(acesas));
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
   }
   {
     const { b, p } = await abrir('repasse.html', { modulos:['PRE_ANALISE','COMERCIAL'] });
-    checa('com a licença liberada, as duas abas aparecem',
-      (await p.locator('#link-pre-analise').isVisible())
-      && (await p.locator('#link-comercial').isVisible()));
+    // As abas deixaram de ser HTML fixo com id próprio em cada tela: o casco as
+    // monta a partir da licença, e o que identifica uma aba é o destino, não um
+    // id que seis arquivos precisavam repetir igual.
+    const abas = await p.$$eval('.sb-mod',
+      els => els.map(e => ({ rot:e.textContent.trim(), href:e.getAttribute('href') })));
+    const pa = abas.find(a => /Pré-análise/.test(a.rot));
+    const co = abas.find(a => /Venda/.test(a.rot));
+    checa('com a licença liberada, as duas abas aparecem', !!pa && !!co,
+      JSON.stringify(abas.map(a => a.rot)));
     checa('e apontam para o endereço do cliente',
-      (await p.locator('#link-pre-analise').getAttribute('href')) === '/thecred/pre-analise');
+      pa && pa.href === '/thecred/pre-analise', pa && pa.href);
     await b.close();
   }
 
@@ -70,33 +90,25 @@ const { abrir, checa, resumo } = require('./comum');
     // desenhavam um cabeçalho próprio. Agora vem do shell, e a barra tem de
     // trazer as mesmas abas de qualquer outra tela do produto.
     const { b, p, erros } = await abrir('pre-analise.html', { modulos:['PRE_ANALISE'] });
-    const abas = await p.evaluate(() =>
-      Array.from(document.querySelectorAll('#shell .tabs-bar .tab-btn'))
-        .map(a => a.textContent.replace(/[▾\s]+/g, ' ').trim()));
-    checa('a barra traz Dashboard, Repasse e Pré-análise, como no resto do sistema',
-      abas.includes('Dashboard') && abas.includes('Repasse') && abas.includes('Pré-análise'),
-      JSON.stringify(abas));
+    const abas = await abasDoCasco(p);
+    checa('a barra traz Geral, Repasse e Pré-análise, como no resto do sistema',
+      temAba(abas, /^Geral$/) && temAba(abas, /Repasse/) && temAba(abas, /Pré-análise/),
+      JSON.stringify(abas.map(a => a.rot)));
     checa('a aba da Pré-análise está marcada como a atual',
-      await p.evaluate(() => {
-        const a = Array.from(document.querySelectorAll('#shell .tab-btn'))
-          .find(x => /Pré-análise/.test(x.textContent));
-        return !!a && a.classList.contains('active');
-      }));
+      abas.some(a => /Pré-análise/.test(a.rot) && a.atual),
+      JSON.stringify(abas));
 
-    // Fila/Esteira/Painel saíram: quem escolhe a vista é o menu do shell.
-    const itens = await p.evaluate(() => {
-      const g = Array.from(document.querySelectorAll('#shell .tab-group'))
-        .find(x => /Pré-análise/.test(x.querySelector('.tab-btn').textContent));
-      return g ? Array.from(g.querySelectorAll('.dd-item')).map(i => i.textContent.trim()) : [];
-    });
-    checa('e o menu da Pré-análise oferece exatamente Andamento e Listagem',
+    // As vistas do módulo moram na sub-barra, e não num menu suspenso: menu que
+    // só abre no hover esconde a segunda vista de quem usa teclado ou toque.
+    const itens = await vistasDoCasco(p);
+    checa('e a sub-barra da Pré-análise oferece exatamente Andamento e Listagem',
       itens.length === 2 && itens[0] === 'Andamento' && itens[1] === 'Listagem',
       JSON.stringify(itens));
     checa('a tela não desenha mais um cabeçalho próprio',
-      await p.evaluate(() => document.querySelectorAll('.hdr').length === 1
-                          && document.querySelectorAll('.tabs-bar').length === 1));
-    checa('e o botão de criar continua à mão, agora como ação do cabeçalho',
-      (await p.locator('#shell #btn-nova').count()) === 1);
+      await p.evaluate(() => document.querySelectorAll('.sb-cromo').length === 1
+                          && document.querySelectorAll('.hdr').length === 0));
+    checa('e o botão de criar continua à mão, agora como ação da sub-barra',
+      (await p.locator('.sb-sub #btn-nova').count()) === 1);
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     todosErros.push(...erros);
     await b.close();
@@ -394,30 +406,22 @@ const { abrir, checa, resumo } = require('./comum');
 
     // O cabeçalho passou a ser o de js/modulo-shell.js, o mesmo dos quadros
     // antigos. Era a divergência que fazia esta tela parecer outro produto.
-    const abas = await p.evaluate(() => Array.from(
-      document.querySelectorAll('#shell .tabs-bar > .tab-btn, #shell .tab-group > .tab-btn'))
-      .map(a => a.textContent.replace(/\s+/g, ' ').replace('▾', '').trim()));
+    const abas = await abasDoCasco(p);
+    const rotulos = abas.map(a => a.rot);
     checa('o cabeçalho traz as abas do resto do sistema',
-      abas.includes('Dashboard') && abas.includes('Repasse') && abas.includes('Configuracoes'),
-      JSON.stringify(abas));
-    checa('com a Venda marcado como a tela atual',
-      await p.evaluate(() => {
-        const a = document.querySelector('#shell .tab-group > .tab-btn.active');
-        return !!a && /Venda/.test(a.textContent);
-      }));
+      temAba(abas, /^Geral$/) && temAba(abas, /Repasse/) && temAba(abas, /Configurações/),
+      JSON.stringify(rotulos));
+    checa('com a Venda marcada como a tela atual',
+      abas.some(a => /Venda/.test(a.rot) && a.atual), JSON.stringify(abas));
     checa('e a Pré-análise, sem licença, continua fora da barra',
-      !abas.includes('Pré-análise'), JSON.stringify(abas));
+      !temAba(abas, /Pré-análise/), JSON.stringify(rotulos));
     checa('existe um cabeçalho só, não dois disputando o topo',
-      await p.evaluate(() => document.querySelectorAll('.hdr').length === 1
-                          && document.querySelectorAll('.tabs-bar').length === 1));
+      await p.evaluate(() => document.querySelectorAll('.sb-cromo').length === 1
+                          && document.querySelectorAll('.hdr').length === 0));
 
-    const menu = await p.evaluate(() => {
-      const g = Array.from(document.querySelectorAll('#shell .tab-group'))
-        .find(x => /Venda/.test(x.querySelector('.tab-btn').textContent));
-      return g ? Array.from(g.querySelectorAll('.dd-item'))
-        .map(a => a.textContent.trim() + ' → ' + a.getAttribute('href')) : [];
-    });
-    checa('o menu Venda oferece exatamente Andamento e Listagem',
+    const menu = await p.$$eval('.sb-sub-item',
+      els => els.map(a => a.textContent.replace(/\s+/g,' ').trim() + ' → ' + a.getAttribute('href')));
+    checa('a sub-barra da Venda oferece exatamente Andamento e Listagem',
       menu.length === 2 && menu[0] === 'Andamento → /thecred/comercial'
                         && menu[1] === 'Listagem → /thecred/comercial-listagem',
       JSON.stringify(menu));
@@ -430,7 +434,7 @@ const { abrir, checa, resumo } = require('./comum');
     checa('com uma coluna por situação da esteira',
       (await p.locator('#vista-andamento .k-col').count()) === 2);
     checa('e sem abas internas dentro do conteúdo',
-      (await p.locator('.main .tab-btn').count()) === 0);
+      (await p.locator('#conteudo .tab-btn, .main .tab-btn').count()) === 0);
 
     await p.evaluate(() => abrirDossie('co1')); await p.waitForTimeout(800);
     checa('o dossiê abre na proposta',
@@ -512,10 +516,10 @@ const { abrir, checa, resumo } = require('./comum');
     checa('?vista=listagem mostra a tabela no lugar do quadro',
       await p.evaluate(() => document.getElementById('vista-listagem').offsetParent !== null
                           && document.getElementById('vista-andamento').offsetParent === null));
-    checa('e o menu marca Listagem como a vista atual',
+    checa('e a sub-barra marca Listagem como a vista atual',
       await p.evaluate(() => {
-        const a = document.querySelector('#shell .dd-item.active');
-        return !!a && a.textContent.trim() === 'Listagem';
+        const a = document.querySelector('.sb-sub-item.ativo');
+        return !!a && a.textContent.replace(/\s+/g,' ').trim() === 'Listagem';
       }));
     // Era `=== 1` e apodreceu no instante em que o cenário ganhou um segundo
     // negócio — sem dizer QUAL linha mudou, que é o defeito de toda asserção por

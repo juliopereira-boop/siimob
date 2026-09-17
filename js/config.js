@@ -113,6 +113,40 @@ const A1 = {
     return { col, desc: (dir || 'asc').toLowerCase().startsWith('desc') };
   },
 
+  // Ler por uma LISTA de ids, sem estourar a URL.
+  //
+  // POR QUE ISTO EXISTE
+  // `?id=in.(a,b,c,...)` com todos os ids da tela funciona ate a lista crescer.
+  // Um uuid ocupa 37 bytes com a virgula; a ~220 ids a URL passa de 8 KB e a
+  // ~450 passa de 16 KB, que e onde servidor e CDN devolvem 414. E o 414 caia
+  // dentro de um `.catch(() => [])`: a tela nao quebrava, so passava a mostrar
+  // "Titular nao informado" em TODA linha — um dado sumindo em silencio, que e
+  // pior que um erro na cara.
+  //
+  // Aqui a lista e quebrada em lotes que cabem na URL, e os lotes vao em
+  // paralelo. Nao ha limite de ids: com 40 mil, sao ~30 idas ao servidor em
+  // vez de uma que nao chega.
+  async buscarPorIds(base, coluna, ids, opcoes = {}) {
+    const unicos = [...new Set((ids || []).filter(Boolean))];
+    if (!unicos.length) return [];
+    // 6 KB de folga para o resto da URL (host, select, outros filtros). O teto
+    // real dos servidores fica entre 8 e 16 KB; ficar perto dele para economizar
+    // uma requisicao seria trocar robustez por nada.
+    const porLote = Math.max(1, Math.floor(6000 / (String(unicos[0]).length + 1)));
+    const lotes = [];
+    for (let i = 0; i < unicos.length; i += porLote) lotes.push(unicos.slice(i, i + porLote));
+    const partes = await Promise.all(lotes.map(async lote => {
+      const sep = base.includes('?') ? '&' : '?';
+      const r = await this.buscarTudo(`${base}${sep}${coluna}=in.(${lote.join(',')})`, opcoes)
+        .catch(() => null);
+      // Lote que falha NAO vira lista vazia silenciosa: quem chama recebe menos
+      // linhas e, se quiser, compara com ids.length. O erro fica no console.
+      if (!r) { console.warn('buscarPorIds: um lote falhou em', base); return []; }
+      return r.linhas || [];
+    }));
+    return partes.flat();
+  },
+
   async buscarTudo(url, opcoes = {}) {
     const tamanho = opcoes.tamanho || 1000;
     const tetoSeguranca = opcoes.teto || 50000;
@@ -150,7 +184,13 @@ const A1 = {
           semChave = true;
           continue;
         }
-        return { linhas, total: total ?? linhas.length, completo: false, erro: 'HTTP ' + res.status };
+        // O CORPO DA RESPOSTA VAI JUNTO, e nao so o numero. "HTTP 400" nao
+        // diz a ninguem o que fazer; a mensagem do PostgREST diz — e e dela que
+        // a tela tira a frase que nomeia a COLUNA que falta. Quem leu so o
+        // status passou uma tarde procurando o que o banco ja tinha dito.
+        const _corpo = await res.text().catch(() => '');
+        return { linhas, total: total ?? linhas.length, completo: false,
+                 erro: 'HTTP ' + res.status + (_corpo ? ': ' + _corpo.slice(0, 400) : '') };
       }
       const parte = await res.json().catch(() => []);
       if (!Array.isArray(parte)) {

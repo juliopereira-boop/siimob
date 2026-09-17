@@ -142,10 +142,13 @@ const condicao = async (p, valorTexto, tipo = 'ATO', quantidade = 1) => {
     checa('e se chama "Iniciar venda"', /Iniciar venda/i.test(await texto(p, '#btn-iniciar-venda')),
       await texto(p, '#btn-iniciar-venda'));
     // Verde, e não "a classe chamada verde": é a cor que o dono pediu e é o que
-    // o olho dele vai conferir.
+    // o olho dele vai conferir. O tom mudou com a paleta nova — o sistema era
+    // azul #3D5CC8, que nunca foi a cor da marca, e passou a ser o verde-
+    // azulado #0E8C7F. A asserção acompanha a decisão; ela não é sobre um hex
+    // em particular, é sobre o botão ter A cor de "seguir em frente".
     const cor = await p.$eval('#btn-iniciar-venda', el => getComputedStyle(el).backgroundColor)
       .catch(() => '(ausente)');
-    checa('e é verde de verdade', cor === 'rgb(22, 163, 74)', cor);
+    checa('e é verde de verdade', cor === 'rgb(14, 140, 127)', cor);
     checa('e está clicável', await ligado(p, '#btn-iniciar-venda'));
 
     await p.evaluate(() => fecharModal('modal-dossie'));

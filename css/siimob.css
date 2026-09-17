@@ -1,0 +1,590 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIIMOB — sistema visual
+   ═══════════════════════════════════════════════════════════════════════════
+
+   POR QUE ESTE ARQUIVO EXISTE
+   Cada tela do sistema carregava o proprio CSS embutido, e as tres telas do
+   Repasse carregavam TRES copias do mesmo CSS. Mudar um raio de canto exigia
+   achar seis lugares, e quem esquecesse um deixava a tela divergindo do resto —
+   que foi exatamente o que aconteceu com o cabecalho dos modulos novos.
+
+   Aqui mora o vocabulario visual: as cores, a tipografia, o cabecalho, o
+   quadro e os cartoes. Uma tela nova inclui este arquivo e ja nasce parecida
+   com as outras. O navegador baixa uma vez e reaproveita em toda navegacao —
+   o CSS embutido em cada pagina era rebaixado a cada troca de tela.
+
+   A PALETA MUDOU, E MUDOU DE PROPOSITO
+   O sistema era azul #3D5CC8, que nunca foi a cor da marca — e azul generico e
+   o que todo painel de gestao usa. A marca e verde-azulada, e e dela que sai o
+   verde-petroleo do cabecalho. O acafrao aparece SO em prazo e o tijolo SO em
+   atraso: cor aqui e informacao, nao enfeite. Onde tudo e colorido, nada
+   chama atencao.
+
+   NOMES EM PORTUGUES, como o resto do repositorio. Prefixo `sb-` (siimob) para
+   nao colidir com o CSS que ainda vive dentro de cada pagina.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* ── Cromo: o cabecalho e o ceu do cartao de saudacao ─────────────────── */
+  --sb-noite:#04201D;
+  --sb-escuro:#07312C;
+  --sb-petroleo:#0B5049;
+  --sb-petroleo-claro:#12665C;
+
+  /* ── A marca ───────────────────────────────────────────────────────────── */
+  --sb-mar:#0E8C7F;          /* preenchimento, borda, estado ativo          */
+  --sb-mar-texto:#0B7568;    /* o mesmo verde legivel sobre branco (5.4:1)  */
+  --sb-mar-claro:#3FB8A6;
+  --sb-mar-lavado:#E6F4F1;   /* fundo de selo                               */
+
+  /* ── Papel ─────────────────────────────────────────────────────────────── */
+  --sb-vellum:#F4F6F4;       /* fundo da pagina: branco com veio verde      */
+  --sb-papel:#FFFFFF;
+  --sb-linha:#E2E8E5;
+  --sb-linha-forte:#C9D5D1;
+
+  /* ── Tinta ─────────────────────────────────────────────────────────────── */
+  --sb-tinta:#09201D;
+  --sb-tinta2:#47615C;
+  --sb-tinta3:#6B827D;
+
+  /* ── Semantica: cada cor diz UMA coisa ─────────────────────────────────── */
+  --sb-acafrao:#C87E12;      --sb-acafrao-texto:#9A6008;  --sb-acafrao-lavado:#FDF3E2;
+  --sb-tijolo:#B8433A;       --sb-tijolo-texto:#9E352D;   --sb-tijolo-lavado:#FCEDEB;
+  --sb-ardosia:#3F6F9E;      --sb-ardosia-texto:#345C84;  --sb-ardosia-lavado:#EDF3F9;
+  --sb-ametista:#6B4FA8;     --sb-ametista-lavado:#F0ECF9;
+
+  /* ── Forma ─────────────────────────────────────────────────────────────── */
+  --sb-r:10px;
+  --sb-r-g:16px;
+  --sb-r-p:7px;
+  --sb-sombra:0 1px 2px rgba(9,32,29,.05), 0 4px 14px rgba(9,32,29,.05);
+  --sb-sombra-alta:0 8px 28px rgba(9,32,29,.10), 0 24px 56px rgba(9,32,29,.07);
+  --sb-sombra-cromo:0 1px 0 rgba(255,255,255,.06) inset, 0 6px 20px rgba(4,32,29,.28);
+
+  /* ── Tipografia ────────────────────────────────────────────────────────── */
+  --sb-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --sb-display:'Bricolage Grotesque','Inter',-apple-system,sans-serif;
+  --sb-mono:'DM Mono','SF Mono',ui-monospace,monospace;
+
+  /* Altura do cromo: a busca flutua acima, entao o topo tem duas faixas.
+     Sai daqui porque o conteudo precisa saber onde comecar a rolar. */
+  --sb-h-busca:52px;
+  --sb-h-cromo:58px;
+  --sb-h-sub:46px;
+}
+
+/* ═══ Base ═══════════════════════════════════════════════════════════════ */
+
+.sb body, body.sb{
+  font-family:var(--sb-ui);
+  background:var(--sb-vellum);
+  color:var(--sb-tinta);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Numero grande e sempre tabular: coluna de KPI que dança quando o valor muda
+   de 9 para 10 faz o olho reler a tela inteira. */
+.sb-num{font-family:var(--sb-display);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-.02em}
+.sb-cod{font-family:var(--sb-mono);font-size:.78em;letter-spacing:-.01em}
+
+/* ═══ 1. Busca flutuante ═════════════════════════════════════════════════
+   Fica ACIMA do cabecalho, centrada, porque e a primeira coisa que alguem faz
+   ao chegar: procurar um processo ou uma tela. No Repasse ela abre o processo
+   pelo codigo; em qualquer tela ela acha a tela pelo nome. */
+
+.sb-busca-faixa{
+  background:var(--sb-noite);
+  padding:9px 16px;
+  display:flex;justify-content:center;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.sb-busca{
+  width:100%;max-width:430px;position:relative;
+  display:flex;align-items:center;gap:.55rem;
+  background:var(--sb-papel);
+  border:1px solid transparent;
+  border-radius:999px;
+  padding:.42rem .5rem .42rem .9rem;
+  box-shadow:0 2px 10px rgba(4,32,29,.22);
+  transition:box-shadow .16s ease, border-color .16s ease, max-width .2s ease;
+}
+.sb-busca:focus-within{
+  border-color:var(--sb-mar-claro);
+  box-shadow:0 0 0 3px rgba(63,184,166,.28), 0 6px 20px rgba(4,32,29,.3);
+  max-width:560px;
+}
+.sb-busca svg{width:15px;height:15px;color:var(--sb-tinta3);flex:none}
+.sb-busca input{
+  flex:1;border:none;outline:none;background:none;
+  font-size:.82rem;color:var(--sb-tinta);min-width:0;
+}
+.sb-busca input::placeholder{color:var(--sb-tinta3)}
+.sb-atalho{
+  font-family:var(--sb-mono);font-size:.66rem;font-weight:500;
+  color:var(--sb-tinta3);background:var(--sb-vellum);
+  border:1px solid var(--sb-linha);border-radius:5px;
+  padding:.18rem .42rem;flex:none;user-select:none;
+}
+
+/* ═══ 2. Cromo: marca + modulos + pessoa ═════════════════════════════════ */
+
+.sb-cromo{
+  position:sticky;top:0;z-index:180;
+  background:linear-gradient(180deg,var(--sb-escuro) 0%,var(--sb-noite) 100%);
+  box-shadow:var(--sb-sombra-cromo);
+}
+.sb-cromo-linha{
+  display:flex;align-items:center;gap:1.1rem;
+  padding:0 1.1rem;height:var(--sb-h-cromo);
+}
+
+/* A marca. O nome e o elemento tipografico mais forte da tela: peso 800,
+   tracking negativo, e o ponto do i substituido pela marca grafica. */
+.sb-marca{display:flex;align-items:center;gap:.55rem;flex:none;text-decoration:none}
+.sb-marca svg{width:24px;height:24px;flex:none}
+.sb-marca span{
+  font-family:var(--sb-display);font-weight:800;font-size:1.12rem;
+  letter-spacing:-.045em;color:#fff;line-height:1;
+}
+.sb-marca:hover span{color:var(--sb-mar-claro)}
+
+.sb-mods{display:flex;align-items:center;gap:.14rem;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.sb-mods::-webkit-scrollbar{display:none}
+.sb-mod{
+  display:flex;align-items:center;gap:.42rem;
+  padding:.44rem .82rem;border-radius:8px;
+  font-size:.795rem;font-weight:600;white-space:nowrap;
+  color:rgba(255,255,255,.62);
+  background:none;border:none;cursor:pointer;font-family:inherit;
+  text-decoration:none;transition:background .13s ease,color .13s ease;
+}
+.sb-mod svg{width:15px;height:15px;flex:none;opacity:.85}
+.sb-mod:hover{background:rgba(255,255,255,.09);color:#fff}
+.sb-mod.ativo{background:var(--sb-papel);color:var(--sb-noite);font-weight:700}
+.sb-mod.ativo svg{opacity:1;color:var(--sb-mar-texto)}
+
+.sb-cromo-dir{display:flex;align-items:center;gap:.35rem;flex:none}
+.sb-icone{
+  position:relative;width:34px;height:34px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:9px;background:none;border:none;cursor:pointer;
+  color:rgba(255,255,255,.7);transition:background .13s ease,color .13s ease;
+}
+.sb-icone:hover{background:rgba(255,255,255,.1);color:#fff}
+.sb-icone svg{width:17px;height:17px}
+.sb-icone-selo{
+  position:absolute;top:2px;right:2px;min-width:15px;height:15px;
+  padding:0 3px;border-radius:99px;
+  background:var(--sb-acafrao);color:#fff;
+  font-size:.58rem;font-weight:800;line-height:15px;text-align:center;
+}
+.sb-icone-selo[data-zero="1"]{background:rgba(255,255,255,.18);color:rgba(255,255,255,.6)}
+
+.sb-pessoa{display:flex;align-items:center;gap:.6rem;padding-left:.5rem;margin-left:.2rem;border-left:1px solid rgba(255,255,255,.1)}
+.sb-pessoa-txt{text-align:right;line-height:1.25;display:none}
+@media(min-width:1100px){.sb-pessoa-txt{display:block}}
+.sb-pessoa-email{font-size:.68rem;color:rgba(255,255,255,.45)}
+.sb-pessoa-nome{font-size:.76rem;font-weight:700;color:#fff}
+.sb-avatar{
+  width:33px;height:33px;border-radius:9px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sb-display);font-weight:800;font-size:.8rem;letter-spacing:-.02em;
+  background:var(--sb-mar);color:#fff;border:none;cursor:pointer;
+}
+.sb-avatar:hover{background:var(--sb-mar-claro)}
+
+/* ═══ 3. Sub-navegacao ═══════════════════════════════════════════════════
+   As vistas DENTRO do modulo ativo. Barra clara porque ela pertence ao
+   conteudo, nao ao cromo: quem olha entende que trocar aqui nao troca de
+   modulo. */
+
+.sb-sub{
+  position:sticky;top:var(--sb-h-cromo);z-index:170;
+  background:var(--sb-papel);
+  border-bottom:1px solid var(--sb-linha);
+  height:var(--sb-h-sub);
+  display:flex;align-items:stretch;gap:.1rem;
+  padding:0 1.15rem;overflow-x:auto;scrollbar-width:none;
+}
+.sb-sub::-webkit-scrollbar{display:none}
+.sb-sub-item{
+  display:flex;align-items:center;gap:.4rem;
+  padding:0 .9rem;white-space:nowrap;
+  font-size:.815rem;font-weight:600;color:var(--sb-tinta2);
+  background:none;border:none;cursor:pointer;font-family:inherit;
+  text-decoration:none;position:relative;transition:color .13s ease;
+}
+.sb-sub-item:hover{color:var(--sb-tinta)}
+.sb-sub-item.ativo{color:var(--sb-mar-texto);font-weight:700}
+/* O sublinhado nasce do proprio item e nao de uma borda na barra: assim ele
+   acompanha a largura do texto e nao some quando a barra rola. */
+.sb-sub-item.ativo::after{
+  content:"";position:absolute;left:.9rem;right:.9rem;bottom:0;height:2.5px;
+  background:var(--sb-mar);border-radius:3px 3px 0 0;
+}
+.sb-sub-conta{
+  font-family:var(--sb-mono);font-size:.68rem;font-weight:500;
+  background:var(--sb-vellum);color:var(--sb-tinta3);
+  border-radius:99px;padding:.1rem .38rem;
+}
+.sb-sub-item.ativo .sb-sub-conta{background:var(--sb-mar-lavado);color:var(--sb-mar-texto)}
+
+/* ═══ 4. Conteudo ════════════════════════════════════════════════════════ */
+
+.sb-pagina{max-width:1560px;margin:0 auto;padding:1.15rem 1.15rem 3rem}
+
+/* ═══ 5. Cartao de saudacao — o ceu ══════════════════════════════════════
+   O unico lugar do sistema onde ha licenca poetica, e ela e curta. O ceu muda
+   com a hora (madrugada, manha, tarde, noite) e as estrelas sao sorteadas a
+   partir do apelido do cliente — cada empresa tem o SEU ceu, sempre o mesmo.
+   A direita nao e so relogio: e a linha do dia, que e o que um coordenador
+   precisa ler as 21h. */
+
+.sb-hero{
+  position:relative;overflow:hidden;
+  border-radius:var(--sb-r-g);
+  min-height:118px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1.4rem;padding:1.3rem 1.5rem;
+  color:#fff;
+  box-shadow:0 2px 6px rgba(4,32,29,.12), 0 14px 40px rgba(4,32,29,.16);
+}
+.sb-ceu{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sb-hero > *:not(.sb-ceu){position:relative;z-index:1}
+
+.sb-hero-esq{display:flex;align-items:center;gap:1.05rem;min-width:0}
+.sb-hero-av{
+  width:52px;height:52px;border-radius:14px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(3px);
+  font-family:var(--sb-display);font-weight:800;font-size:1.15rem;letter-spacing:-.03em;
+}
+.sb-hero-saud{
+  display:flex;align-items:center;gap:.42rem;
+  font-size:.79rem;font-weight:500;color:rgba(255,255,255,.72);
+  margin-bottom:.1rem;
+}
+.sb-hero-saud svg{width:14px;height:14px}
+.sb-hero-nome{
+  font-family:var(--sb-display);font-weight:800;
+  font-size:1.72rem;line-height:1.08;letter-spacing:-.035em;
+  margin-bottom:.45rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sb-hero-emp{
+  display:inline-flex;align-items:center;
+  font-size:.635rem;font-weight:700;letter-spacing:.07em;
+  padding:.24rem .62rem;border-radius:99px;
+  background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.16);
+  color:rgba(255,255,255,.88);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.sb-hero-dir{
+  flex:none;text-align:right;
+  padding:.72rem 1.05rem;border-radius:12px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(4px);
+}
+.sb-relogio{
+  font-family:var(--sb-display);font-weight:800;
+  font-size:1.62rem;line-height:1;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+}
+.sb-hero-data{font-size:.7rem;color:rgba(255,255,255,.62);margin-top:.22rem}
+/* A linha do dia. So aparece quando ha o que dizer — cartaz que diz "0
+   pendencias" todo dia vira moldura e some da vista. */
+.sb-hero-hoje{
+  margin-top:.55rem;padding-top:.5rem;
+  border-top:1px solid rgba(255,255,255,.14);
+  font-size:.715rem;font-weight:600;color:rgba(255,255,255,.9);
+  display:flex;gap:.7rem;justify-content:flex-end;flex-wrap:wrap;
+}
+.sb-hero-hoje b{font-family:var(--sb-display);font-weight:800}
+.sb-hero-hoje .alerta{color:#FFC978}
+.sb-hero-hoje .atraso{color:#FF9E94}
+
+@media(max-width:720px){
+  .sb-hero{flex-direction:column;align-items:flex-start;gap:1rem}
+  .sb-hero-dir{align-self:stretch;text-align:left}
+  .sb-hero-hoje{justify-content:flex-start}
+  .sb-hero-nome{font-size:1.45rem}
+}
+
+/* ═══ 6. Indicadores ═════════════════════════════════════════════════════
+   Sem quadrado colorido de enfeite ao lado do numero: o que carrega a cor e a
+   FAIXA do topo, e ela so muda quando o indicador tem estado (em dia, atento,
+   atrasado). Icone pastel em todo cartao pinta a tela inteira e nao diz nada. */
+
+.sb-kpis{
+  display:grid;gap:.8rem;margin-top:.9rem;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.sb-kpi{
+  position:relative;overflow:hidden;
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-radius:var(--sb-r);
+  padding:.95rem 1.05rem .9rem;
+  box-shadow:var(--sb-sombra);
+  transition:border-color .14s ease, box-shadow .14s ease;
+}
+.sb-kpi::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:var(--sb-mar);
+}
+.sb-kpi[data-tom="atento"]::before{background:var(--sb-acafrao)}
+.sb-kpi[data-tom="atraso"]::before{background:var(--sb-tijolo)}
+.sb-kpi[data-tom="info"]::before{background:var(--sb-ardosia)}
+.sb-kpi[data-tom="neutro"]::before{background:var(--sb-linha-forte)}
+.sb-kpi-valor{
+  font-family:var(--sb-display);font-weight:800;
+  font-size:1.92rem;line-height:1.05;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;color:var(--sb-tinta);
+}
+.sb-kpi-rot{font-size:.735rem;font-weight:600;color:var(--sb-tinta2);margin-top:.22rem}
+.sb-kpi-sub{font-size:.68rem;color:var(--sb-tinta3);margin-top:.28rem;line-height:1.35}
+a.sb-kpi{display:block;text-decoration:none}
+a.sb-kpi:hover{border-color:var(--sb-mar-claro);box-shadow:var(--sb-sombra-alta)}
+
+/* ═══ 7. Cartao ══════════════════════════════════════════════════════════ */
+
+.sb-grade{display:grid;gap:.8rem;margin-top:.8rem}
+.sb-grade-3{grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+.sb-grade-2{grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+
+.sb-card{
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-radius:var(--sb-r);
+  box-shadow:var(--sb-sombra);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sb-card-cab{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.82rem 1rem;border-bottom:1px solid var(--sb-linha);
+}
+.sb-card-tit{font-size:.845rem;font-weight:700;color:var(--sb-tinta);letter-spacing:-.01em}
+.sb-card-sub{font-size:.7rem;color:var(--sb-tinta3);margin-top:.08rem}
+.sb-card-acao{margin-left:auto;display:flex;gap:.35rem;align-items:center}
+.sb-card-corpo{padding:1rem;flex:1}
+.sb-card-corpo.justo{padding:0}
+
+/* O vazio e um convite, nao um lamento. */
+.sb-vazio{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.5rem;padding:2.2rem 1rem;text-align:center;
+}
+.sb-vazio svg{width:26px;height:26px;color:var(--sb-linha-forte)}
+.sb-vazio p{font-size:.78rem;color:var(--sb-tinta3);max-width:30ch;line-height:1.5}
+
+/* ═══ 8. Botoes e selos ══════════════════════════════════════════════════ */
+
+.sb-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.46rem .85rem;border-radius:8px;
+  font-family:inherit;font-size:.775rem;font-weight:600;
+  border:1px solid var(--sb-linha);background:var(--sb-papel);color:var(--sb-tinta2);
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:background .13s ease,border-color .13s ease,color .13s ease;
+}
+.sb-btn:hover{background:var(--sb-vellum);border-color:var(--sb-linha-forte);color:var(--sb-tinta)}
+.sb-btn svg{width:14px;height:14px}
+.sb-btn-forte{background:var(--sb-mar);border-color:var(--sb-mar);color:#fff}
+.sb-btn-forte:hover{background:var(--sb-mar-texto);border-color:var(--sb-mar-texto);color:#fff}
+.sb-btn-p{padding:.32rem .6rem;font-size:.72rem}
+
+.sb-selo{
+  display:inline-flex;align-items:center;gap:.28rem;
+  padding:.16rem .5rem;border-radius:99px;
+  font-size:.685rem;font-weight:700;line-height:1.5;
+  background:var(--sb-vellum);color:var(--sb-tinta2);
+}
+.sb-selo[data-tom="marca"]{background:var(--sb-mar-lavado);color:var(--sb-mar-texto)}
+.sb-selo[data-tom="atento"]{background:var(--sb-acafrao-lavado);color:var(--sb-acafrao-texto)}
+.sb-selo[data-tom="atraso"]{background:var(--sb-tijolo-lavado);color:var(--sb-tijolo-texto)}
+.sb-selo[data-tom="info"]{background:var(--sb-ardosia-lavado);color:var(--sb-ardosia-texto)}
+
+/* ═══ 9. Quadro (pipeline) ═══════════════════════════════════════════════
+   O mesmo quadro em TODO modulo. As colunas sao as situacoes da esteira do
+   cliente; a cor da coluna vem do cadastro dela, nao daqui. */
+
+.sb-quadro{
+  display:flex;gap:.7rem;align-items:flex-start;
+  overflow-x:auto;padding:.2rem .1rem 1rem;
+  scroll-snap-type:x proximity;
+}
+.sb-col{
+  flex:0 0 272px;min-width:272px;
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-radius:var(--sb-r);
+  display:flex;flex-direction:column;max-height:calc(100vh - 230px);
+  scroll-snap-align:start;
+}
+.sb-col-cab{
+  display:flex;align-items:center;gap:.45rem;
+  padding:.62rem .75rem;border-bottom:1px solid var(--sb-linha);
+  position:sticky;top:0;background:var(--sb-papel);border-radius:var(--sb-r) var(--sb-r) 0 0;z-index:2;
+}
+.sb-col-cor{width:8px;height:8px;border-radius:3px;flex:none}
+.sb-col-nome{font-size:.775rem;font-weight:700;color:var(--sb-tinta);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-col-n{font-family:var(--sb-mono);font-size:.7rem;color:var(--sb-tinta3);flex:none}
+.sb-col-lista{padding:.5rem;display:flex;flex-direction:column;gap:.45rem;overflow-y:auto;flex:1;min-height:70px}
+.sb-col.alvo{border-color:var(--sb-mar);box-shadow:0 0 0 3px rgba(14,140,127,.14)}
+
+.sb-cartao{
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-left:3px solid var(--sb-linha-forte);
+  border-radius:var(--sb-r-p);
+  padding:.6rem .7rem;cursor:grab;
+  transition:border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.sb-cartao:hover{border-color:var(--sb-linha-forte);box-shadow:var(--sb-sombra);transform:translateY(-1px)}
+.sb-cartao:active{cursor:grabbing}
+.sb-cartao.arrastando{opacity:.4}
+.sb-cartao[data-prazo="atento"]{border-left-color:var(--sb-acafrao)}
+.sb-cartao[data-prazo="atraso"]{border-left-color:var(--sb-tijolo)}
+.sb-cartao[data-prazo="ok"]{border-left-color:var(--sb-mar)}
+.sb-cartao-tit{font-size:.795rem;font-weight:650;color:var(--sb-tinta);line-height:1.3;margin-bottom:.22rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-cartao-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.685rem;color:var(--sb-tinta3)}
+.sb-cartao-pe{display:flex;align-items:center;gap:.35rem;margin-top:.45rem;padding-top:.42rem;border-top:1px solid var(--sb-linha)}
+
+/* ═══ 10. Tabela ═════════════════════════════════════════════════════════ */
+
+.sb-tabela{width:100%;border-collapse:collapse;font-size:.79rem}
+.sb-tabela th{
+  text-align:left;font-weight:600;font-size:.7rem;color:var(--sb-tinta3);
+  padding:.55rem .7rem;border-bottom:1px solid var(--sb-linha);
+  background:var(--sb-vellum);position:sticky;top:0;z-index:1;white-space:nowrap;
+}
+.sb-tabela td{padding:.58rem .7rem;border-bottom:1px solid var(--sb-linha);color:var(--sb-tinta2)}
+.sb-tabela tbody tr:hover td{background:var(--sb-vellum)}
+.sb-tabela td.forte{color:var(--sb-tinta);font-weight:600}
+
+/* ═══ 11. Paleta de comandos ═════════════════════════════════════════════ */
+
+.sb-paleta{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(4,32,29,.42);backdrop-filter:blur(2px);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:12vh 1rem 1rem;
+}
+.sb-paleta[hidden]{display:none}
+.sb-paleta-cx{
+  width:100%;max-width:560px;background:var(--sb-papel);
+  border-radius:14px;box-shadow:var(--sb-sombra-alta);overflow:hidden;
+  display:flex;flex-direction:column;max-height:70vh;
+}
+.sb-paleta-campo{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;border-bottom:1px solid var(--sb-linha)}
+.sb-paleta-campo svg{width:17px;height:17px;color:var(--sb-tinta3);flex:none}
+.sb-paleta-campo input{flex:1;border:none;outline:none;font-size:.95rem;font-family:inherit;color:var(--sb-tinta);background:none}
+.sb-paleta-lista{overflow-y:auto;padding:.4rem}
+.sb-paleta-grupo{font-size:.65rem;font-weight:700;color:var(--sb-tinta3);letter-spacing:.06em;padding:.55rem .75rem .3rem}
+.sb-paleta-item{
+  display:flex;align-items:center;gap:.65rem;width:100%;
+  padding:.55rem .75rem;border-radius:8px;border:none;background:none;
+  font-family:inherit;font-size:.82rem;color:var(--sb-tinta);cursor:pointer;text-align:left;
+  text-decoration:none;
+}
+.sb-paleta-item svg{width:15px;height:15px;color:var(--sb-tinta3);flex:none}
+.sb-paleta-item:hover,.sb-paleta-item.marcado{background:var(--sb-mar-lavado)}
+.sb-paleta-item.marcado svg{color:var(--sb-mar-texto)}
+.sb-paleta-item small{margin-left:auto;color:var(--sb-tinta3);font-size:.7rem}
+
+/* ═══ 12. Acessibilidade ═════════════════════════════════════════════════ */
+
+.sb-cromo :focus-visible,.sb-hero :focus-visible{outline:2px solid var(--sb-mar-claro);outline-offset:2px;border-radius:6px}
+:focus-visible{outline:2px solid var(--sb-mar);outline-offset:2px}
+.sb-pular{position:absolute;left:-9999px}
+.sb-pular:focus{left:1rem;top:1rem;z-index:999;background:var(--sb-papel);padding:.6rem 1rem;border-radius:8px;box-shadow:var(--sb-sombra-alta)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+
+/* ═══ 13. Pontes com o CSS que ainda vive dentro das paginas ══════════════
+   As telas antigas chamam o shell passando botoes com as classes do cabecalho
+   velho (`btn-hdr`, `btn-hdr-primary`). Em vez de caçar essas chamadas em seis
+   arquivos de 350 KB — e esquecer uma —, as classes passam a existir aqui,
+   apontando para os botoes novos. A ponte some sozinha quando a ultima chamada
+   for reescrita; ate la, nenhuma tela fica com botao sem estilo. */
+
+.btn-hdr{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.42rem .8rem;border-radius:8px;
+  font-family:inherit;font-size:.765rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--sb-linha);background:var(--sb-papel);color:var(--sb-tinta2);
+  white-space:nowrap;text-decoration:none;transition:background .13s ease,border-color .13s ease;
+}
+.btn-hdr:hover{background:var(--sb-vellum);border-color:var(--sb-linha-forte);color:var(--sb-tinta)}
+.btn-hdr-primary{background:var(--sb-mar);border-color:var(--sb-mar);color:#fff}
+.btn-hdr-primary:hover{background:var(--sb-mar-texto);border-color:var(--sb-mar-texto);color:#fff}
+
+/* O quadro das telas antigas herda a forma do quadro novo sem trocar de classe.
+   Tres modulos desenham o mesmo quadro com tres CSS proprios; aqui eles passam
+   a concordar na aparencia sem que nenhum deles mude de comportamento — o
+   arrastar-e-soltar, a permissao e a gravacao continuam onde estao. */
+.k-col,.kanban .k-col{
+  background:var(--sb-papel);border:1px solid var(--sb-linha);border-radius:var(--sb-r);
+}
+.k-col.drag-over,.k-col.sobre{
+  border-color:var(--sb-mar);box-shadow:0 0 0 3px rgba(14,140,127,.14);
+}
+.k-card.dragging,.co-card.arrastando,.pa-card.dragging{opacity:.4}
+/* Contador vazio nao vira pastilha vazia: o selo de tarefas so existe quando ha
+   tarefa, e uma bolinha em branco ao lado do rotulo parece defeito. */
+.sb-sub-conta:empty{display:none}
+
+/* ═══ 14. Telas estreitas ════════════════════════════════════════════════
+   Abaixo de 900px os rótulos das abas empurram os módulos para fora da barra, e
+   uma barra que rola sem dizer que rola esconde metade do sistema. Aqui elas
+   viram ícone: cabem todas, e o `title` continua dizendo o nome para quem
+   passa o dedo ou usa leitor de tela. */
+
+@media (max-width:900px){
+  .sb-mod span{
+    position:absolute;width:1px;height:1px;overflow:hidden;
+    clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;
+  }
+  .sb-mod{padding:.5rem .58rem}
+  .sb-mod svg{width:17px;height:17px}
+  .sb-cromo-linha{gap:.55rem;padding:0 .7rem}
+  .sb-marca span{font-size:1rem}
+  .sb-pessoa{padding-left:.35rem;margin-left:0}
+  /* A agenda e os avisos saem do topo em tela estreita: eles estão a um toque
+     de distância dentro das telas, e aqui roubavam o espaço dos módulos, que é
+     a navegação de verdade. */
+  .sb-cromo-dir .sb-icone{display:none}
+  .sb-cromo-dir #btn-profile{display:none !important}
+  .sb-pagina{padding:.8rem .8rem 2.5rem}
+  .sb-busca-faixa{padding:7px 10px}
+}
+@media (max-width:560px){
+  .sb-kpi-valor{font-size:1.68rem}
+  .sb-col{flex:0 0 84vw;min-width:84vw}
+  /* Sete ícones, a marca e o avatar disputam 390px. Apertando aqui, todos
+     cabem — inclusive Configurações, que é a aba que o gestor mais procura e
+     era justamente a que ficava para fora. */
+  .sb-mod{padding:.5rem .42rem}
+  .sb-cromo-linha{gap:.35rem;padding:0 .5rem}
+  .sb-marca{gap:.4rem}
+  .sb-marca svg{width:21px;height:21px}
+  .sb-marca span{font-size:.92rem}
+  .sb-avatar{width:30px;height:30px}
+}
+/* A barra rola quando não cabe. Sem isto, o último ícone fica cortado no meio e
+   parece defeito; com o esmaecido, fica claro que há mais à direita. */
+.sb-mods{
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%);
+  mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%);
+}
+@media (min-width:1100px){ .sb-mods{-webkit-mask-image:none;mask-image:none} }

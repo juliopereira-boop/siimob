@@ -8,7 +8,10 @@ const { abrir, checa, resumo } = require('./comum');
     checa('tem campo de senha', (await p.locator('input[type=password]').count()) >= 1);
     f += resumo(erros); await b.close(); }
 
-  { const { b, p, erros } = await abrir('crm.html');
+  // Leads pede licença agora, como todo módulo: sem `{modulos:['crm']}` a tela
+  // devolve a pessoa, que é o comportamento certo — e era o que faltava no
+  // banco, onde a1_cases não olhava módulo nenhum para as linhas de lead.
+  { const { b, p, erros } = await abrir('crm.html', { modulos:['crm'] });
     console.log('\n== CRM ==');
     checa('página monta', (await p.locator('body').textContent()).length > 200);
     checa('nenhum XSS', (await p.evaluate(()=>window.__XSS||0)) === 0);

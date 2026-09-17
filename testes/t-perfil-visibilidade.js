@@ -70,7 +70,10 @@ async function abrirComoClara(pag) {
     const { b, p, erros } = await abrirComoClara('repasse.html');
     console.log('\n== CORRETORA COM PERFIL: PAPEL CERTO E CARTEIRA FECHADA ==');
 
-    const papel = await p.$eval('#hdr-user', e => e.textContent);
+    // O papel saiu do `#hdr-user` de cada tela e mora no casco, num lugar só —
+    // era esta duplicação que fazia o mesmo corretor aparecer como Corretor
+    // numa tela e Correspondente na outra.
+    const papel = await p.$eval('.sb-pessoa', e => e.textContent);
     checa('o cabeçalho diz Corretor', /Corretor/.test(papel), papel.trim());
     checa('e NÃO diz Correspondente', !/Correspondente/.test(papel), papel.trim());
 

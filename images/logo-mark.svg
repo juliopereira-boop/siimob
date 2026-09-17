@@ -2,7 +2,7 @@
   <defs>
     <linearGradient id="cg" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#7090E8"/>
-      <stop offset="100%" stop-color="#3D5CC8"/>
+      <stop offset="100%" stop-color="#0E8C7F"/>
     </linearGradient>
   </defs>
   <!-- Top arm (parallelogram) -->

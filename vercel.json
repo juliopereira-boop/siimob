@@ -73,8 +73,16 @@
       "destination": "/comercial.html"
     },
     {
+      "source": "/:slug/geral",
+      "destination": "/geral.html"
+    },
+    {
+      "source": "/:slug/crm-listagem",
+      "destination": "/crm.html"
+    },
+    {
       "source": "/:slug/dashboard",
-      "destination": "/repasse.html"
+      "destination": "/geral.html"
     },
     {
       "source": "/:slug/admin",

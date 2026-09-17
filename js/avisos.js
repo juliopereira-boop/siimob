@@ -92,43 +92,43 @@ const A1Avisos = (() => {
         max-height:88vh;display:flex;flex-direction:column;overflow:hidden;
         box-shadow:0 20px 60px rgba(0,0,0,.28)}
       .av-topo{padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:.75rem}
-      .av-topo.com-linha{border-bottom:1px solid #E2E8F0}
+      .av-topo.com-linha{border-bottom:1px solid #E2E8E5}
       /* A imagem é o cartaz do aviso: entra de ponta a ponta, sem moldura e sem
          nada disputando espaço com ela. */
-      .av-arte{display:block;width:100%;background:#0F172A;line-height:0;flex-shrink:0}
+      .av-arte{display:block;width:100%;background:#09201D;line-height:0;flex-shrink:0}
       .av-arte img,.av-arte video,.av-arte iframe{width:100%;display:block;border-radius:0;margin:0}
       /* Imagem em pé não pode empurrar os botões para fora da tela. */
       .av-arte img{max-height:52vh;object-fit:contain}
       .av-arte a{display:block}
       .av-mais{display:flex;align-items:center;justify-content:center;gap:.4rem;
-        width:100%;padding:.7rem 1rem;border:none;border-top:1px solid #E2E8F0;
-        background:#F8FAFC;color:#3D5CC8;font-size:.82rem;font-weight:800;
+        width:100%;padding:.7rem 1rem;border:none;border-top:1px solid #E2E8E5;
+        background:#F4F6F4;color:#0E8C7F;font-size:.82rem;font-weight:800;
         cursor:pointer;font-family:inherit}
       .av-mais:hover{background:#EEF2FF}
       .av-mais svg{transition:transform .18s}
       .av-mais[aria-expanded="true"] svg{transform:rotate(180deg)}
       .av-selo{display:inline-block;font-size:.62rem;font-weight:800;text-transform:uppercase;
-        letter-spacing:.08em;color:#3D5CC8;background:#EEF2FF;border-radius:5px;padding:.15rem .45rem;margin-bottom:.3rem}
-      .av-titulo{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;color:#0F172A;line-height:1.35}
+        letter-spacing:.08em;color:#0E8C7F;background:#EEF2FF;border-radius:5px;padding:.15rem .45rem;margin-bottom:.3rem}
+      .av-titulo{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;color:#09201D;line-height:1.35}
       .av-x{margin-left:auto;width:28px;height:28px;border:none;border-radius:7px;background:#F1F5F9;
-        color:#475569;cursor:pointer;font-size:.9rem;flex-shrink:0}
-      .av-x:hover{background:#E2E8F0}
+        color:#47615C;cursor:pointer;font-size:.9rem;flex-shrink:0}
+      .av-x:hover{background:#E2E8E5}
       .av-corpo{padding:1.1rem 1.25rem;overflow-y:auto;font-size:.88rem;line-height:1.65;
         color:#334155;flex:1 1 auto;min-height:0}
       .av-corpo p{margin:0 0 .7rem}
-      .av-corpo a{color:#3D5CC8;font-weight:600;word-break:break-word}
-      .av-acao{padding:1rem 1.25rem;background:#fff;border-top:1px solid #E2E8F0;flex-shrink:0}
+      .av-corpo a{color:#0E8C7F;font-weight:600;word-break:break-word}
+      .av-acao{padding:1rem 1.25rem;background:#fff;border-top:1px solid #E2E8E5;flex-shrink:0}
       .av-acao a{display:block;text-align:center;padding:.7rem 1rem;border-radius:9px;
-        background:#3D5CC8;color:#fff;font-size:.86rem;font-weight:800;text-decoration:none}
-      .av-acao a:hover{background:#1E3A8A}
+        background:#0E8C7F;color:#fff;font-size:.86rem;font-weight:800;text-decoration:none}
+      .av-acao a:hover{background:#0B5049}
       .av-corpo img,.av-corpo video{max-width:100%;border-radius:9px;display:block;margin:.5rem 0}
-      .av-rodape{padding:.85rem 1.25rem;border-top:1px solid #E2E8F0;display:flex;
+      .av-rodape{padding:.85rem 1.25rem;border-top:1px solid #E2E8E5;display:flex;
         align-items:center;gap:.6rem}
-      .av-conta{font-size:.75rem;color:#94A3B8;margin-right:auto}
-      .av-btn{padding:.55rem 1.1rem;border:1px solid #E2E8F0;border-radius:8px;background:#fff;
-        color:#0F172A;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit}
-      .av-btn-p{background:#3D5CC8;border-color:#3D5CC8;color:#fff}
-      .av-btn-p:hover{background:#1E3A8A}
+      .av-conta{font-size:.75rem;color:#6B827D;margin-right:auto}
+      .av-btn{padding:.55rem 1.1rem;border:1px solid #E2E8E5;border-radius:8px;background:#fff;
+        color:#09201D;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit}
+      .av-btn-p{background:#0E8C7F;border-color:#0E8C7F;color:#fff}
+      .av-btn-p:hover{background:#0B5049}
     `;
     document.head.appendChild(st);
   }

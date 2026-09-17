@@ -317,7 +317,7 @@ async function a1RequireModule(moduleKey) {
   }
 
   document.body.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui">
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#09201D;color:#6B827D;font-family:system-ui">
       <div style="text-align:center">
         <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
         <h2 style="color:#f1f5f9;margin:0 0 .5rem">Nenhum módulo liberado</h2>

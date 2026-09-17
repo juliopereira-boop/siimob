@@ -153,7 +153,7 @@ async function abrir() {
   c('quem passou fica em vermelho', await p.evaluate(() => {
     const tr = [...document.querySelectorAll('#mon-clientes tr')].find(r => /Beta/.test(r.textContent));
     const b = tr && tr.querySelector('b');
-    return !!b && getComputedStyle(b).color === 'rgb(220, 38, 38)';
+    return !!b && getComputedStyle(b).color === 'rgb(184, 67, 58)';   // --red, hoje #B8433A
   }));
   c('cliente sem medição não inventa número', /—/.test(
     await p.locator('#mon-clientes tr:has-text("Gama")').textContent()));

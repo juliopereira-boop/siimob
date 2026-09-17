@@ -7,20 +7,21 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
-  <style>
+  <link rel="stylesheet" href="/css/siimob.css">
+<style>
     :root {
-      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
-      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --bg:#F4F6F4; --card:#fff; --border:#E2E8E5; --border2:#C9D5D1;
+      --t1:#09201D; --t2:#47615C; --t3:#6B827D; --t4:#C9D5D1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.06);
-      --green:#2945B0; --blue:#2563eb; --violet:#3D5CC8;
-      --amber:#d97706; --red:#dc2626; --teal:#60CFFF; --indigo:#4f46e5;
-      --emerald:#3D5CC8; --emerald-d:#1E3A8A;
+      --green:#0B7568; --blue:#3F6F9E; --violet:#0E8C7F;
+      --amber:#C87E12; --red:#B8433A; --teal:#3FB8A6; --indigo:#4f46e5;
+      --emerald:#0E8C7F; --emerald-d:#0B5049;
       --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -29,7 +30,7 @@
     a{text-decoration:none;color:inherit}
 
     /* ── Header ── */
-    .hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr{background:#0E8C7F;color:#fff;position:sticky;top:0;z-index:200}
     .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
     .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
     .hdr-logo span{color:rgba(255,255,255,.8)}
@@ -38,14 +39,14 @@
     .hdr-user strong{color:rgba(255,255,255,.85)}
     .btn-hdr{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);border-radius:6px;padding:.3rem .8rem;font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s}
     .btn-hdr:hover{background:rgba(255,255,255,.12)}
-    .btn-hdr-primary{background:#fff;border-color:#fff;color:#3D5CC8}
-    .btn-hdr-primary:hover{background:#1E3A8A}
+    .btn-hdr-primary{background:#fff;border-color:#fff;color:#0E8C7F}
+    .btn-hdr-primary:hover{background:#0B5049}
 
     /* ── Tab bar ── */
     .tabs-bar{display:flex;padding:.35rem 1.1rem;border-top:1px solid rgba(255,255,255,.1);align-items:center;gap:.15rem}
     .tab-btn{padding:.42rem 1.05rem;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;cursor:pointer;border-radius:7px;border-bottom:none;transition:all .15s;white-space:nowrap;user-select:none;background:transparent}
     .tab-btn:hover{color:#fff;background:rgba(255,255,255,.13)}
-    .tab-btn.active{color:#3D5CC8;background:#fff;font-weight:700}
+    .tab-btn.active{color:#0E8C7F;background:#fff;font-weight:700}
     a.tab-btn{display:flex;align-items:center;text-decoration:none}
     .tab-group{position:relative;display:flex;align-items:center}
     .tab-group .tab-btn{display:flex;align-items:center;gap:.3rem}
@@ -69,11 +70,11 @@
 
     /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-    .btn-primary{background:#3D5CC8;color:#fff}
-    .btn-primary:hover{background:#1E3A8A}
+    .btn-primary{background:#0E8C7F;color:#fff}
+    .btn-primary:hover{background:#0B5049}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
     .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
-    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger{background:#fee2e2;color:#B8433A;border:1px solid #fca5a5}
     .btn-danger:hover{background:#fecaca}
     .btn-sm{padding:.28rem .65rem;font-size:.73rem}
     .btn-xs{padding:.18rem .48rem;font-size:.7rem}
@@ -123,8 +124,8 @@
     .badge-novo{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem;letter-spacing:.04em}
     .badge-days{background:#f0f2f7;color:var(--t3);border-radius:3px;font-size:.6rem;font-weight:700;padding:.08rem .35rem;font-family:'DM Mono',monospace}
     .badge-days.warn{background:#fff7ed;color:#c2410c}
-    .badge-days.alert{background:#fef2f2;color:#dc2626}
-    .badge-exig{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
+    .badge-days.alert{background:#fef2f2;color:#B8433A}
+    .badge-exig{background:#fee2e2;color:#B8433A;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
     .kc-sub{font-size:.73rem;color:var(--t2);margin-bottom:.22rem}
     .kc-sub .empr{font-weight:700;color:var(--t1)}
     .kc-cpf{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--t3);cursor:pointer;margin-bottom:.22rem;transition:color .12s;display:inline-block}
@@ -134,7 +135,7 @@
     .chip-itbi-pend{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
     .chip-itbi-pago{background:#E0E7FF;color:#3730A3;border:1px solid #86efac}
     .chip-cartorio{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
-    .chip-banco{background:#f5f3ff;color:#1E3A8A;border:1px solid #ddd6fe}
+    .chip-banco{background:#f5f3ff;color:#0B5049;border:1px solid #ddd6fe}
     .chip-valor{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;font-family:'DM Mono',monospace}
     .kc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.28rem;padding-top:.28rem;border-top:1px solid var(--border)}
     .kc-date{font-size:.63rem;color:var(--t4);font-family:'DM Mono',monospace}
@@ -191,7 +192,7 @@
     .funil2-count{font-size:.73rem;font-weight:700;text-align:right}
     .funil2-pct{font-size:.68rem;color:var(--t3);text-align:right}
     .funil2-badges{display:flex;gap:.2rem;justify-content:flex-end}
-    .badge-gargalo{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
+    .badge-gargalo{background:#fee2e2;color:#B8433A;border:1px solid #fca5a5;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
     .badge-pendente2{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;border-radius:3px;font-size:.58rem;font-weight:800;padding:.08rem .35rem}
 
     .dist-row{display:flex;align-items:center;gap:.6rem;padding:.32rem 0;border-bottom:1px solid var(--border)}
@@ -247,45 +248,15 @@
     #rg-toast{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem}
     .toast-item{padding:.55rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .2s ease}
     @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-    .toast-success{background:#0f1520;color:#fff}
-    .toast-error{background:#dc2626;color:#fff}
-    .toast-info{background:#2563eb;color:#fff}
+    .toast-success{background:#09201D;color:#fff}
+    .toast-error{background:#B8433A;color:#fff}
+    .toast-info{background:#3F6F9E;color:#fff}
   </style>
 </head>
 <body>
 
 <!-- ═══════ HEADER ═══════ -->
-<div class="hdr">
-  <div class="hdr-top">
-    <div class="hdr-logo"><svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sireg1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sireg1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sireg1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sireg1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sireg1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sireg1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sireg1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sireg1d)"/></svg><span style="color:#fff;font-weight:800;letter-spacing:-.02em;">SIIMOB</span></div>
-    <div class="hdr-right">
-      <div class="hdr-user" id="hdr-user"></div>
-      <button class="btn-hdr btn-hdr-primary" onclick="openNewModal()">+ Novo Processo</button>
-      <button class="btn-hdr" onclick="a1Logout()">Sair</button>
-    </div>
-  </div>
-  <div class="tabs-bar">
-    <a class="tab-btn" id="link-dashboard" href="">Dashboard</a>
-
-    <div class="tab-group">
-      <a class="tab-btn" id="link-repasse-andamento" href="">Repasse <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-listagem" href="">Listagem</a>
-      </div>
-    </div>
-
-    <div class="tab-group">
-      <div class="tab-btn active" id="tab-registro-btn">Registro <span class="tab-caret">▾</span></div>
-      <div class="tab-dd">
-        <div class="dd-item active">Andamento</div>
-        <a class="dd-item" id="link-registro-listagem" href="">Listagem</a>
-      </div>
-    </div>
-
-    <a class="tab-btn" id="link-config" href="">Configuracoes</a>
-  </div>
-</div>
+<div id="sb-casco"></div>
 
 <div class="main">
 
@@ -543,7 +514,7 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group full"><label>Nome da Etapa *</label><input id="st-name" type="text" placeholder="Ex: Protocolo Cartório RI"></div>
-        <div class="form-group"><label>Cor (hex)</label><input id="st-color" type="color" value="#3D5CC8" style="height:36px;padding:.2rem .4rem"></div>
+        <div class="form-group"><label>Cor (hex)</label><input id="st-color" type="color" value="#0E8C7F" style="height:36px;padding:.2rem .4rem"></div>
         <div class="form-group"><label>Posição</label><input id="st-pos" type="number" min="1" value="1"></div>
         <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Inicial</label><input id="st-init" type="checkbox"></div>
         <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem"><label>Final</label><input id="st-final" type="checkbox"></div>
@@ -560,6 +531,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -597,14 +569,19 @@ async function init() {
   try { await a1RequireModule('registro'); } catch { return; }
   G.slug = A1.slug;
 
-  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(G.user.role)}`;
-  document.getElementById('link-wf-rg').href    = `/${G.slug}/workflow?module=registro`;
-  document.getElementById('link-dashboard').href          = `/${G.slug}/repasse`;
-  document.getElementById('link-repasse-andamento').href  = `/${G.slug}/andamento`;
-  document.getElementById('link-andamento').href          = `/${G.slug}/andamento`;
-  document.getElementById('link-listagem').href           = `/${G.slug}/listagem`;
-  document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro-listagem`;
-  document.getElementById('link-config').href             = `/${G.slug}/configuracoes`;
+  // O cabeçalho é montado por js/modulo-shell.js: marca, busca, abas de módulo
+  // e a sub-barra desta tela. Seis telas tinham a sua cópia da mesma barra, com
+  // o mesmo CSS repetido; a correção numa delas nunca chegava nas outras.
+  await a1MontarShell(document.getElementById('sb-casco'), {
+    ativo:'registro', vista:'andamento',
+    sub:[{ rot:'Andamento', href:`/${G.slug}/registro`, ativo:true },
+         { rot:'Listagem',  href:`/${G.slug}/registro-listagem` }]
+  });
+  // Os links do editor de esteira ficam DENTRO desta tela, não na barra.
+  [['link-wf','repasse'],['link-wf-groups','repasse'],['link-wf-rg','registro']].forEach(([id,mod]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = `/${G.slug}/workflow?module=${mod}`;
+  });
 
   await loadData();
   // Os filtros pertencem à carga, não à aba: quem entra direto no quadro ou na
@@ -664,8 +641,14 @@ async function loadData() {
     // A resposta é guardada INTEIRA, e não só o corpo: quando a coluna archived
     // não existe o PostgREST devolve 400, e `.catch(()=>[])` transformava isso
     // em "nenhum processo" — a tela mentia com toda a confiança. Ver avisarLeitura().
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc`, h)
-      .then(async r => r.ok ? r.json() : { __erro: await r.text() }).catch(() => ({ __erro:'rede' })),
+    // `select=` explicito e A1.buscarTudo nao sao zelo: sem o select, o
+    // PostgREST manda TODAS as colunas, e a1_cases guarda PDF em base64
+    // (attachment_pdf, attachment_doc2, legacy_docs) — um processo com dois
+    // anexos vira megabytes de JSON que a tela nem usa. E sem buscarTudo o
+    // corte em 1.000 acontece EM SILENCIO: a tela mostra mil e diz que sao
+    // todos, que e o pior jeito de errar um numero.
+    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,partner_name,broker_name,real_estate_name,manager_name,payload,observations,archived,created_at,updated_at`)
+      .catch(() => ({ linhas:[], total:0, completo:false, erro:'rede' })),
     // Os três cadastros de vínculo, na mesma carga da tela: um seletor por vez
     // faria o despachante esperar em cada processo que abre.
     fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r => r.json()).catch(() => []),
@@ -673,8 +656,14 @@ async function loadData() {
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, h).then(r => r.json()).catch(() => [])
   ]);
   G.stages = Array.isArray(stages) ? stages : [];
-  G.cases  = Array.isArray(cases)  ? cases  : [];
-  G.erroLeitura = Array.isArray(cases) ? '' : ((cases && cases.__erro) || 'rede');
+  // buscarTudo devolve {linhas, total, completo, erro}. O `erro` continua sendo
+  // a diferenca entre "nao ha processo" e "a consulta foi recusada" — que e a
+  // razao de avisarLeitura() existir. `completo:false` sem erro significa que o
+  // volume passou do teto: a tela mostra o que veio e DIZ que nao e tudo.
+  G.cases  = Array.isArray(cases && cases.linhas) ? cases.linhas : [];
+  G.erroLeitura = (cases && cases.erro) || '';
+  G.totalNoBanco = (cases && cases.total) || G.cases.length;
+  G.leituraCompleta = !cases || cases.completo !== false;
   G.empresas  = Array.isArray(emps) ? emps : [];
   G.ccas      = Array.isArray(ccas) ? ccas : [];
   G.analistas = Array.isArray(anas) ? anas : [];
@@ -843,9 +832,9 @@ function renderDashboard() {
 
   renderDonutChart(stageData, document.getElementById('dg-donut-svg'), document.getElementById('dg-donut-legend'), cases.length);
   renderFunil(stageData, cases.length);
-  renderDistList('dg-empr-list', groupBy(cases, c => c.development), '#2563eb');
-  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#3D5CC8');
-  renderDistList('dg-cartorio-list', groupBy(cases, c => c.payload?.cartorio_name), '#60CFFF');
+  renderDistList('dg-empr-list', groupBy(cases, c => c.development), '#3F6F9E');
+  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#0E8C7F');
+  renderDistList('dg-cartorio-list', groupBy(cases, c => c.payload?.cartorio_name), '#3FB8A6');
 
   // Gargalo = non-final stage with most cases
   const nonFinal = stageData.filter(x => !x.stage.is_final);
@@ -854,13 +843,13 @@ function renderDashboard() {
   setEl('dkpi-gargalo-sub', gargalo ? gargalo.stage.name : '—');
 }
 
-const STAGE_COLORS = ['#3D5CC8','#2563eb','#60CFFF','#2945B0','#d97706','#dc2626','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
+const STAGE_COLORS = ['#0E8C7F','#3F6F9E','#3FB8A6','#0B7568','#C87E12','#B8433A','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
 
 function renderDonutChart(stageData, svgEl, legendEl, total) {
   const R = 46, cx = 56, cy = 56, sw = 14;
   const circ = 2 * Math.PI * R;
   svgEl.innerHTML = stageData.length === 0
-    ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e2e6ef" stroke-width="${sw}"/>`
+    ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#E2E8E5" stroke-width="${sw}"/>`
     : '';
 
   let cumLen = 0;
@@ -971,7 +960,7 @@ function renderKanban() {
   board.innerHTML = G.stages.map(stage => {
     const stageCases = cases.filter(c => c.stage_id === stage.id);
     total += stageCases.length;
-    const color = stage.color || '#3D5CC8';
+    const color = stage.color || '#0E8C7F';
     return `<div class="k-col">
       <div class="k-col-header" style="background:${cor(color)}">
         <span>${esc(stage.name)}</span>
@@ -1098,7 +1087,7 @@ function renderList() {
         const itbi = p.itbi_status || '—';
         const itbiCls = itbi==='pago'?'itbi-pill-pago':itbi==='vencido'?'itbi-pill-venc':'itbi-pill-pend';
         const st   = G.stages.find(s => s.id === c.stage_id);
-        const stClr= st?.color || '#8896a7';
+        const stClr= st?.color || '#6B827D';
         return `<tr onclick="openCase('${esc(c.id)}')" style="cursor:pointer">
           <td><span class="tbl-name">${esc(c.client_name)}</span></td>
           <td><span class="tbl-cpf">${esc(c.client_cpf||'—')}</span></td>
@@ -1413,7 +1402,7 @@ async function saveStage() {
 // abriu o quadro.
 function cor(v, padrao){
   const t = String(v == null ? '' : v).trim();
-  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : (padrao || '#3D5CC8');
+  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : (padrao || '#0E8C7F');
 }
 
 function populateSelect(id, items, placeholder, selected) {

@@ -7,20 +7,21 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
-  <style>
+  <link rel="stylesheet" href="/css/siimob.css">
+<style>
     :root {
-      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
-      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --bg:#F4F6F4; --card:#fff; --border:#E2E8E5; --border2:#C9D5D1;
+      --t1:#09201D; --t2:#47615C; --t3:#6B827D; --t4:#C9D5D1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.06);
-      --green:#2945B0; --blue:#2563eb; --violet:#3D5CC8;
-      --amber:#d97706; --red:#dc2626; --teal:#60CFFF;
-      --emerald:#3D5CC8; --emerald-d:#1E3A8A;
+      --green:#0B7568; --blue:#3F6F9E; --violet:#0E8C7F;
+      --amber:#C87E12; --red:#B8433A; --teal:#3FB8A6;
+      --emerald:#0E8C7F; --emerald-d:#0B5049;
       --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -29,7 +30,7 @@
     a{text-decoration:none;color:inherit}
 
     /* ── Header ── */
-    .hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
+    .hdr{background:#0E8C7F;color:#fff;position:sticky;top:0;z-index:200}
     .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.5rem;gap:1rem}
     .hdr-logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:.9rem;letter-spacing:-.02em}
     .hdr-logo span{color:rgba(255,255,255,.8)}
@@ -43,7 +44,7 @@
     .tabs-bar{display:flex;padding:.35rem 1.1rem;border-top:1px solid rgba(255,255,255,.1);align-items:center;gap:.15rem}
     .tab-btn{padding:.42rem 1.05rem;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;cursor:pointer;border-radius:7px;border-bottom:none;transition:all .15s;white-space:nowrap;user-select:none;background:transparent;display:inline-flex;align-items:center;gap:.3rem}
     .tab-btn:hover{color:#fff;background:rgba(255,255,255,.13)}
-    .tab-btn.active{color:#3D5CC8;background:#fff;font-weight:700}
+    .tab-btn.active{color:#0E8C7F;background:#fff;font-weight:700}
 
     /* Dropdown tab group */
     .tab-group{position:relative;display:flex;align-items:center}
@@ -67,11 +68,11 @@
 
     /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:.3rem;border:none;border-radius:7px;padding:.42rem .9rem;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-    .btn-primary{background:#3D5CC8;color:#fff}
-    .btn-primary:hover{background:#1E3A8A}
+    .btn-primary{background:#0E8C7F;color:#fff}
+    .btn-primary:hover{background:#0B5049}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
     .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
-    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger{background:#fee2e2;color:#B8433A;border:1px solid #fca5a5}
     .btn-danger:hover{background:#fecaca}
     .btn-sm{padding:.28rem .65rem;font-size:.73rem}
     .btn-xs{padding:.18rem .48rem;font-size:.7rem}
@@ -149,7 +150,7 @@
     .pf-grupo{border:1px solid var(--border);border-radius:9px;padding:.85rem;margin-bottom:.75rem}
     .pf-grupo-titulo{font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.55rem}
     .pf-item{display:flex;gap:.55rem;align-items:flex-start;padding:.4rem 0;cursor:pointer}
-    .pf-item input{width:16px;height:16px;margin-top:.15rem;accent-color:#16a34a;cursor:pointer;flex-shrink:0}
+    .pf-item input{width:16px;height:16px;margin-top:.15rem;accent-color:#0E8C7F;cursor:pointer;flex-shrink:0}
     .pf-rotulo{display:block;font-size:.82rem;font-weight:600;color:var(--t1)}
     .pf-ajuda{display:block;font-size:.7rem;color:var(--t3);line-height:1.4;margin-top:.1rem}
     /* Quando um perfil manda, as marcas soltas continuam à vista — apagadas e
@@ -187,8 +188,8 @@
                   padding:.8rem .9rem;margin-top:.7rem;font-size:.78rem;color:#7F1D1D;line-height:1.6}
     .exc-check{display:flex;gap:.5rem;align-items:flex-start;font-size:.78rem;
                color:var(--t1);margin-top:.6rem;cursor:pointer}
-    .exc-check input{width:16px;height:16px;margin-top:.12rem;accent-color:#dc2626;cursor:pointer;flex-shrink:0}
-    .btn-danger-forte{background:#dc2626;color:#fff;border:1px solid #b91c1c}
+    .exc-check input{width:16px;height:16px;margin-top:.12rem;accent-color:#B8433A;cursor:pointer;flex-shrink:0}
+    .btn-danger-forte{background:#B8433A;color:#fff;border:1px solid #b91c1c}
     .btn-danger-forte:hover{background:#b91c1c}
     .btn-danger-forte:disabled{background:#FCA5A5;border-color:#FCA5A5;cursor:not-allowed}
 
@@ -213,7 +214,7 @@
     .pt-pg-btn{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer;color:var(--t2);transition:all .12s}
     .pt-pg-btn:hover:not([disabled]){color:var(--t1)}
     .pt-pg-btn[disabled]{opacity:.4;cursor:default}
-    .pt-pg-btn.active{background:#ede9fe;color:#1E3A8A;border-color:#ddd6fe}
+    .pt-pg-btn.active{background:#ede9fe;color:#0B5049;border-color:#ddd6fe}
 
     /* ── Toast ── */
     #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem}
@@ -235,54 +236,7 @@
 <body class="acesso-pendente">
 
 <!-- ═══════ HEADER ═══════ -->
-<div class="hdr">
-  <div class="hdr-top">
-    <div class="hdr-logo"><svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sicon1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sicon1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sicon1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sicon1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sicon1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sicon1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sicon1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sicon1d)"/></svg><span style="color:#fff;font-weight:800;letter-spacing:-.02em;">SIIMOB</span></div>
-    <div class="hdr-right">
-      <div class="hdr-user" id="hdr-user"></div>
-      <button class="btn-hdr" onclick="a1Logout()">Sair</button>
-    </div>
-  </div>
-  <div class="tabs-bar">
-    <a class="tab-btn" id="link-dashboard">Dashboard</a>
-
-    <!-- A ordem da barra é a ordem do processo, e vale em todo o sistema:
-         Pré-análise → Venda → Repasse. Os dois primeiros nascem escondidos e
-         só aparecem quando o superadmin libera a licença para este cliente. -->
-    <div class="tab-group" id="grupo-pre-analise" style="display:none">
-      <a class="tab-btn" id="link-pre-analise" href="">Pré-análise <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-pa-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-pa-listagem"  href="">Listagem</a>
-      </div>
-    </div>
-    <div class="tab-group" id="grupo-comercial" style="display:none">
-      <a class="tab-btn" id="link-comercial" href="">Venda <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-co-andamento" href="">Andamento</a>
-        <a class="dd-item" id="link-co-listagem"  href="">Listagem</a>
-      </div>
-    </div>
-
-    <div class="tab-group">
-      <a class="tab-btn" id="link-repasse">Repasse <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-andamento">Andamento</a>
-        <a class="dd-item" id="link-listagem">Listagem</a>
-      </div>
-    </div>
-
-    <div class="tab-group" id="tab-registro-group" style="display:none">
-      <a class="tab-btn" id="link-registro">Registro <span class="tab-caret">▾</span></a>
-      <div class="tab-dd">
-        <a class="dd-item" id="link-registro-andamento">Andamento</a>
-        <a class="dd-item" id="link-registro-listagem">Listagem</a>
-      </div>
-    </div>
-
-    <div class="tab-btn active">Configuracoes</div>
-  </div>
-</div>
+<div id="sb-casco"></div>
 
 <div class="main">
 
@@ -290,7 +244,7 @@
   <div id="cfg-hub">
 
     <div class="cfg-busca-wrap">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B827D" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="search" id="cfg-busca" placeholder="Buscar configuração..." oninput="filtrarHub(this.value)">
       <span id="cfg-busca-vazio" style="display:none;font-size:.78rem;color:var(--t3)">Nada com esse nome.</span>
     </div>
@@ -304,7 +258,7 @@
       <div class="cfg-cards">
         <div class="cfg-hub-card" onclick="openCfgView('geral')">
           <div class="cfg-hub-icon" style="background:#fef3c7">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </div>
           <div class="cfg-card-label">Configurações Gerais</div>
         </div>
@@ -319,13 +273,13 @@
       <div class="cfg-cards" id="cfg-cards-workflow">
         <div class="cfg-hub-card" onclick="openCfgView('wf')">
           <div class="cfg-hub-icon" style="background:#ede9fe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </div>
           <div class="cfg-card-label">Editor de Workflow</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('flags')">
           <div class="cfg-hub-icon" style="background:#dbeafe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           </div>
           <div class="cfg-card-label">Flags de Etapa</div>
         </div>
@@ -337,7 +291,7 @@
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('checklist')">
           <div class="cfg-hub-icon" style="background:#dbeafe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
           <div class="cfg-card-label">Checklist operacional</div>
         </div>
@@ -356,7 +310,7 @@
       <div class="cfg-cards">
         <div class="cfg-hub-card" id="cfg-card-perfis" onclick="openCfgView('perfis')">
           <div class="cfg-hub-icon" style="background:#dcfce7">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Perfis de acesso</div>
         </div>
@@ -373,13 +327,13 @@
              "não tem". -->
         <div class="cfg-hub-card" id="cfg-card-analistas" onclick="openCfgView('analistas')">
           <div class="cfg-hub-icon" style="background:#dbeafe">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Analistas de Crédito</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('corretores')">
           <div class="cfg-hub-icon" style="background:#dcfce7">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
           </div>
           <div class="cfg-card-label">Corretores</div>
         </div>
@@ -398,7 +352,7 @@
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
           <div class="cfg-hub-icon" style="background:#fef3c7">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="cfg-card-label">Correspondentes / CCA</div>
         </div>
@@ -417,7 +371,7 @@
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('regionais')">
           <div class="cfg-hub-icon" style="background:#E0E7FF">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7568" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <div class="cfg-card-label">Regionais</div>
         </div>
@@ -429,7 +383,7 @@
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
             <div class="cfg-hub-icon" style="background:#E0E7FF">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7568" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
             </div>
             <div class="cfg-card-label">Despachantes</div>
           </div>
@@ -454,19 +408,19 @@
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('agencias')">
           <div class="cfg-hub-icon" style="background:#fef3c7">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A6008" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
           </div>
           <div class="cfg-card-label">Agências</div>
         </div>
         <div class="cfg-hub-card" onclick="openCfgView('bancos')">
             <div class="cfg-hub-icon" style="background:#dbeafe">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
             </div>
             <div class="cfg-card-label">Bancos</div>
           </div>
         <div class="cfg-hub-card" onclick="openCfgView('cartorios')">
             <div class="cfg-hub-icon" style="background:#f0fdf4">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
             </div>
             <div class="cfg-card-label">Cartórios</div>
           </div>
@@ -533,7 +487,7 @@
       <div class="tag-list" id="flags-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
       <div style="display:flex;gap:.45rem;align-items:center">
         <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--t1);background:var(--card)">
-        <input id="new-flag-color" type="color" value="#3D5CC8" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+        <input id="new-flag-color" type="color" value="#0E8C7F" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
         <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
       </div>
     </div>
@@ -555,7 +509,7 @@
         <button class="btn btn-primary btn-sm" onclick="addRegional()">+ Adicionar</button>
       </div>
       <div id="regionais-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
-      <div id="reg-err" style="display:none;color:#dc2626;font-size:.76rem;margin-top:.5rem;font-weight:500"></div>
+      <div id="reg-err" style="display:none;color:#B8433A;font-size:.76rem;margin-top:.5rem;font-weight:500"></div>
     </div>
     <!-- id oculto p/ compatibilidade com hide de gestor (link-wf-groups) -->
     <a id="link-wf-groups" style="display:none"></a>
@@ -631,14 +585,14 @@
         <!-- Live preview -->
         <div class="full" style="margin-top:.25rem">
           <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.5rem">Pré-visualização das unidades</div>
-          <div id="empr-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">—</div>
+          <div id="empr-preview" style="background:#F4F6F4;border:1px solid var(--border);border-radius:8px;padding:.875rem;max-height:220px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.73rem;line-height:1.9;color:var(--t2)">—</div>
           <div style="margin-top:.35rem;font-size:.68rem;color:var(--t3)" id="empr-total-label"></div>
         </div>
       </div>
 
       <div style="display:flex;gap:.5rem;align-items:center">
         <button class="btn btn-primary" id="empr-save-btn" onclick="saveEmpreendimento()">Cadastrar Unidades</button>
-        <div id="empr-err" style="font-size:.78rem;color:#dc2626;display:none"></div>
+        <div id="empr-err" style="font-size:.78rem;color:#B8433A;display:none"></div>
       </div>
     </div>
   </div>
@@ -1136,7 +1090,7 @@
           <input id="perfil-desc" placeholder="opcional"></div>
       </div>
       <label style="display:flex;align-items:center;gap:.45rem;margin:.8rem 0;font-size:.8rem;cursor:pointer">
-        <input type="checkbox" id="perfil-ativo" checked style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer">
+        <input type="checkbox" id="perfil-ativo" checked style="width:16px;height:16px;accent-color:#0E8C7F;cursor:pointer">
         Ativo — perfil desativado devolve as pessoas às marcas do próprio cadastro
       </label>
       <div class="section-title" style="margin:1rem 0 .6rem">O que quem estiver neste perfil pode fazer</div>
@@ -1454,7 +1408,7 @@
     </div>
     <div id="feedback-success-wrap" class="modal-body hidden" style="text-align:center;padding:2.5rem 1.5rem">
       <div style="width:52px;height:52px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">Obrigado pelo feedback!</div>
       <div style="font-size:.82rem;color:var(--t2);line-height:1.5">Agradecemos sua sugestão. Sua proposta será analisada por nossos desenvolvedores.</div>
@@ -1517,32 +1471,32 @@
           <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-gerente-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor=document.getElementById('pt-gerente').checked?'#0d9488':'var(--border)'">
+          <label id="pt-gerente-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor=document.getElementById('pt-gerente').checked?'#0d9488':'var(--border)'">
             <div>
               <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Gerente (acesso total)</div>
               <div style="font-size:.72rem;color:var(--t3)">Vê e gerencia TODOS os processos, como o gestor — ignora restrições de empresa/analista e pode editar tudo</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="gerente" id="pt-gerente" style="width:18px;height:18px;cursor:pointer;accent-color:#0d9488;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-gerente-label').style.borderColor=this.checked?'#0d9488':'var(--border)';document.getElementById('pt-gerente-label').style.background=this.checked?'#ccfbf1':'#f8fafc'">
+            <input type="checkbox" class="pt-perm" data-key="gerente" id="pt-gerente" style="width:18px;height:18px;cursor:pointer;accent-color:#0d9488;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-gerente-label').style.borderColor=this.checked?'#0d9488':'var(--border)';document.getElementById('pt-gerente-label').style.background=this.checked?'#ccfbf1':'#F4F6F4'">
           </label>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#3D5CC8'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#3D5CC8':'var(--border)'">
+          <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0E8C7F'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#0E8C7F':'var(--border)'">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Habilitar visualização geral</div>
               <div style="font-size:.72rem;color:var(--t3)">Os processos deste usuário ficam visíveis para os outros usuários da empresa correspondente</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral" style="width:18px;height:18px;cursor:pointer;accent-color:#3D5CC8;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-viz-geral-label').style.borderColor=this.checked?'#3D5CC8':'var(--border)';document.getElementById('pt-viz-geral-label').style.background=this.checked?'#EEF2FF':'#f8fafc'">
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral" style="width:18px;height:18px;cursor:pointer;accent-color:#0E8C7F;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-viz-geral-label').style.borderColor=this.checked?'#0E8C7F':'var(--border)';document.getElementById('pt-viz-geral-label').style.background=this.checked?'#EEF2FF':'#F4F6F4'">
           </label>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#f8fafc;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#2563eb':'var(--border)'">
+          <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#3F6F9E'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#3F6F9E':'var(--border)'">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Visão completa</div>
               <div style="font-size:.72rem;color:var(--t3)">Vê os processos de todos os usuários. Editar continua restrito aos processos dele — nos demais, precisa liberar a edição no próprio cartão. Desmarcado, vê apenas os próprios processos.</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#2563eb;flex-shrink:0;margin-left:1rem" onchange="toggleAnalistaChecklist(this.checked)">
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#3F6F9E;flex-shrink:0;margin-left:1rem" onchange="toggleAnalistaChecklist(this.checked)">
           </label>
-          <div id="pt-analista-checklist" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;padding:.65rem .75rem;background:#f8fafc">
+          <div id="pt-analista-checklist" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;padding:.65rem .75rem;background:#F4F6F4">
             <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.5rem">Analistas visíveis para este usuário</div>
             <div id="pt-analista-chk-list" style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem .75rem;font-size:.8rem;color:var(--t1)">
               <span style="color:var(--t3);font-size:.75rem">Carregando analistas...</span>
@@ -1624,7 +1578,7 @@
         <div class="form-group"><label>E-mail</label><input id="desp-email" type="email" placeholder="email@exemplo.com"></div>
         <div class="form-group"><label>Telefone</label><input id="desp-tel" type="text" placeholder="(00) 00000-0000"></div>
       </div>
-      <div id="desp-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div id="desp-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
         <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-desp-bg')">Cancelar</button>
         <button class="btn btn-primary btn-sm" onclick="saveDespachante()">Salvar</button>
@@ -1645,7 +1599,7 @@
         <div class="form-group"><label>Nome do Banco *</label><input id="banco-nome" type="text" placeholder="Ex: Caixa Econômica Federal"></div>
         <div class="form-group"><label>Código BACEN</label><input id="banco-codigo" type="text" placeholder="Ex: 104"></div>
       </div>
-      <div id="banco-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div id="banco-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
         <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-banco-bg')">Cancelar</button>
         <button class="btn btn-primary btn-sm" onclick="saveBanco()">Salvar</button>
@@ -1670,7 +1624,7 @@
         <div class="form-group"><label>UF</label><input id="cart-uf" type="text" maxlength="2" placeholder="SP"></div>
       </div>
       <div class="form-group" style="margin-top:.5rem"><label>CNS (Código Nacional de Serventias)</label><input id="cart-cns" type="text" placeholder="000000"></div>
-      <div id="cart-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
+      <div id="cart-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
         <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-cartorio-bg')">Cancelar</button>
         <button class="btn btn-primary btn-sm" onclick="saveCartorio()">Salvar</button>
@@ -1683,6 +1637,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
 <script src="/js/documentos.js"></script>
 <script src="/js/permissoes.js"></script>
 <script src="/js/geral.js"></script>
@@ -1775,18 +1730,18 @@ async function init() {
   const roleLabel = G.user.role === 'partner'
     ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
     : G.user.role;
-  document.getElementById('hdr-user').innerHTML = `<strong>${esc(G.user.name)}</strong> &middot; ${esc(roleLabel)}`;
+  // O cabeçalho é montado por js/modulo-shell.js: marca, busca, abas de módulo
+  // e a sub-barra desta tela. Seis telas tinham a sua cópia da mesma barra, com
+  // o mesmo CSS repetido; a correção numa delas nunca chegava nas outras.
+  await a1MontarShell(document.getElementById('sb-casco'), { ativo:'config' });
+  // Os links do editor de esteira ficam DENTRO desta tela, não na barra.
+  [['link-wf','repasse'],['link-wf-groups','repasse'],['link-wf-rg','registro']].forEach(([id,mod]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = `/${G.slug}/workflow?module=${mod}`;
+  });
+
 
   // Set nav hrefs
-  document.getElementById('link-dashboard').href          = `/${G.slug}/repasse`;
-  document.getElementById('link-repasse').href            = `/${G.slug}/andamento`;
-  document.getElementById('link-andamento').href          = `/${G.slug}/andamento`;
-  document.getElementById('link-listagem').href           = `/${G.slug}/listagem`;
-  document.getElementById('link-registro').href           = `/${G.slug}/registro`;
-  document.getElementById('link-registro-andamento').href = `/${G.slug}/registro`;
-  document.getElementById('link-registro-listagem').href  = `/${G.slug}/registro-listagem`;
-  document.getElementById('link-wf').href                 = `/${G.slug}/workflow?module=repasse`;
-  document.getElementById('link-wf-groups').href          = `/${G.slug}/workflow?module=repasse`;
 
   // Load tenant info
   G.tenant = await fetch(`${A1.rest('a1_tenants')}?id=eq.${G.user.tenant_id}&select=id,tipo_cliente,max_users`, {headers:A1.headers()})
@@ -2162,7 +2117,7 @@ function renderDocTypesList(){
     return `<tr>
       <td>${esc(t.name)}</td>
       <td><label style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;cursor:pointer" title="Sem este documento anexado o processo não avança de etapa.">
-        <input type="checkbox" ${obr?'checked':''} onchange="toggleDocTypeObrigatorio('${t.id}')" style="width:15px;height:15px;accent-color:#3D5CC8;cursor:pointer">
+        <input type="checkbox" ${obr?'checked':''} onchange="toggleDocTypeObrigatorio('${t.id}')" style="width:15px;height:15px;accent-color:#0E8C7F;cursor:pointer">
         ${obr?'Sim':'Não'}</label></td>
       <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${on?'#dcfce7':'#fee2e2'};color:${on?'#166534':'#b91c1c'}">${on?'Ativo':'Inativo'}</span></td>
       <td style="text-align:right;white-space:nowrap">
@@ -2623,9 +2578,9 @@ function renderDashboard() {
   renderFunilDetail(cases, sm);
 
   // ── Distribution panels ──
-  renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#3D5CC8');
-  renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#2563eb');
-  renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#2945B0');
+  renderDistList('empr-dist-list',     cases.map(c=>c.development).filter(Boolean),      '#0E8C7F');
+  renderDistList('parceiro-dist-list', cases.map(c=>c.partner_name).filter(Boolean),     '#3F6F9E');
+  renderDistList('re-dist-list',       cases.map(c=>c.real_estate_name).filter(Boolean), '#0B7568');
   renderAgendaCalendar();
 }
 
@@ -3122,7 +3077,7 @@ async function renderModalDocs(){
       <button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-attach').click()" ${types.length?'':'disabled'}>Selecionar arquivo</button>
       <input type="file" id="doc-attach" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="attachDoc(this.files[0])">
     </div>
-    ${types.length?'':'<div style="font-size:.72rem;color:#b45309;margin-bottom:.75rem">Cadastre os tipos em Configurações → Tipos de documento.</div>'}
+    ${types.length?'':'<div style="font-size:.72rem;color:#9A6008;margin-bottom:.75rem">Cadastre os tipos em Configurações → Tipos de documento.</div>'}
     <div class="form-section-title" style="margin-top:1rem">Documentos anexados</div>
     <div id="doc-list">${(docs.length||legacyDocs.length||legacy)?docs.map(docRow).join('')+legacyDocs.map(docRow).join('')+legacy:'<div style="color:var(--t3);font-size:.77rem">Nenhum documento anexado.</div>'}</div>`;
 }
@@ -3566,7 +3521,7 @@ async function loadFlags() {
 function renderFlags(){
   const el=document.getElementById('flags-list');
   el.innerHTML=G.flags.length
-    ?G.flags.map(f=>`<div class="tag-item" title="ID: ${esc(f.id)}"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#3D5CC8'};display:inline-block"></span>${esc(f.name)} ${idChip(f.id)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
+    ?G.flags.map(f=>`<div class="tag-item" title="ID: ${esc(f.id)}"><span style="width:8px;height:8px;border-radius:50%;background:${f.color||'#0E8C7F'};display:inline-block"></span>${esc(f.name)} ${idChip(f.id)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`).join('')
     :'<span style="color:var(--t3);font-size:.77rem">Nenhuma flag cadastrada.</span>';
 }
 
@@ -3579,7 +3534,7 @@ async function addFlag(){
   // tenant_id é obrigatório na tabela (NOT NULL) e exigido pela RLS — sem ele o
   // insert falhava e a flag nunca era criada. A cor vem do seletor ao lado, que
   // antes era ignorado (a cor ia fixa no código).
-  const color=document.getElementById('new-flag-color')?.value||'#3D5CC8';
+  const color=document.getElementById('new-flag-color')?.value||'#0E8C7F';
   const res=await fetch(A1.rest('a1_stage_flags'),{
     method:'POST',headers:A1.returnHeaders(),
     body:JSON.stringify({tenant_id:G.user.tenant_id,name,color})
@@ -3685,7 +3640,7 @@ function toggleAnalistaChecklist(verTodos, permitidos = []) {
   const lbl  = document.getElementById('pt-analistas-label');
   if (!wrap) return;
   wrap.style.display = verTodos ? 'none' : '';
-  if (lbl) { lbl.style.borderColor = verTodos ? '#2563eb' : 'var(--border)'; lbl.style.background = verTodos ? '#eff6ff' : '#f8fafc'; }
+  if (lbl) { lbl.style.borderColor = verTodos ? '#3F6F9E' : 'var(--border)'; lbl.style.background = verTodos ? '#eff6ff' : '#F4F6F4'; }
   if (!verTodos) {
     const list = document.getElementById('pt-analista-chk-list');
     if (!list) return;
@@ -3732,14 +3687,14 @@ async function openPartnerModal(id) {
   const vizGeral = document.getElementById('pt-viz-geral');
   const vizLabel = document.getElementById('pt-viz-geral-label');
   if (vizGeral && vizLabel) {
-    vizLabel.style.borderColor = vizGeral.checked ? '#3D5CC8' : 'var(--border)';
-    vizLabel.style.background  = vizGeral.checked ? '#EEF2FF' : '#f8fafc';
+    vizLabel.style.borderColor = vizGeral.checked ? '#0E8C7F' : 'var(--border)';
+    vizLabel.style.background  = vizGeral.checked ? '#EEF2FF' : '#F4F6F4';
   }
   const gerChk = document.getElementById('pt-gerente');
   const gerLabel = document.getElementById('pt-gerente-label');
   if (gerChk && gerLabel) {
     gerLabel.style.borderColor = gerChk.checked ? '#0d9488' : 'var(--border)';
-    gerLabel.style.background  = gerChk.checked ? '#ccfbf1' : '#f8fafc';
+    gerLabel.style.background  = gerChk.checked ? '#ccfbf1' : '#F4F6F4';
   }
   // atualiza visual e checklist de analistas
   const verAnalistas = document.getElementById('pt-ver-analistas');
@@ -3747,8 +3702,8 @@ async function openPartnerModal(id) {
   if (verAnalistas) {
     verAnalistas.checked = 'ver_todos_analistas' in savedPerms ? !!savedPerms.ver_todos_analistas : true;
     if (analLabel) {
-      analLabel.style.borderColor = verAnalistas.checked ? '#2563eb' : 'var(--border)';
-      analLabel.style.background  = verAnalistas.checked ? '#eff6ff' : '#f8fafc';
+      analLabel.style.borderColor = verAnalistas.checked ? '#3F6F9E' : 'var(--border)';
+      analLabel.style.background  = verAnalistas.checked ? '#eff6ff' : '#F4F6F4';
     }
     const permitidos = savedPerms.analistas_permitidos || [];
     toggleAnalistaChecklist(verAnalistas.checked, permitidos);
@@ -3932,7 +3887,7 @@ function renderSimples(tipo){
     <td>${idChip(r.id)}</td>
     <td style="white-space:nowrap">
       <button class="btn btn-ghost btn-sm" onclick="openSimples('${tipo}','${r.id}')">Editar</button>
-      <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteSimples('${tipo}','${r.id}')">Excluir</button>
+      <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteSimples('${tipo}','${r.id}')">Excluir</button>
     </td></tr>`).join('');
 }
 
@@ -4016,7 +3971,7 @@ function renderCoordenadores(){
       <td>${idChip(c.id)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openCoordenador('${c.id}')">Editar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteCoordenador('${c.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteCoordenador('${c.id}')">Excluir</button>
       </td></tr>`;
   }).join('');
 }
@@ -4048,7 +4003,7 @@ async function openCoordenador(id){
         return `<label style="display:flex;align-items:center;gap:.5rem;font-size:.8rem;cursor:pointer">
           <input type="checkbox" class="coord-corretor" value="${co.id}"${meu?' checked':''}>
           <span style="flex:1">${esc(co.name)}</span>
-          ${outro?`<span style="font-size:.68rem;color:#b45309">equipe de ${esc(outro)}</span>`:''}
+          ${outro?`<span style="font-size:.68rem;color:#9A6008">equipe de ${esc(outro)}</span>`:''}
         </label>`;
       }).join('')
     : '<div style="color:var(--t3);font-size:.75rem">Nenhum corretor cadastrado ainda.</div>';
@@ -4184,18 +4139,18 @@ function renderCorretores(){
       ? (ed.length ? chip(ed.length+' editar','#047857','#ecfdf5') : '') +
         (vr.length ? chip(vr.length+' ver','#1e40af','#eff6ff') : '') +
         `<div style="color:var(--t3);font-size:.7rem;margin-top:.15rem">${esc([...ed,...vr].map(nomeEtapa).filter(Boolean).slice(0,3).join(', '))}${(ed.length+vr.length)>3?'…':''}</div>`
-      : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>';
+      : '<span style="color:#9A6008;font-size:.72rem">Nenhuma etapa marcada — não verá nada</span>';
     return `<tr>
       <td><b>${esc(c.name)}</b>${perfilEtiqueta(c.perfil_id)}</td>
       <td style="color:var(--t2)">${esc(c.cpf||'—')}<div style="color:var(--t3);font-size:.72rem">${esc(c.email||'')}</div></td>
       <td style="color:var(--t2);font-size:.78rem">${esc(nomeImobiliaria(c.extra&&c.extra.imobiliaria_id)||'—')}</td>
       <td style="color:var(--t2);font-size:.78rem">${esc(((CAD.coordenador||[]).find(k=>k.id===(c.extra&&c.extra.coordenador_id))||{}).name||'—')}</td>
       <td>${etapasTxt}</td>
-      <td>${c.is_active!==false?'<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
+      <td>${c.is_active!==false?'<span style="color:#0E8C7F;font-weight:700;font-size:.75rem">Ativo</span>':'<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
       <td>${idChip(c.id)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openCorretor('${c.id}')">Editar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteCorretor('${c.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteCorretor('${c.id}')">Excluir</button>
       </td></tr>`;
   }).join('');
 }
@@ -4272,11 +4227,11 @@ function pintarEtapasCorretor(){
   const grupos = etapasGrupos();
   const total  = grupos.reduce((n,g) => n + g.etapas.length, 0);
   if (!total){
-    box.innerHTML = '<div style="color:#b45309;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
+    box.innerHTML = '<div style="color:#9A6008;font-size:.75rem">Nenhuma etapa cadastrada ainda. Crie as etapas no Workflow primeiro.</div>';
     return;
   }
   const btn = (id, lvl, ativo, label) => {
-    const cor = ativo ? '#12B981' : 'var(--border)';
+    const cor = ativo ? '#0E8C7F' : 'var(--border)';
     const bg  = ativo ? '#ecfdf5' : '#fff';
     const tx  = ativo ? '#047857' : 'var(--t3)';
     return `<button type="button" onclick="setEtapaNivel('${id}','${lvl}')"
@@ -4286,7 +4241,7 @@ function pintarEtapasCorretor(){
   const linha = st => {
     const n = CO_ETAPAS[st.id] || null;
     return `<div style="display:flex;align-items:center;gap:.55rem;padding:.3rem .1rem">
-      <span style="width:9px;height:9px;border-radius:50%;background:${st.color||'#94a3b8'};flex-shrink:0"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:${st.color||'#6B827D'};flex-shrink:0"></span>
       <span style="flex:1;font-size:.8rem;color:${n?'var(--t1)':'var(--t3)'};font-weight:${n?'600':'400'}">${esc(st.name)}</span>
       ${btn(st.id,'ver',    n==='ver'||n==='editar', 'Ver')}
       ${btn(st.id,'editar', n==='editar',            'Editar')}
@@ -4480,7 +4435,7 @@ function renderPrecadPendentes(){
       <td style="color:var(--t3);font-size:.75rem">${esc(dataHoraBR(ex.enviado_em || c.created_at))}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-primary btn-sm" onclick="validarPrecad('${c.id}')">Validar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="recusarPrecad('${c.id}')">Recusar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="recusarPrecad('${c.id}')">Recusar</button>
       </td></tr>`;
   }).join('');
 }
@@ -4518,7 +4473,7 @@ function precadUrl(token){ return `${location.origin}/cadastro-corretor?t=${toke
 function renderPrecadLinks(ok){
   const tb = document.getElementById('precad-links-tbody'); if(!tb) return;
   if(!ok){
-    tb.innerHTML = '<tr><td colspan="5" style="padding:1.4rem;text-align:center;color:#b45309;font-size:.78rem">Os links de cadastro ainda não foram habilitados no banco. Rode o arquivo <code>sql/2026-08-26_precadastro_corretores.sql</code> no Supabase.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="5" style="padding:1.4rem;text-align:center;color:#9A6008;font-size:.78rem">Os links de cadastro ainda não foram habilitados no banco. Rode o arquivo <code>sql/2026-08-26_precadastro_corretores.sql</code> no Supabase.</td></tr>';
     return;
   }
   if(!PRECAD_LINKS.length){
@@ -4528,8 +4483,8 @@ function renderPrecadLinks(ok){
   tb.innerHTML = PRECAD_LINKS.map(l=>{
     const venceu = new Date(l.expires_at) < new Date();
     const sit = l.revoked ? '<span style="color:var(--t3);font-size:.75rem">Desativado</span>'
-              : venceu   ? '<span style="color:#b45309;font-weight:700;font-size:.75rem">Vencido</span>'
-                         : '<span style="color:#12B981;font-weight:700;font-size:.75rem">Ativo</span>';
+              : venceu   ? '<span style="color:#9A6008;font-weight:700;font-size:.75rem">Vencido</span>'
+                         : '<span style="color:#0E8C7F;font-weight:700;font-size:.75rem">Ativo</span>';
     return `<tr>
       <td style="color:var(--t2);font-size:.8rem">${esc(l.imobiliaria_nome||'—')}</td>
       <td style="color:var(--t3);font-size:.75rem">até ${esc(dataHoraBR(l.expires_at))}</td>
@@ -4537,7 +4492,7 @@ function renderPrecadLinks(ok){
       <td>${sit}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="copiarPrecadUrl('${l.token}')">Copiar link</button>
-        ${l.revoked ? '' : `<button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="revogarPrecadLink('${l.token}')">Desativar</button>`}
+        ${l.revoked ? '' : `<button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="revogarPrecadLink('${l.token}')">Desativar</button>`}
       </td></tr>`;
   }).join('');
 }
@@ -5356,10 +5311,10 @@ function renderAnalistaList() {
       ? '<span style="color:var(--t3);font-size:.72rem">Sem restrição por etapa</span>'
       : ((ed.length||vr.length)
           ? (ed.length?chip(ed.length+' editar','#047857','#ecfdf5'):'') + (vr.length?chip(vr.length+' ver','#1e40af','#eff6ff'):'')
-          : '<span style="color:#b45309;font-size:.72rem">Nenhuma etapa — não verá nada</span>');
-    const semLogin = !a.cpf ? '<div style="color:#b45309;font-size:.68rem">sem login</div>' : '';
+          : '<span style="color:#9A6008;font-size:.72rem">Nenhuma etapa — não verá nada</span>');
+    const semLogin = !a.cpf ? '<div style="color:#9A6008;font-size:.68rem">sem login</div>' : '';
     return `<tr>
-    <td style="font-weight:600">${esc(a.name)}${perfilEtiqueta(a.perfil_id)}${p.ver_todos_analistas?'<div style="font-size:.66rem;color:#2563eb;font-weight:700">vê todos</div>':''}</td>
+    <td style="font-weight:600">${esc(a.name)}${perfilEtiqueta(a.perfil_id)}${p.ver_todos_analistas?'<div style="font-size:.66rem;color:#3F6F9E;font-weight:700">vê todos</div>':''}</td>
     <td style="color:var(--t2)">${esc(a.cpf||'—')}${semLogin}</td>
     <td style="color:var(--t2);font-size:.78rem">${esc(a.email||'—')}${a.phone?`<div style="color:var(--t3)">${esc(a.phone)}</div>`:''}</td>
     <td>${acesso}</td>
@@ -6029,7 +5984,7 @@ const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false };
 
 
 const CFG_ICONE_FLUXO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
-const CFG_ICONE_INTEGRA = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`;
+const CFG_ICONE_INTEGRA = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`;
 
 // Cria o cartão no hub. Vai para dentro de um grupo que já existe — o dono
 // quer todos os workflows do cliente no mesmo bloco, e grupo criado por
@@ -6367,7 +6322,7 @@ function perfilEtiqueta(id){
   const p = PERFIS.lista.find(x => x.id === id);
   if (!p) return '';
   const off = p.ativo === false;
-  return `<div style="font-size:.66rem;font-weight:700;margin-top:.1rem;color:${off?'#b45309':'#0d9488'}">`
+  return `<div style="font-size:.66rem;font-weight:700;margin-top:.1rem;color:${off?'#9A6008':'#0d9488'}">`
        + `${esc(p.nome)}${off ? ' (perfil inativo — valem as marcas do cadastro)' : ''}</div>`;
 }
 
@@ -6418,7 +6373,7 @@ function cfgModsLiberar(mod) {
 
 // ── Registro de integrações (somente leitura) ────────────────────────────────
 const CFG_INTEGRA_PILL = { OK:['#dcfce7','#166534'], BLOQUEADO:['#fef3c7','#92400e'],
-                           ERRO:['#fee2e2','#b91c1c'], PENDENTE:['#e2e8f0','#475569'] };
+                           ERRO:['#fee2e2','#b91c1c'], PENDENTE:['#E2E8E5','#47615C'] };
 
 async function cfgIntegraCarregar() {
   const corpo = document.getElementById('integra-corpo');
@@ -6471,7 +6426,7 @@ async function cfgIntegraCarregar() {
 // banco, e vale igual para quem chamar o RPC direto na API.
 const EXCDEF = { achados: [], escolhido: null, confirmando: false, buscando: false };
 
-const EXC_ICONE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const EXC_ICONE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B8433A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 
 // As chaves são as mesmas que o banco usa (a1_cases, a1_pre_analises e
 // a1_comerciais, nesta ordem); aqui só se traduz para o nome que o gestor lê.
@@ -6695,7 +6650,7 @@ function excDefFichaHtml(r, i, varios){
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;flex-wrap:wrap">
       <span class="exc-pill">${esc(mod.rotulo)}</span>
       <span class="exc-cod">${esc(r.codigo || '')}</span>
-      ${varios && escolhida ? '<span style="font-size:.7rem;font-weight:700;color:#dc2626">selecionado</span>' : ''}
+      ${varios && escolhida ? '<span style="font-size:.7rem;font-weight:700;color:#B8433A">selecionado</span>' : ''}
     </div>
     ${linha('Cliente', r.titulo || '(sem nome no cadastro)')}
     ${linha('Empreendimento', r.empreendimento)}

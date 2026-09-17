@@ -7,14 +7,15 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/css/siimob.css">
 <style>
   :root{
-    --bg:#F8FAFC;--card:#fff;--border:#e2e6ef;--t1:#0f1520;--t2:#4a5568;--t3:#8896a7;--t4:#b8c4d0;
-    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#3D5CC8;
+    --bg:#F4F6F4;--card:#fff;--border:#E2E8E5;--t1:#09201D;--t2:#47615C;--t3:#6B827D;--t4:#C9D5D1;
+    --blue:#3F6F9E;--green:#0E8C7F;--amber:#C87E12;--red:#B8433A;--violet:#0E8C7F;
     --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);--shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -27,9 +28,9 @@
   .btn-hdr{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.4rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer}
   .btn-hdr:hover{background:rgba(255,255,255,.25)}
   .btn-hdr-primary{background:#fff;color:var(--violet)}
-  .tabs-bar{background:#34499c;display:flex;gap:.2rem;padding:0 1.5rem}
+  .tabs-bar{background:#07312C;display:flex;gap:.2rem;padding:0 1.5rem}
   .tab-btn{color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;padding:.7rem 1rem;cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none}
-  .tab-btn.active{color:#fff;border-bottom-color:#60CFFF;background:rgba(255,255,255,.06)}
+  .tab-btn.active{color:#fff;border-bottom-color:#3FB8A6;background:rgba(255,255,255,.06)}
   .main{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
   .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -50,7 +51,7 @@
   .k-col-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.08rem .45rem;font-size:.66rem;font-weight:800}
   .k-col-fin{background:#E9EEF5;padding:.3rem .6rem;font-size:.63rem;color:var(--t3);font-weight:600;display:flex;justify-content:space-between}
   .k-col-body{background:#F1F5F9;border-radius:0 0 var(--radius) var(--radius);padding:.45rem;min-height:120px;display:flex;flex-direction:column;gap:.4rem}
-  .k-col-body.drag-over{background:#E2E8F0;outline:2px dashed rgba(67,97,238,.35);outline-offset:-2px}
+  .k-col-body.drag-over{background:#E2E8E5;outline:2px dashed rgba(67,97,238,.35);outline-offset:-2px}
   .lead-card{background:var(--card);border:1px solid var(--border);border-left-width:4px;border-left-style:solid;border-radius:7px;padding:.65rem .7rem;cursor:grab;box-shadow:var(--shadow)}
   .lead-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
   .lead-card.dragging{opacity:.4}
@@ -126,26 +127,13 @@
   .bar-track{height:8px;background:var(--bg);border-radius:5px;overflow:hidden}
   #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
   .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg)}
-  .toast-success{background:#16a34a}.toast-error{background:#dc2626}.toast-info{background:#334155}
+  .toast-success{background:#0E8C7F}.toast-error{background:#B8433A}.toast-info{background:#334155}
 </style>
 </head>
 <body>
-<div class="hdr">
-  <div class="hdr-logo"><svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sicrm1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sicrm1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sicrm1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sicrm1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sicrm1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sicrm1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sicrm1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sicrm1d)"/></svg><span>SIIMOB</span></div>
-  <div class="hdr-right">
-    <span id="hdr-user"></span>
-    <button class="btn-hdr btn-hdr-primary" onclick="openNewLead()">+ Novo Lead</button>
-    <button class="btn-hdr" onclick="a1Logout()">Sair</button>
-  </div>
-</div>
-<div class="tabs-bar">
-  <button class="tab-btn active" data-tab="funil" onclick="switchTab('funil',this)">Funil de Leads</button>
-  <button class="tab-btn" data-tab="tarefas" onclick="switchTab('tarefas',this)">Tarefas <span id="task-badge"></span></button>
-  <button class="tab-btn" data-tab="dash" onclick="switchTab('dash',this)">Dashboard</button>
-  <button class="tab-btn" data-tab="config" onclick="switchTab('config',this)">Configurações</button>
-</div>
+<div id="sb-casco"></div>
 
-<div class="main">
+<div class="main" id="conteudo">
   <div id="tab-config" style="display:none"></div>
   <div id="tab-dash" style="display:none"></div>
   <div id="tab-tarefas" style="display:none"></div>
@@ -223,6 +211,7 @@
 
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
@@ -253,7 +242,19 @@ async function init(){
   try { G.user = a1RequireAuth(); } catch { return; }
   try { await a1RequireModule('crm'); } catch { return; }
   G.slug = A1.slug;
-  document.getElementById('hdr-user').textContent = `${G.user.name} · ${G.user.role}`;
+  // O casco e a barra de modulos vem de js/modulo-shell.js. As quatro vistas
+  // de Leads sao abas DESTA pagina — trocam de div, nao de endereco —, entao
+  // vao na sub-barra como acao e nao como link.
+  await a1MontarShell(document.getElementById('sb-casco'), {
+    ativo:'crm',
+    sub:[
+      { rot:'Funil de Leads', chave:'funil',   ativo:true, acao:"switchTab('funil')" },
+      { rot:'Tarefas',        chave:'tarefas', acao:"switchTab('tarefas')", n:'', id:'task-badge' },
+      { rot:'Dashboard',      chave:'dash',    acao:"switchTab('dash')" },
+      { rot:'Configurações',  chave:'config',  acao:"switchTab('config')" }
+    ],
+    acoes:'<button class="sb-btn sb-btn-forte sb-btn-p" onclick="openNewLead()">+ Novo lead</button>'
+  });
   a1StartHeartbeat('crm');
   await loadData();
 }
@@ -262,7 +263,14 @@ async function loadData(){
   // stages, leads e cadastros (origens/corretores) são independentes — busca tudo em paralelo
   const [stagesRaw, leads] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.crm&order=position.asc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]),
+    // `select=` explicito e A1.buscarTudo nao sao zelo: sem o select, o
+    // PostgREST manda TODAS as colunas, e a1_cases guarda PDF em base64
+    // (attachment_pdf, attachment_doc2, legacy_docs) — um processo com dois
+    // anexos vira megabytes de JSON que a tela nem usa. E sem buscarTudo o
+    // corte em 1.000 acontece EM SILENCIO: a tela mostra mil e diz que sao
+    // todos, que e o pior jeito de errar um numero.
+    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,unit,contract_value,partner_name,broker_name,real_estate_name,payload,observations,archived,created_at,updated_at`)
+      .then(r => r.linhas || []).catch(()=>[]),
     loadCad('origens'),
     loadCad('corretores')
   ]);
@@ -342,7 +350,7 @@ function renderFunil(){
 function leadCard(l){
   const sm=stageMap()[l.stage_id]; const sc=leadScore(l); const tp=leadTemp(sc); const ts=taskState(l);
   const phone=(l.client_phone||'').replace(/\D/g,'');
-  return `<div class="lead-card" draggable="true" data-id="${l.id}" style="border-left-color:${sm?sm.color:'#94a3b8'}"
+  return `<div class="lead-card" draggable="true" data-id="${l.id}" style="border-left-color:${sm?sm.color:'#6B827D'}"
     ondragstart="dStart(event,this)" ondragend="this.classList.remove('dragging')" onclick="openLead('${l.id}')">
     <div class="lead-top"><div class="lead-name">${esc(l.client_name||'Sem nome')}</div><span class="temp" style="background:${tp.c}" title="Score ${sc}/100">${tp.k} ${sc}</span></div>
     ${l.client_phone?`<div class="lead-line">📞 ${esc(l.client_phone)}</div>`:''}
@@ -576,7 +584,11 @@ async function archiveLead(){
 function pendingTasks(){ return G.leads.filter(l=>!(l.payload&&l.payload.archived)).map(l=>({l,t:taskState(l)})).filter(x=>x.t).sort((a,b)=>new Date(a.t.date)-new Date(b.t.date)); }
 function refreshTaskBadge(){
   const over=pendingTasks().filter(x=>x.t.over||x.t.today).length;
-  document.getElementById('task-badge').textContent = over?`(${over})`:'';
+  // O selo mora na sub-barra, que e desenhada pelo casco DEPOIS que esta tela
+  // carrega os dados. Se ainda nao existe, nao ha o que atualizar — e derrubar
+  // a tela inteira por causa de um contador seria trocar um numero por nada.
+  const el = document.getElementById('task-badge');
+  if (el) el.textContent = over ? String(over) : '';
 }
 function renderTarefas(){
   const el=document.getElementById('tab-tarefas'); const list=pendingTasks();
@@ -646,12 +658,12 @@ const CAD=[
   {key:'modelos_msg',sec:'Leads & Comunicação',label:'Mensagens Padrão',desc:'Templates WhatsApp/e-mail.',bg:'#ecfeff',st:'#0891b2',fields:[{k:'name',label:'Título',req:true},{k:'canal',label:'Canal',type:'select',options:['WhatsApp','E-mail']},{k:'corpo',label:'Mensagem',type:'textarea'}]},
   {key:'tags',sec:'Leads & Comunicação',label:'Tags de Lead',desc:'Etiquetas de leads.',bg:'#fae8ff',st:'#a21caf',fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
   // Pessoas
-  {key:'pessoas',sec:'Pessoas',label:'Pessoas / Clientes',desc:'Cadastro unificado de clientes.',bg:'#dcfce7',st:'#16a34a',fields:[{k:'name',label:'Nome completo',req:true},{k:'cpf',label:'CPF'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'renda',label:'Renda mensal (R$)'},{k:'profissao',label:'Profissão'},{k:'obs',label:'Observações',type:'textarea'}]},
+  {key:'pessoas',sec:'Pessoas',label:'Pessoas / Clientes',desc:'Cadastro unificado de clientes.',bg:'#dcfce7',st:'#0E8C7F',fields:[{k:'name',label:'Nome completo',req:true},{k:'cpf',label:'CPF'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'renda',label:'Renda mensal (R$)'},{k:'profissao',label:'Profissão'},{k:'obs',label:'Observações',type:'textarea'}]},
   {key:'tags_pessoa',sec:'Pessoas',label:'Tags de Pessoas',desc:'Servidor, aposentado, VIP...',bg:'#fce7f3',st:'#be185d',fields:[{k:'name',label:'Nome',req:true},{k:'color',label:'Cor',type:'color'}]},
   {key:'tipos_assoc',sec:'Pessoas',label:'Tipos de Associação',desc:'Cônjuge, fiador, procurador...',bg:'#ede9fe',st:'#7c3aed',fields:[{k:'name',label:'Nome',req:true}]},
   {key:'tipos_contato',sec:'Pessoas',label:'Tipos de Contato',desc:'WhatsApp, e-mail, telefone...',bg:'#e0e7ff',st:'#4338ca',fields:[{k:'name',label:'Nome',req:true}]},
   // Corretores & Equipe
-  {key:'corretores',sec:'Corretores & Equipe',label:'Corretores',desc:'Força de vendas.',bg:'#dbeafe',st:'#2563eb',fields:[{k:'name',label:'Nome',req:true},{k:'cpf',label:'CPF'},{k:'creci',label:'CRECI'},{k:'imobiliaria',label:'Imobiliária',type:'ref',ref:'imobiliarias'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'}]},
+  {key:'corretores',sec:'Corretores & Equipe',label:'Corretores',desc:'Força de vendas.',bg:'#dbeafe',st:'#3F6F9E',fields:[{k:'name',label:'Nome',req:true},{k:'cpf',label:'CPF'},{k:'creci',label:'CRECI'},{k:'imobiliaria',label:'Imobiliária',type:'ref',ref:'imobiliarias'},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'}]},
   {key:'cat_corretor',sec:'Corretores & Equipe',label:'Categorias de Corretor',desc:'Ouro, prata, bronze...',bg:'#fef9c3',st:'#a16207',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'}]},
   {key:'niveis_corretor',sec:'Corretores & Equipe',label:'Níveis do Corretor',desc:'Hierarquia/permissões.',bg:'#ffedd5',st:'#c2410c',fields:[{k:'name',label:'Nome',req:true},{k:'desc',label:'Descrição'}]},
   {key:'equipes',sec:'Corretores & Equipe',label:'Equipes',desc:'Times/squads.',bg:'#f3e8ff',st:'#9333ea',fields:[{k:'name',label:'Nome',req:true}]},
@@ -667,8 +679,8 @@ const CAD=[
   // Serviços & Outros
   {key:'tipos_imovel',sec:'Serviços & Outros',label:'Tipos de Imóvel',desc:'Apartamento, casa, sala...',bg:'#e0f2fe',st:'#0284c7',fields:[{k:'name',label:'Nome',req:true}]},
   {key:'finalidades',sec:'Serviços & Outros',label:'Finalidades',desc:'Compra, locação, investimento.',bg:'#fef9c3',st:'#a16207',fields:[{k:'name',label:'Nome',req:true}]},
-  {key:'regioes',sec:'Serviços & Outros',label:'Regiões / Bairros',desc:'Áreas de atuação.',bg:'#dcfce7',st:'#16a34a',fields:[{k:'name',label:'Bairro / Região',req:true},{k:'cidade',label:'Cidade'}]},
-  {key:'motivos_perda',sec:'Serviços & Outros',label:'Motivos de Perda',desc:'Por que um lead foi perdido.',bg:'#fee2e2',st:'#dc2626',fields:[{k:'name',label:'Motivo',req:true}]},
+  {key:'regioes',sec:'Serviços & Outros',label:'Regiões / Bairros',desc:'Áreas de atuação.',bg:'#dcfce7',st:'#0E8C7F',fields:[{k:'name',label:'Bairro / Região',req:true},{k:'cidade',label:'Cidade'}]},
+  {key:'motivos_perda',sec:'Serviços & Outros',label:'Motivos de Perda',desc:'Por que um lead foi perdido.',bg:'#fee2e2',st:'#B8433A',fields:[{k:'name',label:'Motivo',req:true}]},
   {key:'garantias',sec:'Serviços & Outros',label:'Garantias Locatícias',desc:'Fiador, caução, seguro...',bg:'#ffedd5',st:'#c2410c',fields:[{k:'name',label:'Nome',req:true}]},
   {key:'bancos',sec:'Serviços & Outros',label:'Bancos / Financiamento',desc:'Instituições parceiras.',bg:'#e0e7ff',st:'#4338ca',fields:[{k:'name',label:'Nome',req:true}]},
   {key:'sindicos',sec:'Serviços & Outros',label:'Síndicos',desc:'Acesso a condomínios.',bg:'#f5f3ff',st:'#6d28d9',fields:[{k:'name',label:'Nome',req:true},{k:'phone',label:'Telefone'},{k:'email',label:'E-mail'},{k:'condominio',label:'Condomínio',type:'ref',ref:'empreendimentos'}]},
@@ -803,8 +815,11 @@ async function deleteStage(id){
 
 // ─── Tabs / helpers ────────────────────────────────────────────────────────────
 function switchTab(tab,el){
-  document.querySelectorAll('.tabs-bar .tab-btn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
+  // A barra saiu daqui: quem marca a aba ativa agora e o casco, que sabe
+  // desenhar a sub-barra de qualquer modulo. `el` continua na assinatura
+  // porque ainda ha chamada antiga passando o botao — e ignora-lo e melhor que
+  // caçar as chamadas em mil linhas para tirar um argumento.
+  if (typeof a1ShellVista === 'function') a1ShellVista(tab);
   ['funil','tarefas','dash','config'].forEach(t=>{ const n=document.getElementById('tab-'+t); if(n) n.style.display = t===tab?'':'none'; });
   if(tab==='dash') renderDash(); else if(tab==='config') renderConfig(); else if(tab==='tarefas') renderTarefas();
 }

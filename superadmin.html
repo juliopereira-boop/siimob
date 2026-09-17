@@ -7,19 +7,19 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
   <style>
     :root {
-      --bg:#F8FAFC; --card:#fff; --border:#E2E8F0; --border2:#CBD5E1;
-      --t1:#0F172A; --t2:#475569; --t3:#94A3B8; --t4:#CBD5E1;
+      --bg:#F4F6F4; --card:#fff; --border:#E2E8E5; --border2:#C9D5D1;
+      --t1:#09201D; --t2:#47615C; --t3:#6B827D; --t4:#C9D5D1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
-      --green:#2945B0; --emerald:#3D5CC8; --emerald-d:#1E3A8A;
-      --blue:#2563eb; --amber:#d97706; --red:#dc2626;
+      --green:#0B7568; --emerald:#0E8C7F; --emerald-d:#0B5049;
+      --blue:#3F6F9E; --amber:#C87E12; --red:#B8433A;
       --radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -33,13 +33,13 @@
     .auth-logo{font-size:1.25rem;font-weight:900;letter-spacing:-.03em;margin-bottom:.25rem}
     .auth-logo span{color:var(--emerald)}
     .auth-sub{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:1.75rem}
-    .auth-top-bar{height:3px;background:linear-gradient(135deg,#60CFFF,#3D5CC8);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
+    .auth-top-bar{height:3px;background:linear-gradient(135deg,#3FB8A6,#0E8C7F);border-radius:16px 16px 0 0;margin:-2.25rem -2.25rem 1.75rem}
 
     /* ── Layout ── */
-    .sa-hdr{background:#3D5CC8;color:#fff;position:sticky;top:0;z-index:200}
+    .sa-hdr{background:#0E8C7F;color:#fff;position:sticky;top:0;z-index:200}
     .sa-hdr-inner{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.5rem;gap:1rem}
     .sa-logo{font-weight:900;font-size:.95rem;letter-spacing:-.02em}
-    .sa-logo span{color:#60CFFF}
+    .sa-logo span{color:#3FB8A6}
     .sa-badge{background:rgba(67,97,238,.15);border:1px solid rgba(67,97,238,.3);color:#818CF8;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.04em}
     .sa-warn-badge{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:#FCD34D;border-radius:99px;padding:.2rem .65rem;font-size:.65rem;font-weight:700}
     .sa-tabs{display:flex;padding:0 1.5rem;border-top:1px solid rgba(255,255,255,.05)}
@@ -71,7 +71,7 @@
     .btn-primary:hover{background:var(--emerald-d)}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
     .btn-ghost:hover{border-color:var(--border2);background:var(--card)}
-    .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+    .btn-danger{background:#fee2e2;color:#B8433A;border:1px solid #fca5a5}
     .btn-danger:hover{background:#fecaca}
     .btn-warn{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
     .btn-warn:hover{background:#fde68a}
@@ -94,8 +94,8 @@
     .badge-red{background:#fee2e2;color:#991b1b}
     .badge-blue{background:#dbeafe;color:#1e40af}
     .badge-violet{background:#f5f3ff;color:#6d28d9}
-    .badge-emerald{background:#E0E7FF;color:#1E3A8A}
-    .badge-gray{background:#f1f5f9;color:#475569}
+    .badge-emerald{background:#E0E7FF;color:#0B5049}
+    .badge-gray{background:#f1f5f9;color:#47615C}
     .mono{font-family:'DM Mono',monospace;font-size:.72rem}
 
     /* ── Module grid ── */
@@ -132,11 +132,11 @@
     .fb-card-meta{font-size:.68rem;color:var(--t3)}
     .fb-badge{display:inline-flex;align-items:center;padding:.12rem .55rem;border-radius:99px;font-size:.65rem;font-weight:700;letter-spacing:.03em;white-space:nowrap}
     .fb-badge.pending{background:#fef3c7;color:#92400e}
-    .fb-badge.accepted{background:#E0E7FF;color:#1E3A8A}
+    .fb-badge.accepted{background:#E0E7FF;color:#0B5049}
     .fb-badge.rejected{background:#fee2e2;color:#991b1b}
     .fb-actions{display:flex;flex-direction:column;gap:.4rem;flex-shrink:0}
     .fb-btn{border:none;border-radius:6px;font-size:.7rem;font-weight:700;cursor:pointer;padding:.3rem .65rem;transition:all .12s}
-    .fb-btn-accept{background:#E0E7FF;color:#1E3A8A}.fb-btn-accept:hover{background:#A5B4FC}
+    .fb-btn-accept{background:#E0E7FF;color:#0B5049}.fb-btn-accept:hover{background:#A5B4FC}
     .fb-btn-reject{background:#fee2e2;color:#991b1b}.fb-btn-reject:hover{background:#fecaca}
 
     /* ── Modal ── */
@@ -153,10 +153,10 @@
     #sa-toast{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem}
     .toast-item{padding:.55rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .2s ease}
     @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-    .toast-success{background:#0F172A;color:#fff}
-    .toast-error{background:#dc2626;color:#fff}
-    .toast-warn{background:#d97706;color:#fff}
-    .toast-info{background:#2563eb;color:#fff}
+    .toast-success{background:#09201D;color:#fff}
+    .toast-error{background:#B8433A;color:#fff}
+    .toast-warn{background:#C87E12;color:#fff}
+    .toast-info{background:#3F6F9E;color:#fff}
   </style>
 </head>
 <body>
@@ -165,7 +165,7 @@
 <div id="auth-gate" class="auth-wrap">
   <div class="auth-card">
     <div class="auth-top-bar"></div>
-    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0B534E"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="sisup1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0B534E"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="sisup1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#0B534E"/></linearGradient><linearGradient id="sisup1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0B534E"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup1d)"/></svg><span>SI<span style="color:#60CFFF">IMOB</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
+    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="sisup1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="sisup1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="sisup1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup1d)"/></svg><span>SI<span style="color:#3FB8A6">IMOB</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
     <div class="auth-sub">Superadmin</div>
     <div class="form-group" style="margin-bottom:.875rem">
       <label>Service Role Key</label>
@@ -204,7 +204,7 @@
       </div>
       <div class="sa-tab" onclick="switchSaTab('interessados',this)" id="tab-interessados">
         Interessados
-        <span id="leads-badge" style="display:none;margin-left:.4rem;background:#12B981;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
+        <span id="leads-badge" style="display:none;margin-left:.4rem;background:#0E8C7F;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
       <div class="sa-tab" onclick="switchSaTab('esteiras',this)">Esteiras</div>
       <div class="sa-tab" onclick="switchSaTab('monitor',this)">Monitor</div>
@@ -268,7 +268,7 @@
         </div>
         <div style="margin-top:.875rem;display:flex;gap:.5rem;align-items:center">
           <button class="btn btn-primary" onclick="createTenant()">Criar cliente + usuário</button>
-          <div id="n-err" style="display:none;font-size:.78rem;color:#dc2626;font-weight:500"></div>
+          <div id="n-err" style="display:none;font-size:.78rem;color:#B8433A;font-weight:500"></div>
         </div>
       </div>
 
@@ -381,7 +381,7 @@
         <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
           <div>
             <div class="section-title">Interessados na plataforma</div>
-            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviados pelo formulário da página <a href="/conheca" target="_blank" style="color:#3D5CC8">/conheca</a></div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviados pelo formulário da página <a href="/conheca" target="_blank" style="color:#0E8C7F">/conheca</a></div>
           </div>
           <div style="display:flex;gap:.5rem">
             <select id="lead-filter" onchange="renderLeads()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
@@ -525,13 +525,13 @@
            ligada, ninguém entra no sistema. Só o superadmin continua passando —
            ele fala com o banco pela service_role key, que não passa por
            a1_login nem por RLS. Por isso esta chave não tranca quem a girou. -->
-      <div class="panel" id="manut-painel" style="padding:1.25rem;margin-bottom:1.25rem;border-left:4px solid #94A3B8">
+      <div class="panel" id="manut-painel" style="padding:1.25rem;margin-bottom:1.25rem;border-left:4px solid #6B827D">
         <div class="section-hdr" style="margin-bottom:1rem">
           <div>
             <div class="section-title">Modo Manutenção</div>
             <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">Com a chave ligada, <strong>ninguém consegue entrar</strong> e quem já está dentro vê o aviso de manutenção no lugar do sistema. Você continua com acesso a esta tela.</div>
           </div>
-          <div id="manut-selo" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.3rem .6rem;border-radius:999px;background:#F1F5F9;color:#475569">—</div>
+          <div id="manut-selo" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.3rem .6rem;border-radius:999px;background:#F1F5F9;color:#47615C">—</div>
         </div>
 
         <div id="manut-corpo" style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
@@ -576,7 +576,7 @@
         <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
           <!-- Preview -->
           <div style="flex:0 0 220px">
-            <div id="logo-preview-box" style="background:#3D5CC8;border-radius:10px;min-height:70px;display:flex;align-items:center;justify-content:center;padding:1rem 1.25rem">
+            <div id="logo-preview-box" style="background:#0E8C7F;border-radius:10px;min-height:70px;display:flex;align-items:center;justify-content:center;padding:1rem 1.25rem">
               <img id="logo-preview" src="" alt="" style="display:none;max-width:100%;max-height:52px;object-fit:contain">
               <span id="logo-empty-msg" style="font-size:.72rem;color:rgba(255,255,255,.5)">Sem logo personalizada</span>
             </div>
@@ -595,7 +595,7 @@
             </div>
 
             <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;color:var(--t1)">
-              <input type="checkbox" id="logo-rm-white" checked style="accent-color:#3D5CC8;width:14px;height:14px;cursor:pointer">
+              <input type="checkbox" id="logo-rm-white" checked style="accent-color:#0E8C7F;width:14px;height:14px;cursor:pointer">
               Remover fundo branco automaticamente
             </label>
             <div style="font-size:.7rem;color:var(--t3);margin-top:-.5rem">Pixels brancos e quase-brancos ficam transparentes, isolando apenas o símbolo.</div>
@@ -631,7 +631,7 @@
         <input id="desp-limit-input" type="number" min="1" max="999" placeholder="Ex: 2"
           style="width:100%" onkeydown="if(event.key==='Enter')confirmDespLimit()">
       </div>
-      <div id="desp-limit-err" style="color:#dc2626;font-size:.75rem;display:none;margin-bottom:.5rem;font-weight:500"></div>
+      <div id="desp-limit-err" style="color:#B8433A;font-size:.75rem;display:none;margin-bottom:.5rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end">
         <button class="btn btn-ghost btn-sm" onclick="closeDespLimitModal()">Cancelar</button>
         <button class="btn btn-primary btn-sm" onclick="confirmDespLimit()">Liberar módulo</button>
@@ -667,7 +667,7 @@
             </select>
           </div>
         </div>
-        <div id="um-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.5rem;font-weight:500"></div>
+        <div id="um-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.5rem;font-weight:500"></div>
         <button class="btn btn-primary btn-sm" style="margin-top:.75rem" onclick="createUserForTenant()">Criar usuário</button>
       </div>
       <div class="tbl-wrap">
@@ -706,7 +706,7 @@
       </div>
       <div style="font-size:.7rem;color:var(--t3);margin-bottom:.5rem">Clique no mês para girar entre <b>Pendente</b> → <b>Pago</b> → <b>Em atraso</b>. Mês em atraso faz o cliente ver a tarja de cobrança dentro do sistema dele.</div>
       <div id="cob-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem"></div>
-      <div id="cob-err" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
+      <div id="cob-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
     </div>
     <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
       <button class="btn btn-ghost" onclick="closeModal('modal-cobranca')">Fechar</button>
@@ -797,14 +797,20 @@ let CONTRACT_MODS   = [];
 
 // `types`: tipos de cliente para os quais o módulo é ofertável. Ausente = todos.
 const MODULES_DEF = [
-  // A ordem da lista é a ordem do processo — Pré-análise → Venda → Repasse —
-  // e é a mesma da barra de abas e do editor de workflow. Os dois primeiros
-  // continuam nascendo desligados para todo cliente; ordem não é licença.
+  // A ordem da lista é a ordem do processo — Leads → Pré-análise → Venda →
+  // Repasse → Registro — e é a mesma da barra de abas e do editor de workflow.
+  // Todos continuam nascendo desligados para todo cliente; ordem não é licença.
+  //
+  // 'crm' chamava-se "CRM Básico" e era ofertado só a imobiliária e construtora.
+  // O nome virou Leads porque é assim que a tela, a barra e o dono o chamam — e
+  // catálogo que diz um nome com a tela dizendo outro faz o gestor licenciar a
+  // coisa errada. O tipo de cliente saiu: correspondente e despachante também
+  // recebem lead, e a restrição só impedia de vender o módulo a quem o quer.
+  { key: 'crm',              name: 'Leads',                    desc: 'Funil de leads com quadro, qualificação, proposta, tarefas e histórico. É a porta de entrada da jornada: o lead qualificado vira Pré-análise.', types:['correspondente_bancario','imobiliaria','construtora','despachante'], dependeDe: [] },
   { key: 'PRE_ANALISE',      name: 'Pré-análise',              desc: 'Entrada do processo: pessoas, dossiê, renda, FGTS, subsídio, correspondente e decisão de crédito. Esteira própria.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: [] },
   { key: 'COMERCIAL',        name: 'Venda',                desc: 'Proposta, negociação, contrato e assinatura. Pode abrir Repasse na etapa que o cliente escolher.', types:['correspondente_bancario','imobiliaria','construtora'], dependeDe: ['PRE_ANALISE'] },
   { key: 'repasse',          name: 'Repasse Imobiliário',      desc: 'Pipeline completo de repasse bancário com Kanban, documentos e acompanhamento.', types:['correspondente_bancario','imobiliaria','construtora'] },
   { key: 'registro',         name: 'Registro em Cartório',     desc: 'Módulo despachante: ITBI, protocolos, exigências e matrícula atualizada.', types:['correspondente_bancario','imobiliaria','construtora','despachante'] },
-  { key: 'crm',              name: 'CRM Básico',               desc: 'Gestão de contatos, leads e clientes com histórico de interações.', types:['imobiliaria','construtora'] },
   { key: 'financeiro',       name: 'Módulo Financeiro',        desc: 'Controle de comissões, repasse financeiro e fluxo de caixa.', types:['correspondente_bancario','imobiliaria','construtora'] },
   { key: 'simulador',        name: 'Simulador de Crédito',     desc: 'Simulação de financiamento consignado e habitacional integrada.', types:['correspondente_bancario','imobiliaria','construtora'] },
   { key: 'portal_parceiro',  name: 'Portal Parceiro',          desc: 'Acesso externo para correspondentes parceiros acompanharem seus processos.', types:['correspondente_bancario'] },
@@ -825,7 +831,7 @@ function avisoDependencia(mod, activeKeys) {
   const faltando = (mod.dependeDe || []).filter(k => !activeKeys.has(k));
   if (!faltando.length) return '';
   const nomes = faltando.map(k => (MODULES_DEF.find(m => m.key === k) || {}).name || k);
-  return `<div style="font-size:.66rem;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;
+  return `<div style="font-size:.66rem;color:#9A6008;background:#FFFBEB;border:1px solid #FDE68A;
     border-radius:6px;padding:.35rem .5rem;margin-top:.4rem;line-height:1.4">
     Funciona sozinho, mas o fluxo automático precisa de <b>${esc(nomes.join(', '))}</b>.</div>`;
 }
@@ -909,7 +915,7 @@ const EST_DEF = {
       { nome:'Pendência',         flag:'PENDENTE',  cor:'#f59e0b', sla_horas:48 },
       { nome:'Aprovada',          flag:'APROVADO',  cor:'#22c55e', sla_horas:null },
       { nome:'Reprovada',         flag:'REPROVADO', cor:'#ef4444', sla_horas:null },
-      { nome:'Cancelada',         flag:'CANCELADO', cor:'#94a3b8', sla_horas:null }
+      { nome:'Cancelada',         flag:'CANCELADO', cor:'#6B827D', sla_horas:null }
     ]
   },
   COMERCIAL: {
@@ -1051,7 +1057,7 @@ function renderEsteira() {
                   <label style="display:flex;align-items:center;gap:.3rem;font-size:.71rem;color:var(--t2);cursor:pointer">
                     <input type="checkbox" ${(t.requisitos || {})[k] ? 'checked' : ''}
                            onchange="editarRequisito('${esc(t.id)}','${k}',this.checked)"
-                           style="accent-color:#3D5CC8;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`).join('')}</td>
+                           style="accent-color:#0E8C7F;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`).join('')}</td>
             <td><input value="${esc((t.papeis || []).join(', '))}" placeholder="todos"
                        onchange="editarPapeis('${esc(t.id)}',this.value)"
                        style="width:130px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem"></td>
@@ -1234,7 +1240,7 @@ async function loadMonitor() {
 
   const papeis = (d.online_por_papel || []).map(x => `${x.quantos} ${esc(x.papel)}`).join(' · ') || 'ninguém agora';
   document.getElementById('mon-kpis').innerHTML =
-    kpi('Online agora', d.online || 0, papeis, (d.online > 0 ? '#12B981' : 'var(--t3)')) +
+    kpi('Online agora', d.online || 0, papeis, (d.online > 0 ? '#0E8C7F' : 'var(--t3)')) +
     kpi('Acessos', d.total_acessos || 0, rotuloJanela) +
     kpi('Usuários distintos', d.total_usuarios || 0, rotuloJanela) +
     kpi('Pico do período', pico, d.janela === 'hora' ? 'na hora mais movimentada'
@@ -1262,14 +1268,14 @@ async function loadMonitor() {
     <svg width="${total}" height="${C + 26}" role="img" aria-label="Acessos por período" style="display:block">
       ${[0, 0.5, 1].map(f => {
         const y = C - 30 - (C - 30) * f + 8;
-        return `<line x1="${L}" y1="${y}" x2="${total - 6}" y2="${y}" stroke="#E2E8F0" stroke-width="1"/>
-                <text x="4" y="${y + 4}" font-size="10" fill="#94A3B8">${Math.round(pico * f)}</text>`;
+        return `<line x1="${L}" y1="${y}" x2="${total - 6}" y2="${y}" stroke="#E2E8E5" stroke-width="1"/>
+                <text x="4" y="${y + 4}" font-size="10" fill="#6B827D">${Math.round(pico * f)}</text>`;
       }).join('')}
       ${baldes.map((b, i) => {
         const h = alt(b.acessos), x = L + i * larg, y = C - 22 - h;
         return `<rect x="${x + 2}" y="${y}" width="${larg - 4}" height="${Math.max(h, b.acessos > 0 ? 2 : 0)}"
-                  rx="2" fill="#3D5CC8"><title>${esc(rot(b.inicio))} — ${b.acessos} acesso(s), ${b.usuarios} usuário(s)</title></rect>
-                ${i % passo === 0 ? `<text x="${x + larg/2}" y="${C + 2}" font-size="10" fill="#94A3B8"
+                  rx="2" fill="#0E8C7F"><title>${esc(rot(b.inicio))} — ${b.acessos} acesso(s), ${b.usuarios} usuário(s)</title></rect>
+                ${i % passo === 0 ? `<text x="${x + larg/2}" y="${C + 2}" font-size="10" fill="#6B827D"
                   text-anchor="middle">${esc(rot(b.inicio))}</text>` : ''}`;
       }).join('')}
     </svg>` : '<div style="color:var(--t3);font-size:.8rem">Sem acesso registrado neste período.</div>';
@@ -1297,9 +1303,9 @@ async function loadMonitor() {
         const passou = max != null && lim > 0 && max > lim;
         const cel = max == null
           ? '<span style="color:var(--t3)">—</span>'
-          : `<b style="color:${passou ? '#DC2626' : (max === lim ? '#D97706' : 'var(--t1)')}">${max}</b>` +
+          : `<b style="color:${passou ? '#B8433A' : (max === lim ? '#C87E12' : 'var(--t1)')}">${max}</b>` +
             (lim > 0 ? `<span style="color:var(--t3)"> / ${lim}</span>` : '') +
-            (passou ? ' <span style="color:#DC2626;font-size:.68rem;font-weight:800">acima do teto</span>' : '');
+            (passou ? ' <span style="color:#B8433A;font-size:.68rem;font-weight:800">acima do teto</span>' : '');
         return `<tr>
           <td style="font-weight:600">${esc(c.cliente)}</td>
           <td>${c.acessos}</td>
@@ -1318,8 +1324,8 @@ let INDICACOES = [];
 const IND_STATUS = ['nova','em_contato','proposta','fechado','perdido'];
 const IND_ROT = { nova:'Recebida', em_contato:'Em contato', proposta:'Proposta',
                   fechado:'Fechado', perdido:'Não seguiu' };
-const IND_COR = { nova:'#3D5CC8', em_contato:'#0891b2', proposta:'#F5A524',
-                  fechado:'#12B981', perdido:'#94a3b8' };
+const IND_COR = { nova:'#0E8C7F', em_contato:'#0891b2', proposta:'#F5A524',
+                  fechado:'#0E8C7F', perdido:'#6B827D' };
 const brlSA = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 async function loadIndicacoes() {
@@ -1353,7 +1359,7 @@ function renderIndicacoes() {
   const aPagar = INDICACOES.filter(i => !i.pago).reduce((a,i) => a + comissaoDe(i), 0);
   document.getElementById('indica-resumo').innerHTML =
     `<b>${INDICACOES.length}</b> indicação(ões) · <b>${fechadas.length}</b> fechada(s)<br>
-     <span style="color:#12B981;font-weight:800">${brlSA(aPagar)}</span> a pagar`;
+     <span style="color:#0E8C7F;font-weight:800">${brlSA(aPagar)}</span> a pagar`;
 
   if (!INDICACOES.length) {
     box.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhuma indicação recebida ainda.</div>';
@@ -1389,12 +1395,12 @@ function renderIndicacoes() {
             style="width:110px;font-size:.78rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px">
           <div style="color:var(--t3);font-size:.68rem;margin-top:.1rem">${i.percentual||20}% da 1ª parcela</div>
         </td>
-        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;font-weight:800;color:${com?'#12B981':'var(--t3)'}">
+        <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;font-weight:800;color:${com?'#0E8C7F':'var(--t3)'}">
           ${com ? brlSA(com) : '—'}
         </td>
         <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9;white-space:nowrap;text-align:right">
           ${com ? (i.pago
-            ? '<span style="font-size:.72rem;color:#12B981;font-weight:800">pago</span>'
+            ? '<span style="font-size:.72rem;color:#0E8C7F;font-weight:800">pago</span>'
             : `<button class="btn btn-ghost" style="font-size:.73rem" onclick="marcarPagoIndicacao('${i.id}')">Marcar pago</button>`) : ''}
         </td></tr>`;
     }).join('')}</tbody></table></div>`;
@@ -1462,14 +1468,14 @@ function renderAvisos() {
     ${AVISOS.map(a => {
       const venceu = a.expira_em && new Date(a.expira_em) < agora;
       const sit = !a.publicado ? '<span style="color:var(--t3);font-weight:700">Rascunho</span>'
-                : venceu       ? '<span style="color:#b45309;font-weight:700">Vencido</span>'
-                               : '<span style="color:#12B981;font-weight:700">No ar</span>';
+                : venceu       ? '<span style="color:#9A6008;font-weight:700">Vencido</span>'
+                               : '<span style="color:#0E8C7F;font-weight:700">No ar</span>';
       const quem = (a.publicos && a.publicos.length)
         ? a.publicos.map(p => AV_ROTULO[p] || p).join(', ') : 'Todos';
       const clientes = (a.tenants && a.tenants.length) ? `${a.tenants.length} cliente(s)` : 'Todos os clientes';
       return `<tr>
         <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9)">
-          <b>${esc(a.titulo)}</b>${a.fixado ? ' <span style="font-size:.62rem;background:#EEF2FF;color:#3D5CC8;padding:.1rem .35rem;border-radius:4px;font-weight:800">FIXADO</span>' : ''}
+          <b>${esc(a.titulo)}</b>${a.fixado ? ' <span style="font-size:.62rem;background:#EEF2FF;color:#0E8C7F;padding:.1rem .35rem;border-radius:4px;font-weight:800">FIXADO</span>' : ''}
           <div style="color:var(--t3);font-size:.72rem;margin-top:.15rem">
             ${a.imagem_url ? 'imagem · ' : ''}${a.video_url ? 'vídeo · ' : ''}${esc((a.corpo||'').slice(0,70))}${(a.corpo||'').length>70?'…':''}
           </div>
@@ -1481,7 +1487,7 @@ function renderAvisos() {
         <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9);white-space:nowrap;text-align:right">
           <button class="btn btn-ghost" style="font-size:.74rem" onclick="abrirAviso('${a.id}')">Editar</button>
           <button class="btn btn-ghost" style="font-size:.74rem" onclick="alternarPublicacao('${a.id}')">${a.publicado ? 'Despublicar' : 'Publicar'}</button>
-          <button class="btn btn-ghost" style="font-size:.74rem;color:#dc2626" onclick="excluirAviso('${a.id}')">Excluir</button>
+          <button class="btn btn-ghost" style="font-size:.74rem;color:#B8433A" onclick="excluirAviso('${a.id}')">Excluir</button>
         </td></tr>`;
     }).join('')}
   </tbody></table></div>`;
@@ -1652,7 +1658,7 @@ async function excluirAviso(id) {
 // service role — por isso a lista vive aqui e não vaza para nenhum cliente.
 let LEADS = [];
 const LEAD_STATUS = ['novo','contatado','negociando','ganho','perdido'];
-const LEAD_CORES  = { novo:'#3D5CC8', contatado:'#0891b2', negociando:'#F5A524', ganho:'#12B981', perdido:'#94a3b8' };
+const LEAD_CORES  = { novo:'#0E8C7F', contatado:'#0891b2', negociando:'#F5A524', ganho:'#0E8C7F', perdido:'#6B827D' };
 
 async function loadLeads() {
   const box = document.getElementById('leads-list');
@@ -1662,7 +1668,7 @@ async function loadLeads() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     LEADS = await res.json();
   } catch (e) {
-    box.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#dc2626;font-size:.8rem">Não foi possível carregar os interessados (${esc(e.message)}).</div>`;
+    box.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#B8433A;font-size:.8rem">Não foi possível carregar os interessados (${esc(e.message)}).</div>`;
     return;
   }
   const n = k => LEADS.filter(l => l.status === k).length;
@@ -1685,7 +1691,7 @@ function renderLeads() {
   }
   box.style.padding = '0';
   box.innerHTML = `<div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
-    <thead><tr style="background:#f8fafc;color:var(--t3);text-align:left">
+    <thead><tr style="background:#F4F6F4;color:var(--t3);text-align:left">
       <th style="padding:.6rem .8rem;font-weight:700">Quando</th>
       <th style="padding:.6rem .8rem;font-weight:700">Contato</th>
       <th style="padding:.6rem .8rem;font-weight:700">Empresa</th>
@@ -1702,8 +1708,8 @@ function renderLeads() {
         <td style="padding:.7rem .8rem">
           <div style="font-weight:700;color:var(--t1)">${esc(l.name)}</div>
           <div style="color:var(--t3);font-size:.74rem;margin-top:.1rem">
-            <a href="mailto:${esc(l.email)}" style="color:#3D5CC8">${esc(l.email)}</a>
-            ${l.phone ? ` · <a href="https://wa.me/55${zap}" target="_blank" rel="noopener" style="color:#12B981">${esc(l.phone)}</a>` : ''}
+            <a href="mailto:${esc(l.email)}" style="color:#0E8C7F">${esc(l.email)}</a>
+            ${l.phone ? ` · <a href="https://wa.me/55${zap}" target="_blank" rel="noopener" style="color:#0E8C7F">${esc(l.phone)}</a>` : ''}
           </div>
           ${l.message ? `<div style="color:var(--t2);font-size:.74rem;margin-top:.35rem;max-width:34ch;line-height:1.45">"${esc(l.message)}"</div>` : ''}
         </td>
@@ -1715,7 +1721,7 @@ function renderLeads() {
           </select>
         </td>
         <td style="padding:.7rem .8rem;text-align:right">
-          <button class="btn btn-ghost btn-sm" style="color:#dc2626;border-color:#fecaca" onclick="deleteLead('${l.id}','${esc(l.name).replace(/'/g,"\\'")}')">Excluir</button>
+          <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteLead('${l.id}','${esc(l.name).replace(/'/g,"\\'")}')">Excluir</button>
         </td>
       </tr>`;
     }).join('')}
@@ -1769,7 +1775,7 @@ function manutPintar(m) {
   selo.textContent = ligada ? 'Sistema desligado' : 'Sistema no ar';
   selo.style.background = ligada ? '#FEE2E2' : '#DCFCE7';
   selo.style.color      = ligada ? '#B91C1C' : '#15803D';
-  painel.style.borderLeftColor = ligada ? '#DC2626' : '#94A3B8';
+  painel.style.borderLeftColor = ligada ? '#B8433A' : '#6B827D';
 
   document.getElementById('manut-btn-ligar').style.display    = ligada ? 'none' : '';
   document.getElementById('manut-btn-desligar').style.display = ligada ? '' : 'none';
@@ -2036,7 +2042,7 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <button class="btn btn-xs" style="background:#3D5CC8;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
+          <button class="btn btn-xs" style="background:#0E8C7F;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -2149,7 +2155,7 @@ function renderAllModulesTable() {
           <td><span style="font-weight:600">${esc(t?.name || r.tenant_id?.slice(0,8) || '—')}</span></td>
           <td><span class="badge badge-emerald">${esc(r.module_key)}</span></td>
           <td class="mono" style="font-size:.72rem">${new Date(r.unlocked_at).toLocaleString('pt-BR')}</td>
-          <td style="color:${r.expires_at?'#d97706':'#2945B0'};font-size:.73rem;font-weight:600">
+          <td style="color:${r.expires_at?'#C87E12':'#0B7568'};font-size:.73rem;font-weight:600">
             ${r.expires_at ? new Date(r.expires_at).toLocaleDateString('pt-BR') : 'Permanente'}
           </td>
           <td style="font-size:.72rem;color:var(--t3)">${esc(r.unlocked_by || '—')}</td>
@@ -2827,7 +2833,7 @@ function updateCobHint(tenantId, data) {
   const now = new Date();
   const over = isOverdue(now.getFullYear(), now.getMonth(), dueDay, data.paid || {});
   el.textContent = over ? '● vencido' : '';
-  el.style.color = '#dc2626';
+  el.style.color = '#B8433A';
 }
 
 // Auto-envio: ao abrir a aba Clientes, para cada tenant com dia de vencimento

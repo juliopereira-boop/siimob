@@ -5,22 +5,22 @@
        turquesa claro ao verde-azulado escuro. -->
   <defs>
     <linearGradient id="sii-a" x1="172" y1="530" x2="466" y2="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="0%"   stop-color="#04201D"/>
       <stop offset="55%"  stop-color="#149287"/>
       <stop offset="100%" stop-color="#33E9D7"/>
     </linearGradient>
     <linearGradient id="sii-b" x1="820" y1="163" x2="820" y2="455" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="0%"   stop-color="#04201D"/>
       <stop offset="55%"  stop-color="#159A8E"/>
       <stop offset="100%" stop-color="#3BF0DE"/>
     </linearGradient>
     <linearGradient id="sii-c" x1="462" y1="825" x2="462" y2="1115" gradientUnits="userSpaceOnUse">
       <stop offset="0%"   stop-color="#3BF0DE"/>
       <stop offset="45%"  stop-color="#159A8E"/>
-      <stop offset="100%" stop-color="#0B534E"/>
+      <stop offset="100%" stop-color="#04201D"/>
     </linearGradient>
     <linearGradient id="sii-d" x1="1108" y1="750" x2="814" y2="1080" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#0B534E"/>
+      <stop offset="0%"   stop-color="#04201D"/>
       <stop offset="55%"  stop-color="#149287"/>
       <stop offset="100%" stop-color="#33E9D7"/>
     </linearGradient>

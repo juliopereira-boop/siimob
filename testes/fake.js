@@ -1,5 +1,8 @@
 // Supabase de mentira: responde a tudo o que as telas pedem, com dados que
 // incluem caracteres perigosos, para provar que o HTML está escapado.
+// Prazo relativo a hoje: data fixa em andaime apodrece — o teste passa hoje e
+// falha em janeiro, e quem vier depois acha que quebrou o codigo.
+const _prazo = d => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
 const XSS = `<img src=x onerror="window.__XSS=(window.__XSS||0)+1">`;
 const ASPA = `Aspa" onfocus="window.__XSS=(window.__XSS||0)+1" x="`;
 
@@ -10,7 +13,7 @@ const D = {
     {id:'s2',name:'Análise',color:'#12B981',group_key:'Centro',is_initial:false,is_final:false,position:2,module_key:'repasse'},
     {id:'s3',name:'Assinado',color:'#059669',group_key:'Centro',is_initial:false,is_final:true,position:3,module_key:'repasse'}],
   cases: [
-    {id:'c1',tenant_id:'t1',module_key:'repasse',stage_id:'s1',stage_name:'Documentação',client_name:'Maria '+XSS,client_cpf:'52998224725',
+    {id:'c1',tenant_id:'t1',module_key:'repasse',stage_id:'s1',evaluation_expiry:_prazo(-2),stage_name:'Documentação',client_name:'Maria '+XSS,client_cpf:'52998224725',
      development:'Residencial das Flores',block:'B1',unit:'101',contract_value:250000,partner_name:'Correspondente A',
      broker_name:'Ana Souza',real_estate_name:'Imob Alfa',manager_name:'João Analista',observations:'obs '+XSS,is_new:true,
      created_at:'2026-08-01T10:00:00Z',stage_entered_at:'2026-08-01T10:00:00Z',
@@ -18,10 +21,10 @@ const D = {
      legacy_docs:[{id:'ld1',nome:'rg-antigo.pdf',data:'data:application/pdf;base64,JVBERi0xLjQK'}],
      payload:{regional:'Centro',convenio:'Convênio Alfa',agencia:'1234 - Centro',modalidade:'Imóvel na planta',estado:'SP',cidade:'Campinas',
               chave_que_nao_pode_sumir:'valor importante',data_venda:'2026-07-01'}},
-    {id:'c2',tenant_id:'t1',module_key:'repasse',stage_id:'s3',stage_name:'Assinado',client_name:'Pedro Lima',client_cpf:'11144477735',
+    {id:'c2',tenant_id:'t1',module_key:'repasse',evaluation_expiry:_prazo(0),stage_id:'s3',stage_name:'Assinado',client_name:'Pedro Lima',client_cpf:'11144477735',
      development:'Parque das Águas',contract_value:180000,partner_name:'Correspondente B',broker_name:'Carla Dias',created_at:'2026-07-15T10:00:00Z',
      stage_entered_at:'2026-08-20T10:00:00Z',payload:{regional:'Centro',data_venda:'2026-07-01'}},
-    {id:'c3',tenant_id:'t1',module_key:'repasse',stage_id:'s2',stage_name:'Análise',client_name:'Rui Santos',client_cpf:'52998224725',
+    {id:'c3',tenant_id:'t1',module_key:'repasse',evaluation_expiry:_prazo(5),stage_id:'s2',stage_name:'Análise',client_name:'Rui Santos',client_cpf:'52998224725',
      development:'Residencial das Flores',contract_value:150000,partner_name:'Correspondente A',broker_name:'Diego Melo',created_at:'2026-07-10T10:00:00Z',
      stage_entered_at:'2026-08-18T10:00:00Z',payload:{regional:'Centro',data_venda:'2026-08-08'}},
     {id:'c4',tenant_id:'t1',module_key:'repasse',stage_id:'s2',stage_name:'Análise',client_name:'Ivo Costa',client_cpf:'11144477735',
@@ -256,7 +259,12 @@ function responder(url, metodo, corpo0) {
     let chave = '';
     try { chave = (JSON.parse(corpo0 || '{}') || {}).p_module_key || ''; } catch {}
     if (MODULOS_NEGADOS.includes(chave)) return false;
-    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL') return MODULOS_NOVOS.includes(chave);
+    // 'crm' (Leads) entra aqui junto com os outros dois: modulo novo nasce
+    // DESLIGADO para todo mundo, e o andaime tem de dizer a mesma coisa que o
+    // superadmin diz. Deixa-lo no ramo do "sim por padrao" faria a tela Geral
+    // desenhar Leads para os tres clientes reais e o teste aplaudir.
+    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL' || chave === 'crm')
+      return MODULOS_NOVOS.includes(chave);
     return true;
   }
   if (p.includes('/rpc/a1_pa_transicionar') || p.includes('/rpc/a1_co_transicionar'))
@@ -270,6 +278,34 @@ function responder(url, metodo, corpo0) {
   // caía no {ok:true} genérico lá embaixo, que não é `true`, e o dono do cliente
   // ficava sem NENHUM dashboard: o andaime é que mentia, não a tela.
   if (p.includes('/rpc/a1_perm')) return true;
+  // a1_resumo_geral conta DENTRO do banco e devolve so numeros. O falso monta o
+  // mesmo formato a partir das mesmas linhas que as outras telas leem — se o
+  // formato mudar de um lado so, a tela Geral passa a somar errado e nenhum
+  // outro teste percebe.
+  if (p.includes('/rpc/a1_resumo_geral')) {
+    const casos = {};
+    ['crm','repasse','registro'].forEach(mk => {
+      const etapas = D.stages.filter(s2 => s2.module_key === mk);
+      const linhas = D.cases.concat(COM_EXTRAS ? D.extras : [])
+        .filter(c => c.module_key === mk && c.archived !== true);
+      const porEtapa = etapas.map(e => ({
+        id:e.id, nome:e.name, cor:e.color, fim:!!e.is_final,
+        n: linhas.filter(c => c.stage_id === e.id).length }));
+      casos[mk] = { total: linhas.length,
+        aberto: porEtapa.filter(e => !e.fim).reduce((t,e) => t + e.n, 0),
+        etapas: porEtapa };
+    });
+    const monta = (linhas, sits, campo, selosFim) => {
+      const etapas = sits.filter(s2 => s2.ativo !== false).map(s2 => ({
+        id:s2.id, nome:s2.nome, cor:s2.cor, fim: selosFim.indexOf(s2.selo) >= 0,
+        n: linhas.filter(x => x[campo] === s2.id).length }));
+      return { total: linhas.length,
+        aberto: etapas.filter(e => !e.fim).reduce((t,e) => t + e.n, 0), etapas };
+    };
+    return { em:new Date().toISOString(), casos,
+      pre_analise: monta(D.pre_analises, D.pa_situacoes, 'situacao_id', ['FIM_POSITIVO','FIM_NEGATIVO']),
+      venda:       monta(D.comerciais, D.co_situacoes, 'situacao_id', ['VENDIDO','FIM_NEGATIVO']) };
+  }
   if (p.includes('/rpc/a1_manutencao_estado')) return MANUTENCAO;
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;

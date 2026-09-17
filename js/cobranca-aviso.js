@@ -76,7 +76,7 @@ const A1Cobranca = (() => {
     const st = document.createElement('style');
     st.id = 'a1-cob-css';
     st.textContent = `
-      .a1-cob{background:#DC2626;color:#fff;text-align:center;
+      .a1-cob{background:#B8433A;color:#fff;text-align:center;
         padding:.85rem 1.25rem;font-size:.87rem;font-weight:700;line-height:1.5;
         box-shadow:0 2px 10px rgba(220,38,38,.28);position:relative;z-index:400;
         /* Desce do topo: a faixa nasce recolhida e abre. Como ela ocupa espaço

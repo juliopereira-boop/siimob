@@ -7,18 +7,18 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"></noscript>
   <style>
     :root{
-      --bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--border2:#CBD5E1;
-      --t1:#0F172A;--t2:#475569;--t3:#94A3B8;--t4:#CBD5E1;
+      --bg:#F4F6F4;--card:#fff;--border:#E2E8E5;--border2:#C9D5D1;
+      --t1:#09201D;--t2:#47615C;--t3:#6B827D;--t4:#C9D5D1;
       --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
       --shadow-lg:0 8px 32px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.05);
-      --green:#3D5CC8;--green-dark:#1E3A8A;--radius:10px;
+      --green:#0E8C7F;--green-dark:#0B5049;--radius:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--t1);min-height:100vh;display:flex;font-size:14px;-webkit-font-smoothing:antialiased}
@@ -29,7 +29,7 @@
     /* ── Left panel ── */
     .left-panel{
       width:42%;min-width:320px;
-      background:linear-gradient(155deg,#0F172A 0%,#1e293b 60%,#0f2027 100%);
+      background:linear-gradient(155deg,#09201D 0%,#1e293b 60%,#0f2027 100%);
       display:flex;flex-direction:column;justify-content:space-between;
       padding:3rem 3rem;position:relative;overflow:hidden;
     }
@@ -44,14 +44,14 @@
       margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;
     }
     .left-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
-    .left-tagline{font-size:1.5rem;font-weight:700;color:#e2e8f0;line-height:1.35;margin-bottom:1.5rem}
+    .left-tagline{font-size:1.5rem;font-weight:700;color:#E2E8E5;line-height:1.35;margin-bottom:1.5rem}
     .left-tagline span{color:var(--green)}
     .left-sub{font-size:.82rem;color:#64748b;line-height:1.6;max-width:280px}
     .left-footer{position:relative;z-index:1;font-size:.7rem;color:#334155}
     .tenant-badge{
       display:inline-flex;align-items:center;gap:.4rem;
       background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;
-      padding:.3rem .875rem;font-size:.72rem;color:#94a3b8;font-weight:600;
+      padding:.3rem .875rem;font-size:.72rem;color:#6B827D;font-weight:600;
       margin-top:2rem;
     }
     .tenant-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -88,14 +88,14 @@
     .panel-card:hover .panel-card-arrow{transform:translateY(-50%) translateX(2px);color:var(--t2)}
 
     /* card accent colors */
-    .panel-card.gestor{border-color:#3D5CC830}
-    .panel-card.gestor:hover{border-color:#3D5CC8}
+    .panel-card.gestor{border-color:#0E8C7F30}
+    .panel-card.gestor:hover{border-color:#0E8C7F}
     .panel-card.gestor .panel-card-icon{background:#EEF2FF}
     .panel-card.cca{border-color:#3B82F630}
     .panel-card.cca:hover{border-color:#3B82F6}
     .panel-card.cca .panel-card-icon{background:#eff6ff}
-    .panel-card.corretor{border-color:#12B98130}
-    .panel-card.corretor:hover{border-color:#12B981}
+    .panel-card.corretor{border-color:#0E8C7F30}
+    .panel-card.corretor:hover{border-color:#0E8C7F}
     .panel-card.corretor .panel-card-icon{background:#ecfdf5}
     .panel-card.analista{border-color:#7C3AED30}
     .panel-card.analista:hover{border-color:#7C3AED}
@@ -116,7 +116,7 @@
       padding:.25rem .875rem;border-radius:99px;font-size:.72rem;font-weight:700;
       letter-spacing:.03em;text-transform:uppercase;margin-bottom:1rem;
     }
-    .role-badge.gestor{background:#EEF2FF;color:#1E3A8A;border:1px solid #A5B4FC}
+    .role-badge.gestor{background:#EEF2FF;color:#0B5049;border:1px solid #A5B4FC}
     .role-badge.cca{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
     .role-badge.corretor{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
     .role-badge.analista{background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe}
@@ -160,7 +160,7 @@
     .loading-panels{
       display:flex;flex-direction:column;gap:.875rem;
     }
-    .skel{height:72px;background:#e2e8f0;border-radius:14px;animation:pulse 1.2s ease-in-out infinite}
+    .skel{height:72px;background:#E2E8E5;border-radius:14px;animation:pulse 1.2s ease-in-out infinite}
     .skel-row{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
@@ -208,7 +208,7 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:2rem">
-        <a href="/" style="font-size:.73rem;color:var(--t3);transition:color .15s" onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94A3B8'">← Trocar empresa</a>
+        <a href="/" style="font-size:.73rem;color:var(--t3);transition:color .15s" onmouseover="this.style.color='#47615C'" onmouseout="this.style.color='#6B827D'">← Trocar empresa</a>
       </div>
     </div>
 
@@ -309,8 +309,8 @@ const PANELS_DEF = [
     sub: 'Acesso completo ao painel',
     module: null,
     loginType: 'user',
-    color: '#3D5CC8',
-    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#3D5CC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    color: '#0E8C7F',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
       <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -334,8 +334,8 @@ const PANELS_DEF = [
     sub: 'Acesso aos processos das suas etapas',
     module: null,
     loginType: 'partner',
-    color: '#12B981',
-    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#12B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    color: '#0E8C7F',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
     </svg>`,
   },
@@ -386,7 +386,7 @@ async function loadPanels() {
   const container = document.getElementById('panels-container');
 
   if (!visible.length) {
-    container.innerHTML = '<p style="color:#94a3b8;font-size:.83rem;text-align:center;padding:2rem 0">Nenhum painel disponível.</p>';
+    container.innerHTML = '<p style="color:#6B827D;font-size:.83rem;text-align:center;padding:2rem 0">Nenhum painel disponível.</p>';
     return;
   }
 
@@ -430,10 +430,15 @@ function backToPanels() {
 function redirectAfterLogin(user) {
   const role = user.role;
   const type = user.type;
+  // O despachante continua caindo direto no Registro: e o unico modulo dele, e
+  // passar pela tela Geral seria uma parada a mais para chegar no mesmo lugar.
   if (role === 'partner' && type === 'despachante') {
     window.location.href = `/${slug}/registro`;
   } else {
-    window.location.href = `/${slug}/repasse`;
+    // Todo o resto entra pela tela Geral, que mostra os modulos que a pessoa
+    // tem. Antes o sistema abria no dashboard do Repasse — e quem tinha cinco
+    // modulos entrava por um deles e tinha de adivinhar o resto.
+    window.location.href = `/${slug}/geral`;
   }
 }
 

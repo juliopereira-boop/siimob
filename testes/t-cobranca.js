@@ -154,7 +154,10 @@ const ultimoBilling = g => {
     c('tem animação de descida', await p.evaluate(() =>
       /a1CobDesce/.test(getComputedStyle(document.getElementById('a1-cobranca')).animationName)
       || getComputedStyle(document.getElementById('a1-cobranca')).animationName !== 'none'));
-    c('o cabeçalho continua funcionando', await p.locator('.hdr').isVisible());
+    // `.hdr` era o cabeçalho próprio de cada tela; hoje o casco vem de
+    // js/modulo-shell.js e a classe é `.sb-cromo`. O que a asserção quer dizer
+    // continua o mesmo: o aviso de cobrança não pode cobrir a navegação.
+    c('o cabeçalho continua funcionando', await p.locator('.sb-cromo').isVisible());
     c('a tela continua carregando os dados', (await p.locator('#kpi-total').textContent()).trim() !== '');
     c('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close(); }

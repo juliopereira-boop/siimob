@@ -7,15 +7,15 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#0B534E">
+  <meta name="theme-color" content="#04201D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
   <style>
     :root{
-      --bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--t1:#0F172A;--t2:#475569;--t3:#94A3B8;
-      --azul:#3D5CC8;--azul-esc:#1E3A8A;--verde:#12B981;--amb:#b45309;--verm:#dc2626;
+      --bg:#F4F6F4;--card:#fff;--border:#E2E8E5;--t1:#09201D;--t2:#47615C;--t3:#6B827D;
+      --azul:#0E8C7F;--azul-esc:#0B5049;--verde:#0E8C7F;--amb:#9A6008;--verm:#B8433A;
       --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -69,7 +69,7 @@
     .m-cria{background:#ecfdf5;color:#047857}
     .m-alerta{background:#fff7ed;color:#9a3412}
     .m-erro{background:#fef2f2;color:#b91c1c}
-    .m-neutro{background:#f1f5f9;color:#475569}
+    .m-neutro{background:#f1f5f9;color:#47615C}
 
     .aviso{border-radius:8px;padding:.7rem .85rem;font-size:.8rem;line-height:1.55;margin-bottom:.85rem}
     .a-alerta{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
@@ -82,9 +82,9 @@
                  letter-spacing:.06em;color:var(--t3);margin-bottom:.25rem}
     .campo select{width:100%}
 
-    .barra{height:8px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin:.6rem 0}
+    .barra{height:8px;background:#E2E8E5;border-radius:99px;overflow:hidden;margin:.6rem 0}
     .barra > div{height:100%;background:var(--azul);width:0;transition:width .2s}
-    .reg{max-height:280px;overflow:auto;font-size:.75rem;background:#0F172A;color:#cbd5e1;
+    .reg{max-height:280px;overflow:auto;font-size:.75rem;background:#09201D;color:#C9D5D1;
          border-radius:8px;padding:.75rem;line-height:1.6}
     .reg .ok{color:#6ee7b7} .reg .er{color:#fca5a5} .reg .av{color:#fcd34d}
     .spinner{width:22px;height:22px;border:2.5px solid var(--border);border-top-color:var(--azul);
@@ -105,7 +105,7 @@
     <div class="painel">
       <div class="titulo"><span class="n">1</span> Arquivo</div>
       <div class="zona" id="zona" onclick="document.getElementById('arq').click()">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6B827D" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
         <h3>Escolha a planilha ou arraste até aqui</h3>
         <div class="sub">Aceita .xlsx e .csv. O arquivo é lido dentro do seu navegador — nada é enviado antes de você conferir.</div>
       </div>

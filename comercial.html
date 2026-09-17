@@ -7,14 +7,14 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#0B534E">
+<meta name="theme-color" content="#04201D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
 <style>
   :root{
-    --bg:#F8FAFC;--card:#fff;--border:#e2e6ef;--t1:#0f1520;--t2:#4a5568;--t3:#8896a7;--t4:#b8c4d0;
-    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#3D5CC8;
+    --bg:#F4F6F4;--card:#fff;--border:#E2E8E5;--t1:#09201D;--t2:#47615C;--t3:#6B827D;--t4:#C9D5D1;
+    --blue:#3F6F9E;--green:#0E8C7F;--amber:#C87E12;--red:#B8433A;--violet:#0E8C7F;
     --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);--shadow-lg:0 8px 32px rgba(0,0,0,.1),0 24px 64px rgba(0,0,0,.07);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -78,7 +78,7 @@
      chega dita: qual permissão falta e onde pedi-la. */
   .co-card.arrastavel{cursor:grab}
   .co-card.arrastando{opacity:.45;cursor:grabbing}
-  .k-col-body.sobre{background:#e2e8f0;outline:2px dashed var(--violet);outline-offset:-3px}
+  .k-col-body.sobre{background:#E2E8E5;outline:2px dashed var(--violet);outline-offset:-3px}
   .co-name{font-weight:700;font-size:.82rem;margin-bottom:.15rem}
   .co-line{font-size:.71rem;color:var(--t2);margin-bottom:.1rem}
   .card-doc{display:inline-flex;align-items:center;gap:.28rem;margin:.04rem 0 .3rem;padding:0;border:0;background:transparent;color:var(--violet);font:600 .68rem 'DM Mono',monospace;cursor:pointer}
@@ -139,7 +139,7 @@
 
   #toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:.5rem;z-index:900}
   .toast{padding:.65rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;color:#fff;box-shadow:var(--shadow-lg);max-width:360px}
-  .toast-success{background:#16a34a}.toast-error{background:#dc2626}.toast-info{background:#334155}
+  .toast-success{background:#0E8C7F}.toast-error{background:#B8433A}.toast-info{background:#334155}
   @media(max-width:720px){ .fgrid{grid-template-columns:1fr} .main{padding:1rem .8rem} }
 </style>
 </head>
@@ -307,9 +307,9 @@ function semAcessoAoModulo(){
   const main = document.querySelector('.main') || document.body;
   main.innerHTML =
     '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;'
-    + 'border:1px solid #E2E8F0;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
+    + 'border:1px solid #E2E8E5;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
     + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Venda</div>'
-    + '<div style="font-size:.85rem;color:#475569;line-height:1.55">O seu cadastro não tem a '
+    + '<div style="font-size:.85rem;color:#47615C;line-height:1.55">O seu cadastro não tem a '
     + 'permissão <b>Ver negócios</b>. Peça ao gestor em Configurações (ou no perfil de '
     + 'acesso vinculado a você).</div></div>';
 }
@@ -457,12 +457,16 @@ async function carregarTitulares(){
   G.titulares = {};
   const preIds = [...new Set(G.lista.map(c => c.pre_analise_id).filter(Boolean))];
   if (!preIds.length) return;
-  const partesResp = await A1.buscarTudo(`${A1.rest('a1_pa_participantes')}?pre_analise_id=in.(${preIds.join(',')})&papel=eq.TITULAR&select=pre_analise_id,pessoa_id`);
-  const partes = Array.isArray(partesResp && partesResp.linhas) ? partesResp.linhas : [];
+  // Mesma armadilha da Pré-análise: in.(todos os ids) passa de 16 KB de URL por
+  // volta de 450 negócios e vira 414 dentro de um catch — o titular sumia de
+  // toda linha sem ninguém ver erro. buscarPorIds quebra em lotes.
+  const partes = await A1.buscarPorIds(
+    `${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&select=pre_analise_id,pessoa_id`,
+    'pre_analise_id', preIds);
   const pessoaIds = [...new Set(partes.map(p => p.pessoa_id).filter(Boolean))];
   if (!pessoaIds.length) return;
-  const pessoasResp = await A1.buscarTudo(`${A1.rest('a1_pa_pessoas')}?id=in.(${pessoaIds.join(',')})&select=id,nome,documento`);
-  const pessoas = Array.isArray(pessoasResp && pessoasResp.linhas) ? pessoasResp.linhas : [];
+  const pessoas = await A1.buscarPorIds(
+    `${A1.rest('a1_pa_pessoas')}?select=id,nome,documento`, 'id', pessoaIds);
   const porPessoa = Object.fromEntries(pessoas.map(p => [p.id, p]));
   const porPre = Object.fromEntries(partes.map(p => [p.pre_analise_id, porPessoa[p.pessoa_id]]).filter(([, p]) => !!p));
   G.lista.forEach(c => { if (porPre[c.pre_analise_id]) G.titulares[c.id] = porPre[c.pre_analise_id]; });

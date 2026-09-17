@@ -57,7 +57,7 @@ function servidor(linhas, opc = {}) {
     if (m) {
       if (opc.recusaChave) {
         estado.usouChave++;
-        return { ok: false, status: 400, headers: { get: () => null }, json: async () => ({}) };
+        return { ok: false, status: 400, headers: { get: () => null }, json: async () => ({}), text: async () => '' };
       }
       estado.usouChave++;
       // "created_at.lt.X,and(created_at.eq.X,id.lt.Y)" — a mesma condição que o
@@ -183,11 +183,51 @@ function gerar(n, empates = 0) {
     // é falha de leitura e tem de ser dito — é o aviso que apareceu para a
     // Raissa, e ele não pode ser engolido pela nova lógica.
     const A1 = carregarA1(async () => ({
-      ok: false, status: 500, headers: { get: () => null }, json: async () => ({})
+      ok: false, status: 500, headers: { get: () => null }, json: async () => ({}), text: async () => ''
     }));
     const r = await A1.buscarTudo(URL_ORD);
     checa('a leitura se declara incompleta', r.completo === false);
     checa('e diz qual foi o status', r.erro === 'HTTP 500', String(r.erro));
+  }
+
+  console.log('\n== LER POR LISTA DE IDS SEM ESTOURAR A URL ==');
+  {
+    // O defeito que isto guarda: `?id=in.(a,b,c...)` com todos os ids da tela.
+    // Um uuid custa 37 bytes com a vírgula, então a ~450 ids a URL passa de
+    // 16 KB e o servidor devolve 414 — dentro de um `.catch(() => [])`. A tela
+    // não quebrava: passava a mostrar "Titular não informado" em TODA linha, o
+    // que é um dado sumindo em silêncio.
+    const uuid = i => `${String(i).padStart(8,'0')}-aaaa-bbbb-cccc-dddddddddddd`;
+    const ids = Array.from({ length: 900 }, (_, i) => uuid(i));
+    const linhas = ids.map((id, i) => ({ id, nome: 'P' + i }));
+
+    const pedidos = [];
+    const fetchFalso = async (url) => {
+      pedidos.push(String(url));
+      const m = /in\.\(([^)]*)\)/.exec(String(url));
+      const pedidos_ids = m ? m[1].split(',') : [];
+      const corpo = linhas.filter(l => pedidos_ids.includes(l.id));
+      return { ok:true, status:200, text: async () => JSON.stringify(corpo),
+        headers:{ get:(k) => k.toLowerCase() === 'content-range'
+          ? `0-${Math.max(0, corpo.length - 1)}/${corpo.length}` : null },
+        json: async () => corpo };
+    };
+    const A1 = carregarA1(fetchFalso);
+    const r = await A1.buscarPorIds('https://x.supabase.co/rest/v1/a1_pa_pessoas?select=id,nome', 'id', ids);
+
+    checa('trouxe TODAS as linhas, não só o primeiro lote', r.length === 900, 'vieram ' + r.length);
+    checa('sem repetir nenhuma', new Set(r.map(x => x.id)).size === 900);
+    // A prova que importa: nenhuma URL pode chegar perto do teto do servidor.
+    const maior = Math.max(...pedidos.map(u => u.length));
+    checa('e nenhuma URL passou de 8 KB', maior < 8000, 'a maior teve ' + maior + ' bytes');
+    checa('foi preciso mais de uma ida', pedidos.length > 1, pedidos.length + ' pedido(s)');
+
+    // Id repetido não vira consulta repetida, e lista vazia não vira consulta.
+    const r2 = await A1.buscarPorIds('https://x.supabase.co/rest/v1/a1_pa_pessoas', 'id', [uuid(1), uuid(1)]);
+    checa('id repetido é pedido uma vez só', r2.length === 1, 'vieram ' + r2.length);
+    const antes = pedidos.length;
+    const r3 = await A1.buscarPorIds('https://x.supabase.co/rest/v1/a1_pa_pessoas', 'id', []);
+    checa('lista vazia não vai ao servidor', r3.length === 0 && pedidos.length === antes);
   }
 
   process.exit(resumo([]) ? 1 : 0);

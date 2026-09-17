@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geral — SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/css/siimob.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sb-ui);background:var(--sb-vellum);color:var(--sb-tinta);font-size:14px;-webkit-font-smoothing:antialiased}
+  input,button,select,textarea{font-family:inherit}
+  a{text-decoration:none;color:inherit}
+
+  /* ── As barras do pipeline por módulo ────────────────────────────────────
+     Uma linha por módulo licenciado. Cada faixa é uma etapa da esteira DAQUELE
+     cliente, na cor que ele cadastrou, com largura proporcional. É o mapa de
+     onde o trabalho está parado — e cabe num olhar, que é o ponto. */
+  .trilho{display:block;padding:.7rem 0;border-bottom:1px solid var(--sb-linha)}
+  .trilho:last-child{border-bottom:none}
+  .trilho-cab{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.45rem}
+  .trilho-nome{font-size:.8rem;font-weight:700;color:var(--sb-tinta)}
+  .trilho-n{font-family:var(--sb-mono);font-size:.72rem;color:var(--sb-tinta3);margin-left:auto}
+  .trilho-barra{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--sb-vellum);gap:1px}
+  .trilho-faixa{min-width:3px;transition:flex-grow .25s ease}
+  .trilho-leg{display:flex;flex-wrap:wrap;gap:.3rem .75rem;margin-top:.42rem}
+  .trilho-item{display:flex;align-items:center;gap:.3rem;font-size:.685rem;color:var(--sb-tinta3)}
+  .trilho-pt{width:7px;height:7px;border-radius:2px;flex:none}
+  .trilho-item b{color:var(--sb-tinta2);font-family:var(--sb-mono);font-weight:500}
+  a.trilho:hover .trilho-nome{color:var(--sb-mar-texto)}
+
+  /* ── A fila do dia ─────────────────────────────────────────────────────── */
+  .fila-linha{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;border-bottom:1px solid var(--sb-linha)}
+  .fila-linha:last-child{border-bottom:none}
+  .fila-linha:hover{background:var(--sb-vellum)}
+  .fila-tit{font-size:.79rem;font-weight:600;color:var(--sb-tinta);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fila-sub{font-size:.68rem;color:var(--sb-tinta3);margin-top:.1rem}
+  .fila-dir{margin-left:auto;flex:none;text-align:right}
+
+  /* ── Agenda ────────────────────────────────────────────────────────────── */
+  .cal-topo{display:flex;align-items:center;justify-content:space-between;padding:0 .2rem .6rem}
+  .cal-mes{font-size:.78rem;font-weight:700;color:var(--sb-tinta)}
+  .cal-nav{display:flex;gap:.2rem}
+  .cal-bt{width:26px;height:26px;border-radius:7px;border:1px solid var(--sb-linha);background:var(--sb-papel);color:var(--sb-tinta2);cursor:pointer;font-size:.8rem;line-height:1}
+  .cal-bt:hover{background:var(--sb-vellum)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal-dw{text-align:center;font-size:.62rem;font-weight:700;color:var(--sb-tinta3);padding:.25rem 0}
+  .cal-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.73rem;color:var(--sb-tinta2);font-variant-numeric:tabular-nums}
+  .cal-d.fora{color:var(--sb-linha-forte)}
+  .cal-d.tem{font-weight:700;color:var(--sb-tinta);cursor:pointer}
+  .cal-d.tem:hover{background:var(--sb-vellum)}
+  .cal-d.hoje{background:var(--sb-mar);color:#fff;font-weight:800}
+  .cal-pt{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+  .cal-pt i{width:4px;height:4px;border-radius:99px;display:block}
+  .cal-d.hoje .cal-pt i{background:#fff !important}
+
+  .sb-esq{display:inline-block;height:1em;min-width:2.4em;border-radius:5px;
+    background:linear-gradient(90deg,var(--sb-vellum) 25%,#EDF1EF 50%,var(--sb-vellum) 75%);
+    background-size:200% 100%;animation:sb-onda 1.3s ease infinite;vertical-align:-.15em}
+  @keyframes sb-onda{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<div id="sb-casco"></div>
+
+<main class="sb-pagina" id="conteudo">
+  <div id="hero"></div>
+  <div id="kpis"></div>
+  <div class="sb-grade sb-grade-3" id="blocos"></div>
+</main>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/modulo-shell.js"></script>
+<script src="/js/avisos.js"></script>
+<script src="/js/cobranca-aviso.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   GERAL — a tela inicial do SIIMOB
+
+   POR QUE ESTA TELA EXISTE
+   O sistema abria no dashboard do Repasse. Quem tem cinco módulos entrava por
+   um deles e tinha de adivinhar o resto. Aqui é o lugar onde se vê o todo: onde
+   o trabalho está parado, o que vence, e o que está marcado no mês.
+
+   A REGRA DE ESCALA DESTA TELA
+   Ela NÃO baixa processo. Os números vêm de a1_resumo_geral(), que conta dentro
+   do Postgres e devolve alguns quilobytes. As duas listas que mostram linha de
+   verdade — a fila do dia e a agenda — pedem no máximo 10 registros e só do
+   mês corrente. Por isso a tela custa o mesmo com 235 ou com 40.000 processos,
+   e é essa a diferença entre crescer e travar.
+
+   E se a função ainda não tiver sido criada no banco, a tela não quebra: ela
+   cai para a contagem por cabeçalho (`count=exact` com `Range: 0-0`), que
+   também não traz linha nenhuma — só perde o detalhe por etapa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const G = { user:null, slug:null, modulos:{}, resumo:null, mes:null, ano:null, agenda:[] };
+
+// Os módulos da tela Geral, na ordem do processo. `casos:true` marca os que
+// moram em a1_cases separados por module_key — Leads, Repasse e Registro
+// compartilham a mesma engrenagem genérica; Pré-análise e Venda têm a sua.
+const MODS = [
+  { chave:'crm',         rotulo:'Leads',       rota:'crm',        casos:'crm' },
+  { chave:'PRE_ANALISE', rotulo:'Pré-análise', rota:'pre-analise' },
+  { chave:'COMERCIAL',   rotulo:'Venda',       rota:'comercial' },
+  { chave:'repasse',     rotulo:'Repasse',     rota:'andamento',  casos:'repasse' },
+  { chave:'registro',    rotulo:'Registro',    rota:'registro',   casos:'registro' }
+];
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+const n0 = n => Number(n || 0).toLocaleString('pt-BR');
+
+// evaluation_expiry as vezes chega como 'AAAA-MM-DD' e as vezes como carimbo
+// completo. Somar 'T12:00:00' no segundo caso produz data invalida, e o prazo
+// virava "em NaNd" na tela. Normaliza uma vez, aqui, e o resto do arquivo lê
+// sempre dez caracteres.
+const soData = v => String(v || '').slice(0, 10);
+const hojeISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const diasAte = iso => Math.round(
+  (new Date(soData(iso) + 'T12:00:00') - new Date(hojeISO() + 'T12:00:00')) / 864e5);
+
+/* ── Partida ──────────────────────────────────────────────────────────────── */
+
+async function init(){
+  if (!await a1RequireAuth()) return;
+  G.user = A1.user; G.slug = A1.slug;
+  const hoje = new Date(); G.mes = hoje.getMonth(); G.ano = hoje.getFullYear();
+
+  // O casco primeiro: a pessoa vê o sistema montado enquanto os números chegam.
+  G.modulos = await a1MontarShell(document.getElementById('sb-casco'), { ativo:'geral' });
+
+  // QUEM NÃO PODE VER PAINEL NENHUM NÃO PARA AQUI.
+  // O login manda todo mundo para cá, e a tela Geral É um painel: deixar um
+  // corretor sem `ver_dashboard_*` parado nela seria contornar a permissão pela
+  // porta da frente. Os números que ele veria são os DELE — a1_resumo_geral()
+  // é invoker e passa pelo RLS —, mas a regra do dono não é sobre vazamento, é
+  // sobre o que cada papel deve ter na cara ao entrar. Vai para o quadro do
+  // primeiro módulo que ele tem; só se não tiver nenhum é que fica, e aí a tela
+  // diz o que falta em vez de mandá-lo para lugar nenhum.
+  const _dash = await a1DashboardsDoCliente().catch(() => null);
+  if (_dash && !a1PodeVerAlgumDashboard(G.user, _dash)) {
+    const destino = MODS.find(m => G.modulos[m.chave] === true);
+    if (destino) { location.replace(`/${G.slug}/${destino.rota}`); return; }
+  }
+
+  a1Hero(document.getElementById('hero'), {});
+  desenharEsqueleto();
+
+  await Promise.all([carregarResumo(), carregarFila(), carregarAgenda()]);
+
+  a1Hero(document.getElementById('hero'), { hoje: linhaDoDia() });
+  desenhar();
+
+  if (typeof a1AvisosIniciar === 'function') a1AvisosIniciar();
+  if (typeof a1CobrancaAviso === 'function') a1CobrancaAviso();
+}
+
+/* ── Os números ───────────────────────────────────────────────────────────── */
+
+async function carregarResumo(){
+  try {
+    const r = await fetch(A1.rpc('a1_resumo_geral'), { method:'POST', headers:A1.headers(), body:'{}' });
+    if (r.ok){
+      const j = await r.json();
+      // 200 nao basta. Se a funcao nao existe, o PostgREST devolve 404 — mas um
+      // proxy no meio pode devolver 200 com lista vazia, e aceitar isso zeraria
+      // a tela inteira sem dizer por que. O que vale e a FORMA da resposta.
+      if (j && typeof j === 'object' && !Array.isArray(j) && ('casos' in j)){ G.resumo = j; return; }
+    }
+  } catch { /* cai para a contagem por cabeçalho, logo abaixo */ }
+  G.resumo = await resumoPorCabecalho();
+}
+
+// A reserva, para enquanto o SQL não tiver sido rodado. Pede zero linha: manda
+// `Range: 0-0` e lê o total do cabeçalho content-range. Perde o detalhe por
+// etapa — a barra some, o total continua.
+async function resumoPorCabecalho(){
+  const conta = async url => {
+    try {
+      const r = await fetch(url, { headers:{ ...A1.headers(), Range:'0-0', Prefer:'count=exact' } });
+      const cr = r.headers.get('content-range') || '';
+      const t = cr.split('/')[1];
+      return t && t !== '*' ? Number(t) : 0;
+    } catch { return 0; }
+  };
+  const [crm, rep, reg, pa, co] = await Promise.all([
+    conta(`${A1.rest('a1_cases')}?module_key=eq.crm&archived=eq.false&select=id`),
+    conta(`${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false&select=id`),
+    conta(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&select=id`),
+    conta(`${A1.rest('a1_pre_analises')}?select=id`),
+    conta(`${A1.rest('a1_comerciais')}?select=id`)
+  ]);
+  const so = n => ({ total:n, aberto:n, etapas:[] });
+  return { parcial:true, casos:{ crm:so(crm), repasse:so(rep), registro:so(reg) },
+           pre_analise:so(pa), venda:so(co) };
+}
+
+function dadosDe(m){
+  const r = G.resumo || {};
+  if (m.casos) return (r.casos || {})[m.casos] || { total:0, aberto:0, etapas:[] };
+  if (m.chave === 'PRE_ANALISE') return r.pre_analise || { total:0, aberto:0, etapas:[] };
+  if (m.chave === 'COMERCIAL')   return r.venda       || { total:0, aberto:0, etapas:[] };
+  return { total:0, aberto:0, etapas:[] };
+}
+const licenciados = () => MODS.filter(m => G.modulos[m.chave] === true);
+
+/* ── A fila do dia: o que vence, e o que já venceu ────────────────────────── */
+// Só o Repasse guarda data de vencimento de avaliação, e é ela que aperta o
+// prazo com a Caixa. Pede no máximo 10 e ordena pela data — não existe caso em
+// que alguém precise ver a décima primeira linha nesta tela.
+
+async function carregarFila(){
+  if (G.modulos.repasse !== true){ G.fila = []; return; }
+  const d14 = new Date(Date.now() + 14*864e5);
+  const lim = `${d14.getFullYear()}-${String(d14.getMonth()+1).padStart(2,'0')}-${String(d14.getDate()).padStart(2,'0')}`;
+  try {
+    const r = await fetch(
+      `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false` +
+      `&evaluation_expiry=not.is.null&evaluation_expiry=lte.${lim}` +
+      `&select=id,client_name,stage_name,evaluation_expiry,development,unit` +
+      `&order=evaluation_expiry.asc&limit=10`, { headers:A1.headers() });
+    G.fila = r.ok ? await r.json() : [];
+  } catch { G.fila = []; }
+}
+
+/* ── Agenda: só o mês que está na tela ────────────────────────────────────── */
+
+async function carregarAgenda(){
+  if (G.modulos.repasse !== true){ G.agenda = []; return; }
+  const pad = n => String(n).padStart(2,'0');
+  const de  = `${G.ano}-${pad(G.mes+1)}-01`;
+  const ate = `${G.ano}-${pad(G.mes+1)}-${pad(new Date(G.ano, G.mes + 1, 0).getDate())}`;
+  try {
+    const r = await fetch(
+      `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false` +
+      `&evaluation_expiry=gte.${de}&evaluation_expiry=lte.${ate}` +
+      `&select=id,client_name,evaluation_expiry&order=evaluation_expiry.asc&limit=400`,
+      { headers:A1.headers() });
+    G.agenda = r.ok ? await r.json() : [];
+  } catch { G.agenda = []; }
+}
+
+async function mudarMes(d){
+  G.mes += d;
+  if (G.mes < 0){ G.mes = 11; G.ano--; }
+  if (G.mes > 11){ G.mes = 0; G.ano++; }
+  document.getElementById('cal-corpo').innerHTML = '<div class="sb-vazio"><p>Carregando…</p></div>';
+  await carregarAgenda();
+  desenharAgenda();
+}
+
+/* ── A linha do dia, que vai no cartão de saudação ────────────────────────── */
+
+function linhaDoDia(){
+  const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
+  if (!fila.length) return [];
+  const hoje = hojeISO();
+  const venceHoje = fila.filter(c => soData(c.evaluation_expiry) === hoje).length;
+  const vencidos  = fila.filter(c => soData(c.evaluation_expiry) < hoje).length;
+  const out = [];
+  if (vencidos)  out.push({ n:vencidos,  rotulo:vencidos === 1 ? 'avaliação vencida' : 'avaliações vencidas', tom:'atraso' });
+  if (venceHoje) out.push({ n:venceHoje, rotulo:venceHoje === 1 ? 'vence hoje' : 'vencem hoje', tom:'alerta' });
+  if (!out.length) out.push({ n:fila.length,
+    rotulo:fila.length === 1 ? 'avaliação nos próximos 14 dias' : 'avaliações nos próximos 14 dias' });
+  return out;
+}
+
+/* ── Desenho ──────────────────────────────────────────────────────────────── */
+
+function desenharEsqueleto(){
+  document.getElementById('kpis').innerHTML =
+    `<div class="sb-kpis">${[0,1,2,3].map(() =>
+      `<div class="sb-kpi"><div class="sb-kpi-valor"><span class="sb-esq"></span></div>
+       <div class="sb-kpi-rot"><span class="sb-esq" style="min-width:6em"></span></div></div>`).join('')}</div>`;
+}
+
+function desenhar(){
+  desenharKpis();
+  desenharBlocos();
+}
+
+function desenharKpis(){
+  const mods = licenciados();
+  if (!mods.length){
+    document.getElementById('kpis').innerHTML = `<div class="sb-card" style="margin-top:.9rem">
+      <div class="sb-card-corpo">${a1Vazio('Nenhum módulo liberado para esta empresa ainda. Quem libera é o suporte do SIIMOB.')}</div></div>`;
+    return;
+  }
+  // Um cartão por módulo: o número é o que está EM ABERTO, porque é o que exige
+  // trabalho. O total fica no rodapé — ele conta história, não pauta o dia.
+  const kpis = mods.map(m => {
+    const d = dadosDe(m);
+    const fechados = Math.max(0, (d.total || 0) - (d.aberto || 0));
+    return {
+      valor: n0(d.aberto), rotulo: m.rotulo,
+      sub: !d.total ? 'nenhum processo ainda'
+        : (G.resumo && G.resumo.parcial) ? `${n0(d.total)} no total`
+        : `${n0(d.total)} no total · ${n0(fechados)} ${fechados === 1 ? 'encerrado' : 'encerrados'}`,
+      href: `/${G.slug}/${m.rota}`,
+      tom: 'marca',
+      titulo: `Processos em aberto no módulo ${m.rotulo}. Clique para abrir o quadro.`
+    };
+  });
+  document.getElementById('kpis').innerHTML = a1Kpis(kpis);
+}
+
+function desenharBlocos(){
+  const blocos = [];
+
+  // 1. Onde o trabalho está
+  blocos.push(a1Card({
+    titulo:'Onde o trabalho está',
+    sub: G.resumo && G.resumo.parcial
+      ? 'O detalhe por etapa aparece depois que o resumo for criado no banco'
+      : 'Processos em aberto por etapa, em cada módulo',
+    corpo: desenharTrilhos()
+  }));
+
+  // 2. A fila do dia
+  blocos.push(a1Card({
+    titulo:'Avaliações a vencer',
+    sub:'Próximos 14 dias, do prazo mais curto para o mais longo',
+    justo:true,
+    corpo: desenharFila()
+  }));
+
+  // 3. Agenda
+  blocos.push(a1Card({
+    titulo:'Agenda do mês',
+    sub:'Dias com avaliação vencendo',
+    acao:`<div class="cal-nav">
+      <button class="cal-bt" onclick="mudarMes(-1)" aria-label="Mês anterior">‹</button>
+      <button class="cal-bt" onclick="mudarMes(1)" aria-label="Próximo mês">›</button></div>`,
+    corpo:`<div id="cal-corpo"></div>`
+  }));
+
+  document.getElementById('blocos').innerHTML = blocos.join('');
+  desenharAgenda();
+}
+
+function desenharTrilhos(){
+  const mods = licenciados();
+  if (!mods.length) return a1Vazio('Nenhum módulo liberado.');
+  const linhas = mods.map(m => {
+    const d = dadosDe(m);
+    const abertas = (d.etapas || []).filter(e => !e.fim && e.n > 0);
+    const total = abertas.reduce((s,e) => s + e.n, 0);
+    const href = `/${G.slug}/${m.rota}`;
+    if (!total){
+      return `<a class="trilho" href="${esc(href)}">
+        <div class="trilho-cab"><span class="trilho-nome">${esc(m.rotulo)}</span>
+          <span class="trilho-n">${d.total ? n0(d.total) + ' encerrados' : 'sem processo'}</span></div>
+        <div class="trilho-barra"><span class="trilho-faixa" style="flex:1;background:var(--sb-linha)"></span></div></a>`;
+    }
+    const faixas = abertas.map(e =>
+      `<span class="trilho-faixa" style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
+             title="${esc(e.nome)}: ${n0(e.n)}"></span>`).join('');
+    // A legenda mostra as cinco maiores. Listar quinze etapas transforma o
+    // cartão numa tabela, e tabela é a outra tela.
+    const top = abertas.slice().sort((a,b) => b.n - a.n).slice(0,5);
+    const leg = top.map(e =>
+      `<span class="trilho-item"><i class="trilho-pt" style="background:${esc(e.cor || '#0E8C7F')}"></i>
+        ${esc(e.nome)} <b>${n0(e.n)}</b></span>`).join('');
+    const resto = abertas.length - top.length;
+    return `<a class="trilho" href="${esc(href)}">
+      <div class="trilho-cab"><span class="trilho-nome">${esc(m.rotulo)}</span>
+        <span class="trilho-n">${n0(total)} em aberto</span></div>
+      <div class="trilho-barra">${faixas}</div>
+      <div class="trilho-leg">${leg}${resto > 0
+        ? `<span class="trilho-item">+${resto} etapa(s)</span>` : ''}</div></a>`;
+  });
+  return linhas.join('');
+}
+
+function desenharFila(){
+  const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
+  if (G.modulos.repasse !== true)
+    return a1Vazio('Esta lista vem do Repasse, que não está liberado para esta empresa.');
+  if (!fila.length)
+    return a1Vazio('Nenhuma avaliação vence nos próximos 14 dias. Quando uma entrar no prazo, ela aparece aqui.');
+  return fila.map(c => {
+    const dias = diasAte(c.evaluation_expiry);
+    const tom = dias < 0 ? 'atraso' : dias <= 3 ? 'atento' : 'info';
+    const quando = dias < 0 ? `vencida há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`;
+    const onde = [c.development, c.unit].filter(Boolean).join(' · ');
+    return `<a class="fila-linha" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(c.id)}">
+      <div style="min-width:0">
+        <div class="fila-tit">${esc(c.client_name || 'Sem nome')}</div>
+        <div class="fila-sub">${esc(c.stage_name || '—')}${onde ? ' · ' + esc(onde) : ''}</div>
+      </div>
+      <div class="fila-dir"><span class="sb-selo" data-tom="${tom}">${esc(quando)}</span></div></a>`;
+  }).join('');
+}
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_S = ['D','S','T','Q','Q','S','S'];
+
+function desenharAgenda(){
+  const el = document.getElementById('cal-corpo');
+  if (!el) return;
+  if (G.modulos.repasse !== true){
+    el.innerHTML = a1Vazio('A agenda mostra prazos do Repasse, que não está liberado.');
+    return;
+  }
+  const porDia = {};
+  (G.agenda || []).forEach(c => {
+    const d = soData(c.evaluation_expiry);
+    if (d.length !== 10) return;
+    const dia = Number(d.slice(8,10));
+    if (!dia) return;
+    (porDia[dia] || (porDia[dia] = [])).push(c);
+  });
+
+  const hoje = new Date();
+  const ehMesAtual = hoje.getMonth() === G.mes && hoje.getFullYear() === G.ano;
+  const primeiro = new Date(G.ano, G.mes, 1).getDay();
+  const nDias = new Date(G.ano, G.mes + 1, 0).getDate();
+  const nAnt = new Date(G.ano, G.mes, 0).getDate();
+
+  const nAgenda = Object.values(porDia).reduce((t, l) => t + l.length, 0);
+  const celulas = [];
+  for (let i = primeiro - 1; i >= 0; i--)
+    celulas.push(`<div class="cal-d fora">${nAnt - i}</div>`);
+  for (let d = 1; d <= nDias; d++){
+    const lista = porDia[d] || [];
+    const eHoje = ehMesAtual && hoje.getDate() === d;
+    const cls = ['cal-d', lista.length ? 'tem' : '', eHoje ? 'hoje' : ''].filter(Boolean).join(' ');
+    const pts = lista.length
+      ? `<span class="cal-pt">${lista.slice(0,3).map(() =>
+          `<i style="background:var(--sb-acafrao)"></i>`).join('')}</span>` : '';
+    const tit = lista.length
+      ? ` title="${esc(lista.length + ' avaliação(ões) vencendo: ' + lista.slice(0,4).map(c => c.client_name).join(', '))}"` : '';
+    celulas.push(`<div class="${cls}"${tit}>${d}${pts}</div>`);
+  }
+  const sobra = (7 - (celulas.length % 7)) % 7;
+  for (let i = 1; i <= sobra; i++) celulas.push(`<div class="cal-d fora">${i}</div>`);
+
+  el.innerHTML = `
+    <div class="cal-topo"><span class="cal-mes">${MESES[G.mes]} de ${G.ano}</span></div>
+    <div class="cal">
+      ${DIAS_S.map(d => `<div class="cal-dw">${d}</div>`).join('')}
+      ${celulas.join('')}
+    </div>
+    ${nAgenda
+      ? `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">${n0(nAgenda)} ${nAgenda === 1 ? 'avaliação vence' : 'avaliações vencem'} neste mês</div>`
+      : `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">Nenhum prazo neste mês</div>`}`;
+}
+
+init();
+</script>
+</body>
+</html>
