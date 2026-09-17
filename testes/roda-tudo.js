@@ -17,11 +17,35 @@ const TIPOS = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; char
   '.css':'text/css', '.json':'application/json', '.svg':'image/svg+xml',
   '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon', '.txt':'text/plain; charset=utf-8' };
 
+// AS ROTAS DE PRODUÇÃO VALEM AQUI TAMBÉM.
+// O servidor de teste servia arquivo cru: `/repasse.html` funcionava,
+// `/thecred/repasse` dava 404. Só que em produção é SEMPRE a segunda forma — e
+// o apelido do cliente é lido do próprio caminho (getSlugFromURL). Sem a
+// reescrita, nenhum teste exercitava esse caminho, e um defeito ali passaria
+// pela suíte inteira sem ninguém ver.
+//
+// As regras saem de vercel.json, o mesmo arquivo que a Vercel lê. Duas
+// leituras do MESMO arquivo não são duas verdades; duas LISTAS seriam.
+const REGRAS = (() => {
+  try {
+    const conf = JSON.parse(fs.readFileSync(path.join(RAIZ, 'vercel.json'), 'utf8'));
+    return (conf.rewrites || []).map(r => ({
+      re: new RegExp('^' + r.source
+            .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+            .replace(/:\w+/g, '[^/]+')
+            .replace(/\*/g, '.*') + '/?$'),
+      destino: r.destination
+    }));
+  } catch { return []; }
+})();
+
 // Servidor mínimo em Node: um a menos entre "rodar o teste" e "ter python".
 function servir() {
   return new Promise((ok, erro) => {
     const s = http.createServer((req, res) => {
-      const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
+      const caminho = decodeURIComponent(req.url.split('?')[0]);
+      const regra = REGRAS.find(r => r.re.test(caminho));
+      const rel = (regra ? regra.destino : caminho).replace(/^\/+/, '');
       const alvo = path.resolve(RAIZ, rel || 'index.html');
       if (!alvo.startsWith(RAIZ)) { res.writeHead(403).end(); return; }   // nada fora da pasta
       fs.readFile(alvo, (e, dados) => {
