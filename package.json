@@ -7,7 +7,9 @@
     "servidor": "python3 -m http.server 8099",
     "test": "node testes/roda-tudo.js",
     "teste": "node testes/roda-tudo.js",
-    "teste:um": "node --"
+    "teste:um": "node --",
+    "dev": "node servidor-local.js",
+    "local": "node servidor-local.js"
   },
   "devDependencies": {
     "playwright": "^1.47.0"
