@@ -751,3 +751,56 @@ a.sb-kpi:hover{border-color:var(--sb-mar-claro);box-shadow:var(--sb-sombra-alta)
   .sb-degrau::before{display:none}
 }
 @media (max-width:560px){ .sb-degrau{flex:1 1 100%} }
+
+/* ═══ 17. Marcar na agenda ═══════════════════════════════════════════════
+   O formulário abre DENTRO do painel, no lugar do calendário, já com o dia que
+   estava selecionado. Um modal por cima esconderia justamente a informação que
+   a pessoa usou para escolher a data. */
+
+.sb-ag-form{padding:.85rem .95rem;display:flex;flex-direction:column;gap:.1rem}
+.sb-ag-tipo{display:flex;gap:.25rem;margin-bottom:.7rem}
+.sb-ag-tipo button{
+  flex:1;padding:.42rem .6rem;border-radius:8px;cursor:pointer;
+  border:1px solid var(--sb-linha);background:var(--sb-papel);
+  font-family:inherit;font-size:.755rem;font-weight:600;color:var(--sb-tinta2);
+}
+.sb-ag-tipo button:hover{background:var(--sb-vellum)}
+.sb-ag-tipo button.on{background:var(--sb-mar);border-color:var(--sb-mar);color:#fff}
+.sb-ag-rot{display:block;font-size:.68rem;font-weight:700;color:var(--sb-tinta2);margin:.55rem 0 .25rem}
+.sb-ag-campo{
+  width:100%;padding:.45rem .6rem;border-radius:8px;
+  border:1px solid var(--sb-linha);background:var(--sb-papel);
+  font-family:inherit;font-size:.8rem;color:var(--sb-tinta);
+}
+.sb-ag-campo:focus{outline:none;border-color:var(--sb-mar);box-shadow:0 0 0 3px rgba(14,140,127,.14)}
+textarea.sb-ag-campo{resize:vertical;min-height:52px}
+.sb-ag-linha{display:flex;gap:.5rem}
+.sb-ag-erro{
+  margin-top:.6rem;padding:.5rem .65rem;border-radius:8px;
+  background:var(--sb-tijolo-lavado);color:var(--sb-tijolo-texto);
+  font-size:.72rem;line-height:1.4;
+}
+.sb-ag-erro[hidden]{display:none}
+.sb-ag-pe{display:flex;gap:.4rem;justify-content:flex-end;margin-top:.9rem}
+
+/* Concluir e excluir, na própria linha. */
+.sb-ag-check{
+  width:17px;height:17px;flex:none;margin-top:.22rem;
+  border:1.5px solid var(--sb-linha-forte);border-radius:5px;
+  background:var(--sb-papel);cursor:pointer;
+  font-size:.7rem;line-height:1;color:#fff;padding:0;
+}
+.sb-ag-check:hover{border-color:var(--sb-mar)}
+.sb-ag-check.on{background:var(--sb-mar);border-color:var(--sb-mar)}
+.sb-ag-x{
+  flex:none;width:20px;height:20px;margin-top:.15rem;border:none;background:none;
+  color:var(--sb-tinta3);cursor:pointer;font-size:1rem;line-height:1;border-radius:5px;
+}
+.sb-ag-x:hover{background:var(--sb-tijolo-lavado);color:var(--sb-tijolo-texto)}
+
+.sb-cal-legenda{
+  display:flex;flex-wrap:wrap;gap:.25rem .8rem;
+  padding:0 .95rem .65rem;font-size:.66rem;color:var(--sb-tinta3);
+}
+.sb-cal-legenda span{display:flex;align-items:center;gap:.28rem}
+.sb-cal-legenda i{width:6px;height:6px;border-radius:99px;display:block}

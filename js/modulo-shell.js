@@ -743,7 +743,7 @@ async function a1AgendaCarregar(ano, mes){
   const ate = `${ano}-${pad(mes+1)}-${pad(new Date(ano, mes+1, 0).getDate())}`;
   const h = { headers: A1.headers() };
   const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
-  const [venc, ent] = await Promise.all([
+  const [venc, ent, meus] = await Promise.all([
     fetch(`${base}&evaluation_expiry=gte.${de}&evaluation_expiry=lte.${ate}` +
           `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=300`, h)
       .then(r => r.ok ? r.json() : []).catch(() => []),
@@ -752,6 +752,13 @@ async function a1AgendaCarregar(ano, mes){
     // tudo de novo, que e o que esta tela existe para nao fazer.
     fetch(`${base}&payload->>agendamento_data=gte.${de}&payload->>agendamento_data=lte.${ate}T23:59:59` +
           `&select=id,client_name,stage_name,payload->>agendamento_data&order=created_at.desc&limit=300`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => []),
+    // O que a PESSOA marcou. A tabela pode ainda não existir no banco do
+    // cliente — o SQL é rodado à mão —, e nesse caso a agenda continua
+    // mostrando entrevistas e vencimentos em vez de quebrar.
+    fetch(`${A1.rest('a1_agenda')}?data=gte.${de}&data=lte.${ate}` +
+          `&select=id,tipo,titulo,descricao,local,data,hora_inicio,hora_fim,caso_id,concluido_em` +
+          `&order=data.asc&limit=400`, h)
       .then(r => r.ok ? r.json() : []).catch(() => [])
   ]);
   const itens = [];
@@ -766,7 +773,138 @@ async function a1AgendaCarregar(ano, mes){
       titulo: c.client_name || 'Sem nome', sub: 'Entrevista agendada',
       etapa: c.stage_name || '', id: c.id, hora: d.slice(11,16) });
   });
+  (Array.isArray(meus) ? meus : []).forEach(a => {
+    const d = String(a.data || '');
+    if (d.length < 10) return;
+    itens.push({ dia: d.slice(8,10), tipo: a.tipo === 'tarefa' ? 'tarefa' : 'meu',
+      titulo: a.titulo || 'Sem título',
+      sub: [a.tipo === 'tarefa' ? 'Tarefa' : 'Compromisso', a.local, a.descricao]
+             .filter(Boolean).join(' · '),
+      etapa: '', id: a.id, agendaId: a.id, casoId: a.caso_id || null,
+      feito: !!a.concluido_em,
+      hora: a.hora_inicio ? String(a.hora_inicio).slice(0,5) : '' });
+  });
   return itens;
+}
+
+// ── Marcar na agenda ───────────────────────────────────────────────────────
+// O formulário abre DENTRO do mesmo painel, no dia que já está selecionado. Um
+// modal em cima do calendário esconderia justamente a informação que a pessoa
+// usou para escolher a data.
+
+const A1_AGENDA_CORES = { compromisso:'var(--sb-mar)', tarefa:'var(--sb-ametista)' };
+
+function a1AgendaNovo(){
+  const alvo = document.getElementById('sb-agenda-corpo');
+  if (!alvo) return;
+  const { ano, mes, dia } = A1_POP.agenda;
+  const pad = n => String(n).padStart(2,'0');
+  const dataSel = `${ano}-${pad(mes+1)}-${pad(dia || 1)}`;
+  alvo.innerHTML = `
+    <form class="sb-ag-form" onsubmit="return a1AgendaGravar(event)">
+      <div class="sb-ag-tipo" role="group" aria-label="Tipo">
+        <button type="button" class="on" data-tipo="compromisso" onclick="a1AgendaTipo(this)">Compromisso</button>
+        <button type="button" data-tipo="tarefa" onclick="a1AgendaTipo(this)">Tarefa</button>
+      </div>
+      <label class="sb-ag-rot">Título</label>
+      <input id="ag-titulo" class="sb-ag-campo" required maxlength="120" placeholder="Visita ao cliente, ligar para o banco…">
+      <div class="sb-ag-linha">
+        <div style="flex:1.2"><label class="sb-ag-rot">Data</label>
+          <input id="ag-data" class="sb-ag-campo" type="date" required value="${dataSel}"></div>
+        <div style="flex:1" id="ag-hora-wrap"><label class="sb-ag-rot">Hora</label>
+          <input id="ag-hora" class="sb-ag-campo" type="time"></div>
+      </div>
+      <label class="sb-ag-rot">Local <span style="font-weight:400;color:var(--sb-tinta3)">(opcional)</span></label>
+      <input id="ag-local" class="sb-ag-campo" maxlength="120">
+      <label class="sb-ag-rot">Observação <span style="font-weight:400;color:var(--sb-tinta3)">(opcional)</span></label>
+      <textarea id="ag-obs" class="sb-ag-campo" rows="2" maxlength="400"></textarea>
+      <div class="sb-ag-erro" id="ag-erro" hidden></div>
+      <div class="sb-ag-pe">
+        <button type="button" class="sb-btn sb-btn-p" onclick="a1AgendaDesenhar()">Cancelar</button>
+        <button type="submit" class="sb-btn sb-btn-forte sb-btn-p" id="ag-salvar">Marcar</button>
+      </div>
+    </form>`;
+  const t = document.getElementById('ag-titulo'); if (t) t.focus();
+}
+
+function a1AgendaTipo(bt){
+  document.querySelectorAll('.sb-ag-tipo button').forEach(b => b.classList.toggle('on', b === bt));
+  // Tarefa tem PRAZO, não horário. Deixar o campo de hora à mostra faria a
+  // pessoa preencher uma informação que a tarefa não usa.
+  const w = document.getElementById('ag-hora-wrap');
+  if (w) w.style.visibility = bt.dataset.tipo === 'tarefa' ? 'hidden' : '';
+}
+
+async function a1AgendaGravar(ev){
+  ev.preventDefault();
+  const erro = document.getElementById('ag-erro');
+  const bt = document.getElementById('ag-salvar');
+  const marcado = document.querySelector('.sb-ag-tipo button.on');
+  const tipo = marcado ? marcado.dataset.tipo : 'compromisso';
+  const titulo = (document.getElementById('ag-titulo').value || '').trim();
+  const data = document.getElementById('ag-data').value;
+  if (!titulo || !data) return false;
+
+  const user = A1.user || {};
+  const corpo = {
+    tenant_id: user.tenant_id,
+    // `dono` é quem está logado. A política do banco só aceita a1_ator() ou
+    // a1_usuario(); mandar outro id seria tentar marcar na agenda alheia.
+    dono: user.id,
+    tipo, titulo, data,
+    hora_inicio: tipo === 'compromisso' ? (document.getElementById('ag-hora').value || null) : null,
+    local: (document.getElementById('ag-local').value || '').trim() || null,
+    descricao: (document.getElementById('ag-obs').value || '').trim() || null
+  };
+  bt.disabled = true; bt.textContent = 'Marcando…';
+  try {
+    const r = await fetch(A1.rest('a1_agenda'), { method:'POST', headers:A1.headers(), body:JSON.stringify(corpo) });
+    if (!r.ok){
+      const txt = await r.text().catch(() => '');
+      // Erro de banco não vira "tente novamente": a pessoa tentaria de novo, e
+      // de novo, sem descobrir que a tabela ainda não foi criada.
+      erro.hidden = false;
+      erro.textContent = /a1_agenda/.test(txt) && /does not exist|relation/.test(txt)
+        ? 'A agenda ainda não foi criada no banco deste cliente. Peça para rodar sql/2026-09-17_agenda.sql.'
+        : ('Não foi possível marcar: ' + txt.slice(0, 160));
+      bt.disabled = false; bt.textContent = 'Marcar';
+      return false;
+    }
+    // Volta para o calendário JÁ no dia marcado, para a pessoa ver o ponto
+    // aparecer. Fechar o painel esconderia o resultado do que ela acabou de fazer.
+    A1_POP.agenda.dia = Number(String(data).slice(8,10));
+    const [a, m] = [Number(data.slice(0,4)), Number(data.slice(5,7)) - 1];
+    if (a !== A1_POP.agenda.ano || m !== A1_POP.agenda.mes){
+      A1_POP.agenda.ano = a; A1_POP.agenda.mes = m;
+    }
+    A1_POP.agenda.itens = null;
+    await a1AgendaDesenhar();
+  } catch (e) {
+    erro.hidden = false;
+    erro.textContent = 'Não foi possível marcar: ' + String(e.message || e).slice(0,140);
+    bt.disabled = false; bt.textContent = 'Marcar';
+  }
+  return false;
+}
+
+async function a1AgendaConcluir(id, feito){
+  try {
+    await fetch(`${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers:A1.headers(),
+      body: JSON.stringify({ concluido_em: feito ? null : new Date().toISOString() }) });
+    A1_POP.agenda.itens = null;
+    await a1AgendaDesenhar();
+  } catch { /* o desenho seguinte mostra o estado real */ }
+}
+
+async function a1AgendaExcluir(id){
+  if (!confirm('Excluir este item da sua agenda?')) return;
+  try {
+    await fetch(`${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
+      { method:'DELETE', headers:A1.headers() });
+    A1_POP.agenda.itens = null;
+    await a1AgendaDesenhar();
+  } catch { /* idem */ }
 }
 
 async function a1AgendaAbrir(ev){
@@ -786,7 +924,9 @@ async function a1AgendaAbrir(ev){
     <div class="sb-pop-corpo" id="sb-agenda-corpo">
       <div class="sb-vazio"><p>Carregando…</p></div></div>
     <div class="sb-pop-pe">
-      <a class="sb-btn sb-btn-p" href="/${a1Esc(A1.slug || '')}/repasse?tab=agenda">Ver agenda completa</a></div>`);
+      <button class="sb-btn sb-btn-forte sb-btn-p" type="button" onclick="a1AgendaNovo()">+ Marcar</button>
+      <a class="sb-btn sb-btn-p" style="margin-left:auto"
+         href="/${a1Esc(A1.slug || '')}/repasse?tab=agenda">Agenda do Repasse</a></div>`);
   if (!el) return;
   A1_POP.agenda.itens = null;
   await a1AgendaDesenhar();
@@ -828,9 +968,11 @@ async function a1AgendaDesenhar(){
     const lista = porDia[d] || [];
     const cls = ['sb-cal-d', lista.length ? 'tem' : '',
                  ehMesAtual && hoje.getDate() === d ? 'hoje' : '', sel === d ? 'sel' : ''].filter(Boolean).join(' ');
+    // Quatro cores, quatro coisas: prazo de avaliação, entrevista marcada,
+    // compromisso seu e tarefa sua. O dia fala sem precisar do clique.
     const pts = lista.length ? `<span class="sb-cal-pt">${
-      [...new Set(lista.map(i => i.tipo))].slice(0,2).map(t =>
-        `<i style="background:${t === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></i>`).join('')}</span>` : '';
+      [...new Set(lista.map(i => i.tipo))].slice(0,3).map(t =>
+        `<i style="background:${a1CorDoTipo(t)}"></i>`).join('')}</span>` : '';
     cel.push(lista.length
       ? `<button type="button" class="${cls}" onclick="a1AgendaDia(${d})">${d}${pts}</button>`
       : `<span class="${cls}">${d}</span>`);
@@ -840,13 +982,30 @@ async function a1AgendaDesenhar(){
 
   const doDia = (porDia[sel] || []).slice().sort((a,b) => (a.hora || '99').localeCompare(b.hora || '99'));
   const lista = doDia.length
-    ? doDia.map(i => `<a class="sb-item" data-tom="${i.tipo === 'ent' ? 'info' : 'atento'}"
-        href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}">
-        <span class="sb-item-pt" style="background:${i.tipo === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></span>
-        <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(i.titulo)}</span>
-          <span class="sb-item-s">${a1Esc(i.sub)}${i.etapa ? ' · ' + a1Esc(i.etapa) : ''}</span></span>
-        ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}</a>`).join('')
-    : `<div class="sb-vazio"><p>Nada marcado neste dia.</p></div>`;
+    ? doDia.map(i => {
+        // O que é DA PESSOA ela conclui e apaga; o que vem do processo
+        // (entrevista, vencimento) abre o processo. São coisas diferentes e por
+        // isso a linha se comporta diferente — botão que promete a mesma ação
+        // para as duas mentiria numa delas.
+        if (i.agendaId) return `<div class="sb-item" data-tom="${i.feito ? 'neutro' : 'marca'}">
+            <button class="sb-ag-check${i.feito ? ' on' : ''}" type="button"
+              title="${i.feito ? 'Reabrir' : 'Concluir'}"
+              onclick="a1AgendaConcluir('${a1Esc(i.agendaId)}', ${i.feito ? 'true' : 'false'})"
+              aria-label="${i.feito ? 'Reabrir' : 'Concluir'}">${i.feito ? '✓' : ''}</button>
+            <span class="sb-item-tx"><span class="sb-item-t"${i.feito ? ' style="text-decoration:line-through;color:var(--sb-tinta3)"' : ''}>${a1Esc(i.titulo)}</span>
+              <span class="sb-item-s">${a1Esc(i.sub)}</span></span>
+            ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}
+            <button class="sb-ag-x" type="button" title="Excluir"
+              onclick="a1AgendaExcluir('${a1Esc(i.agendaId)}')" aria-label="Excluir">×</button>
+          </div>`;
+        return `<a class="sb-item" data-tom="${i.tipo === 'ent' ? 'info' : 'atento'}"
+          href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}">
+          <span class="sb-item-pt" style="background:${i.tipo === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></span>
+          <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(i.titulo)}</span>
+            <span class="sb-item-s">${a1Esc(i.sub)}${i.etapa ? ' · ' + a1Esc(i.etapa) : ''}</span></span>
+          ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}</a>`;
+      }).join('')
+    : `<div class="sb-vazio"><p>Nada marcado neste dia. O botão abaixo cria um compromisso ou uma tarefa.</p></div>`;
 
   alvo.innerHTML = `
     <div class="sb-cal-topo">
@@ -855,8 +1014,17 @@ async function a1AgendaDesenhar(){
       <button class="sb-cal-bt" type="button" onclick="a1AgendaMes(1)" aria-label="Próximo mês">›</button>
     </div>
     <div class="sb-cal">${['D','S','T','Q','Q','S','S'].map(d => `<span class="sb-cal-dw">${d}</span>`).join('')}${cel.join('')}</div>
+    <div class="sb-cal-legenda">
+      ${[['venc','Avaliação'],['ent','Entrevista'],['meu','Compromisso'],['tarefa','Tarefa']]
+        .filter(([t]) => itens.some(i => i.tipo === t))
+        .map(([t,r]) => `<span><i style="background:${a1CorDoTipo(t)}"></i>${r}</span>`).join('')}
+    </div>
     <div class="sb-cal-dia">
       <div class="sb-cal-dia-t">${sel} DE ${A1_MESES_L[mes].toUpperCase()}</div>${lista}</div>`;
+}
+function a1CorDoTipo(t){
+  return { ent:'var(--sb-ardosia)', venc:'var(--sb-acafrao)',
+           meu:'var(--sb-mar)', tarefa:'var(--sb-ametista)' }[t] || 'var(--sb-linha-forte)';
 }
 const A1_MESES_L = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 

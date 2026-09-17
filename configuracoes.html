@@ -1712,7 +1712,11 @@ async function init() {
   const _tipoBarrado = G.user.role === 'partner'
                     && (G.user.type === 'corretor' || G.user.type === 'analista');
   if (_tipoBarrado) {
-    window.location.replace(`/${G.slug}/repasse`);
+    // Para a Geral, e não para o Repasse. Mandar para um módulo específico
+    // encadeava redirecionamento — quem não pode ver o painel do Repasse era
+    // desviado de novo para /andamento — e presumia que o Repasse é o módulo
+    // dele, o que deixou de ser verdade quando o cliente passou a ter cinco.
+    window.location.replace(`/${G.slug}/geral`);
     return;
   }
   document.body.classList.remove('acesso-pendente');

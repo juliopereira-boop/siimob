@@ -284,8 +284,15 @@ const modalAberto = p => p.evaluate(() => {
     const { b, p, erros } = await abrirComo('configuracoes.html', 'parceiro',
       { permissoes: {} });
     await p.waitForTimeout(1500);
-    const saiu = await p.evaluate(() => location.pathname.includes('repasse'));
-    checa('corretor é devolvido para o Repasse', saiu, `→ ${await p.evaluate(()=>location.pathname)}`);
+    // Devolvido para a GERAL, e não para o Repasse. Mandar para um módulo
+    // específico presumia que o Repasse é o módulo dele — o que deixou de ser
+    // verdade quando o cliente passou a ter cinco — e encadeava um segundo
+    // desvio para /andamento quando ele não podia ver aquele painel.
+    const saiu = await p.evaluate(() => !location.pathname.includes('configuracoes'));
+    checa('corretor não fica em Configurações', saiu, `→ ${await p.evaluate(()=>location.pathname)}`);
+    checa('e é devolvido para a Geral',
+      await p.evaluate(() => location.pathname.includes('geral')),
+      `→ ${await p.evaluate(()=>location.pathname)}`);
     todosErros.push(...erros); await b.close();
   }
   {

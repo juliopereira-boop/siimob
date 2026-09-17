@@ -80,6 +80,27 @@ async function preencher(p, painel, cpf) {
       !/\/\$\{slug\}\/repasse/.test(corpo), corpo.slice(0,300));
   }
 
+  console.log('\n== O SUPERADMIN ACESSANDO UM CLIENTE TAMBÉM ABRE NA GERAL ==');
+  {
+    // O dono achou isto sozinho: "quando eu acesso um cliente do meu super
+    // admin ele vai direto para tela de repasse". Era uma TERCEIRA regra para
+    // a mesma pergunta — o superadmin escolhia o primeiro módulo licenciado,
+    // na ordem do tipo de cliente. Duas regras para "por onde o sistema abre"
+    // divergem no primeiro ajuste, e foi exatamente o que aconteceu.
+    const fs = require('fs');
+    const src = fs.readFileSync(require('path').join(__dirname, '..', 'superadmin.html'), 'utf8');
+    const fn = /async function acessarComo\([\s\S]*?\n\}/.exec(src);
+    checa('acessarComo existe', !!fn);
+    const corpo = fn ? fn[0] : '';
+    checa('o superadmin abre o cliente pela Geral',
+      /_home\s*=.*'geral'/.test(corpo), (corpo.match(/const _home[^\n]*/) || [''])[0]);
+    checa('e o despachante continua indo para o Registro',
+      /despachante.*'registro'/.test(corpo), (corpo.match(/const _home[^\n]*/) || [''])[0]);
+    // A prova que impede a volta: nenhuma escolha própria de módulo aqui.
+    checa('sem uma segunda regra escolhendo módulo por tipo de cliente',
+      !/ALL_MODULES[\s\S]{0,200}_order/.test(corpo), 'ainda há escolha própria de módulo');
+  }
+
   console.log('\n== GESTOR ENTRA E CAI NA GERAL ==');
   {
     const { b, p, erros } = await entrar({ id:'u1', name:'Julio', role:'owner' }, ['repasse']);

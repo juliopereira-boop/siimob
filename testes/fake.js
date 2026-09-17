@@ -185,6 +185,17 @@ const D = {
     {id:2,tenant_id:'t1',comercial_id:'co2',evento:'situacao_alterada',para_situacao:'cs2',
      ator_nome:'Julio',detalhe:{},criado_em:new Date(Date.now()-24*36e5).toISOString()}],
   integra_eventos: [],
+  // A agenda da pessoa. Um compromisso com hora e uma tarefa sem — os dois
+  // tipos —, no mes corrente, porque o calendario sempre pergunta por mes.
+  agenda: (()=>{ const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+    const dia = n => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(Math.min(28, d.getDate()+n))}`;
+    return [
+    {id:'ag1',tenant_id:'t1',dono:'u1',tipo:'compromisso',titulo:'Visita ao cliente '+XSS,
+     descricao:'levar contrato',local:'Residencial das Flores',data:dia(0),
+     hora_inicio:'14:00',hora_fim:null,caso_id:'c1',concluido_em:null},
+    {id:'ag2',tenant_id:'t1',dono:'u1',tipo:'tarefa',titulo:'Ligar para o banco',
+     descricao:null,local:null,data:dia(2),hora_inicio:null,hora_fim:null,
+     caso_id:null,concluido_em:null}]; })(),
 
   stage_edges: [{from_id:'s1',to_id:'s2'},{from_id:'s2',to_id:'s3'}],
   case_events: [{id:'ev1',case_id:'c1',type:'comment',description:'comentário '+XSS,actor_name:'Julio',created_at:'2026-08-02T10:00:00Z'}],
@@ -348,6 +359,12 @@ function responder(url, metodo, corpo0) {
   const filtroTipos = ((qs.match(/type=in\.\(([^)]*)\)/)||[])[1]||'')
     .split(',').map(x=>x.trim()).filter(Boolean);
   if (t === 'a1_tenants') return D.tenants;
+  if (t === 'a1_agenda') {
+    // O POST devolve a linha criada, como o PostgREST com Prefer=representation
+    // faz. Devolver lista vazia esconderia todo codigo que usa o id de volta —
+    // foi assim que a semeadura da esteira deixou de ligar nada sem quebrar.
+    return D.agenda;
+  }
   if (t === 'a1_stages') return D.stages;
   if (t === 'a1_cases') {
     // devolve SÓ as colunas pedidas, como o PostgREST faz — é o que prova que a
