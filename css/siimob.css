@@ -588,3 +588,166 @@ a.sb-kpi:hover{border-color:var(--sb-mar-claro);box-shadow:var(--sb-sombra-alta)
   mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%);
 }
 @media (min-width:1100px){ .sb-mods{-webkit-mask-image:none;mask-image:none} }
+
+/* ═══ 15. Painéis do cabeçalho ═══════════════════════════════════════════
+   Agenda, avisos e a conta. Os três abrem no lugar, ancorados no ícone que os
+   chamou — e não numa tela nova. Sair da tela para ver um compromisso e voltar
+   custa o contexto de quem estava no meio de um processo. */
+
+.sb-pop{
+  position:fixed;z-index:400;
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-radius:13px;
+  box-shadow:var(--sb-sombra-alta);
+  overflow:hidden;display:flex;flex-direction:column;
+  max-height:min(560px,78vh);
+}
+.sb-pop[hidden]{display:none}
+.sb-pop-cab{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.78rem .95rem;
+  background:linear-gradient(180deg,var(--sb-escuro),var(--sb-noite));
+  color:#fff;flex:none;
+}
+.sb-pop-cab svg{width:16px;height:16px;opacity:.85}
+.sb-pop-tit{font-size:.82rem;font-weight:700;letter-spacing:-.01em}
+.sb-pop-sub{font-size:.67rem;color:rgba(255,255,255,.58);margin-top:.05rem}
+.sb-pop-x{
+  margin-left:auto;background:rgba(255,255,255,.12);border:none;color:#fff;
+  width:24px;height:24px;border-radius:7px;cursor:pointer;font-size:.9rem;line-height:1;flex:none;
+}
+.sb-pop-x:hover{background:rgba(255,255,255,.22)}
+.sb-pop-corpo{overflow-y:auto;flex:1}
+.sb-pop-pe{
+  padding:.55rem .95rem;border-top:1px solid var(--sb-linha);
+  background:var(--sb-vellum);flex:none;
+  display:flex;align-items:center;gap:.5rem;
+}
+
+/* Linha de aviso / compromisso */
+.sb-item{
+  display:flex;gap:.65rem;align-items:flex-start;width:100%;
+  padding:.62rem .95rem;border-bottom:1px solid var(--sb-linha);
+  background:none;border-left:none;border-right:none;border-top:none;
+  font-family:inherit;text-align:left;cursor:pointer;text-decoration:none;color:inherit;
+}
+.sb-item:last-child{border-bottom:none}
+.sb-item:hover{background:var(--sb-vellum)}
+.sb-item-pt{width:7px;height:7px;border-radius:99px;margin-top:.38rem;flex:none;background:var(--sb-linha-forte)}
+.sb-item[data-tom="atraso"] .sb-item-pt{background:var(--sb-tijolo)}
+.sb-item[data-tom="atento"] .sb-item-pt{background:var(--sb-acafrao)}
+.sb-item[data-tom="marca"] .sb-item-pt{background:var(--sb-mar)}
+.sb-item-tx{min-width:0;flex:1}
+.sb-item-t{font-size:.785rem;font-weight:600;color:var(--sb-tinta);line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-item-s{font-size:.68rem;color:var(--sb-tinta3);margin-top:.12rem}
+.sb-item-q{font-size:.66rem;font-weight:700;flex:none;white-space:nowrap;color:var(--sb-tinta3);margin-top:.15rem}
+.sb-item[data-tom="atraso"] .sb-item-q{color:var(--sb-tijolo-texto)}
+.sb-item[data-tom="atento"] .sb-item-q{color:var(--sb-acafrao-texto)}
+
+/* Menu da conta */
+.sb-menu-cab{padding:.85rem .95rem;border-bottom:1px solid var(--sb-linha);display:flex;gap:.65rem;align-items:center}
+.sb-menu-av{width:38px;height:38px;border-radius:11px;background:var(--sb-mar);color:#fff;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sb-display);font-weight:800;font-size:.85rem}
+.sb-menu-nome{font-size:.83rem;font-weight:700;color:var(--sb-tinta);line-height:1.25}
+.sb-menu-papel{font-size:.69rem;color:var(--sb-tinta3)}
+.sb-menu-item{
+  display:flex;align-items:center;gap:.6rem;width:100%;
+  padding:.6rem .95rem;border:none;background:none;cursor:pointer;
+  font-family:inherit;font-size:.8rem;color:var(--sb-tinta2);text-align:left;text-decoration:none;
+}
+.sb-menu-item svg{width:15px;height:15px;color:var(--sb-tinta3);flex:none}
+.sb-menu-item:hover{background:var(--sb-vellum);color:var(--sb-tinta)}
+.sb-menu-item.saida{color:var(--sb-tijolo-texto);border-top:1px solid var(--sb-linha)}
+.sb-menu-item.saida svg{color:var(--sb-tijolo)}
+.sb-menu-item.saida:hover{background:var(--sb-tijolo-lavado)}
+
+/* Calendário do cabeçalho */
+.sb-cal-topo{display:flex;align-items:center;gap:.4rem;padding:.7rem .95rem .3rem}
+.sb-cal-mes{font-size:.79rem;font-weight:700;color:var(--sb-tinta);flex:1;text-align:center}
+.sb-cal-bt{width:25px;height:25px;border-radius:7px;border:1px solid var(--sb-linha);
+  background:var(--sb-papel);color:var(--sb-tinta2);cursor:pointer;font-size:.78rem;line-height:1;flex:none}
+.sb-cal-bt:hover{background:var(--sb-vellum)}
+.sb-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 .7rem .6rem}
+.sb-cal-dw{text-align:center;font-size:.6rem;font-weight:700;color:var(--sb-tinta3);padding:.2rem 0}
+.sb-cal-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;font-size:.72rem;color:var(--sb-tinta2);font-variant-numeric:tabular-nums;
+  border:none;background:none;font-family:inherit;cursor:default}
+.sb-cal-d.fora{color:var(--sb-linha-forte)}
+.sb-cal-d.tem{font-weight:700;color:var(--sb-tinta);cursor:pointer}
+.sb-cal-d.tem:hover{background:var(--sb-vellum)}
+.sb-cal-d.hoje{outline:1.5px solid var(--sb-mar);outline-offset:-1.5px;font-weight:800;color:var(--sb-mar-texto)}
+.sb-cal-d.sel{background:var(--sb-mar);color:#fff;font-weight:800}
+.sb-cal-d.sel.hoje{outline-color:#fff}
+.sb-cal-pt{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+.sb-cal-pt i{width:4px;height:4px;border-radius:99px;display:block}
+.sb-cal-d.sel .sb-cal-pt i{background:#fff !important}
+.sb-cal-dia{border-top:1px solid var(--sb-linha)}
+.sb-cal-dia-t{font-size:.66rem;font-weight:700;color:var(--sb-tinta3);padding:.55rem .95rem .1rem}
+
+@media (max-width:640px){
+  .sb-pop{left:8px !important;right:8px !important;width:auto !important}
+}
+
+/* ═══ 16. A jornada ═══════════════════════════════════════════════════════
+   O que separa este painel de um painel de cartões: aqui os módulos NÃO são
+   cinco caixas iguais lado a lado. Eles são uma sequência — o lead vira
+   pré-análise, que vira venda, que vira repasse, que vira registro —, e o
+   desenho diz isso. Onde há cinco caixas, o olho procura a maior; onde há uma
+   corrente, o olho procura onde ela aperta, que é a pergunta certa.
+
+   O degrau é um link para o módulo. A tarja de baixo é a esteira DAQUELE
+   cliente, nas cores que ele cadastrou. */
+
+.sb-jornada{
+  display:flex;align-items:stretch;gap:0;margin-top:.9rem;
+  background:var(--sb-papel);
+  border:1px solid var(--sb-linha);
+  border-radius:var(--sb-r-g);
+  box-shadow:var(--sb-sombra);
+  overflow:hidden;
+}
+.sb-degrau{
+  flex:1 1 0;min-width:0;position:relative;
+  display:flex;flex-direction:column;gap:.3rem;
+  padding:.95rem 1rem 0;text-decoration:none;color:inherit;
+  border-right:1px solid var(--sb-linha);
+  transition:background .14s ease;
+}
+.sb-degrau:last-child{border-right:none}
+.sb-degrau:hover{background:var(--sb-vellum)}
+/* A seta entre os degraus. Desenhada com bordas, para acompanhar o fundo do
+   cartão em vez de ser um caractere que muda de fonte para fonte. */
+.sb-degrau:not(:first-child)::before{
+  content:"";position:absolute;left:-1px;top:50%;transform:translateY(-50%);
+  border-top:7px solid transparent;border-bottom:7px solid transparent;
+  border-left:7px solid var(--sb-linha);z-index:1;
+}
+.sb-degrau-rot{
+  display:flex;align-items:center;gap:.38rem;
+  font-size:.715rem;font-weight:700;color:var(--sb-tinta2);
+  text-transform:none;letter-spacing:0;white-space:nowrap;
+}
+.sb-degrau-rot svg{width:14px;height:14px;color:var(--sb-tinta3);flex:none}
+.sb-degrau:hover .sb-degrau-rot{color:var(--sb-mar-texto)}
+.sb-degrau:hover .sb-degrau-rot svg{color:var(--sb-mar)}
+.sb-degrau-n{
+  font-family:var(--sb-display);font-weight:800;
+  font-size:1.62rem;line-height:1;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;color:var(--sb-tinta);
+}
+.sb-degrau-sub{font-size:.665rem;color:var(--sb-tinta3);line-height:1.35;min-height:1.6em}
+.sb-degrau-sub b{color:var(--sb-acafrao-texto);font-weight:700}
+/* A esteira do cliente, em miniatura, colada no pé do degrau. */
+.sb-degrau-tarja{display:flex;height:4px;margin-top:.7rem;gap:1px;background:var(--sb-vellum)}
+.sb-degrau-tarja i{display:block;min-width:2px}
+.sb-degrau.vazio .sb-degrau-n{color:var(--sb-linha-forte)}
+
+@media (max-width:1000px){
+  .sb-jornada{flex-wrap:wrap}
+  .sb-degrau{flex:1 1 46%;border-bottom:1px solid var(--sb-linha)}
+  .sb-degrau::before{display:none}
+}
+@media (max-width:560px){ .sb-degrau{flex:1 1 100%} }

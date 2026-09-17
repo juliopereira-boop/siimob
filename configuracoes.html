@@ -427,6 +427,16 @@
       </div>
     </div>
 
+    <!-- LEADS. O grupo nasce escondido e so aparece quando cfgModsLiberar('crm')
+         confirma a licenca — e, sem licenca, nem os cartoes entram no DOM.
+         As listas do modulo moram em js/cadastros-leads.js; aqui fica so a
+         gaveta onde elas se penduram, como os outros modulos fazem. -->
+    <div class="cfg-grupo" id="cfg-sec-leads" style="display:none">
+      <div class="cfg-section-hdr">Leads</div>
+      <div class="cfg-section-sub">As listas que alimentam o funil: origem, motivo de perda, mensagens padrão.</div>
+      <div class="cfg-cards" id="cfg-cards-leads"></div>
+    </div>
+
     <div class="cfg-grupo">
       <div class="cfg-section-hdr">Ferramentas e suporte</div>
       <div class="cfg-section-sub">Trazer dados de fora e falar com quem cuida do sistema.</div>
@@ -1640,6 +1650,7 @@
 <script src="/js/modulo-shell.js"></script>
 <script src="/js/documentos.js"></script>
 <script src="/js/permissoes.js"></script>
+<script src="/js/cadastros-leads.js"></script>
 <script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
@@ -1791,6 +1802,11 @@ async function init() {
       // aba VENDA acesa, com link e submenu, sem ter comprado o módulo. O dado
       // seguia protegido pelo RLS; o que vazava era a promessa. Regra do dono:
       // sem licença o elemento não pode nem existir no DOM.
+      // Leads e Registro nao ganham ABA nesta tela — mas Leads ganha o grupo de
+      // cadastros no hub, e isso acontece ANTES do desvio abaixo. Sem esta
+      // linha o grupo nunca era montado: o laco saia fora antes de chegar em
+      // cfgModsLiberar, e o cliente licenciava Leads e nao achava nada.
+      if (mod === 'crm'){ cfgModsLiberar('crm'); return; }
       if (mod !== 'PRE_ANALISE' && mod !== 'COMERCIAL') return;
       // O menu Andamento/Listagem e o mesmo que Repasse e Registro ja tinham.
       // Sem ele, o modulo novo era um link plano no meio de abas com submenu:
@@ -1900,6 +1916,9 @@ function openCfgView(view) {
     const el = document.getElementById(`cfg-view-${v}`);
     if (el) el.style.display = v === view ? '' : 'none';
   });
+  // Cada cadastro de Leads carrega a propria lista ao abrir. Carregar as
+  // catorze na entrada da tela seriam catorze consultas para mostrar nenhuma.
+  if (view.startsWith('lead-') && typeof leadsCadAbrir === 'function') leadsCadAbrir(view.slice(5));
   if (view === 'geral') geralCarregarTela();
   if (view === 'perfis') perfisCarregar();
   if (view === 'flags') loadFlags();
@@ -5980,7 +5999,9 @@ async function saveCartorio() {
 // "Ativa" — a coluna já existe nas quatro tabelas, as filas já buscam com
 // ativo=is.true e a1_pa_transicionar já exige `and ativo`.
 
-const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false };
+// `false` = ainda nao confirmado. cfgModsLiberar so age quando o valor e
+// literalmente false: assim uma resposta que nao chegou nao vira "tem".
+const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false, crm:false };
 
 
 const CFG_ICONE_FLUXO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
@@ -6355,6 +6376,13 @@ function cfgModsLiberar(mod) {
     // era uma tabela enquanto o outro era um quadro. Agora é o mesmo quadro do
     // Repasse, e os módulos são botões dentro dele.
   }
+
+  // Leads: as listas do funil viram cartões aqui. Estavam numa aba dentro do
+  // próprio CRM, e configuração em dois lugares é o gestor procurando em um e
+  // achando no outro. As seis que Configurações JÁ TEM com outro nome
+  // (corretores, imobiliárias, empreendimentos, bancos, regiões, tipos de
+  // imóvel) ficaram de fora de propósito — o motivo está em js/cadastros-leads.js.
+  if (mod === 'crm' && typeof leadsMontarConfig === 'function') leadsMontarConfig();
 
   // Registro de integrações: a política a1_integra_eventos_ler exige só
   // a1_e_gestor(), sem porta de módulo. Quem tem de fechar essa porta é a tela

@@ -146,6 +146,12 @@
 <body>
 
 <div id="shell"></div>
+<!-- O PAINEL DESTE MODULO.
+     Ele ja existia em js/paineis.js, mas so era alcancavel pelo seletor de
+     painel do dashboard do Repasse — um modulo tinha de passar por outro para
+     mostrar os proprios numeros. Agora e a terceira vista da propria tela,
+     ao lado de Andamento e Listagem, como em qualquer modulo. -->
+<div id="vista-painel" style="display:none;padding:1.1rem 1.15rem 3rem;max-width:1560px;margin:0 auto"></div>
 
 <div class="main">
   <div class="kpi-grid" id="kpis"></div>
@@ -153,7 +159,7 @@
   <!-- Os filtros ficam FORA das vistas: quem recorta a lista e troca de vista
        pelo menu do cabeçalho espera reencontrar o mesmo recorte, não a base
        inteira de novo. -->
-  <div class="toolbar">
+  <div class="toolbar" id="filtros">
     <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderVistas()" style="min-width:220px">
     <select id="f-situacao" onchange="renderVistas()"><option value="">Todas as situações</option></select>
     <select id="f-corretor" onchange="renderVistas()"><option value="">Todos os corretores</option></select>
@@ -237,6 +243,7 @@
 <script src="/js/config.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/modulo-shell.js"></script>
+<script src="/js/paineis.js"></script>
 <script src="/js/geral.js"></script>
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
@@ -416,8 +423,18 @@ async function init(){
 }
 
 function aplicarVista(){
-  document.getElementById('vista-andamento').style.display = G.vista === 'listagem' ? 'none' : '';
+  document.getElementById('vista-andamento').style.display = G.vista === 'andamento' ? '' : 'none';
   document.getElementById('vista-listagem').style.display  = G.vista === 'listagem' ? '' : 'none';
+  const _pnl = document.getElementById('vista-painel');
+  if (_pnl){
+    _pnl.style.display = G.vista === 'dashboard' ? '' : 'none';
+    if (G.vista === 'dashboard' && !_pnl.dataset.pronto){ _pnl.dataset.pronto = '1'; a1PainelComercial(_pnl); }
+  }
+  // A barra de filtro e das vistas de operacao; o painel tem o proprio recorte.
+  ['filtros','kpis','pg-cab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = G.vista === 'dashboard' ? 'none' : '';
+  });
 }
 
 async function carregar(){

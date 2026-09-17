@@ -68,11 +68,15 @@ async function pedidos(p){
     checa('nem a de Pré-análise', !/Pré-análise/.test(barra), barra);
     checa('nem a de Venda', !/Venda/.test(barra), barra);
     checa('nem a de Registro', !/Registro/.test(barra), barra);
-    // Não basta a aba sumir: o cartão do módulo não pode existir no DOM. O que
+    // Não basta a aba sumir: o degrau do módulo não pode existir no DOM. O que
     // está no DOM alguém acha com o inspetor e com a busca da paleta.
-    const kpis = await p.locator('#kpis').textContent();
-    checa('e o cartão de Leads não foi nem desenhado', !/Leads/.test(kpis), kpis.slice(0,150));
-    checa('o cartão do Repasse foi', /Repasse/.test(kpis), kpis.slice(0,150));
+    // Os módulos deixaram de ser cinco cartões iguais e viraram uma JORNADA —
+    // eles são uma sequência (lead → pré-análise → venda → repasse → registro),
+    // e o desenho passou a dizer isso. Os cartões de cima agora respondem outra
+    // pergunta: o estado da operação somando tudo.
+    const jorn = await p.locator('#jornada').textContent();
+    checa('e o degrau de Leads não foi nem desenhado', !/Leads/.test(jorn), jorn.slice(0,150));
+    checa('o degrau do Repasse foi', /Repasse/.test(jorn), jorn.slice(0,150));
     checa('nenhum XSS', (await p.evaluate(() => window.__XSS || 0)) === 0);
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     todosErros.push(...erros);
@@ -86,14 +90,25 @@ async function pedidos(p){
     checa('as cinco abas de módulo saem na ordem do processo',
       /Geral[\s\S]*Leads[\s\S]*Pré-análise[\s\S]*Venda[\s\S]*Repasse[\s\S]*Registro/.test(barra),
       barra.replace(/\s+/g,' ').slice(0,160));
-    const kpis = await p.locator('#kpis .sb-kpi').count();
-    checa('e há um cartão por módulo', kpis === 5, 'foram ' + kpis);
+    const degraus = await p.locator('#jornada .sb-degrau').count();
+    checa('e a jornada tem um degrau por módulo', degraus === 5, 'foram ' + degraus);
+    checa('na ordem do processo', await p.evaluate(() =>
+      [...document.querySelectorAll('#jornada .sb-degrau-rot')].map(e => e.textContent.trim())
+        .join('|') === 'Leads|Pré-análise|Venda|Repasse|Registro'),
+      await p.evaluate(() => [...document.querySelectorAll('#jornada .sb-degrau-rot')].map(e=>e.textContent.trim()).join('|')));
 
     // Os números vêm do resumo do banco, não de uma contagem no navegador.
     // 4 pré-análises e 1 venda em aberto é o que o cenário tem.
-    const txt = await p.locator('#kpis').textContent();
-    checa('o número da Pré-análise vem do resumo', /4\s*Pré-análise/.test(txt.replace(/\s+/g,' ')),
-      txt.replace(/\s+/g,' ').slice(0,200));
+    const jt = (await p.locator('#jornada').textContent()).replace(/\s+/g,' ');
+    checa('o número da Pré-análise vem do resumo', /Pré-análise\s*4/.test(jt), jt.slice(0,220));
+
+    // E os cartões de cima somam os módulos em vez de repetir cada um: 4 + 1 +
+    // 3 = 8 em aberto. Repetir a jornada em cartões ensinaria o olho a pular a
+    // segunda leitura.
+    const kt = (await p.locator('#kpis').textContent()).replace(/\s+/g,' ');
+    checa('os indicadores somam os módulos, não os repetem',
+      /8\s*Em aberto, somando os módulos/.test(kt), kt.slice(0,200));
+    checa('e dizem o que está parado', /Parados há mais de 30 dias/.test(kt), kt.slice(0,200));
 
     checa('o quadro "Onde o trabalho está" mostra etapa com nome e contagem',
       /Aprovada/.test(await p.locator('#blocos').textContent()));
@@ -149,17 +164,21 @@ async function pedidos(p){
     await b.close();
   }
 
-  console.log('\n== QUEM NÃO PODE VER PAINEL NÃO PARA NA TELA GERAL ==');
+  console.log('\n== A TELA GERAL É A PORTA DE ENTRADA, PARA TODO MUNDO ==');
   {
-    // O login manda todo mundo para a Geral, e a Geral É um painel. Um corretor
-    // sem `ver_dashboard_repasse` parado nela seria a permissão contornada pela
-    // porta da frente — mesmo que os números fossem os dele, que são.
+    // Esta prova já afirmou o CONTRÁRIO: que o corretor sem `ver_dashboard_*`
+    // era desviado daqui para o quadro do módulo dele. O dono desfez a regra —
+    // "sempre para a Geral, isso para todo usuário" — e ele tem razão: esta
+    // tela não é o painel de um módulo, é o mapa de onde a pessoa está.
+    //
+    // O que continua valendo, e é o que esta prova guarda agora: o corretor vê
+    // a tela, mas vê o QUE É DELE. a1_resumo_geral é security invoker e passa
+    // pelo RLS como qualquer consulta.
     const { b, p, erros } = await abrirComoCorretor();
-    await p.waitForTimeout(900);
-    checa('o corretor sem painel não fica na tela Geral',
-      !/geral\.html/.test(p.url()), p.url());
-    checa('e cai no quadro do módulo que ele tem',
-      /andamento/.test(p.url()), p.url());
+    await p.waitForTimeout(1100);
+    checa('o corretor fica na tela Geral', /geral\.html/.test(p.url()), p.url());
+    checa('e a tela monta para ele', (await p.locator('#jornada').count()) === 1);
+    checa('sem erro de JS', erros.length === 0, erros[0] || '');
     todosErros.push(...erros);
     await b.close();
   }

@@ -105,11 +105,18 @@ const rotulosDosCartoes = p =>
     const { b, p, erros, pedidos } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
 
     checa('cartão do registro de integrações', await p.locator('#cfg-card-integra').isVisible());
-    // 5 de sempre + "Regras gerais" + "Área de risco", este último montado por
-    // JS e só para gestor. A licença de módulo NÃO acrescenta grupo: ela
-    // acrescenta cartão dentro dos que já existem.
-    checa('o hub continua com 7 grupos', await p.evaluate(() =>
-      document.querySelectorAll('#cfg-hub .cfg-grupo').length) === 7);
+    // 5 de sempre + "Regras gerais" + "Área de risco" + "Leads". O último é o
+    // único grupo que a LICENÇA acrescenta, e por isso ele nasce escondido no
+    // HTML: sem o módulo Leads, nem o grupo nem os cartões dele aparecem. O
+    // teste conta os VISÍVEIS, que é o que o gestor vê.
+    const _grupos = await p.evaluate(() =>
+      [...document.querySelectorAll('#cfg-hub .cfg-grupo')]
+        .filter(g => g.style.display !== 'none')
+        .map(g => (g.querySelector('.cfg-section-hdr') || {}).textContent || ''));
+    checa('o hub tem 7 grupos sem a licença de Leads', _grupos.length === 7,
+      JSON.stringify(_grupos));
+    checa('e o grupo Leads não é um deles', !_grupos.some(t => /Leads/.test(t)),
+      JSON.stringify(_grupos));
     // Antes isto era uma contagem ("22 cartões viram 24"), e ela apodreceu: um
     // cartão novo e legítimo do próprio Repasse (Checklist operacional) fez o
     // número acusar defeito sem dizer qual cartão mudou.

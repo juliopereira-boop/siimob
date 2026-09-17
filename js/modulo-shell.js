@@ -55,11 +55,13 @@ function a1Svg(nome, tam){
 // para o que nao depende de licenca.
 const A1_MODULOS = [
   { chave:'crm',         rotulo:'Leads',       icone:'lead',
-    vistas:[['Andamento','crm'],['Listagem','crm-listagem'],['Dashboard','crm?tab=dash']] },
+    vistas:[['Andamento','crm'],['Listagem','crm?vista=listagem'],['Dashboard','crm?vista=dashboard']] },
   { chave:'PRE_ANALISE', rotulo:'Pré-análise', icone:'pre',
-    vistas:[['Andamento','pre-analise'],['Listagem','pre-analise-listagem']] },
+    vistas:[['Andamento','pre-analise'],['Listagem','pre-analise-listagem'],
+            ['Dashboard','pre-analise?vista=dashboard']] },
   { chave:'COMERCIAL',   rotulo:'Venda',       icone:'venda',
-    vistas:[['Andamento','comercial'],['Listagem','comercial-listagem']] },
+    vistas:[['Andamento','comercial'],['Listagem','comercial-listagem'],
+            ['Dashboard','comercial?vista=dashboard']] },
   { chave:'repasse',     rotulo:'Repasse',     icone:'repasse',
     vistas:[['Andamento','andamento'],['Listagem','listagem']] },
   { chave:'registro',    rotulo:'Registro',    icone:'registro',
@@ -244,22 +246,24 @@ async function a1MontarShell(alvo, opcoes){
     </div>
     <header class="sb-cromo">
       <div class="sb-cromo-linha">
-        <a class="sb-marca" href="${url('')}" aria-label="SIIMOB, ir para o início">
+        <a class="sb-marca" href="${url('geral')}" aria-label="SIIMOB, ir para a visão geral">
           ${A1_MARCA_SVG}<span>SIIMOB</span></a>
         <nav class="sb-mods" aria-label="Módulos">${abas.join('')}</nav>
         <div class="sb-cromo-dir">
-          <button class="sb-icone" type="button" title="Agenda" onclick="a1ShellIr('agenda')">${a1Svg('calend',17)}</button>
-          <button class="sb-icone" type="button" title="Avisos" onclick="a1ShellIr('avisos')">
+          <button class="sb-icone" type="button" title="Minha agenda" data-pop="agenda"
+            onclick="a1AgendaAbrir(event)">${a1Svg('calend',17)}</button>
+          <button class="sb-icone" type="button" title="Avisos" data-pop="avisos"
+            onclick="a1AvisosAbrir(event)">
             ${a1Svg('sino',17)}<span class="sb-icone-selo" id="sb-avisos-n" data-zero="1" hidden>0</span></button>
-          ${o.perfil ? `<button class="sb-icone" type="button" id="btn-profile" style="display:none"
-            title="Meu perfil" onclick="openProfile()">${a1Svg('pessoa',17)}</button>` : ''}
+
           <div class="sb-pessoa">
             <div class="sb-pessoa-txt">
               <div class="sb-pessoa-email">${a1Esc(a1RotuloPapel(user))}</div>
               <div class="sb-pessoa-nome">${a1Esc(user.name || '')}</div>
             </div>
-            <button class="sb-avatar" type="button" title="Sair" onclick="a1Logout()"
-              aria-label="Sair do sistema">${a1Esc(a1Iniciais(user.name))}</button>
+            <button class="sb-avatar" type="button" id="sb-avatar" title="Minha conta"
+              aria-haspopup="menu" aria-expanded="false"
+              onclick="a1MenuPessoa(event)">${a1Esc(a1Iniciais(user.name))}</button>
           </div>
         </div>
       </div>
@@ -277,6 +281,10 @@ async function a1MontarShell(alvo, opcoes){
 
   A1_SHELL.montado = true;
   a1PaletaMontarIndice(tem, dash, user, slug);
+  // O contador do sino sai do caminho da tela: se demorar ou falhar, o sistema
+  // ja esta montado e utilizavel. Cabecalho que espera por um numero opcional
+  // faz todo mundo esperar por ele.
+  a1AvisosPrimeiraContagem();
   return tem;
 }
 
@@ -626,4 +634,324 @@ function a1Card(o){
 }
 function a1Vazio(texto){
   return `<div class="sb-vazio">${a1Svg('fluxo',26)}<p>${a1Esc(texto)}</p></div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. OS TRES PAINEIS DO CABECALHO — agenda, avisos e a conta
+
+   POR QUE ESTAO AQUI, E NAO EM CADA TELA
+   Sao do CASCO, nao do modulo. A agenda de uma pessoa e a mesma esteja ela no
+   Repasse ou no Registro; o aviso de avaliacao vencendo nao muda de texto
+   conforme a aba aberta. Cada tela tendo a sua copia foi o que produziu seis
+   cabecalhos diferentes — e este arquivo existe para isso nao se repetir.
+
+   O QUE ELES LEEM
+   Nada que nao seja da pessoa: as consultas passam pelo RLS como qualquer
+   outra, entao o corretor ve a agenda DELE. O recorte e sempre estreito — o
+   mes na tela, os proximos 14 dias, os 20 mais recentes — porque painel de
+   cabecalho que baixa colecao inteira trava o sistema em TODA tela, e nao so
+   numa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const A1_POP = { aberto: null, agenda: { mes: null, ano: null, dia: null, itens: null }, avisos: null };
+
+function a1PopFechar(){
+  document.querySelectorAll('.sb-pop').forEach(el => el.remove());
+  const av = document.getElementById('sb-avatar');
+  if (av) av.setAttribute('aria-expanded', 'false');
+  A1_POP.aberto = null;
+}
+
+// Ancora o painel embaixo do botao que o chamou, e nunca para fora da tela: o
+// ultimo icone da direita abriria um painel metade fora do monitor.
+function a1PopAbrir(nome, botao, largura, html){
+  const jaEstava = A1_POP.aberto === nome;
+  a1PopFechar();
+  if (jaEstava) return null;
+  const el = document.createElement('div');
+  el.className = 'sb-pop';
+  el.id = 'sb-pop';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  const r = botao.getBoundingClientRect();
+  const L = Math.min(largura, window.innerWidth - 16);
+  let esq = r.right - L;
+  if (esq < 8) esq = 8;
+  if (esq + L > window.innerWidth - 8) esq = window.innerWidth - 8 - L;
+  el.style.width = L + 'px';
+  el.style.left = esq + 'px';
+  el.style.top = (r.bottom + 8) + 'px';
+  A1_POP.aberto = nome;
+  return el;
+}
+
+document.addEventListener('click', ev => {
+  if (!A1_POP.aberto) return;
+  if (ev.target.closest('.sb-pop') || ev.target.closest('[data-pop]')) return;
+  a1PopFechar();
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') a1PopFechar(); });
+window.addEventListener('resize', () => a1PopFechar(), { passive:true });
+
+/* ── A conta ───────────────────────────────────────────────────────────────
+   O avatar encerrava a sessao com um clique. Um clique sem confirmacao, no
+   canto onde todo sistema poe o perfil — quem ia ver o proprio cadastro caia
+   na tela de login. Agora abre menu, e sair e o ultimo item.                */
+
+function a1MenuPessoa(ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const user = A1.user || {};
+  const slug = A1.slug || '';
+  const bt = ev.currentTarget;
+  // openProfile() e das telas do Repasse. Onde ela nao existe, o cadastro da
+  // pessoa mora em Configuracoes — e o parceiro, que nao entra la, edita o
+  // proprio perfil pela mesma funcao quando ela existir.
+  const temPerfil = typeof openProfile === 'function';
+  const el = a1PopAbrir('pessoa', bt, 262, `
+    <div class="sb-menu-cab">
+      <div class="sb-menu-av">${a1Esc(a1Iniciais(user.name))}</div>
+      <div style="min-width:0">
+        <div class="sb-menu-nome">${a1Esc(user.name || '')}</div>
+        <div class="sb-menu-papel">${a1Esc(a1RotuloPapel(user))}${
+          user.tenant_name ? ' · ' + a1Esc(user.tenant_name) : ''}</div>
+      </div>
+    </div>
+    ${temPerfil
+      ? `<button class="sb-menu-item" type="button" onclick="a1PopFechar();openProfile()">
+           ${a1Svg('pessoa',15)} Meu cadastro</button>`
+      : `<a class="sb-menu-item" href="/${a1Esc(slug)}/repasse?perfil=1">
+           ${a1Svg('pessoa',15)} Meu cadastro</a>`}
+    <button class="sb-menu-item" type="button" onclick="a1PopFechar();a1PaletaAbrir()">
+      ${a1Svg('lupa',15)} Buscar no sistema <small style="margin-left:auto;color:var(--sb-tinta3);font-family:var(--sb-mono);font-size:.68rem">Ctrl K</small></button>
+    ${user.role !== 'partner'
+      ? `<a class="sb-menu-item" href="/${a1Esc(slug)}/configuracoes">${a1Svg('config',15)} Configurações</a>` : ''}
+    <button class="sb-menu-item saida" type="button" onclick="a1Logout()">
+      ${a1Svg('sair',15)} Sair do sistema</button>`);
+  if (el) bt.setAttribute('aria-expanded', 'true');
+}
+
+/* ── A agenda ──────────────────────────────────────────────────────────────
+   Mes na tela, compromissos do dia escolhido. Os dois tipos que o sistema ja
+   guarda hoje: a ENTREVISTA marcada (payload.agendamento_data, escrita pela
+   tela do Repasse) e o VENCIMENTO da avaliacao (evaluation_expiry). Sao os
+   mesmos dados do calendario do dashboard do Repasse — de proposito: duas
+   agendas com numeros diferentes seriam duas verdades sobre o mesmo dia.    */
+
+async function a1AgendaCarregar(ano, mes){
+  const pad = n => String(n).padStart(2,'0');
+  const de  = `${ano}-${pad(mes+1)}-01`;
+  const ate = `${ano}-${pad(mes+1)}-${pad(new Date(ano, mes+1, 0).getDate())}`;
+  const h = { headers: A1.headers() };
+  const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
+  const [venc, ent] = await Promise.all([
+    fetch(`${base}&evaluation_expiry=gte.${de}&evaluation_expiry=lte.${ate}` +
+          `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=300`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => []),
+    // O agendamento mora dentro do jsonb. O filtro `->>` faz o corte no
+    // servidor; trazer o mes inteiro para filtrar no navegador seria pedir
+    // tudo de novo, que e o que esta tela existe para nao fazer.
+    fetch(`${base}&payload->>agendamento_data=gte.${de}&payload->>agendamento_data=lte.${ate}T23:59:59` +
+          `&select=id,client_name,stage_name,payload->>agendamento_data&order=created_at.desc&limit=300`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => [])
+  ]);
+  const itens = [];
+  (Array.isArray(venc) ? venc : []).forEach(c => itens.push({
+    dia: String(c.evaluation_expiry || '').slice(8,10), tipo:'venc',
+    titulo: c.client_name || 'Sem nome', sub: 'Vencimento da avaliação',
+    etapa: c.stage_name || '', id: c.id, hora: '' }));
+  (Array.isArray(ent) ? ent : []).forEach(c => {
+    const d = String(c.agendamento_data || '');
+    if (d.length < 10) return;
+    itens.push({ dia: d.slice(8,10), tipo:'ent',
+      titulo: c.client_name || 'Sem nome', sub: 'Entrevista agendada',
+      etapa: c.stage_name || '', id: c.id, hora: d.slice(11,16) });
+  });
+  return itens;
+}
+
+async function a1AgendaAbrir(ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const bt = ev.currentTarget;
+  const hoje = new Date();
+  if (A1_POP.agenda.mes == null){
+    A1_POP.agenda.mes = hoje.getMonth();
+    A1_POP.agenda.ano = hoje.getFullYear();
+    A1_POP.agenda.dia = hoje.getDate();
+  }
+  const el = a1PopAbrir('agenda', bt, 330, `
+    <div class="sb-pop-cab">${a1Svg('calend',16)}
+      <div><div class="sb-pop-tit">Minha agenda</div>
+        <div class="sb-pop-sub">Entrevistas e vencimentos de avaliação</div></div>
+      <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+    <div class="sb-pop-corpo" id="sb-agenda-corpo">
+      <div class="sb-vazio"><p>Carregando…</p></div></div>
+    <div class="sb-pop-pe">
+      <a class="sb-btn sb-btn-p" href="/${a1Esc(A1.slug || '')}/repasse?tab=agenda">Ver agenda completa</a></div>`);
+  if (!el) return;
+  A1_POP.agenda.itens = null;
+  await a1AgendaDesenhar();
+}
+
+async function a1AgendaMes(passo){
+  A1_POP.agenda.mes += passo;
+  if (A1_POP.agenda.mes < 0){ A1_POP.agenda.mes = 11; A1_POP.agenda.ano--; }
+  if (A1_POP.agenda.mes > 11){ A1_POP.agenda.mes = 0; A1_POP.agenda.ano++; }
+  A1_POP.agenda.dia = null;
+  A1_POP.agenda.itens = null;
+  await a1AgendaDesenhar();
+}
+function a1AgendaDia(d){ A1_POP.agenda.dia = d; a1AgendaDesenhar(); }
+
+async function a1AgendaDesenhar(){
+  const alvo = document.getElementById('sb-agenda-corpo');
+  if (!alvo) return;
+  const { ano, mes } = A1_POP.agenda;
+  if (A1_POP.agenda.itens == null){
+    A1_POP.agenda.itens = await a1AgendaCarregar(ano, mes).catch(() => []);
+    if (!document.getElementById('sb-agenda-corpo')) return;   // fechou enquanto carregava
+  }
+  const itens = A1_POP.agenda.itens || [];
+  const porDia = {};
+  itens.forEach(i => { (porDia[Number(i.dia)] || (porDia[Number(i.dia)] = [])).push(i); });
+
+  const hoje = new Date();
+  const ehMesAtual = hoje.getMonth() === mes && hoje.getFullYear() === ano;
+  if (A1_POP.agenda.dia == null) A1_POP.agenda.dia = ehMesAtual ? hoje.getDate() : 1;
+  const sel = A1_POP.agenda.dia;
+
+  const primeiro = new Date(ano, mes, 1).getDay();
+  const nDias = new Date(ano, mes + 1, 0).getDate();
+  const nAnt = new Date(ano, mes, 0).getDate();
+  const cel = [];
+  for (let i = primeiro - 1; i >= 0; i--) cel.push(`<span class="sb-cal-d fora">${nAnt - i}</span>`);
+  for (let d = 1; d <= nDias; d++){
+    const lista = porDia[d] || [];
+    const cls = ['sb-cal-d', lista.length ? 'tem' : '',
+                 ehMesAtual && hoje.getDate() === d ? 'hoje' : '', sel === d ? 'sel' : ''].filter(Boolean).join(' ');
+    const pts = lista.length ? `<span class="sb-cal-pt">${
+      [...new Set(lista.map(i => i.tipo))].slice(0,2).map(t =>
+        `<i style="background:${t === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></i>`).join('')}</span>` : '';
+    cel.push(lista.length
+      ? `<button type="button" class="${cls}" onclick="a1AgendaDia(${d})">${d}${pts}</button>`
+      : `<span class="${cls}">${d}</span>`);
+  }
+  const sobra = (7 - (cel.length % 7)) % 7;
+  for (let i = 1; i <= sobra; i++) cel.push(`<span class="sb-cal-d fora">${i}</span>`);
+
+  const doDia = (porDia[sel] || []).slice().sort((a,b) => (a.hora || '99').localeCompare(b.hora || '99'));
+  const lista = doDia.length
+    ? doDia.map(i => `<a class="sb-item" data-tom="${i.tipo === 'ent' ? 'info' : 'atento'}"
+        href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}">
+        <span class="sb-item-pt" style="background:${i.tipo === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></span>
+        <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(i.titulo)}</span>
+          <span class="sb-item-s">${a1Esc(i.sub)}${i.etapa ? ' · ' + a1Esc(i.etapa) : ''}</span></span>
+        ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}</a>`).join('')
+    : `<div class="sb-vazio"><p>Nada marcado neste dia.</p></div>`;
+
+  alvo.innerHTML = `
+    <div class="sb-cal-topo">
+      <button class="sb-cal-bt" type="button" onclick="a1AgendaMes(-1)" aria-label="Mês anterior">‹</button>
+      <span class="sb-cal-mes">${A1_MESES_L[mes]} de ${ano}</span>
+      <button class="sb-cal-bt" type="button" onclick="a1AgendaMes(1)" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="sb-cal">${['D','S','T','Q','Q','S','S'].map(d => `<span class="sb-cal-dw">${d}</span>`).join('')}${cel.join('')}</div>
+    <div class="sb-cal-dia">
+      <div class="sb-cal-dia-t">${sel} DE ${A1_MESES_L[mes].toUpperCase()}</div>${lista}</div>`;
+}
+const A1_MESES_L = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+/* ── Os avisos ─────────────────────────────────────────────────────────────
+   O sininho tinha um contador e nenhuma lista: clicar levava para outra tela.
+   Aqui ele diz o que ha, em ordem de urgencia, e cada linha abre o processo.
+   So entra o que EXIGE acao — avaliacao vencida ou vencendo, entrevista de
+   hoje, lead novo sem dono. Aviso que nao pede nada e ruido, e sino que toca
+   a toa o gestor aprende a ignorar.                                          */
+
+async function a1AvisosCarregar(){
+  const hoje = new Date();
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const hj = iso(hoje);
+  const em7 = iso(new Date(Date.now() + 7*864e5));
+  const h = { headers: A1.headers() };
+  const tem = A1_SHELL.tem || {};
+  const pedidos = [];
+
+  if (tem.repasse){
+    const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
+    pedidos.push(fetch(`${base}&evaluation_expiry=not.is.null&evaluation_expiry=lte.${em7}` +
+      `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=20`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => [])
+      .then(l => (Array.isArray(l) ? l : []).map(c => {
+        const d = String(c.evaluation_expiry).slice(0,10);
+        const dias = Math.round((new Date(d + 'T12:00:00') - new Date(hj + 'T12:00:00')) / 864e5);
+        return { peso: dias < 0 ? 0 : 1, tom: dias < 0 ? 'atraso' : 'atento',
+          titulo: c.client_name || 'Sem nome',
+          sub: 'Avaliação · ' + (c.stage_name || ''),
+          quando: dias < 0 ? `venceu há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`,
+          href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}` };
+      })));
+    pedidos.push(fetch(`${base}&payload->>agendamento_data=gte.${hj}&payload->>agendamento_data=lte.${hj}T23:59:59` +
+      `&select=id,client_name,stage_name,payload->>agendamento_data&limit=20`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => [])
+      .then(l => (Array.isArray(l) ? l : []).map(c => ({
+        peso: 0, tom: 'atento', titulo: c.client_name || 'Sem nome',
+        sub: 'Entrevista hoje' + (c.stage_name ? ' · ' + c.stage_name : ''),
+        quando: String(c.agendamento_data || '').slice(11,16),
+        href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}` }))));
+  }
+  if (tem.crm){
+    const ontem = new Date(Date.now() - 2*864e5).toISOString();
+    pedidos.push(fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&archived=eq.false&created_at=gte.${ontem}` +
+      `&select=id,client_name,stage_name,created_at&order=created_at.desc&limit=10`, h)
+      .then(r => r.ok ? r.json() : []).catch(() => [])
+      .then(l => (Array.isArray(l) ? l : []).map(c => ({
+        peso: 2, tom: 'marca', titulo: c.client_name || 'Sem nome',
+        sub: 'Lead novo' + (c.stage_name ? ' · ' + c.stage_name : ''),
+        quando: 'novo', href: `/${A1.slug}/crm?lead=${encodeURIComponent(c.id)}` }))));
+  }
+  const partes = await Promise.all(pedidos);
+  return partes.flat().sort((a,b) => a.peso - b.peso).slice(0, 30);
+}
+
+async function a1AvisosAbrir(ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const bt = ev.currentTarget;
+  const el = a1PopAbrir('avisos', bt, 340, `
+    <div class="sb-pop-cab">${a1Svg('sino',16)}
+      <div><div class="sb-pop-tit">Avisos</div>
+        <div class="sb-pop-sub">O que pede ação agora</div></div>
+      <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+    <div class="sb-pop-corpo" id="sb-avisos-corpo">
+      <div class="sb-vazio"><p>Carregando…</p></div></div>`);
+  if (!el) return;
+  const lista = await a1AvisosCarregar().catch(() => []);
+  A1_POP.avisos = lista;
+  const alvo = document.getElementById('sb-avisos-corpo');
+  if (!alvo) return;
+  alvo.innerHTML = lista.length
+    ? lista.map(a => `<a class="sb-item" data-tom="${a1Esc(a.tom)}" href="${a1Esc(a.href)}">
+        <span class="sb-item-pt"></span>
+        <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(a.titulo)}</span>
+          <span class="sb-item-s">${a1Esc(a.sub)}</span></span>
+        <span class="sb-item-q">${a1Esc(a.quando)}</span></a>`).join('')
+    : `<div class="sb-vazio">${a1Svg('fluxo',26)}<p>Nada pedindo atenção agora. Vencimentos, entrevistas do dia e leads novos aparecem aqui.</p></div>`;
+  a1AvisosContar(lista.filter(a => a.peso === 0).length);
+}
+
+// O numero no sininho conta so o que esta VENCIDO ou e de hoje. Contar tudo que
+// existe faria o numero nunca zerar, e numero que nunca zera deixa de ser lido.
+function a1AvisosContar(n){
+  const el = document.getElementById('sb-avisos-n');
+  if (!el) return;
+  el.textContent = String(n);
+  el.hidden = !n;
+  el.setAttribute('data-zero', n ? '0' : '1');
+}
+
+// Ao montar o casco, o contador e calculado uma vez, em segundo plano.
+async function a1AvisosPrimeiraContagem(){
+  try {
+    const lista = await a1AvisosCarregar();
+    a1AvisosContar(lista.filter(a => a.peso === 0).length);
+  } catch { /* contador e conveniencia: falhar em silencio e melhor que alarmar */ }
 }

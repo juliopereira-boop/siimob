@@ -288,19 +288,34 @@ function responder(url, metodo, corpo0) {
       const etapas = D.stages.filter(s2 => s2.module_key === mk);
       const linhas = D.cases.concat(COM_EXTRAS ? D.extras : [])
         .filter(c => c.module_key === mk && c.archived !== true);
+      const _novo = c => Date.now() - new Date(c.created_at).getTime() < 7*864e5;
+      const _parado = c => Date.now() - new Date(c.stage_entered_at || c.created_at).getTime() > 30*864e5;
       const porEtapa = etapas.map(e => ({
         id:e.id, nome:e.name, cor:e.color, fim:!!e.is_final,
-        n: linhas.filter(c => c.stage_id === e.id).length }));
+        n: linhas.filter(c => c.stage_id === e.id).length,
+        novos: linhas.filter(c => c.stage_id === e.id && _novo(c)).length,
+        parados: linhas.filter(c => c.stage_id === e.id && _parado(c)).length }));
+      const abertas = porEtapa.filter(e => !e.fim);
       casos[mk] = { total: linhas.length,
-        aberto: porEtapa.filter(e => !e.fim).reduce((t,e) => t + e.n, 0),
+        aberto:  abertas.reduce((t,e) => t + e.n, 0),
+        novos:   abertas.reduce((t,e) => t + e.novos, 0),
+        parados: abertas.reduce((t,e) => t + e.parados, 0),
         etapas: porEtapa };
     });
     const monta = (linhas, sits, campo, selosFim) => {
+      const _novo = x => Date.now() - new Date(x.criado_em).getTime() < 7*864e5;
+      const _parado = x => Date.now() - new Date(x.situacao_em || x.criado_em).getTime() > 30*864e5;
       const etapas = sits.filter(s2 => s2.ativo !== false).map(s2 => ({
         id:s2.id, nome:s2.nome, cor:s2.cor, fim: selosFim.indexOf(s2.selo) >= 0,
-        n: linhas.filter(x => x[campo] === s2.id).length }));
+        n: linhas.filter(x => x[campo] === s2.id).length,
+        novos: linhas.filter(x => x[campo] === s2.id && _novo(x)).length,
+        parados: linhas.filter(x => x[campo] === s2.id && _parado(x)).length }));
+      const abertas = etapas.filter(e => !e.fim);
       return { total: linhas.length,
-        aberto: etapas.filter(e => !e.fim).reduce((t,e) => t + e.n, 0), etapas };
+        aberto:  abertas.reduce((t,e) => t + e.n, 0),
+        novos:   abertas.reduce((t,e) => t + e.novos, 0),
+        parados: abertas.reduce((t,e) => t + e.parados, 0),
+        etapas };
     };
     return { em:new Date().toISOString(), casos,
       pre_analise: monta(D.pre_analises, D.pa_situacoes, 'situacao_id', ['FIM_POSITIVO','FIM_NEGATIVO']),

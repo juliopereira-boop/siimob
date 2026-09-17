@@ -137,6 +137,24 @@
   <div id="tab-config" style="display:none"></div>
   <div id="tab-dash" style="display:none"></div>
   <div id="tab-tarefas" style="display:none"></div>
+  <!-- LISTAGEM. O quadro mostra onde o lead ESTA; a listagem mostra a carteira
+       inteira de uma vez, ordenavel, com o que o gestor precisa para cobrar.
+       Todo outro modulo do sistema tem as duas vistas; Leads era o unico sem. -->
+  <div id="tab-lista" style="display:none">
+    <div class="toolbar">
+      <input type="search" id="ll-busca" placeholder="Nome, telefone, e-mail..." oninput="renderLista()">
+      <select id="ll-etapa" onchange="renderLista()"><option value="">Todas as etapas</option></select>
+      <select id="ll-origem" onchange="renderLista()"><option value="">Todas as origens</option></select>
+      <select id="ll-corretor" onchange="renderLista()"><option value="">Todos os corretores</option></select>
+      <select id="ll-temp" onchange="renderLista()">
+        <option value="">Qualquer temperatura</option><option value="Quente">Quente</option>
+        <option value="Morno">Morno</option><option value="Frio">Frio</option></select>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportarLeads()">Exportar CSV</button>
+      <span id="ll-conta" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="panel" style="overflow:auto"><div id="ll-corpo"></div></div>
+  </div>
   <div id="tab-funil">
     <div class="toolbar">
       <select id="pipe-sel" class="pipe-sel" onchange="onPipeChange()"></select>
@@ -154,11 +172,24 @@
   <div class="modal">
     <div class="modal-hdr"><div><div class="modal-title">Novo Lead</div><div class="modal-sub">Cadastre e qualifique o lead</div></div><button class="modal-close" onclick="closeModal('modal-new')">×</button></div>
     <div class="modal-body">
-      <div class="sec-title" style="margin-top:0">Contato</div>
+      <!-- CRIAR LEAD SAO TRES CAMPOS.
+           Quem cadastra lead esta com o cliente ao telefone, e o formulario
+           pedia dezoito coisas antes de deixar salvar — entao o corretor
+           anotava no papel e cadastrava depois, ou nao cadastrava. O resto
+           continua aqui, atras de um botao: quem tem a informacao na mao
+           preenche na hora; quem nao tem, salva e volta depois. -->
       <div class="fgrid">
-        <div class="fg full"><label>Nome *</label><input id="n-name" placeholder="Nome do lead"></div>
-        <div class="fg"><label>Telefone / WhatsApp</label><input id="n-phone" placeholder="(00) 00000-0000"></div>
-        <div class="fg"><label>E-mail</label><input id="n-email" type="email"></div>
+        <div class="fg full"><label>Nome *</label><input id="n-name" placeholder="Nome do lead" autocomplete="off"></div>
+        <div class="fg"><label>Telefone / WhatsApp</label><input id="n-phone" placeholder="(00) 00000-0000" inputmode="tel"></div>
+        <div class="fg"><label>E-mail</label><input id="n-email" type="email" autocomplete="off"></div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="n-mais" onclick="alternarMaisLead()"
+        style="margin-top:.9rem;width:100%;justify-content:center">
+        + Adicionar informações complementares</button>
+
+      <div id="n-extra" hidden>
+      <div class="sec-title">Origem e responsável</div>
+      <div class="fgrid">
         <div class="fg"><label>Origem / Campanha</label><input id="n-source" list="dl-sources"></div>
         <div class="fg"><label>Corretor responsável</label><input id="n-broker" list="dl-brokers"></div>
       </div>
@@ -181,8 +212,9 @@
         <div class="fg"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="n-permuta"> Tem imóvel p/ permuta</label></div>
         <div class="fg full"><label>Observações</label><textarea id="n-obs" rows="2"></textarea></div>
       </div>
+      </div><!-- /n-extra -->
     </div>
-    <div class="modal-foot"><span></span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createLead()">Criar lead</button></div></div>
+    <div class="modal-foot"><span id="n-dica" style="font-size:.7rem;color:var(--t3)">Nome basta para salvar.</span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createLead()">Criar lead</button></div></div>
   </div>
 </div>
 
@@ -191,7 +223,17 @@
   <div class="modal">
     <div class="modal-hdr">
       <div><div class="modal-title" id="ml-title"></div><div class="modal-sub" id="ml-sub"></div></div>
-      <div style="display:flex;gap:.5rem;align-items:center"><select id="ml-stage" onchange="changeLeadStage()" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select><button class="modal-close" onclick="closeModal('modal-lead')">×</button></div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <!-- EM QUALQUER ETAPA. Nao ha selo de automacao no Leads e nao precisa
+             haver: o dono foi explicito — de toda etapa o corretor pode abrir a
+             pre-analise. Amarrar isso a uma etapa "certa" seria inventar uma
+             regra de processo que o cliente nao pediu, e que ele teria de
+             descobrir errando. O botao so aparece com o modulo licenciado. -->
+        <button class="btn btn-primary btn-sm" id="ml-pre" style="display:none"
+          onclick="criarPreAnaliseDoLead()" title="Abrir uma pré-análise já com os dados deste lead">
+          Criar pré-análise</button>
+        <select id="ml-stage" onchange="changeLeadStage()" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
+        <button class="modal-close" onclick="closeModal('modal-lead')">×</button></div>
     </div>
     <div class="modal-tabs">
       <button class="modal-tab active" data-mt="dados" onclick="switchLeadTab('dados',this)">Dados</button>
@@ -245,18 +287,31 @@ async function init(){
   // O casco e a barra de modulos vem de js/modulo-shell.js. As quatro vistas
   // de Leads sao abas DESTA pagina — trocam de div, nao de endereco —, entao
   // vao na sub-barra como acao e nao como link.
+  // A vista vem do endereco, e nao de um estado so na memoria: assim o link do
+  // casco, o botao voltar do navegador e um link colado no WhatsApp abrem todos
+  // a mesma tela. Era o que faltava para Leads ter as tres vistas de verdade.
+  const _v = { listagem:'lista', dashboard:'dash' }[new URLSearchParams(location.search).get('vista')]
+           || (new URLSearchParams(location.search).get('tab') === 'dash' ? 'dash' : 'funil');
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo:'crm',
     sub:[
-      { rot:'Funil de Leads', chave:'funil',   ativo:true, acao:"switchTab('funil')" },
-      { rot:'Tarefas',        chave:'tarefas', acao:"switchTab('tarefas')", n:'', id:'task-badge' },
-      { rot:'Dashboard',      chave:'dash',    acao:"switchTab('dash')" },
-      { rot:'Configurações',  chave:'config',  acao:"switchTab('config')" }
+      // As mesmas tres vistas de todo modulo do sistema. "Tarefas" saiu: o dono
+      // pediu a gestao de tarefa no calendario, e uma aba que so listava o que
+      // o quadro ja mostra era uma terceira leitura do mesmo dado. As
+      // configuracoes de Leads foram para Configuracoes, com o resto do
+      // sistema — "tudo que for configuracao vai estar em um unico lugar".
+      { rot:'Andamento', chave:'funil', ativo:_v === 'funil', acao:"switchTab('funil')" },
+      { rot:'Listagem',  chave:'lista', ativo:_v === 'lista', acao:"switchTab('lista')" },
+      { rot:'Dashboard', chave:'dash',  ativo:_v === 'dash',  acao:"switchTab('dash')" }
     ],
     acoes:'<button class="sb-btn sb-btn-forte sb-btn-p" onclick="openNewLead()">+ Novo lead</button>'
   });
+  // A licenca da Pre-analise decide se o caminho lead -> pre-analise existe.
+  // Sem ela, o botao prometeria uma tela que o RLS recusa.
+  G.temPreAnalise = await a1HasModule('PRE_ANALISE').then(r => r === true).catch(() => false);
   a1StartHeartbeat('crm');
   await loadData();
+  if (_v !== 'funil') switchTab(_v);
 }
 
 async function loadData(){
@@ -406,8 +461,30 @@ function openNewLead(){
   fillPipeStages('n-pipe','n-stage');
   const broker = document.getElementById('n-broker');
   if (broker) { broker.value = souCorretor ? G.user.name : ''; broker.disabled = souCorretor; }
+  // A gaveta volta fechada a cada abertura: o caminho curto e o padrao, e quem
+  // precisa do longo pede. Pipeline e etapa inicial ja vem escolhidos — sao a
+  // primeira do cliente —, entao salvar so com o nome funciona.
+  const ex = document.getElementById('n-extra'); if (ex) ex.hidden = true;
+  const bt = document.getElementById('n-mais'); if (bt) bt.style.display = '';
+  const dica = document.getElementById('n-dica'); if (dica) dica.textContent = 'Nome basta para salvar.';
   document.getElementById('modal-new').classList.remove('hidden');
+  const nome = document.getElementById('n-name'); if (nome) setTimeout(() => nome.focus(), 60);
 }
+// O bloco extra abre e NAO fecha de volta: quem clicou quer preencher, e uma
+// gaveta que se fecha sozinha ao clicar de novo apaga o que a pessoa digitou da
+// vista sem apagar do formulario — o pior dos dois mundos.
+function alternarMaisLead(){
+  const ex = document.getElementById('n-extra');
+  const bt = document.getElementById('n-mais');
+  if (!ex) return;
+  ex.hidden = false;
+  if (bt) bt.style.display = 'none';
+  const dica = document.getElementById('n-dica');
+  if (dica) dica.textContent = 'Preencha só o que você já tem. O resto entra depois, pelo lead.';
+  const p = document.getElementById('n-source');
+  if (p) p.focus();
+}
+
 function fillPipeStages(pipeSelId,stageSelId){
   const pk=document.getElementById(pipeSelId).value;
   const sts=pipeStages(pk); const initials=sts.filter(s=>s.is_initial);
@@ -445,8 +522,25 @@ function openLead(id){
   document.querySelectorAll('#modal-lead .modal-tab').forEach(t=>t.classList.remove('active'));
   document.querySelector('#modal-lead .modal-tab[data-mt="dados"]').classList.add('active');
   G.activeMt='dados'; renderLeadDados();
+  const bp = document.getElementById('ml-pre');
+  if (bp) bp.style.display = G.temPreAnalise ? '' : 'none';
   document.getElementById('modal-lead').classList.remove('hidden');
 }
+// O lead vira pre-analise pelo assistente da PROPRIA Pre-analise, levando o que
+// ja se sabe no endereco. Criar a linha daqui exigiria repetir aqui as regras
+// de permissao, a regra-mae de criacao avulsa e a escolha da situacao inicial —
+// tres coisas que aquela tela ja faz, e que divergiriam no primeiro ajuste.
+function criarPreAnaliseDoLead(){
+  const l = G.editingData || G.leads.find(x => x.id === G.editingId);
+  if (!l) return;
+  const q = new URLSearchParams({ lead: l.id, nome: l.client_name || '' });
+  if (l.client_phone) q.set('tel', l.client_phone);
+  if (l.client_email) q.set('email', l.client_email);
+  if (l.client_cpf)   q.set('cpf', l.client_cpf);
+  if (l.unit)         q.set('unidade', l.unit);
+  location.href = `/${G.slug}/pre-analise?${q.toString()}`;
+}
+
 function switchLeadTab(t,el){ document.querySelectorAll('#modal-lead .modal-tab').forEach(x=>x.classList.remove('active')); el.classList.add('active'); G.activeMt=t;
   if(t==='dados') renderLeadDados(); else if(t==='qual') renderLeadQual(); else if(t==='prop') renderLeadProp(); else if(t==='tarefa') renderLeadTask(); else renderLeadHist(); }
 
@@ -604,46 +698,390 @@ function renderTarefas(){
   }</tbody></table></div>`;
 }
 
+/* ─── Listagem ─────────────────────────────────────────────────────────────
+   A carteira inteira numa tabela. O quadro responde "onde esta cada lead"; a
+   listagem responde "o que eu tenho na mao" — e e nela que se cobra, se ordena
+   por valor e se exporta. Todo modulo do sistema tem as duas vistas.
+
+   Ordena no navegador de proposito: a lista ja esta carregada para o quadro, e
+   uma segunda ida ao servidor para reordenar o que esta na memoria seria
+   trabalho a mais para dar a mesma resposta.                                 */
+
+const LL = { ord:'created_at', desc:true };
+
+function popularFiltrosLista(){
+  const leads = G.leads.filter(l => !(l.payload && l.payload.archived));
+  const enche = (id, lista, atual) => {
+    const el = document.getElementById(id); if (!el) return;
+    const v = atual != null ? atual : el.value;
+    const rotulo = el.options[0] ? el.options[0].textContent : '';
+    el.innerHTML = `<option value="">${esc(rotulo)}</option>` +
+      lista.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    el.value = v;
+  };
+  enche('ll-etapa',    [...new Set(G.stages.map(s => s.name).filter(Boolean))]);
+  enche('ll-origem',   [...new Set(leads.map(l => l.partner_name).filter(Boolean))].sort());
+  enche('ll-corretor', [...new Set(leads.map(l => l.broker_name).filter(Boolean))].sort());
+}
+
+function leadsDaLista(){
+  const q = (document.getElementById('ll-busca')?.value || '').trim().toLowerCase();
+  const et = document.getElementById('ll-etapa')?.value || '';
+  const or = document.getElementById('ll-origem')?.value || '';
+  const co = document.getElementById('ll-corretor')?.value || '';
+  const tp = document.getElementById('ll-temp')?.value || '';
+  const sm = stageMap();
+  return G.leads.filter(l => {
+    if (l.payload && l.payload.archived) return false;
+    if (et && (sm[l.stage_id] || {}).name !== et) return false;
+    if (or && (l.partner_name || '') !== or) return false;
+    if (co && (l.broker_name || '') !== co) return false;
+    if (tp && leadTemp(leadScore(l)).k !== tp) return false;
+    if (q) {
+      const alvo = [l.client_name, l.client_phone, l.client_email, l.development]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!alvo.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function ordenarLista(col){
+  if (LL.ord === col) LL.desc = !LL.desc; else { LL.ord = col; LL.desc = true; }
+  renderLista();
+}
+
+function renderLista(){
+  const alvo = document.getElementById('ll-corpo');
+  if (!alvo) return;
+  const sm = stageMap();
+  const linhas = leadsDaLista().slice().sort((a,b) => {
+    const val = l => {
+      switch (LL.ord) {
+        case 'nome':  return (l.client_name || '').toLowerCase();
+        case 'etapa': return ((sm[l.stage_id] || {}).position ?? 99);
+        case 'score': return leadScore(l);
+        case 'valor': return Number(l.contract_value) || 0;
+        case 'corretor': return (l.broker_name || '').toLowerCase();
+        default: return l.created_at || '';
+      }
+    };
+    const x = val(a), y = val(b);
+    if (x === y) return 0;
+    return (x > y ? 1 : -1) * (LL.desc ? -1 : 1);
+  });
+
+  const conta = document.getElementById('ll-conta');
+  if (conta) conta.textContent = `${linhas.length} de ${G.leads.length} lead(s)`;
+
+  if (!linhas.length){
+    alvo.innerHTML = `<div style="padding:2.4rem;text-align:center;color:var(--t3);font-size:.8rem">
+      Nenhum lead com esses filtros. Limpe a busca ou crie o primeiro pelo botão do cabeçalho.</div>`;
+    return;
+  }
+
+  const seta = c => LL.ord === c ? (LL.desc ? ' ↓' : ' ↑') : '';
+  const cab = [['nome','Lead'],['etapa','Etapa'],['score','Temperatura'],
+               ['valor','Valor'],['corretor','Corretor'],['created_at','Entrou em']];
+  alvo.innerHTML = `<table class="pt-table" style="width:100%">
+    <thead><tr>${cab.map(([c,r]) =>
+      `<th style="cursor:pointer;white-space:nowrap" onclick="ordenarLista('${c}')">${esc(r)}${seta(c)}</th>`).join('')}
+      <th style="width:1%"></th></tr></thead>
+    <tbody>${linhas.map(l => {
+      const st = sm[l.stage_id] || {};
+      const sc = leadScore(l), tp = leadTemp(sc);
+      const ts = taskState(l);
+      const fone = (l.client_phone || '').replace(/\D/g,'');
+      return `<tr style="cursor:pointer" onclick="openLead('${esc(l.id)}')">
+        <td><b>${esc(l.client_name || 'Sem nome')}</b>
+          <div style="font-size:.69rem;color:var(--t3)">${
+            [l.client_phone, l.client_email].filter(Boolean).map(esc).join(' · ') || '—'}</div></td>
+        <td><span class="chip" style="background:${esc(st.color || '#6B827D')}22;color:${esc(st.color || '#6B827D')}">${esc(st.name || '—')}</span>
+          ${ts ? `<div style="font-size:.66rem;color:${ts.over ? 'var(--red)' : 'var(--t3)'}">⏰ ${ts.over ? 'tarefa atrasada' : fmtDate(ts.date)}</div>` : ''}</td>
+        <td><span class="temp" style="background:${tp.c}">${tp.k} ${sc}</span></td>
+        <td style="white-space:nowrap">${l.contract_value ? `<b>${fmtBRL(l.contract_value)}</b>` : '—'}</td>
+        <td>${esc(l.broker_name || '—')}</td>
+        <td style="white-space:nowrap;color:var(--t3)">${fmtDate(l.created_at)}</td>
+        <td style="white-space:nowrap;text-align:right">${
+          fone ? `<button class="wa" onclick="event.stopPropagation();waTo('${esc(fone)}','${esc(l.id)}')">Zap</button> ` : ''}
+          <button class="mini-btn" onclick="event.stopPropagation();openLead('${esc(l.id)}')">Abrir</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// CSV do que esta na tela, e nao da tabela inteira: o gestor exporta o recorte
+// que acabou de montar com os filtros. Exportar tudo ignorando o filtro e o
+// jeito de entregar uma planilha que ninguem pediu.
+function exportarLeads(){
+  const sm = stageMap();
+  const linhas = leadsDaLista();
+  if (!linhas.length){ toast('Nada para exportar com esses filtros','info'); return; }
+  const cols = ['Lead','Telefone','E-mail','Etapa','Score','Temperatura','Valor','Origem','Corretor','Entrou em'];
+  const escCsv = v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`;
+  const corpo = linhas.map(l => {
+    const sc = leadScore(l);
+    return [l.client_name, l.client_phone, l.client_email, (sm[l.stage_id]||{}).name,
+            sc, leadTemp(sc).k, l.contract_value || '', l.partner_name, l.broker_name,
+            fmtDate(l.created_at)].map(escCsv).join(';');
+  });
+  // BOM na frente: sem ele o Excel em portugues abre acento como caractere
+  // quebrado, e o gestor conclui que o sistema gravou errado.
+  const csv = '\ufeff' + [cols.map(escCsv).join(';')].concat(corpo).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  a.download = `leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
 // ─── Dashboard ───────────────────────────────────────────────────────────────
+//
+// O QUE ESTE PAINEL RESPONDE
+// Um funil de leads só tem três perguntas de verdade, e o painel antigo não
+// respondia nenhuma: (1) estou recebendo lead? (2) estou ATENDENDO o que
+// recebo? (3) o que entra vira negócio, e em quanto tempo?
+//
+// Quantidade sozinha engana. "120 leads" é ótimo e é péssimo, e a diferença
+// está em quantos ninguém tocou, quantos passaram do prazo de contato e quanto
+// tempo o funil leva para fechar. É isso que está aqui.
+//
+// O RECORTE É POR SAFRA DE ENTRADA, e o seletor diz qual. Misturar lead de
+// ontem com lead de um ano atrás numa taxa de conversão dá um número que sobe
+// sozinho conforme o cliente envelhece.
+
+const DASH = { dias: 30 };
+function dashPeriodo(d){ DASH.dias = Number(d) || 0; renderDash(); }
+
+// Sem primeiro contato registrado e sem tarefa marcada, ninguém pegou o lead.
+// É o KPI mais importante da tela: lead sem dono é dinheiro parado na porta.
+function leadSemToque(l){
+  const p = l.payload || {};
+  return !p.task && !p.primeiro_contato && !l.broker_name;
+}
+function horasDesde(iso){
+  const t = iso ? new Date(iso).getTime() : NaN;
+  return isNaN(t) ? null : (Date.now() - t) / 36e5;
+}
+
 function renderDash(){
-  const el=document.getElementById('tab-dash');
-  const leads=G.leads.filter(l=>!(l.payload&&l.payload.archived));
-  const sm=stageMap();
-  const isGanho=l=>{const s=sm[l.stage_id];return s&&s.is_final&&/ganho|ativo|assinad/i.test(s.name);};
-  const isPerd=l=>{const s=sm[l.stage_id];return s&&s.is_final&&/perdid/i.test(s.name);};
-  const abertos=leads.filter(l=>!(sm[l.stage_id]&&sm[l.stage_id].is_final));
-  const ganhos=leads.filter(isGanho); const perdidos=leads.filter(isPerd);
-  const valorAberto=abertos.reduce((a,l)=>a+(Number(l.contract_value)||0),0);
-  const vgv=ganhos.reduce((a,l)=>a+(Number(l.contract_value)||0),0);
-  const conv= leads.length? Math.round(ganhos.length/leads.length*100):0;
-  // ranking corretores
-  const byB={}; leads.forEach(l=>{const b=l.broker_name||'—'; byB[b]=byB[b]||{total:0,ganho:0,vgv:0}; byB[b].total++; if(isGanho(l)){byB[b].ganho++; byB[b].vgv+=Number(l.contract_value)||0;}});
-  const ranking=Object.entries(byB).sort((a,b)=>b[1].vgv-a[1].vgv||b[1].ganho-a[1].ganho).slice(0,8);
-  const bySrc={}; leads.forEach(l=>{const s=l.partner_name||'Sem origem'; bySrc[s]=(bySrc[s]||0)+1;});
-  const stsPipe=pipeStages(G.pipe);
-  el.innerHTML=`
-    <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">Total de Leads</div><div class="kpi-value">${leads.length}</div><div class="kpi-sub">ativos</div></div>
-      <div class="kpi-card a"><div class="kpi-label">Em Aberto</div><div class="kpi-value">${abertos.length}</div><div class="kpi-sub">em negociação</div></div>
-      <div class="kpi-card g"><div class="kpi-label">Ganhos</div><div class="kpi-value">${ganhos.length}</div><div class="kpi-sub">conversão ${conv}%</div></div>
-      <div class="kpi-card r"><div class="kpi-label">Perdidos</div><div class="kpi-value">${perdidos.length}</div><div class="kpi-sub">descartados</div></div>
-      <div class="kpi-card v"><div class="kpi-label">VGV Fechado</div><div class="kpi-value" style="font-size:1.15rem">${fmtBRL(vgv)}</div><div class="kpi-sub">negócios ganhos</div></div>
-      <div class="kpi-card"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" style="font-size:1.15rem">${fmtBRL(valorAberto)}</div><div class="kpi-sub">potencial</div></div>
+  const el = document.getElementById('tab-dash');
+  const sm = stageMap();
+  const todos = G.leads.filter(l => !(l.payload && l.payload.archived));
+  const corte = DASH.dias ? Date.now() - DASH.dias * 864e5 : 0;
+  const safra = DASH.dias ? todos.filter(l => new Date(l.created_at).getTime() >= corte) : todos;
+
+  const fim     = l => (sm[l.stage_id] || {}).is_final;
+  const isGanho = l => { const st = sm[l.stage_id]; return st && st.is_final && /ganho|ativo|assinad|convertid/i.test(st.name || ''); };
+  const isPerd  = l => { const st = sm[l.stage_id]; return st && st.is_final && /perdid|descart|sem interesse/i.test(st.name || ''); };
+
+  const abertos  = todos.filter(l => !fim(l));
+  const ganhos   = safra.filter(isGanho);
+  const perdidos = safra.filter(isPerd);
+  const decididos = ganhos.length + perdidos.length;
+
+  const vgv         = ganhos.reduce((a,l) => a + (Number(l.contract_value) || 0), 0);
+  const valorAberto = abertos.reduce((a,l) => a + (Number(l.contract_value) || 0), 0);
+  const ticket      = ganhos.length ? vgv / ganhos.length : null;
+
+  // Conversão sobre quem JÁ FOI DECIDIDO, não sobre todo mundo. Dividir pelos
+  // leads totais conta como "perda" quem ainda está em negociação, e faz a taxa
+  // parecer pior quanto mais leads novos entram — exatamente ao contrário.
+  const conv = decididos ? ganhos.length / decididos : null;
+
+  const semToque = abertos.filter(leadSemToque);
+  const parados  = abertos.filter(l => { const h = horasDesde(l.stage_entered_at || l.created_at); return h != null && h > 7*24; });
+  const tarefaAtrasada = abertos.filter(l => { const t = taskState(l); return t && t.over; });
+
+  // Ciclo: da entrada até cair numa etapa final. Só quem fechou tem ciclo.
+  const ciclos = ganhos.map(l => {
+    const a = new Date(l.created_at).getTime();
+    const b = new Date(l.updated_at || l.stage_entered_at || l.created_at).getTime();
+    return isNaN(a) || isNaN(b) || b < a ? null : (b - a) / 864e5;
+  }).filter(v => v != null).sort((x,y) => x - y);
+  const cicloMed = ciclos.length ? ciclos[Math.floor(ciclos.length/2)] : null;
+
+  // Entrada por semana, das últimas 8 — a resposta à pergunta "estou recebendo".
+  const semanas = [];
+  for (let k = 7; k >= 0; k--){
+    const de  = Date.now() - (k+1) * 7 * 864e5;
+    const ate = Date.now() - k * 7 * 864e5;
+    semanas.push({ n: todos.filter(l => { const t = new Date(l.created_at).getTime();
+                                          return t >= de && t < ate; }).length,
+                   rot: new Date(ate).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) });
+  }
+  const topoSem = Math.max(1, ...semanas.map(x => x.n));
+
+  const dia = n => n == null ? '—' : (n < 1 ? '<1d' : Math.round(n) + 'd');
+  const pct = v => v == null ? '—' : Math.round(v * 100) + '%';
+
+  const kpi = (rot, val, sub, tom, tit) => `
+    <div class="sb-kpi" data-tom="${tom || 'marca'}"${tit ? ` title="${esc(tit)}"` : ''}>
+      <div class="sb-kpi-valor">${esc(String(val))}</div>
+      <div class="sb-kpi-rot">${esc(rot)}</div>
+      <div class="sb-kpi-sub">${esc(sub)}</div></div>`;
+
+  // ── Funil, do topo ao fim, com a perda de cada degrau ──
+  const sts = pipeStages(G.pipe).filter(x => !(sm[x.id] || {}).is_final || isGanhoNome(x.name));
+  const degraus = sts.map(st => ({
+    nome: st.name, cor: st.color || '#0E8C7F',
+    n: safra.filter(l => leadPassouPor(l, st, sm)).length
+  }));
+  const topoFun = Math.max(1, ...degraus.map(d => d.n));
+
+  const rank = {};
+  safra.forEach(l => {
+    const b = l.broker_name || 'Sem corretor';
+    rank[b] = rank[b] || { total:0, ganho:0, vgv:0, sem:0 };
+    rank[b].total++;
+    if (isGanho(l)) { rank[b].ganho++; rank[b].vgv += Number(l.contract_value) || 0; }
+    if (leadSemToque(l) && !fim(l)) rank[b].sem++;
+  });
+  const ranking = Object.entries(rank).sort((a,b) => b[1].vgv - a[1].vgv || b[1].ganho - a[1].ganho).slice(0,8);
+
+  const porOrigem = {};
+  safra.forEach(l => {
+    const o = l.partner_name || 'Sem origem';
+    porOrigem[o] = porOrigem[o] || { n:0, ganho:0 };
+    porOrigem[o].n++;
+    if (isGanho(l)) porOrigem[o].ganho++;
+  });
+  const origens = Object.entries(porOrigem).sort((a,b) => b[1].n - a[1].n).slice(0,8);
+  const topoOri = Math.max(1, ...origens.map(([,d]) => d.n));
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem">
+      <span style="font-size:.7rem;font-weight:700;color:var(--t3)">SAFRA DE ENTRADA</span>
+      ${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias'],[0,'Tudo']].map(([d,r]) =>
+        `<button class="sb-btn sb-btn-p${DASH.dias === d ? ' sb-btn-forte' : ''}"
+           onclick="dashPeriodo(${d})">${r}</button>`).join('')}
+      <span style="margin-left:auto;font-size:.7rem;color:var(--t3)">${safra.length} lead(s) na safra · ${abertos.length} em aberto agora</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-      <div class="panel" style="padding:1.15rem">
-        <div class="sec-title" style="margin-top:0">Conversão por etapa · ${esc(pipeLabel(G.pipe))}</div>
-        ${stsPipe.map(s=>{const n=leads.filter(l=>l.stage_id===s.id).length;const inPipe=leads.filter(l=>leadPipe(l)===G.pipe).length||1;const pct=Math.round(n/inPipe*100);return `<div class="bar-row"><div class="bar-top"><span>${esc(s.name)}</span><b>${n}</b></div><div class="bar-track"><div style="height:100%;width:${pct}%;background:${s.color}"></div></div></div>`;}).join('')}
-      </div>
-      <div class="panel" style="padding:1.15rem">
-        <div class="sec-title" style="margin-top:0">Ranking de corretores (VGV)</div>
-        ${ranking.length?ranking.map(([b,d],i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid var(--border)"><span><b>${i+1}.</b> ${esc(b)}</span><span style="text-align:right"><b>${fmtBRL(d.vgv)}</b><div style="font-size:.68rem;color:var(--t3)">${d.ganho} ganho(s) · ${d.total} lead(s)</div></span></div>`).join(''):'<div style="color:var(--t3);font-size:.78rem">Sem dados</div>'}
-      </div>
+
+    <div class="sb-kpis">
+      ${kpi('Sem ninguém atendendo', semToque.length,
+            semToque.length ? 'de ' + abertos.length + ' em aberto' : 'todo lead tem dono',
+            semToque.length ? 'atraso' : 'marca',
+            'Lead em aberto sem corretor, sem tarefa marcada e sem primeiro contato registrado. É o número que custa dinheiro: lead parado na porta.')}
+      ${kpi('Tarefa atrasada', tarefaAtrasada.length,
+            tarefaAtrasada.length ? 'follow-up vencido' : 'nenhum follow-up vencido',
+            tarefaAtrasada.length ? 'atento' : 'marca',
+            'Leads com tarefa marcada cuja data já passou.')}
+      ${kpi('Parados há mais de 7 dias', parados.length, 'sem mudar de etapa', parados.length ? 'atento' : 'neutro',
+            'Contado pelo relógio da etapa atual — quem não anda, não avança nem sai.')}
+      ${kpi('Conversão', pct(conv),
+            decididos ? ganhos.length + ' de ' + decididos + ' decididos' : 'ninguém decidido ainda',
+            'info',
+            'Ganhos ÷ (ganhos + perdidos) da safra. Quem ainda negocia fica FORA da conta: contá-lo como perda faria a taxa cair só por entrar lead novo.')}
+      ${kpi('Ciclo até o ganho', dia(cicloMed), ciclos.length ? 'mediana de ' + ciclos.length : 'sem ganho na safra', 'info',
+            'Mediana de dias entre a entrada do lead e o fechamento. A mediana, e não a média: um negócio de um ano puxa a média e não representa ninguém.')}
+      ${kpi('VGV ganho', fmtBRL(vgv), ganhos.length + ' negócio(s)', 'marca')}
+      ${kpi('Ticket médio', ticket == null ? '—' : fmtBRL(ticket),
+            ganhos.length ? 'n = ' + ganhos.length : 'sem base', 'marca',
+            'Com poucos negócios no período o ticket balança demais para virar sinal de gestão — por isso o n vai junto.')}
+      ${kpi('Em negociação', fmtBRL(valorAberto), abertos.length + ' lead(s)', 'neutro',
+            'Soma dos valores dos leads que ainda correm. É promessa, não previsão: não há probabilidade por etapa cadastrada.')}
     </div>
-    <div class="panel" style="padding:1.15rem;max-width:520px">
-      <div class="sec-title" style="margin-top:0">Leads por origem</div>
-      ${Object.entries(bySrc).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:.32rem 0;border-bottom:1px solid var(--border)"><span>${esc(k)}</span><b>${n}</b></div>`).join('')||'<div style="color:var(--t3);font-size:.78rem">Sem dados</div>'}
+
+    <div class="sb-grade sb-grade-2">
+      <section class="sb-card">
+        <div class="sb-card-cab"><div><div class="sb-card-tit">Funil — ${esc(pipeLabel(G.pipe))}</div>
+          <div class="sb-card-sub">Quantos chegaram a cada degrau, e quanto se perde entre eles</div></div></div>
+        <div class="sb-card-corpo">
+          ${degraus.length ? degraus.map((d,i) => {
+            const ant = i ? degraus[i-1].n : null;
+            const queda = ant && ant > d.n ? Math.round((1 - d.n/ant) * 100) : 0;
+            return `<div style="padding:.5rem 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:baseline;gap:.5rem;margin-bottom:.3rem">
+                <span style="font-size:.78rem;font-weight:600">${esc(d.nome)}</span>
+                <span style="margin-left:auto;font-family:var(--sb-mono);font-size:.76rem"><b>${d.n}</b></span>
+                ${queda ? `<span style="font-size:.67rem;color:var(--red);min-width:3.2em;text-align:right">−${queda}%</span>`
+                        : `<span style="min-width:3.2em"></span>`}
+              </div>
+              <div style="height:8px;border-radius:99px;background:var(--bg);overflow:hidden">
+                <div style="height:100%;width:${Math.round(d.n/topoFun*100)}%;background:${esc(d.cor)};border-radius:99px"></div></div>
+            </div>`; }).join('')
+            : '<div class="sb-vazio"><p>Nenhuma etapa configurada neste funil.</p></div>'}
+        </div>
+      </section>
+
+      <section class="sb-card">
+        <div class="sb-card-cab"><div><div class="sb-card-tit">Entrada por semana</div>
+          <div class="sb-card-sub">Últimas 8 semanas — a pergunta é se o topo do funil está enchendo</div></div></div>
+        <div class="sb-card-corpo">
+          <div style="display:flex;align-items:flex-end;gap:.4rem;height:150px">
+            ${semanas.map(w => `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.3rem;height:100%"
+                 title="${esc(w.n + ' lead(s) na semana que terminou em ' + w.rot)}">
+                 <span style="font-family:var(--sb-mono);font-size:.68rem;color:var(--t3)">${w.n || ''}</span>
+                 <div style="width:100%;border-radius:5px 5px 0 0;background:var(--sb-mar);
+                             height:${Math.max(2, Math.round(w.n/topoSem*100))}%"></div>
+                 <span style="font-size:.6rem;color:var(--t3)">${esc(w.rot)}</span></div>`).join('')}
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="sb-grade sb-grade-2">
+      <section class="sb-card">
+        <div class="sb-card-cab"><div><div class="sb-card-tit">Corretores</div>
+          <div class="sb-card-sub">Por VGV ganho. A coluna "parados" é a que cobra</div></div></div>
+        <div class="sb-card-corpo justo">
+          ${ranking.length ? `<table class="sb-tabela"><thead><tr>
+              <th>Corretor</th><th style="text-align:right">Leads</th><th style="text-align:right">Ganhos</th>
+              <th style="text-align:right">VGV</th><th style="text-align:right">Parados</th></tr></thead><tbody>
+              ${ranking.map(([b,d]) => `<tr>
+                <td class="forte">${esc(b)}</td>
+                <td style="text-align:right">${d.total}</td>
+                <td style="text-align:right">${d.ganho}</td>
+                <td style="text-align:right;white-space:nowrap">${fmtBRL(d.vgv)}</td>
+                <td style="text-align:right;${d.sem ? 'color:var(--red);font-weight:700' : ''}">${d.sem || '—'}</td>
+              </tr>`).join('')}</tbody></table>`
+            : '<div class="sb-vazio"><p>Nenhum lead com corretor na safra.</p></div>'}
+        </div>
+      </section>
+
+      <section class="sb-card">
+        <div class="sb-card-cab"><div><div class="sb-card-tit">Origens</div>
+          <div class="sb-card-sub">Volume e o que cada canal converte</div></div></div>
+        <div class="sb-card-corpo">
+          ${origens.length ? origens.map(([o,d]) => {
+            const c = d.n ? Math.round(d.ganho/d.n*100) : 0;
+            return `<div style="padding:.45rem 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:baseline;gap:.5rem;font-size:.78rem">
+                <span>${esc(o)}</span>
+                <span style="margin-left:auto;font-family:var(--sb-mono);font-size:.74rem"><b>${d.n}</b></span>
+                <span style="font-size:.67rem;color:var(--t3);min-width:5.5em;text-align:right">${d.ganho} ganho(s) · ${c}%</span>
+              </div>
+              <div style="height:6px;border-radius:99px;background:var(--bg);margin-top:.3rem;overflow:hidden">
+                <div style="height:100%;width:${Math.round(d.n/topoOri*100)}%;background:var(--sb-ardosia);border-radius:99px"></div></div>
+            </div>`; }).join('')
+            : '<div class="sb-vazio"><p>Nenhuma origem cadastrada nos leads da safra.</p></div>'}
+        </div>
+      </section>
+    </div>
+
+    <div class="sb-card" style="margin-top:.8rem">
+      <div class="sb-card-cab"><div><div class="sb-card-tit">Depende de cadastro que ainda não existe</div></div></div>
+      <div class="sb-card-corpo">
+        <div class="sb-kpis" style="margin-top:0">
+          ${[['Custo por lead e retorno por canal','a1_config guarda o custo na origem, mas não há gasto lançado por período'],
+             ['Tempo até o primeiro contato','o lead não registra quando alguém falou com ele pela primeira vez'],
+             ['Motivo de perda agrupado','há catálogo de motivos, mas o lead perdido não grava qual foi']]
+            .map(([t,p]) => `<div class="sb-kpi" data-tom="neutro" title="${esc(p)}">
+               <div class="sb-kpi-valor">—</div><div class="sb-kpi-rot">${esc(t)}</div>
+               <div class="sb-kpi-sub">${esc(p)}</div></div>`).join('')}
+        </div>
+      </div>
     </div>`;
+}
+
+function isGanhoNome(n){ return /ganho|ativo|assinad|convertid/i.test(n || ''); }
+// Um lead "passou por" uma etapa se está nela ou numa posterior. Contar só quem
+// está PARADO em cada etapa desenha um funil que não é funil — quem já avançou
+// sumiria dos degraus de trás e o gráfico alargaria no meio.
+function leadPassouPor(l, st, sm){
+  const atual = sm[l.stage_id];
+  if (!atual) return false;
+  return (atual.position ?? 0) >= (st.position ?? 0);
 }
 
 // ─── Configurações (hub + motor genérico de cadastros) ───────────────────────
@@ -651,6 +1089,17 @@ function renderDash(){
 // as chaves antigas (crm_sources/crm_brokers) para não perder dados existentes.
 const CAD_KEYMAP={ origens:'crm_sources', corretores:'crm_brokers' };
 function cadConfigKey(k){ return CAD_KEYMAP[k]||('crm_cad_'+k); }
+// CODIGO PARADO, MANTIDO DE PROPOSITO.
+// Daqui ate o fim do editor generico de cadastros esta a maquina que desenhava
+// a aba "Configuracoes" desta tela. Ela saiu do ar quando as listas do funil
+// foram para Configuracoes (js/cadastros-leads.js): renderConfig() virou um
+// ponteiro e ninguem mais chama openCfgView/renderCadList daqui.
+//
+// Fica no lugar porque `loadCad`, `getCad` e `cadConfigKey` LOGO ABAIXO ainda
+// sao usados — o funil le origens e corretores das mesmas chaves de a1_config
+// para montar os seletores. NAO CONSERTE AQUI: a tela viva desses cadastros e
+// a de Configuracoes, e mexer so nesta copia cria uma segunda verdade sobre a
+// mesma lista.
 const CAD=[
   // Leads & Comunicação
   {key:'origens',sec:'Leads & Comunicação',label:'Origens de Lead',desc:'Canais de captação.',bg:'#cffafe',st:'#0e7490',fields:[{k:'name',label:'Nome',req:true},{k:'tipo',label:'Tipo',type:'select',options:['Digital','Indicação','Presencial','Parceria']},{k:'custo',label:'Custo por lead (R$)'}]},
@@ -697,16 +1146,23 @@ async function saveCad(k){ await fetch(A1.rest('a1_config'),{method:'POST',heade
 function getCad(k){ return G.cad[k]||[]; }
 
 function renderConfig(){
-  const icon=(bg,st)=>`<div class="cfg-hub-icon" style="background:${bg}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${st}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></div>`;
-  const funil=`<div class="cfg-hub-card" onclick="openCfgView('funil')"><div class="cfg-hub-icon" style="background:#ede9fe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div><div class="cfg-card-label">Funis / Pipelines</div><div class="cfg-card-desc">Etapas de cada funil (Vendas, Lançamentos, Locação).</div></div>`;
-  const secs=[...new Set(CAD.map(c=>c.sec))];
-  const body=secs.map(s=>`<div class="cfg-section-hdr">${esc(s)}</div><div class="cfg-cards">${CAD.filter(c=>c.sec===s).map(c=>`<div class="cfg-hub-card" onclick="openCfgView('${c.key}')">${icon(c.bg,c.st)}<div class="cfg-card-label">${c.label}</div><div class="cfg-card-desc">${c.desc}</div></div>`).join('')}</div>`).join('');
-  document.getElementById('tab-config').innerHTML=`
-    <div class="cfg-hub" id="cfg-hub">
-      <div class="cfg-section-hdr">Funil</div><div class="cfg-cards">${funil}</div>
-      ${body}
-    </div>
-    <div id="cfg-view" style="display:none"></div>`;
+  // AS CONFIGURACOES DE LEADS MUDARAM DE CASA.
+  // Elas viviam aqui dentro, numa aba desta tela. O dono pediu o contrario, e
+  // com razao: "tudo que for configuracao vai estar em um unico lugar". Hoje os
+  // mesmos cadastros — origens, motivos de perda, mensagens padrao — sao
+  // cartoes do grupo Leads em Configuracoes, montados por js/cadastros-leads.js
+  // a partir das MESMAS chaves de a1_config. Nada foi migrado e nada se perdeu.
+  //
+  // Esta funcao ficou como ponteiro: quem chegar por um link antigo e levado
+  // para o lugar certo em vez de achar uma tela vazia.
+  const el = document.getElementById('tab-config');
+  if (!el) return;
+  el.innerHTML = `<div class="panel" style="padding:2.4rem;text-align:center">
+    <div style="font-size:.9rem;font-weight:700;margin-bottom:.4rem">As configurações de Leads ficam em Configurações</div>
+    <div style="font-size:.8rem;color:var(--t3);max-width:46ch;margin:0 auto 1.1rem">
+      Origens, motivos de perda, mensagens padrão e as outras listas do funil agora
+      moram no mesmo lugar que o resto das configurações do sistema.</div>
+    <a class="btn btn-primary" href="/${esc(G.slug)}/configuracoes">Abrir Configurações</a></div>`;
 }
 function openCfgView(view){
   document.getElementById('cfg-hub').style.display='none';
@@ -820,8 +1276,11 @@ function switchTab(tab,el){
   // porque ainda ha chamada antiga passando o botao — e ignora-lo e melhor que
   // caçar as chamadas em mil linhas para tirar um argumento.
   if (typeof a1ShellVista === 'function') a1ShellVista(tab);
-  ['funil','tarefas','dash','config'].forEach(t=>{ const n=document.getElementById('tab-'+t); if(n) n.style.display = t===tab?'':'none'; });
-  if(tab==='dash') renderDash(); else if(tab==='config') renderConfig(); else if(tab==='tarefas') renderTarefas();
+  ['funil','lista','tarefas','dash','config'].forEach(t=>{ const n=document.getElementById('tab-'+t); if(n) n.style.display = t===tab?'':'none'; });
+  if(tab==='dash') renderDash();
+  else if(tab==='config') renderConfig();
+  else if(tab==='lista') { popularFiltrosLista(); renderLista(); }
+  else if(tab==='tarefas') renderTarefas();
 }
 function populateFilters(){
   const cfgSrc=getCad('origens').filter(x=>x.active!==false).map(x=>x.name);

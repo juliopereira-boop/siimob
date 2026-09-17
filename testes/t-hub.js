@@ -5,18 +5,24 @@ const { abrir, checa, resumo } = require('./comum');
   const grupos = await p.evaluate(() => [...document.querySelectorAll('#cfg-hub .cfg-grupo')].map(g => ({
     titulo: g.querySelector('.cfg-section-hdr').textContent.trim(),
     sub: g.querySelector('.cfg-section-sub')?.textContent.trim() || '',
-    cards: [...g.querySelectorAll('.cfg-hub-card .cfg-card-label')].map(c=>c.textContent.trim())
+    cards: [...g.querySelectorAll('.cfg-hub-card .cfg-card-label')].map(c=>c.textContent.trim()),
+    visivel: g.style.display !== 'none'
   })));
   grupos.forEach(g => { console.log(`\n  [${g.titulo}] ${g.sub}`); g.cards.forEach(c=>console.log('     · '+c)); });
   // 5 de sempre + "Regras gerais" (as configurações-mãe do cliente) + "Área de
   // risco", o grupo da Exclusão definitiva. Este último é montado por JS e só
   // existe para gestor — por isso não está no HTML.
-  checa('7 grupos', grupos.length === 7, 'n='+grupos.length);
+  // Só os VISÍVEIS: o grupo Leads existe no HTML mas nasce escondido, e só
+  // aparece quando cfgModsLiberar('crm') confirma a licença. Contar os ocultos
+  // faria o teste acusar um grupo que o gestor não vê.
+  const visiveis = grupos.filter(g => g.visivel);
+  checa('7 grupos sem a licença de Leads', visiveis.length === 7, 'n='+visiveis.length
+    + ' · ' + JSON.stringify(grupos.map(g=>g.titulo)));
   // Regras gerais vem PRIMEIRO, e isso é decisão de leitura: o que está lá vale
   // acima de qualquer permissão dos cadastros que vêm depois. Se um grupo novo
   // furar a fila, esta linha avisa.
-  checa('e "Regras gerais" abre o hub', grupos[0].titulo === 'Regras gerais', grupos[0].titulo);
-  checa('todo grupo tem explicação', grupos.every(g=>g.sub.length > 10));
+  checa('e "Regras gerais" abre o hub', visiveis[0].titulo === 'Regras gerais', visiveis[0].titulo);
+  checa('todo grupo tem explicação', visiveis.every(g=>g.sub.length > 10));
   // Aqui havia uma CONTAGEM ("23 cards no total"), e ela apodreceu exatamente
   // como a skill avisa: entrou o cartão do Checklist operacional — decisão
   // legítima, com sub-tela e tudo — e o número passou a acusar um defeito que

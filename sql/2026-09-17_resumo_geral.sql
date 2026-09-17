@@ -38,7 +38,14 @@ as $$
   -- Os módulos de processo genérico (Leads, Repasse, Registro) moram todos em
   -- a1_cases, separados por module_key. Um group by resolve os três de uma vez.
   casos as (
-    select c.module_key, c.stage_id, count(*)::int as n
+    select c.module_key, c.stage_id, count(*)::int as n,
+           -- Entrou nos ultimos 7 dias: responde "o topo do funil esta enchendo".
+           count(*) filter (where c.created_at >= now() - interval '7 days')::int as novos,
+           -- Parado ha mais de 30 dias no MESMO lugar. O relogio e o da etapa, e
+           -- nao o da criacao: processo antigo que anda todo dia nao esta parado,
+           -- e processo de ontem que nao andou tambem nao esta. `coalesce` porque
+           -- linha migrada a mao pode nao ter carimbo de entrada na etapa.
+           count(*) filter (where coalesce(c.stage_entered_at, c.created_at) < now() - interval '30 days')::int as parados
       from a1_cases c
      where c.archived is not true
      group by 1, 2
@@ -49,13 +56,19 @@ as $$
   ),
   -- Pré-análise e Venda têm tabela e esteira próprias.
   pa as (
-    select p.situacao_id, count(*)::int as n from a1_pre_analises p group by 1
+    select p.situacao_id, count(*)::int as n,
+           count(*) filter (where p.criado_em >= now() - interval '7 days')::int as novos,
+           count(*) filter (where coalesce(p.situacao_em, p.criado_em) < now() - interval '30 days')::int as parados
+      from a1_pre_analises p group by 1
   ),
   pa_sit as (
     select s.id, s.nome, s.cor, s.ordem, s.selo from a1_pa_situacoes s where s.ativo
   ),
   co as (
-    select c.situacao_id, count(*)::int as n from a1_comerciais c group by 1
+    select c.situacao_id, count(*)::int as n,
+           count(*) filter (where c.criado_em >= now() - interval '7 days')::int as novos,
+           count(*) filter (where coalesce(c.situacao_em, c.criado_em) < now() - interval '30 days')::int as parados
+      from a1_comerciais c group by 1
   ),
   co_sit as (
     select s.id, s.nome, s.cor, s.ordem, s.selo from a1_co_situacoes s where s.ativo
@@ -72,6 +85,10 @@ as $$
                jsonb_build_object(
                  'total',  coalesce(sum(c.n), 0),
                  'aberto', coalesce(sum(c.n) filter (where not coalesce(e.is_final, false)), 0),
+                 -- Novos e parados contam SO o que ainda corre: um processo
+                 -- encerrado ha seis meses nao esta "parado", esta pronto.
+                 'novos',   coalesce(sum(c.novos)   filter (where not coalesce(e.is_final, false)), 0),
+                 'parados', coalesce(sum(c.parados) filter (where not coalesce(e.is_final, false)), 0),
                  'etapas', jsonb_agg(jsonb_build_object(
                      'id', e.id, 'nome', e.name, 'cor', e.color,
                      'fim', coalesce(e.is_final, false), 'n', coalesce(c.n, 0))
@@ -87,6 +104,10 @@ as $$
       'total',  coalesce((select sum(n) from pa), 0),
       'aberto', coalesce((select sum(p.n) from pa p join pa_sit s on s.id = p.situacao_id
                            where s.selo is null or s.selo = 'INICIO'), 0),
+      'novos',   coalesce((select sum(p.novos) from pa p join pa_sit s on s.id = p.situacao_id
+                            where s.selo is null or s.selo = 'INICIO'), 0),
+      'parados', coalesce((select sum(p.parados) from pa p join pa_sit s on s.id = p.situacao_id
+                            where s.selo is null or s.selo = 'INICIO'), 0),
       'etapas', coalesce((select jsonb_agg(jsonb_build_object(
                    'id', s.id, 'nome', s.nome, 'cor', s.cor,
                    'fim', s.selo in ('FIM_POSITIVO','FIM_NEGATIVO'),
@@ -98,6 +119,10 @@ as $$
       'total',  coalesce((select sum(n) from co), 0),
       'aberto', coalesce((select sum(c.n) from co c join co_sit s on s.id = c.situacao_id
                            where s.selo is null or s.selo = 'INICIO'), 0),
+      'novos',   coalesce((select sum(c.novos) from co c join co_sit s on s.id = c.situacao_id
+                            where s.selo is null or s.selo = 'INICIO'), 0),
+      'parados', coalesce((select sum(c.parados) from co c join co_sit s on s.id = c.situacao_id
+                            where s.selo is null or s.selo = 'INICIO'), 0),
       'etapas', coalesce((select jsonb_agg(jsonb_build_object(
                    'id', s.id, 'nome', s.nome, 'cor', s.cor,
                    'fim', s.selo in ('VENDIDO','FIM_NEGATIVO'),

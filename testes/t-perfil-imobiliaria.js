@@ -69,8 +69,14 @@ async function abrirComo(pag, usuario) {
 }
 
 // Abre o perfil pelo caminho de verdade: o botão que o corretor clica.
+// O perfil mudou de porta, e a porta velha era uma armadilha: o avatar do
+// cabeçalho ENCERRAVA A SESSÃO com um clique, no canto onde todo sistema põe o
+// perfil — quem ia ver o próprio cadastro caía na tela de login. Agora o avatar
+// abre um menu, "Meu cadastro" é o primeiro item e "Sair" é o último.
 async function abrirPerfil(p) {
-  await p.click('#btn-profile');
+  await p.click('#sb-avatar');
+  await p.waitForTimeout(400);
+  await p.click('.sb-pop .sb-menu-item:has-text("Meu cadastro")');
   await p.waitForTimeout(700);
 }
 
@@ -95,7 +101,18 @@ const textoDoModal = p => p.evaluate(() => {
       const { b, p, erros } = await abrirComo(pag, CARLA);
       console.log(`\n== ${pag} — CORRETOR COM IMOBILIÁRIA (Carla Dias) ==`);
 
-      checa('o botão Perfil aparece para o corretor', await visivel(p, '#btn-profile'));
+      // A prova de antes era "existe um botão #btn-profile". O que importa não
+      // é o botão: é a pessoa conseguir chegar ao próprio cadastro sem sair do
+      // sistema. É isso que está guardado aqui agora.
+      await p.click('#sb-avatar');
+      await p.waitForTimeout(400);
+      const menu = await p.locator('.sb-pop').textContent();
+      checa('o menu da conta oferece o cadastro da pessoa', /Meu cadastro/.test(menu), menu.slice(0,120));
+      checa('e "Sair" não é mais um clique acidental no avatar',
+        /Sair do sistema/.test(menu) && menu.indexOf('Meu cadastro') < menu.indexOf('Sair do sistema'),
+        menu.replace(/\s+/g,' ').slice(0,160));
+      await p.keyboard.press('Escape');
+      await p.waitForTimeout(200);
       await abrirPerfil(p);
 
       checa('o perfil tem o campo Imobiliária', await p.locator('#prof-imob').count() === 1);

@@ -100,9 +100,12 @@ const vistasDoCasco = p => p.$$eval('.sb-sub-item',
 
     // As vistas do módulo moram na sub-barra, e não num menu suspenso: menu que
     // só abre no hover esconde a segunda vista de quem usa teclado ou toque.
+    // Três vistas, e a terceira é nova: o painel da Pré-análise existia em
+    // js/paineis.js mas só era alcançável pelo seletor do dashboard do Repasse
+    // — um módulo tinha de passar por outro para mostrar os próprios números.
     const itens = await vistasDoCasco(p);
-    checa('e a sub-barra da Pré-análise oferece exatamente Andamento e Listagem',
-      itens.length === 2 && itens[0] === 'Andamento' && itens[1] === 'Listagem',
+    checa('e a sub-barra da Pré-análise oferece Andamento, Listagem e Dashboard',
+      JSON.stringify(itens) === JSON.stringify(['Andamento','Listagem','Dashboard']),
       JSON.stringify(itens));
     checa('a tela não desenha mais um cabeçalho próprio',
       await p.evaluate(() => document.querySelectorAll('.sb-cromo').length === 1
@@ -421,9 +424,10 @@ const vistasDoCasco = p => p.$$eval('.sb-sub-item',
 
     const menu = await p.$$eval('.sb-sub-item',
       els => els.map(a => a.textContent.replace(/\s+/g,' ').trim() + ' → ' + a.getAttribute('href')));
-    checa('a sub-barra da Venda oferece exatamente Andamento e Listagem',
-      menu.length === 2 && menu[0] === 'Andamento → /thecred/comercial'
-                        && menu[1] === 'Listagem → /thecred/comercial-listagem',
+    checa('a sub-barra da Venda oferece Andamento, Listagem e Dashboard',
+      menu.length === 3 && menu[0] === 'Andamento → /thecred/comercial'
+                        && menu[1] === 'Listagem → /thecred/comercial-listagem'
+                        && menu[2] === 'Dashboard → /thecred/comercial?vista=dashboard',
       JSON.stringify(menu));
 
     // Sem vista no endereço, abre no Andamento — e as abas internas Fila/Esteira

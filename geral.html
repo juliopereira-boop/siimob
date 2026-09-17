@@ -72,6 +72,7 @@
 
 <main class="sb-pagina" id="conteudo">
   <div id="hero"></div>
+  <div id="jornada"></div>
   <div id="kpis"></div>
   <div class="sb-grade sb-grade-3" id="blocos"></div>
 </main>
@@ -108,11 +109,11 @@ const G = { user:null, slug:null, modulos:{}, resumo:null, mes:null, ano:null, a
 // moram em a1_cases separados por module_key — Leads, Repasse e Registro
 // compartilham a mesma engrenagem genérica; Pré-análise e Venda têm a sua.
 const MODS = [
-  { chave:'crm',         rotulo:'Leads',       rota:'crm',        casos:'crm' },
-  { chave:'PRE_ANALISE', rotulo:'Pré-análise', rota:'pre-analise' },
-  { chave:'COMERCIAL',   rotulo:'Venda',       rota:'comercial' },
-  { chave:'repasse',     rotulo:'Repasse',     rota:'andamento',  casos:'repasse' },
-  { chave:'registro',    rotulo:'Registro',    rota:'registro',   casos:'registro' }
+  { chave:'crm',         rotulo:'Leads',       rota:'crm',        casos:'crm',      icone:'lead' },
+  { chave:'PRE_ANALISE', rotulo:'Pré-análise', rota:'pre-analise',                  icone:'pre' },
+  { chave:'COMERCIAL',   rotulo:'Venda',       rota:'comercial',                    icone:'venda' },
+  { chave:'repasse',     rotulo:'Repasse',     rota:'andamento',  casos:'repasse',  icone:'repasse' },
+  { chave:'registro',    rotulo:'Registro',    rota:'registro',   casos:'registro', icone:'registro' }
 ];
 
 function esc(s){
@@ -143,19 +144,13 @@ async function init(){
   // O casco primeiro: a pessoa vê o sistema montado enquanto os números chegam.
   G.modulos = await a1MontarShell(document.getElementById('sb-casco'), { ativo:'geral' });
 
-  // QUEM NÃO PODE VER PAINEL NENHUM NÃO PARA AQUI.
-  // O login manda todo mundo para cá, e a tela Geral É um painel: deixar um
-  // corretor sem `ver_dashboard_*` parado nela seria contornar a permissão pela
-  // porta da frente. Os números que ele veria são os DELE — a1_resumo_geral()
-  // é invoker e passa pelo RLS —, mas a regra do dono não é sobre vazamento, é
-  // sobre o que cada papel deve ter na cara ao entrar. Vai para o quadro do
-  // primeiro módulo que ele tem; só se não tiver nenhum é que fica, e aí a tela
-  // diz o que falta em vez de mandá-lo para lugar nenhum.
-  const _dash = await a1DashboardsDoCliente().catch(() => null);
-  if (_dash && !a1PodeVerAlgumDashboard(G.user, _dash)) {
-    const destino = MODS.find(m => G.modulos[m.chave] === true);
-    if (destino) { location.replace(`/${G.slug}/${destino.rota}`); return; }
-  }
+  // A TELA GERAL E A PORTA DE ENTRADA, PARA TODO MUNDO.
+  // Havia aqui um desvio: quem nao tinha `ver_dashboard_*` de modulo nenhum era
+  // mandado direto para o quadro. O dono desfez a regra — "sempre para a Geral,
+  // isso para todo usuario" —, e ele tem razao: esta tela nao e o painel de um
+  // modulo, e o mapa de onde a pessoa esta. O que cada papel VE aqui continua
+  // filtrado: a1_resumo_geral e invoker e passa pelo RLS, entao o corretor conta
+  // a carteira dele, e os blocos de dinheiro so aparecem para quem pode ver.
 
   a1Hero(document.getElementById('hero'), {});
   desenharEsqueleto();
@@ -239,19 +234,16 @@ async function carregarFila(){
 
 /* ── Agenda: só o mês que está na tela ────────────────────────────────────── */
 
+// A MESMA AGENDA DO REPASSE, NÃO UMA SEGUNDA.
+// O dashboard do Repasse já tem um calendário que os clientes usam hoje, com
+// dois marcadores: a ENTREVISTA agendada (payload.agendamento_data) e o
+// VENCIMENTO da avaliação (evaluation_expiry). Esta tela mostra os mesmos dois,
+// lidos pela mesma função do casco (a1AgendaCarregar) — porque dois calendários
+// com números diferentes sobre o mesmo dia é o tipo de divergência que faz o
+// gestor parar de confiar nos dois.
 async function carregarAgenda(){
   if (G.modulos.repasse !== true){ G.agenda = []; return; }
-  const pad = n => String(n).padStart(2,'0');
-  const de  = `${G.ano}-${pad(G.mes+1)}-01`;
-  const ate = `${G.ano}-${pad(G.mes+1)}-${pad(new Date(G.ano, G.mes + 1, 0).getDate())}`;
-  try {
-    const r = await fetch(
-      `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false` +
-      `&evaluation_expiry=gte.${de}&evaluation_expiry=lte.${ate}` +
-      `&select=id,client_name,evaluation_expiry&order=evaluation_expiry.asc&limit=400`,
-      { headers:A1.headers() });
-    G.agenda = r.ok ? await r.json() : [];
-  } catch { G.agenda = []; }
+  G.agenda = await a1AgendaCarregar(G.ano, G.mes).catch(() => []);
 }
 
 async function mudarMes(d){
@@ -289,33 +281,99 @@ function desenharEsqueleto(){
 }
 
 function desenhar(){
+  desenharJornada();
   desenharKpis();
   desenharBlocos();
 }
 
+/* ── A JORNADA ──────────────────────────────────────────────────────────────
+   Os módulos como uma sequência, não como cinco cartões iguais. É a diferença
+   entre "quantos processos há em cada lugar" e "onde a corrente aperta" — e a
+   segunda é a pergunta de quem coordena repasse.
+
+   Cada degrau mostra o que está EM ABERTO ali, o que entrou na semana, o que
+   está parado há mais de 30 dias, e a esteira do cliente em miniatura.        */
+
+function desenharJornada(){
+  const mods = licenciados();
+  const alvo = document.getElementById('jornada');
+  if (!mods.length){ alvo.innerHTML = ''; return; }
+  alvo.innerHTML = `<nav class="sb-jornada" aria-label="A jornada do processo">${
+    mods.map(m => {
+      const d = dadosDe(m);
+      const abertas = (d.etapas || []).filter(e => !e.fim && e.n > 0);
+      const total = abertas.reduce((t,e) => t + e.n, 0) || d.aberto || 0;
+      const tarja = abertas.length
+        ? abertas.map(e => `<i style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
+             title="${esc(e.nome)}: ${n0(e.n)}"></i>`).join('')
+        : `<i style="flex:1;background:var(--sb-linha)"></i>`;
+      const notas = [];
+      if (d.novos)   notas.push(`${n0(d.novos)} novo(s) na semana`);
+      if (d.parados) notas.push(`<b>${n0(d.parados)} parado(s) há +30d</b>`);
+      return `<a class="sb-degrau${total ? '' : ' vazio'}" href="/${esc(G.slug)}/${esc(m.rota)}"
+        title="${esc('Abrir ' + m.rotulo)}">
+        <span class="sb-degrau-rot">${a1Svg(m.icone, 14)}${esc(m.rotulo)}</span>
+        <span class="sb-degrau-n">${n0(total)}</span>
+        <span class="sb-degrau-sub">${notas.length ? notas.join(' · ')
+          : (d.total ? n0(d.total) + ' no total' : 'nenhum processo ainda')}</span>
+        <span class="sb-degrau-tarja">${tarja}</span></a>`;
+    }).join('')}</nav>`;
+}
+
+/* ── OS INDICADORES ─────────────────────────────────────────────────────────
+   A jornada acima já diz quanto há em cada módulo. Repetir isso em cartões
+   seria a mesma informação duas vezes — e informação repetida ensina o olho a
+   pular a segunda. Aqui vai o que a jornada NÃO diz: o estado da operação
+   somando tudo, e o dinheiro.
+
+   Os cartões de dinheiro só aparecem para quem pode ver consolidado. É a mesma
+   regra dos painéis de módulo, e ela é do dono: corretor não abre o sistema e
+   vê o VGV da empresa inteira.                                                */
+
 function desenharKpis(){
   const mods = licenciados();
+  const alvo = document.getElementById('kpis');
   if (!mods.length){
-    document.getElementById('kpis').innerHTML = `<div class="sb-card" style="margin-top:.9rem">
+    alvo.innerHTML = `<div class="sb-card" style="margin-top:.9rem">
       <div class="sb-card-corpo">${a1Vazio('Nenhum módulo liberado para esta empresa ainda. Quem libera é o suporte do SIIMOB.')}</div></div>`;
     return;
   }
-  // Um cartão por módulo: o número é o que está EM ABERTO, porque é o que exige
-  // trabalho. O total fica no rodapé — ele conta história, não pauta o dia.
-  const kpis = mods.map(m => {
-    const d = dadosDe(m);
-    const fechados = Math.max(0, (d.total || 0) - (d.aberto || 0));
-    return {
-      valor: n0(d.aberto), rotulo: m.rotulo,
-      sub: !d.total ? 'nenhum processo ainda'
-        : (G.resumo && G.resumo.parcial) ? `${n0(d.total)} no total`
-        : `${n0(d.total)} no total · ${n0(fechados)} ${fechados === 1 ? 'encerrado' : 'encerrados'}`,
-      href: `/${G.slug}/${m.rota}`,
-      tom: 'marca',
-      titulo: `Processos em aberto no módulo ${m.rotulo}. Clique para abrir o quadro.`
-    };
-  });
-  document.getElementById('kpis').innerHTML = a1Kpis(kpis);
+  const somar = campo => mods.reduce((t,m) => t + (Number(dadosDe(m)[campo]) || 0), 0);
+  const emAberto = somar('aberto');
+  const novos    = somar('novos');
+  const parados  = somar('parados');
+  const encerrados = mods.reduce((t,m) => {
+    const d = dadosDe(m); return t + Math.max(0, (d.total || 0) - (d.aberto || 0));
+  }, 0);
+
+  const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
+  const hoje = hojeISO();
+  const vencidas = fila.filter(c => soData(c.evaluation_expiry) < hoje).length;
+  const emSete   = fila.filter(c => { const d = diasAte(c.evaluation_expiry); return d >= 0 && d <= 7; }).length;
+
+  const kpis = [
+    { valor:n0(emAberto), rotulo:'Em aberto, somando os módulos',
+      sub: encerrados ? `${n0(encerrados)} já encerrado(s)` : 'nada encerrado ainda',
+      tom:'marca',
+      titulo:'Soma do que ainda corre em todos os módulos liberados. Etapa de fim não entra: promessa cumprida sai da conta.' },
+    { valor:n0(novos), rotulo:'Entraram nos últimos 7 dias',
+      sub: novos ? 'trabalho novo na mesa' : 'nenhuma entrada na semana',
+      tom: novos ? 'info' : 'neutro',
+      titulo:'Processos criados na última semana, em qualquer módulo — é o que diz se o topo do funil está enchendo.' },
+    { valor:n0(parados), rotulo:'Parados há mais de 30 dias',
+      sub: parados ? 'não mudam de etapa' : 'nada esquecido',
+      tom: parados ? 'atento' : 'marca',
+      titulo:'O relógio é o da ETAPA, não o da criação: processo antigo que anda todo dia não está parado, e processo de ontem que não andou também não está.' },
+    G.modulos.repasse === true
+      ? { valor:n0(vencidas + emSete), rotulo:'Avaliações no prazo curto',
+          sub: vencidas ? `${n0(vencidas)} já vencida(s)` : (emSete ? 'vencem em até 7 dias' : 'nenhuma no prazo curto'),
+          tom: vencidas ? 'atraso' : (emSete ? 'atento' : 'marca'),
+          href:`/${G.slug}/listagem`,
+          titulo:'Vencidas mais as que vencem em até 7 dias. É o prazo que aperta com a Caixa.' }
+      : { valor:n0(mods.length), rotulo:'Módulos liberados',
+          sub:mods.map(m => m.rotulo).join(' · '), tom:'neutro' }
+  ];
+  alvo.innerHTML = a1Kpis(kpis);
 }
 
 function desenharBlocos(){
@@ -341,7 +399,7 @@ function desenharBlocos(){
   // 3. Agenda
   blocos.push(a1Card({
     titulo:'Agenda do mês',
-    sub:'Dias com avaliação vencendo',
+    sub:'Entrevistas e vencimentos de avaliação',
     acao:`<div class="cal-nav">
       <button class="cal-bt" onclick="mudarMes(-1)" aria-label="Mês anterior">‹</button>
       <button class="cal-bt" onclick="mudarMes(1)" aria-label="Próximo mês">›</button></div>`,
@@ -413,14 +471,12 @@ function desenharAgenda(){
   const el = document.getElementById('cal-corpo');
   if (!el) return;
   if (G.modulos.repasse !== true){
-    el.innerHTML = a1Vazio('A agenda mostra prazos do Repasse, que não está liberado.');
+    el.innerHTML = a1Vazio('A agenda mostra entrevistas e prazos do Repasse, que não está liberado para esta empresa.');
     return;
   }
   const porDia = {};
   (G.agenda || []).forEach(c => {
-    const d = soData(c.evaluation_expiry);
-    if (d.length !== 10) return;
-    const dia = Number(d.slice(8,10));
+    const dia = Number(c.dia);
     if (!dia) return;
     (porDia[dia] || (porDia[dia] = [])).push(c);
   });
@@ -439,11 +495,15 @@ function desenharAgenda(){
     const lista = porDia[d] || [];
     const eHoje = ehMesAtual && hoje.getDate() === d;
     const cls = ['cal-d', lista.length ? 'tem' : '', eHoje ? 'hoje' : ''].filter(Boolean).join(' ');
+    // Duas cores, dois compromissos: âmbar é prazo que vence, azul-ardósia é
+    // entrevista marcada. Uma cor só faria o gestor abrir o dia para descobrir
+    // qual dos dois é — que é o clique que o calendário existe para poupar.
+    const tipos = [...new Set(lista.map(i => i.tipo))];
     const pts = lista.length
-      ? `<span class="cal-pt">${lista.slice(0,3).map(() =>
-          `<i style="background:var(--sb-acafrao)"></i>`).join('')}</span>` : '';
+      ? `<span class="cal-pt">${tipos.slice(0,2).map(t =>
+          `<i style="background:${t === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></i>`).join('')}</span>` : '';
     const tit = lista.length
-      ? ` title="${esc(lista.length + ' avaliação(ões) vencendo: ' + lista.slice(0,4).map(c => c.client_name).join(', '))}"` : '';
+      ? ` title="${esc(lista.map(i => (i.hora ? i.hora + ' ' : '') + i.titulo + ' — ' + i.sub).slice(0,5).join('\n'))}"` : '';
     celulas.push(`<div class="${cls}"${tit}>${d}${pts}</div>`);
   }
   const sobra = (7 - (celulas.length % 7)) % 7;
@@ -455,9 +515,14 @@ function desenharAgenda(){
       ${DIAS_S.map(d => `<div class="cal-dw">${d}</div>`).join('')}
       ${celulas.join('')}
     </div>
-    ${nAgenda
-      ? `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">${n0(nAgenda)} ${nAgenda === 1 ? 'avaliação vence' : 'avaliações vencem'} neste mês</div>`
-      : `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">Nenhum prazo neste mês</div>`}`;
+    ${nAgenda ? (() => {
+      const ents = (G.agenda || []).filter(i => i.tipo === 'ent').length;
+      const vencs = nAgenda - ents;
+      const partes = [];
+      if (vencs) partes.push(`<span><i style="display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--sb-acafrao);margin-right:.3rem"></i>${n0(vencs)} ${vencs === 1 ? 'avaliação' : 'avaliações'}</span>`);
+      if (ents)  partes.push(`<span><i style="display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--sb-ardosia);margin-right:.3rem"></i>${n0(ents)} ${ents === 1 ? 'entrevista' : 'entrevistas'}</span>`);
+      return `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3);display:flex;gap:.9rem;flex-wrap:wrap">${partes.join('')}</div>`;
+    })() : `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">Nenhum compromisso neste mês</div>`}`;
 }
 
 init();

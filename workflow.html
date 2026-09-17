@@ -439,6 +439,12 @@ let WF_USER  = null;    // current logged-in user (holds tenant_id)
 // Na ordem do processo, a mesma da barra e a mesma das abas de tipo de
 // documento: Pré-análise → Venda → Repasse, e o Registro ao fim.
 const WF_MODULES = [
+  // Leads faltava aqui, e por isso o modulo licenciado nao aparecia no editor:
+  // o cliente ligava Leads e nao tinha como desenhar a esteira dele. Usa o
+  // mesmo motor do Repasse e do Registro (`stages`), porque as tres moram em
+  // a1_stages separadas por module_key — Leads nao precisa de selo de
+  // automacao, so de inicio e fim, que e exatamente o que esse motor oferece.
+  { key: 'crm',         label: 'Leads',       icone: '🎯', drv: 'stages' },
   { key: 'PRE_ANALISE', label: 'Pré-análise', icone: '🔎', drv: 'pa' },
   { key: 'COMERCIAL',   label: 'Venda',   icone: '🤝', drv: 'co' },
   { key: 'repasse',     label: 'Repasse',     icone: '🏦', drv: 'stages' },
