@@ -1,0 +1,45 @@
+# ══════════════════════════════════════════════════════════════════════════
+# Rotas do SIIMOB — formato Cloudflare Pages / Netlify
+#
+# POR QUE ESTE ARQUIVO EXISTE
+# As rotas bonitas do sistema (/cliente/repasse) sao reescritas, nao redirecionamentos:
+# o endereco continua o que a pessoa digitou e o servidor entrega outro arquivo. Na
+# Vercel isso mora em vercel.json; no Cloudflare Pages e no Netlify, aqui.
+#
+# O `200` no fim de cada linha e o que faz ser REESCRITA. Com 301 ou 302 o endereco
+# mudaria na barra do navegador, o slug do cliente sumiria da URL e A1.slug — que le
+# o apelido do cliente do proprio caminho — devolveria nulo. O sistema inteiro perde
+# a nocao de qual cliente esta logado.
+#
+# Os dois arquivos precisam concordar. Rota nova entra NOS DOIS.
+# ══════════════════════════════════════════════════════════════════════════
+
+/                                      /index.html                200
+/conheca                               /lp.html                   200
+/siimob                                /lp.html                   200
+/indica                                /indica.html               200
+/indicasii                             /indica.html               200
+/indica/cadastro                       /indica-cadastro.html      200
+/cadastro-corretor                     /precadastro.html          200
+/:slug/login                           /login.html                200
+/:slug/repasse                         /repasse.html              200
+/:slug/andamento                       /andamento.html            200
+/:slug/listagem                        /listagem.html             200
+/:slug/registro                        /registro.html             200
+/:slug/registro-listagem               /registro-listagem.html    200
+/:slug/crm                             /crm.html                  200
+/:slug/pre-analise                     /pre-analise.html          200
+/:slug/pre-analise-listagem            /pre-analise.html          200
+/:slug/comercial                       /comercial.html            200
+/:slug/comercial-listagem              /comercial.html            200
+/:slug/geral                           /geral.html                200
+/:slug/dashboard                       /geral.html                200
+/:slug/admin                           /tenant-admin.html         200
+/:slug/workflow                        /workflow.html             200
+/:slug/configuracoes                   /configuracoes.html        200
+/:slug/importar                        /importar.html             200
+/superadmin                            /superadmin.html           200
+
+# Qualquer outro caminho dentro de um cliente cai na tela inicial dele, em vez
+# de um 404 branco que nao diz o que fazer.
+/:slug/*                               /geral.html                200
