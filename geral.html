@@ -51,14 +51,96 @@
   .cal-bt:hover{background:var(--sb-vellum)}
   .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
   .cal-dw{text-align:center;font-size:.62rem;font-weight:700;color:var(--sb-tinta3);padding:.25rem 0}
-  .cal-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.73rem;color:var(--sb-tinta2);font-variant-numeric:tabular-nums}
+  .cal-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.73rem;color:var(--sb-tinta2);font-variant-numeric:tabular-nums;border:0;background:transparent;padding:0;font-family:inherit}
   .cal-d.fora{color:var(--sb-linha-forte)}
-  .cal-d.tem{font-weight:700;color:var(--sb-tinta);cursor:pointer}
-  .cal-d.tem:hover{background:var(--sb-vellum)}
+  .cal-d:not(.fora){cursor:pointer}
+  .cal-d:not(.fora):hover{background:var(--sb-vellum)}
+  .cal-d.tem{font-weight:700;color:var(--sb-tinta)}
   .cal-d.hoje{background:var(--sb-mar);color:#fff;font-weight:800}
   .cal-pt{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
   .cal-pt i{width:4px;height:4px;border-radius:99px;display:block}
   .cal-d.hoje .cal-pt i{background:#fff !important}
+  /* dias do calendário Geral continuam visualmente iguais,
+   mas agora podem ser buttons */
+button.cal-d{
+  border:0;
+  background:transparent;
+  padding:0;
+  margin:0;
+  width:100%;
+  font:inherit;
+  appearance:none;
+  -webkit-appearance:none;
+  cursor:pointer;
+}
+
+button.cal-d:hover{
+  background:var(--sb-vellum);
+}
+
+.cal-d.selecionado{
+  box-shadow:inset 0 0 0 2px var(--sb-mar);
+}
+
+.cal-d.hoje.selecionado{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.9);
+}
+
+.cal-dia-detalhe{
+  margin-top:.75rem;
+  padding-top:.65rem;
+  border-top:1px solid var(--sb-linha);
+}
+
+.cal-dia-detalhe-titulo{
+  font-size:.68rem;
+  font-weight:800;
+  color:var(--sb-tinta3);
+  margin-bottom:.45rem;
+  text-transform:uppercase;
+}
+
+.cal-dia-evento{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.48rem .15rem;
+  border-bottom:1px solid var(--sb-linha);
+}
+
+.cal-dia-evento:last-child{
+  border-bottom:none;
+}
+
+.cal-dia-evento-ponto{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  flex:none;
+}
+
+.cal-dia-evento-conteudo{
+  flex:1;
+  min-width:0;
+}
+
+.cal-dia-evento-titulo{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--sb-tinta);
+}
+
+.cal-dia-evento-sub{
+  margin-top:.08rem;
+  font-size:.66rem;
+  color:var(--sb-tinta3);
+}
+
+.cal-dia-evento-hora{
+  font-size:.68rem;
+  font-family:var(--sb-mono);
+  color:var(--sb-tinta3);
+}
 
   .sb-esq{display:inline-block;height:1em;min-width:2.4em;border-radius:5px;
     background:linear-gradient(90deg,var(--sb-vellum) 25%,#EDF1EF 50%,var(--sb-vellum) 75%);
@@ -103,7 +185,16 @@
    também não traz linha nenhuma — só perde o detalhe por etapa.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const G = { user:null, slug:null, modulos:{}, resumo:null, mes:null, ano:null, agenda:[] };
+const G = {
+  user:null,
+  slug:null,
+  modulos:{},
+  resumo:null,
+  mes:null,
+  ano:null,
+  agenda:[],
+  diaSelecionado:null
+};
 
 // Os módulos da tela Geral, na ordem do processo. `casos:true` marca os que
 // moram em a1_cases separados por module_key — Leads, Repasse e Registro
@@ -242,19 +333,77 @@ async function carregarFila(){
 // com números diferentes sobre o mesmo dia é o tipo de divergência que faz o
 // gestor parar de confiar nos dois.
 async function carregarAgenda(){
-  if (G.modulos.repasse !== true){ G.agenda = []; return; }
-  G.agenda = await a1AgendaCarregar(G.ano, G.mes).catch(() => []);
+  G.agenda = await a1AgendaCarregar(
+    G.ano,
+    G.mes
+  ).catch(() => []);
 }
+
+let mudandoMesAgenda = false;
 
 async function mudarMes(d){
-  G.mes += d;
-  if (G.mes < 0){ G.mes = 11; G.ano--; }
-  if (G.mes > 11){ G.mes = 0; G.ano++; }
-  document.getElementById('cal-corpo').innerHTML = '<div class="sb-vazio"><p>Carregando…</p></div>';
-  await carregarAgenda();
-  desenharAgenda();
-}
 
+  if (mudandoMesAgenda) return;
+
+  mudandoMesAgenda = true;
+
+  let novoMes = G.mes + d;
+  let novoAno = G.ano;
+
+  if (novoMes < 0){
+    novoMes = 11;
+    novoAno--;
+  }
+
+  if (novoMes > 11){
+    novoMes = 0;
+    novoAno++;
+  }
+
+  const botoes = document.querySelectorAll('.cal-nav .cal-bt');
+
+  botoes.forEach(bt => {
+    bt.disabled = true;
+  });
+
+  try {
+
+    /*
+      Busca o novo mês sem apagar o calendário atual.
+
+      Enquanto os dados chegam, o usuário continua vendo
+      o mês anterior normalmente.
+    */
+    const novaAgenda = await a1AgendaCarregar(
+      novoAno,
+      novoMes
+    ).catch(() => []);
+
+    /*
+      Só altera o estado DEPOIS que os dados chegaram.
+      Assim não existe estado intermediário na tela.
+    */
+    G.mes = novoMes;
+    G.ano = novoAno;
+    G.agenda = novaAgenda;
+    G.diaSelecionado = null;
+
+    /*
+      Apenas agora troca o conteúdo do calendário.
+    */
+    desenharAgenda();
+
+  } finally {
+
+    mudandoMesAgenda = false;
+
+    document
+      .querySelectorAll('.cal-nav .cal-bt')
+      .forEach(bt => {
+        bt.disabled = false;
+      });
+  }
+}
 /* ── A linha do dia, que vai no cartão de saudação ────────────────────────── */
 
 function linhaDoDia(){
@@ -399,7 +548,7 @@ function desenharBlocos(){
   // 3. Agenda
   blocos.push(a1Card({
     titulo:'Agenda do mês',
-    sub:'Entrevistas e vencimentos de avaliação',
+    sub:'Compromissos, tarefas, avaliações e entrevistas',
     acao:`<div class="cal-nav">
       <button class="cal-bt" onclick="mudarMes(-1)" aria-label="Mês anterior">‹</button>
       <button class="cal-bt" onclick="mudarMes(1)" aria-label="Próximo mês">›</button></div>`,
@@ -467,63 +616,666 @@ function desenharFila(){
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIAS_S = ['D','S','T','Q','Q','S','S'];
 
-function desenharAgenda(){
-  const el = document.getElementById('cal-corpo');
-  if (!el) return;
-  if (G.modulos.repasse !== true){
-    el.innerHTML = a1Vazio('A agenda mostra entrevistas e prazos do Repasse, que não está liberado para esta empresa.');
-    return;
+function tipoAgendaReal(item){
+  if (typeof a1AgendaTipoReal === 'function') return a1AgendaTipoReal(item && item.tipo);
+  const t = String((item && item.tipo) || '').toLowerCase();
+  if (t === 'ent') return 'entrevista';
+  if (t === 'venc') return 'avaliacao';
+  if (t === 'meu') return 'compromisso';
+  return ['compromisso','tarefa','avaliacao','entrevista'].includes(t) ? t : 'compromisso';
+}
+
+function corAgendaReal(tipo){
+  if (typeof a1CorDoTipo === 'function') return a1CorDoTipo(tipo);
+  return { compromisso:'var(--sb-mar)', tarefa:'var(--sb-ametista)',
+           avaliacao:'var(--sb-acafrao)', entrevista:'var(--sb-ardosia)' }[tipo] || 'var(--sb-linha-forte)';
+}
+
+function rotuloAgendaReal(tipo){
+  return { compromisso:'Compromisso', tarefa:'Tarefa', avaliacao:'Avaliação', entrevista:'Entrevista' }[tipo] || 'Compromisso';
+}
+
+function abrirDiaAgendaGeral(ev, dia){
+  ev.preventDefault(); ev.stopPropagation();
+  const lista = (G.agenda || []).filter(i => Number(i.dia) === Number(dia))
+    .slice().sort((a,b) => String(a.hora || '99').localeCompare(String(b.hora || '99')));
+  const data = `${String(dia).padStart(2,'0')} de ${MESES[G.mes].toLowerCase()} de ${G.ano}`;
+  const corpo = lista.length ? lista.map(i => {
+    const tipo = tipoAgendaReal(i);
+    const sub = i.sub || rotuloAgendaReal(tipo);
+    const hora = i.hora ? `<span class="sb-item-q">${esc(i.hora)}</span>` : '';
+    if (!i.agendaId && i.id){
+      return `<a class="sb-item" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(i.id)}">
+        <span class="sb-item-pt" style="background:${corAgendaReal(tipo)}"></span>
+        <span class="sb-item-tx"><span class="sb-item-t">${esc(i.titulo || 'Sem título')}</span>
+          <span class="sb-item-s">${esc(sub)}${i.etapa ? ' · ' + esc(i.etapa) : ''}</span></span>${hora}</a>`;
+    }
+    return `<div class="sb-item">
+      <span class="sb-item-pt" style="background:${corAgendaReal(tipo)}"></span>
+      <span class="sb-item-tx"><span class="sb-item-t">${esc(i.titulo || 'Sem título')}</span>
+        <span class="sb-item-s">${esc(sub)}</span></span>${hora}</div>`;
+  }).join('') : `<div class="sb-vazio"><p>Nenhum evento neste dia.</p></div>`;
+
+  if (typeof a1PopAbrir === 'function'){
+    a1PopAbrir(`agenda-geral-${G.ano}-${G.mes}-${dia}`, ev.currentTarget, 330, `
+      <div class="sb-pop-cab">${typeof a1Svg === 'function' ? a1Svg('calend',16) : ''}
+        <div><div class="sb-pop-tit">${dia} de ${MESES[G.mes]}</div>
+          <div class="sb-pop-sub">${data}</div></div>
+        <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+      <div class="sb-pop-corpo">${corpo}</div>`);
   }
+}
+
+async function atualizarAgendaGeral(){
+  await carregarAgenda();
+  desenharAgenda();
+}
+window.addEventListener('siimob:agenda-atualizada', atualizarAgendaGeral);
+
+function tipoAgendaGeral(item){
+
+  const t = String(item.tipo || '')
+    .trim()
+    .toLowerCase();
+
+  if (t === 'venc') return 'avaliacao';
+  if (t === 'avaliação') return 'avaliacao';
+
+  if (t === 'ent') return 'entrevista';
+
+  if (t === 'meu') return 'compromisso';
+
+  if (
+    [
+      'compromisso',
+      'tarefa',
+      'avaliacao',
+      'entrevista'
+    ].includes(t)
+  ){
+    return t;
+  }
+
+  return 'compromisso';
+}
+
+
+function rotuloAgendaGeral(tipo){
+
+  return {
+    compromisso:'Compromisso',
+    tarefa:'Tarefa',
+    avaliacao:'Avaliação',
+    entrevista:'Entrevista'
+  }[tipo] || 'Compromisso';
+}
+
+
+function corAgendaGeral(tipo){
+
+  return {
+    compromisso:'var(--sb-mar)',
+    tarefa:'var(--sb-ametista)',
+    avaliacao:'var(--sb-acafrao)',
+    entrevista:'var(--sb-ardosia)'
+  }[tipo] || 'var(--sb-linha-forte)';
+}
+
+
+function selecionarDiaAgenda(dia, ev){
+
+  if (ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  G.diaSelecionado = Number(dia);
+
+  setTimeout(() => {
+    desenharAgenda();
+  }, 0);
+
+  return false;
+}
+
+function desenharAgenda(){
+
+  const el = document.getElementById('cal-corpo');
+
+  if (!el) return;
+
+
   const porDia = {};
-  (G.agenda || []).forEach(c => {
-    const dia = Number(c.dia);
+
+
+  (G.agenda || []).forEach(item => {
+
+    const dia = Number(item.dia);
+
     if (!dia) return;
-    (porDia[dia] || (porDia[dia] = [])).push(c);
+
+    if (!porDia[dia]){
+      porDia[dia] = [];
+    }
+
+    porDia[dia].push(item);
+
   });
 
-  const hoje = new Date();
-  const ehMesAtual = hoje.getMonth() === G.mes && hoje.getFullYear() === G.ano;
-  const primeiro = new Date(G.ano, G.mes, 1).getDay();
-  const nDias = new Date(G.ano, G.mes + 1, 0).getDate();
-  const nAnt = new Date(G.ano, G.mes, 0).getDate();
 
-  const nAgenda = Object.values(porDia).reduce((t, l) => t + l.length, 0);
+  const hoje = new Date();
+
+  const ehMesAtual =
+    hoje.getMonth() === G.mes &&
+    hoje.getFullYear() === G.ano;
+
+
+  const primeiro =
+    new Date(
+      G.ano,
+      G.mes,
+      1
+    ).getDay();
+
+
+  const nDias =
+    new Date(
+      G.ano,
+      G.mes + 1,
+      0
+    ).getDate();
+
+
+  const nAnt =
+    new Date(
+      G.ano,
+      G.mes,
+      0
+    ).getDate();
+
+
   const celulas = [];
-  for (let i = primeiro - 1; i >= 0; i--)
-    celulas.push(`<div class="cal-d fora">${nAnt - i}</div>`);
-  for (let d = 1; d <= nDias; d++){
-    const lista = porDia[d] || [];
-    const eHoje = ehMesAtual && hoje.getDate() === d;
-    const cls = ['cal-d', lista.length ? 'tem' : '', eHoje ? 'hoje' : ''].filter(Boolean).join(' ');
-    // Duas cores, dois compromissos: âmbar é prazo que vence, azul-ardósia é
-    // entrevista marcada. Uma cor só faria o gestor abrir o dia para descobrir
-    // qual dos dois é — que é o clique que o calendário existe para poupar.
-    const tipos = [...new Set(lista.map(i => i.tipo))];
-    const pts = lista.length
-      ? `<span class="cal-pt">${tipos.slice(0,2).map(t =>
-          `<i style="background:${t === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></i>`).join('')}</span>` : '';
-    const tit = lista.length
-      ? ` title="${esc(lista.map(i => (i.hora ? i.hora + ' ' : '') + i.titulo + ' — ' + i.sub).slice(0,5).join('\n'))}"` : '';
-    celulas.push(`<div class="${cls}"${tit}>${d}${pts}</div>`);
+
+
+  /*
+    Dias anteriores.
+  */
+  for (
+    let i = primeiro - 1;
+    i >= 0;
+    i--
+  ){
+
+    celulas.push(
+      `<div class="cal-d fora">${nAnt - i}</div>`
+    );
+
   }
-  const sobra = (7 - (celulas.length % 7)) % 7;
-  for (let i = 1; i <= sobra; i++) celulas.push(`<div class="cal-d fora">${i}</div>`);
+
+
+  /*
+    TODOS OS DIAS DO MÊS AGORA SÃO CLICÁVEIS.
+  */
+  for (
+    let d = 1;
+    d <= nDias;
+    d++
+  ){
+
+    const lista =
+      porDia[d] || [];
+
+
+    const eHoje =
+      ehMesAtual &&
+      hoje.getDate() === d;
+
+
+    const selecionado =
+      G.diaSelecionado === d;
+
+
+    const cls = [
+
+      'cal-d',
+
+      lista.length
+        ? 'tem'
+        : '',
+
+      eHoje
+        ? 'hoje'
+        : '',
+
+      selecionado
+        ? 'selecionado'
+        : ''
+
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+
+    const tipos = [
+
+      ...new Set(
+
+        lista.map(
+          item => tipoAgendaGeral(item)
+        )
+
+      )
+
+    ];
+
+
+    const pts =
+      lista.length
+
+        ? `
+
+          <span class="cal-pt">
+
+            ${
+
+              tipos
+                .slice(0,4)
+                .map(tipo =>
+
+                  `<i
+                    style="background:${corAgendaGeral(tipo)}"
+                  ></i>`
+
+                )
+                .join('')
+
+            }
+
+          </span>
+
+        `
+
+        : '';
+
+
+    celulas.push(`
+
+      <button
+        type="button"
+        class="${cls}"
+        onclick="return selecionarDiaAgenda(${d}, event)"
+        aria-label="Ver eventos do dia ${d}"
+      >
+
+        ${d}
+
+        ${pts}
+
+      </button>
+
+    `);
+
+  }
+
+
+  /*
+    Dias seguintes.
+  */
+  const sobra =
+    (
+      7 -
+      (
+        celulas.length % 7
+      )
+    ) % 7;
+
+
+  for (
+    let i = 1;
+    i <= sobra;
+    i++
+  ){
+
+    celulas.push(
+      `<div class="cal-d fora">${i}</div>`
+    );
+
+  }
+
+
+  /*
+    DETALHE DO DIA SELECIONADO.
+  */
+  let detalhe = '';
+
+
+  if (G.diaSelecionado){
+
+    const eventos =
+      (
+        porDia[G.diaSelecionado] ||
+        []
+      )
+        .slice()
+        .sort(
+
+          (a,b) =>
+
+            (
+              a.hora ||
+              '99:99'
+            ).localeCompare(
+
+              b.hora ||
+              '99:99'
+
+            )
+
+        );
+
+
+    const tituloDia =
+      `${G.diaSelecionado} DE ${MESES[G.mes].toUpperCase()}`;
+
+
+    const linhas =
+      eventos.length
+
+        ? eventos.map(item => {
+
+            const tipo =
+              tipoAgendaGeral(item);
+
+
+            const rotulo =
+              rotuloAgendaGeral(tipo);
+
+
+            const titulo =
+              item.titulo ||
+              'Sem título';
+
+
+            const sub = [
+
+              rotulo,
+
+              item.sub,
+
+              item.etapa
+
+            ]
+              .filter(Boolean)
+              .join(' · ');
+
+
+            return `
+
+              <div class="cal-dia-evento">
+
+                <span
+                  class="cal-dia-evento-ponto"
+                  style="
+                    background:
+                    ${corAgendaGeral(tipo)}
+                  "
+                ></span>
+
+
+                <div class="cal-dia-evento-conteudo">
+
+                  <div class="cal-dia-evento-titulo">
+                    ${esc(titulo)}
+                  </div>
+
+                  <div class="cal-dia-evento-sub">
+                    ${esc(sub)}
+                  </div>
+
+                </div>
+
+
+                ${
+                  item.hora
+
+                    ? `
+
+                      <span class="cal-dia-evento-hora">
+                        ${esc(item.hora)}
+                      </span>
+
+                    `
+
+                    : ''
+                }
+
+              </div>
+
+            `;
+
+          }).join('')
+
+        : `
+
+          <div
+            style="
+              font-size:.7rem;
+              color:var(--sb-tinta3);
+              padding:.25rem 0;
+            "
+          >
+
+            Nenhum evento neste dia.
+
+          </div>
+
+        `;
+
+
+    detalhe = `
+
+      <div class="cal-dia-detalhe">
+
+        <div class="cal-dia-detalhe-titulo">
+          ${tituloDia}
+        </div>
+
+        ${linhas}
+
+      </div>
+
+    `;
+
+  }
+
+
+  /*
+    LEGENDA.
+  */
+  const contagem = {
+
+    compromisso:0,
+    tarefa:0,
+    avaliacao:0,
+    entrevista:0
+
+  };
+
+
+  (G.agenda || []).forEach(item => {
+
+    const tipo =
+      tipoAgendaGeral(item);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        contagem,
+        tipo
+      )
+    ){
+
+      contagem[tipo]++;
+
+    }
+
+  });
+
+
+  const legenda =
+    Object.entries(contagem)
+
+      .filter(
+        ([, quantidade]) =>
+          quantidade > 0
+      )
+
+      .map(
+        ([tipo, quantidade]) => `
+
+          <span>
+
+            <i
+              style="
+                display:inline-block;
+                width:7px;
+                height:7px;
+                border-radius:99px;
+                background:${corAgendaGeral(tipo)};
+                margin-right:.3rem;
+              "
+            ></i>
+
+            ${n0(quantidade)}
+
+            ${rotuloAgendaGeral(tipo)}
+
+          </span>
+
+        `
+      )
+      .join('');
+
 
   el.innerHTML = `
-    <div class="cal-topo"><span class="cal-mes">${MESES[G.mes]} de ${G.ano}</span></div>
-    <div class="cal">
-      ${DIAS_S.map(d => `<div class="cal-dw">${d}</div>`).join('')}
-      ${celulas.join('')}
+
+    <div class="cal-topo">
+
+      <span class="cal-mes">
+        ${MESES[G.mes]} de ${G.ano}
+      </span>
+
     </div>
-    ${nAgenda ? (() => {
-      const ents = (G.agenda || []).filter(i => i.tipo === 'ent').length;
-      const vencs = nAgenda - ents;
-      const partes = [];
-      if (vencs) partes.push(`<span><i style="display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--sb-acafrao);margin-right:.3rem"></i>${n0(vencs)} ${vencs === 1 ? 'avaliação' : 'avaliações'}</span>`);
-      if (ents)  partes.push(`<span><i style="display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--sb-ardosia);margin-right:.3rem"></i>${n0(ents)} ${ents === 1 ? 'entrevista' : 'entrevistas'}</span>`);
-      return `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3);display:flex;gap:.9rem;flex-wrap:wrap">${partes.join('')}</div>`;
-    })() : `<div style="margin-top:.7rem;font-size:.7rem;color:var(--sb-tinta3)">Nenhum compromisso neste mês</div>`}`;
+
+
+    <div class="cal">
+
+      ${
+
+        DIAS_S
+          .map(
+            d =>
+              `<div class="cal-dw">${d}</div>`
+          )
+          .join('')
+
+      }
+
+      ${celulas.join('')}
+
+    </div>
+
+
+    ${
+      legenda
+
+        ? `
+
+          <div
+            style="
+              margin-top:.7rem;
+              font-size:.7rem;
+              color:var(--sb-tinta3);
+              display:flex;
+              gap:.9rem;
+              flex-wrap:wrap;
+            "
+          >
+
+            ${legenda}
+
+          </div>
+
+        `
+
+        : `
+
+          <div
+            style="
+              margin-top:.7rem;
+              font-size:.7rem;
+              color:var(--sb-tinta3);
+            "
+          >
+
+            Nenhum evento neste mês
+
+          </div>
+
+        `
+    }
+
+
+    ${detalhe}
+
+  `;
+
 }
+
+window.addEventListener(
+  'siimob:agenda-atualizada',
+
+  async ev => {
+
+    const data =
+      ev.detail &&
+      ev.detail.data
+        ? String(ev.detail.data)
+        : '';
+
+
+    /*
+      Se acabou de criar um evento,
+      leva o calendário grande exatamente
+      para o mês e dia criados.
+    */
+    if (data.length >= 10){
+
+      G.ano =
+        Number(
+          data.slice(0,4)
+        );
+
+
+      G.mes =
+        Number(
+          data.slice(5,7)
+        ) - 1;
+
+
+      G.diaSelecionado =
+        Number(
+          data.slice(8,10)
+        );
+
+    }
+
+
+    await carregarAgenda();
+
+    desenharAgenda();
+
+  }
+);
 
 init();
 </script>

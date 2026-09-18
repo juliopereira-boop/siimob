@@ -730,303 +730,1866 @@ function a1MenuPessoa(ev){
   if (el) bt.setAttribute('aria-expanded', 'true');
 }
 
+/* 
+  SUBSTITUA NO modulo-shell.js TODO O BLOCO DA AGENDA,
+  começando em:
+
+  /* ── A agenda ──
+
+  e terminando ANTES de:
+
+  /* ── Os avisos ──
+*/
+
+
 /* ── A agenda ──────────────────────────────────────────────────────────────
-   Mes na tela, compromissos do dia escolhido. Os dois tipos que o sistema ja
-   guarda hoje: a ENTREVISTA marcada (payload.agendamento_data, escrita pela
-   tela do Repasse) e o VENCIMENTO da avaliacao (evaluation_expiry). Sao os
-   mesmos dados do calendario do dashboard do Repasse — de proposito: duas
-   agendas com numeros diferentes seriam duas verdades sobre o mesmo dia.    */
+   Mês na tela, eventos do dia escolhido.
+
+   Tipos:
+   - compromisso
+   - tarefa
+   - avaliacao
+   - entrevista
+
+   Todos os dias do calendário são clicáveis.
+   Depois de criar/alterar/excluir um evento, a tela Geral é avisada
+   imediatamente pelo evento "siimob:agenda-atualizada".
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 async function a1AgendaCarregar(ano, mes){
   const pad = n => String(n).padStart(2,'0');
-  const de  = `${ano}-${pad(mes+1)}-01`;
-  const ate = `${ano}-${pad(mes+1)}-${pad(new Date(ano, mes+1, 0).getDate())}`;
-  const h = { headers: A1.headers() };
-  const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
+
+  const de = `${ano}-${pad(mes + 1)}-01`;
+  const ate = `${ano}-${pad(mes + 1)}-${pad(
+    new Date(ano, mes + 1, 0).getDate()
+  )}`;
+
+  const h = {
+    headers: A1.headers()
+  };
+
+  const base =
+    `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
+
   const [venc, ent, meus] = await Promise.all([
-    fetch(`${base}&evaluation_expiry=gte.${de}&evaluation_expiry=lte.${ate}` +
-          `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=300`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => []),
-    // O agendamento mora dentro do jsonb. O filtro `->>` faz o corte no
-    // servidor; trazer o mes inteiro para filtrar no navegador seria pedir
-    // tudo de novo, que e o que esta tela existe para nao fazer.
-    fetch(`${base}&payload->>agendamento_data=gte.${de}&payload->>agendamento_data=lte.${ate}T23:59:59` +
-          `&select=id,client_name,stage_name,payload->>agendamento_data&order=created_at.desc&limit=300`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => []),
-    // O que a PESSOA marcou. A tabela pode ainda não existir no banco do
-    // cliente — o SQL é rodado à mão —, e nesse caso a agenda continua
-    // mostrando entrevistas e vencimentos em vez de quebrar.
-    fetch(`${A1.rest('a1_agenda')}?data=gte.${de}&data=lte.${ate}` +
-          `&select=id,tipo,titulo,descricao,local,data,hora_inicio,hora_fim,caso_id,concluido_em` +
-          `&order=data.asc&limit=400`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => [])
+
+    /* Vencimentos de avaliação já existentes no Repasse */
+    fetch(
+      `${base}` +
+      `&evaluation_expiry=gte.${de}` +
+      `&evaluation_expiry=lte.${ate}` +
+      `&select=id,client_name,evaluation_expiry,stage_name` +
+      `&order=evaluation_expiry.asc` +
+      `&limit=300`,
+      h
+    )
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []),
+
+    /* Entrevistas já existentes no Repasse */
+    fetch(
+      `${base}` +
+      `&payload->>agendamento_data=gte.${de}` +
+      `&payload->>agendamento_data=lte.${ate}T23:59:59` +
+      `&select=id,client_name,stage_name,payload->>agendamento_data` +
+      `&order=created_at.desc` +
+      `&limit=300`,
+      h
+    )
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []),
+
+    /* Eventos criados pela agenda */
+    fetch(
+      `${A1.rest('a1_agenda')}` +
+      `?data=gte.${de}` +
+      `&data=lte.${ate}` +
+      `&select=id,tipo,titulo,descricao,local,data,hora_inicio,hora_fim,caso_id,concluido_em` +
+      `&order=data.asc` +
+      `&limit=400`,
+      h
+    )
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => [])
+
   ]);
+
   const itens = [];
-  (Array.isArray(venc) ? venc : []).forEach(c => itens.push({
-    dia: String(c.evaluation_expiry || '').slice(8,10), tipo:'venc',
-    titulo: c.client_name || 'Sem nome', sub: 'Vencimento da avaliação',
-    etapa: c.stage_name || '', id: c.id, hora: '' }));
+
+
+  /* ─────────────────────────────────────────────────────────────
+     AVALIAÇÕES DO REPASSE
+     ───────────────────────────────────────────────────────────── */
+
+  (Array.isArray(venc) ? venc : []).forEach(c => {
+
+    const data = String(c.evaluation_expiry || '');
+
+    if (data.length < 10) return;
+
+    itens.push({
+      dia: data.slice(8,10),
+
+      tipo: 'avaliacao',
+
+      titulo: c.client_name || 'Sem nome',
+
+      sub: 'Vencimento da avaliação',
+
+      etapa: c.stage_name || '',
+
+      id: c.id,
+
+      hora: '',
+
+      origem: 'repasse'
+    });
+
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     ENTREVISTAS DO REPASSE
+     ───────────────────────────────────────────────────────────── */
+
   (Array.isArray(ent) ? ent : []).forEach(c => {
+
     const d = String(c.agendamento_data || '');
+
     if (d.length < 10) return;
-    itens.push({ dia: d.slice(8,10), tipo:'ent',
-      titulo: c.client_name || 'Sem nome', sub: 'Entrevista agendada',
-      etapa: c.stage_name || '', id: c.id, hora: d.slice(11,16) });
+
+    itens.push({
+
+      dia: d.slice(8,10),
+
+      tipo: 'entrevista',
+
+      titulo: c.client_name || 'Sem nome',
+
+      sub: 'Entrevista agendada',
+
+      etapa: c.stage_name || '',
+
+      id: c.id,
+
+      hora: d.slice(11,16),
+
+      origem: 'repasse'
+
+    });
+
   });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     EVENTOS CRIADOS MANUALMENTE
+     ───────────────────────────────────────────────────────────── */
+
   (Array.isArray(meus) ? meus : []).forEach(a => {
+
     const d = String(a.data || '');
+
     if (d.length < 10) return;
-    itens.push({ dia: d.slice(8,10), tipo: a.tipo === 'tarefa' ? 'tarefa' : 'meu',
+
+    const tipo = a1AgendaTipoReal(a.tipo);
+
+    itens.push({
+
+      dia: d.slice(8,10),
+
+      tipo,
+
       titulo: a.titulo || 'Sem título',
-      sub: [a.tipo === 'tarefa' ? 'Tarefa' : 'Compromisso', a.local, a.descricao]
-             .filter(Boolean).join(' · '),
-      etapa: '', id: a.id, agendaId: a.id, casoId: a.caso_id || null,
+
+      sub: [
+        a1AgendaRotuloTipo(tipo),
+        a.local,
+        a.descricao
+      ]
+        .filter(Boolean)
+        .join(' · '),
+
+      etapa: '',
+
+      id: a.id,
+
+      agendaId: a.id,
+
+      casoId: a.caso_id || null,
+
       feito: !!a.concluido_em,
-      hora: a.hora_inicio ? String(a.hora_inicio).slice(0,5) : '' });
+
+      hora: a.hora_inicio
+        ? String(a.hora_inicio).slice(0,5)
+        : '',
+
+      origem: 'agenda'
+
+    });
+
   });
+
+
   return itens;
 }
 
-// ── Marcar na agenda ───────────────────────────────────────────────────────
-// O formulário abre DENTRO do mesmo painel, no dia que já está selecionado. Um
-// modal em cima do calendário esconderia justamente a informação que a pessoa
-// usou para escolher a data.
 
-const A1_AGENDA_CORES = { compromisso:'var(--sb-mar)', tarefa:'var(--sb-ametista)' };
+/* ═══════════════════════════════════════════════════════════════
+   TIPOS DA AGENDA
+   ═══════════════════════════════════════════════════════════════ */
+
+const A1_AGENDA_CORES = {
+
+  compromisso: 'var(--sb-mar)',
+
+  tarefa: 'var(--sb-ametista)',
+
+  avaliacao: 'var(--sb-acafrao)',
+
+  entrevista: 'var(--sb-ardosia)'
+
+};
+
+
+/*
+  Corrige também os nomes antigos.
+
+  "meu" não pode virar avaliação.
+  "meu" = compromisso.
+*/
+
+function a1AgendaTipoReal(tipo){
+
+  const t = String(tipo || '')
+    .trim()
+    .toLowerCase();
+
+  if (t === 'venc') {
+    return 'avaliacao';
+  }
+
+  if (t === 'avaliação') {
+    return 'avaliacao';
+  }
+
+  if (t === 'ent') {
+    return 'entrevista';
+  }
+
+  if (t === 'meu') {
+    return 'compromisso';
+  }
+
+  if (
+    [
+      'compromisso',
+      'tarefa',
+      'avaliacao',
+      'entrevista'
+    ].includes(t)
+  ){
+    return t;
+  }
+
+  return 'compromisso';
+}
+
+
+function a1AgendaRotuloTipo(tipo){
+
+  const real = a1AgendaTipoReal(tipo);
+
+  return {
+
+    compromisso: 'Compromisso',
+
+    tarefa: 'Tarefa',
+
+    avaliacao: 'Avaliação',
+
+    entrevista: 'Entrevista'
+
+  }[real] || 'Compromisso';
+
+}
+
+
+function a1CorDoTipo(tipo){
+
+  const real = a1AgendaTipoReal(tipo);
+
+  return (
+    A1_AGENDA_CORES[real] ||
+    'var(--sb-linha-forte)'
+  );
+
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   NOVO EVENTO
+   ═══════════════════════════════════════════════════════════════ */
+
+function a1AgendaGarantirAjustesCSS(){
+  if (document.getElementById('sb-agenda-ajustes-css')) return;
+
+  const style = document.createElement('style');
+  style.id = 'sb-agenda-ajustes-css';
+
+  style.textContent = `
+    /* formulário nunca ultrapassa o popup */
+    .sb-ag-form{
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
+    }
+
+    /* quatro tipos sem sair do container */
+    .sb-ag-tipo{
+      display:grid !important;
+      grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+      gap:.4rem !important;
+      width:100% !important;
+      max-width:100% !important;
+      overflow:visible !important;
+    }
+
+    .sb-ag-tipo button{
+      width:100% !important;
+      min-width:0 !important;
+      max-width:100% !important;
+      margin:0 !important;
+      padding:.55rem .35rem !important;
+      white-space:nowrap !important;
+      font-size:.76rem !important;
+    }
+
+    .sb-ag-linha > div{
+      min-width:0;
+    }
+
+    .sb-ag-campo{
+      width:100%;
+      max-width:100%;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
 
 function a1AgendaNovo(){
-  const alvo = document.getElementById('sb-agenda-corpo');
+
+  const alvo =
+    document.getElementById('sb-agenda-corpo');
+
   if (!alvo) return;
-  const { ano, mes, dia } = A1_POP.agenda;
-  const pad = n => String(n).padStart(2,'0');
-  const dataSel = `${ano}-${pad(mes+1)}-${pad(dia || 1)}`;
+
+
+  const {
+    ano,
+    mes,
+    dia
+  } = A1_POP.agenda;
+
+
+  const pad = n =>
+    String(n).padStart(2,'0');
+
+
+  const dataSel =
+    `${ano}-${pad(mes + 1)}-${pad(dia || 1)}`;
+
+
   alvo.innerHTML = `
-    <form class="sb-ag-form" onsubmit="return a1AgendaGravar(event)">
-      <div class="sb-ag-tipo" role="group" aria-label="Tipo">
-        <button type="button" class="on" data-tipo="compromisso" onclick="a1AgendaTipo(this)">Compromisso</button>
-        <button type="button" data-tipo="tarefa" onclick="a1AgendaTipo(this)">Tarefa</button>
+
+    <form
+      class="sb-ag-form"
+      onsubmit="return a1AgendaGravar(event)"
+    >
+
+      <div
+        class="sb-ag-tipo"
+        role="group"
+        aria-label="Tipo"
+      >
+
+        <button
+          type="button"
+          class="on"
+          data-tipo="compromisso"
+          onclick="a1AgendaTipo(this)"
+        >
+          Compromisso
+        </button>
+
+        <button
+          type="button"
+          data-tipo="tarefa"
+          onclick="a1AgendaTipo(this)"
+        >
+          Tarefa
+        </button>
+
+        <button
+          type="button"
+          data-tipo="avaliacao"
+          onclick="a1AgendaTipo(this)"
+        >
+          Avaliação
+        </button>
+
+        <button
+          type="button"
+          data-tipo="entrevista"
+          onclick="a1AgendaTipo(this)"
+        >
+          Entrevista
+        </button>
+
       </div>
-      <label class="sb-ag-rot">Título</label>
-      <input id="ag-titulo" class="sb-ag-campo" required maxlength="120" placeholder="Visita ao cliente, ligar para o banco…">
+
+
+      <label class="sb-ag-rot">
+        Título
+      </label>
+
+      <input
+        id="ag-titulo"
+        class="sb-ag-campo"
+        required
+        maxlength="120"
+        placeholder="Visita ao cliente, ligar para o banco…"
+      >
+
+
       <div class="sb-ag-linha">
-        <div style="flex:1.2"><label class="sb-ag-rot">Data</label>
-          <input id="ag-data" class="sb-ag-campo" type="date" required value="${dataSel}"></div>
-        <div style="flex:1" id="ag-hora-wrap"><label class="sb-ag-rot">Hora</label>
-          <input id="ag-hora" class="sb-ag-campo" type="time"></div>
+
+        <div style="flex:1.2">
+
+          <label class="sb-ag-rot">
+            Data
+          </label>
+
+          <input
+            id="ag-data"
+            class="sb-ag-campo"
+            type="date"
+            required
+            value="${dataSel}"
+          >
+
+        </div>
+
+
+        <div
+          style="flex:1"
+          id="ag-hora-wrap"
+        >
+
+          <label class="sb-ag-rot">
+            Hora
+          </label>
+
+          <input
+            id="ag-hora"
+            class="sb-ag-campo"
+            type="time"
+          >
+
+        </div>
+
       </div>
-      <label class="sb-ag-rot">Local <span style="font-weight:400;color:var(--sb-tinta3)">(opcional)</span></label>
-      <input id="ag-local" class="sb-ag-campo" maxlength="120">
-      <label class="sb-ag-rot">Observação <span style="font-weight:400;color:var(--sb-tinta3)">(opcional)</span></label>
-      <textarea id="ag-obs" class="sb-ag-campo" rows="2" maxlength="400"></textarea>
-      <div class="sb-ag-erro" id="ag-erro" hidden></div>
+
+
+      <label class="sb-ag-rot">
+
+        Local
+
+        <span
+          style="
+            font-weight:400;
+            color:var(--sb-tinta3)
+          "
+        >
+          (opcional)
+        </span>
+
+      </label>
+
+      <input
+        id="ag-local"
+        class="sb-ag-campo"
+        maxlength="120"
+      >
+
+
+      <label class="sb-ag-rot">
+
+        Observação
+
+        <span
+          style="
+            font-weight:400;
+            color:var(--sb-tinta3)
+          "
+        >
+          (opcional)
+        </span>
+
+      </label>
+
+      <textarea
+        id="ag-obs"
+        class="sb-ag-campo"
+        rows="2"
+        maxlength="400"
+      ></textarea>
+
+
+      <div
+        class="sb-ag-erro"
+        id="ag-erro"
+        hidden
+      ></div>
+
+
       <div class="sb-ag-pe">
-        <button type="button" class="sb-btn sb-btn-p" onclick="a1AgendaDesenhar()">Cancelar</button>
-        <button type="submit" class="sb-btn sb-btn-forte sb-btn-p" id="ag-salvar">Marcar</button>
+
+        <button
+          type="button"
+          class="sb-btn sb-btn-p"
+          onclick="a1AgendaDesenhar()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="sb-btn sb-btn-forte sb-btn-p"
+          id="ag-salvar"
+        >
+          Marcar
+        </button>
+
       </div>
-    </form>`;
-  const t = document.getElementById('ag-titulo'); if (t) t.focus();
+
+    </form>
+  `;
+
+
+  const titulo =
+    document.getElementById('ag-titulo');
+
+  if (titulo) {
+    titulo.focus();
+  }
+
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TROCAR TIPO
+   ═══════════════════════════════════════════════════════════════ */
 
 function a1AgendaTipo(bt){
-  document.querySelectorAll('.sb-ag-tipo button').forEach(b => b.classList.toggle('on', b === bt));
-  // Tarefa tem PRAZO, não horário. Deixar o campo de hora à mostra faria a
-  // pessoa preencher uma informação que a tarefa não usa.
-  const w = document.getElementById('ag-hora-wrap');
-  if (w) w.style.visibility = bt.dataset.tipo === 'tarefa' ? 'hidden' : '';
+
+  document
+    .querySelectorAll('.sb-ag-tipo button')
+    .forEach(b => {
+
+      b.classList.toggle(
+        'on',
+        b === bt
+      );
+
+    });
+
+
+  const wrap =
+    document.getElementById('ag-hora-wrap');
+
+  const campoHora =
+    document.getElementById('ag-hora');
+
+
+  const ehTarefa =
+    bt.dataset.tipo === 'tarefa';
+
+
+  /*
+    Tarefa não precisa de horário.
+
+    Compromisso, Avaliação e Entrevista
+    podem ter horário.
+  */
+
+  if (wrap){
+
+    wrap.style.visibility =
+      ehTarefa
+        ? 'hidden'
+        : '';
+
+  }
+
+
+  if (
+    ehTarefa &&
+    campoHora
+  ){
+
+    campoHora.value = '';
+
+  }
+
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SALVAR EVENTO
+   ═══════════════════════════════════════════════════════════════ */
 
 async function a1AgendaGravar(ev){
+
   ev.preventDefault();
-  const erro = document.getElementById('ag-erro');
-  const bt = document.getElementById('ag-salvar');
-  const marcado = document.querySelector('.sb-ag-tipo button.on');
-  const tipo = marcado ? marcado.dataset.tipo : 'compromisso';
-  const titulo = (document.getElementById('ag-titulo').value || '').trim();
-  const data = document.getElementById('ag-data').value;
-  if (!titulo || !data) return false;
 
-  const user = A1.user || {};
-  const corpo = {
-    tenant_id: user.tenant_id,
-    // `dono` é quem está logado. A política do banco só aceita a1_ator() ou
-    // a1_usuario(); mandar outro id seria tentar marcar na agenda alheia.
-    dono: user.id,
-    tipo, titulo, data,
-    hora_inicio: tipo === 'compromisso' ? (document.getElementById('ag-hora').value || null) : null,
-    local: (document.getElementById('ag-local').value || '').trim() || null,
-    descricao: (document.getElementById('ag-obs').value || '').trim() || null
-  };
-  bt.disabled = true; bt.textContent = 'Marcando…';
-  try {
-    const r = await fetch(A1.rest('a1_agenda'), { method:'POST', headers:A1.headers(), body:JSON.stringify(corpo) });
-    if (!r.ok){
-      const txt = await r.text().catch(() => '');
-      // Erro de banco não vira "tente novamente": a pessoa tentaria de novo, e
-      // de novo, sem descobrir que a tabela ainda não foi criada.
-      erro.hidden = false;
-      erro.textContent = /a1_agenda/.test(txt) && /does not exist|relation/.test(txt)
-        ? 'A agenda ainda não foi criada no banco deste cliente. Peça para rodar sql/2026-09-17_agenda.sql.'
-        : ('Não foi possível marcar: ' + txt.slice(0, 160));
-      bt.disabled = false; bt.textContent = 'Marcar';
-      return false;
-    }
-    // Volta para o calendário JÁ no dia marcado, para a pessoa ver o ponto
-    // aparecer. Fechar o painel esconderia o resultado do que ela acabou de fazer.
-    A1_POP.agenda.dia = Number(String(data).slice(8,10));
-    const [a, m] = [Number(data.slice(0,4)), Number(data.slice(5,7)) - 1];
-    if (a !== A1_POP.agenda.ano || m !== A1_POP.agenda.mes){
-      A1_POP.agenda.ano = a; A1_POP.agenda.mes = m;
-    }
-    A1_POP.agenda.itens = null;
-    await a1AgendaDesenhar();
-  } catch (e) {
-    erro.hidden = false;
-    erro.textContent = 'Não foi possível marcar: ' + String(e.message || e).slice(0,140);
-    bt.disabled = false; bt.textContent = 'Marcar';
+
+  const erro =
+    document.getElementById('ag-erro');
+
+
+  const bt =
+    document.getElementById('ag-salvar');
+
+
+  const marcado =
+    document.querySelector(
+      '.sb-ag-tipo button.on'
+    );
+
+
+  const tipo =
+    marcado
+      ? marcado.dataset.tipo
+      : 'compromisso';
+
+
+  const titulo =
+    (
+      document.getElementById('ag-titulo').value ||
+      ''
+    ).trim();
+
+
+  const data =
+    document.getElementById('ag-data').value;
+
+
+  if (
+    !titulo ||
+    !data
+  ){
+    return false;
   }
+
+
+  const user =
+    A1.user || {};
+
+
+  const campoHora =
+    document.getElementById('ag-hora');
+
+
+  const hora =
+    campoHora
+      ? campoHora.value || null
+      : null;
+
+
+  const corpo = {
+
+    tenant_id: user.tenant_id,
+
+    dono: user.id,
+
+    tipo,
+
+    titulo,
+
+    data,
+
+    hora_inicio:
+      tipo === 'tarefa'
+        ? null
+        : hora,
+
+    local:
+      (
+        document.getElementById('ag-local').value ||
+        ''
+      ).trim() || null,
+
+    descricao:
+      (
+        document.getElementById('ag-obs').value ||
+        ''
+      ).trim() || null
+
+  };
+
+
+  bt.disabled = true;
+
+  bt.textContent =
+    'Marcando…';
+
+
+  try {
+
+    const r =
+      await fetch(
+
+        A1.rest('a1_agenda'),
+
+        {
+
+          method: 'POST',
+
+          headers: A1.headers(),
+
+          body: JSON.stringify(corpo)
+
+        }
+
+      );
+
+
+    if (!r.ok){
+
+      const txt =
+        await r
+          .text()
+          .catch(() => '');
+
+
+      erro.hidden = false;
+
+
+      erro.textContent =
+        /a1_agenda/.test(txt) &&
+        /does not exist|relation/.test(txt)
+
+          ? 'A agenda ainda não foi criada no banco deste cliente.'
+
+          : (
+            'Não foi possível marcar: ' +
+            txt.slice(0,160)
+          );
+
+
+      bt.disabled = false;
+
+      bt.textContent =
+        'Marcar';
+
+
+      return false;
+
+    }
+
+
+    /*
+      Seleciona automaticamente a data
+      do evento que acabou de ser criado.
+    */
+
+    A1_POP.agenda.dia =
+      Number(
+        String(data).slice(8,10)
+      );
+
+
+    const a =
+      Number(
+        data.slice(0,4)
+      );
+
+
+    const m =
+      Number(
+        data.slice(5,7)
+      ) - 1;
+
+
+    /*
+      Se o usuário escolheu uma data
+      de outro mês no campo de data,
+      o calendário muda para esse mês.
+    */
+
+    if (
+      a !== A1_POP.agenda.ano ||
+      m !== A1_POP.agenda.mes
+    ){
+
+      A1_POP.agenda.ano = a;
+
+      A1_POP.agenda.mes = m;
+
+    }
+
+
+    /*
+      Força nova consulta ao banco.
+    */
+
+    A1_POP.agenda.itens = null;
+
+
+    /*
+      Redesenha imediatamente o popup.
+    */
+
+    await a1AgendaDesenhar();
+
+
+    /*
+      AVISA A TELA GERAL.
+
+      Assim o calendário maior atualiza
+      instantaneamente sem precisar dar F5.
+    */
+
+    window.dispatchEvent(
+
+      new CustomEvent(
+
+        'siimob:agenda-atualizada',
+
+        {
+
+          detail: {
+            tipo,
+            data
+          }
+
+        }
+
+      )
+
+    );
+
+
+  } catch (e){
+
+
+    erro.hidden = false;
+
+
+    erro.textContent =
+      'Não foi possível marcar: ' +
+      String(
+        e.message ||
+        e
+      ).slice(0,140);
+
+
+    bt.disabled = false;
+
+
+    bt.textContent =
+      'Marcar';
+
+  }
+
+
   return false;
+
 }
 
-async function a1AgendaConcluir(id, feito){
+
+/* ═══════════════════════════════════════════════════════════════
+   CONCLUIR / REABRIR
+   ═══════════════════════════════════════════════════════════════ */
+
+async function a1AgendaConcluir(
+  id,
+  feito
+){
+
   try {
-    await fetch(`${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`, {
-      method:'PATCH', headers:A1.headers(),
-      body: JSON.stringify({ concluido_em: feito ? null : new Date().toISOString() }) });
+
+    await fetch(
+
+      `${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
+
+      {
+
+        method: 'PATCH',
+
+        headers: A1.headers(),
+
+        body: JSON.stringify({
+
+          concluido_em:
+            feito
+              ? null
+              : new Date().toISOString()
+
+        })
+
+      }
+
+    );
+
+
     A1_POP.agenda.itens = null;
+
+
     await a1AgendaDesenhar();
-  } catch { /* o desenho seguinte mostra o estado real */ }
+
+
+    window.dispatchEvent(
+
+      new CustomEvent(
+        'siimob:agenda-atualizada'
+      )
+
+    );
+
+
+  } catch {
+
+    /* mantém o estado do banco */
+
+  }
+
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   EXCLUIR
+   ═══════════════════════════════════════════════════════════════ */
 
 async function a1AgendaExcluir(id){
-  if (!confirm('Excluir este item da sua agenda?')) return;
+
+  if (
+    !confirm(
+      'Excluir este item da sua agenda?'
+    )
+  ){
+    return;
+  }
+
+
   try {
-    await fetch(`${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
-      { method:'DELETE', headers:A1.headers() });
+
+    await fetch(
+
+      `${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
+
+      {
+
+        method: 'DELETE',
+
+        headers: A1.headers()
+
+      }
+
+    );
+
+
     A1_POP.agenda.itens = null;
+
+
     await a1AgendaDesenhar();
-  } catch { /* idem */ }
+
+
+    window.dispatchEvent(
+
+      new CustomEvent(
+        'siimob:agenda-atualizada'
+      )
+
+    );
+
+
+  } catch {
+
+    /* mantém o estado do banco */
+
+  }
+
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   ABRIR POPUP
+   ═══════════════════════════════════════════════════════════════ */
+
 async function a1AgendaAbrir(ev){
-  ev.preventDefault(); ev.stopPropagation();
+
+  ev.preventDefault();
+  ev.stopPropagation();
+
+  a1AgendaGarantirAjustesCSS();
+
   const bt = ev.currentTarget;
   const hoje = new Date();
+
   if (A1_POP.agenda.mes == null){
     A1_POP.agenda.mes = hoje.getMonth();
     A1_POP.agenda.ano = hoje.getFullYear();
     A1_POP.agenda.dia = hoje.getDate();
   }
+
   const el = a1PopAbrir('agenda', bt, 330, `
-    <div class="sb-pop-cab">${a1Svg('calend',16)}
-      <div><div class="sb-pop-tit">Minha agenda</div>
-        <div class="sb-pop-sub">Entrevistas e vencimentos de avaliação</div></div>
-      <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+    <div class="sb-pop-cab">
+      ${a1Svg('calend',16)}
+
+      <div>
+        <div class="sb-pop-tit">Minha agenda</div>
+        <div class="sb-pop-sub">
+          Compromissos, tarefas, avaliações e entrevistas
+        </div>
+      </div>
+
+      <button
+        class="sb-pop-x"
+        type="button"
+        onclick="a1PopFechar()"
+        aria-label="Fechar"
+      >×</button>
+    </div>
+
     <div class="sb-pop-corpo" id="sb-agenda-corpo">
-      <div class="sb-vazio"><p>Carregando…</p></div></div>
+      <div class="sb-vazio">
+        <p>Carregando…</p>
+      </div>
+    </div>
+
     <div class="sb-pop-pe">
-      <button class="sb-btn sb-btn-forte sb-btn-p" type="button" onclick="a1AgendaNovo()">+ Marcar</button>
-      <a class="sb-btn sb-btn-p" style="margin-left:auto"
-         href="/${a1Esc(A1.slug || '')}/repasse?tab=agenda">Agenda do Repasse</a></div>`);
+      <button
+        class="sb-btn sb-btn-forte sb-btn-p"
+        type="button"
+        onclick="a1AgendaNovo()"
+      >
+        + Marcar
+      </button>
+
+      <a
+        class="sb-btn sb-btn-p"
+        style="margin-left:auto"
+        href="/${a1Esc(A1.slug || '')}/repasse?tab=agenda"
+      >
+        Agenda do Repasse
+      </a>
+    </div>
+  `);
+
   if (!el) return;
+
   A1_POP.agenda.itens = null;
+
   await a1AgendaDesenhar();
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MUDAR MÊS
+   ═══════════════════════════════════════════════════════════════ */
 
 async function a1AgendaMes(passo){
+
   A1_POP.agenda.mes += passo;
-  if (A1_POP.agenda.mes < 0){ A1_POP.agenda.mes = 11; A1_POP.agenda.ano--; }
-  if (A1_POP.agenda.mes > 11){ A1_POP.agenda.mes = 0; A1_POP.agenda.ano++; }
+
+
+  if (
+    A1_POP.agenda.mes < 0
+  ){
+
+    A1_POP.agenda.mes = 11;
+
+    A1_POP.agenda.ano--;
+
+  }
+
+
+  if (
+    A1_POP.agenda.mes > 11
+  ){
+
+    A1_POP.agenda.mes = 0;
+
+    A1_POP.agenda.ano++;
+
+  }
+
+
   A1_POP.agenda.dia = null;
+
+
   A1_POP.agenda.itens = null;
+
+
   await a1AgendaDesenhar();
+
 }
-function a1AgendaDia(d){ A1_POP.agenda.dia = d; a1AgendaDesenhar(); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SELECIONAR DIA
+   ═══════════════════════════════════════════════════════════════ */
+
+function a1AgendaDia(d, ev){
+
+  if (ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  A1_POP.agenda.dia = Number(d);
+
+  /*
+    Espera o clique terminar antes de redesenhar.
+    Isso impede o listener externo do popup de interpretar
+    o clique como clique "fora" e fechar a agenda.
+  */
+  setTimeout(() => {
+    a1AgendaDesenhar();
+  }, 0);
+
+  return false;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DESENHAR CALENDÁRIO
+   ═══════════════════════════════════════════════════════════════ */
 
 async function a1AgendaDesenhar(){
-  const alvo = document.getElementById('sb-agenda-corpo');
+
+  const alvo =
+    document.getElementById(
+      'sb-agenda-corpo'
+    );
+
+
   if (!alvo) return;
-  const { ano, mes } = A1_POP.agenda;
-  if (A1_POP.agenda.itens == null){
-    A1_POP.agenda.itens = await a1AgendaCarregar(ano, mes).catch(() => []);
-    if (!document.getElementById('sb-agenda-corpo')) return;   // fechou enquanto carregava
+
+
+  const {
+    ano,
+    mes
+  } = A1_POP.agenda;
+
+
+  /*
+    Busca os dados somente quando necessário.
+  */
+
+  if (
+    A1_POP.agenda.itens == null
+  ){
+
+    A1_POP.agenda.itens =
+      await a1AgendaCarregar(
+        ano,
+        mes
+      )
+        .catch(
+          () => []
+        );
+
+
+    /*
+      O popup pode ter sido fechado enquanto
+      os dados carregavam.
+    */
+
+    if (
+      !document.getElementById(
+        'sb-agenda-corpo'
+      )
+    ){
+      return;
+    }
+
   }
-  const itens = A1_POP.agenda.itens || [];
+
+
+  const itens =
+    A1_POP.agenda.itens || [];
+
+
   const porDia = {};
-  itens.forEach(i => { (porDia[Number(i.dia)] || (porDia[Number(i.dia)] = [])).push(i); });
 
-  const hoje = new Date();
-  const ehMesAtual = hoje.getMonth() === mes && hoje.getFullYear() === ano;
-  if (A1_POP.agenda.dia == null) A1_POP.agenda.dia = ehMesAtual ? hoje.getDate() : 1;
-  const sel = A1_POP.agenda.dia;
 
-  const primeiro = new Date(ano, mes, 1).getDay();
-  const nDias = new Date(ano, mes + 1, 0).getDate();
-  const nAnt = new Date(ano, mes, 0).getDate();
-  const cel = [];
-  for (let i = primeiro - 1; i >= 0; i--) cel.push(`<span class="sb-cal-d fora">${nAnt - i}</span>`);
-  for (let d = 1; d <= nDias; d++){
-    const lista = porDia[d] || [];
-    const cls = ['sb-cal-d', lista.length ? 'tem' : '',
-                 ehMesAtual && hoje.getDate() === d ? 'hoje' : '', sel === d ? 'sel' : ''].filter(Boolean).join(' ');
-    // Quatro cores, quatro coisas: prazo de avaliação, entrevista marcada,
-    // compromisso seu e tarefa sua. O dia fala sem precisar do clique.
-    const pts = lista.length ? `<span class="sb-cal-pt">${
-      [...new Set(lista.map(i => i.tipo))].slice(0,3).map(t =>
-        `<i style="background:${a1CorDoTipo(t)}"></i>`).join('')}</span>` : '';
-    cel.push(lista.length
-      ? `<button type="button" class="${cls}" onclick="a1AgendaDia(${d})">${d}${pts}</button>`
-      : `<span class="${cls}">${d}</span>`);
+  itens.forEach(i => {
+
+    const dia =
+      Number(i.dia);
+
+
+    if (!dia) return;
+
+
+    (
+      porDia[dia] ||
+      (
+        porDia[dia] = []
+      )
+    ).push(i);
+
+  });
+
+
+  const hoje =
+    new Date();
+
+
+  const ehMesAtual =
+    hoje.getMonth() === mes &&
+    hoje.getFullYear() === ano;
+
+
+  /*
+    Quando troca de mês:
+    - mês atual → seleciona hoje
+    - outro mês → seleciona dia 1
+  */
+
+  if (
+    A1_POP.agenda.dia == null
+  ){
+
+    A1_POP.agenda.dia =
+      ehMesAtual
+        ? hoje.getDate()
+        : 1;
+
   }
-  const sobra = (7 - (cel.length % 7)) % 7;
-  for (let i = 1; i <= sobra; i++) cel.push(`<span class="sb-cal-d fora">${i}</span>`);
 
-  const doDia = (porDia[sel] || []).slice().sort((a,b) => (a.hora || '99').localeCompare(b.hora || '99'));
-  const lista = doDia.length
-    ? doDia.map(i => {
-        // O que é DA PESSOA ela conclui e apaga; o que vem do processo
-        // (entrevista, vencimento) abre o processo. São coisas diferentes e por
-        // isso a linha se comporta diferente — botão que promete a mesma ação
-        // para as duas mentiria numa delas.
-        if (i.agendaId) return `<div class="sb-item" data-tom="${i.feito ? 'neutro' : 'marca'}">
-            <button class="sb-ag-check${i.feito ? ' on' : ''}" type="button"
-              title="${i.feito ? 'Reabrir' : 'Concluir'}"
-              onclick="a1AgendaConcluir('${a1Esc(i.agendaId)}', ${i.feito ? 'true' : 'false'})"
-              aria-label="${i.feito ? 'Reabrir' : 'Concluir'}">${i.feito ? '✓' : ''}</button>
-            <span class="sb-item-tx"><span class="sb-item-t"${i.feito ? ' style="text-decoration:line-through;color:var(--sb-tinta3)"' : ''}>${a1Esc(i.titulo)}</span>
-              <span class="sb-item-s">${a1Esc(i.sub)}</span></span>
-            ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}
-            <button class="sb-ag-x" type="button" title="Excluir"
-              onclick="a1AgendaExcluir('${a1Esc(i.agendaId)}')" aria-label="Excluir">×</button>
-          </div>`;
-        return `<a class="sb-item" data-tom="${i.tipo === 'ent' ? 'info' : 'atento'}"
-          href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}">
-          <span class="sb-item-pt" style="background:${i.tipo === 'ent' ? 'var(--sb-ardosia)' : 'var(--sb-acafrao)'}"></span>
-          <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(i.titulo)}</span>
-            <span class="sb-item-s">${a1Esc(i.sub)}${i.etapa ? ' · ' + a1Esc(i.etapa) : ''}</span></span>
-          ${i.hora ? `<span class="sb-item-q">${a1Esc(i.hora)}</span>` : ''}</a>`;
-      }).join('')
-    : `<div class="sb-vazio"><p>Nada marcado neste dia. O botão abaixo cria um compromisso ou uma tarefa.</p></div>`;
+
+  const sel =
+    A1_POP.agenda.dia;
+
+
+  const primeiro =
+    new Date(
+      ano,
+      mes,
+      1
+    ).getDay();
+
+
+  const nDias =
+    new Date(
+      ano,
+      mes + 1,
+      0
+    ).getDate();
+
+
+  const nAnt =
+    new Date(
+      ano,
+      mes,
+      0
+    ).getDate();
+
+
+  const cel = [];
+
+
+  /*
+    Dias do mês anterior.
+
+    Continuam apenas visuais.
+  */
+
+  for (
+    let i = primeiro - 1;
+    i >= 0;
+    i--
+  ){
+
+    cel.push(
+
+      `<span class="sb-cal-d fora">
+        ${nAnt - i}
+      </span>`
+
+    );
+
+  }
+
+
+  /*
+    TODOS OS DIAS DO MÊS ATUAL
+    AGORA SÃO BOTÕES.
+
+    Antes:
+      - dia com evento = button
+      - dia vazio = span
+
+    Agora:
+      - todos = button
+
+    Portanto qualquer data pode ser clicada.
+  */
+
+  for (
+    let d = 1;
+    d <= nDias;
+    d++
+  ){
+
+    const lista =
+      porDia[d] || [];
+
+
+    const cls = [
+
+      'sb-cal-d',
+
+      lista.length
+        ? 'tem'
+        : '',
+
+      ehMesAtual &&
+      hoje.getDate() === d
+        ? 'hoje'
+        : '',
+
+      sel === d
+        ? 'sel'
+        : ''
+
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+
+    /*
+      Pontinhos dos tipos presentes no dia.
+    */
+
+    const tipos =
+      [
+        ...new Set(
+          lista.map(
+            i => a1AgendaTipoReal(i.tipo)
+          )
+        )
+      ];
+
+
+    const pts =
+      lista.length
+
+        ? `
+
+          <span class="sb-cal-pt">
+
+            ${
+
+              tipos
+                .slice(0,4)
+                .map(
+
+                  tipo =>
+
+                    `<i style="background:${a1CorDoTipo(tipo)}"></i>`
+
+                )
+                .join('')
+
+            }
+
+          </span>
+
+        `
+
+        : '';
+
+
+    cel.push(`
+  <button
+    type="button"
+    class="${cls}"
+    onclick="return a1AgendaDia(${d}, event)"
+    aria-label="Selecionar dia ${d}"
+  >
+    ${d}${pts}
+  </button>
+`);
+
+  }
+
+
+  /*
+    Completa última semana com dias
+    do próximo mês apenas visuais.
+  */
+
+  const sobra =
+    (
+      7 -
+      (
+        cel.length % 7
+      )
+    ) % 7;
+
+
+  for (
+    let i = 1;
+    i <= sobra;
+    i++
+  ){
+
+    cel.push(
+
+      `<span class="sb-cal-d fora">
+        ${i}
+      </span>`
+
+    );
+
+  }
+
+
+  /*
+    EVENTOS DO DIA SELECIONADO
+  */
+
+  const doDia =
+    (
+      porDia[sel] ||
+      []
+    )
+      .slice()
+      .sort(
+
+        (a,b) =>
+
+          (
+            a.hora ||
+            '99'
+          )
+            .localeCompare(
+
+              b.hora ||
+              '99'
+
+            )
+
+      );
+
+
+  const lista =
+    doDia.length
+
+      ? doDia
+          .map(i => {
+
+            const tipoReal =
+              a1AgendaTipoReal(
+                i.tipo
+              );
+
+
+            /*
+              Evento criado manualmente
+              na a1_agenda.
+            */
+
+            if (
+              i.agendaId
+            ){
+
+              return `
+
+                <div
+                  class="sb-item"
+                  data-tom="${
+                    i.feito
+                      ? 'neutro'
+                      : 'marca'
+                  }"
+                >
+
+                  <button
+                    class="sb-ag-check${
+                      i.feito
+                        ? ' on'
+                        : ''
+                    }"
+                    type="button"
+                    title="${
+                      i.feito
+                        ? 'Reabrir'
+                        : 'Concluir'
+                    }"
+                    onclick="a1AgendaConcluir(
+                      '${a1Esc(i.agendaId)}',
+                      ${i.feito ? 'true' : 'false'}
+                    )"
+                    aria-label="${
+                      i.feito
+                        ? 'Reabrir'
+                        : 'Concluir'
+                    }"
+                  >
+                    ${
+                      i.feito
+                        ? '✓'
+                        : ''
+                    }
+                  </button>
+
+
+                  <span class="sb-item-pt"
+                    style="
+                      background:
+                      ${a1CorDoTipo(tipoReal)}
+                    "
+                  ></span>
+
+
+                  <span class="sb-item-tx">
+
+                    <span
+                      class="sb-item-t"
+                      ${
+                        i.feito
+                          ? 'style="text-decoration:line-through;color:var(--sb-tinta3)"'
+                          : ''
+                      }
+                    >
+                      ${a1Esc(i.titulo)}
+                    </span>
+
+
+                    <span class="sb-item-s">
+
+                      ${a1Esc(i.sub)}
+
+                    </span>
+
+                  </span>
+
+
+                  ${
+                    i.hora
+
+                      ? `
+
+                        <span class="sb-item-q">
+
+                          ${a1Esc(i.hora)}
+
+                        </span>
+
+                      `
+
+                      : ''
+                  }
+
+
+                  <button
+                    class="sb-ag-x"
+                    type="button"
+                    title="Excluir"
+                    onclick="a1AgendaExcluir('${a1Esc(i.agendaId)}')"
+                    aria-label="Excluir"
+                  >
+                    ×
+                  </button>
+
+                </div>
+
+              `;
+
+            }
+
+
+            /*
+              Evento vindo do Repasse.
+            */
+
+            return `
+
+              <a
+                class="sb-item"
+                data-tom="${
+                  tipoReal === 'entrevista'
+                    ? 'info'
+                    : 'atento'
+                }"
+                href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}"
+              >
+
+                <span
+                  class="sb-item-pt"
+                  style="
+                    background:
+                    ${a1CorDoTipo(tipoReal)}
+                  "
+                ></span>
+
+
+                <span class="sb-item-tx">
+
+                  <span class="sb-item-t">
+
+                    ${a1Esc(i.titulo)}
+
+                  </span>
+
+
+                  <span class="sb-item-s">
+
+                    ${a1Esc(i.sub)}
+
+                    ${
+                      i.etapa
+                        ? ' · ' + a1Esc(i.etapa)
+                        : ''
+                    }
+
+                  </span>
+
+                </span>
+
+
+                ${
+                  i.hora
+
+                    ? `
+
+                      <span class="sb-item-q">
+
+                        ${a1Esc(i.hora)}
+
+                      </span>
+
+                    `
+
+                    : ''
+                }
+
+              </a>
+
+            `;
+
+          })
+          .join('')
+
+      : `
+
+        <div class="sb-vazio">
+
+          <p>
+
+            Nada marcado neste dia.
+            O botão abaixo cria compromisso,
+            tarefa, avaliação ou entrevista.
+
+          </p>
+
+        </div>
+
+      `;
+
+
+  /*
+    LEGENDA
+
+    Não chama compromisso de avaliação.
+  */
+
+  const legendaTipos = [
+
+    ['avaliacao','Avaliação'],
+
+    ['entrevista','Entrevista'],
+
+    ['compromisso','Compromisso'],
+
+    ['tarefa','Tarefa']
+
+  ];
+
+
+  const legenda =
+    legendaTipos
+
+      .filter(
+
+        ([tipo]) =>
+
+          itens.some(
+
+            item =>
+
+              a1AgendaTipoReal(
+                item.tipo
+              ) === tipo
+
+          )
+
+      )
+
+      .map(
+
+        ([tipo, rotulo]) =>
+
+          `
+
+          <span>
+
+            <i
+              style="
+                background:
+                ${a1CorDoTipo(tipo)}
+              "
+            ></i>
+
+            ${rotulo}
+
+          </span>
+
+          `
+
+      )
+      .join('');
+
+
+  /*
+    Mantém o mesmo layout original.
+  */
 
   alvo.innerHTML = `
+
     <div class="sb-cal-topo">
-      <button class="sb-cal-bt" type="button" onclick="a1AgendaMes(-1)" aria-label="Mês anterior">‹</button>
-      <span class="sb-cal-mes">${A1_MESES_L[mes]} de ${ano}</span>
-      <button class="sb-cal-bt" type="button" onclick="a1AgendaMes(1)" aria-label="Próximo mês">›</button>
+
+      <button
+        class="sb-cal-bt"
+        type="button"
+        onclick="a1AgendaMes(-1)"
+        aria-label="Mês anterior"
+      >
+        ‹
+      </button>
+
+
+      <span class="sb-cal-mes">
+
+        ${A1_MESES_L[mes]}
+        de
+        ${ano}
+
+      </span>
+
+
+      <button
+        class="sb-cal-bt"
+        type="button"
+        onclick="a1AgendaMes(1)"
+        aria-label="Próximo mês"
+      >
+        ›
+      </button>
+
     </div>
-    <div class="sb-cal">${['D','S','T','Q','Q','S','S'].map(d => `<span class="sb-cal-dw">${d}</span>`).join('')}${cel.join('')}</div>
+
+
+    <div class="sb-cal">
+
+      ${
+
+        [
+          'D',
+          'S',
+          'T',
+          'Q',
+          'Q',
+          'S',
+          'S'
+        ]
+          .map(
+
+            d =>
+
+              `<span class="sb-cal-dw">
+                ${d}
+              </span>`
+
+          )
+          .join('')
+
+      }
+
+      ${cel.join('')}
+
+    </div>
+
+
     <div class="sb-cal-legenda">
-      ${[['venc','Avaliação'],['ent','Entrevista'],['meu','Compromisso'],['tarefa','Tarefa']]
-        .filter(([t]) => itens.some(i => i.tipo === t))
-        .map(([t,r]) => `<span><i style="background:${a1CorDoTipo(t)}"></i>${r}</span>`).join('')}
+
+      ${legenda}
+
     </div>
+
+
     <div class="sb-cal-dia">
-      <div class="sb-cal-dia-t">${sel} DE ${A1_MESES_L[mes].toUpperCase()}</div>${lista}</div>`;
+
+      <div class="sb-cal-dia-t">
+
+        ${sel}
+        DE
+        ${A1_MESES_L[mes].toUpperCase()}
+
+      </div>
+
+      ${lista}
+
+    </div>
+
+  `;
+
 }
-function a1CorDoTipo(t){
-  return { ent:'var(--sb-ardosia)', venc:'var(--sb-acafrao)',
-           meu:'var(--sb-mar)', tarefa:'var(--sb-ametista)' }[t] || 'var(--sb-linha-forte)';
-}
-const A1_MESES_L = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+
+const A1_MESES_L = [
+
+  'Janeiro',
+
+  'Fevereiro',
+
+  'Março',
+
+  'Abril',
+
+  'Maio',
+
+  'Junho',
+
+  'Julho',
+
+  'Agosto',
+
+  'Setembro',
+
+  'Outubro',
+
+  'Novembro',
+
+  'Dezembro'
+
+];
 
 /* ── Os avisos ─────────────────────────────────────────────────────────────
    O sininho tinha um contador e nenhuma lista: clicar levava para outra tela.
