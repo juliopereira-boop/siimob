@@ -110,29 +110,447 @@ function a1Iniciais(nome){
 // uma falha de rede seria trancar o cliente fora do proprio sistema — mas
 // tambem nao vira "tem", senao a tela promete o que o RLS nao entrega. Fica
 // como esta: a aba some, e a tela diz que nao conseguiu perguntar.
+// ═══════════════════════════════════════════════════════════════════════════
+// MÓDULOS DO CLIENTE — consulta resiliente
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Uma falha temporária de rede NÃO pode significar "cliente sem módulo".
+// Antes, qualquer erro em a1HasModule() virava null e logo depois false.
+//
+// Agora:
+// 1. tenta novamente automaticamente;
+// 2. só considera false quando o servidor realmente respondeu false;
+// 3. reaproveita a mesma resposta para montar os dashboards;
+// 4. guarda por alguns minutos o último módulo confirmado como ativo;
+// 5. o usuário não precisa atualizar, limpar cache ou fazer nada.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const A1_MODULO_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+
+
+function a1Esperar(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+function a1ModuloCacheChave(chave){
+
+  const tenant =
+    (A1.user && A1.user.tenant_id) ||
+    A1.slug ||
+    'sem-tenant';
+
+  return `siimob:modulo:${tenant}:${chave}`;
+}
+
+
+function a1ModuloCacheLer(chave){
+
+  try {
+
+    const bruto =
+      localStorage.getItem(
+        a1ModuloCacheChave(chave)
+      );
+
+    if (!bruto) return null;
+
+    const item =
+      JSON.parse(bruto);
+
+    if (
+      !item ||
+      item.valor !== true ||
+      !item.em
+    ){
+      return null;
+    }
+
+    /*
+      Cache serve somente para sobreviver
+      a uma falha momentânea da consulta.
+
+      Ele não substitui a consulta real.
+    */
+    if (
+      Date.now() - Number(item.em) >
+      A1_MODULO_CACHE_TTL
+    ){
+      localStorage.removeItem(
+        a1ModuloCacheChave(chave)
+      );
+
+      return null;
+    }
+
+    return true;
+
+  } catch {
+
+    return null;
+
+  }
+}
+
+
+function a1ModuloCacheSalvar(chave, valor){
+
+  try {
+
+    /*
+      Guardamos somente módulo confirmado como ATIVO.
+
+      Nunca guardamos false como fallback para evitar que
+      um módulo recém-liberado fique escondido por cache.
+    */
+    if (valor === true){
+
+      localStorage.setItem(
+        a1ModuloCacheChave(chave),
+        JSON.stringify({
+          valor:true,
+          em:Date.now()
+        })
+      );
+
+    } else if (valor === false){
+
+      /*
+        Se o servidor respondeu explicitamente false,
+        remove qualquer confirmação antiga.
+      */
+      localStorage.removeItem(
+        a1ModuloCacheChave(chave)
+      );
+    }
+
+  } catch {
+
+    // localStorage indisponível não pode quebrar o sistema.
+
+  }
+}
+
+
+async function a1HasModuleSeguro(chave){
+
+  const esperas = [
+    0,
+    250,
+    650,
+    1200
+  ];
+
+  let ultimoErro = null;
+
+
+  for (
+    let tentativa = 0;
+    tentativa < esperas.length;
+    tentativa++
+  ){
+
+    if (esperas[tentativa]){
+
+      await a1Esperar(
+        esperas[tentativa]
+      );
+
+    }
+
+
+    try {
+
+      const valor =
+        await a1HasModule(chave);
+
+
+      /*
+        Só aceitamos respostas booleanas reais.
+
+        true  = possui
+        false = não possui
+
+        Qualquer outra coisa será tratada
+        como consulta inconclusiva.
+      */
+      if (
+        valor === true ||
+        valor === false
+      ){
+
+        a1ModuloCacheSalvar(
+          chave,
+          valor
+        );
+
+        return valor;
+      }
+
+
+    } catch (erro){
+
+      ultimoErro = erro;
+
+    }
+
+  }
+
+
+  /*
+    Todas as tentativas falharam.
+
+    Se este navegador já confirmou recentemente
+    que o módulo estava ativo, preservamos a aba.
+
+    A segurança continua no backend/RLS.
+  */
+  const cache =
+    a1ModuloCacheLer(chave);
+
+
+  if (cache === true){
+
+    console.warn(
+      `[SIIMOB] Consulta do módulo "${chave}" falhou. ` +
+      'Usando última confirmação válida.'
+    );
+
+    return true;
+  }
+
+
+  console.error(
+    `[SIIMOB] Não foi possível verificar o módulo "${chave}".`,
+    ultimoErro || ''
+  );
+
+
+  /*
+    IMPORTANTE:
+    null significa "não consegui verificar".
+    Não significa "não possui".
+  */
+  return null;
+}
+
+
 async function a1ModulosDoCliente(){
-  const r = await Promise.all(A1_MODULOS.map(m => a1HasModule(m.chave).catch(() => null)));
+
+  const resultados =
+    await Promise.all(
+
+      A1_MODULOS.map(
+        modulo =>
+          a1HasModuleSeguro(
+            modulo.chave
+          )
+      )
+
+    );
+
+
   const tem = {};
-  A1_MODULOS.forEach((m,i) => { tem[m.chave] = r[i] === true; });
+
+
+  A1_MODULOS.forEach(
+    (modulo, i) => {
+
+      tem[modulo.chave] =
+        resultados[i];
+
+    }
+  );
+
+
   return tem;
 }
 
-async function a1DashboardsDoCliente(){
-  const chaves = Object.keys(A1_DASHBOARD_PERMISSOES);
-  const licencas = await Promise.all(chaves.map(m => a1HasModule(m).catch(() => null)));
-  const user = A1.user || {};
-  if (user.role && user.role !== 'partner'){
-    const permissoes = await Promise.all(chaves.map(async (m,i) => {
-      if (licencas[i] !== true) return false;
-      try {
-        const r = await fetch(A1.rpc('a1_perm'), { method:'POST', headers:A1.headers(),
-          body:JSON.stringify({ p_chave:A1_DASHBOARD_PERMISSOES[m] }) });
-        return r.ok && (await r.json()) === true;
-      } catch { return false; }
-    }));
-    return Object.fromEntries(chaves.map((m,i) => [m, permissoes[i] === true]));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DASHBOARDS
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Recebe os módulos JÁ CONSULTADOS.
+//
+// Antes esta função chamava a1HasModule novamente.
+// Isso podia fazer:
+//   primeira consulta -> Repasse = true
+//   segunda consulta falha -> Repasse = false
+//
+// e a tela ficava incoerente.
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function a1DashboardsDoCliente(modulosJaConsultados){
+
+  const chaves =
+    Object.keys(
+      A1_DASHBOARD_PERMISSOES
+    );
+
+
+  const licencas =
+    modulosJaConsultados || {};
+
+
+  const user =
+    A1.user || {};
+
+
+  /*
+    Parceiros:
+    o acesso aos dashboards acompanha
+    os módulos efetivamente liberados.
+  */
+  if (
+    user.role === 'partner'
+  ){
+
+    return Object.fromEntries(
+
+      chaves.map(
+        modulo => [
+
+          modulo,
+
+          licencas[modulo] === true
+
+        ]
+      )
+
+    );
+
   }
-  return Object.fromEntries(chaves.map((m,i) => [m, licencas[i] === true]));
+
+
+  /*
+    Usuários internos:
+    além do módulo existir, precisa ter
+    a permissão de dashboard correspondente.
+  */
+
+  const permissoes =
+    await Promise.all(
+
+      chaves.map(
+        async modulo => {
+
+          /*
+            Se o módulo foi confirmado como não disponível,
+            não precisa consultar permissão.
+          */
+          if (
+            licencas[modulo] !== true
+          ){
+            return false;
+          }
+
+
+          const chavePermissao =
+            A1_DASHBOARD_PERMISSOES[modulo];
+
+
+          /*
+            Também damos pequenas tentativas para a permissão,
+            evitando retirar a aba Geral por uma oscilação.
+          */
+          const esperas = [
+            0,
+            250,
+            650
+          ];
+
+
+          for (
+            let tentativa = 0;
+            tentativa < esperas.length;
+            tentativa++
+          ){
+
+            if (
+              esperas[tentativa]
+            ){
+
+              await a1Esperar(
+                esperas[tentativa]
+              );
+
+            }
+
+
+            try {
+
+              const r =
+                await fetch(
+
+                  A1.rpc('a1_perm'),
+
+                  {
+                    method:'POST',
+                    headers:A1.headers(),
+                    body:JSON.stringify({
+                      p_chave:
+                        chavePermissao
+                    })
+                  }
+
+                );
+
+
+              if (!r.ok){
+                continue;
+              }
+
+
+              const resultado =
+                await r.json();
+
+
+              if (
+                resultado === true
+              ){
+                return true;
+              }
+
+
+              if (
+                resultado === false
+              ){
+                return false;
+              }
+
+
+            } catch {
+
+              // tenta novamente
+
+            }
+
+          }
+
+
+          return false;
+
+        }
+      )
+
+    );
+
+
+  return Object.fromEntries(
+
+    chaves.map(
+      (modulo, i) => [
+
+        modulo,
+
+        permissoes[i] === true
+
+      ]
+    )
+
+  );
+
 }
 
 function a1PodeVerDashboardModulo(user, modulo, licencas){
@@ -183,8 +601,14 @@ async function a1MontarShell(alvo, opcoes){
 
   a1ShellGarantirCSS();
 
-  const [tem, dash] = await Promise.all([a1ModulosDoCliente(), a1DashboardsDoCliente()]);
-  A1_SHELL.tem = tem; A1_SHELL.dash = dash;
+  const tem =
+  await a1ModulosDoCliente();
+
+const dash =
+  await a1DashboardsDoCliente(tem);
+
+A1_SHELL.tem = tem;
+A1_SHELL.dash = dash;
 
   // ── As abas de modulo ──
   const abas = [];
