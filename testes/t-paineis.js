@@ -92,6 +92,23 @@ function kpi(lista, rotulo) {
     await b.close();
   }
 
+  console.log('\n== AUTORIZAÇÃO ESTÁVEL DO DASHBOARD ==');
+  {
+    const corretor={id:'p3',tenant_id:'t1',name:'Ana Souza',role:'partner',type:'corretor',permissions:{ver_repasses:true}};
+    const {b,p,erros}=await abrir('repasse.html',{usuario:corretor});
+    checa('sem permissão, a URL não entra e sai da tela',/\/repasse\.html$/.test(new URL(p.url()).pathname),p.url());
+    checa('mostra acesso negado estável',/não possui permissão para acessar este recurso/i.test(await p.locator('#tab-dashboard').textContent()));
+    checa('e não desenha os KPIs do Repasse',!(await p.locator('#kpi-total').isVisible()));
+    checa('o menu não oferece o Dashboard',!(await p.locator('.sb-sub-item').allTextContents()).some(x=>/Dashboard/.test(x)));
+    checa('sem erro de JS',erros.length===0,erros[0]||''); todosErros.push(...erros); await b.close();
+  }
+  {
+    const {b,p,erros}=await abrir('repasse.html',{superadmin:true});
+    checa('Superadmin abre o Dashboard do Repasse',await p.locator('#painel-repasse').isVisible());
+    checa('e não recebe a mensagem de bloqueio',!/não possui permissão/.test(await p.locator('#tab-dashboard').textContent()));
+    checa('sem erro de JS',erros.length===0,erros[0]||''); todosErros.push(...erros); await b.close();
+  }
+
   console.log('\n== COM OS TRÊS MÓDULOS, O SELETOR APARECE ==');
   {
     const { b, p, erros } = await abrir('repasse.html', { modulos: ['PRE_ANALISE', 'COMERCIAL'] });
@@ -227,7 +244,10 @@ function kpi(lista, rotulo) {
     // Dez para quem tem o corte de agregado: entraram vendas líquidas (bruto
     // sozinho mente para cima) e cobertura de responsável (o KPI que diz se os
     // rankings estão medindo desempenho ou preenchimento de cadastro).
-    checa('o painel Venda desenha os dez KPIs', co.length === 10, 'foram ' + co.length);
+    checa('o painel Venda desenha os doze KPIs', co.length === 12, 'foram ' + co.length);
+    checa('o painel Venda mostra entradas e propostas preenchidas',
+      kpi(co, 'Entradas no período') === '2' && kpi(co, 'Propostas preenchidas') === '2',
+      JSON.stringify(co.slice(0,2)));
     checa('comerciais ativos conta o negócio aberto', kpi(co, 'Comerciais ativos') === '1',
       kpi(co, 'Comerciais ativos'));
     checa('o pipeline sai em reais, a partir dos centavos do banco',
@@ -447,13 +467,17 @@ function kpi(lista, rotulo) {
       const id = (PN.co.empr[0] || {}).id;
       PN.empr = 'nao-existe-este-empreendimento';
       pnDesenharCO(alvo);
-      const vazio = { kpi: (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent,
+      const valorKpi = rotulo => {
+        const card=Array.from(alvo.querySelectorAll('#pn-kpis-co .kpi-card')).find(c=>c.querySelector('.kpi-label')?.textContent===rotulo);
+        return card?.querySelector('.kpi-value')?.textContent || '';
+      };
+      const vazio = { kpi: valorKpi('Comerciais ativos'),
                       titulo: alvo.querySelector('.pn-titulo small').textContent,
                       html: alvo.innerHTML };
       PN.empr = id; pnDesenharCO(alvo);
-      const um = (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent;
+      const um = valorKpi('Comerciais ativos');
       PN.empr = ''; pnDesenharCO(alvo);
-      return { vazio, um, todos: (alvo.querySelector('#pn-kpis-co .kpi-value') || {}).textContent };
+      return { vazio, um, todos: valorKpi('Comerciais ativos') };
     });
     checa('empreendimento sem negócio nenhum zera o painel inteiro',
       filtrado.vazio.kpi === '0', JSON.stringify(filtrado));

@@ -41,7 +41,8 @@ const A1_ICONES = {
   pessoa: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   lua:    '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
   sol:    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  fluxo:  '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/>'
+  fluxo:  '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/>',
+  whatsapp:'<path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.3-4.9a8.4 8.4 0 1 1 16.2-3.8Z"/><path d="M8.2 7.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.7 1.7c.1.3 0 .5-.2.7l-.6.7c-.2.2-.1.4 0 .6.7 1.2 1.6 2.1 2.8 2.7.2.1.4.2.6 0l.8-1c.2-.2.4-.3.7-.2l1.8.8c.3.1.5.2.5.4 0 .2-.1 1.1-.5 1.6-.5.6-1.3.9-2.1.9-1.1 0-2.7-.5-4.5-2.1-2.1-1.8-3.4-4.1-3.5-5.5 0-.5.1-.9.3-1.2Z"/>'
 };
 
 function a1Svg(nome, tam){
@@ -86,9 +87,25 @@ const A1_DASHBOARD_PERMISSOES = {
 // que a pessoa nao tem foi um defeito real — o mesmo corretor aparecia como
 // Corretor numa tela e Correspondente na outra.
 function a1RotuloPapel(user){
-  if (!user || user.role !== 'partner') return 'Gestor';
+  try { if (sessionStorage.getItem('a1_sa_mode')) return 'Superadmin'; } catch {}
+  if (!user || user.role !== 'partner') return user && user.role === 'owner' ? 'Gestor (proprietário)' : 'Gestor';
   return { cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
            analista:'Analista', coordenador:'Coordenador' }[user.type] || 'Parceiro';
+}
+
+// O papel vem gravado junto do evento. Assim, se alguém mudar de Corretor
+// para Coordenador amanhã, o histórico de ontem continua dizendo quem ele era
+// no momento da ação.
+function a1RotuloPapelHistorico(papel){
+  return { superadmin:'Superadmin', owner:'Gestor (proprietário)', admin:'Gestor',
+    manager:'Gestor', user:'Usuário', viewer:'Consulta', partner:'Parceiro',
+    cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
+    analista:'Analista', coordenador:'Coordenador', imobiliaria:'Imobiliária' }[papel] || String(papel || '');
+}
+function a1AtorHistorico(evento){
+  const nome=evento && (evento.actor_name || evento.ator_nome || evento.criado_por_nome) || '';
+  const papel=a1RotuloPapelHistorico(evento && (evento.actor_role || evento.ator_papel || evento.criado_por_papel));
+  return [nome,papel].filter(Boolean).join(' · ');
 }
 
 function a1Esc(s){
@@ -337,6 +354,16 @@ async function a1HasModuleSeguro(chave){
 
 async function a1ModulosDoCliente(){
 
+  // A sessão aberta pelo painel do Superadmin é uma sessão de suporte. Ela
+  // já passa pelo guard de módulo em auth.js e precisa conservar o mesmo
+  // comportamento ao montar o shell; do contrário, o guard liberava a URL,
+  // mas o menu e os dashboards concluíam que não havia licença alguma.
+  try {
+    if (sessionStorage.getItem('a1_sa_mode')) {
+      return Object.fromEntries(A1_MODULOS.map(modulo => [modulo.chave, true]));
+    }
+  } catch {}
+
   const resultados =
     await Promise.all(
 
@@ -389,12 +416,25 @@ async function a1DashboardsDoCliente(modulosJaConsultados){
     );
 
 
+  // Reaproveita a consulta do shell quando disponível. Algumas telas antigas
+  // chamavam esta função sem argumento e acabavam transformando `undefined`
+  // em um mapa vazio: todos os dashboards eram negados, inclusive ao suporte.
   const licencas =
-    modulosJaConsultados || {};
+    modulosJaConsultados || A1_SHELL.tem || await a1ModulosDoCliente();
 
 
   const user =
     A1.user || {};
+
+  // Suporte/Superadmin não é um perfil do cliente e não deve herdar a matriz
+  // de permissões do usuário usado para abrir a sessão. O backend continua
+  // protegido; este atalho apenas mantém a autorização administrativa que já
+  // foi concedida pelo painel com service role.
+  try {
+    if (sessionStorage.getItem('a1_sa_mode')) {
+      return Object.fromEntries(chaves.map(modulo => [modulo, licencas[modulo] === true]));
+    }
+  } catch {}
 
 
   /*

@@ -443,7 +443,6 @@ async function init(){
     ativo:'PRE_ANALISE', vista: a1VistaDaURL(),
     acoes: '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
   });
-  abrirDoLeadSeVeio();
   G.temComercial = temModulo && temModulo.COMERCIAL === true;
   if (!G.temComercial){
     const abaCo = document.querySelector('#dos-tabs [data-dt="comercial"]');
@@ -463,6 +462,12 @@ async function init(){
   aplicarVista();
   a1StartHeartbeat('pre-analise');
   await carregar();
+  // O assistente vindo de um Lead usa exatamente a mesma lista de
+  // empreendimentos do fluxo normal. Antes ele era aberto acima, enquanto
+  // `carregar()` ainda não tinha preenchido G.empreendimentos; por isso o
+  // mesmo usuário via empreendimentos no botão principal e uma lista vazia
+  // quando chegava pelo Lead.
+  abrirDoLeadSeVeio();
 }
 
 async function carregar(){
@@ -1040,6 +1045,8 @@ function aproveitarLead(){
   t.documento= q.get('cpf') || '';
   G.rascunho.lead_id = q.get('lead');
   G.rascunho.unidade = q.get('unidade') || '';
+  G.rascunho.corretor_id = q.get('corretor') || G.rascunho.corretor_id || null;
+  G.rascunho.imobiliaria_id = q.get('imobiliaria') || G.rascunho.imobiliaria_id || null;
   // O assistente comeca no passo 2 quando ja ha nome: o passo 1 e o negocio, e
   // o que veio do lead e a PESSOA. Mandar para o passo 1 faria o corretor
   // passar por uma tela vazia antes de ver o que ele acabou de trazer.
@@ -1972,7 +1979,7 @@ function dosHistorico(){
         de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
         para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
         ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
-        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${e.ator_nome ? ' · ' + esc(e.ator_nome) : ''}</div></div>
+        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${a1AtorHistorico(e) ? ' · ' + esc(a1AtorHistorico(e)) : ''}</div></div>
     </div>`; }).join('')}</div>
   <div class="aviso i" style="margin-top:.9rem">O histórico só recebe linhas novas. Não se edita e não se
     apaga — nem pelo gestor, nem pela API.</div>`;

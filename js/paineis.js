@@ -158,6 +158,13 @@ table.pn-tbl tbody tr:hover{background:#f7f9fc}
 .pn-at{color:var(--amber);font-weight:800}
 .pn-ok{color:var(--green);font-weight:700}
 .pn-nd{color:var(--t3)}
+.pn-evolucao{display:flex;align-items:stretch;gap:3px;height:180px;padding:12px 2px 24px;border-bottom:1px solid var(--border)}
+.pn-evol-col{flex:1;min-width:3px;display:flex;align-items:flex-end;justify-content:center;gap:1px;position:relative}
+.pn-evol-col i{display:block;width:44%;min-height:1px;border-radius:2px 2px 0 0;background:var(--violet)}
+.pn-evol-col i.venda{background:var(--green)}
+.pn-evol-leg{display:flex;gap:1rem;justify-content:flex-end;margin-top:.55rem;font-size:.68rem;color:var(--t3)}
+.pn-evol-leg span:before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--violet);margin-right:.3rem}.pn-evol-leg span:last-child:before{background:var(--green)}
+@media(max-width:700px){.pn-evolucao{gap:1px;height:140px}.pn-evol-col i{width:48%}}
 `;
 
 function pnCSS(){
@@ -209,6 +216,15 @@ function pnPainelBox(titulo, nota, conteudo){
     ${nota ? `<div class="pn-nota">${pnEsc(nota)}</div>` : ''}
     ${conteudo}
   </div>`;
+}
+
+function pnEvolucao(pontos){
+  if (!pontos || !pontos.length) return '<div class="pn-vazio">Sem movimento no período.</div>';
+  const max=Math.max(1,...pontos.map(p=>Math.max(p.entradas,p.vendas)));
+  return `<div class="pn-evolucao">${pontos.map(p=>`<div class="pn-evol-col" title="${pnEsc(p.rotulo+': '+p.entradas+' entrada(s), '+p.vendas+' venda(s)')}">
+    <i style="height:${Math.max(p.entradas?3:0,Math.round(p.entradas/max*100))}%"></i>
+    <i class="venda" style="height:${Math.max(p.vendas?3:0,Math.round(p.vendas/max*100))}%"></i></div>`).join('')}</div>
+    <div class="pn-evol-leg"><span>Entradas</span><span>Vendas pelo selo</span></div>`;
 }
 
 function pnAviso(texto, tipo){
@@ -1259,9 +1275,12 @@ function pnCalcCO(d){
   // `vendaEm` devolve null para ele — e sem a memória do evento não haveria como
   // saber que houve venda antes do cancelamento.
   const vendaEm = co => {
+    // O KPI de venda tem UMA fonte de verdade: a situação atual marcada com o
+    // selo VENDIDO. Um contrato assinado fora dessa etapa continua sendo um
+    // documento válido, mas não transforma sozinho o cartão em venda no KPI.
+    if (!sitVendida[co.situacao_id]) return null;
     const ct = ctPorCom[co.id];
     if (ct && ct.status === 'ASSINADO' && pnMs(ct.assinado_em) != null) return pnMs(ct.assinado_em);
-    if (!sitVendida[co.situacao_id]) return null;
     return entrouVendido[co.id] ?? (pnMs(co.situacao_em) || pnMs(co.criado_em));
   };
   // "Já esteve ganho", para o distrato. O contrato assinado também conta aqui:
@@ -1437,6 +1456,23 @@ function pnCalcCO(d){
   const comAssinado = safra.filter(co => vendaEm(co) != null);
   const comRepasse  = safra.filter(co => co.repasse_case_id);
 
+  // Entradas e evolução usam a mesma janela do filtro. No histórico inteiro
+  // não existe uma janela anterior comparável; por isso a variação fica nula.
+  const janela = pnJanela();
+  const anterior = janela ? d.com.filter(co => {
+    const t=pnMs(co.criado_em); return t != null && t >= inicio-janela && t < inicio;
+  }).length : null;
+  const serieInicio = pnTemCorte() ? inicio : Math.min(...d.com.map(co=>pnMs(co.criado_em)).filter(x=>x!=null), Date.now());
+  const diasSerie = Math.max(1, Math.ceil((fim-serieInicio)/864e5));
+  const passoDias = Math.max(1, Math.ceil(diasSerie/60));
+  const qtdPontos = Math.min(60, Math.max(1, Math.ceil(diasSerie/passoDias)));
+  const evolucao = Array.from({length:qtdPontos},(_,i)=>({
+    ini:serieInicio+i*passoDias*864e5, fim:Math.min(fim,serieInicio+(i+1)*passoDias*864e5),
+    rotulo:new Date(serieInicio+i*passoDias*864e5).toLocaleDateString('pt-BR'), entradas:0, vendas:0
+  }));
+  const acumulaSerie=(t,campo)=>{ if(t==null||t<serieInicio||t>fim)return; const i=Math.min(qtdPontos-1,Math.floor((t-serieInicio)/(passoDias*864e5))); if(evolucao[i]) evolucao[i][campo]++; };
+  d.com.forEach(co=>{ acumulaSerie(pnMs(co.criado_em),'entradas'); acumulaSerie(vendaEm(co),'vendas'); });
+
   const dtContrato = [], dtAssinatura = [], dtRepasse = [];
   comContrato.forEach(co => {
     // ctPorCom pode não existir: desde que esta linha passou a aceitar o SELO,
@@ -1479,6 +1515,11 @@ function pnCalcCO(d){
     estourados, comPrazo, semPrazo, encerrados, faixas,
     convRepasse: baseRepasse ? viraramRepasse / baseRepasse : null,
     baseRepasse, viraramRepasse, repasseForaDaBase,
+    entradas:safra.length, anterior, propostas:comProposta.length, evolucao,
+    atencao:{ sla:estourados, parados30:fila.filter(x=>x.horas>30*24).length,
+      semCorretor, semProposta:ativos.filter(co=>(co.proposta||{}).valor_venda==null).length,
+      vendidoSemContrato:d.com.filter(co=>sitVendida[co.situacao_id] && !(ctPorCom[co.id]&&ctPorCom[co.id].status==='ASSINADO')).length,
+      distratos },
     funil: {
       criados: safra.length, proposta: comProposta.length, contrato: comContrato.length,
       assinado: comAssinado.length, repasse: comRepasse.length,
@@ -1496,6 +1537,12 @@ function pnDesenharCO(alvo){
   const rota = pnRota('comercial');
 
   const kpis = [
+    pnKpi({ rotulo:'Entradas no período', valor:c.entradas, cor:'kpi-violet',
+      sub:c.anterior==null?'todo o histórico':(c.anterior===0?'sem base anterior':`${c.entradas>=c.anterior?'+':''}${Math.round((c.entradas-c.anterior)/c.anterior*100)}% vs. anterior`),
+      titulo:`Comerciais criados no período (${per}). A comparação usa a janela imediatamente anterior, com o mesmo tamanho; base zero não é exibida como +100%.` }),
+    pnKpi({ rotulo:'Propostas preenchidas', valor:c.propostas, cor:'kpi-blue',
+      sub:c.entradas?pnPct(c.propostas/c.entradas)+' das entradas':'nenhuma entrada no período',
+      titulo:'Comerciais criados no período cuja proposta possui valor_venda. Como proposta é JSON sem carimbo próprio, este indicador mede preenchimento na safra criada, não a data em que o formulário foi salvo.' }),
     pnKpi({ rotulo:'Comerciais ativos', valor: c.ativos, cor:'kpi-blue', sub:'estoque de agora',
       titulo:'situação atual com flag fora de CANCELADO e ENCERRADO, E fora de etapa com selo de fim. '
            + 'Negócio ganho ou perdido não está no pipeline: promessa cumprida sai da conta. O handoff perdido para o Repasse tem cartão próprio (Conversão → Repasse).' }),
@@ -1569,6 +1616,17 @@ function pnDesenharCO(alvo){
   ];
 
   const f = c.funil;
+  const atencaoDefs = [
+    ['SLA estourado',c.atencao.sla,'Ativos acima do sla_horas da situação atual.'],
+    ['Parados +30d',c.atencao.parados30,'Ativos há mais de 30 dias na situação atual.'],
+    ['Sem corretor',c.atencao.semCorretor,'Ativos sem corretor_id.'],
+    ['Sem proposta',c.atencao.semProposta,'Ativos sem proposta.valor_venda.'],
+    ['Vendidos sem contrato',c.atencao.vendidoSemContrato,'Na etapa selada VENDIDO, sem contrato ASSINADO cadastrado.'],
+    ['Distratos',c.atencao.distratos,'Cancelamentos posteriores ao marco de venda dentro do período.']
+  ].filter(x=>x[1]>0);
+  const atencao = atencaoDefs.length ? pnPainelBox('Exige atenção',
+    'Só aparecem exceções com quantidade maior que zero.',
+    `<div class="pn-faixas">${atencaoDefs.map(x=>pnFaixa(x[0],x[1],x[2])).join('')}</div>`) : '';
   const etapas = [
     { nome:'Venda criada', n:f.criados, titulo:'a1_comerciais.criado_em dentro do período', tempo:'—', tempoTitulo:'é a origem da contagem' },
     { nome:'Proposta preenchida', n:f.proposta, titulo:'proposta contém valor_venda',
@@ -1620,6 +1678,10 @@ function pnDesenharCO(alvo){
     </div>
     ${c.temCancelamento ? '' : pnAviso('A esteira da Venda não tem situação com flag CANCELADO. Sem ela não há como medir win rate — o denominador ficaria igual ao numerador.')}
     <div class="kpi-grid" id="pn-kpis-co" style="grid-template-columns:repeat(4,1fr)">${kpis.join('')}</div>
+    ${atencao}
+    ${pnPainelBox('Evolução no período',
+      'Entradas e vendas por dia; períodos longos são agrupados em até 60 colunas. A venda é contada pela etapa atual com selo VENDIDO.',
+      pnEvolucao(c.evolucao))}
     ${pnPainelBox('Funil — safra criada no período',
       'Volume por etapa e mediana de dias entre os marcos com carimbo de tempo. Proposta preenchida não tem data no schema, por isso fica sem tempo.',
       `<div id="pn-funil-co">${pnFunil(etapas)}</div>`)}

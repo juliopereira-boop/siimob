@@ -996,6 +996,20 @@ function closeEditPanel() {
   render();
 }
 
+async function definirSeloDaEtapa(stageId, selo){
+  if (!ehEsteira()) return true;
+  const res = await fetch(A1.rpc('a1_workflow_definir_selo'), {
+    method:'POST', headers:A1.headers(),
+    body:JSON.stringify({ p_module_key:MODULE, p_stage_id:stageId, p_selo:selo || null })
+  });
+  if (res.ok) return true;
+  const erro = await res.json().catch(()=>({}));
+  epErro(erro.message && /sem_permissao/.test(erro.message)
+    ? 'Você não tem permissão para alterar selos deste workflow.'
+    : 'A etapa foi preservada, mas não foi possível transferir o selo. Aplique a migration de integridade do workflow e tente novamente.');
+  return false;
+}
+
 async function saveStage() {
   const name     = document.getElementById('ep-name').value.trim();
   const color    = getSelectedColor();
@@ -1018,12 +1032,17 @@ async function saveStage() {
   const sla = ehEsteira() ? (slaCampo.value === '' ? null : parseInt(slaCampo.value, 10)) : null;
   const payload = d.doFormulario({ nome: name, cor: color, ordem: position, grupo: group,
     inicial: is_initial, final: is_final, pendente: is_pending, flag, selo, sla, ativa: true });
+  // O selo não viaja no PATCH comum. Remover/mover precisa ser uma operação
+  // atômica no banco, porque dois PATCHes deixariam uma janela com duplicidade
+  // ou poderiam manter o valor antigo quando o campo viesse vazio.
+  if (ehEsteira()) delete payload.selo;
 
   if (editingStage) {
     const res = await fetch(`${A1.rest(d.tabelaNo)}?id=eq.${editingStage.id}`, {
       method: 'PATCH', headers: A1.headers(), body: JSON.stringify(payload)
     });
     if (!res.ok) { epErro('Não foi possível salvar. Confira se você é gestor deste cliente.'); return; }
+    if (ehEsteira() && !(await definirSeloDaEtapa(editingStage.id, selo))) return;
     Object.assign(editingStage, { name, color, position, group_key: group,
       is_initial, is_final, is_pending, flag: flag || '', selo: selo || '', sla_horas: sla });
     toast('Etapa atualizada', 'success');
@@ -1036,6 +1055,7 @@ async function saveStage() {
     });
     if (!res.ok) { epErro('Não foi possível criar. Confira se você é gestor deste cliente.'); return; }
     const [criada] = await res.json();
+    if (ehEsteira() && !(await definirSeloDaEtapa(criada.id, selo))) return;
     stages.push(ehEsteira()
       ? { id: criada.id, name, color, position, pos_x: criada.pos_x, pos_y: criada.pos_y,
           is_initial, is_final, is_pending, flag: flag || '', selo: selo || '', sla_horas: sla, ativo: true }
@@ -1044,7 +1064,9 @@ async function saveStage() {
   }
 
   closeEditPanel();
-  render();
+  // Refaz a leitura em vez de confiar só no objeto local: ao transferir um
+  // selo, a outra etapa também mudou dentro da mesma transação.
+  await load();
 }
 
 async function deleteStage() {

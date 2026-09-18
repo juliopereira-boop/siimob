@@ -1176,7 +1176,7 @@ function dosHistorico(){
         de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
         para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
         ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
-        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${e.ator_nome ? ' · ' + esc(e.ator_nome) : ''}</div></div>
+        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${a1AtorHistorico(e) ? ' · ' + esc(a1AtorHistorico(e)) : ''}</div></div>
     </div>`; }).join('')}</div>`;
 }
 function rotuloEvento(e){

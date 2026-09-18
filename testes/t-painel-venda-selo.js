@@ -176,6 +176,17 @@ console.log('\n== CONTRATO ASSINADO CONTINUA MANDANDO NA DATA ==');
     c.vendidosSemContrato === 0, String(c.vendidosSemContrato));
 }
 
+console.log('\n== CONTRATO FORA DO SELO NÃO MUDA O KPI ==');
+{
+  const c = calc(
+    [{ id:'coF', codigo:'CO-F', situacao_id:'cs1', situacao_em:dias(1), criado_em:dias(20), proposta:{valor_venda:9900000} }],
+    [],
+    [{ comercial_id:'coF', versao:1, status:'ASSINADO', assinado_em:dias(1), criado_em:dias(2) }]
+  );
+  checa('contrato assinado fora da etapa VENDIDO não entra em Vendas ganhas', c.assinados === 0, 'assinados='+c.assinados);
+  checa('o registro continua no pipeline enquanto estiver em etapa aberta', c.ativos === 1, 'ativos='+c.ativos);
+}
+
 console.log('\n== CADA MÓDULO TEM O SEU VOCABULÁRIO DE SELO ==');
 {
   // São dois CHECK diferentes no banco: a Pré-análise termina em FIM_POSITIVO

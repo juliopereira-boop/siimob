@@ -3627,7 +3627,7 @@ function renderModalHist() {
     const evIcon={comment:'C',edit:'E',document:'D',interview:'S',agendamento:'A'};
     (Array.isArray(evts)?evts:[]).forEach(ev=>{
       if(ev.type==='stage_change') return;
-      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')});
+      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(a1AtorHistorico(ev))});
     });
     if(!items.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico.</span>';return;}
     items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
@@ -3658,7 +3658,7 @@ function renderModalEvts() {
           <div class="tl-dot ${cls[ev.type]||'comment'}">${icons[ev.type]||'C'}</div>
           <div class="tl-content">
             <div class="tl-desc">${esc(ev.description||'')}</div>
-            <div class="tl-meta">${esc(ev.actor_name||'')} &middot; ${fmtDT(ev.created_at)}</div>
+            <div class="tl-meta">${esc(a1AtorHistorico(ev))} &middot; ${fmtDT(ev.created_at)}</div>
           </div>
         </div>`).join('')+'</div>'+commentBox;
     }).catch(()=>{body.innerHTML='<span style="color:var(--red)">Erro.</span>'+commentBox;});

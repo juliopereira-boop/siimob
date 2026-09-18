@@ -70,7 +70,7 @@ const D = {
     {id:'p12',tenant_id:'t1',type:'corretor',name:'Sem Equipe',cpf:'12312312312',is_active:true,approved:true,permissions:{},extra:{}},
     {id:'p8',tenant_id:'t1',type:'cca',name:'Usuário Corr',cpf:'55555555555',is_active:true,approved:true,permissions:{}}],
   users: [{id:'u1',tenant_id:'t1',name:'Julio',cpf:'99999999999',role:'owner',is_active:true,last_seen:'2026-08-27T09:00:00Z'}],
-  config: [{key:'regionais',value:'["Centro","Sul"]'},{key:'commission',value:'{}'},{key:'wf_lock_repasse',value:'false'},{key:'doc_types',value:'["RG","CPF"]'}],
+  config: [{key:'regionais',value:'["Centro","Sul"]'},{key:'crm_sources',value:'[{"id":"org1","name":"Indicação","active":true},{"id":"org2","name":"Portal","active":true}]'},{key:'commission',value:'{}'},{key:'wf_lock_repasse',value:'false'},{key:'doc_types',value:'["RG","CPF"]'}],
   despachantes: [{id:'x1',nome:'Despachante '+XSS,email:'d@x.com',telefone:'11999999999'}],
   bancos: [{id:'b1',nome:'Banco '+XSS,codigo:'001'},{id:'b2',nome:'Caixa',codigo:'104'}],
   cartorios: [{id:'k1',nome:'Cartório '+XSS,municipio:'Campinas',uf:'SP'}],
@@ -363,7 +363,12 @@ function responder(url, metodo, corpo0) {
     // O POST devolve a linha criada, como o PostgREST com Prefer=representation
     // faz. Devolver lista vazia esconderia todo codigo que usa o id de volta —
     // foi assim que a semeadura da esteira deixou de ligar nada sem quebrar.
-    return D.agenda;
+    let r=D.agenda.slice();
+    const tipo=(qs.match(/tipo=eq\.([a-z_]+)/)||[])[1];
+    if(tipo) r=r.filter(x=>x.tipo===tipo);
+    if(/caso_id=not\.is\.null/.test(qs)) r=r.filter(x=>x.caso_id!=null);
+    if(/concluido_em=is\.null/.test(qs)) r=r.filter(x=>x.concluido_em==null);
+    return r;
   }
   if (t === 'a1_stages') return D.stages;
   if (t === 'a1_cases') {

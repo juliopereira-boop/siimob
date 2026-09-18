@@ -148,9 +148,9 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.evaluate(() => alternarMaisLead());
     await p.waitForTimeout(200);
     checa('o corretor já vem preenchido com quem está logado',
-      (await p.inputValue('#n-broker')) === 'Ana Souza', await p.inputValue('#n-broker'));
-    checa('e o campo é somente leitura',
-      await p.evaluate(() => document.getElementById('n-broker').readOnly));
+      (await p.inputValue('#n-broker')) === 'p3', await p.inputValue('#n-broker'));
+    checa('e o campo é bloqueado',
+      await p.evaluate(() => document.getElementById('n-broker').disabled));
 
     await p.fill('#n-name', 'Cliente Novo');
     await p.evaluate(() => createLead());
@@ -169,16 +169,16 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     const { b, p, erros } = await abrirComo('crm.html', CORRETOR, ['crm']);
     await p.evaluate(() => { const l = G.leads[0]; if (l) openLead(l.id); });
     await p.waitForTimeout(600);
-    checa('no dossiê, o corretor é somente leitura',
-      await p.evaluate(() => document.getElementById('e-broker').readOnly));
+    checa('no dossiê, o corretor é bloqueado',
+      await p.evaluate(() => document.getElementById('e-broker').disabled));
     checa('e a imobiliária também',
-      await p.evaluate(() => document.getElementById('e-imob').readOnly));
+      await p.evaluate(() => document.getElementById('e-imob').disabled));
 
     // Mesmo que alguém force o campo pelo console, o que a tela MANDA continua
     // sendo o nome dele. É a segunda barreira; a primeira é o gatilho no banco.
     await p.evaluate(() => {
       const el = document.getElementById('e-broker');
-      el.readOnly = false; el.value = 'Outro Corretor';
+      el.disabled = false; el.value = 'p10';
     });
     await p.evaluate(() => saveLead());
     await p.waitForTimeout(700);
@@ -197,10 +197,10 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.evaluate(() => { const l = G.leads[0]; if (l) openLead(l.id); });
     await p.waitForTimeout(600);
     checa('o gestor escolhe o corretor',
-      !(await p.evaluate(() => document.getElementById('e-broker').readOnly)));
+      !(await p.evaluate(() => document.getElementById('e-broker').disabled)));
     checa('e transfere de imobiliária',
-      !(await p.evaluate(() => document.getElementById('e-imob').readOnly)));
-    await p.evaluate(() => { document.getElementById('e-broker').value = 'Carla Dias'; });
+      !(await p.evaluate(() => document.getElementById('e-imob').disabled)));
+    await p.evaluate(() => { document.getElementById('e-broker').value = 'p10'; });
     await p.evaluate(() => saveLead());
     await p.waitForTimeout(700);
     const patch = await p.evaluate(() =>
@@ -208,8 +208,50 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     const corpo = patch ? JSON.parse(patch.body) : {};
     checa('a transferência é enviada ao banco', corpo.broker_name === 'Carla Dias',
       JSON.stringify(corpo.broker_name));
+    checa('e guarda a referência estável do corretor', corpo.payload?.crm_refs?.corretor_id === 'p10',
+      JSON.stringify(corpo.payload));
     todosErros.push(...erros);
     await b.close();
+  }
+
+  console.log('\n== TAREFA DO LEAD É A MESMA DA AGENDA ==');
+  {
+    const { b, p, erros } = await abrirComo('crm.html', GESTOR, ['crm']);
+    await p.evaluate(() => { const l=G.leads[0]; if(l){ openLead(l.id); const bt=document.querySelector('[data-mt=tarefa]'); switchLeadTab('tarefa',bt); } });
+    await p.fill('#t-desc','Retornar ao cliente');
+    await p.fill('#t-date',new Date().toISOString().slice(0,10));
+    await p.evaluate(() => saveTask());
+    await p.waitForTimeout(700);
+    const post=await p.evaluate(() => (window.__POSTS||[]).find(x=>/a1_agenda/.test(x.url)&&x.m==='POST'));
+    const corpo=post?JSON.parse(post.body):{};
+    checa('a tarefa é gravada em a1_agenda', !!post, JSON.stringify(post));
+    checa('e fica ligada ao Lead e ao responsável', corpo.caso_id==='c1'&&corpo.dono==='u1'&&corpo.tipo==='tarefa',JSON.stringify(corpo));
+    const patch=await p.evaluate(() => (window.__POSTS||[]).filter(x=>/a1_cases/.test(x.url)&&x.m==='PATCH').pop());
+    const payload=patch?JSON.parse(patch.body).payload:{};
+    checa('o payload legado guarda somente a ponte para a Agenda', !!payload?.task?.agenda_id,JSON.stringify(payload));
+    todosErros.push(...erros); await b.close();
+  }
+
+  console.log('\n== LEAD ABRE A PRÉ-ANÁLISE COM OS DADOS CARREGADOS ==');
+  {
+    const { b, p, erros } = await abrirComo('pre-analise.html?lead=c1&nome=Maria', GESTOR, ['PRE_ANALISE']);
+    await p.waitForSelector('#w-empr',{timeout:5000});
+    const opcoes=await p.locator('#w-empr option').allTextContents();
+    checa('o assistente vindo do Lead abre sozinho',await p.locator('#modal-nova').isVisible());
+    checa('e usa os empreendimentos reais do módulo principal',opcoes.some(x=>/Residencial das Flores/.test(x)),JSON.stringify(opcoes));
+    checa('não mostra o falso estado de cadastro vazio',!opcoes.some(x=>/Nenhum empreendimento/.test(x)),JSON.stringify(opcoes));
+    todosErros.push(...erros); await b.close();
+  }
+
+  console.log('\n== CAMPOS CADASTRADOS DO LEAD SÃO SELEÇÕES ==');
+  {
+    const { b, p, erros } = await abrirComo('crm.html', GESTOR, ['crm']);
+    await p.evaluate(()=>{openNewLead();alternarMaisLead();}); await p.waitForTimeout(250);
+    checa('Origem, Corretor e Imobiliária são selects',await p.evaluate(()=>['n-source','n-broker','n-imob'].every(id=>document.getElementById(id)?.tagName==='SELECT')));
+    checa('origem vem do cadastro do tenant',(await p.locator('#n-source option').allTextContents()).includes('Indicação'));
+    checa('corretor vem dos usuários válidos',(await p.locator('#n-broker option').allTextContents()).includes('Ana Souza'));
+    checa('imobiliária vem do cadastro',(await p.locator('#n-imob option').allTextContents()).some(x=>/Imob Alfa/.test(x)));
+    todosErros.push(...erros); await b.close();
   }
 
   process.exit(resumo(todosErros) ? 1 : 0);

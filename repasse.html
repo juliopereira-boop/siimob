@@ -1928,12 +1928,14 @@ async function init() {
   // logado — vem de js/modulo-shell.js. Esta tela tinha a sua cópia da barra,
   // e outras cinco telas tinham a delas: seis cabeçalhos para o mesmo sistema,
   // e quem trocava de tela achava que tinha trocado de produto.
+  const _subDashboard = [];
+  if (G.permiteDashboard) _subDashboard.push({ rot:'Dashboard', href:`/${G.slug}/repasse`, ativo:true });
+  _subDashboard.push({ rot:'Andamento', href:`/${G.slug}/andamento` },
+                     { rot:'Listagem',  href:`/${G.slug}/listagem` });
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo:'geral', vista:'dashboard',
     perfil:true,
-    sub:[{ rot:'Dashboard do Repasse', href:`/${G.slug}/repasse`, ativo:true },
-         { rot:'Andamento', href:`/${G.slug}/andamento` },
-         { rot:'Listagem',  href:`/${G.slug}/listagem` }]
+    sub:_subDashboard
   });
   // Item 1: esconde itens exclusivos do gestor ANTES de qualquer await (evita o "flash" p/ o usuário correspondente)
   // Item 2: mostra o ícone de perfil para o usuário correspondente
@@ -1953,9 +1955,18 @@ async function init() {
     if (!hasPerm('ver_repasses')) { semAcessoAoRepasse(); return; }
     // Dashboard é autorizado pela chave do respectivo módulo. A chave genérica
     // antiga não pode decidir por Pré-análise/Venda/Repasse.
-    if (!G.permiteDashboard) {
-      if (/\/(repasse|dashboard|geral)\/?$/.test(location.pathname)) { window.location.replace(`/${G.slug}/andamento`); return; }
-    }
+  }
+  // Acesso direto não redireciona nem começa a carregar cartões para depois
+  // voltar. O menu já nasceu sem a opção e a URL forçada recebe um estado
+  // estável; RLS continua sendo a barreira dos dados no servidor.
+  if (!G.permiteDashboard) {
+    document.getElementById('tab-dashboard').innerHTML = `<div class="empty-state" role="alert" style="margin:2rem auto;max-width:640px">
+      <div style="font-size:2rem;margin-bottom:.65rem" aria-hidden="true">🔒</div>
+      <b>Você não possui permissão para acessar este recurso.</b>
+      <div style="margin-top:.4rem;color:var(--t3)">Peça ao gestor a permissão de dashboard do módulo.</div>
+    </div>`;
+    a1StartHeartbeat('repasse');
+    return;
   }
   // Os endereços das abas saem do casco, que os monta a partir da licença. O
   // que sobrou aqui são os dois links do editor de esteira, que vivem dentro
@@ -3721,7 +3732,7 @@ function renderModalHist() {
     const evIcon={comment:'C',edit:'E',document:'D',interview:'S',agendamento:'A'};
     (Array.isArray(evts)?evts:[]).forEach(ev=>{
       if(ev.type==='stage_change') return;
-      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')});
+      items.push({ts:ev.created_at,cls:evCls[ev.type]||'comment',icon:evIcon[ev.type]||'C',desc:esc(ev.description||''),meta:esc(a1AtorHistorico(ev))});
     });
     if(!items.length){body.innerHTML='<span style="color:var(--t3);font-size:.78rem">Sem historico.</span>';return;}
     items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
@@ -3752,7 +3763,7 @@ function renderModalEvts() {
           <div class="tl-dot ${cls[ev.type]||'comment'}">${icons[ev.type]||'C'}</div>
           <div class="tl-content">
             <div class="tl-desc">${esc(ev.description||'')}</div>
-            <div class="tl-meta">${esc(ev.actor_name||'')} &middot; ${fmtDT(ev.created_at)}</div>
+            <div class="tl-meta">${esc(a1AtorHistorico(ev))} &middot; ${fmtDT(ev.created_at)}</div>
           </div>
         </div>`).join('')+'</div>'+commentBox;
     }).catch(()=>{body.innerHTML='<span style="color:var(--red)">Erro.</span>'+commentBox;});

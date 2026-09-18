@@ -190,9 +190,9 @@
       <div id="n-extra" hidden>
       <div class="sec-title">Origem e responsável</div>
       <div class="fgrid">
-        <div class="fg"><label>Origem / Campanha</label><input id="n-source" list="dl-sources"></div>
-        <div class="fg"><label>Corretor responsável</label><input id="n-broker" list="dl-brokers"></div>
-        <div class="fg" id="n-imob-wrap"><label>Imobiliária</label><input id="n-imob" list="dl-imobs"></div>
+        <div class="fg"><label>Origem / Campanha</label><select id="n-source"><option value="">— selecione —</option></select></div>
+        <div class="fg"><label>Corretor responsável</label><select id="n-broker"><option value="">— sem corretor —</option></select></div>
+        <div class="fg" id="n-imob-wrap"><label>Imobiliária</label><select id="n-imob"><option value="">— sem imobiliária —</option></select></div>
       </div>
       <div class="sec-title">Funil</div>
       <div class="fgrid">
@@ -248,9 +248,6 @@
   </div>
 </div>
 
-<datalist id="dl-sources"></datalist>
-<datalist id="dl-brokers"></datalist>
-<datalist id="dl-imobs"></datalist>
 <div id="toast-wrap"></div>
 
 <script src="/js/config.js"></script>
@@ -259,7 +256,7 @@
 <script src="/js/avisos.js"></script>
 <script src="/js/cobranca-aviso.js"></script>
 <script>
-const G = { user:null, slug:null, stages:[], leads:[], editingId:null, editingData:null, activeMt:'dados', pipe:null, cad:{}, cadCur:null };
+const G = { user:null, slug:null, stages:[], leads:[], editingId:null, editingData:null, activeMt:'dados', pipe:null, cad:{}, cadCur:null, corretores:[], imobiliarias:[], agendaTasks:{} };
 
 const DEFAULT_PIPELINES = {
   vendas: { label:'Vendas — Imóveis Prontos', stages:[
@@ -315,6 +312,9 @@ async function init(){
   G.imobiliarias = await fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`,
     { headers:A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
   if (!Array.isArray(G.imobiliarias)) G.imobiliarias = [];
+  G.corretores = await fetch(`${A1.rest('a1_partners')}?type=eq.corretor&is_active=is.true&approved=is.true&select=id,name,extra&order=name.asc`,
+    { headers:A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
+  if (!Array.isArray(G.corretores)) G.corretores = [];
   a1StartHeartbeat('crm');
   await loadData();
   if (_v !== 'funil') switchTab(_v);
@@ -322,7 +322,7 @@ async function init(){
 
 async function loadData(){
   // stages, leads e cadastros (origens/corretores) são independentes — busca tudo em paralelo
-  const [stagesRaw, leads] = await Promise.all([
+  const [stagesRaw, leads, agenda] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.crm&order=position.asc`, { headers:A1.headers() }).then(r=>r.json()).catch(()=>[]),
     // `select=` explicito e A1.buscarTudo nao sao zelo: sem o select, o
     // PostgREST manda TODAS as colunas, e a1_cases guarda PDF em base64
@@ -332,13 +332,15 @@ async function loadData(){
     // todos, que e o pior jeito de errar um numero.
     A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,unit,contract_value,partner_name,broker_name,real_estate_name,payload,observations,archived,created_at,updated_at`)
       .then(r => r.linhas || []).catch(()=>[]),
-    loadCad('origens'),
-    loadCad('corretores')
+    A1.buscarTudo(`${A1.rest('a1_agenda')}?tipo=eq.tarefa&caso_id=not.is.null&concluido_em=is.null&select=id,caso_id,titulo,descricao,data,hora_inicio,concluido_em`)
+      .then(r => r.linhas || []).catch(()=>[]),
+    loadCad('origens')
   ]);
   let stages = stagesRaw;
   if (!Array.isArray(stages) || !stages.length) stages = await seedPipelines();
   G.stages = stages || [];
   G.leads = Array.isArray(leads) ? leads : [];
+  G.agendaTasks = Object.fromEntries((Array.isArray(agenda)?agenda:[]).filter(x=>x.caso_id).map(x=>[x.caso_id,x]));
   if(!G.pipe) G.pipe = pipeKeys()[0] || 'vendas';
   populateFilters(); populatePipeSelector(); renderFunil(); refreshTaskBadge();
 }
@@ -390,9 +392,10 @@ async function carregarMinhaImobiliaria(){
       { headers:A1.headers() }).then(r => r.ok ? r.json() : []);
     const idImob = eu && eu[0] && eu[0].extra && eu[0].extra.imobiliaria_id;
     if (!idImob) return;
-    const im = await fetch(`${A1.rest('a1_partners')}?id=eq.${idImob}&select=name`,
+    const im = await fetch(`${A1.rest('a1_partners')}?id=eq.${idImob}&select=id,name`,
       { headers:A1.headers() }).then(r => r.ok ? r.json() : []);
     G.minhaImobiliaria = (im && im[0] && im[0].name) || '';
+    G.minhaImobiliariaId = (im && im[0] && im[0].id) || null;
   } catch { /* sem vinculo cadastrado, o lead nasce so com o corretor */ }
 }
 
@@ -418,7 +421,18 @@ function filteredLeads(){
     return true;
   });
 }
-function taskState(l){ const t=l.payload&&l.payload.task; if(!t||!t.date) return null; const today=new Date(); today.setHours(0,0,0,0); const d=new Date(t.date+'T00:00:00'); return { over:d<today, today:d.getTime()===today.getTime(), date:t.date, desc:t.desc||'' }; }
+function taskState(l){
+  const ag=G.agendaTasks[l.id];
+  const legado=l.payload&&l.payload.task;
+  const t=ag ? {id:ag.id,date:ag.data,desc:ag.titulo||ag.descricao||''} : legado;
+  if(!t||!t.date) return null;
+  // Quando uma tarefa já foi vinculada à Agenda, a Agenda é a fonte de
+  // verdade. Se ela foi concluída/excluída por lá, não ressuscitamos a cópia
+  // antiga do payload do Lead.
+  if(!ag && legado&&legado.agenda_id) return null;
+  const today=new Date(); today.setHours(0,0,0,0); const d=new Date(t.date+'T00:00:00');
+  return { id:t.id||t.agenda_id||null, over:d<today, today:d.getTime()===today.getTime(), date:t.date, desc:t.desc||'' };
+}
 
 function renderFunil(){
   const board=document.getElementById('kanban');
@@ -456,7 +470,7 @@ function leadCard(l){
     </div>
     <div class="lead-foot"><span class="date">${fmtDate(l.created_at)}</span>
       <div style="display:flex;gap:.3rem">
-        ${phone?`<button class="wa" onclick="event.stopPropagation();waTo('${phone}','${l.id}')">Zap</button>`:''}
+        ${phone?`<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${phone}','${l.id}')">${a1Svg('whatsapp',15)}</button>`:''}
         <button class="mini-btn" onclick="event.stopPropagation();openLead('${l.id}')">Gerenciar</button>
       </div>
     </div></div>`;
@@ -489,6 +503,43 @@ function waTo(phone,id){
 }
 function waLead(){ const l=G.editingData||{}; waTo(l.client_phone,G.editingId); }
 
+// IDs ficam no payload para não duplicarmos nomes como relacionamento. As
+// colunas textuais continuam sendo preenchidas porque relatórios e registros
+// antigos ainda as consomem. Ao abrir um legado sem ID, tentamos casar pelo
+// nome; se o cadastro já não existir, mostramos a opção histórica sem permitir
+// que o usuário invente outra por digitação livre.
+function crmRefs(l){ return (l && l.payload && l.payload.crm_refs) || {}; }
+function crmAtivos(lista){ return (lista || []).filter(x => x && x.active !== false && x.id && x.name); }
+function crmAcharId(lista, id, nome){
+  if (id && (lista || []).some(x => String(x.id) === String(id))) return String(id);
+  const alvo = String(nome || '').trim().toLocaleLowerCase('pt-BR');
+  const achado = (lista || []).find(x => String(x.name || '').trim().toLocaleLowerCase('pt-BR') === alvo);
+  return achado ? String(achado.id) : (nome ? `legacy:${nome}` : '');
+}
+function crmOpcoes(lista, selecionado, legado, vazio){
+  const itens = crmAtivos(lista);
+  const valor = crmAcharId(itens, selecionado, legado);
+  const historico = valor.startsWith('legacy:')
+    ? `<option value="${esc(valor)}" selected>${esc(legado)} (cadastro antigo)</option>` : '';
+  return `<option value="">${esc(vazio || '— selecione —')}</option>${historico}` +
+    itens.map(x => `<option value="${esc(x.id)}" ${String(x.id)===valor?'selected':''}>${esc(x.name)}</option>`).join('');
+}
+function crmEscolha(id, lista, legado){
+  const valor = val(id);
+  if (!valor) return { id:null, name:'' };
+  if (valor.startsWith('legacy:')) return { id:null, name:valor.slice(7) || legado || '' };
+  const item = (lista || []).find(x => String(x.id) === valor);
+  return { id:item ? item.id : null, name:item ? item.name : (legado || '') };
+}
+function crmPreencherNovo(){
+  const origem = document.getElementById('n-source');
+  const corretor = document.getElementById('n-broker');
+  const imob = document.getElementById('n-imob');
+  if (origem) origem.innerHTML = crmOpcoes(getCad('origens'), null, '', '— selecione —');
+  if (corretor) corretor.innerHTML = crmOpcoes(G.corretores, souCorretor()?G.user.id:null, souCorretor()?G.user.name:'', '— sem corretor —');
+  if (imob) imob.innerHTML = crmOpcoes(G.imobiliarias, souCorretor()?G.minhaImobiliariaId:null, souCorretor()?G.minhaImobiliaria:'', '— sem imobiliária —');
+}
+
 // ─── New lead ────────────────────────────────────────────────────────────────
 function openNewLead(){
   const ehCorretor = souCorretor();
@@ -497,13 +548,14 @@ function openNewLead(){
   document.getElementById('n-fgts').checked=false; document.getElementById('n-permuta').checked=false;
   const ps=document.getElementById('n-pipe'); ps.innerHTML=pipeKeys().map(k=>`<option value="${k}">${esc(pipeLabel(k))}</option>`).join(''); ps.value=G.pipe;
   fillPipeStages('n-pipe','n-stage');
+  crmPreencherNovo();
   // O corretor ve o proprio nome, preenchido e travado: e informacao, nao
   // escolha. Campo editavel que o banco vai recusar e pior que campo travado —
   // a pessoa digita, salva e leva um erro que nao explica nada.
   const broker = document.getElementById('n-broker');
-  if (broker) { broker.value = ehCorretor ? G.user.name : ''; broker.readOnly = ehCorretor; }
+  if (broker) { broker.value = ehCorretor ? String(G.user.id) : ''; broker.disabled = ehCorretor; }
   const imob = document.getElementById('n-imob');
-  if (imob) { imob.value = ehCorretor ? (G.minhaImobiliaria || '') : ''; imob.readOnly = ehCorretor; }
+  if (imob) { imob.value = ehCorretor ? String(G.minhaImobiliariaId || '') : ''; imob.disabled = ehCorretor; }
   const imobWrap = document.getElementById('n-imob-wrap');
   // Corretor sem imobiliaria cadastrada nao ganha campo vazio: campo em branco
   // que ele nao pode preencher parece cadastro pela metade.
@@ -545,14 +597,17 @@ function qualFromForm(p){ return {
 async function createLead(){
   const name=val('n-name'); if(!name){ toast('Informe o nome do lead','error'); return; }
   const stageId=document.getElementById('n-stage').value; const st=G.stages.find(s=>s.id===stageId);
+  const origem=crmEscolha('n-source',getCad('origens'),''), corretor=crmEscolha('n-broker',G.corretores,''), imob=crmEscolha('n-imob',G.imobiliarias,'');
+  if(souCorretor()){ corretor.id=G.user.id; corretor.name=G.user.name; imob.id=G.minhaImobiliariaId||null; imob.name=G.minhaImobiliaria||''; }
   const body={ tenant_id:G.user.tenant_id, module_key:'crm', client_name:name, client_phone:val('n-phone'), client_email:val('n-email'),
-    development:val('n-bairro')?val('n-bairro'):'', partner_name:val('n-source'),
+    development:val('n-bairro')?val('n-bairro'):'', partner_name:origem.name,
     // O corretor NAO escolhe: o lead nasce dele. O gestor escolhe, e o campo
     // fica em branco quando ele nao quiser vincular ninguem ainda.
-    broker_name: souCorretor() ? G.user.name : val('n-broker'),
-    real_estate_name: souCorretor() ? (G.minhaImobiliaria || '') : val('n-imob'),
+    broker_name: corretor.name,
+    real_estate_name: imob.name,
     contract_value:parseFloat(val('n-value'))||null, observations:val('n-obs'),
-    stage_id:stageId||null, stage_name:st?st.name:null, is_new:true, payload:{ qual:qualFromForm('n-') } };
+    stage_id:stageId||null, stage_name:st?st.name:null, is_new:true,
+    payload:{ qual:qualFromForm('n-'), crm_refs:{ origem_id:origem.id, corretor_id:corretor.id, imobiliaria_id:imob.id } } };
   const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
   const data=await res.json().catch(()=>null); const created=Array.isArray(data)?data[0]:null;
   if(created&&created.id){
@@ -585,10 +640,13 @@ function criarPreAnaliseDoLead(){
   const l = G.editingData || G.leads.find(x => x.id === G.editingId);
   if (!l) return;
   const q = new URLSearchParams({ lead: l.id, nome: l.client_name || '' });
+  const refs=crmRefs(l);
   if (l.client_phone) q.set('tel', l.client_phone);
   if (l.client_email) q.set('email', l.client_email);
   if (l.client_cpf)   q.set('cpf', l.client_cpf);
   if (l.unit)         q.set('unidade', l.unit);
+  if (refs.corretor_id) q.set('corretor', refs.corretor_id);
+  if (refs.imobiliaria_id) q.set('imobiliaria', refs.imobiliaria_id);
   location.href = `/${G.slug}/pre-analise?${q.toString()}`;
 }
 
@@ -597,18 +655,17 @@ function switchLeadTab(t,el){ document.querySelectorAll('#modal-lead .modal-tab'
 
 function renderLeadDados(){
   const l=G.editingData||{};
+  const refs=crmRefs(l);
   document.getElementById('ml-body').innerHTML=`
     <div class="fgrid">
       <div class="fg full"><label>Nome</label><input id="e-name" value="${esc(l.client_name||'')}"></div>
       <div class="fg"><label>Telefone / WhatsApp</label><input id="e-phone" value="${esc(l.client_phone||'')}"></div>
       <div class="fg"><label>E-mail</label><input id="e-email" value="${esc(l.client_email||'')}"></div>
-      <div class="fg"><label>Origem / Campanha</label><input id="e-source" value="${esc(l.partner_name||'')}" list="dl-sources"></div>
+      <div class="fg"><label>Origem / Campanha</label><select id="e-source">${crmOpcoes(getCad('origens'),refs.origem_id,l.partner_name||'','— selecione —')}</select></div>
       <div class="fg"><label>Corretor responsável</label>
-        <input id="e-broker" value="${esc(l.broker_name||'')}" list="dl-brokers"
-          ${souCorretor() ? 'readonly title="O lead é seu. Só um gestor pode transferi-lo."' : ''}></div>
+        <select id="e-broker" ${souCorretor() ? 'disabled title="O lead é seu. Só um gestor pode transferi-lo."' : ''}>${crmOpcoes(G.corretores,refs.corretor_id,l.broker_name||'','— sem corretor —')}</select></div>
       <div class="fg"><label>Imobiliária</label>
-        <input id="e-imob" value="${esc(l.real_estate_name||'')}" list="dl-imobs"
-          ${souCorretor() ? 'readonly title="Vem do seu cadastro. Quem altera é o gestor."' : ''}></div>
+        <select id="e-imob" ${souCorretor() ? 'disabled title="Vem do seu cadastro. Quem altera é o gestor."' : ''}>${crmOpcoes(G.imobiliarias,refs.imobiliaria_id,l.real_estate_name||'','— sem imobiliária —')}</select></div>
       <div class="fg full"><label>Interesse (empreendimento/imóvel)</label><input id="e-interest" value="${esc(l.development||'')}"></div>
       <div class="fg"><label>Valor do negócio (R$)</label><input id="e-value" type="number" step="0.01" value="${l.contract_value||''}"></div>
       <div class="fg full"><label>Observações</label><textarea id="e-obs" rows="3">${esc(l.observations||'')}</textarea></div>
@@ -644,7 +701,7 @@ function renderLeadProp(){
     ${p.at?`<div style="font-size:.7rem;color:var(--t3);margin-top:.5rem">Última atualização: ${fmtDT(p.at)}</div>`:''}`;
 }
 function renderLeadTask(){
-  const t=(G.editingData&&G.editingData.payload&&G.editingData.payload.task)||{};
+  const t=taskState(G.editingData||{})||{};
   document.getElementById('ml-body').innerHTML=`
     <div class="fgrid">
       <div class="fg full"><label>Próxima ação / follow-up</label><input id="t-desc" value="${esc(t.desc||'')}" placeholder="Ex: ligar para confirmar visita"></div>
@@ -671,8 +728,8 @@ async function loadInteractions(){
   ]);
   const items=[]; const l=G.editingData||{};
   if(l.created_at) items.push({ts:l.created_at,icon:'+',desc:'<b>Lead cadastrado</b>',meta:l.partner_name?`origem: ${esc(l.partner_name)}`:''});
-  (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,icon:'⇢',desc:`Entrou em <b>${esc(h.stage_name||'')}</b>`,meta:''}));
-  (Array.isArray(evts)?evts:[]).forEach(ev=>{ if(ev.type==='stage_change') return; items.push({ts:ev.created_at,icon:'•',desc:esc(ev.description||''),meta:esc(ev.actor_name||'')}); });
+  (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,icon:'⇢',desc:`Entrou em <b>${esc(h.stage_name||'')}</b>`,meta:esc(a1AtorHistorico(h))}));
+  (Array.isArray(evts)?evts:[]).forEach(ev=>{ if(ev.type==='stage_change') return; items.push({ts:ev.created_at,icon:'•',desc:esc(ev.description||''),meta:esc(a1AtorHistorico(ev))}); });
   if(!items.length){ document.getElementById('i-list').innerHTML='<div style="color:var(--t3);font-size:.78rem">Sem interações ainda.</div>'; return; }
   items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   document.getElementById('i-list').innerHTML='<div class="timeline">'+items.map(it=>`<div class="tl-item"><div class="tl-dot">${it.icon}</div><div><div class="tl-desc">${it.desc}</div><div class="tl-meta">${fmtDT(it.ts)}${it.meta?' · '+it.meta:''}</div></div></div>`).join('')+'</div>';
@@ -695,14 +752,17 @@ async function patchLead(patch, eventDesc){
 }
 async function saveLead(){
   if(!document.getElementById('e-name')){ toast('Abra a aba Dados para salvar o cadastro','info'); return; }
+  const refsAtuais=crmRefs(G.editingData), origem=crmEscolha('e-source',getCad('origens'),G.editingData.partner_name), corretor=crmEscolha('e-broker',G.corretores,G.editingData.broker_name), imob=crmEscolha('e-imob',G.imobiliarias,G.editingData.real_estate_name);
+  if(souCorretor()){ corretor.id=refsAtuais.corretor_id||G.user.id; corretor.name=G.user.name; imob.id=refsAtuais.imobiliaria_id||G.minhaImobiliariaId||null; imob.name=G.editingData.real_estate_name||G.minhaImobiliaria||''; }
+  const payload={...(G.editingData.payload||{}),crm_refs:{...refsAtuais,origem_id:origem.id,corretor_id:corretor.id,imobiliaria_id:imob.id}};
   const patch={ client_name:val('e-name'), client_phone:val('e-phone'), client_email:val('e-email'),
-    partner_name:val('e-source'),
+    partner_name:origem.name,
     // O corretor nao desvincula nem transfere: manda o proprio nome, sempre. O
     // banco tambem recusaria outro valor — aqui e para ele nao levar um erro
     // por ter mexido num campo que a tela deixou editavel por descuido.
-    broker_name: souCorretor() ? G.user.name : val('e-broker'),
-    real_estate_name: souCorretor() ? (G.editingData.real_estate_name || G.minhaImobiliaria || '') : val('e-imob'),
-    development:val('e-interest'), contract_value:parseFloat(val('e-value'))||null, observations:val('e-obs') };
+    broker_name:corretor.name,
+    real_estate_name:imob.name,
+    development:val('e-interest'), contract_value:parseFloat(val('e-value'))||null, observations:val('e-obs'), payload };
   if(await patchLead(patch,'Cadastro do lead atualizado')){ closeModal('modal-lead'); populateFilters(); renderFunil(); toast('Lead salvo','success'); }
 }
 async function saveQual(){
@@ -718,10 +778,29 @@ async function saveProposta(){
 async function saveTask(){
   const t={desc:val('t-desc'),date:val('t-date')};
   if(!t.date){ toast('Informe a data da tarefa','error'); return; }
-  const payload={...(G.editingData.payload||{}),task:t};
+  const atual=taskState(G.editingData||{});
+  const agendaBody={tenant_id:G.user.tenant_id,dono:G.user.id,tipo:'tarefa',titulo:t.desc||`Tarefa — ${G.editingData.client_name||'Lead'}`,descricao:`Lead: ${G.editingData.client_name||''}`,data:t.date,caso_id:G.editingId,concluido_em:null};
+  let agendaId=atual&&atual.id;
+  let resposta;
+  if(agendaId){
+    resposta=await fetch(`${A1.rest('a1_agenda')}?id=eq.${agendaId}`,{method:'PATCH',headers:A1.returnHeaders(),body:JSON.stringify(agendaBody)});
+  }else{
+    resposta=await fetch(A1.rest('a1_agenda'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(agendaBody)});
+  }
+  const gravada=await resposta.json().catch(()=>[]);
+  if(!resposta.ok){ toast('Não foi possível salvar a tarefa na Agenda','error'); return; }
+  agendaId=(gravada[0]&&gravada[0].id)||agendaId;
+  if(agendaId) G.agendaTasks[G.editingId]={...agendaBody,id:agendaId};
+  const payload={...(G.editingData.payload||{}),task:{...t,agenda_id:agendaId||null}};
   if(await patchLead({payload},`Tarefa: ${t.desc||''} (${fmtDate(t.date)})`)){ renderFunil(); refreshTaskBadge(); toast('Tarefa salva','success'); switchLeadTab('tarefa',document.querySelector('#modal-lead .modal-tab[data-mt="tarefa"]')); }
 }
 async function clearTask(){
+  const atual=taskState(G.editingData||{});
+  if(atual&&atual.id){
+    const r=await fetch(`${A1.rest('a1_agenda')}?id=eq.${atual.id}`,{method:'PATCH',headers:A1.headers(),body:JSON.stringify({concluido_em:new Date().toISOString()})});
+    if(!r.ok){ toast('Não foi possível concluir a tarefa na Agenda','error'); return; }
+    delete G.agendaTasks[G.editingId];
+  }
   const payload={...(G.editingData.payload||{})}; delete payload.task;
   if(await patchLead({payload},'Tarefa concluída/removida')){ renderFunil(); refreshTaskBadge(); toast('Tarefa concluída','info'); switchLeadTab('tarefa',document.querySelector('#modal-lead .modal-tab[data-mt="tarefa"]')); }
 }
@@ -755,7 +834,7 @@ function renderTarefas(){
       <td><b>${esc(l.client_name||'')}</b>${l.client_phone?`<div style="font-size:.7rem;color:var(--t3)">${esc(l.client_phone)}</div>`:''}</td>
       <td>${esc(t.desc||'—')}</td>
       <td>${esc(l.broker_name||'—')}</td>
-      <td style="text-align:right;white-space:nowrap">${(l.client_phone||'').replace(/\\D/g,'')?`<button class="wa" onclick="waTo('${(l.client_phone||'').replace(/\\D/g,'')}','${l.id}')">Zap</button> `:''}<button class="mini-btn" onclick="openLead('${l.id}')">Abrir</button></td>
+      <td style="text-align:right;white-space:nowrap">${(l.client_phone||'').replace(/\\D/g,'')?`<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="waTo('${(l.client_phone||'').replace(/\\D/g,'')}','${l.id}')">${a1Svg('whatsapp',15)}</button> `:''}<button class="mini-btn" onclick="openLead('${l.id}')">Abrir</button></td>
     </tr>`).join('')
   }</tbody></table></div>`;
 }
@@ -865,7 +944,7 @@ function renderLista(){
         <td>${esc(l.broker_name || '—')}</td>
         <td style="white-space:nowrap;color:var(--t3)">${fmtDate(l.created_at)}</td>
         <td style="white-space:nowrap;text-align:right">${
-          fone ? `<button class="wa" onclick="event.stopPropagation();waTo('${esc(fone)}','${esc(l.id)}')">Zap</button> ` : ''}
+          fone ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${esc(fone)}','${esc(l.id)}')">${a1Svg('whatsapp',15)}</button> ` : ''}
           <button class="mini-btn" onclick="event.stopPropagation();openLead('${esc(l.id)}')">Abrir</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;

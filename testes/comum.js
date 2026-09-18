@@ -19,15 +19,16 @@ async function abrir(pag, opc = {}) {
   p.on('pageerror', e => erros.push('JS: ' + e.message));
   p.on('console', m => { const t=m.text();
     if (m.type()==='error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::/.test(t)) erros.push('console: '+t); });
-  await p.addInitScript(() => {
+  await p.addInitScript(cfg => {
     localStorage.setItem('a1_token','tok'); localStorage.setItem('a1_slug','thecred');
-    localStorage.setItem('a1_user', JSON.stringify({id:'u1',tenant_id:'t1',name:'Julio',role:'owner',cpf:'99999999999'}));
+    localStorage.setItem('a1_user', JSON.stringify(cfg.usuario || {id:'u1',tenant_id:'t1',name:'Julio',role:'owner',cpf:'99999999999'}));
+    if (cfg.superadmin) sessionStorage.setItem('a1_sa_mode','1');
     window.__XSS = 0;
     window.confirm = () => true;                    // aceita confirmações
     window.__POSTS = [];
     const f = window.fetch;
     window.fetch = function(u, o){ if(o && o.method && o.method!=='GET') window.__POSTS.push({url:String(u),m:o.method,body:o.body}); return f.apply(this,arguments); };
-  });
+  }, { usuario:opc.usuario || null, superadmin:opc.superadmin === true });
   await p.route(/supabase\.co/, r => {
     let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch(e){ d = []; }
     r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-1/2'},body:JSON.stringify(d)});
