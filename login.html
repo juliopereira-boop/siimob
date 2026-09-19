@@ -285,7 +285,7 @@ if (A1.token && A1.slug === slug && A1.user) {
   box.textContent = motivo === 'outro_acesso'
     ? 'Sua sessão foi encerrada porque esta conta entrou em outro dispositivo. Cada login só pode estar ativo em um lugar por vez.'
     : motivo === 'conta_suspensa'
-      ? 'Esta conta está suspensa. Contate o suporte para regularizar o acesso.'
+      ? 'CONTA SUSPENSA. Entre em contato com o suporte para regularizar o acesso.'
       : 'Sua sessão foi encerrada. Entre novamente para continuar.';
   box.classList.remove('hidden');
 })();

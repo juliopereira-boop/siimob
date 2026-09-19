@@ -2,9 +2,9 @@
 -- Migration aditiva e idempotente. Nao desativa RLS nem remove dados do cliente.
 begin;
 
--- A fonte central de identidade deixa de reconhecer uma sessao de tenant
--- suspenso/cancelado. Como as policies usam a1_sessao/a1_tenant, os dados ficam
--- indisponiveis imediatamente, mesmo antes de o navegador perceber o logout.
+-- A fonte central de identidade deixa de reconhecer uma sessao comum de tenant
+-- suspenso/cancelado. A excecao e a sessao administrativa gravada pelo painel
+-- com origem='suporte', necessaria para recuperacao de dados pelo Superadmin.
 create or replace function public.a1_sessao()
 returns public.a1_sessions
 language sql stable security definer
@@ -14,15 +14,15 @@ set search_path = public, extensions, pg_temp as $$
     join public.a1_tenants t on t.id = s.tenant_id
    where s.token = current_setting('request.headers', true)::json->>'x-session-token'
      and (s.expires_at is null or s.expires_at > now())
-     and t.status in ('active', 'trial')
+     and (t.status in ('active', 'trial') or s.origem = 'suporte')
    limit 1;
 $$;
 revoke all on function public.a1_sessao() from public;
 grant execute on function public.a1_sessao() to anon, authenticated;
 
--- Nao permite nem que a service role do painel crie uma sessao de suporte para
--- uma conta suspensa. O trigger tambem fecha a corrida entre conferir o status
--- no login e inserir a sessao.
+-- Nao permite criar sessao comum em conta suspensa. A unica excecao e
+-- origem='suporte', valor escrito pelo painel administrativo com service role.
+-- O trigger tambem fecha a corrida entre conferir o status e inserir a sessao.
 create or replace function public.a1_impedir_sessao_tenant_bloqueado()
 returns trigger
 language plpgsql security definer
@@ -30,7 +30,8 @@ set search_path = public, pg_temp as $$
 declare v_status text;
 begin
   select status into v_status from public.a1_tenants where id = new.tenant_id;
-  if v_status is null or v_status not in ('active', 'trial') then
+  if new.origem is distinct from 'suporte'
+     and (v_status is null or v_status not in ('active', 'trial')) then
     raise exception 'tenant_%', coalesce(v_status, 'not_found')
       using errcode = 'P0001';
   end if;
@@ -44,9 +45,9 @@ create trigger trg_a1_impedir_sessao_tenant_bloqueado
 before insert on public.a1_sessions
 for each row execute function public.a1_impedir_sessao_tenant_bloqueado();
 
--- Ao suspender/cancelar, revoga todas as sessoes e presencas do cliente na
--- mesma transacao do PATCH do Superadmin. Reativar nao recria sessao: cada
--- pessoa precisa autenticar novamente.
+-- Ao suspender/cancelar, revoga as sessoes comuns e presencas do cliente na
+-- mesma transacao do PATCH. A sessao de suporte continua disponivel; reativar
+-- nao recria sessao de cliente, portanto cada pessoa autentica novamente.
 create or replace function public.a1_revogar_sessoes_tenant_bloqueado()
 returns trigger
 language plpgsql security definer
@@ -54,7 +55,8 @@ set search_path = public, pg_temp as $$
 begin
   if new.status in ('suspended', 'cancelled')
      and new.status is distinct from old.status then
-    delete from public.a1_sessions where tenant_id = new.id;
+    delete from public.a1_sessions
+     where tenant_id = new.id and origem is distinct from 'suporte';
     delete from public.a1_presence where tenant_id = new.id;
   end if;
   return new;
@@ -72,7 +74,9 @@ for each row execute function public.a1_revogar_sessoes_tenant_bloqueado();
 -- ficaram vivas pelo comportamento antigo.
 delete from public.a1_sessions s
  using public.a1_tenants t
- where t.id = s.tenant_id and t.status in ('suspended', 'cancelled');
+ where t.id = s.tenant_id
+   and t.status in ('suspended', 'cancelled')
+   and s.origem is distinct from 'suporte';
 delete from public.a1_presence p
  using public.a1_tenants t
  where t.id = p.tenant_id and t.status in ('suspended', 'cancelled');
@@ -97,14 +101,16 @@ begin
   if not found then return false; end if;
 
   select status into v_status from public.a1_tenants where id = v_sess.tenant_id;
-  if v_status not in ('active', 'trial') then
+  if v_sess.origem is distinct from 'suporte'
+     and v_status not in ('active', 'trial') then
     delete from public.a1_sessions where token = v_token;
     delete from public.a1_presence
      where user_key = v_sess.tenant_id::text || '::' || v_sess.user_id::text;
     return false;
   end if;
 
-  if v_sess.last_seen <= now() - public.a1_sessao_janela() then
+  if v_sess.origem is distinct from 'suporte'
+     and v_sess.last_seen <= now() - public.a1_sessao_janela() then
     select coalesce(max_users, 0) into v_max
       from public.a1_tenants where id = v_sess.tenant_id;
     if v_max > 0 then

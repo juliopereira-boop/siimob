@@ -637,6 +637,9 @@ async function a1MontarShell(alvo, opcoes){
   const user = A1.user || {};
   const slug = A1.slug || '';
   const ehParceiro = user.role === 'partner';
+  let emSuporte = false;
+  try { emSuporte = sessionStorage.getItem('a1_sa_mode') === '1'; } catch {}
+  const suporteEmContaSuspensa = emSuporte && user.status === 'suspended';
   const url = s => `/${a1Esc(slug)}/${s}`;
 
   a1ShellGarantirCSS();
@@ -714,6 +717,7 @@ A1_SHELL.dash = dash;
           ${A1_MARCA_SVG}<span>SIIMOB</span></a>
         <nav class="sb-mods" aria-label="Módulos">${abas.join('')}</nav>
         <div class="sb-cromo-dir">
+          ${suporteEmContaSuspensa ? '<span role="status" title="Acesso administrativo em conta suspensa" style="padding:.3rem .65rem;border:1px solid #F59E0B;border-radius:999px;background:#FEF3C7;color:#92400E;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Suspensa</span>' : ''}
           <button class="sb-icone" type="button" title="Minha agenda" data-pop="agenda"
             onclick="a1AgendaAbrir(event)">${a1Svg('calend',17)}</button>
           <button class="sb-icone" type="button" title="Avisos" data-pop="avisos"

@@ -357,6 +357,11 @@ async function a1TouchSession() {
     if (!res.ok) return true;
     if ((await res.json()) === false) return false;
 
+    // A sessao de suporte e criada exclusivamente pelo Superadmin com service
+    // role e recebe origem='suporte' no banco. Ela pode entrar para recuperar
+    // dados sem reativar o cliente; a autorizacao real continua no banco.
+    try { if (sessionStorage.getItem('a1_sa_mode')) return true; } catch {}
+
     // Compatibilidade imediata enquanto a migration de suspensao ainda nao foi
     // aplicada: a tabela de tenants ja e consultavel pela propria sessao. Assim
     // uma aba recarregada nao continua desenhando o sistema so porque a versao

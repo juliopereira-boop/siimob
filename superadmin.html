@@ -2042,9 +2042,9 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          ${t.status === 'suspended'
-            ? '<button class="btn btn-xs" disabled title="Reative a conta antes de acessar">Acessar</button>'
-            : `<button class="btn btn-xs" style="background:#0E8C7F;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>`}
+          <button class="btn btn-xs" style="background:#0E8C7F;color:#fff"
+            title="${t.status === 'suspended' ? 'Acessar em modo suporte — cliente suspenso' : 'Acessar cliente'}"
+            onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -2483,11 +2483,6 @@ async function resetPw(userId) {
 // Entrar como o gestor do cliente. É o atalho do dia a dia; para entrar como
 // uma pessoa específica, o botão "Acessar" de cada linha na janela de usuários.
 async function accessTenant(tenantId, slug, tenantName) {
-  const tenant = TENANTS.find(t => t.id === tenantId);
-  if (tenant && tenant.status === 'suspended') {
-    toast('Conta suspensa. Reative o cliente antes de acessar.', 'error');
-    return;
-  }
   const users = await fetch(
     `${saRest('a1_users')}?tenant_id=eq.${tenantId}&is_active=eq.true&order=created_at.asc&limit=10`,
     { headers: saHeaders() }
@@ -2508,11 +2503,6 @@ async function accessTenant(tenantId, slug, tenantName) {
 // navegador precisa carregar type/permissions — sem isso a pessoa entraria com
 // permissão vazia e a investigação diria a coisa errada.
 async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
-  const tenant = TENANTS.find(t => t.id === tenantId);
-  if (tenant && tenant.status === 'suspended') {
-    toast('Conta suspensa. Reative o cliente antes de acessar.', 'error');
-    return;
-  }
   toast(`Abrindo "${tenantName}" como ${nome}...`, 'info');
   try {
     let extra = {};
@@ -2595,7 +2585,7 @@ async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
       tenant_name: tenantName,
       plan:        'enterprise',
       max_users:   9999,
-      status:      'active',
+      status:      (TENANTS.find(t => t.id === tenantId) || {}).status || 'active',
       trial_ends_at: null,
       ...extra,
     }));
