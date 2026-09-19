@@ -2042,7 +2042,9 @@ function renderTenantsTable(list) {
       </td>
       <td>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <button class="btn btn-xs" style="background:#0E8C7F;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>
+          ${t.status === 'suspended'
+            ? '<button class="btn btn-xs" disabled title="Reative a conta antes de acessar">Acessar</button>'
+            : `<button class="btn btn-xs" style="background:#0E8C7F;color:#fff" onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g,"\\'")}')">Acessar</button>`}
           <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g,"\\'")}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
@@ -2297,9 +2299,20 @@ async function deleteTenant(tenantId, tenantName) {
 
 async function suspendTenant(tenantId) {
   if (!confirm('Suspender este cliente? O acesso será bloqueado imediatamente.')) return;
-  await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
-    method:'PATCH', headers:saHeaders(), body:JSON.stringify({status:'suspended'})
+  const res = await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
+    method:'PATCH', headers:saHeaders({ 'Prefer':'return=representation' }),
+    body:JSON.stringify({status:'suspended'})
   });
+  if (!res.ok) {
+    const erro = await res.json().catch(() => ({}));
+    toast('Não foi possível suspender: ' + (erro.message || `HTTP ${res.status}`), 'error');
+    return;
+  }
+  const alterados = await res.json().catch(() => []);
+  if (!alterados.length || alterados[0].status !== 'suspended') {
+    toast('A suspensão não foi confirmada pelo banco.', 'error');
+    return;
+  }
   toast('Conta suspensa.', 'warn');
   await loadTenants();
   updateKPIs();
@@ -2470,6 +2483,11 @@ async function resetPw(userId) {
 // Entrar como o gestor do cliente. É o atalho do dia a dia; para entrar como
 // uma pessoa específica, o botão "Acessar" de cada linha na janela de usuários.
 async function accessTenant(tenantId, slug, tenantName) {
+  const tenant = TENANTS.find(t => t.id === tenantId);
+  if (tenant && tenant.status === 'suspended') {
+    toast('Conta suspensa. Reative o cliente antes de acessar.', 'error');
+    return;
+  }
   const users = await fetch(
     `${saRest('a1_users')}?tenant_id=eq.${tenantId}&is_active=eq.true&order=created_at.asc&limit=10`,
     { headers: saHeaders() }
@@ -2490,6 +2508,11 @@ async function accessTenant(tenantId, slug, tenantName) {
 // navegador precisa carregar type/permissions — sem isso a pessoa entraria com
 // permissão vazia e a investigação diria a coisa errada.
 async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
+  const tenant = TENANTS.find(t => t.id === tenantId);
+  if (tenant && tenant.status === 'suspended') {
+    toast('Conta suspensa. Reative o cliente antes de acessar.', 'error');
+    return;
+  }
   toast(`Abrindo "${tenantName}" como ${nome}...`, 'info');
   try {
     let extra = {};

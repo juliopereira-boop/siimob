@@ -91,6 +91,8 @@ async function a1PartnerLogin(slug, cpf, password) {
     // mostrava 'invalid_credentials' cru para quem só errou a senha.
     const msgsP = {
       tenant_not_found:   'Empresa não encontrada.',
+      tenant_suspended:   'Conta suspensa. Contate o suporte.',
+      tenant_cancelled:   'Conta cancelada.',
       invalid_credentials:'CPF ou senha incorretos.'
     };
     throw new Error(msgsP[data.error] || data.error);
@@ -365,6 +367,18 @@ function a1SessionEnded(motivo) {
   window.location.href = (slug ? `/${slug}/login` : '/') + '?motivo=' + encodeURIComponent(motivo || 'encerrada');
 }
 
+// So e chamado depois de o banco recusar a sessao. Evita dizer "outro acesso"
+// quando a causa real foi a suspensao administrativa da conta.
+async function a1MotivoSessaoEncerrada() {
+  try {
+    const res = await fetch(A1.rpc('a1_tenant_status_publico'), {
+      method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_tenant_slug: A1.slug })
+    });
+    if (res.ok && (await res.json()) === 'suspended') return 'conta_suspensa';
+  } catch {}
+  return 'outro_acesso';
+}
+
 // Presence heartbeat. Retorna true/false (sucesso) — usado por a1StartHeartbeat
 // para parar de tentar quando a sessão está claramente inválida/expirada.
 async function a1Heartbeat(moduleName) {
@@ -495,7 +509,7 @@ function a1StartHeartbeat(moduleName) {
     // sessão: quem estava logado cai aqui, em até um ciclo (~50s).
     if (!(await a1TouchSession())) {
       if (id) clearInterval(id);
-      a1SessionEnded('outro_acesso');
+      a1SessionEnded(await a1MotivoSessaoEncerrada());
       return;
     }
     const ok = await a1Heartbeat(moduleName);

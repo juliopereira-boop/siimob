@@ -548,6 +548,7 @@ function ehEsteira(){ return drv().temFlag; }
 
 async function init() {
   try { WF_USER = a1RequireAuth(); } catch { return; }
+  a1StartHeartbeat('workflow');
   const slug = A1.slug;
   document.getElementById('back-btn').href = `/${slug}/configuracoes`;
 

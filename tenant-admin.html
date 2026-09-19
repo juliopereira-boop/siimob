@@ -146,6 +146,7 @@ function esc(s) {
 async function init() {
   let user;
   try { user = a1RequireAuth(['owner','admin']); } catch { return; }
+  a1StartHeartbeat('tenant-admin');
 
   const slug = A1.slug;
   document.getElementById('nav-home').href        = `/${slug}/dashboard`;

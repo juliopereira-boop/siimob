@@ -229,6 +229,7 @@ const diasAte = iso => Math.round(
 
 async function init(){
   if (!await a1RequireAuth()) return;
+  a1StartHeartbeat('geral');
   G.user = A1.user; G.slug = A1.slug;
   const hoje = new Date(); G.mes = hoje.getMonth(); G.ano = hoje.getFullYear();
 
