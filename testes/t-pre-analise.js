@@ -116,6 +116,28 @@ async function preencherAssistente(p){
 (async () => {
   const todosErros = [];
 
+  console.log('\n0. A regra geral decide se CPF repetido bloqueia ou cria outra pessoa');
+  {
+    const { b, p, erros } = await abrir({ user:GESTOR });
+    await p.evaluate(() => { G.geral.permitir_cpf_duplicado=false; abrirAssistente(); });
+    await escolher(p, '#w-empr', 'd1');
+    await p.evaluate(() => passoSeguinte()); await p.waitForTimeout(200);
+    await p.fill('#w-doc', '529.982.247-25');
+    await p.evaluate(() => buscarPessoa()); await p.waitForTimeout(300);
+    checa('desligada, a duplicidade é informada como bloqueio',
+      /não permite duplicidade/i.test(await p.locator('#w-doc-msg').textContent()));
+    await p.evaluate(() => passoSeguinte()); await p.waitForTimeout(150);
+    checa('e o assistente não avança', await p.evaluate(() => G.passo === 2));
+
+    await p.evaluate(() => { G.geral.permitir_cpf_duplicado=true; buscarPessoa(); });
+    await p.waitForTimeout(300);
+    checa('ligada, informa que uma nova pessoa será criada',
+      /será criada uma nova pessoa/i.test(await p.locator('#w-doc-msg').textContent()));
+    await p.evaluate(() => passoSeguinte()); await p.waitForTimeout(150);
+    checa('e o assistente permite continuar', await p.evaluate(() => G.passo === 3));
+    todosErros.push(...erros); await b.close();
+  }
+
   // ── 1. A imobiliária do corretor ─────────────────────────────────────────
   console.log('\n1. A imobiliária do corretor vem preenchida e não se troca');
   {

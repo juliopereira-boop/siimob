@@ -23,6 +23,8 @@
 const { chromium } = require('playwright');
 const { responder, liberarModulos, D } = require('./fake');
 const { checa, resumo } = require('./comum');
+const fs = require('fs');
+const path = require('path');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 
 const GESTOR   = { id:'u1',  tenant_id:'t1', name:'Julio', role:'owner', cpf:'99999999999' };
@@ -125,6 +127,9 @@ const condicao = async (p, valorTexto, tipo = 'ATO', quantidade = 1) => {
 };
 
 (async () => {
+  const sqlPermissao = fs.readFileSync(path.join(__dirname,'..','sql','2026-09-19_correcoes_origem_auditoria_cpf_workflow.sql'),'utf8');
+  checa('a RPC de iniciar Venda pode ser chamada pela sessão web anon',
+    /grant execute on function public\.a1_pa_executar_acao\(uuid,text\) to anon, authenticated/i.test(sqlPermissao));
   const todosErros = [];
 
   // ── 1. O botão só existe onde a esteira TERMINA BEM ──────────────────────

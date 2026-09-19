@@ -1159,7 +1159,9 @@ async function marcarChecklistOperacional(itemId, concluido){
   if (!res.ok){ toast('Não foi possível atualizar o checklist.','error'); renderDossie(); return; }
   const item=(G.atualChecklist||[]).find(i=>i.id===itemId);
   if(item){ item.concluido=concluido; item.concluido_em=concluido?new Date().toISOString():null; }
-  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),ator_nome:(G.user||{}).name||null});
+  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),
+    ator_nome:(G.user||{}).name||null,
+    ator_papel:G.user?.role==='partner' ? G.user.type : G.user?.role});
   renderDossie();
   toast('Checklist atualizado.','success');
 }

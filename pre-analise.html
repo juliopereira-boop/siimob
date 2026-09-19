@@ -1192,7 +1192,8 @@ function passo2(){
     <div class="fgrid">
       <div class="fg"><label>CPF do titular *</label>
         <div style="display:flex;gap:.4rem">
-          <input id="w-doc" value="${esc(t.documento)}" placeholder="000.000.000-00" style="flex:1">
+          <input id="w-doc" value="${esc(t.documento)}" placeholder="000.000.000-00" style="flex:1"
+            oninput="G.rascunho.cpfDuplicadoBloqueado=false;G.rascunho.pessoaExistente=null">
           <button class="btn btn-ghost btn-sm" type="button" onclick="buscarPessoa()">Buscar</button>
         </div>
         <div id="w-doc-msg" style="font-size:.7rem;margin-top:.25rem;color:var(--t3)"></div></div>
@@ -1279,14 +1280,20 @@ async function buscarPessoa(){
     .then(r=>r.json()).catch(()=>[]);
   if (Array.isArray(achou) && achou[0]){
     const p = achou[0];
-    G.rascunho.pessoaExistente = p.id;
+    const permiteDuplicado = a1GeralPermite(G.geral, 'permitir_cpf_duplicado');
+    G.rascunho.pessoaExistente = null;
+    G.rascunho.cpfDuplicadoBloqueado = !permiteDuplicado;
     G.rascunho.titular = { documento:p.documento||'', nome:p.nome||'', nascimento:(p.nascimento||'').slice(0,10),
                            telefone:p.telefone||'', email:p.email||'', estado_civil:p.estado_civil||'' };
     renderPasso();
     const m2 = document.getElementById('w-doc-msg');
-    m2.style.color = 'var(--green)'; m2.textContent = 'Já cadastrado — dados preenchidos.';
+    m2.style.color = permiteDuplicado ? 'var(--t3)' : 'var(--red)';
+    m2.textContent = permiteDuplicado
+      ? 'CPF já cadastrado — duplicidade habilitada; será criada uma nova pessoa.'
+      : 'CPF já cadastrado. A configuração atual não permite duplicidade.';
   } else {
     G.rascunho.pessoaExistente = null;
+    G.rascunho.cpfDuplicadoBloqueado = false;
     msg.style.color = 'var(--t3)';
     msg.textContent = 'Não encontrado no cadastro. Preencha os dados ao lado.';
   }
@@ -1303,6 +1310,9 @@ async function passoSeguinte(){
   }
   if (G.passo === 2){
     const doc = soDigitos(r.titular.documento);
+    if (r.cpfDuplicadoBloqueado && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
+      toast('Este CPF já está cadastrado e a duplicidade está desativada.','error'); return;
+    }
     if (!r.titular.nome.trim()){ toast('O nome do titular é obrigatório.','error'); return; }
     if (doc.length === 11 && !cpfValido(doc)){ toast('CPF do titular inválido.','error'); return; }
     if (!doc){ toast('Informe o CPF ou CNPJ do titular.','error'); return; }
@@ -1359,7 +1369,7 @@ async function criarPreAnalise(){
       if (!a.nome.trim()) continue;
       const docA = soDigitos(a.documento);
       let idA = null;
-      if (docA){
+      if (docA && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
         const ex = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${docA}&select=id`, { headers:A1.headers() })
           .then(x=>x.json()).catch(()=>[]);
         idA = (Array.isArray(ex) && ex[0]) ? ex[0].id : null;
@@ -1714,7 +1724,7 @@ async function salvarPessoaAdicional(){
   }
   try {
     let pessoaId = null;
-    if (documento){
+    if (documento && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
       const existentes = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${documento}&select=id`,
         { headers:A1.headers() }).then(x => x.ok ? x.json() : []);
       pessoaId = (existentes[0] || {}).id || null;
@@ -1962,7 +1972,9 @@ async function marcarChecklistOperacional(itemId, concluido){
   if (!res.ok){ toast('Não foi possível atualizar o checklist.','error'); renderDossie(); return; }
   const item=(G.atualChecklist||[]).find(i=>i.id===itemId);
   if(item){ item.concluido=concluido; item.concluido_em=concluido?new Date().toISOString():null; }
-  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),ator_nome:(G.user||{}).name||null});
+  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),
+    ator_nome:(G.user||{}).name||null,
+    ator_papel:G.user?.role==='partner' ? G.user.type : G.user?.role});
   renderDossie();
   toast('Checklist atualizado.','success');
 }
@@ -1985,7 +1997,7 @@ function dosHistorico(){
     apaga — nem pelo gestor, nem pela API.</div>`;
 }
 function rotuloEvento(e){
-  return { transicao:'Mudança de situação', criado_da_pre_analise:'Venda criada',
+  return { transicao:'Mudança de situação', pre_analise_criada:'Pré-análise criada', criado_da_pre_analise:'Venda criada',
            decisao_invalidada:'Decisão de crédito invalidada',
            decisao_credito_registrada:'Decisão de crédito registrada',
            documento_enviado:'Documento enviado', documento_status_alterado:'Documento analisado',

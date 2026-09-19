@@ -732,9 +732,16 @@ function render() {
     el.style.color       = s.color || '#6366f1';
 
     const cnt   = counts[s.id] || 0;
+    // Nas esteiras, o desenho obedece ao SELO salvo. `flag` classifica a
+    // situação, mas não transforma visualmente uma etapa em início/fim. Antes,
+    // tirar o selo mantinha o ícone Fim porque ele vinha da flag APROVADO.
+    const inicioVisual = ehEsteira() ? s.selo === 'INICIO' : s.is_initial;
+    const fimVisual = ehEsteira()
+      ? ['FIM_POSITIVO','FIM_NEGATIVO','VENDIDO'].includes(s.selo)
+      : s.is_final;
     const badges = [
-      s.is_initial ? '<span class="stag stag-init">Início</span>'   : '',
-      s.is_final   ? '<span class="stag stag-final">Fim</span>'     : '',
+      inicioVisual ? '<span class="stag stag-init">Início</span>'   : '',
+      fimVisual    ? '<span class="stag stag-final">Fim</span>'     : '',
       s.is_pending ? '<span class="stag stag-pending">Pendente</span>' : ''
     ].join('');
 

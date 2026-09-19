@@ -509,12 +509,15 @@ function waLead(){ const l=G.editingData||{}; waTo(l.client_phone,G.editingId); 
 // nome; se o cadastro já não existir, mostramos a opção histórica sem permitir
 // que o usuário invente outra por digitação livre.
 function crmRefs(l){ return (l && l.payload && l.payload.crm_refs) || {}; }
-function crmAtivos(lista){ return (lista || []).filter(x => x && x.active !== false && x.id && x.name); }
+function crmAtivos(lista){
+  return (lista || []).map((x, i) => x && x.name && x.active !== false
+    ? { ...x, _crmValor:String(x.id || `cadastro-legado:${i}`) } : null).filter(Boolean);
+}
 function crmAcharId(lista, id, nome){
-  if (id && (lista || []).some(x => String(x.id) === String(id))) return String(id);
+  if (id && (lista || []).some(x => x._crmValor === String(id))) return String(id);
   const alvo = String(nome || '').trim().toLocaleLowerCase('pt-BR');
   const achado = (lista || []).find(x => String(x.name || '').trim().toLocaleLowerCase('pt-BR') === alvo);
-  return achado ? String(achado.id) : (nome ? `legacy:${nome}` : '');
+  return achado ? achado._crmValor : (nome ? `legacy:${nome}` : '');
 }
 function crmOpcoes(lista, selecionado, legado, vazio){
   const itens = crmAtivos(lista);
@@ -522,13 +525,13 @@ function crmOpcoes(lista, selecionado, legado, vazio){
   const historico = valor.startsWith('legacy:')
     ? `<option value="${esc(valor)}" selected>${esc(legado)} (cadastro antigo)</option>` : '';
   return `<option value="">${esc(vazio || '— selecione —')}</option>${historico}` +
-    itens.map(x => `<option value="${esc(x.id)}" ${String(x.id)===valor?'selected':''}>${esc(x.name)}</option>`).join('');
+    itens.map(x => `<option value="${esc(x._crmValor)}" ${x._crmValor===valor?'selected':''}>${esc(x.name)}</option>`).join('');
 }
 function crmEscolha(id, lista, legado){
   const valor = val(id);
   if (!valor) return { id:null, name:'' };
   if (valor.startsWith('legacy:')) return { id:null, name:valor.slice(7) || legado || '' };
-  const item = (lista || []).find(x => String(x.id) === valor);
+  const item = crmAtivos(lista).find(x => x._crmValor === valor);
   return { id:item ? item.id : null, name:item ? item.name : (legado || '') };
 }
 function crmPreencherNovo(){
@@ -727,7 +730,8 @@ async function loadInteractions(){
     fetch(`${A1.rest('a1_events')}?case_id=eq.${cid}&order=created_at.asc`,{headers:A1.headers()}).then(r=>r.json()).catch(()=>[])
   ]);
   const items=[]; const l=G.editingData||{};
-  if(l.created_at) items.push({ts:l.created_at,icon:'+',desc:'<b>Lead cadastrado</b>',meta:l.partner_name?`origem: ${esc(l.partner_name)}`:''});
+  if(l.created_at && !(Array.isArray(evts) && evts.some(ev=>ev.type==='created')))
+    items.push({ts:l.created_at,icon:'+',desc:'<b>Lead cadastrado</b>',meta:l.partner_name?`origem: ${esc(l.partner_name)}`:''});
   (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,icon:'⇢',desc:`Entrou em <b>${esc(h.stage_name||'')}</b>`,meta:esc(a1AtorHistorico(h))}));
   (Array.isArray(evts)?evts:[]).forEach(ev=>{ if(ev.type==='stage_change') return; items.push({ts:ev.created_at,icon:'•',desc:esc(ev.description||''),meta:esc(a1AtorHistorico(ev))}); });
   if(!items.length){ document.getElementById('i-list').innerHTML='<div style="color:var(--t3);font-size:.78rem">Sem interações ainda.</div>'; return; }

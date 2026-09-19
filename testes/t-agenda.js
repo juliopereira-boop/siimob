@@ -249,6 +249,7 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.evaluate(()=>{openNewLead();alternarMaisLead();}); await p.waitForTimeout(250);
     checa('Origem, Corretor e Imobiliária são selects',await p.evaluate(()=>['n-source','n-broker','n-imob'].every(id=>document.getElementById(id)?.tagName==='SELECT')));
     checa('origem vem do cadastro do tenant',(await p.locator('#n-source option').allTextContents()).includes('Indicação'));
+    checa('origem antiga sem id também continua disponível',(await p.locator('#n-source option').allTextContents()).includes('Feirão legado'));
     checa('corretor vem dos usuários válidos',(await p.locator('#n-broker option').allTextContents()).includes('Ana Souza'));
     checa('imobiliária vem do cadastro',(await p.locator('#n-imob option').allTextContents()).some(x=>/Imob Alfa/.test(x)));
     todosErros.push(...erros); await b.close();

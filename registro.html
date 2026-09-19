@@ -1209,9 +1209,13 @@ async function saveCase() {
     payload
   };
 
-  await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
+  const res = await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
     method:'PATCH', headers:A1.headers(), body:JSON.stringify(body)
   });
+  if (!res.ok) { toast('Não foi possível salvar o processo.','error'); return; }
+  await fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(),
+    body:JSON.stringify({ tenant_id:G.user.tenant_id, case_id:c.id, type:'edit',
+      description:'Cadastro do Registro atualizado', actor_name:G.user.name }) });
 
   Object.assign(c, body);
   toast('Salvo.', 'success');
@@ -1243,6 +1247,9 @@ async function archiveCase() {
     toast(await motivoDoArquivar(res), 'error');
     return;
   }
+  await fetch(A1.rest('a1_events'), { method:'POST', headers:A1.headers(),
+    body:JSON.stringify({ tenant_id:G.user.tenant_id, case_id:G.activeCase.id,
+      type:'edit', description:'Processo de Registro arquivado', actor_name:G.user.name }) });
   G.cases = G.cases.filter(c => c.id !== G.activeCase.id);
   closeModal('modal-det-bg');
   renderKanban();
@@ -1276,6 +1283,7 @@ async function loadEvents(caseId) {
     ? events.map(e => `<div class="evt-item">
         <div class="evt-date">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
         <div>${esc(e.description || e.type)}</div>
+        ${a1AtorHistorico(e) ? `<div class="evt-date">${esc(a1AtorHistorico(e))}</div>` : ''}
       </div>`).join('')
     : '<div style="color:var(--t3);font-size:.78rem">Sem histórico.</div>';
 }

@@ -79,6 +79,11 @@ async function leadsCadCarregar(k){
     { headers:A1.headers() }).then(r => r.ok ? r.json() : []).catch(() => []);
   let lista = [];
   try { lista = JSON.parse((linhas && linhas[0] && linhas[0].value) || '[]'); } catch { lista = []; }
+  // Cadastros criados pela primeira versão desta tela não recebiam `id`.
+  // O seletor do Lead trabalha com referência estável e, corretamente,
+  // descartava linhas sem id — por isso a origem aparecia em Configurações e
+  // sumia no Lead. Mantemos os legados legíveis; toda gravação nova já nasce
+  // com id real logo abaixo.
   LEADS_CAD_DADOS[k] = Array.isArray(lista) ? lista : [];
   return LEADS_CAD_DADOS[k];
 }
@@ -173,6 +178,18 @@ async function leadsCadGravar(k, i){
       return;
     }
     item[c.k] = v;
+  }
+  if (i < 0) {
+    item.id = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+      ? globalThis.crypto.randomUUID()
+      : 'lc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    item.active = true;
+  } else {
+    const anterior = (LEADS_CAD_DADOS[k] || [])[i] || {};
+    item.id = anterior.id || ((globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+      ? globalThis.crypto.randomUUID()
+      : 'lc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    item.active = anterior.active !== false;
   }
   const lista = LEADS_CAD_DADOS[k] || (LEADS_CAD_DADOS[k] = []);
   if (i >= 0) lista[i] = item; else lista.push(item);

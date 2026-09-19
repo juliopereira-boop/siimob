@@ -451,7 +451,10 @@ function desenharJornada(){
     mods.map(m => {
       const d = dadosDe(m);
       const abertas = (d.etapas || []).filter(e => !e.fim && e.n > 0);
-      const total = abertas.reduce((t,e) => t + e.n, 0) || d.aberto || 0;
+      // O número grande é estoque TOTAL do módulo, incluindo todas as etapas.
+      // `aberto` continua servindo aos KPIs operacionais, mas não pode apagar
+      // aprovados, vendidos ou concluídos da fotografia da jornada.
+      const total = Number(d.total) || 0;
       const tarja = abertas.length
         ? abertas.map(e => `<i style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
              title="${esc(e.nome)}: ${n0(e.n)}"></i>`).join('')

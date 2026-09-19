@@ -22,6 +22,10 @@ const { abrir, checa, resumo } = require('./comum');
   // acima de qualquer permissão dos cadastros que vêm depois. Se um grupo novo
   // furar a fila, esta linha avisa.
   checa('e "Regras gerais" abre o hub', visiveis[0].titulo === 'Regras gerais', visiveis[0].titulo);
+  await p.evaluate(() => openCfgView('geral'));
+  checa('Configurações Gerais oferece a regra de CPF duplicado',
+    /Habilitar cadastro de CPF duplicado/.test(await p.locator('#geral-lista').textContent()));
+  await p.evaluate(() => closeCfgView());
   checa('todo grupo tem explicação', visiveis.every(g=>g.sub.length > 10));
   // Aqui havia uma CONTAGEM ("23 cards no total"), e ela apodreceu exatamente
   // como a skill avisa: entrou o cartão do Checklist operacional — decisão

@@ -119,6 +119,17 @@ const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
     checa('conta quantos processos estão parados em cada nó', await p.evaluate(() =>
       Object.keys(counts).length > 0));
 
+    // O ícone de fim pertence ao SELO, não à classificação APROVADO. A flag
+    // continua igual nos dois desenhos; só o selo muda.
+    checa('etapa aprovada sem selo não mostra o ícone Fim', await p.evaluate(() =>
+      !document.querySelector('#node-ps3 .stag-final')));
+    await p.evaluate(() => { stages.find(s=>s.id==='ps3').selo='FIM_POSITIVO'; render(); });
+    checa('colocar o selo desenha imediatamente o ícone Fim', await p.evaluate(() =>
+      !!document.querySelector('#node-ps3 .stag-final')));
+    await p.evaluate(() => { stages.find(s=>s.id==='ps3').selo=''; render(); });
+    checa('retirar o selo remove imediatamente o ícone Fim', await p.evaluate(() =>
+      !document.querySelector('#node-ps3 .stag-final')));
+
     console.log('\n-- o painel mostra os campos DESTE módulo --');
     await p.evaluate(() => openEdit('ps2')); await p.waitForTimeout(400);
     checa('classificação e SLA aparecem', await p.evaluate(() =>

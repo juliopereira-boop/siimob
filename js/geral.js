@@ -40,7 +40,11 @@ const A1_GERAL_PADRAO = {
   // Repasse sem depender de venda. Ligada por padrão porque é o que os três
   // clientes fazem hoje — a criação manual pela retaguarda é o fluxo normal
   // deles, e o Repasse nascido da Venda é que é a novidade.
-  criar_repasse_avulso: true
+  criar_repasse_avulso: true,
+  // CPF repetido é exceção operacional, não padrão. Desligado, o banco barra
+  // a segunda pessoa no mesmo tenant; ligado, permite cadastros homônimos com
+  // o mesmo documento sem afrouxar CPF de login de usuários/parceiros.
+  permitir_cpf_duplicado: false
 };
 
 // O que está gravado, com o padrão por baixo. Chave ausente vale o padrão, e

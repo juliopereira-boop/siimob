@@ -19,7 +19,7 @@ const TODOS = ['repasse','PRE_ANALISE','COMERCIAL','crm','registro'];
 // Uma corretora de verdade: papel `partner`, sem `ver_dashboard_repasse`. O
 // `abrir` comum entra sempre como gestor, e gestor vê painel — com ele, a
 // prova abaixo passaria sem tocar na regra.
-const { chromium } = require('/home/user/siimob/node_modules/playwright');
+const { chromium } = require('playwright');
 const { responder, liberarModulos, negarModulos } = require('./fake');
 async function abrirComoCorretor(){
   liberarModulos([]); negarModulos(['registro']);
@@ -98,9 +98,11 @@ async function pedidos(p){
       await p.evaluate(() => [...document.querySelectorAll('#jornada .sb-degrau-rot')].map(e=>e.textContent.trim()).join('|')));
 
     // Os números vêm do resumo do banco, não de uma contagem no navegador.
-    // 4 pré-análises e 1 venda em aberto é o que o cenário tem.
+    // O número grande é o TOTAL, inclusive etapas finais: 4 pré-análises e 2
+    // vendas no cenário. O aberto continua reservado aos KPIs operacionais.
     const jt = (await p.locator('#jornada').textContent()).replace(/\s+/g,' ');
     checa('o número da Pré-análise vem do resumo', /Pré-análise\s*4/.test(jt), jt.slice(0,220));
+    checa('o número da Venda inclui todas as etapas', /Venda\s*2/.test(jt), jt.slice(0,260));
 
     // E os cartões de cima somam os módulos em vez de repetir cada um: 4 + 1 +
     // 3 = 8 em aberto. Repetir a jornada em cartões ensinaria o olho a pular a

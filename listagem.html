@@ -3635,9 +3635,10 @@ function renderModalHist() {
     const items=[];
     const c=G.editingCaseData||{};
     // Cadastro do cliente (data e hora)
-    if(c.created_at) items.push({ts:c.created_at,cls:'created',icon:'+',desc:'<b>Cliente cadastrado no sistema</b>',meta:c.manager_name?`por ${esc(c.manager_name)}`:''});
+    if(c.created_at && !(Array.isArray(evts) && evts.some(ev=>ev.type==='created')))
+      items.push({ts:c.created_at,cls:'created',icon:'+',desc:'<b>Cliente cadastrado no sistema</b>',meta:c.manager_name?`por ${esc(c.manager_name)}`:''});
     // Movimentacoes de etapa
-    (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,cls:'stage',icon:'E',desc:`Entrou na etapa <b>${esc(h.stage_name||'')}</b>`,meta:h.exited_at?`saiu em ${fmtDT(h.exited_at)}`:'etapa atual'}));
+    (Array.isArray(stages)?stages:[]).forEach(h=>items.push({ts:h.entered_at,cls:'stage',icon:'E',desc:`Entrou na etapa <b>${esc(h.stage_name||'')}</b>`,meta:[h.exited_at?`saiu em ${fmtDT(h.exited_at)}`:'etapa atual',a1AtorHistorico(h)].filter(Boolean).join(' · ')}));
     // Demais eventos (status, comentarios, edicoes, documentos) — stage_change ja coberto acima
     const evCls={comment:'comment',edit:'edit',document:'edit',interview:'created',agendamento:'created'};
     const evIcon={comment:'C',edit:'E',document:'D',interview:'S',agendamento:'A'};
