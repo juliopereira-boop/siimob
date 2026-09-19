@@ -355,8 +355,29 @@ async function a1TouchSession() {
       method: 'POST', headers: A1.headers(), body: JSON.stringify({})
     });
     if (!res.ok) return true;
-    return (await res.json()) !== false;
+    if ((await res.json()) === false) return false;
+
+    // Compatibilidade imediata enquanto a migration de suspensao ainda nao foi
+    // aplicada: a tabela de tenants ja e consultavel pela propria sessao. Assim
+    // uma aba recarregada nao continua desenhando o sistema so porque a versao
+    // antiga de a1_touch_session ainda devolve TRUE para tenant suspenso.
+    const status = await a1TenantStatusAtual();
+    return status !== 'suspended' && status !== 'cancelled';
   } catch { return true; }
+}
+
+async function a1TenantStatusAtual() {
+  const u = A1.user;
+  if (!u || !u.tenant_id) return null;
+  try {
+    const res = await fetch(
+      `${A1.rest('a1_tenants')}?id=eq.${encodeURIComponent(u.tenant_id)}&select=status&limit=1`,
+      { headers: A1.headers() }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return Array.isArray(rows) && rows[0] ? rows[0].status || null : null;
+  } catch { return null; }
 }
 
 // Encerra a sessão local e manda para o login explicando o motivo.
@@ -376,6 +397,9 @@ async function a1MotivoSessaoEncerrada() {
     });
     if (res.ok && (await res.json()) === 'suspended') return 'conta_suspensa';
   } catch {}
+  // Bancos que ainda nao receberam a migration nao possuem o RPC acima, mas a
+  // sessao antiga ainda consegue ler o status do proprio tenant.
+  if (await a1TenantStatusAtual() === 'suspended') return 'conta_suspensa';
   return 'outro_acesso';
 }
 

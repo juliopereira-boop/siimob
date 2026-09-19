@@ -28,6 +28,9 @@ checa('login de parceiro recusa suspended explicitamente',
   /v_tenant\.status='suspended'.*tenant_suspended/.test(sql));
 checa('heartbeat consulta o status depois da sessao recusada',
   /a1MotivoSessaoEncerrada/.test(auth) && /conta_suspensa/.test(auth));
+checa('frontend bloqueia tenant suspenso mesmo antes da migration',
+  /a1TenantStatusAtual/.test(auth)
+  && /status !== 'suspended' && status !== 'cancelled'/.test(auth));
 checa('Superadmin confirma que o PATCH realmente suspendeu',
   /alterados\[0\]\.status !== 'suspended'/.test(sa));
 checa('Superadmin nao cria sessao de suporte em conta suspensa',
