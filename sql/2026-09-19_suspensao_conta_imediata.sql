@@ -67,6 +67,16 @@ create trigger trg_a1_revogar_sessoes_tenant_bloqueado
 after update of status on public.a1_tenants
 for each row execute function public.a1_revogar_sessoes_tenant_bloqueado();
 
+-- A migration pode chegar depois de uma conta ja ter sido suspensa. Nesse caso
+-- o trigger acima nao retroage, portanto limpa agora as sessoes/presencas que
+-- ficaram vivas pelo comportamento antigo.
+delete from public.a1_sessions s
+ using public.a1_tenants t
+ where t.id = s.tenant_id and t.status in ('suspended', 'cancelled');
+delete from public.a1_presence p
+ using public.a1_tenants t
+ where t.id = p.tenant_id and t.status in ('suspended', 'cancelled');
+
 -- O heartbeat confirma no servidor que a sessao e o tenant ainda estao ativos.
 create or replace function public.a1_touch_session()
 returns boolean

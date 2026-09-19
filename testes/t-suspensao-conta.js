@@ -20,6 +20,8 @@ checa('suspender revoga todas as sessoes do tenant',
   /delete from public\.a1_sessions where tenant_id = new\.id/.test(sql));
 checa('suspender limpa a presenca do tenant',
   /delete from public\.a1_presence where tenant_id = new\.id/.test(sql));
+checa('migration revoga sessoes de contas que ja estavam suspensas',
+  /delete from public\.a1_sessions s[\s\S]*t\.status in \('suspended', 'cancelled'\)/.test(sql));
 checa('nem service role cria sessao para tenant bloqueado',
   /before insert on public\.a1_sessions/.test(sql));
 checa('login de parceiro recusa suspended explicitamente',
