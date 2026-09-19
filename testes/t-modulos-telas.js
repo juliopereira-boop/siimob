@@ -234,13 +234,17 @@ const vistasDoCasco = p => p.$$eval('.sb-sub-item',
     checa('CPF com dígito verificador errado é recusado',
       /Passo 2 de 3/.test(await p.locator('#nova-sub').textContent()));
 
-    // CPF de uma pessoa que já existe: reaproveita em vez de duplicar.
+    // CPF de uma pessoa que já existe: informa a duplicidade. A regra geral
+    // nasce bloqueando duplicados, então seguimos a criação com outro CPF.
     await p.fill('#w-doc', '529.982.247-25');
     await p.evaluate(() => buscarPessoa()); await p.waitForTimeout(500);
     checa('CPF já cadastrado traz os dados prontos',
       (await p.inputValue('#w-nome')).includes('Maria Titular'));
-    checa('e avisa que não vai duplicar',
+    checa('e avisa que já está cadastrado',
       /Já cadastrado/i.test(await p.locator('#w-doc-msg').textContent()));
+
+    await p.fill('#w-doc', '390.533.447-05');
+    await p.fill('#w-nome', 'Fulano de Tal');
 
     await p.evaluate(() => passoSeguinte()); await p.waitForTimeout(300);
     checa('vai para renda e associados',

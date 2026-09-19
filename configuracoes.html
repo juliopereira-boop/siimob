@@ -1309,9 +1309,9 @@
           <select id="ge-role"><option value="admin">Gestor</option><option value="owner">Gestor (proprietário)</option></select>
         </div>
         <div class="form-group full"><label style="display:flex;align-items:center;gap:.45rem;font-size:.82rem"><input type="checkbox" id="ge-active" checked> Ativo</label></div>
-        <div class="form-group full" style="padding-top:.65rem;border-top:1px solid var(--border)"><label>Dashboards liberados</label><div id="ge-dashboard-checks" style="display:flex;gap:.55rem;flex-wrap:wrap"></div></div>
+        <div class="form-group full" style="padding-top:.65rem;border-top:1px solid var(--border)"><label>Módulos liberados</label><div id="ge-dashboard-checks" style="display:flex;gap:.55rem;flex-wrap:wrap"></div></div>
       </div>
-      <div style="font-size:.73rem;color:var(--t3);margin-top:.6rem">O gestor tem acesso completo ao painel, incluindo configurações e cadastro de outros gestores.</div>
+      <div style="font-size:.73rem;color:var(--t3);margin-top:.6rem">Sem módulos marcados, é Gestor Geral e acessa tudo. Com módulos marcados, administra integralmente somente os módulos escolhidos.</div>
     </div>
     <div class="modal-ftr">
       <button class="btn btn-ghost" onclick="closeModal('modal-gestor-bg')">Cancelar</button>
@@ -1944,6 +1944,7 @@ function openCfgView(view) {
   if (view === 'despachantes') loadDespachantes();
   if (view === 'bancos') loadBancos();
   if (view === 'cartorios') loadCartorios();
+  if (view === 'ciclo-pa') cicloCarregar();
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
   if (view === 'integra')    cfgIntegraCarregar();
@@ -4647,13 +4648,14 @@ async function saveGestor(){
   const body={tenant_id:G.user.tenant_id,name,cpf,email:document.getElementById('ge-email').value.trim(),role:document.getElementById('ge-role').value,is_active:document.getElementById('ge-active').checked};if(pw)body.password_hash=await sha256(pw+'::a1');
   const res=EDIT_GESTOR_ID?await fetch(`${A1.rest('a1_users')}?id=eq.${EDIT_GESTOR_ID}`,{method:'PATCH',headers:A1.upsertHeaders(),body:JSON.stringify(body)}):await fetch(`${A1.rest('a1_users')}?select=id`,{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
   if(!res.ok){toast('Erro ao salvar gestor.','error');return;}
-  const id=EDIT_GESTOR_ID||((await res.json().catch(()=>[]))[0]||{}).id;if(!id){toast('Gestor salvo; não foi possível salvar dashboards.','error');return;}
+  const id=EDIT_GESTOR_ID||((await res.json().catch(()=>[]))[0]||{}).id;if(!id){toast('Gestor salvo; não foi possível salvar os módulos.','error');return;}
   const keys=['dashboard_access_configured',...GE_DASHBOARDS.map(x=>x[0])];
   await fetch(`${A1.rest('a1_user_permissions')}?user_id=eq.${id}&permission=in.(${keys.join(',')})`,{method:'DELETE',headers:A1.headers()});
   const selected=[...document.querySelectorAll('.ge-dashboard-perm:checked')].map(x=>x.value);
   const p=await fetch(A1.rest('a1_user_permissions'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(['dashboard_access_configured',...selected].map(permission=>({user_id:id,permission})) )});
-  if(!p.ok){toast('Gestor salvo, mas dashboards não foram gravados.','error');return;}
-  toast('Gestor e dashboards atualizados','success');closeModal('modal-gestor-bg');loadGestores();
+  if(!p.ok){toast('Gestor salvo, mas os módulos não foram gravados.','error');return;}
+  a1ClearModuleCache();
+  toast('Gestor e módulos atualizados','success');closeModal('modal-gestor-bg');loadGestores();
 }
 
 async function deleteGestor(id){
@@ -6013,6 +6015,7 @@ const CFG_MOD_LIB = { PRE_ANALISE:false, COMERCIAL:false, crm:false };
 
 const CFG_ICONE_FLUXO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
 const CFG_ICONE_INTEGRA = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`;
+const CFG_ICONE_CICLO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-5V2"/><path d="M4 17h5v5"/><path d="M5.1 9A8 8 0 0 1 18 5l2 2"/><path d="M18.9 15A8 8 0 0 1 6 19l-2-2"/></svg>`;
 
 // Cria o cartão no hub. Vai para dentro de um grupo que já existe — o dono
 // quer todos os workflows do cliente no mesmo bloco, e grupo criado por
@@ -6377,6 +6380,15 @@ function cfgModsLiberar(mod) {
       const el = document.getElementById(id);
       if (el) el.style.display = '';
     });
+    cfgModsCartao({ id:'cfg-card-ciclo-pa', modulo:'PRE_ANALISE',
+                    grade:'cfg-cards-workflow', view:'ciclo-pa',
+                    rotulo:'Ciclo de Distribuição', fundo:'#dff5f1', icone:CFG_ICONE_CICLO });
+    cfgModsVista('ciclo-pa', 'Pré-análise — Ciclo de Distribuição', `
+      <div class="cfg-explica" style="max-width:900px">
+        Distribui cada nova pré-análise pela hierarquia Empresa Correspondente → Usuário Correspondente → Analista.
+        Com o ciclo ativo, esses responsáveis são definidos pelo banco e não podem ser escolhidos no cadastro.
+      </div>
+      <div id="ciclo-pa-corpo" class="panel" style="padding:1.1rem;max-width:1000px"></div>`);
     // O workflow NÃO ganha cartão próprio. O dono foi claro: "quando eu clico em
     // editor de workflow, deve aparecer os ícones do workflow de cada módulo".
     // Dois cartões separados eram dois editores para a mesma coisa, e um deles
@@ -6404,6 +6416,77 @@ function cfgModsLiberar(mod) {
       apontar de volta para um ajuste no workflow.
     </div>
     <div id="integra-corpo"></div>`);
+}
+
+// ══ Ciclo de distribuição da Pré-análise ════════════════════════════════════
+const CICLO_PA = { config:{ativo:false,modo:'LIVRE'}, participantes:[], empresas:[], correspondentes:[], analistas:[] };
+
+async function cicloCarregar(){
+  const el=document.getElementById('ciclo-pa-corpo'); if(!el)return;
+  el.innerHTML='<div class="pt-empty">Carregando ciclo…</div>';
+  const h={headers:A1.headers()};
+  const [rc,re,rr,ra]=await Promise.all([
+    fetch(A1.rpc('a1_pa_ciclo_configuracao'),{method:'POST',headers:A1.headers(),body:'{}'}),
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`,h),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&is_active=is.true&approved=is.true&select=id,name,empresa_id&order=name.asc`,h),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&is_active=is.true&approved=is.true&select=id,name,empresa_id&order=name.asc`,h)
+  ]);
+  if(!rc.ok){ el.innerHTML='<div class="aviso w">O SQL do Ciclo de Distribuição ainda não foi aplicado no Supabase.</div>'; return; }
+  const cfg=await rc.json().catch(()=>({}));
+  CICLO_PA.config={ativo:cfg.ativo===true,modo:cfg.modo||'LIVRE',proxima_ordem:cfg.proxima_ordem||1};
+  CICLO_PA.participantes=Array.isArray(cfg.participantes)?cfg.participantes:[];
+  CICLO_PA.empresas=await re.json().catch(()=>[]); CICLO_PA.correspondentes=await rr.json().catch(()=>[]); CICLO_PA.analistas=await ra.json().catch(()=>[]);
+  if(!Array.isArray(CICLO_PA.empresas))CICLO_PA.empresas=[]; if(!Array.isArray(CICLO_PA.correspondentes))CICLO_PA.correspondentes=[]; if(!Array.isArray(CICLO_PA.analistas))CICLO_PA.analistas=[];
+  cicloRender();
+}
+
+function cicloRender(){
+  const el=document.getElementById('ciclo-pa-corpo'); if(!el)return;
+  const c=CICLO_PA.config, ps=CICLO_PA.participantes;
+  el.innerHTML=`
+    <div style="display:flex;gap:1.2rem;align-items:end;flex-wrap:wrap;margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:.45rem;font-weight:700"><input id="ciclo-ativo" type="checkbox" ${c.ativo?'checked':''}> Ciclo ativo</label>
+      <div class="form-group" style="min-width:230px"><label>Critério de distribuição</label><select id="ciclo-modo">
+        <option value="LIVRE" ${c.modo==='LIVRE'?'selected':''}>Livre — rodízio igual</option>
+        <option value="DESEMPENHO" ${c.modo==='DESEMPENHO'?'selected':''}>Desempenho — peso por aprovações</option>
+      </select></div>
+    </div>
+    <div class="fgrid" style="align-items:end;margin-bottom:.7rem">
+      <div class="fg"><label>Empresa correspondente</label><select id="ciclo-empresa" onchange="cicloEmpresaMudou()"><option value="">Selecione…</option>${CICLO_PA.empresas.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="fg"><label>Usuário correspondente</label><select id="ciclo-corr"><option value="">Escolha a empresa</option></select></div>
+      <div class="fg"><label>Analista</label><select id="ciclo-ana"><option value="">Escolha a empresa</option></select></div>
+      <div class="fg"><label>&nbsp;</label><button class="btn btn-ghost" onclick="cicloAdicionar()">+ Adicionar ao ciclo</button></div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Empresa</th><th>Usuário correspondente</th><th>Analista</th><th>Recebidas</th><th>Aprovadas</th><th></th></tr></thead><tbody>
+      ${ps.length?ps.map((p,i)=>`<tr><td>${i+1}${c.modo==='LIVRE'&&p.ordem===c.proxima_ordem?' · próximo':''}</td><td>${esc(p.empresa||'—')}</td><td>${esc(p.correspondente||'—')}</td><td><b>${esc(p.analista||'—')}</b></td><td>${Number(p.recebidas||0)}</td><td>${Number(p.aprovadas||0)}</td><td><button class="btn btn-danger btn-sm" onclick="cicloRemover(${i})">Remover</button></td></tr>`).join(''):'<tr><td colspan="7" class="pt-empty">Nenhum participante no ciclo.</td></tr>'}
+    </tbody></table></div>
+    <div style="font-size:.72rem;color:var(--t3);margin-top:.7rem">No modo desempenho, o peso de 1 a 5 é recalculado pelas aprovações na etapa que possui o selo FIM POSITIVO.</div>
+    <div style="margin-top:1rem"><button id="ciclo-salvar" class="btn btn-primary" onclick="cicloSalvar()">Salvar configuração</button></div>`;
+}
+
+function cicloEmpresaMudou(){
+  const id=document.getElementById('ciclo-empresa').value;
+  const op=(lista,txt)=>`<option value="">${txt}</option>`+lista.filter(x=>x.empresa_id===id).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+  document.getElementById('ciclo-corr').innerHTML=op(CICLO_PA.correspondentes,'Selecione…');
+  document.getElementById('ciclo-ana').innerHTML=op(CICLO_PA.analistas,'Selecione…');
+}
+function cicloAdicionar(){
+  const eid=document.getElementById('ciclo-empresa').value,cid=document.getElementById('ciclo-corr').value,aid=document.getElementById('ciclo-ana').value;
+  if(!eid||!cid||!aid){toast('Selecione empresa, usuário correspondente e analista.','error');return;}
+  if(CICLO_PA.participantes.some(x=>x.analista_id===aid)){toast('Este analista já participa do ciclo.','info');return;}
+  const e=CICLO_PA.empresas.find(x=>x.id===eid),co=CICLO_PA.correspondentes.find(x=>x.id===cid),an=CICLO_PA.analistas.find(x=>x.id===aid);
+  CICLO_PA.participantes.push({empresa_id:eid,empresa:e?.name,correspondente_id:cid,correspondente:co?.name,analista_id:aid,analista:an?.name,ordem:CICLO_PA.participantes.length+1,recebidas:0,aprovadas:0});
+  cicloRender();
+}
+function cicloRemover(i){CICLO_PA.participantes.splice(i,1);CICLO_PA.participantes.forEach((p,n)=>p.ordem=n+1);cicloRender();}
+async function cicloSalvar(){
+  const btn=document.getElementById('ciclo-salvar'),ativo=document.getElementById('ciclo-ativo').checked,modo=document.getElementById('ciclo-modo').value;
+  if(ativo&&!CICLO_PA.participantes.length){toast('Adicione ao menos um participante antes de ativar.','error');return;}
+  btn.disabled=true; btn.textContent='Salvando…';
+  const participantes=CICLO_PA.participantes.map(p=>({empresa_id:p.empresa_id,correspondente_id:p.correspondente_id,analista_id:p.analista_id}));
+  const r=await fetch(A1.rpc('a1_pa_ciclo_salvar'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_ativo:ativo,p_modo:modo,p_participantes:participantes})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.message||'Não foi possível salvar o ciclo.','error');btn.disabled=false;btn.textContent='Salvar configuração';return;}
+  toast('Ciclo de distribuição atualizado.','success'); await cicloCarregar();
 }
 
 // ── Registro de integrações (somente leitura) ────────────────────────────────

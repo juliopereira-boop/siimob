@@ -519,8 +519,8 @@ const condicao = async (p, valorTexto, tipo = 'ATO', quantidade = 1) => {
     todosErros.push(...erros); await b.close();
   }
 
-  // ── 6. O Roteamento de Analistas, preparado e desligado ──────────────────
-  console.log('\n6. Roteamento de Analistas: a trava existe e nasce desligada');
+  // ── 6. O Ciclo de Distribuição, preparado e desligado ────────────────────
+  console.log('\n6. Ciclo de Distribuição: a trava existe e nasce desligada');
   {
     const { b, p, erros } = await abrir({ user:GESTOR });
     await dossie(p, 'pa1');
@@ -531,7 +531,7 @@ const condicao = async (p, valorTexto, tipo = 'ATO', quantidade = 1) => {
     await p.evaluate(() => { G.roteamentoAnalistas = true; renderDossie(); });
     await p.waitForTimeout(300);
     checa('com o roteamento ativo o campo fica bloqueado', !(await ligado(p, '#d-analista')));
-    checa('e a tela diz quem escolhe', /Roteamento/i.test(await texto(p, '#dos-body')),
+    checa('e a tela diz quem escolhe', /Ciclo de Distribuição/i.test(await texto(p, '#dos-body')),
       await texto(p, '#dos-body'));
     await p.evaluate(() => { window.__POSTS = []; salvarDados(); });
     await p.waitForTimeout(700);

@@ -472,7 +472,7 @@ async function init(){
 
 async function carregar(){
   const h = { headers: A1.headers() };
-  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda, resumoChecklist] = await Promise.all([
+  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda, resumoChecklist, cicloEstado] = await Promise.all([
     fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
     fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
     A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
@@ -507,7 +507,8 @@ async function carregar(){
     // quando todos os clientes tiverem rodado o SQL do analista.
     fetch(`${A1.rest('a1_pre_analises')}?select=analista_id&limit=1`, h).then(r=>r.ok).catch(()=>false)
     ,
-    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'PRE_ANALISE'})}).then(r=>r.ok?r.json():{}).catch(()=>{})
+    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'PRE_ANALISE'})}).then(r=>r.ok?r.json():{}).catch(()=>{}),
+    fetch(A1.rpc('a1_pa_ciclo_estado'),{method:'POST',headers:A1.headers(),body:'{}'}).then(r=>r.ok?r.json():{}).catch(()=>({}))
   ]);
   G.situacoes     = Array.isArray(sit)  ? sit  : [];
   G.transicoes    = Array.isArray(tr)   ? tr   : [];
@@ -520,6 +521,7 @@ async function carregar(){
   G.analistas       = Array.isArray(anas) ? anas : [];
   G.temColunaAnalista = sonda === true;
   G.resumoChecklist = (resumoChecklist && typeof resumoChecklist==='object') ? resumoChecklist : {};
+  G.roteamentoAnalistas = cicloEstado && cicloEstado.ativo === true;
   // O PostgREST devolve todas as colunas quando não há `select=`, inclusive as
   // nulas — então a PRESENÇA da chave é a resposta sobre a coluna existir.
   G.temSelo = !!G.situacoes.length && ('selo' in G.situacoes[0]);
@@ -1141,15 +1143,15 @@ function campoCorretor(r){
 function camposDeGenteNoAssistente(r){
   const roteia = roteamentoDeAnalistasAtivo();
   let html = `<div class="fg"><label>Empresa correspondente</label>
-    <select id="w-empresa">${opcoesDe(G.empresasCorr, r.empresa_id, '— sem empresa —')}</select></div>
+    <select id="w-empresa" ${roteia?'disabled':''}>${opcoesDe(G.empresasCorr, r.empresa_id, '— sem empresa —')}</select></div>
     <div class="fg"><label>Usuário correspondente</label>
-    <select id="w-correspondente">${
+    <select id="w-correspondente" ${roteia?'disabled':''}>${
       opcoesDe(G.correspondentes, r.correspondente_id, '— sem correspondente —')}</select></div>`;
   if (G.temColunaAnalista) {
     html += `<div class="fg"><label>Analista</label>
       <select id="w-analista" ${roteia ? 'disabled' : ''}>${
         opcoesDe(G.analistas, r.analista_id, '— sem analista —')}</select>
-      ${roteia ? '<div class="sub" style="margin-top:.25rem">definido pelo Roteamento de Analistas</div>' : ''}</div>`;
+      ${roteia ? '<div class="sub" style="margin-top:.25rem">Responsável definido automaticamente pelo Ciclo de Distribuição.</div>' : ''}</div>`;
   }
   return html;
 }
@@ -1353,9 +1355,11 @@ async function criarPreAnalise(){
     // rascunho só tem a chave quando o campo existia e estava habilitado.
     // Assim a criação continua funcionando no cliente cujo banco ainda não
     // ganhou a coluna do analista, e o Roteamento não é atropelado.
-    ['empresa_id','correspondente_id','analista_id'].forEach(coluna => {
-      if (coluna in r) corpoPa[coluna] = r[coluna] || null;
-    });
+    if (!roteamentoDeAnalistasAtivo()) {
+      ['empresa_id','correspondente_id','analista_id'].forEach(coluna => {
+        if (coluna in r) corpoPa[coluna] = r[coluna] || null;
+      });
+    }
     const resPa = await fetch(A1.rest('a1_pre_analises'), {
       method:'POST', headers:A1.returnHeaders(), body: JSON.stringify(corpoPa) });
     if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.', 'pa_criar'));
@@ -1590,8 +1594,9 @@ function opcoesDe(lista, escolhido, vazio){
 // Deixar o seletor aberto para o corretor derrubaria o PATCH INTEIRO, levando
 // junto os campos que ele pode salvar — e o erro nem falaria de empresa.
 function campoEmpresa(p, podeEditar){
+  const roteia = roteamentoDeAnalistasAtivo();
   const nome = (G.empresasCorr.find(e => e.id === p.empresa_id) || {}).name || '—';
-  if (!(podeEditar && mandaNaCarteira()))
+  if (roteia || !(podeEditar && mandaNaCarteira()))
     return `<div class="fg"><label>Empresa correspondente</label>
       <select id="d-empresa" disabled>${opcoesDe(G.empresasCorr, p.empresa_id, nome === '—' ? '—' : nome)}</select></div>`;
   return `<div class="fg"><label>Empresa correspondente</label>
@@ -1599,12 +1604,13 @@ function campoEmpresa(p, podeEditar){
 }
 
 function campoCorrespondente(p, podeEditar){
+  const roteia = roteamentoDeAnalistasAtivo();
   return `<div class="fg"><label>Usuário correspondente</label>
-    <select id="d-correspondente" ${podeEditar?'':'disabled'}>${
+    <select id="d-correspondente" ${podeEditar&&!roteia?'':'disabled'}>${
       opcoesDe(G.correspondentes, p.correspondente_id, '— sem correspondente —')}</select></div>`;
 }
 
-// ROTEAMENTO DE ANALISTAS — a trava que ainda não existe.
+// CICLO DE DISTRIBUIÇÃO — a decisão é do banco; a tela só espelha a trava.
 //
 // O dono pediu: quando o Roteamento de Analistas estiver ativo E configurado,
 // quem escolhe o analista é ele, e o campo fica BLOQUEADO na tela. Um campo
@@ -1612,13 +1618,6 @@ function campoCorrespondente(p, podeEditar){
 // o operador escolhe, o roteador reescreve, e os dois ficam achando que o outro
 // está errado.
 //
-// A trava nasce DESLIGADA porque a tabela de roteamento ainda não existe, e
-// inventá-la aqui seria escrever contra um contrato que ninguém escreveu.
-// ONDE LIGAR: preencha G.roteamentoAnalistas em carregar(), lendo a
-// configuração do roteamento quando ela existir (ativo E com pelo menos uma
-// regra — "ativo e vazio" tem de continuar deixando escolher à mão, senão o
-// primeiro dia do recurso é um dia sem conseguir atribuir analista nenhum).
-// Nada mais precisa mudar: o campo e o salvamento já obedecem a esta função.
 function roteamentoDeAnalistasAtivo(){ return G.roteamentoAnalistas === true; }
 
 function campoAnalista(p, podeEditar){
@@ -1629,7 +1628,7 @@ function campoAnalista(p, podeEditar){
   return `<div class="fg"><label>Analista</label>
     <select id="d-analista" ${podeEditar && !roteia ? '' : 'disabled'}>${
       opcoesDe(G.analistas, p.analista_id, '— sem analista —')}</select>
-    ${roteia ? `<div class="sub" style="margin-top:.25rem">definido pelo Roteamento de Analistas</div>` : ''}</div>`;
+    ${roteia ? `<div class="sub" style="margin-top:.25rem">Responsável definido automaticamente pelo Ciclo de Distribuição.</div>` : ''}</div>`;
 }
 
 async function salvarDados(){

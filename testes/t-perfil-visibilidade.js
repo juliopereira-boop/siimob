@@ -102,11 +102,10 @@ async function abrirComoClara(pag) {
     await p.evaluate(() => { delete G.user.permissions.gerente;
                              delete G.user.permissions.ver_todos_analistas; });
 
-    // A prova que importa: o servidor entregou os processos (a1_cases só tem
-    // isolamento por cliente), e mesmo assim nenhum aparece — porque nenhum é
-    // dela. Se a tela mostrasse um só, seria o vazamento relatado.
+    // A proteção hoje acontece também no servidor: a RLS já não entrega a
+    // carteira alheia. A tela continua com a segunda barreira abaixo.
     const carregados = await p.evaluate(() => (G.cases || []).length);
-    checa('o servidor entregou os processos do cliente', carregados === totalDaBase,
+    checa('o servidor não entregou a carteira alheia', carregados === 0,
       `${carregados} de ${totalDaBase}`);
     const meus = await p.evaluate(() => (G.cases || []).filter(c => isMeuProcesso(c)).length);
     checa('nenhum deles é dela', meus === 0, 'meus=' + meus);

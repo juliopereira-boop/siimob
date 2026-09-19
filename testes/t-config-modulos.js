@@ -122,15 +122,13 @@ const rotulosDosCartoes = p =>
     // número acusar defeito sem dizer qual cartão mudou.
     //
     // A pergunta que importa não é quantos, é QUAIS a licença acrescenta. O
-    // hub licenciado tem de ser o hub sem licença MAIS o Registro de
-    // integrações, e nada além — nem cartão de workflow por módulo, nem cartão
-    // que a licença faça sumir. Assim o teste continua pegando o que pegava
-    // (módulo que vaza cartão a mais) e para de acusar cartão alheio.
+    // hub licenciado tem de ser o hub sem licença MAIS as duas configurações
+    // próprias da Pré-análise: Ciclo de Distribuição e Registro de integrações.
     const cards   = await rotulosDosCartoes(p);
     const novos   = cards.filter(c => !CARTOES_SEM_LICENCA.includes(c));
     const sumiram = CARTOES_SEM_LICENCA.filter(c => !cards.includes(c));
-    checa('a licença acrescenta o Registro de integrações, e só ele',
-      novos.join(' | ') === 'Registro de integrações' && sumiram.length === 0,
+    checa('a licença acrescenta o Ciclo e o Registro de integrações',
+      novos.join(' | ') === 'Ciclo de Distribuição | Registro de integrações' && sumiram.length === 0,
       `novos: ${novos.join(', ') || '—'} | sumiram: ${sumiram.join(', ') || '—'}`);
     checa('o terceiro módulo dos tipos de documento aparece', await p.evaluate(() =>
       document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none'));
