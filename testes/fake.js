@@ -37,8 +37,9 @@ const D = {
   partners: [
     {id:'p1',tenant_id:'t1',type:'imobiliaria',name:'Imob Alfa '+ASPA,cpf:'11111111111',email:'a@x.com',is_active:true,approved:true},
     {id:'p20',tenant_id:'t1',type:'imobiliaria',name:'Imob Recem Cadastrada',cpf:'22233344455',is_active:true,approved:true},
-    {id:'p21',tenant_id:'t1',type:'cca',name:'Usuario Novo CCA',cpf:'33344455566',is_active:true,approved:true,permissions:{}},
-    {id:'p2',tenant_id:'t1',type:'analista',name:'João Analista',cpf:'22222222222',email:'j@x.com',is_active:true,approved:true,permissions:{}},
+    {id:'p21',tenant_id:'t1',type:'cca',name:'Usuario Novo CCA',cpf:'33344455566',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
+    {id:'p2',tenant_id:'t1',type:'analista',name:'João Analista',cpf:'22222222222',email:'j@x.com',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
+    {id:'p22',tenant_id:'t1',type:'analista',name:'Ana Analista',cpf:'22233344455',email:'a@x.com',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
     {id:'p3',tenant_id:'t1',type:'corretor',name:'Ana Souza',cpf:'33333333333',is_active:true,approved:true,permissions:{etapas:{s1:'editar'}},extra:{coordenador_id:'p7'}},
     // Vinculada ao perfil "Corretor". Existe para provar que o cadastro abre
     // seguindo o perfil, e não as marcas soltas — que aqui dizem o contrário
@@ -68,7 +69,7 @@ const D = {
     // Sem imobiliária no cadastro: aparece em qualquer uma. É a situação dos 37
     // corretores que existem hoje, e o motivo de o filtro não ser estrito.
     {id:'p12',tenant_id:'t1',type:'corretor',name:'Sem Equipe',cpf:'12312312312',is_active:true,approved:true,permissions:{},extra:{}},
-    {id:'p8',tenant_id:'t1',type:'cca',name:'Usuário Corr',cpf:'55555555555',is_active:true,approved:true,permissions:{}}],
+    {id:'p8',tenant_id:'t1',type:'cca',name:'Usuário Corr',cpf:'55555555555',is_active:true,approved:true,empresa_id:'e1',permissions:{}}],
   users: [{id:'u1',tenant_id:'t1',name:'Julio',cpf:'99999999999',role:'owner',is_active:true,last_seen:'2026-08-27T09:00:00Z'}],
   config: [{key:'regionais',value:'["Centro","Sul"]'},{key:'crm_sources',value:'[{"id":"org1","name":"Indicação","active":true},{"id":"org2","name":"Portal","active":true},{"name":"Feirão legado","active":true}]'},{key:'commission',value:'{}'},{key:'wf_lock_repasse',value:'false'},{key:'doc_types',value:'["RG","CPF"]'}],
   despachantes: [{id:'x1',nome:'Despachante '+XSS,email:'d@x.com',telefone:'11999999999'}],
@@ -282,6 +283,13 @@ function responder(url, metodo, corpo0) {
     return { ok:true, situacao_id:'ps2' };
   if (p.includes('/rpc/a1_pa_executar_acao')) return { ok:true, comercial_id:'co1' };
   if (p.includes('/rpc/a1_co_executar_acao')) return { ok:true, repasse_case_id:'c1' };
+  if (p.includes('/rpc/a1_pa_ciclo_configuracoes')) return {configuracoes:[
+    {id:'cfg1',nome:'Equipe principal',ativo:true,modo:'LIVRE',empresa_id:'e1',empresa:'Empresa Corr',correspondente_id:'p8',correspondente:'Usuário Corr',proxima_ordem:1,
+     participantes:[{id:'cp1',analista_id:'p2',analista:'João Analista',ordem:1,recebidas:3,aprovadas:2}]},
+    {id:'cfg2',nome:'Equipe de contingência',ativo:false,modo:'DESEMPENHO',empresa_id:'e1',empresa:'Empresa Corr',correspondente_id:'p21',correspondente:'Usuario Novo CCA',proxima_ordem:1,participantes:[]}
+  ]};
+  if (p.includes('/rpc/a1_pa_ciclo_salvar_configuracao')) return {ok:true,config_id:'cfg1'};
+  if (p.includes('/rpc/a1_pa_ciclo_ativar')) return {ok:true,config_id:'cfg2'};
   // a1_perm() no banco começa com "when a1_e_gestor() then true": para quem não
   // é parceiro a resposta é sempre sim, sem consultar perfil nem marca. E o
   // navegador só chama esta RPC para gestor (js/modulo-shell.js) — o parceiro é

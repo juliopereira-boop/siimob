@@ -76,6 +76,47 @@
     .btn-danger:hover{background:#fecaca}
     .btn-sm{padding:.28rem .65rem;font-size:.73rem}
     .btn-xs{padding:.18rem .48rem;font-size:.7rem}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    /* ── Ciclo de distribuição ── */
+    .ciclo-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:1rem;align-items:start}
+    .ciclo-side,.ciclo-editor{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
+    .ciclo-side-hdr{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.9rem;border-bottom:1px solid var(--border)}
+    .ciclo-side-title{font-size:.76rem;font-weight:800;color:var(--t1)}
+    .ciclo-list{padding:.45rem;display:flex;flex-direction:column;gap:.3rem}
+    .ciclo-config{width:100%;border:1px solid transparent;background:transparent;border-radius:9px;padding:.7rem;text-align:left;cursor:pointer;color:var(--t1);transition:all .15s}
+    .ciclo-config:hover{background:var(--bg)}
+    .ciclo-config.active{background:#E8F5F2;border-color:#A7D9D1}
+    .ciclo-config-top{display:flex;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.18rem}
+    .ciclo-config-name{font-size:.77rem;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ciclo-config-meta{font-size:.66rem;color:var(--t3);line-height:1.45}
+    .ciclo-status{display:inline-flex;align-items:center;gap:.25rem;border-radius:999px;padding:.15rem .45rem;font-size:.59rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#DCFCE7;color:#166534;white-space:nowrap}
+    .ciclo-status::before{content:'';width:5px;height:5px;border-radius:50%;background:#22C55E}
+    .ciclo-editor-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1rem 1.1rem;border-bottom:1px solid var(--border)}
+    .ciclo-editor-title{font-size:.9rem;font-weight:800}
+    .ciclo-editor-sub{font-size:.7rem;color:var(--t3);margin-top:.2rem}
+    .ciclo-actions{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end}
+    .ciclo-body{padding:1.1rem}
+    .ciclo-fields{display:grid;grid-template-columns:1.2fr .8fr;gap:.75rem;margin-bottom:1rem}
+    .ciclo-hierarquia{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;padding-top:1rem;margin-top:.15rem;border-top:1px solid var(--border)}
+    .ciclo-analistas{margin-top:1rem;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .ciclo-analistas-hdr{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem .85rem;background:#F8FAF9;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .ciclo-analistas-title{font-size:.73rem;font-weight:800}
+    .ciclo-count{font-size:.65rem;font-weight:750;color:var(--green);background:#E8F5F2;border-radius:999px;padding:.16rem .48rem}
+    .ciclo-tools{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+    .ciclo-search{width:210px;border:1px solid var(--border);border-radius:7px;padding:.4rem .6rem;font-size:.74rem;color:var(--t1);background:#fff}
+    .ciclo-search:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(14,140,127,.08)}
+    .ciclo-analistas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.55rem;padding:.75rem;max-height:300px;overflow:auto}
+    .ciclo-analista{display:flex;align-items:center;gap:.55rem;border:1px solid var(--border);border-radius:8px;padding:.62rem .7rem;cursor:pointer;transition:all .12s;background:#fff}
+    .ciclo-analista:hover{border-color:#A7D9D1;background:#F7FCFB}
+    .ciclo-analista.marcado{border-color:#5FBCAE;background:#E8F5F2}
+    .ciclo-analista input{width:16px;height:16px;accent-color:var(--green);flex-shrink:0}
+    .ciclo-analista-info{min-width:0}
+    .ciclo-analista-nome{font-size:.75rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ciclo-analista-meta{font-size:.64rem;color:var(--t3);margin-top:.08rem}
+    .ciclo-empty{padding:1.5rem;text-align:center;font-size:.74rem;color:var(--t3);grid-column:1/-1}
+    .ciclo-resumo{margin-top:1rem}
+    @media(max-width:850px){.ciclo-layout{grid-template-columns:1fr}.ciclo-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.ciclo-editor-hdr{flex-direction:column}.ciclo-actions{justify-content:flex-start}.ciclo-fields,.ciclo-hierarquia{grid-template-columns:1fr}}
 
     /* ── Panel ── */
     .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -6388,7 +6429,7 @@ function cfgModsLiberar(mod) {
         Distribui cada nova pré-análise pela hierarquia Empresa Correspondente → Usuário Correspondente → Analista.
         Com o ciclo ativo, esses responsáveis são definidos pelo banco e não podem ser escolhidos no cadastro.
       </div>
-      <div id="ciclo-pa-corpo" class="panel" style="padding:1.1rem;max-width:1000px"></div>`);
+      <div id="ciclo-pa-corpo" style="max-width:1280px"></div>`);
     // O workflow NÃO ganha cartão próprio. O dono foi claro: "quando eu clico em
     // editor de workflow, deve aparecer os ícones do workflow de cada módulo".
     // Dois cartões separados eram dois editores para a mesma coisa, e um deles
@@ -6419,74 +6460,128 @@ function cfgModsLiberar(mod) {
 }
 
 // ══ Ciclo de distribuição da Pré-análise ════════════════════════════════════
-const CICLO_PA = { config:{ativo:false,modo:'LIVRE'}, participantes:[], empresas:[], correspondentes:[], analistas:[] };
+const CICLO_PA = { configuracoes:[], selecionadaId:null, rascunho:null, empresas:[], correspondentes:[], analistas:[] };
 
 async function cicloCarregar(){
   const el=document.getElementById('ciclo-pa-corpo'); if(!el)return;
   el.innerHTML='<div class="pt-empty">Carregando ciclo…</div>';
   const h={headers:A1.headers()};
   const [rc,re,rr,ra]=await Promise.all([
-    fetch(A1.rpc('a1_pa_ciclo_configuracao'),{method:'POST',headers:A1.headers(),body:'{}'}),
+    fetch(A1.rpc('a1_pa_ciclo_configuracoes'),{method:'POST',headers:A1.headers(),body:'{}'}),
     fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`,h),
     fetch(`${A1.rest('a1_partners')}?type=eq.cca&is_active=is.true&approved=is.true&select=id,name,empresa_id&order=name.asc`,h),
     fetch(`${A1.rest('a1_partners')}?type=eq.analista&is_active=is.true&approved=is.true&select=id,name,empresa_id&order=name.asc`,h)
   ]);
   if(!rc.ok){ el.innerHTML='<div class="aviso w">O SQL do Ciclo de Distribuição ainda não foi aplicado no Supabase.</div>'; return; }
   const cfg=await rc.json().catch(()=>({}));
-  CICLO_PA.config={ativo:cfg.ativo===true,modo:cfg.modo||'LIVRE',proxima_ordem:cfg.proxima_ordem||1};
-  CICLO_PA.participantes=Array.isArray(cfg.participantes)?cfg.participantes:[];
+  CICLO_PA.configuracoes=Array.isArray(cfg.configuracoes)?cfg.configuracoes:[];
   CICLO_PA.empresas=await re.json().catch(()=>[]); CICLO_PA.correspondentes=await rr.json().catch(()=>[]); CICLO_PA.analistas=await ra.json().catch(()=>[]);
   if(!Array.isArray(CICLO_PA.empresas))CICLO_PA.empresas=[]; if(!Array.isArray(CICLO_PA.correspondentes))CICLO_PA.correspondentes=[]; if(!Array.isArray(CICLO_PA.analistas))CICLO_PA.analistas=[];
+  const manter=CICLO_PA.configuracoes.find(x=>x.id===CICLO_PA.selecionadaId);
+  const alvo=manter||CICLO_PA.configuracoes.find(x=>x.ativo)||CICLO_PA.configuracoes[0];
+  if(alvo)cicloAbrir(alvo.id,false); else cicloNova(false);
   cicloRender();
+}
+
+function cicloAbrir(id,render=true){
+  const c=CICLO_PA.configuracoes.find(x=>x.id===id); if(!c)return;
+  CICLO_PA.selecionadaId=id;
+  CICLO_PA.rascunho={id:c.id,nome:c.nome||'',ativo:c.ativo===true,modo:c.modo||'LIVRE',empresa_id:c.empresa_id||'',correspondente_id:c.correspondente_id||'',
+    proxima_ordem:Number(c.proxima_ordem||1),participantes:Array.isArray(c.participantes)?c.participantes.map(x=>({...x})):[]};
+  if(render)cicloRender();
+}
+function cicloNova(render=true){
+  CICLO_PA.selecionadaId=null;
+  CICLO_PA.rascunho={id:null,nome:'',ativo:false,modo:'LIVRE',empresa_id:'',correspondente_id:'',proxima_ordem:1,participantes:[]};
+  if(render)cicloRender();
 }
 
 function cicloRender(){
   const el=document.getElementById('ciclo-pa-corpo'); if(!el)return;
-  const c=CICLO_PA.config, ps=CICLO_PA.participantes;
+  const c=CICLO_PA.rascunho||{participantes:[]}, ps=c.participantes||[];
+  const corr=CICLO_PA.correspondentes.filter(x=>x.empresa_id===c.empresa_id);
+  const anas=CICLO_PA.analistas.filter(x=>x.empresa_id===c.empresa_id);
+  const marcados=new Set(ps.map(x=>x.analista_id));
   el.innerHTML=`
-    <div style="display:flex;gap:1.2rem;align-items:end;flex-wrap:wrap;margin-bottom:1rem">
-      <label style="display:flex;align-items:center;gap:.45rem;font-weight:700"><input id="ciclo-ativo" type="checkbox" ${c.ativo?'checked':''}> Ciclo ativo</label>
-      <div class="form-group" style="min-width:230px"><label>Critério de distribuição</label><select id="ciclo-modo">
-        <option value="LIVRE" ${c.modo==='LIVRE'?'selected':''}>Livre — rodízio igual</option>
-        <option value="DESEMPENHO" ${c.modo==='DESEMPENHO'?'selected':''}>Desempenho — peso por aprovações</option>
-      </select></div>
-    </div>
-    <div class="fgrid" style="align-items:end;margin-bottom:.7rem">
-      <div class="fg"><label>Empresa correspondente</label><select id="ciclo-empresa" onchange="cicloEmpresaMudou()"><option value="">Selecione…</option>${CICLO_PA.empresas.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select></div>
-      <div class="fg"><label>Usuário correspondente</label><select id="ciclo-corr"><option value="">Escolha a empresa</option></select></div>
-      <div class="fg"><label>Analista</label><select id="ciclo-ana"><option value="">Escolha a empresa</option></select></div>
-      <div class="fg"><label>&nbsp;</label><button class="btn btn-ghost" onclick="cicloAdicionar()">+ Adicionar ao ciclo</button></div>
-    </div>
-    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Empresa</th><th>Usuário correspondente</th><th>Analista</th><th>Recebidas</th><th>Aprovadas</th><th></th></tr></thead><tbody>
-      ${ps.length?ps.map((p,i)=>`<tr><td>${i+1}${c.modo==='LIVRE'&&p.ordem===c.proxima_ordem?' · próximo':''}</td><td>${esc(p.empresa||'—')}</td><td>${esc(p.correspondente||'—')}</td><td><b>${esc(p.analista||'—')}</b></td><td>${Number(p.recebidas||0)}</td><td>${Number(p.aprovadas||0)}</td><td><button class="btn btn-danger btn-sm" onclick="cicloRemover(${i})">Remover</button></td></tr>`).join(''):'<tr><td colspan="7" class="pt-empty">Nenhum participante no ciclo.</td></tr>'}
-    </tbody></table></div>
-    <div style="font-size:.72rem;color:var(--t3);margin-top:.7rem">No modo desempenho, o peso de 1 a 5 é recalculado pelas aprovações na etapa que possui o selo FIM POSITIVO.</div>
-    <div style="margin-top:1rem"><button id="ciclo-salvar" class="btn btn-primary" onclick="cicloSalvar()">Salvar configuração</button></div>`;
+    <div class="ciclo-layout">
+      <aside class="ciclo-side">
+        <div class="ciclo-side-hdr"><div class="ciclo-side-title">Configurações salvas</div><button class="btn btn-primary btn-sm" onclick="cicloNova()">+ Nova</button></div>
+        <div class="ciclo-list">${CICLO_PA.configuracoes.length?CICLO_PA.configuracoes.map(x=>`
+          <button class="ciclo-config ${x.id===CICLO_PA.selecionadaId?'active':''}" onclick="cicloAbrir('${esc(x.id)}')">
+            <span class="ciclo-config-top"><span class="ciclo-config-name">${esc(x.nome)}</span>${x.ativo?'<span class="ciclo-status">Ativa</span>':''}</span>
+            <span class="ciclo-config-meta">${esc(x.empresa||'Sem empresa')} · ${Number((x.participantes||[]).length)} analista(s)</span>
+          </button>`).join(''):'<div class="ciclo-empty">Nenhuma configuração criada.</div>'}</div>
+      </aside>
+      <section class="ciclo-editor">
+        <div class="ciclo-editor-hdr">
+          <div><div class="ciclo-editor-title">${c.id?'Editar configuração':'Nova configuração'}</div><div class="ciclo-editor-sub">Uma empresa, um usuário correspondente e todos os analistas que participarão da fila.</div></div>
+          <div class="ciclo-actions">
+            ${c.id&&!c.ativo?`<button id="ciclo-ativar" class="btn btn-ghost" onclick="cicloAtivar()">Ativar configuração</button>`:''}
+            ${c.ativo?'<span class="ciclo-status">Padrão do sistema</span>':''}
+            <button id="ciclo-salvar" class="btn btn-primary" onclick="cicloSalvar()">Salvar alterações</button>
+          </div>
+        </div>
+        <div class="ciclo-body">
+          <div class="ciclo-fields">
+            <div class="form-group"><label>Nome da configuração</label><input id="ciclo-nome" maxlength="100" value="${esc(c.nome||'')}" placeholder="Ex.: Equipe principal" oninput="CICLO_PA.rascunho.nome=this.value"></div>
+            <div class="form-group"><label>Critério de distribuição</label><select id="ciclo-modo" onchange="CICLO_PA.rascunho.modo=this.value">
+              <option value="LIVRE" ${c.modo==='LIVRE'?'selected':''}>Livre — rodízio igual</option>
+              <option value="DESEMPENHO" ${c.modo==='DESEMPENHO'?'selected':''}>Desempenho — peso por aprovações</option>
+            </select></div>
+          </div>
+          <div class="ciclo-hierarquia">
+            <div class="form-group"><label>Empresa correspondente</label><select id="ciclo-empresa" onchange="cicloEmpresaMudou(this.value)"><option value="">Selecione uma empresa</option>${CICLO_PA.empresas.map(x=>`<option value="${esc(x.id)}" ${x.id===c.empresa_id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Usuário correspondente</label><select id="ciclo-corr" onchange="CICLO_PA.rascunho.correspondente_id=this.value" ${c.empresa_id?'':'disabled'}><option value="">${c.empresa_id?'Selecione o responsável':'Escolha primeiro a empresa'}</option>${corr.map(x=>`<option value="${esc(x.id)}" ${x.id===c.correspondente_id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+          </div>
+          <div class="ciclo-analistas">
+            <div class="ciclo-analistas-hdr">
+              <div style="display:flex;align-items:center;gap:.45rem"><span class="ciclo-analistas-title">Analistas da fila</span><span class="ciclo-count" id="ciclo-count">${marcados.size} selecionado(s)</span></div>
+              <div class="ciclo-tools"><input class="ciclo-search" type="search" placeholder="Buscar analista…" oninput="cicloFiltrarAnalistas(this.value)"><button class="btn btn-ghost btn-sm" onclick="cicloSelecionarVisiveis(true)">Selecionar visíveis</button><button class="btn btn-ghost btn-sm" onclick="cicloSelecionarVisiveis(false)">Limpar</button></div>
+            </div>
+            <div class="ciclo-analistas-grid" id="ciclo-analistas-grid">${!c.empresa_id?'<div class="ciclo-empty">Selecione a empresa para listar os analistas.</div>':anas.length?anas.map(a=>`
+              <label class="ciclo-analista ${marcados.has(a.id)?'marcado':''}" data-nome="${esc((a.name||'').toLowerCase())}"><input type="checkbox" value="${esc(a.id)}" ${marcados.has(a.id)?'checked':''} onchange="cicloAlternarAnalista('${esc(a.id)}',this.checked)"><span class="ciclo-analista-info"><span class="ciclo-analista-nome">${esc(a.name)}</span><span class="ciclo-analista-meta">Analista de crédito</span></span></label>`).join(''):'<div class="ciclo-empty">Nenhum analista ativo nesta empresa.</div>'}</div>
+          </div>
+          ${ps.length?`<div class="ciclo-resumo tbl-wrap"><table><thead><tr><th>Ordem</th><th>Analista</th><th>Recebidas</th><th>Aprovadas</th><th></th></tr></thead><tbody>${ps.map((p,i)=>`<tr><td>${i+1}${c.ativo&&c.modo==='LIVRE'&&Number(p.ordem)===Number(c.proxima_ordem)?' · próximo':''}</td><td><b>${esc(p.analista||CICLO_PA.analistas.find(a=>a.id===p.analista_id)?.name||'—')}</b></td><td>${Number(p.recebidas||0)}</td><td>${Number(p.aprovadas||0)}</td><td><button class="btn btn-danger btn-sm" onclick="cicloRemover('${esc(p.analista_id)}')">Remover</button></td></tr>`).join('')}</tbody></table></div>`:''}
+          <div style="font-size:.69rem;color:var(--t3);margin-top:.75rem">No modo desempenho, o peso é recalculado pelas aprovações na etapa com o selo FIM POSITIVO.</div>
+        </div>
+      </section>
+    </div>`;
 }
 
-function cicloEmpresaMudou(){
-  const id=document.getElementById('ciclo-empresa').value;
-  const op=(lista,txt)=>`<option value="">${txt}</option>`+lista.filter(x=>x.empresa_id===id).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
-  document.getElementById('ciclo-corr').innerHTML=op(CICLO_PA.correspondentes,'Selecione…');
-  document.getElementById('ciclo-ana').innerHTML=op(CICLO_PA.analistas,'Selecione…');
+function cicloEmpresaMudou(id){
+  CICLO_PA.rascunho.empresa_id=id; CICLO_PA.rascunho.correspondente_id=''; CICLO_PA.rascunho.participantes=[]; cicloRender();
 }
-function cicloAdicionar(){
-  const eid=document.getElementById('ciclo-empresa').value,cid=document.getElementById('ciclo-corr').value,aid=document.getElementById('ciclo-ana').value;
-  if(!eid||!cid||!aid){toast('Selecione empresa, usuário correspondente e analista.','error');return;}
-  if(CICLO_PA.participantes.some(x=>x.analista_id===aid)){toast('Este analista já participa do ciclo.','info');return;}
-  const e=CICLO_PA.empresas.find(x=>x.id===eid),co=CICLO_PA.correspondentes.find(x=>x.id===cid),an=CICLO_PA.analistas.find(x=>x.id===aid);
-  CICLO_PA.participantes.push({empresa_id:eid,empresa:e?.name,correspondente_id:cid,correspondente:co?.name,analista_id:aid,analista:an?.name,ordem:CICLO_PA.participantes.length+1,recebidas:0,aprovadas:0});
-  cicloRender();
+function cicloAlternarAnalista(id,marcado){
+  const ps=CICLO_PA.rascunho.participantes, atual=ps.find(x=>x.analista_id===id);
+  if(marcado&&!atual){const a=CICLO_PA.analistas.find(x=>x.id===id);ps.push({analista_id:id,analista:a?.name,ordem:ps.length+1,recebidas:0,aprovadas:0});}
+  if(!marcado&&atual)CICLO_PA.rascunho.participantes=ps.filter(x=>x.analista_id!==id).map((x,i)=>({...x,ordem:i+1}));
+  const box=document.querySelector(`.ciclo-analista input[value="${id}"]`); if(box)box.closest('.ciclo-analista').classList.toggle('marcado',marcado);
+  const count=document.getElementById('ciclo-count');if(count)count.textContent=`${CICLO_PA.rascunho.participantes.length} selecionado(s)`;
 }
-function cicloRemover(i){CICLO_PA.participantes.splice(i,1);CICLO_PA.participantes.forEach((p,n)=>p.ordem=n+1);cicloRender();}
+function cicloFiltrarAnalistas(busca){const q=(busca||'').trim().toLowerCase();document.querySelectorAll('#ciclo-analistas-grid .ciclo-analista').forEach(x=>x.style.display=!q||x.dataset.nome.includes(q)?'':'none');}
+function cicloSelecionarVisiveis(marcar){document.querySelectorAll('#ciclo-analistas-grid .ciclo-analista').forEach(x=>{if(x.style.display==='none')return;const cb=x.querySelector('input');if(cb.checked!==marcar){cb.checked=marcar;cicloAlternarAnalista(cb.value,marcar);}});cicloRender();}
+function cicloRemover(id){CICLO_PA.rascunho.participantes=CICLO_PA.rascunho.participantes.filter(x=>x.analista_id!==id).map((x,i)=>({...x,ordem:i+1}));cicloRender();}
 async function cicloSalvar(){
-  const btn=document.getElementById('ciclo-salvar'),ativo=document.getElementById('ciclo-ativo').checked,modo=document.getElementById('ciclo-modo').value;
-  if(ativo&&!CICLO_PA.participantes.length){toast('Adicione ao menos um participante antes de ativar.','error');return;}
+  const btn=document.getElementById('ciclo-salvar'),c=CICLO_PA.rascunho;
+  c.nome=(document.getElementById('ciclo-nome')?.value||'').trim();c.modo=document.getElementById('ciclo-modo')?.value||c.modo;c.correspondente_id=document.getElementById('ciclo-corr')?.value||'';
+  if(!c.nome){toast('Informe um nome para a configuração.','error');return;}
+  if(!c.empresa_id||!c.correspondente_id){toast('Selecione a empresa e o usuário correspondente.','error');return;}
+  if(!c.participantes.length){toast('Selecione ao menos um analista.','error');return;}
   btn.disabled=true; btn.textContent='Salvando…';
-  const participantes=CICLO_PA.participantes.map(p=>({empresa_id:p.empresa_id,correspondente_id:p.correspondente_id,analista_id:p.analista_id}));
-  const r=await fetch(A1.rpc('a1_pa_ciclo_salvar'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_ativo:ativo,p_modo:modo,p_participantes:participantes})});
+  const r=await fetch(A1.rpc('a1_pa_ciclo_salvar_configuracao'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_config_id:c.id,p_nome:c.nome,p_modo:c.modo,p_empresa_id:c.empresa_id,p_correspondente_id:c.correspondente_id,p_analistas:c.participantes.map(p=>p.analista_id)})});
   if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.message||'Não foi possível salvar o ciclo.','error');btn.disabled=false;btn.textContent='Salvar configuração';return;}
-  toast('Ciclo de distribuição atualizado.','success'); await cicloCarregar();
+  const salvo=await r.json().catch(()=>({}));CICLO_PA.selecionadaId=salvo.config_id||c.id;
+  toast('Configuração salva.','success'); await cicloCarregar();
+}
+async function cicloAtivar(){
+  const c=CICLO_PA.rascunho;if(!c?.id)return;
+  const atual=CICLO_PA.configuracoes.find(x=>x.ativo);
+  const msg=atual?`Ativar "${c.nome}"? A configuração "${atual.nome}" deixará de ser o padrão do sistema.`:`Ativar "${c.nome}" como padrão do sistema?`;
+  if(!confirm(msg))return;
+  const btn=document.getElementById('ciclo-ativar');btn.disabled=true;btn.textContent='Ativando…';
+  const r=await fetch(A1.rpc('a1_pa_ciclo_ativar'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_config_id:c.id})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.message||'Não foi possível ativar a configuração.','error');btn.disabled=false;btn.textContent='Ativar configuração';return;}
+  toast('Configuração ativada como padrão.','success');await cicloCarregar();
 }
 
 // ── Registro de integrações (somente leitura) ────────────────────────────────
