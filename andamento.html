@@ -4044,7 +4044,10 @@ async function openNewCase() {
   partnerSel.innerHTML='<option value="">Selecione...</option>'+
     G.empresas.filter(e=>e.is_active).map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
   if (isCCA && G.user.empresa_name) {
-    partnerSel.value = G.user.empresa_name;
+    // O seletor tem o ID no value. Atribuir o NOME deixava o seletor vazio em
+    // silêncio, e o correspondente criava processo sem a própria empresa.
+    const minha = G.empresas.find(e => e.name === G.user.empresa_name);
+    partnerSel.value = minha ? minha.id : '';
     partnerSel.disabled = true;
   } else {
     partnerSel.disabled = false;
@@ -4096,16 +4099,24 @@ async function openNewCase() {
 async function onNovoRepasseEmpresaChange() {
   const partnerSel = document.getElementById('n-partner');
   const managerSel = document.getElementById('n-manager');
-  const selectedName = partnerSel.value;
+  const selecionado = partnerSel.value;
 
   // garante que G.empresas é um array (nunca deixa o select quebrado)
   const empresas = Array.isArray(G.empresas) ? G.empresas : [];
-  const empresa = empresas.find(e => e.name === selectedName);
+  // Desde que os vínculos passaram a ser por id (11/09), o seletor de empresa
+  // entrega o ID. Esta função ficou procurando pelo NOME e montando a lista de
+  // analistas com o NOME no value — e o banco recusava a criação com
+  // "invalid input syntax for type uuid: <nome da analista>". Quem escolhia a
+  // empresa antes da analista não conseguia criar repasse (THE CRED, 02/10).
+  // O nome segue aceito aqui só para não quebrar quem ainda chegar com ele.
+  const empresa = empresas.find(e => e.id === selecionado)
+               || empresas.find(e => e.name === selecionado);
+  const opcoesAnalistas = lista => '<option value="">Selecione...</option>' +
+    lista.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
 
   if (!empresa) {
     // sem empresa: mostra todos os analistas ativos
-    managerSel.innerHTML = '<option value="">Selecione...</option>' +
-      (G.analistas || []).filter(a => a.is_active !== false).map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+    managerSel.innerHTML = opcoesAnalistas((G.analistas || []).filter(a => a.is_active !== false));
     managerSel.disabled = false;
     return;
   }
@@ -4119,12 +4130,10 @@ async function onNovoRepasseEmpresaChange() {
     const lista = Array.isArray(analistas) ? analistas : [];
     // se nenhum analista vinculado à empresa ainda, exibe todos como fallback
     const fallback = !lista.length ? (G.analistas || []).filter(a => a.is_active !== false) : lista;
-    managerSel.innerHTML = '<option value="">Selecione...</option>' +
-      fallback.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+    managerSel.innerHTML = opcoesAnalistas(fallback);
   } catch {
     // qualquer erro: mantém lista completa
-    managerSel.innerHTML = '<option value="">Selecione...</option>' +
-      (G.analistas || []).filter(a => a.is_active !== false).map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+    managerSel.innerHTML = opcoesAnalistas((G.analistas || []).filter(a => a.is_active !== false));
   }
   managerSel.disabled = false;
 }
@@ -4170,6 +4179,21 @@ function onBlocoChange() {
   unitSel.disabled=false;
 }
 
+// Vínculo é gravado por id, sempre. Se algum seletor ainda entregar o NOME —
+// foi o que derrubou a criação em 02/10 —, resolve pelo cadastro. Se não achar,
+// vai vazio: um texto num campo uuid faz o banco recusar o processo INTEIRO, e
+// perder o cliente digitado é pior que ficar sem a analista, que se corrige
+// depois no cartão.
+function idDoVinculo(valor, lista){
+  const v = String(valor || '').trim();
+  if (!v) return '';
+  const l = Array.isArray(lista) ? lista : [];
+  if (l.some(x => x && x.id === v)) return v;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) return v;
+  const porNome = l.find(x => x && String(x.name || '').trim().toLowerCase() === v.toLowerCase());
+  return porNome ? porNome.id : '';
+}
+
 async function createCase() {
   // Conferido de novo na gravação: entre abrir o formulário e salvar, o gestor
   // pode ter tirado o acesso — e o caminho até aqui não passa necessariamente
@@ -4185,9 +4209,9 @@ async function createCase() {
   // porque filtros, relatórios e a visibilidade do Repasse ainda casam por
   // texto. Guardar os dois é o que permite migrar sem parar ninguém.
   const nomeDe = (lista, id) => ((Array.isArray(lista)?lista:[]).find(x => x.id === id) || {}).name || '';
-  const empresaId = G.isCorrTenant ? '' : (document.getElementById('n-partner')||{}).value || '';
-  const usuarioId = (document.getElementById('n-usuario')||{}).value || '';
-  const analistaId = (document.getElementById('n-manager')||{}).value || '';
+  const empresaId = G.isCorrTenant ? '' : idDoVinculo((document.getElementById('n-partner')||{}).value, G.empresas);
+  const usuarioId = idDoVinculo((document.getElementById('n-usuario')||{}).value, G.partners);
+  const analistaId = idDoVinculo((document.getElementById('n-manager')||{}).value, G.analistas);
   const partner = G.isCorrTenant ? (G.fixedCorr||'') : nomeDe(G.empresas, empresaId);
   const re      = document.getElementById('n-re').value;
   const manager = nomeDe(G.analistas, analistaId);
@@ -4196,6 +4220,8 @@ async function createCase() {
   const body={tenant_id:G.user.tenant_id,module_key:'repasse',client_name:name,client_cpf:v('n-cpf'),client_phone:v('n-phone'),client_email:v('n-email'),development:dev?.name||'',block,unit,contract_value:brToNum(v('n-value')),partner_name:partner,real_estate_name:re,broker_name:v('n-broker'),manager_name:manager,evaluation_expiry:v('n-eval')||null,observations:v('n-obs'),stage_id:stageId||null,stage_name:stage?.name||null,is_new:true,empresa_id:empresaId||null,correspondente_id:usuarioId||null,analista_id:analistaId||null,payload:{regional:(v('n-regional')||''),usuario_correspondente:nomeDe(G.partners, usuarioId),convenio:(v('n-convenio')||''),agencia:(v('n-agencia')||''),modalidade:(v('n-modalidade')||''),data_venda:(v('n-data-venda')||''),estado:(v('n-estado')||''),cidade:(v('n-cidade')||'')}};
   try {
     const res=await fetch(A1.rest('a1_cases'),{method:'POST',headers:A1.returnHeaders(),body:JSON.stringify(body)});
+    // "Erro ao criar repasse" escondia o motivo, e o motivo era o que resolvia.
+    if(!res.ok){ toast(await motivoDoErro(res),'error'); return; }
     const data = await res.json().catch(()=>null);
     const created = Array.isArray(data) ? data[0] : null;
     if(created?.id){
