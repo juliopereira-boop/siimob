@@ -2594,10 +2594,7 @@ function dashCases() {
     if (agencia  && (c.payload&&c.payload.agencia)  !== agencia)  return false;
     if (coordenador && !_souDaEquipe(c, coordenador)) return false;
     if (modalidade && (c.payload&&c.payload.modalidade) !== modalidade) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!`${c.client_name} ${c.client_cpf} ${c.development}`.toLowerCase().includes(q)) return false;
-    }
+    if (search && !A1.casaBusca([c.client_name, c.client_cpf, c.development], search)) return false;
     return true;
   });
 }
@@ -3071,7 +3068,8 @@ function filteredCases() {
     const stage=sm[c.stage_id];
     const _reg=(c.payload&&c.payload.regional)||stage?.group_key||'';
     if(G.currentGroup!=='__all__' && _reg!==G.currentGroup) return false;
-    if(search){ const q=search.toLowerCase(),hay=`${c.client_name} ${c.client_cpf} ${c.development} ${c.partner_name}`.toLowerCase(); if(!hay.includes(q)) return false; }
+    // Sem acento, CPF com ou sem pontuação, palavras em qualquer ordem: A1.casaBusca.
+    if(search && !A1.casaBusca([c.client_name, c.client_cpf, c.development, c.partner_name], search)) return false;
     if(empr     && c.development!==empr)                      return false;
     if(parceiro && c.partner_name!==parceiro)                  return false;
     if(re       && c.real_estate_name!==re)                    return false;

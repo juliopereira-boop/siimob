@@ -279,5 +279,38 @@ const A1 = {
         body: JSON.stringify({ prefixes: [path] })
       });
     } catch {}
+  },
+
+  // ─── Busca por texto livre ────────────────────────────────────────────────
+  // A busca comparava o texto exatamente como digitado, e a operação digita
+  // como fala: "joao" para achar JOÃO, os onze números para achar o CPF que
+  // foi gravado com pontos e traço. Na THE CRED, 236 de 307 CPFs estão
+  // pontuados — quem buscava pelos dígitos não achava três em cada quatro
+  // processos, e a queixa chegava como "o cliente está cadastrado e não
+  // aparece" (14/10).
+  //
+  // Três regras, nessa ordem de importância:
+  //   1. acento e caixa não contam: "conceicao" acha CONCEIÇÃO;
+  //   2. número compara só os dígitos, CAMPO A CAMPO: 12345678909 acha
+  //      123.456.789-09 e vice-versa. Campo a campo de propósito — juntar os
+  //      dígitos de tudo faria "Bloco 12" + CPF "345..." responder a "12345";
+  //   3. cada palavra digitada precisa aparecer, em qualquer ordem:
+  //      "maria silva" acha MARIA DA SILVA, que a frase exata não achava.
+  normalBusca(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/\s+/g, ' ').trim();
+  },
+  casaBusca(campos, consulta) {
+    const q = this.normalBusca(consulta);
+    if (!q) return true;
+    const lista = (Array.isArray(campos) ? campos : [campos]).map(c => this.normalBusca(c));
+    const texto = lista.join(' ');
+    const digitos = lista.map(c => c.replace(/\D/g, '')).filter(Boolean);
+    return q.split(' ').every(p => {
+      if (texto.includes(p)) return true;
+      const semPontuacao = p.replace(/[.\-\/]/g, '');
+      if (!/^\d{3,}$/.test(semPontuacao)) return false;
+      return digitos.some(d => d.includes(semPontuacao));
+    });
   }
 };
