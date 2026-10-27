@@ -594,9 +594,19 @@ async function init() {
   if (tabLista) tabLista.style.display = '';
   a1StartHeartbeat('registro-listagem');
 
+  // Volta para a aba do navegador: busca de novo (alguém pode ter mexido em outra
+  // aba, no workflow, no celular), mas a tela fica como a pessoa deixou. Antes,
+  // cada volta redesenhava tudo: a etapa escolhida voltava para "Todas" e o quadro
+  // e a lista voltavam para o começo (THE CRED, 27/10). Agora só se redesenha o que
+  // mudou de fato, e com a rolagem devolvida ao lugar.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') loadData().then(() => {
+    if (document.visibilityState !== 'visible') return;
+    const antes = A1.impressaoTela(G.cases, G.stages);
+    loadData().then(() => {
+      if (A1.impressaoTela(G.cases, G.stages) === antes) return;
+      const rol = A1.fotoRolagem();
       renderKanban(); renderList();
+      A1.voltarRolagem(rol);
     });
   });
 }
@@ -720,10 +730,10 @@ function renderDashboard() {
   populateSelect('rg-filter-empr', allEmprs,  'Todos os empreendimentos', G.filters.empr);
   populateSelect('rg-filter-banco',allBancos, 'Todos os bancos',          G.filters.banco);
   populateSelect('rg-list-stage',  G.stages.map(s=>s.name), 'Todas as etapas', '');
-  G.stages.forEach(s => {
-    const opt = document.querySelector(`#rg-list-stage option[value="${s.name}"]`);
-    if (opt) opt.selected = false;
-  });
+  // Aqui havia um laço que desmarcava a etapa depois de montar as opções: a
+  // cada salvar, a etapa escolhida na lista voltava para "Todas". E ele montava
+  // um seletor CSS com o nome da etapa, que lança SyntaxError com aspas no nome
+  // e abortava o painel inteiro. populateSelect mantém a escolha; o laço saiu.
 
   const finalStageIds = new Set(G.stages.filter(s => s.is_final).map(s => s.id));
   const andamento  = cases.filter(c => !finalStageIds.has(c.stage_id));
@@ -1333,8 +1343,12 @@ function camposDeVinculo(c, prefixo){
 function populateSelect(id, items, placeholder, selected) {
   const el = document.getElementById(id);
   if (!el) return;
+  // Sem valor pedido, fica o que já estava escolhido. A etapa da lista era
+  // remontada com '' a cada carga, e a volta para a aba do navegador devolvia a
+  // pessoa para "Todas as etapas".
+  const manter = selected || el.value;
   el.innerHTML = `<option value="">${placeholder}</option>` +
-    items.map(v => `<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+    items.map(v => `<option value="${esc(v)}" ${v===manter?'selected':''}>${esc(v)}</option>`).join('');
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────

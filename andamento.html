@@ -2388,7 +2388,10 @@ async function loadData() {
   populateFilterOptions();
 }
 
-function populateFilterOptions() {
+// A reconstrução das opções passa por A1.manterSelecoes: sem isso, toda carga
+// (a volta para a aba, o salvar de um processo) devolvia os filtros para o vazio.
+function populateFilterOptions() { return A1.manterSelecoes(_populateFilterOptions); }
+function _populateFilterOptions() {
   const emprs    = _opcoesFiltro((G.emprFiltro||[]).map(e=>e.name), G.cases.map(c=>c.development));
   const partners = _opcoesFiltro(_ativos(G.empresasFiltro),          G.cases.map(c=>c.partner_name));
   const res      = _opcoesFiltro(_ativos(G.imobsFiltro),             G.cases.map(c=>c.real_estate_name));
@@ -2508,7 +2511,10 @@ function dashCases() {
   });
 }
 
-function populateDashFilters() {
+// A reconstrução das opções passa por A1.manterSelecoes: sem isso, toda carga
+// (a volta para a aba, o salvar de um processo) devolvia os filtros para o vazio.
+function populateDashFilters() { return A1.manterSelecoes(_populateDashFilters); }
+function _populateDashFilters() {
   const emprs    = _opcoesFiltro((G.emprFiltro||[]).map(e=>e.name), G.cases.map(c=>c.development));
   const partners = _opcoesFiltro(_ativos(G.empresasFiltro),          G.cases.map(c=>c.partner_name));
   const res      = _opcoesFiltro(_ativos(G.imobsFiltro),             G.cases.map(c=>c.real_estate_name));
@@ -6066,13 +6072,20 @@ async function saveCartorio() {
   }
 }
 
-// Reload data when the browser tab regains focus (user returns from workflow, another tab, etc.)
+// Volta para a aba do navegador: busca de novo (alguém pode ter mexido em outra
+// aba, no workflow, no celular), mas a tela fica como a pessoa deixou. Antes,
+// cada volta redesenhava tudo: a etapa escolhida voltava para "Todas" e o quadro
+// e a lista voltavam para o começo (THE CRED, 27/10). Agora só se redesenha o que
+// mudou de fato, e com a rolagem devolvida ao lugar.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && G.user) {
-    loadData().then(() => {
-      renderPipeline(); renderList();
-    });
-  }
+  if (document.visibilityState !== 'visible' || !G.user) return;
+  const antes = A1.impressaoTela(G.cases, G.stages);
+  loadData().then(() => {
+    if (A1.impressaoTela(G.cases, G.stages) === antes) return;
+    const rol = A1.fotoRolagem();
+    renderPipeline(); renderList();
+    A1.voltarRolagem(rol);
+  });
 });
 </script>
 </body>

@@ -312,5 +312,67 @@ const A1 = {
       if (!/^\d{3,}$/.test(semPontuacao)) return false;
       return digitos.some(d => d.includes(semPontuacao));
     });
+  },
+
+  // Reconstruir as opções de um <select> com innerHTML apaga o que a pessoa
+  // tinha escolhido nele. As telas reconstroem os filtros a cada carga, inclusive
+  // na volta para a aba do navegador e depois de salvar um processo, e a etapa
+  // escolhida voltava para "Todas", com a lista inteira de volta (THE CRED, 27/10).
+  // Este embrulho guarda o valor de cada <select> com id, roda a reconstrução e
+  // devolve o valor a quem ainda tiver aquela opção. Opção que deixou de existir
+  // fica no vazio, que é o único estado honesto.
+  manterSelecoes(reconstruir) {
+    const antes = [...document.querySelectorAll('select[id]')]
+      .filter(s => !s.multiple && s.value !== '')
+      .map(s => [s.id, s.value]);
+    const r = reconstruir();
+    for (const [id, valor] of antes) {
+      const s = document.getElementById(id);
+      if (s && s.value !== valor && [...s.options].some(o => o.value === valor)) s.value = valor;
+    }
+    return r;
+  },
+
+  // Impressão do que a tela desenha: se a volta para a aba trouxe exatamente os
+  // mesmos processos e etapas, não há o que redesenhar; e redesenhar à toa joga
+  // a rolagem do quadro e da lista para o começo.
+  impressaoTela(casos, etapas) {
+    const c = (casos || []).map(x => `${x.id}|${x.updated_at}|${x.stage_id}|${x.archived}`).join(';');
+    const e = (etapas || []).map(x => `${x.id}|${x.name}|${x.position}|${x.color}|${x.group_key}`).join(';');
+    return c.length + ':' + c + '#' + e;
+  },
+
+  // Rolagem da janela e de cada área rolada, para voltar ao mesmo lugar depois de
+  // um redesenho. A área é achada pelo caminho a partir do ancestral com id mais
+  // próximo, porque o redesenho troca os elementos e uma referência guardada
+  // apontaria para um nó que já saiu da página.
+  fotoRolagem() {
+    const caminho = el => {
+      const p = [];
+      while (el && el !== document.body) {
+        if (el.id) { p.unshift('#' + el.id); break; }
+        const pai = el.parentElement;
+        p.unshift(pai ? [...pai.children].indexOf(el) : 0);
+        el = pai;
+      }
+      return p;
+    };
+    const areas = [];
+    document.querySelectorAll('.main *').forEach(el => {
+      if (el.scrollTop || el.scrollLeft) areas.push([caminho(el), el.scrollTop, el.scrollLeft]);
+    });
+    return { x: window.scrollX, y: window.scrollY, areas };
+  },
+  voltarRolagem(f) {
+    if (!f) return;
+    for (const [p, top, left] of f.areas) {
+      let el = document.body;
+      for (const passo of p) {
+        el = typeof passo === 'string' ? document.getElementById(passo.slice(1)) : (el && el.children[passo]);
+        if (!el) break;
+      }
+      if (el) { el.scrollTop = top; el.scrollLeft = left; }
+    }
+    window.scrollTo(f.x, f.y);
   }
 };
