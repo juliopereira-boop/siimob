@@ -438,7 +438,10 @@
 <div class="main">
 
   <!-- ══════════ DASHBOARD ══════════ -->
-  <div id="tab-dashboard">
+  <!-- Nasce escondido: esta tela é a do Listagem. Visível de saída, o painel vazio
+       ficava na frente durante toda a carga e piscava a cada troca de vista,
+       como se a pessoa tivesse aberto o Dashboard no caminho. -->
+  <div id="tab-dashboard" style="display:none">
 
     <!-- Filter bar -->
     <div class="filtros-topo">
@@ -631,7 +634,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
       <div class="regional-tabs" id="regional-tabs"></div>
       <div style="display:flex;align-items:center;gap:.5rem">
-        <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Andamento</span>
+        <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Listagem</span>
         <!-- O "+ Novo Repasse" voltou. Ele era um atalho no cabeçalho global e
              saiu em 05a1c6d junto com o de Arquivados, porque atalho de Repasse
              não pertence ao topo de um sistema de vários módulos. Só que o
@@ -684,12 +687,12 @@
     </div>
 
     <!-- Andamento view (kanban) -->
-    <div id="view-andamento">
+    <div id="view-andamento" style="display:none">
       <div class="kanban-wrap" id="kanban-board"></div>
     </div>
 
     <!-- Listagem view (table) -->
-    <div id="view-listagem" style="display:none">
+    <div id="view-listagem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <span id="tbl-count" style="font-size:.73rem;color:var(--t3)"></span>
         <div style="display:flex;gap:.5rem;align-items:center">
@@ -720,7 +723,7 @@
               <th>Correspondente</th><th>Valor</th><th>Entrevista</th><th>Dias</th><th></th>
             </tr>
           </thead>
-          <tbody id="cases-tbody"></tbody>
+          <tbody id="cases-tbody"><tr><td colspan="99" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1896,6 +1899,13 @@ async function init() {
       if (/\/(repasse|dashboard)\/?$/.test(location.pathname)) { window.location.replace(`/${G.slug}/andamento`); return; }
     }
   }
+
+  // A área do listagem aparece já aqui, vazia e com "Carregando", em vez de
+  // esperar a carga inteira. É depois das travas de parceiro acima de
+  // propósito: quem não tem acesso já saiu, e o botão de novo repasse já
+  // obedece à permissão antes de ficar à vista.
+  aplicarBotaoNovoRepasse();
+  document.getElementById('tab-repasse').style.display = '';
 
   // tenant já iniciado em paralelo lá em cima
   G.tenant = await _tenantP;

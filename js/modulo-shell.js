@@ -612,7 +612,9 @@ function a1PodeVerAlgumDashboard(user, licencas){
    a mesma ideia do produto: o processo girando de etapa em etapa.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+// width/height no próprio SVG: se o CSS ainda não chegou, a marca nasce do
+// tamanho do cabeçalho em vez de ocupar a tela inteira. O CSS continua mandando.
+const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" width="24" height="24" fill="none" aria-hidden="true">
 <defs><linearGradient id="sbm" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
 <stop offset="0%" stop-color="#3FB8A6"/><stop offset="100%" stop-color="#0E8C7F"/></linearGradient></defs>
 <path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sbm)"/>

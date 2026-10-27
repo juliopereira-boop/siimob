@@ -157,6 +157,12 @@
   .toast-success{background:#0E8C7F}.toast-error{background:#B8433A}.toast-info{background:#334155}
   @media(max-width:720px){ .fgrid{grid-template-columns:1fr} .main{padding:1rem .8rem} }
 </style>
+<!-- O CSS do cabeçalho vem no <head>, e não só quando js/modulo-shell.js o injeta.
+     Injetado depois, o cabeçalho era desenhado antes de o estilo chegar e a marca
+     do SIIMOB aparecia gigante a cada troca de vista. Fica no fim do <head>, onde
+     a injeção o punha, para a ordem da cascata continuar a mesma; o id é o que a
+     injeção procura para não duplicar. -->
+<link rel="stylesheet" id="sb-css" href="/css/siimob.css">
 </head>
 <body>
 
