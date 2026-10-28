@@ -446,7 +446,7 @@ reset role;
 -- E até esta rodada ele conseguia por dois caminhos, os dois com um PATCH só:
 -- copiar o token do dono (a1_sessions era isolada só por cliente) ou reescrever
 -- a própria linha de a1_partners, que é de onde a1_perm() lê. As duas travas
--- estão em sql/2026-09-06_travas_sessao_e_parceiro.sql.
+-- estão em database/migrations/2026-09-06_travas_sessao_e_parceiro.sql.
 set role anon;
 select teste_entrar('tk-ana');
 select checa('a sessão que o navegador enxerga é só a dele',
@@ -1481,7 +1481,7 @@ values ('11111111-1111-1111-1111-111111111111','PRE_ANALISE') on conflict do not
 set role anon;
 
 -- ─── 22. DE QUEM É A PRÉ-ANÁLISE: O CORRETOR E A IMOBILIÁRIA ─────────────────
--- sql/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql
+-- database/migrations/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql
 --
 -- O relato: "o gestor não consegue escolher o corretor". A metade da tela era
 -- não haver campo; a metade do banco é que, para o gestor, a1_ator() devolve o

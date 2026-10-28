@@ -12,9 +12,9 @@ Q() { psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -t -A -v ON_ERROR
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $BANCO"
 trap 'psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO" >/dev/null' EXIT
 
-for f in testes/sql/base-falsa.sql sql/2026-09-04_identidade.sql \
-         sql/2026-09-04_pre_analise.sql sql/2026-09-04_comercial.sql \
-         sql/2026-09-04_gatilhos.sql; do
+for f in testes/sql/base-falsa.sql database/migrations/2026-09-04_identidade.sql \
+         database/migrations/2026-09-04_pre_analise.sql database/migrations/2026-09-04_comercial.sql \
+         database/migrations/2026-09-04_gatilhos.sql; do
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done
 
