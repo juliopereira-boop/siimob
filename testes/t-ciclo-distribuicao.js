@@ -14,7 +14,8 @@ assert(
 );
 assert(sql.includes('a1_gestor_modulo(p_module_key)'), 'licença deve considerar escopo do gestor');
 
-assert(cfg.includes("view:'ciclo-pa'"), 'configuração deve expor o Ciclo de Distribuição');
+// Tolerante a espaço: o que importa é a chave, não a formatação do objeto.
+assert(/view:\s*'ciclo-pa'/.test(cfg), 'configuração deve expor o Ciclo de Distribuição');
 assert(
   cfg.includes("A1.rpc('a1_pa_ciclo_salvar_configuracao')"),
   'tela deve persistir configurações nomeadas por RPC'
@@ -59,11 +60,11 @@ assert(
 
 assert(pa.includes("A1.rpc('a1_pa_ciclo_estado')"), 'assistente deve consultar o estado real do ciclo');
 assert(
-  pa.includes("id=\"w-empresa\" ${roteia?'disabled':''}"),
+  /id="w-empresa" \$\{\s*roteia\s*\?\s*'disabled'\s*:\s*''\s*\}/.test(pa),
   'empresa deve ser bloqueada quando o ciclo está ativo'
 );
 assert(
-  pa.includes("id=\"w-correspondente\" ${roteia?'disabled':''}"),
+  /id="w-correspondente" \$\{\s*roteia\s*\?\s*'disabled'\s*:\s*''\s*\}/.test(pa),
   'correspondente deve ser bloqueado quando o ciclo está ativo'
 );
 assert(

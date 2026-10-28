@@ -387,7 +387,7 @@ const gravado = (p, re) =>
     // assim que ver_repasses, baixar_documentos e editar_perfil passaram anos
     // sendo marcadas sem efeito nenhum.
     const cat = fs.readFileSync(path.join(RAIZ, 'src/shared/auth/permissoes.js'), 'utf8');
-    const catalogo = [...cat.matchAll(/\{\s*chave:'([a-z_]+)'/g)].map(m => m[1]);
+    const catalogo = [...cat.matchAll(/\{\s*chave:\s*'([a-z_]+)'/g)].map(m => m[1]);
     checa('o catálogo foi lido', catalogo.length >= 14, 'n=' + catalogo.length);
 
     const arquivos = [];
