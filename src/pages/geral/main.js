@@ -19,30 +19,33 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const G = {
-  user:null,
-  slug:null,
-  modulos:{},
-  resumo:null,
-  mes:null,
-  ano:null,
-  agenda:[],
-  diaSelecionado:null
+  user: null,
+  slug: null,
+  modulos: {},
+  resumo: null,
+  mes: null,
+  ano: null,
+  agenda: [],
+  diaSelecionado: null
 };
 
 // Os módulos da tela Geral, na ordem do processo. `casos:true` marca os que
 // moram em a1_cases separados por module_key — Leads, Repasse e Registro
 // compartilham a mesma engrenagem genérica; Pré-análise e Venda têm a sua.
 const MODS = [
-  { chave:'crm',         rotulo:'Leads',       rota:'crm',        casos:'crm',      icone:'lead' },
-  { chave:'PRE_ANALISE', rotulo:'Pré-análise', rota:'pre-analise',                  icone:'pre' },
-  { chave:'COMERCIAL',   rotulo:'Venda',       rota:'comercial',                    icone:'venda' },
-  { chave:'repasse',     rotulo:'Repasse',     rota:'andamento',  casos:'repasse',  icone:'repasse' },
-  { chave:'registro',    rotulo:'Registro',    rota:'registro',   casos:'registro', icone:'registro' }
+  { chave: 'crm', rotulo: 'Leads', rota: 'crm', casos: 'crm', icone: 'lead' },
+  { chave: 'PRE_ANALISE', rotulo: 'Pré-análise', rota: 'pre-analise', icone: 'pre' },
+  { chave: 'COMERCIAL', rotulo: 'Venda', rota: 'comercial', icone: 'venda' },
+  { chave: 'repasse', rotulo: 'Repasse', rota: 'andamento', casos: 'repasse', icone: 'repasse' },
+  { chave: 'registro', rotulo: 'Registro', rota: 'registro', casos: 'registro', icone: 'registro' }
 ];
 
-function esc(s){
+function esc(s) {
   return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 const n0 = n => Number(n || 0).toLocaleString('pt-BR');
 
@@ -53,21 +56,24 @@ const n0 = n => Number(n || 0).toLocaleString('pt-BR');
 const soData = v => String(v || '').slice(0, 10);
 const hojeISO = () => {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-const diasAte = iso => Math.round(
-  (new Date(soData(iso) + 'T12:00:00') - new Date(hojeISO() + 'T12:00:00')) / 864e5);
+const diasAte = iso =>
+  Math.round((new Date(soData(iso) + 'T12:00:00') - new Date(hojeISO() + 'T12:00:00')) / 864e5);
 
 /* ── Partida ──────────────────────────────────────────────────────────────── */
 
-async function init(){
-  if (!await a1RequireAuth()) return;
+async function init() {
+  if (!(await a1RequireAuth())) return;
   a1StartHeartbeat('geral');
-  G.user = A1.user; G.slug = A1.slug;
-  const hoje = new Date(); G.mes = hoje.getMonth(); G.ano = hoje.getFullYear();
+  G.user = A1.user;
+  G.slug = A1.slug;
+  const hoje = new Date();
+  G.mes = hoje.getMonth();
+  G.ano = hoje.getFullYear();
 
   // O casco primeiro: a pessoa vê o sistema montado enquanto os números chegam.
-  G.modulos = await a1MontarShell(document.getElementById('sb-casco'), { ativo:'geral' });
+  G.modulos = await a1MontarShell(document.getElementById('sb-casco'), { ativo: 'geral' });
 
   // A TELA GERAL E A PORTA DE ENTRADA, PARA TODO MUNDO.
   // Havia aqui um desvio: quem nao tinha `ver_dashboard_*` de modulo nenhum era
@@ -91,31 +97,38 @@ async function init(){
 
 /* ── Os números ───────────────────────────────────────────────────────────── */
 
-async function carregarResumo(){
+async function carregarResumo() {
   try {
-    const r = await fetch(A1.rpc('a1_resumo_geral'), { method:'POST', headers:A1.headers(), body:'{}' });
-    if (r.ok){
+    const r = await fetch(A1.rpc('a1_resumo_geral'), { method: 'POST', headers: A1.headers(), body: '{}' });
+    if (r.ok) {
       const j = await r.json();
       // 200 nao basta. Se a funcao nao existe, o PostgREST devolve 404 — mas um
       // proxy no meio pode devolver 200 com lista vazia, e aceitar isso zeraria
       // a tela inteira sem dizer por que. O que vale e a FORMA da resposta.
-      if (j && typeof j === 'object' && !Array.isArray(j) && ('casos' in j)){ G.resumo = j; return; }
+      if (j && typeof j === 'object' && !Array.isArray(j) && 'casos' in j) {
+        G.resumo = j;
+        return;
+      }
     }
-  } catch { /* cai para a contagem por cabeçalho, logo abaixo */ }
+  } catch {
+    /* cai para a contagem por cabeçalho, logo abaixo */
+  }
   G.resumo = await resumoPorCabecalho();
 }
 
 // A reserva, para enquanto o SQL não tiver sido rodado. Pede zero linha: manda
 // `Range: 0-0` e lê o total do cabeçalho content-range. Perde o detalhe por
 // etapa — a barra some, o total continua.
-async function resumoPorCabecalho(){
+async function resumoPorCabecalho() {
   const conta = async url => {
     try {
-      const r = await fetch(url, { headers:{ ...A1.headers(), Range:'0-0', Prefer:'count=exact' } });
+      const r = await fetch(url, { headers: { ...A1.headers(), Range: '0-0', Prefer: 'count=exact' } });
       const cr = r.headers.get('content-range') || '';
       const t = cr.split('/')[1];
       return t && t !== '*' ? Number(t) : 0;
-    } catch { return 0; }
+    } catch {
+      return 0;
+    }
   };
   const [crm, rep, reg, pa, co] = await Promise.all([
     conta(`${A1.rest('a1_cases')}?module_key=eq.crm&archived=eq.false&select=id`),
@@ -124,17 +137,21 @@ async function resumoPorCabecalho(){
     conta(`${A1.rest('a1_pre_analises')}?select=id`),
     conta(`${A1.rest('a1_comerciais')}?select=id`)
   ]);
-  const so = n => ({ total:n, aberto:n, etapas:[] });
-  return { parcial:true, casos:{ crm:so(crm), repasse:so(rep), registro:so(reg) },
-           pre_analise:so(pa), venda:so(co) };
+  const so = n => ({ total: n, aberto: n, etapas: [] });
+  return {
+    parcial: true,
+    casos: { crm: so(crm), repasse: so(rep), registro: so(reg) },
+    pre_analise: so(pa),
+    venda: so(co)
+  };
 }
 
-function dadosDe(m){
+function dadosDe(m) {
   const r = G.resumo || {};
-  if (m.casos) return (r.casos || {})[m.casos] || { total:0, aberto:0, etapas:[] };
-  if (m.chave === 'PRE_ANALISE') return r.pre_analise || { total:0, aberto:0, etapas:[] };
-  if (m.chave === 'COMERCIAL')   return r.venda       || { total:0, aberto:0, etapas:[] };
-  return { total:0, aberto:0, etapas:[] };
+  if (m.casos) return (r.casos || {})[m.casos] || { total: 0, aberto: 0, etapas: [] };
+  if (m.chave === 'PRE_ANALISE') return r.pre_analise || { total: 0, aberto: 0, etapas: [] };
+  if (m.chave === 'COMERCIAL') return r.venda || { total: 0, aberto: 0, etapas: [] };
+  return { total: 0, aberto: 0, etapas: [] };
 }
 const licenciados = () => MODS.filter(m => G.modulos[m.chave] === true);
 
@@ -143,18 +160,25 @@ const licenciados = () => MODS.filter(m => G.modulos[m.chave] === true);
 // prazo com a Caixa. Pede no máximo 10 e ordena pela data — não existe caso em
 // que alguém precise ver a décima primeira linha nesta tela.
 
-async function carregarFila(){
-  if (G.modulos.repasse !== true){ G.fila = []; return; }
-  const d14 = new Date(Date.now() + 14*864e5);
-  const lim = `${d14.getFullYear()}-${String(d14.getMonth()+1).padStart(2,'0')}-${String(d14.getDate()).padStart(2,'0')}`;
+async function carregarFila() {
+  if (G.modulos.repasse !== true) {
+    G.fila = [];
+    return;
+  }
+  const d14 = new Date(Date.now() + 14 * 864e5);
+  const lim = `${d14.getFullYear()}-${String(d14.getMonth() + 1).padStart(2, '0')}-${String(d14.getDate()).padStart(2, '0')}`;
   try {
     const r = await fetch(
       `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false` +
-      `&evaluation_expiry=not.is.null&evaluation_expiry=lte.${lim}` +
-      `&select=id,client_name,stage_name,evaluation_expiry,development,unit` +
-      `&order=evaluation_expiry.asc&limit=10`, { headers:A1.headers() });
+        `&evaluation_expiry=not.is.null&evaluation_expiry=lte.${lim}` +
+        `&select=id,client_name,stage_name,evaluation_expiry,development,unit` +
+        `&order=evaluation_expiry.asc&limit=10`,
+      { headers: A1.headers() }
+    );
     G.fila = r.ok ? await r.json() : [];
-  } catch { G.fila = []; }
+  } catch {
+    G.fila = [];
+  }
 }
 
 /* ── Agenda: só o mês que está na tela ────────────────────────────────────── */
@@ -166,17 +190,13 @@ async function carregarFila(){
 // lidos pela mesma função do casco (a1AgendaCarregar) — porque dois calendários
 // com números diferentes sobre o mesmo dia é o tipo de divergência que faz o
 // gestor parar de confiar nos dois.
-async function carregarAgenda(){
-  G.agenda = await a1AgendaCarregar(
-    G.ano,
-    G.mes
-  ).catch(() => []);
+async function carregarAgenda() {
+  G.agenda = await a1AgendaCarregar(G.ano, G.mes).catch(() => []);
 }
 
 let mudandoMesAgenda = false;
 
-async function mudarMes(d){
-
+async function mudarMes(d) {
   if (mudandoMesAgenda) return;
 
   mudandoMesAgenda = true;
@@ -184,12 +204,12 @@ async function mudarMes(d){
   let novoMes = G.mes + d;
   let novoAno = G.ano;
 
-  if (novoMes < 0){
+  if (novoMes < 0) {
     novoMes = 11;
     novoAno--;
   }
 
-  if (novoMes > 11){
+  if (novoMes > 11) {
     novoMes = 0;
     novoAno++;
   }
@@ -201,17 +221,13 @@ async function mudarMes(d){
   });
 
   try {
-
     /*
       Busca o novo mês sem apagar o calendário atual.
 
       Enquanto os dados chegam, o usuário continua vendo
       o mês anterior normalmente.
     */
-    const novaAgenda = await a1AgendaCarregar(
-      novoAno,
-      novoMes
-    ).catch(() => []);
+    const novaAgenda = await a1AgendaCarregar(novoAno, novoMes).catch(() => []);
 
     /*
       Só altera o estado DEPOIS que os dados chegaram.
@@ -226,44 +242,52 @@ async function mudarMes(d){
       Apenas agora troca o conteúdo do calendário.
     */
     desenharAgenda();
-
   } finally {
-
     mudandoMesAgenda = false;
 
-    document
-      .querySelectorAll('.cal-nav .cal-bt')
-      .forEach(bt => {
-        bt.disabled = false;
-      });
+    document.querySelectorAll('.cal-nav .cal-bt').forEach(bt => {
+      bt.disabled = false;
+    });
   }
 }
 /* ── A linha do dia, que vai no cartão de saudação ────────────────────────── */
 
-function linhaDoDia(){
+function linhaDoDia() {
   const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
   if (!fila.length) return [];
   const hoje = hojeISO();
   const venceHoje = fila.filter(c => soData(c.evaluation_expiry) === hoje).length;
-  const vencidos  = fila.filter(c => soData(c.evaluation_expiry) < hoje).length;
+  const vencidos = fila.filter(c => soData(c.evaluation_expiry) < hoje).length;
   const out = [];
-  if (vencidos)  out.push({ n:vencidos,  rotulo:vencidos === 1 ? 'avaliação vencida' : 'avaliações vencidas', tom:'atraso' });
-  if (venceHoje) out.push({ n:venceHoje, rotulo:venceHoje === 1 ? 'vence hoje' : 'vencem hoje', tom:'alerta' });
-  if (!out.length) out.push({ n:fila.length,
-    rotulo:fila.length === 1 ? 'avaliação nos próximos 14 dias' : 'avaliações nos próximos 14 dias' });
+  if (vencidos)
+    out.push({
+      n: vencidos,
+      rotulo: vencidos === 1 ? 'avaliação vencida' : 'avaliações vencidas',
+      tom: 'atraso'
+    });
+  if (venceHoje)
+    out.push({ n: venceHoje, rotulo: venceHoje === 1 ? 'vence hoje' : 'vencem hoje', tom: 'alerta' });
+  if (!out.length)
+    out.push({
+      n: fila.length,
+      rotulo: fila.length === 1 ? 'avaliação nos próximos 14 dias' : 'avaliações nos próximos 14 dias'
+    });
   return out;
 }
 
 /* ── Desenho ──────────────────────────────────────────────────────────────── */
 
-function desenharEsqueleto(){
-  document.getElementById('kpis').innerHTML =
-    `<div class="sb-kpis">${[0,1,2,3].map(() =>
-      `<div class="sb-kpi"><div class="sb-kpi-valor"><span class="sb-esq"></span></div>
-       <div class="sb-kpi-rot"><span class="sb-esq" style="min-width:6em"></span></div></div>`).join('')}</div>`;
+function desenharEsqueleto() {
+  document.getElementById('kpis').innerHTML = `<div class="sb-kpis">${[0, 1, 2, 3]
+    .map(
+      () =>
+        `<div class="sb-kpi"><div class="sb-kpi-valor"><span class="sb-esq"></span></div>
+       <div class="sb-kpi-rot"><span class="sb-esq" style="min-width:6em"></span></div></div>`
+    )
+    .join('')}</div>`;
 }
 
-function desenhar(){
+function desenhar() {
   desenharJornada();
   desenharKpis();
   desenharBlocos();
@@ -277,12 +301,15 @@ function desenhar(){
    Cada degrau mostra o que está EM ABERTO ali, o que entrou na semana, o que
    está parado há mais de 30 dias, e a esteira do cliente em miniatura.        */
 
-function desenharJornada(){
+function desenharJornada() {
   const mods = licenciados();
   const alvo = document.getElementById('jornada');
-  if (!mods.length){ alvo.innerHTML = ''; return; }
-  alvo.innerHTML = `<nav class="sb-jornada" aria-label="A jornada do processo">${
-    mods.map(m => {
+  if (!mods.length) {
+    alvo.innerHTML = '';
+    return;
+  }
+  alvo.innerHTML = `<nav class="sb-jornada" aria-label="A jornada do processo">${mods
+    .map(m => {
       const d = dadosDe(m);
       const abertas = (d.etapas || []).filter(e => !e.fim && e.n > 0);
       // O número grande é estoque TOTAL do módulo, incluindo todas as etapas.
@@ -290,20 +317,26 @@ function desenharJornada(){
       // aprovados, vendidos ou concluídos da fotografia da jornada.
       const total = Number(d.total) || 0;
       const tarja = abertas.length
-        ? abertas.map(e => `<i style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
-             title="${esc(e.nome)}: ${n0(e.n)}"></i>`).join('')
+        ? abertas
+            .map(
+              e => `<i style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
+             title="${esc(e.nome)}: ${n0(e.n)}"></i>`
+            )
+            .join('')
         : `<i style="flex:1;background:var(--sb-linha)"></i>`;
       const notas = [];
-      if (d.novos)   notas.push(`${n0(d.novos)} novo(s) na semana`);
+      if (d.novos) notas.push(`${n0(d.novos)} novo(s) na semana`);
       if (d.parados) notas.push(`<b>${n0(d.parados)} parado(s) há +30d</b>`);
       return `<a class="sb-degrau${total ? '' : ' vazio'}" href="/${esc(G.slug)}/${esc(m.rota)}"
         title="${esc('Abrir ' + m.rotulo)}">
         <span class="sb-degrau-rot">${a1Svg(m.icone, 14)}${esc(m.rotulo)}</span>
         <span class="sb-degrau-n">${n0(total)}</span>
-        <span class="sb-degrau-sub">${notas.length ? notas.join(' · ')
-          : (d.total ? n0(d.total) + ' no total' : 'nenhum processo ainda')}</span>
+        <span class="sb-degrau-sub">${
+          notas.length ? notas.join(' · ') : d.total ? n0(d.total) + ' no total' : 'nenhum processo ainda'
+        }</span>
         <span class="sb-degrau-tarja">${tarja}</span></a>`;
-    }).join('')}</nav>`;
+    })
+    .join('')}</nav>`;
 }
 
 /* ── OS INDICADORES ─────────────────────────────────────────────────────────
@@ -316,201 +349,285 @@ function desenharJornada(){
    regra dos painéis de módulo, e ela é do dono: corretor não abre o sistema e
    vê o VGV da empresa inteira.                                                */
 
-function desenharKpis(){
+function desenharKpis() {
   const mods = licenciados();
   const alvo = document.getElementById('kpis');
-  if (!mods.length){
+  if (!mods.length) {
     alvo.innerHTML = `<div class="sb-card" style="margin-top:.9rem">
       <div class="sb-card-corpo">${a1Vazio('Nenhum módulo liberado para esta empresa ainda. Quem libera é o suporte do SIIMOB.')}</div></div>`;
     return;
   }
-  const somar = campo => mods.reduce((t,m) => t + (Number(dadosDe(m)[campo]) || 0), 0);
+  const somar = campo => mods.reduce((t, m) => t + (Number(dadosDe(m)[campo]) || 0), 0);
   const emAberto = somar('aberto');
-  const novos    = somar('novos');
-  const parados  = somar('parados');
-  const encerrados = mods.reduce((t,m) => {
-    const d = dadosDe(m); return t + Math.max(0, (d.total || 0) - (d.aberto || 0));
+  const novos = somar('novos');
+  const parados = somar('parados');
+  const encerrados = mods.reduce((t, m) => {
+    const d = dadosDe(m);
+    return t + Math.max(0, (d.total || 0) - (d.aberto || 0));
   }, 0);
 
   const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
   const hoje = hojeISO();
   const vencidas = fila.filter(c => soData(c.evaluation_expiry) < hoje).length;
-  const emSete   = fila.filter(c => { const d = diasAte(c.evaluation_expiry); return d >= 0 && d <= 7; }).length;
+  const emSete = fila.filter(c => {
+    const d = diasAte(c.evaluation_expiry);
+    return d >= 0 && d <= 7;
+  }).length;
 
   const kpis = [
-    { valor:n0(emAberto), rotulo:'Em aberto, somando os módulos',
+    {
+      valor: n0(emAberto),
+      rotulo: 'Em aberto, somando os módulos',
       sub: encerrados ? `${n0(encerrados)} já encerrado(s)` : 'nada encerrado ainda',
-      tom:'marca',
-      titulo:'Soma do que ainda corre em todos os módulos liberados. Etapa de fim não entra: promessa cumprida sai da conta.' },
-    { valor:n0(novos), rotulo:'Entraram nos últimos 7 dias',
+      tom: 'marca',
+      titulo:
+        'Soma do que ainda corre em todos os módulos liberados. Etapa de fim não entra: promessa cumprida sai da conta.'
+    },
+    {
+      valor: n0(novos),
+      rotulo: 'Entraram nos últimos 7 dias',
       sub: novos ? 'trabalho novo na mesa' : 'nenhuma entrada na semana',
       tom: novos ? 'info' : 'neutro',
-      titulo:'Processos criados na última semana, em qualquer módulo — é o que diz se o topo do funil está enchendo.' },
-    { valor:n0(parados), rotulo:'Parados há mais de 30 dias',
+      titulo:
+        'Processos criados na última semana, em qualquer módulo — é o que diz se o topo do funil está enchendo.'
+    },
+    {
+      valor: n0(parados),
+      rotulo: 'Parados há mais de 30 dias',
       sub: parados ? 'não mudam de etapa' : 'nada esquecido',
       tom: parados ? 'atento' : 'marca',
-      titulo:'O relógio é o da ETAPA, não o da criação: processo antigo que anda todo dia não está parado, e processo de ontem que não andou também não está.' },
+      titulo:
+        'O relógio é o da ETAPA, não o da criação: processo antigo que anda todo dia não está parado, e processo de ontem que não andou também não está.'
+    },
     G.modulos.repasse === true
-      ? { valor:n0(vencidas + emSete), rotulo:'Avaliações no prazo curto',
-          sub: vencidas ? `${n0(vencidas)} já vencida(s)` : (emSete ? 'vencem em até 7 dias' : 'nenhuma no prazo curto'),
-          tom: vencidas ? 'atraso' : (emSete ? 'atento' : 'marca'),
-          href:`/${G.slug}/listagem`,
-          titulo:'Vencidas mais as que vencem em até 7 dias. É o prazo que aperta com a Caixa.' }
-      : { valor:n0(mods.length), rotulo:'Módulos liberados',
-          sub:mods.map(m => m.rotulo).join(' · '), tom:'neutro' }
+      ? {
+          valor: n0(vencidas + emSete),
+          rotulo: 'Avaliações no prazo curto',
+          sub: vencidas
+            ? `${n0(vencidas)} já vencida(s)`
+            : emSete
+              ? 'vencem em até 7 dias'
+              : 'nenhuma no prazo curto',
+          tom: vencidas ? 'atraso' : emSete ? 'atento' : 'marca',
+          href: `/${G.slug}/listagem`,
+          titulo: 'Vencidas mais as que vencem em até 7 dias. É o prazo que aperta com a Caixa.'
+        }
+      : {
+          valor: n0(mods.length),
+          rotulo: 'Módulos liberados',
+          sub: mods.map(m => m.rotulo).join(' · '),
+          tom: 'neutro'
+        }
   ];
   alvo.innerHTML = a1Kpis(kpis);
 }
 
-function desenharBlocos(){
+function desenharBlocos() {
   const blocos = [];
 
   // 1. Onde o trabalho está
-  blocos.push(a1Card({
-    titulo:'Onde o trabalho está',
-    sub: G.resumo && G.resumo.parcial
-      ? 'O detalhe por etapa aparece depois que o resumo for criado no banco'
-      : 'Processos em aberto por etapa, em cada módulo',
-    corpo: desenharTrilhos()
-  }));
+  blocos.push(
+    a1Card({
+      titulo: 'Onde o trabalho está',
+      sub:
+        G.resumo && G.resumo.parcial
+          ? 'O detalhe por etapa aparece depois que o resumo for criado no banco'
+          : 'Processos em aberto por etapa, em cada módulo',
+      corpo: desenharTrilhos()
+    })
+  );
 
   // 2. A fila do dia
-  blocos.push(a1Card({
-    titulo:'Avaliações a vencer',
-    sub:'Próximos 14 dias, do prazo mais curto para o mais longo',
-    justo:true,
-    corpo: desenharFila()
-  }));
+  blocos.push(
+    a1Card({
+      titulo: 'Avaliações a vencer',
+      sub: 'Próximos 14 dias, do prazo mais curto para o mais longo',
+      justo: true,
+      corpo: desenharFila()
+    })
+  );
 
   // 3. Agenda
-  blocos.push(a1Card({
-    titulo:'Agenda do mês',
-    sub:'Compromissos, tarefas, avaliações e entrevistas',
-    acao:`<div class="cal-nav">
+  blocos.push(
+    a1Card({
+      titulo: 'Agenda do mês',
+      sub: 'Compromissos, tarefas, avaliações e entrevistas',
+      acao: `<div class="cal-nav">
       <button class="cal-bt" onclick="mudarMes(-1)" aria-label="Mês anterior">‹</button>
       <button class="cal-bt" onclick="mudarMes(1)" aria-label="Próximo mês">›</button></div>`,
-    corpo:`<div id="cal-corpo"></div>`
-  }));
+      corpo: `<div id="cal-corpo"></div>`
+    })
+  );
 
   document.getElementById('blocos').innerHTML = blocos.join('');
   desenharAgenda();
 }
 
-function desenharTrilhos(){
+function desenharTrilhos() {
   const mods = licenciados();
   if (!mods.length) return a1Vazio('Nenhum módulo liberado.');
   const linhas = mods.map(m => {
     const d = dadosDe(m);
     const abertas = (d.etapas || []).filter(e => !e.fim && e.n > 0);
-    const total = abertas.reduce((s,e) => s + e.n, 0);
+    const total = abertas.reduce((s, e) => s + e.n, 0);
     const href = `/${G.slug}/${m.rota}`;
-    if (!total){
+    if (!total) {
       return `<a class="trilho" href="${esc(href)}">
         <div class="trilho-cab"><span class="trilho-nome">${esc(m.rotulo)}</span>
           <span class="trilho-n">${d.total ? n0(d.total) + ' encerrados' : 'sem processo'}</span></div>
         <div class="trilho-barra"><span class="trilho-faixa" style="flex:1;background:var(--sb-linha)"></span></div></a>`;
     }
-    const faixas = abertas.map(e =>
-      `<span class="trilho-faixa" style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
-             title="${esc(e.nome)}: ${n0(e.n)}"></span>`).join('');
+    const faixas = abertas
+      .map(
+        e =>
+          `<span class="trilho-faixa" style="flex:${e.n};background:${esc(e.cor || '#0E8C7F')}"
+             title="${esc(e.nome)}: ${n0(e.n)}"></span>`
+      )
+      .join('');
     // A legenda mostra as cinco maiores. Listar quinze etapas transforma o
     // cartão numa tabela, e tabela é a outra tela.
-    const top = abertas.slice().sort((a,b) => b.n - a.n).slice(0,5);
-    const leg = top.map(e =>
-      `<span class="trilho-item"><i class="trilho-pt" style="background:${esc(e.cor || '#0E8C7F')}"></i>
-        ${esc(e.nome)} <b>${n0(e.n)}</b></span>`).join('');
+    const top = abertas
+      .slice()
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 5);
+    const leg = top
+      .map(
+        e =>
+          `<span class="trilho-item"><i class="trilho-pt" style="background:${esc(e.cor || '#0E8C7F')}"></i>
+        ${esc(e.nome)} <b>${n0(e.n)}</b></span>`
+      )
+      .join('');
     const resto = abertas.length - top.length;
     return `<a class="trilho" href="${esc(href)}">
       <div class="trilho-cab"><span class="trilho-nome">${esc(m.rotulo)}</span>
         <span class="trilho-n">${n0(total)} em aberto</span></div>
       <div class="trilho-barra">${faixas}</div>
-      <div class="trilho-leg">${leg}${resto > 0
-        ? `<span class="trilho-item">+${resto} etapa(s)</span>` : ''}</div></a>`;
+      <div class="trilho-leg">${leg}${
+        resto > 0 ? `<span class="trilho-item">+${resto} etapa(s)</span>` : ''
+      }</div></a>`;
   });
   return linhas.join('');
 }
 
-function desenharFila(){
+function desenharFila() {
   const fila = (G.fila || []).filter(c => soData(c.evaluation_expiry).length === 10);
   if (G.modulos.repasse !== true)
     return a1Vazio('Esta lista vem do Repasse, que não está liberado para esta empresa.');
   if (!fila.length)
-    return a1Vazio('Nenhuma avaliação vence nos próximos 14 dias. Quando uma entrar no prazo, ela aparece aqui.');
-  return fila.map(c => {
-    const dias = diasAte(c.evaluation_expiry);
-    const tom = dias < 0 ? 'atraso' : dias <= 3 ? 'atento' : 'info';
-    const quando = dias < 0 ? `vencida há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`;
-    const onde = [c.development, c.unit].filter(Boolean).join(' · ');
-    return `<a class="fila-linha" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(c.id)}">
+    return a1Vazio(
+      'Nenhuma avaliação vence nos próximos 14 dias. Quando uma entrar no prazo, ela aparece aqui.'
+    );
+  return fila
+    .map(c => {
+      const dias = diasAte(c.evaluation_expiry);
+      const tom = dias < 0 ? 'atraso' : dias <= 3 ? 'atento' : 'info';
+      const quando = dias < 0 ? `vencida há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`;
+      const onde = [c.development, c.unit].filter(Boolean).join(' · ');
+      return `<a class="fila-linha" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(c.id)}">
       <div style="min-width:0">
         <div class="fila-tit">${esc(c.client_name || 'Sem nome')}</div>
         <div class="fila-sub">${esc(c.stage_name || '—')}${onde ? ' · ' + esc(onde) : ''}</div>
       </div>
       <div class="fila-dir"><span class="sb-selo" data-tom="${tom}">${esc(quando)}</span></div></a>`;
-  }).join('');
+    })
+    .join('');
 }
 
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const DIAS_S = ['D','S','T','Q','Q','S','S'];
+const MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
+];
+const DIAS_S = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-function tipoAgendaReal(item){
+function tipoAgendaReal(item) {
   if (typeof a1AgendaTipoReal === 'function') return a1AgendaTipoReal(item && item.tipo);
   const t = String((item && item.tipo) || '').toLowerCase();
   if (t === 'ent') return 'entrevista';
   if (t === 'venc') return 'avaliacao';
   if (t === 'meu') return 'compromisso';
-  return ['compromisso','tarefa','avaliacao','entrevista'].includes(t) ? t : 'compromisso';
+  return ['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t) ? t : 'compromisso';
 }
 
-function corAgendaReal(tipo){
+function corAgendaReal(tipo) {
   if (typeof a1CorDoTipo === 'function') return a1CorDoTipo(tipo);
-  return { compromisso:'var(--sb-mar)', tarefa:'var(--sb-ametista)',
-           avaliacao:'var(--sb-acafrao)', entrevista:'var(--sb-ardosia)' }[tipo] || 'var(--sb-linha-forte)';
+  return (
+    {
+      compromisso: 'var(--sb-mar)',
+      tarefa: 'var(--sb-ametista)',
+      avaliacao: 'var(--sb-acafrao)',
+      entrevista: 'var(--sb-ardosia)'
+    }[tipo] || 'var(--sb-linha-forte)'
+  );
 }
 
-function rotuloAgendaReal(tipo){
-  return { compromisso:'Compromisso', tarefa:'Tarefa', avaliacao:'Avaliação', entrevista:'Entrevista' }[tipo] || 'Compromisso';
+function rotuloAgendaReal(tipo) {
+  return (
+    { compromisso: 'Compromisso', tarefa: 'Tarefa', avaliacao: 'Avaliação', entrevista: 'Entrevista' }[
+      tipo
+    ] || 'Compromisso'
+  );
 }
 
-function abrirDiaAgendaGeral(ev, dia){
-  ev.preventDefault(); ev.stopPropagation();
-  const lista = (G.agenda || []).filter(i => Number(i.dia) === Number(dia))
-    .slice().sort((a,b) => String(a.hora || '99').localeCompare(String(b.hora || '99')));
-  const data = `${String(dia).padStart(2,'0')} de ${MESES[G.mes].toLowerCase()} de ${G.ano}`;
-  const corpo = lista.length ? lista.map(i => {
-    const tipo = tipoAgendaReal(i);
-    const sub = i.sub || rotuloAgendaReal(tipo);
-    const hora = i.hora ? `<span class="sb-item-q">${esc(i.hora)}</span>` : '';
-    if (!i.agendaId && i.id){
-      return `<a class="sb-item" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(i.id)}">
+function abrirDiaAgendaGeral(ev, dia) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  const lista = (G.agenda || [])
+    .filter(i => Number(i.dia) === Number(dia))
+    .slice()
+    .sort((a, b) => String(a.hora || '99').localeCompare(String(b.hora || '99')));
+  const data = `${String(dia).padStart(2, '0')} de ${MESES[G.mes].toLowerCase()} de ${G.ano}`;
+  const corpo = lista.length
+    ? lista
+        .map(i => {
+          const tipo = tipoAgendaReal(i);
+          const sub = i.sub || rotuloAgendaReal(tipo);
+          const hora = i.hora ? `<span class="sb-item-q">${esc(i.hora)}</span>` : '';
+          if (!i.agendaId && i.id) {
+            return `<a class="sb-item" href="/${esc(G.slug)}/andamento?caso=${encodeURIComponent(i.id)}">
         <span class="sb-item-pt" style="background:${corAgendaReal(tipo)}"></span>
         <span class="sb-item-tx"><span class="sb-item-t">${esc(i.titulo || 'Sem título')}</span>
           <span class="sb-item-s">${esc(sub)}${i.etapa ? ' · ' + esc(i.etapa) : ''}</span></span>${hora}</a>`;
-    }
-    return `<div class="sb-item">
+          }
+          return `<div class="sb-item">
       <span class="sb-item-pt" style="background:${corAgendaReal(tipo)}"></span>
       <span class="sb-item-tx"><span class="sb-item-t">${esc(i.titulo || 'Sem título')}</span>
         <span class="sb-item-s">${esc(sub)}</span></span>${hora}</div>`;
-  }).join('') : `<div class="sb-vazio"><p>Nenhum evento neste dia.</p></div>`;
+        })
+        .join('')
+    : `<div class="sb-vazio"><p>Nenhum evento neste dia.</p></div>`;
 
-  if (typeof a1PopAbrir === 'function'){
-    a1PopAbrir(`agenda-geral-${G.ano}-${G.mes}-${dia}`, ev.currentTarget, 330, `
-      <div class="sb-pop-cab">${typeof a1Svg === 'function' ? a1Svg('calend',16) : ''}
+  if (typeof a1PopAbrir === 'function') {
+    a1PopAbrir(
+      `agenda-geral-${G.ano}-${G.mes}-${dia}`,
+      ev.currentTarget,
+      330,
+      `
+      <div class="sb-pop-cab">${typeof a1Svg === 'function' ? a1Svg('calend', 16) : ''}
         <div><div class="sb-pop-tit">${dia} de ${MESES[G.mes]}</div>
           <div class="sb-pop-sub">${data}</div></div>
         <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
-      <div class="sb-pop-corpo">${corpo}</div>`);
+      <div class="sb-pop-corpo">${corpo}</div>`
+    );
   }
 }
 
-async function atualizarAgendaGeral(){
+async function atualizarAgendaGeral() {
   await carregarAgenda();
   desenharAgenda();
 }
 window.addEventListener('siimob:agenda-atualizada', atualizarAgendaGeral);
 
-function tipoAgendaGeral(item){
-
+function tipoAgendaGeral(item) {
   const t = String(item.tipo || '')
     .trim()
     .toLowerCase();
@@ -522,46 +639,37 @@ function tipoAgendaGeral(item){
 
   if (t === 'meu') return 'compromisso';
 
-  if (
-    [
-      'compromisso',
-      'tarefa',
-      'avaliacao',
-      'entrevista'
-    ].includes(t)
-  ){
+  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t)) {
     return t;
   }
 
   return 'compromisso';
 }
 
-
-function rotuloAgendaGeral(tipo){
-
-  return {
-    compromisso:'Compromisso',
-    tarefa:'Tarefa',
-    avaliacao:'Avaliação',
-    entrevista:'Entrevista'
-  }[tipo] || 'Compromisso';
+function rotuloAgendaGeral(tipo) {
+  return (
+    {
+      compromisso: 'Compromisso',
+      tarefa: 'Tarefa',
+      avaliacao: 'Avaliação',
+      entrevista: 'Entrevista'
+    }[tipo] || 'Compromisso'
+  );
 }
 
-
-function corAgendaGeral(tipo){
-
-  return {
-    compromisso:'var(--sb-mar)',
-    tarefa:'var(--sb-ametista)',
-    avaliacao:'var(--sb-acafrao)',
-    entrevista:'var(--sb-ardosia)'
-  }[tipo] || 'var(--sb-linha-forte)';
+function corAgendaGeral(tipo) {
+  return (
+    {
+      compromisso: 'var(--sb-mar)',
+      tarefa: 'var(--sb-ametista)',
+      avaliacao: 'var(--sb-acafrao)',
+      entrevista: 'var(--sb-ardosia)'
+    }[tipo] || 'var(--sb-linha-forte)'
+  );
 }
 
-
-function selecionarDiaAgenda(dia, ev){
-
-  if (ev){
+function selecionarDiaAgenda(dia, ev) {
+  if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
@@ -575,165 +683,79 @@ function selecionarDiaAgenda(dia, ev){
   return false;
 }
 
-function desenharAgenda(){
-
+function desenharAgenda() {
   const el = document.getElementById('cal-corpo');
 
   if (!el) return;
 
-
   const porDia = {};
 
-
   (G.agenda || []).forEach(item => {
-
     const dia = Number(item.dia);
 
     if (!dia) return;
 
-    if (!porDia[dia]){
+    if (!porDia[dia]) {
       porDia[dia] = [];
     }
 
     porDia[dia].push(item);
-
   });
-
 
   const hoje = new Date();
 
-  const ehMesAtual =
-    hoje.getMonth() === G.mes &&
-    hoje.getFullYear() === G.ano;
+  const ehMesAtual = hoje.getMonth() === G.mes && hoje.getFullYear() === G.ano;
 
+  const primeiro = new Date(G.ano, G.mes, 1).getDay();
 
-  const primeiro =
-    new Date(
-      G.ano,
-      G.mes,
-      1
-    ).getDay();
+  const nDias = new Date(G.ano, G.mes + 1, 0).getDate();
 
-
-  const nDias =
-    new Date(
-      G.ano,
-      G.mes + 1,
-      0
-    ).getDate();
-
-
-  const nAnt =
-    new Date(
-      G.ano,
-      G.mes,
-      0
-    ).getDate();
-
+  const nAnt = new Date(G.ano, G.mes, 0).getDate();
 
   const celulas = [];
-
 
   /*
     Dias anteriores.
   */
-  for (
-    let i = primeiro - 1;
-    i >= 0;
-    i--
-  ){
-
-    celulas.push(
-      `<div class="cal-d fora">${nAnt - i}</div>`
-    );
-
+  for (let i = primeiro - 1; i >= 0; i--) {
+    celulas.push(`<div class="cal-d fora">${nAnt - i}</div>`);
   }
-
 
   /*
     TODOS OS DIAS DO MÊS AGORA SÃO CLICÁVEIS.
   */
-  for (
-    let d = 1;
-    d <= nDias;
-    d++
-  ){
+  for (let d = 1; d <= nDias; d++) {
+    const lista = porDia[d] || [];
 
-    const lista =
-      porDia[d] || [];
+    const eHoje = ehMesAtual && hoje.getDate() === d;
 
+    const selecionado = G.diaSelecionado === d;
 
-    const eHoje =
-      ehMesAtual &&
-      hoje.getDate() === d;
-
-
-    const selecionado =
-      G.diaSelecionado === d;
-
-
-    const cls = [
-
-      'cal-d',
-
-      lista.length
-        ? 'tem'
-        : '',
-
-      eHoje
-        ? 'hoje'
-        : '',
-
-      selecionado
-        ? 'selecionado'
-        : ''
-
-    ]
+    const cls = ['cal-d', lista.length ? 'tem' : '', eHoje ? 'hoje' : '', selecionado ? 'selecionado' : '']
       .filter(Boolean)
       .join(' ');
 
+    const tipos = [...new Set(lista.map(item => tipoAgendaGeral(item)))];
 
-    const tipos = [
-
-      ...new Set(
-
-        lista.map(
-          item => tipoAgendaGeral(item)
-        )
-
-      )
-
-    ];
-
-
-    const pts =
-      lista.length
-
-        ? `
+    const pts = lista.length
+      ? `
 
           <span class="cal-pt">
 
-            ${
-
-              tipos
-                .slice(0,4)
-                .map(tipo =>
-
+            ${tipos
+              .slice(0, 4)
+              .map(
+                tipo =>
                   `<i
                     style="background:${corAgendaGeral(tipo)}"
                   ></i>`
-
-                )
-                .join('')
-
-            }
+              )
+              .join('')}
 
           </span>
 
         `
-
-        : '';
-
+      : '';
 
     celulas.push(`
 
@@ -751,100 +773,39 @@ function desenharAgenda(){
       </button>
 
     `);
-
   }
-
 
   /*
     Dias seguintes.
   */
-  const sobra =
-    (
-      7 -
-      (
-        celulas.length % 7
-      )
-    ) % 7;
+  const sobra = (7 - (celulas.length % 7)) % 7;
 
-
-  for (
-    let i = 1;
-    i <= sobra;
-    i++
-  ){
-
-    celulas.push(
-      `<div class="cal-d fora">${i}</div>`
-    );
-
+  for (let i = 1; i <= sobra; i++) {
+    celulas.push(`<div class="cal-d fora">${i}</div>`);
   }
-
 
   /*
     DETALHE DO DIA SELECIONADO.
   */
   let detalhe = '';
 
+  if (G.diaSelecionado) {
+    const eventos = (porDia[G.diaSelecionado] || [])
+      .slice()
+      .sort((a, b) => (a.hora || '99:99').localeCompare(b.hora || '99:99'));
 
-  if (G.diaSelecionado){
+    const tituloDia = `${G.diaSelecionado} DE ${MESES[G.mes].toUpperCase()}`;
 
-    const eventos =
-      (
-        porDia[G.diaSelecionado] ||
-        []
-      )
-        .slice()
-        .sort(
+    const linhas = eventos.length
+      ? eventos
+          .map(item => {
+            const tipo = tipoAgendaGeral(item);
 
-          (a,b) =>
+            const rotulo = rotuloAgendaGeral(tipo);
 
-            (
-              a.hora ||
-              '99:99'
-            ).localeCompare(
+            const titulo = item.titulo || 'Sem título';
 
-              b.hora ||
-              '99:99'
-
-            )
-
-        );
-
-
-    const tituloDia =
-      `${G.diaSelecionado} DE ${MESES[G.mes].toUpperCase()}`;
-
-
-    const linhas =
-      eventos.length
-
-        ? eventos.map(item => {
-
-            const tipo =
-              tipoAgendaGeral(item);
-
-
-            const rotulo =
-              rotuloAgendaGeral(tipo);
-
-
-            const titulo =
-              item.titulo ||
-              'Sem título';
-
-
-            const sub = [
-
-              rotulo,
-
-              item.sub,
-
-              item.etapa
-
-            ]
-              .filter(Boolean)
-              .join(' · ');
-
+            const sub = [rotulo, item.sub, item.etapa].filter(Boolean).join(' · ');
 
             return `
 
@@ -874,7 +835,6 @@ function desenharAgenda(){
 
                 ${
                   item.hora
-
                     ? `
 
                       <span class="cal-dia-evento-hora">
@@ -882,17 +842,15 @@ function desenharAgenda(){
                       </span>
 
                     `
-
                     : ''
                 }
 
               </div>
 
             `;
-
-          }).join('')
-
-        : `
+          })
+          .join('')
+      : `
 
           <div
             style="
@@ -908,7 +866,6 @@ function desenharAgenda(){
 
         `;
 
-
     detalhe = `
 
       <div class="cal-dia-detalhe">
@@ -922,52 +879,32 @@ function desenharAgenda(){
       </div>
 
     `;
-
   }
-
 
   /*
     LEGENDA.
   */
   const contagem = {
-
-    compromisso:0,
-    tarefa:0,
-    avaliacao:0,
-    entrevista:0
-
+    compromisso: 0,
+    tarefa: 0,
+    avaliacao: 0,
+    entrevista: 0
   };
 
-
   (G.agenda || []).forEach(item => {
+    const tipo = tipoAgendaGeral(item);
 
-    const tipo =
-      tipoAgendaGeral(item);
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        contagem,
-        tipo
-      )
-    ){
-
+    if (Object.prototype.hasOwnProperty.call(contagem, tipo)) {
       contagem[tipo]++;
-
     }
-
   });
 
+  const legenda = Object.entries(contagem)
 
-  const legenda =
-    Object.entries(contagem)
+    .filter(([, quantidade]) => quantidade > 0)
 
-      .filter(
-        ([, quantidade]) =>
-          quantidade > 0
-      )
-
-      .map(
-        ([tipo, quantidade]) => `
+    .map(
+      ([tipo, quantidade]) => `
 
           <span>
 
@@ -989,9 +926,8 @@ function desenharAgenda(){
           </span>
 
         `
-      )
-      .join('');
-
+    )
+    .join('');
 
   el.innerHTML = `
 
@@ -1006,16 +942,7 @@ function desenharAgenda(){
 
     <div class="cal">
 
-      ${
-
-        DIAS_S
-          .map(
-            d =>
-              `<div class="cal-dw">${d}</div>`
-          )
-          .join('')
-
-      }
+      ${DIAS_S.map(d => `<div class="cal-dw">${d}</div>`).join('')}
 
       ${celulas.join('')}
 
@@ -1024,7 +951,6 @@ function desenharAgenda(){
 
     ${
       legenda
-
         ? `
 
           <div
@@ -1043,7 +969,6 @@ function desenharAgenda(){
           </div>
 
         `
-
         : `
 
           <div
@@ -1065,52 +990,30 @@ function desenharAgenda(){
     ${detalhe}
 
   `;
-
 }
 
 window.addEventListener(
   'siimob:agenda-atualizada',
 
   async ev => {
-
-    const data =
-      ev.detail &&
-      ev.detail.data
-        ? String(ev.detail.data)
-        : '';
-
+    const data = ev.detail && ev.detail.data ? String(ev.detail.data) : '';
 
     /*
       Se acabou de criar um evento,
       leva o calendário grande exatamente
       para o mês e dia criados.
     */
-    if (data.length >= 10){
+    if (data.length >= 10) {
+      G.ano = Number(data.slice(0, 4));
 
-      G.ano =
-        Number(
-          data.slice(0,4)
-        );
+      G.mes = Number(data.slice(5, 7)) - 1;
 
-
-      G.mes =
-        Number(
-          data.slice(5,7)
-        ) - 1;
-
-
-      G.diaSelecionado =
-        Number(
-          data.slice(8,10)
-        );
-
+      G.diaSelecionado = Number(data.slice(8, 10));
     }
-
 
     await carregarAgenda();
 
     desenharAgenda();
-
   }
 );
 

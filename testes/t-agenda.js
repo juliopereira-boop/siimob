@@ -26,29 +26,51 @@ async function abrirComo(pag, usuario, modulos) {
   const erros = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
   await p.addInitScript(u => {
-    localStorage.setItem('a1_token','tok'); localStorage.setItem('a1_slug','thecred');
+    localStorage.setItem('a1_token', 'tok');
+    localStorage.setItem('a1_slug', 'thecred');
     localStorage.setItem('a1_user', JSON.stringify(u));
-    window.__XSS = 0; window.confirm = () => true; window.__POSTS = [];
+    window.__XSS = 0;
+    window.confirm = () => true;
+    window.__POSTS = [];
     const f = window.fetch;
-    window.fetch = function(url, o){
-      if (o && o.method && o.method !== 'GET') window.__POSTS.push({ url:String(url), m:o.method, body:o.body });
+    window.fetch = function (url, o) {
+      if (o && o.method && o.method !== 'GET')
+        window.__POSTS.push({ url: String(url), m: o.method, body: o.body });
       return f.apply(this, arguments);
     };
   }, usuario);
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status:200, contentType:'text/css', body:'' }));
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, r =>
+    r.fulfill({ status: 200, contentType: 'text/css', body: '' })
+  );
   await p.route(/supabase\.co/, r => {
-    let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch { d = []; }
-    r.fulfill({ status:200, contentType:'application/json',
-                headers:{ 'content-range':'0-1/2' }, body: JSON.stringify(d) });
+    let d;
+    try {
+      d = responder(r.request().url(), r.request().method(), r.request().postData());
+    } catch {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
-  await p.goto(BASE + '/' + pag, { waitUntil:'load' });
+  await p.goto(BASE + '/' + pag, { waitUntil: 'load' });
   await p.waitForTimeout(1800);
   return { b, p, erros };
 }
 
-const GESTOR   = { id:'u1', tenant_id:'t1', name:'Julio', role:'owner' };
-const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
-                   type:'corretor', cpf:'52998224725', permissions:{} };
+const GESTOR = { id: 'u1', tenant_id: 't1', name: 'Julio', role: 'owner' };
+const CORRETOR = {
+  id: 'p3',
+  tenant_id: 't1',
+  name: 'Ana Souza',
+  role: 'partner',
+  type: 'corretor',
+  cpf: '52998224725',
+  permissions: {}
+};
 
 (async () => {
   const todosErros = [];
@@ -59,27 +81,30 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.click('[data-pop=agenda]');
     await p.waitForTimeout(1300);
 
-    checa('a agenda abre no lugar, sem trocar de tela',
-      (await p.locator('.sb-pop .sb-cal').count()) === 1);
+    checa('a agenda abre no lugar, sem trocar de tela', (await p.locator('.sb-pop .sb-cal').count()) === 1);
 
     // A prova que importa: o compromisso do cenário está num dia, e aquele dia
     // tem ponto. Contar "há pontos" passaria com os pontos nos dias errados.
-    const marcados = await p.$$eval('.sb-cal-d.tem', els => els.map(e => e.textContent.replace(/\D/g,'')));
+    const marcados = await p.$$eval('.sb-cal-d.tem', els => els.map(e => e.textContent.replace(/\D/g, '')));
     const hoje = String(new Date().getDate());
-    checa('o dia do compromisso de hoje está marcado', marcados.includes(hoje),
-      'dias marcados: ' + JSON.stringify(marcados));
+    checa(
+      'o dia do compromisso de hoje está marcado',
+      marcados.includes(hoje),
+      'dias marcados: ' + JSON.stringify(marcados)
+    );
 
     // Quatro coisas dividem o calendário, e a legenda diz quais estão ali.
-    const leg = (await p.locator('.sb-cal-legenda').textContent()).replace(/\s+/g,' ');
-    checa('a legenda distingue compromisso de tarefa',
-      /Compromisso/.test(leg) && /Tarefa/.test(leg), leg);
+    const leg = (await p.locator('.sb-cal-legenda').textContent()).replace(/\s+/g, ' ');
+    checa('a legenda distingue compromisso de tarefa', /Compromisso/.test(leg) && /Tarefa/.test(leg), leg);
     checa('e do que vem do processo', /Avaliação/.test(leg), leg);
 
     // O dia de hoje já vem aberto, com o que há nele.
-    const dia = (await p.locator('.sb-cal-dia').textContent()).replace(/\s+/g,' ');
-    checa('o compromisso do dia aparece com hora e local',
+    const dia = (await p.locator('.sb-cal-dia').textContent()).replace(/\s+/g, ' ');
+    checa(
+      'o compromisso do dia aparece com hora e local',
       /Visita ao cliente/.test(dia) && /14:00/.test(dia) && /Residencial das Flores/.test(dia),
-      dia.slice(0,200));
+      dia.slice(0, 200)
+    );
     checa('e o XSS do nome não executou', (await p.evaluate(() => window.__XSS || 0)) === 0);
     todosErros.push(...erros);
     await b.close();
@@ -94,8 +119,11 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.waitForTimeout(400);
 
     checa('o formulário abre dentro do painel', (await p.locator('#ag-titulo').count()) === 1);
-    checa('e já vem com o dia que estava selecionado',
-      /^\d{4}-\d{2}-\d{2}$/.test(await p.inputValue('#ag-data')), await p.inputValue('#ag-data'));
+    checa(
+      'e já vem com o dia que estava selecionado',
+      /^\d{4}-\d{2}-\d{2}$/.test(await p.inputValue('#ag-data')),
+      await p.inputValue('#ag-data')
+    );
 
     await p.fill('#ag-titulo', 'Reunião com a construtora');
     await p.fill('#ag-hora', '09:30');
@@ -104,12 +132,17 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.waitForTimeout(900);
 
     const post = await p.evaluate(() =>
-      (window.__POSTS || []).find(x => /a1_agenda/.test(x.url) && x.m === 'POST'));
+      (window.__POSTS || []).find(x => /a1_agenda/.test(x.url) && x.m === 'POST')
+    );
     checa('o compromisso é gravado', !!post, JSON.stringify(post || null));
     const corpo = post ? JSON.parse(post.body) : {};
-    checa('com o título, a data e a hora', corpo.titulo === 'Reunião com a construtora'
-      && /^\d{4}-\d{2}-\d{2}$/.test(corpo.data || '') && corpo.hora_inicio === '09:30',
-      JSON.stringify(corpo));
+    checa(
+      'com o título, a data e a hora',
+      corpo.titulo === 'Reunião com a construtora' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(corpo.data || '') &&
+        corpo.hora_inicio === '09:30',
+      JSON.stringify(corpo)
+    );
     // `dono` vindo da tela é o que a política do banco confere. Mandar outro id
     // seria tentar marcar na agenda de outra pessoa — e o banco recusaria.
     checa('em nome de quem está logado, e de mais ninguém', corpo.dono === 'u1', String(corpo.dono));
@@ -121,17 +154,24 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     await p.waitForTimeout(400);
     await p.click('.sb-ag-tipo button[data-tipo=tarefa]');
     await p.waitForTimeout(200);
-    checa('em tarefa, o campo de hora sai da frente',
-      await p.evaluate(() => getComputedStyle(document.getElementById('ag-hora-wrap')).visibility === 'hidden'));
+    checa(
+      'em tarefa, o campo de hora sai da frente',
+      await p.evaluate(
+        () => getComputedStyle(document.getElementById('ag-hora-wrap')).visibility === 'hidden'
+      )
+    );
     await p.fill('#ag-titulo', 'Cobrar o cartório');
     await p.click('#ag-salvar');
     await p.waitForTimeout(800);
     const tarefa = await p.evaluate(() => {
       const l = (window.__POSTS || []).filter(x => /a1_agenda/.test(x.url) && x.m === 'POST');
-      return l.length ? JSON.parse(l[l.length-1].body) : null;
+      return l.length ? JSON.parse(l[l.length - 1].body) : null;
     });
-    checa('a tarefa vai sem hora', tarefa && tarefa.tipo === 'tarefa' && tarefa.hora_inicio === null,
-      JSON.stringify(tarefa));
+    checa(
+      'a tarefa vai sem hora',
+      tarefa && tarefa.tipo === 'tarefa' && tarefa.hora_inicio === null,
+      JSON.stringify(tarefa)
+    );
     todosErros.push(...erros);
     await b.close();
   }
@@ -147,19 +187,26 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
     // um erro que não explica nada.
     await p.evaluate(() => alternarMaisLead());
     await p.waitForTimeout(200);
-    checa('o corretor já vem preenchido com quem está logado',
-      (await p.inputValue('#n-broker')) === 'p3', await p.inputValue('#n-broker'));
-    checa('e o campo é bloqueado',
-      await p.evaluate(() => document.getElementById('n-broker').disabled));
+    checa(
+      'o corretor já vem preenchido com quem está logado',
+      (await p.inputValue('#n-broker')) === 'p3',
+      await p.inputValue('#n-broker')
+    );
+    checa('e o campo é bloqueado', await p.evaluate(() => document.getElementById('n-broker').disabled));
 
     await p.fill('#n-name', 'Cliente Novo');
     await p.evaluate(() => createLead());
     await p.waitForTimeout(800);
     const post = await p.evaluate(() =>
-      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'POST'));
+      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'POST')
+    );
     const corpo = post ? JSON.parse(post.body) : {};
     checa('o lead nasce no nome dele', corpo.broker_name === 'Ana Souza', JSON.stringify(corpo.broker_name));
-    checa('e carrega o campo da imobiliária', 'real_estate_name' in corpo, JSON.stringify(Object.keys(corpo)));
+    checa(
+      'e carrega o campo da imobiliária',
+      'real_estate_name' in corpo,
+      JSON.stringify(Object.keys(corpo))
+    );
     todosErros.push(...erros);
     await b.close();
   }
@@ -167,26 +214,35 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
   console.log('\n== E ELE NÃO SE DESVINCULA ==');
   {
     const { b, p, erros } = await abrirComo('crm.html', CORRETOR, ['crm']);
-    await p.evaluate(() => { const l = G.leads[0]; if (l) openLead(l.id); });
+    await p.evaluate(() => {
+      const l = G.leads[0];
+      if (l) openLead(l.id);
+    });
     await p.waitForTimeout(600);
-    checa('no dossiê, o corretor é bloqueado',
-      await p.evaluate(() => document.getElementById('e-broker').disabled));
-    checa('e a imobiliária também',
-      await p.evaluate(() => document.getElementById('e-imob').disabled));
+    checa(
+      'no dossiê, o corretor é bloqueado',
+      await p.evaluate(() => document.getElementById('e-broker').disabled)
+    );
+    checa('e a imobiliária também', await p.evaluate(() => document.getElementById('e-imob').disabled));
 
     // Mesmo que alguém force o campo pelo console, o que a tela MANDA continua
     // sendo o nome dele. É a segunda barreira; a primeira é o gatilho no banco.
     await p.evaluate(() => {
       const el = document.getElementById('e-broker');
-      el.disabled = false; el.value = 'p10';
+      el.disabled = false;
+      el.value = 'p10';
     });
     await p.evaluate(() => saveLead());
     await p.waitForTimeout(700);
     const patch = await p.evaluate(() =>
-      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'PATCH'));
+      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'PATCH')
+    );
     const corpo = patch ? JSON.parse(patch.body) : {};
-    checa('a tela não pede ao banco o que ele vai recusar',
-      corpo.broker_name === 'Ana Souza', JSON.stringify(corpo.broker_name));
+    checa(
+      'a tela não pede ao banco o que ele vai recusar',
+      corpo.broker_name === 'Ana Souza',
+      JSON.stringify(corpo.broker_name)
+    );
     todosErros.push(...erros);
     await b.close();
   }
@@ -194,22 +250,38 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
   console.log('\n== O GESTOR TEM O PODER ==');
   {
     const { b, p, erros } = await abrirComo('crm.html', GESTOR, ['crm']);
-    await p.evaluate(() => { const l = G.leads[0]; if (l) openLead(l.id); });
+    await p.evaluate(() => {
+      const l = G.leads[0];
+      if (l) openLead(l.id);
+    });
     await p.waitForTimeout(600);
-    checa('o gestor escolhe o corretor',
-      !(await p.evaluate(() => document.getElementById('e-broker').disabled)));
-    checa('e transfere de imobiliária',
-      !(await p.evaluate(() => document.getElementById('e-imob').disabled)));
-    await p.evaluate(() => { document.getElementById('e-broker').value = 'p10'; });
+    checa(
+      'o gestor escolhe o corretor',
+      !(await p.evaluate(() => document.getElementById('e-broker').disabled))
+    );
+    checa(
+      'e transfere de imobiliária',
+      !(await p.evaluate(() => document.getElementById('e-imob').disabled))
+    );
+    await p.evaluate(() => {
+      document.getElementById('e-broker').value = 'p10';
+    });
     await p.evaluate(() => saveLead());
     await p.waitForTimeout(700);
     const patch = await p.evaluate(() =>
-      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'PATCH'));
+      (window.__POSTS || []).find(x => /a1_cases/.test(x.url) && x.m === 'PATCH')
+    );
     const corpo = patch ? JSON.parse(patch.body) : {};
-    checa('a transferência é enviada ao banco', corpo.broker_name === 'Carla Dias',
-      JSON.stringify(corpo.broker_name));
-    checa('e guarda a referência estável do corretor', corpo.payload?.crm_refs?.corretor_id === 'p10',
-      JSON.stringify(corpo.payload));
+    checa(
+      'a transferência é enviada ao banco',
+      corpo.broker_name === 'Carla Dias',
+      JSON.stringify(corpo.broker_name)
+    );
+    checa(
+      'e guarda a referência estável do corretor',
+      corpo.payload?.crm_refs?.corretor_id === 'p10',
+      JSON.stringify(corpo.payload)
+    );
     todosErros.push(...erros);
     await b.close();
   }
@@ -217,42 +289,93 @@ const CORRETOR = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
   console.log('\n== TAREFA DO LEAD É A MESMA DA AGENDA ==');
   {
     const { b, p, erros } = await abrirComo('crm.html', GESTOR, ['crm']);
-    await p.evaluate(() => { const l=G.leads[0]; if(l){ openLead(l.id); const bt=document.querySelector('[data-mt=tarefa]'); switchLeadTab('tarefa',bt); } });
-    await p.fill('#t-desc','Retornar ao cliente');
-    await p.fill('#t-date',new Date().toISOString().slice(0,10));
+    await p.evaluate(() => {
+      const l = G.leads[0];
+      if (l) {
+        openLead(l.id);
+        const bt = document.querySelector('[data-mt=tarefa]');
+        switchLeadTab('tarefa', bt);
+      }
+    });
+    await p.fill('#t-desc', 'Retornar ao cliente');
+    await p.fill('#t-date', new Date().toISOString().slice(0, 10));
     await p.evaluate(() => saveTask());
     await p.waitForTimeout(700);
-    const post=await p.evaluate(() => (window.__POSTS||[]).find(x=>/a1_agenda/.test(x.url)&&x.m==='POST'));
-    const corpo=post?JSON.parse(post.body):{};
+    const post = await p.evaluate(() =>
+      (window.__POSTS || []).find(x => /a1_agenda/.test(x.url) && x.m === 'POST')
+    );
+    const corpo = post ? JSON.parse(post.body) : {};
     checa('a tarefa é gravada em a1_agenda', !!post, JSON.stringify(post));
-    checa('e fica ligada ao Lead e ao responsável', corpo.caso_id==='c1'&&corpo.dono==='u1'&&corpo.tipo==='tarefa',JSON.stringify(corpo));
-    const patch=await p.evaluate(() => (window.__POSTS||[]).filter(x=>/a1_cases/.test(x.url)&&x.m==='PATCH').pop());
-    const payload=patch?JSON.parse(patch.body).payload:{};
-    checa('o payload legado guarda somente a ponte para a Agenda', !!payload?.task?.agenda_id,JSON.stringify(payload));
-    todosErros.push(...erros); await b.close();
+    checa(
+      'e fica ligada ao Lead e ao responsável',
+      corpo.caso_id === 'c1' && corpo.dono === 'u1' && corpo.tipo === 'tarefa',
+      JSON.stringify(corpo)
+    );
+    const patch = await p.evaluate(() =>
+      (window.__POSTS || []).filter(x => /a1_cases/.test(x.url) && x.m === 'PATCH').pop()
+    );
+    const payload = patch ? JSON.parse(patch.body).payload : {};
+    checa(
+      'o payload legado guarda somente a ponte para a Agenda',
+      !!payload?.task?.agenda_id,
+      JSON.stringify(payload)
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   console.log('\n== LEAD ABRE A PRÉ-ANÁLISE COM OS DADOS CARREGADOS ==');
   {
     const { b, p, erros } = await abrirComo('pre-analise.html?lead=c1&nome=Maria', GESTOR, ['PRE_ANALISE']);
-    await p.waitForSelector('#w-empr',{timeout:5000});
-    const opcoes=await p.locator('#w-empr option').allTextContents();
-    checa('o assistente vindo do Lead abre sozinho',await p.locator('#modal-nova').isVisible());
-    checa('e usa os empreendimentos reais do módulo principal',opcoes.some(x=>/Residencial das Flores/.test(x)),JSON.stringify(opcoes));
-    checa('não mostra o falso estado de cadastro vazio',!opcoes.some(x=>/Nenhum empreendimento/.test(x)),JSON.stringify(opcoes));
-    todosErros.push(...erros); await b.close();
+    await p.waitForSelector('#w-empr', { timeout: 5000 });
+    const opcoes = await p.locator('#w-empr option').allTextContents();
+    checa('o assistente vindo do Lead abre sozinho', await p.locator('#modal-nova').isVisible());
+    checa(
+      'e usa os empreendimentos reais do módulo principal',
+      opcoes.some(x => /Residencial das Flores/.test(x)),
+      JSON.stringify(opcoes)
+    );
+    checa(
+      'não mostra o falso estado de cadastro vazio',
+      !opcoes.some(x => /Nenhum empreendimento/.test(x)),
+      JSON.stringify(opcoes)
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   console.log('\n== CAMPOS CADASTRADOS DO LEAD SÃO SELEÇÕES ==');
   {
     const { b, p, erros } = await abrirComo('crm.html', GESTOR, ['crm']);
-    await p.evaluate(()=>{openNewLead();alternarMaisLead();}); await p.waitForTimeout(250);
-    checa('Origem, Corretor e Imobiliária são selects',await p.evaluate(()=>['n-source','n-broker','n-imob'].every(id=>document.getElementById(id)?.tagName==='SELECT')));
-    checa('origem vem do cadastro do tenant',(await p.locator('#n-source option').allTextContents()).includes('Indicação'));
-    checa('origem antiga sem id também continua disponível',(await p.locator('#n-source option').allTextContents()).includes('Feirão legado'));
-    checa('corretor vem dos usuários válidos',(await p.locator('#n-broker option').allTextContents()).includes('Ana Souza'));
-    checa('imobiliária vem do cadastro',(await p.locator('#n-imob option').allTextContents()).some(x=>/Imob Alfa/.test(x)));
-    todosErros.push(...erros); await b.close();
+    await p.evaluate(() => {
+      openNewLead();
+      alternarMaisLead();
+    });
+    await p.waitForTimeout(250);
+    checa(
+      'Origem, Corretor e Imobiliária são selects',
+      await p.evaluate(() =>
+        ['n-source', 'n-broker', 'n-imob'].every(id => document.getElementById(id)?.tagName === 'SELECT')
+      )
+    );
+    checa(
+      'origem vem do cadastro do tenant',
+      (await p.locator('#n-source option').allTextContents()).includes('Indicação')
+    );
+    checa(
+      'origem antiga sem id também continua disponível',
+      (await p.locator('#n-source option').allTextContents()).includes('Feirão legado')
+    );
+    checa(
+      'corretor vem dos usuários válidos',
+      (await p.locator('#n-broker option').allTextContents()).includes('Ana Souza')
+    );
+    checa(
+      'imobiliária vem do cadastro',
+      (await p.locator('#n-imob option').allTextContents()).some(x => /Imob Alfa/.test(x))
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   process.exit(resumo(todosErros) ? 1 : 0);

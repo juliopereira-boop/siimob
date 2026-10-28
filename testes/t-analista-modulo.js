@@ -21,8 +21,10 @@ const { abrir, checa, resumo } = require('./comum');
   {
     const { b, p, erros } = await abrir('configuracoes.html');
     console.log('\n== COM REPASSE, O CARTÃO CONTINUA ==');
-    checa('o cartão de Analistas de Crédito está no hub',
-          await p.locator('#cfg-card-analistas').count() === 1);
+    checa(
+      'o cartão de Analistas de Crédito está no hub',
+      (await p.locator('#cfg-card-analistas').count()) === 1
+    );
     await p.evaluate(() => openCfgView('analistas'));
     await p.waitForTimeout(600);
     checa('e a sub-tela abre', await p.locator('#cfg-view-analistas').isVisible());
@@ -32,29 +34,30 @@ const { abrir, checa, resumo } = require('./comum');
 
   // ── Só Pré-análise, sem Repasse ──────────────────────────────────────────
   {
-    const { b, p, erros } = await abrir('configuracoes.html',
-      { modulos:['PRE_ANALISE'], semModulos:['repasse'] });
+    const { b, p, erros } = await abrir('configuracoes.html', {
+      modulos: ['PRE_ANALISE'],
+      semModulos: ['repasse']
+    });
     console.log('\n== SÓ COM PRÉ-ANÁLISE, O CARTÃO CONTINUA ==');
-    checa('um módulo dos dois já basta',
-          await p.locator('#cfg-card-analistas').count() === 1);
+    checa('um módulo dos dois já basta', (await p.locator('#cfg-card-analistas').count()) === 1);
     todosErros.push(...erros);
     await b.close();
   }
 
   // ── Sem nenhum dos dois ──────────────────────────────────────────────────
   {
-    const { b, p, erros } = await abrir('configuracoes.html', { semModulos:['repasse'] });
+    const { b, p, erros } = await abrir('configuracoes.html', { semModulos: ['repasse'] });
     console.log('\n== SEM REPASSE E SEM PRÉ-ANÁLISE, O CARTÃO SAI DO DOM ==');
-    checa('o cartão não existe mais',
-          await p.locator('#cfg-card-analistas').count() === 0);
+    checa('o cartão não existe mais', (await p.locator('#cfg-card-analistas').count()) === 0);
     // O que não está no DOM a busca do hub também não acha.
     await p.fill('#cfg-busca', 'analista');
     await p.waitForTimeout(300);
-    const achou = await p.$$eval('.cfg-hub-card',
-      els => els.filter(e => !e.classList.contains('oculto') && e.offsetParent !== null)
-                .map(e => e.textContent.trim()));
-    checa('a busca do hub não oferece o cadastro',
-          !achou.some(t => /Analista/i.test(t)), achou.join(' | '));
+    const achou = await p.$$eval('.cfg-hub-card', els =>
+      els
+        .filter(e => !e.classList.contains('oculto') && e.offsetParent !== null)
+        .map(e => e.textContent.trim())
+    );
+    checa('a busca do hub não oferece o cadastro', !achou.some(t => /Analista/i.test(t)), achou.join(' | '));
 
     // E o link direto também não passa.
     await p.evaluate(() => openCfgView('analistas'));
@@ -62,7 +65,7 @@ const { abrir, checa, resumo } = require('./comum');
     const abriu = await p.locator('#cfg-view-analistas').isVisible();
     checa('e abrir a sub-tela por código não abre nada', abriu === false);
 
-    checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
+    checa('nenhum XSS executou', (await p.evaluate(() => window.__XSS)) === 0);
     todosErros.push(...erros);
     await b.close();
   }

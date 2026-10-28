@@ -28,11 +28,11 @@
 // tocar em nada, use a suíte de testes (`npm test`), que finge ser o Supabase.
 
 const http = require('http');
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 const PROJETO = path.join(__dirname, '..');
-const RAIZ  = path.join(PROJETO, 'dist');
+const RAIZ = path.join(PROJETO, 'dist');
 const PORTA = Number(process.argv[2] || process.env.PORTA || 3000);
 
 if (!fs.existsSync(RAIZ)) {
@@ -45,11 +45,21 @@ const { carregarRotas } = require('../tools/rotas');
 const REGRAS = carregarRotas(PROJETO);
 
 const TIPOS = {
-  '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
-  '.css':'text/css; charset=utf-8',   '.json':'application/json; charset=utf-8',
-  '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
-  '.webp':'image/webp', '.ico':'image/x-icon', '.woff2':'font/woff2', '.woff':'font/woff',
-  '.pdf':'application/pdf', '.txt':'text/plain; charset=utf-8', '.webmanifest':'application/manifest+json'
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.webmanifest': 'application/manifest+json'
 };
 
 const servidor = http.createServer((req, res) => {
@@ -59,16 +69,19 @@ const servidor = http.createServer((req, res) => {
   // que faz /thecred/repasse chegar em repasse.html com o slug preservado na
   // barra de endereço.
   const regra = REGRAS.find(r => r.re.test(caminho));
-  const alvo  = regra ? regra.destino : caminho;
+  const alvo = regra ? regra.destino : caminho;
 
   const arquivo = path.resolve(RAIZ, '.' + alvo);
   // Nada fora da pasta do projeto. `..` no endereço é a forma clássica de
   // pedir /etc/passwd a um servidor de arquivos escrito às pressas.
-  if (!arquivo.startsWith(RAIZ)) { res.writeHead(403).end('fora da pasta'); return; }
+  if (!arquivo.startsWith(RAIZ)) {
+    res.writeHead(403).end('fora da pasta');
+    return;
+  }
 
   fs.readFile(arquivo, (erro, dados) => {
     if (erro) {
-      res.writeHead(404, { 'Content-Type':'text/html; charset=utf-8' });
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(`<meta charset="utf-8"><body style="font:15px system-ui;padding:3rem;color:#09201D">
         <h2 style="margin:0 0 .5rem">404 — ${caminho}</h2>
         <p style="color:#47615C">Nenhuma regra de <code>vercel.json</code> casou com este caminho,
@@ -89,7 +102,9 @@ const servidor = http.createServer((req, res) => {
 
 servidor.on('error', e => {
   if (e.code === 'EADDRINUSE') {
-    console.error(`\n  A porta ${PORTA} já está ocupada. Tente outra:  node scripts/servidor-local.js 3001\n`);
+    console.error(
+      `\n  A porta ${PORTA} já está ocupada. Tente outra:  node scripts/servidor-local.js 3001\n`
+    );
     process.exit(1);
   }
   throw e;

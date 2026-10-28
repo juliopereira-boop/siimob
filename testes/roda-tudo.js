@@ -18,9 +18,17 @@ const RAIZ = path.join(PROJETO, 'dist');
 const PORTA = Number(process.env.PORTA_TESTE || 8099);
 const filtro = process.argv[2] || '';
 
-const TIPOS = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
-  '.css':'text/css', '.json':'application/json', '.svg':'image/svg+xml',
-  '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon', '.txt':'text/plain; charset=utf-8' };
+const TIPOS = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8'
+};
 
 // AS ROTAS DE PRODUÇÃO VALEM AQUI TAMBÉM.
 // O servidor de teste servia arquivo cru: `/repasse.html` funcionava,
@@ -34,9 +42,15 @@ const REGRAS = carregarRotas(PROJETO);
 // SEM_BUILD=1 pula o build (útil quando você acabou de rodar `npm run build`).
 function construir() {
   if (process.env.SEM_BUILD === '1' && fs.existsSync(RAIZ)) return;
-  const r = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['vite', 'build', '--logLevel', 'error'],
-    { cwd: PROJETO, stdio: 'inherit' });
-  if (r.status !== 0) { console.error('\n>>> o build falhou; a suíte não roda contra código que não compila.'); process.exit(1); }
+  const r = spawnSync(
+    process.platform === 'win32' ? 'npx.cmd' : 'npx',
+    ['vite', 'build', '--logLevel', 'error'],
+    { cwd: PROJETO, stdio: 'inherit' }
+  );
+  if (r.status !== 0) {
+    console.error('\n>>> o build falhou; a suíte não roda contra código que não compila.');
+    process.exit(1);
+  }
 }
 
 // Servidor mínimo em Node: um a menos entre "rodar o teste" e "ter python".
@@ -46,9 +60,15 @@ function servir() {
       const caminho = decodeURIComponent(req.url.split('?')[0]);
       const rel = reescrever(caminho, REGRAS).replace(/^\/+/, '');
       const alvo = path.resolve(RAIZ, rel || 'index.html');
-      if (!alvo.startsWith(RAIZ)) { res.writeHead(403).end(); return; }   // nada fora da pasta
+      if (!alvo.startsWith(RAIZ)) {
+        res.writeHead(403).end();
+        return;
+      } // nada fora da pasta
       fs.readFile(alvo, (e, dados) => {
-        if (e) { res.writeHead(404).end('não encontrado'); return; }
+        if (e) {
+          res.writeHead(404).end('não encontrado');
+          return;
+        }
         res.writeHead(200, { 'Content-Type': TIPOS[path.extname(alvo)] || 'application/octet-stream' });
         res.end(dados);
       });
@@ -60,19 +80,25 @@ function servir() {
 
 function rodar(arquivo) {
   return new Promise(ok => {
-    const p = spawn(process.execPath, [path.join(__dirname, arquivo)],
-      { stdio: 'inherit', env: { ...process.env, PORTA_TESTE: String(PORTA) } });
+    const p = spawn(process.execPath, [path.join(__dirname, arquivo)], {
+      stdio: 'inherit',
+      env: { ...process.env, PORTA_TESTE: String(PORTA) }
+    });
     p.on('close', codigo => ok(codigo === 0));
   });
 }
 
 (async () => {
-  const suites = fs.readdirSync(__dirname)
+  const suites = fs
+    .readdirSync(__dirname)
     .filter(f => /^t-.*\.js$/.test(f))
     .filter(f => !filtro || f.includes(filtro))
     .sort();
 
-  if (!suites.length) { console.error('nenhuma suíte casou com "' + filtro + '"'); process.exit(1); }
+  if (!suites.length) {
+    console.error('nenhuma suíte casou com "' + filtro + '"');
+    process.exit(1);
+  }
 
   construir();
   const servidor = await servir();
@@ -81,7 +107,7 @@ function rodar(arquivo) {
   const falharam = [];
   for (const s of suites) {
     console.log('\n' + '━'.repeat(70) + '\n  ' + s + '\n' + '━'.repeat(70));
-    if (!await rodar(s)) falharam.push(s);
+    if (!(await rodar(s))) falharam.push(s);
   }
   servidor.close();
 

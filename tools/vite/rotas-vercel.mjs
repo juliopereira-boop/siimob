@@ -22,7 +22,11 @@ function middleware(paraFonte) {
 export default function rotasVercel() {
   return {
     name: 'siimob:rotas-vercel',
-    configureServer(server) { server.middlewares.use(middleware(true)); },
-    configurePreviewServer(server) { server.middlewares.use(middleware(false)); }
+    configureServer(server) {
+      server.middlewares.use(middleware(true));
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware(false));
+    }
   };
 }

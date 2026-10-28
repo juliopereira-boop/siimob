@@ -21,7 +21,7 @@ export default [
     rules: {
       'no-undef': 'off',
       'no-unused-vars': 'off',
-      'no-redeclare': 'off',          // globais repetidos entre telas: fase 2
+      'no-redeclare': 'off', // globais repetidos entre telas: fase 2
       'no-empty': ['error', { allowEmptyCatch: true }],
       // 23 escapes desnecessários em regex antigas ([:\-], \/ dentro de classe).
       // Inofensivos; ficam como aviso para não mexer em regex de produção por estilo.
@@ -31,7 +31,8 @@ export default [
   {
     files: ['testes/**/*.js', 'tools/**/*.js', 'scripts/**/*.js'],
     languageOptions: {
-      ecmaVersion: 'latest', sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
       // os testes mandam funções para dentro da página (page.evaluate), onde
       // window, document e os globais da tela existem
       globals: { ...globals.node, ...globals.browser }

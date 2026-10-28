@@ -17,23 +17,39 @@
 // falso é instantânea e o flash não teria tempo de existir, que é o jeito de
 // um teste passar mentindo.
 const { chromium } = require('playwright');
-const { responder, liberarModulos, usarExtras, negarModulos, usarDocTypes, usarManutencao } = require('./fake');
+const {
+  responder,
+  liberarModulos,
+  usarExtras,
+  negarModulos,
+  usarDocTypes,
+  usarManutencao
+} = require('./fake');
 const { checa, resumo } = require('./comum');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 const ATRASO = 1500;
 
 async function abrirDevagar(pag, modulos, atrasarCss) {
-  usarExtras(false); liberarModulos(modulos); negarModulos([]); usarDocTypes(undefined); usarManutencao(undefined);
+  usarExtras(false);
+  liberarModulos(modulos);
+  negarModulos([]);
+  usarDocTypes(undefined);
+  usarManutencao(undefined);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
   await p.addInitScript(() => {
-    localStorage.setItem('a1_token','tok'); localStorage.setItem('a1_slug','thecred');
-    localStorage.setItem('a1_user', JSON.stringify({id:'u1',tenant_id:'t1',name:'Julio',role:'owner',cpf:'99999999999'}));
+    localStorage.setItem('a1_token', 'tok');
+    localStorage.setItem('a1_slug', 'thecred');
+    localStorage.setItem(
+      'a1_user',
+      JSON.stringify({ id: 'u1', tenant_id: 't1', name: 'Julio', role: 'owner', cpf: '99999999999' })
+    );
     window.__XSS = 0;
-    window.__VIGIA = { dash:false, maiorMarca:0 };
-    const visivel = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+    window.__VIGIA = { dash: false, maiorMarca: 0 };
+    const visivel = el =>
+      !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
     const olha = () => {
       const v = window.__VIGIA;
       if (visivel(document.getElementById('tab-dashboard'))) v.dash = true;
@@ -48,8 +64,18 @@ async function abrirDevagar(pag, modulos, atrasarCss) {
     if (/a1_cases/.test(url) && r.request().method() === 'GET') {
       await new Promise(ok => setTimeout(ok, ATRASO));
     }
-    let d; try { d = responder(url, r.request().method(), r.request().postData()); } catch(e){ d = []; }
-    r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-1/2'},body:JSON.stringify(d)});
+    let d;
+    try {
+      d = responder(url, r.request().method(), r.request().postData());
+    } catch (e) {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
   if (atrasarCss) {
     // Rede lenta para o estilo: é aí que a marca sem tamanho aparecia.
@@ -65,7 +91,10 @@ async function abrirDevagar(pag, modulos, atrasarCss) {
 (async () => {
   const todosErros = [];
 
-  for (const [pag, vista] of [['andamento.html','view-andamento'], ['listagem.html','view-listagem']]) {
+  for (const [pag, vista] of [
+    ['andamento.html', 'view-andamento'],
+    ['listagem.html', 'view-listagem']
+  ]) {
     console.log(`\n${pag}`);
     const { b, p, erros } = await abrirDevagar(pag, [], false);
     await p.waitForTimeout(ATRASO / 2);
@@ -76,26 +105,35 @@ async function abrirDevagar(pag, modulos, atrasarCss) {
     checa('durante a carga, a área do repasse já está à vista', meio.repasse);
     checa('durante a carga, a tela avisa que está carregando', /Carregando/.test(meio.texto));
     await p.waitForTimeout(ATRASO + 1500);
-    const fim = await p.evaluate(v => ({
-      vigia: window.__VIGIA,
-      vista: getComputedStyle(document.getElementById(v)).display !== 'none',
-      dash: getComputedStyle(document.getElementById('tab-dashboard')).display
-    }), vista);
+    const fim = await p.evaluate(
+      v => ({
+        vigia: window.__VIGIA,
+        vista: getComputedStyle(document.getElementById(v)).display !== 'none',
+        dash: getComputedStyle(document.getElementById('tab-dashboard')).display
+      }),
+      vista
+    );
     checa('o Dashboard não aparece em momento nenhum da carga', fim.vigia.dash === false);
     checa('depois da carga, a vista certa está aberta', fim.vista);
     checa('depois da carga, o Dashboard segue escondido', fim.dash === 'none');
-    checa('nenhum XSS disparou', await p.evaluate(() => window.__XSS) === 0);
+    checa('nenhum XSS disparou', (await p.evaluate(() => window.__XSS)) === 0);
     todosErros.push(...erros.map(e => pag + ': ' + e));
     await b.close();
   }
 
-  for (const [pag, mod] of [['comercial.html','COMERCIAL'], ['pre-analise.html','PRE_ANALISE']]) {
+  for (const [pag, mod] of [
+    ['comercial.html', 'COMERCIAL'],
+    ['pre-analise.html', 'PRE_ANALISE']
+  ]) {
     console.log(`\n${pag}`);
     const { b, p, erros } = await abrirDevagar(pag, [mod], true);
     await p.waitForTimeout(ATRASO * 2 + 1500);
     const v = await p.evaluate(() => window.__VIGIA);
-    checa('a marca do SIIMOB nunca passa do tamanho do cabeçalho', v.maiorMarca > 0 && v.maiorMarca <= 40,
-          `(maior largura vista: ${Math.round(v.maiorMarca)}px)`);
+    checa(
+      'a marca do SIIMOB nunca passa do tamanho do cabeçalho',
+      v.maiorMarca > 0 && v.maiorMarca <= 40,
+      `(maior largura vista: ${Math.round(v.maiorMarca)}px)`
+    );
     todosErros.push(...erros.map(e => pag + ': ' + e));
     await b.close();
   }

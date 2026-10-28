@@ -15,10 +15,14 @@ const RAIZ = path.join(__dirname, '..');
 function carregarRotas(raiz = RAIZ) {
   const conf = JSON.parse(fs.readFileSync(path.join(raiz, 'vercel.json'), 'utf8'));
   return (conf.rewrites || []).map(r => ({
-    re: new RegExp('^' + r.source
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/:\w+/g, '[^/]+')
-      .replace(/\*/g, '.*') + '/?$'),
+    re: new RegExp(
+      '^' +
+        r.source
+          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+          .replace(/:\w+/g, '[^/]+')
+          .replace(/\*/g, '.*') +
+        '/?$'
+    ),
     fonte: r.source,
     destino: r.destination
   }));

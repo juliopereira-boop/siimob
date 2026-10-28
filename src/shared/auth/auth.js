@@ -15,50 +15,55 @@ async function a1Login(slug, cpf, password) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey':       A1_KEY,
-      'Authorization':`Bearer ${A1_KEY}`
+      apikey: A1_KEY,
+      Authorization: `Bearer ${A1_KEY}`
     },
     body: JSON.stringify({
       p_tenant_slug: slug,
-      p_cpf:         cpf.replace(/\D/g, ''),
-      p_password:    password
+      p_cpf: cpf.replace(/\D/g, ''),
+      p_password: password
     })
   });
 
   const data = await res.json();
   if (data.error) {
     if (data.error === 'max_concurrent') {
-      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+      throw new Error(
+        `Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`
+      );
     }
     const msgs = {
-      tenant_not_found:   'Empresa não encontrada.',
-      tenant_suspended:   'Conta suspensa. Contate o suporte.',
-      tenant_cancelled:   'Conta cancelada.',
-      invalid_credentials:'CPF ou senha incorretos.'
+      tenant_not_found: 'Empresa não encontrada.',
+      tenant_suspended: 'Conta suspensa. Contate o suporte.',
+      tenant_cancelled: 'Conta cancelada.',
+      invalid_credentials: 'CPF ou senha incorretos.'
     };
     if (data.error === 'em_manutencao') throw new Error(a1MsgManutencao(data));
     throw new Error(msgs[data.error] || data.error);
   }
 
   localStorage.setItem('a1_token', data.token);
-  localStorage.setItem('a1_slug',  slug);
+  localStorage.setItem('a1_slug', slug);
 
   // O limite de acessos simultâneos é decidido pelo servidor, dentro de
   // a1_login (erro 'max_concurrent', tratado acima). A conferência que existia
   // aqui contava a tabela de presença — escrita pelo próprio navegador — e por
   // isso não segurava nada; além de poder barrar quem tinha direito à vaga.
 
-  localStorage.setItem('a1_user',  JSON.stringify({
-    id:    data.user_id,
-    name:  data.name,
-    role:  data.role,
-    plan:  data.plan,
-    max_users: data.max_users,
-    status:    data.status,
-    trial_ends_at: data.trial_ends_at,
-    tenant_id: data.tenant_id,
-    tenant_name: data.tenant_name
-  }));
+  localStorage.setItem(
+    'a1_user',
+    JSON.stringify({
+      id: data.user_id,
+      name: data.name,
+      role: data.role,
+      plan: data.plan,
+      max_users: data.max_users,
+      status: data.status,
+      trial_ends_at: data.trial_ends_at,
+      tenant_id: data.tenant_id,
+      tenant_name: data.tenant_name
+    })
+  );
 
   a1Heartbeat(null); // reserva o slot imediatamente
   return data;
@@ -71,49 +76,54 @@ async function a1PartnerLogin(slug, cpf, password) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey':       A1_KEY,
-      'Authorization':`Bearer ${A1_KEY}`
+      apikey: A1_KEY,
+      Authorization: `Bearer ${A1_KEY}`
     },
     body: JSON.stringify({
       p_tenant_slug: slug,
-      p_cpf:         cpf.replace(/\D/g, ''),
-      p_password:    password
+      p_cpf: cpf.replace(/\D/g, ''),
+      p_password: password
     })
   });
 
   const data = await res.json();
   if (data.error) {
     if (data.error === 'max_concurrent') {
-      throw new Error(`Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`);
+      throw new Error(
+        `Limite de ${data.limit || ''} acesso(s) simultâneo(s) atingido. Aguarde alguém sair e tente novamente.`
+      );
     }
     if (data.error === 'em_manutencao') throw new Error(a1MsgManutencao(data));
     // Parceiro recebe os mesmos nomes de erro do gestor. Sem tradução, a tela
     // mostrava 'invalid_credentials' cru para quem só errou a senha.
     const msgsP = {
-      tenant_not_found:   'Empresa não encontrada.',
-      tenant_suspended:   'Conta suspensa. Contate o suporte.',
-      tenant_cancelled:   'Conta cancelada.',
-      invalid_credentials:'CPF ou senha incorretos.'
+      tenant_not_found: 'Empresa não encontrada.',
+      tenant_suspended: 'Conta suspensa. Contate o suporte.',
+      tenant_cancelled: 'Conta cancelada.',
+      invalid_credentials: 'CPF ou senha incorretos.'
     };
     throw new Error(msgsP[data.error] || data.error);
   }
 
   localStorage.setItem('a1_token', data.token);
-  localStorage.setItem('a1_slug',  slug);
+  localStorage.setItem('a1_slug', slug);
 
   // Idem: o teto de acessos simultâneos é imposto pelo servidor em
   // a1_partner_login, que devolve 'max_concurrent' quando não há vaga.
 
-  localStorage.setItem('a1_user',  JSON.stringify({
-    id:          data.partner_id,
-    name:        data.name,
-    role:        'partner',
-    type:        data.type,
-    permissions: data.permissions,
-    developments:data.developments,
-    region:      data.region,
-    tenant_id:   data.tenant_id
-  }));
+  localStorage.setItem(
+    'a1_user',
+    JSON.stringify({
+      id: data.partner_id,
+      name: data.name,
+      role: 'partner',
+      type: data.type,
+      permissions: data.permissions,
+      developments: data.developments,
+      region: data.region,
+      tenant_id: data.tenant_id
+    })
+  );
 
   a1Heartbeat(null); // reserva o slot imediatamente
   return data;
@@ -125,7 +135,8 @@ async function a1Logout() {
     const u = A1.user;
     if (u && u.tenant_id && u.id) {
       await fetch(`${A1.rest('a1_presence')}?user_key=eq.${encodeURIComponent(`${u.tenant_id}::${u.id}`)}`, {
-        method: 'DELETE', headers: A1.headers()
+        method: 'DELETE',
+        headers: A1.headers()
       }).catch(() => {});
     }
     await fetch(A1.rpc('a1_logout'), {
@@ -147,8 +158,8 @@ async function a1Logout() {
 // redirects to login if no valid session; returns user object
 function a1RequireAuth(allowedRoles = null) {
   const token = A1.token;
-  const user  = A1.user;
-  const slug  = A1.slug;
+  const user = A1.user;
+  const slug = A1.slug;
 
   if (!token || !user) {
     window.location.href = slug ? `/${slug}/login` : '/';
@@ -174,19 +185,24 @@ async function a1RefreshPartnerPerms() {
   const u = A1.user;
   if (!u || u.role !== 'partner' || !u.id) return null;
   try {
-    const res = await fetch(
-      `${A1.rest('a1_partners')}?id=eq.${u.id}&select=permissions,type,perfil_id`,
-      { headers: A1.headers() }
-    );
-    if (!res.ok) return null;                     // servidor fora: mantém o que já tem
+    const res = await fetch(`${A1.rest('a1_partners')}?id=eq.${u.id}&select=permissions,type,perfil_id`, {
+      headers: A1.headers()
+    });
+    if (!res.ok) return null; // servidor fora: mantém o que já tem
     const row = (await res.json())[0];
     if (!row) return null;
 
     // jsonb costuma chegar como objeto; se vier texto, virar objeto aqui evita
     // que todo `permissions.gerente` do sistema dê undefined.
     const objeto = v => {
-      if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return null; } }
-      return (v && typeof v === 'object') ? v : null;
+      if (typeof v === 'string') {
+        try {
+          v = JSON.parse(v);
+        } catch {
+          return null;
+        }
+      }
+      return v && typeof v === 'object' ? v : null;
     };
     let perms = objeto(row.permissions);
     let veioDoPerfil = false;
@@ -204,20 +220,22 @@ async function a1RefreshPartnerPerms() {
     // entrega — e é aquela que protege.
     if (row.perfil_id) {
       try {
-        const rp = await fetch(
-          `${A1.rest('a1_perfis')}?id=eq.${row.perfil_id}&select=permissions,ativo`,
-          { headers: A1.headers() }
-        );
+        const rp = await fetch(`${A1.rest('a1_perfis')}?id=eq.${row.perfil_id}&select=permissions,ativo`, {
+          headers: A1.headers()
+        });
         if (rp.ok) {
           const perfil = (await rp.json())[0];
           // Perfil desativado devolve a pessoa às marcas soltas dela, igual ao
           // que a1_perm() faz. Divergir aqui daria tela e API discordando.
           if (perfil && perfil.ativo !== false) {
             const pp = objeto(perfil.permissions);
-            if (pp) { perms = pp; veioDoPerfil = true; }
+            if (pp) {
+              perms = pp;
+              veioDoPerfil = true;
+            }
           }
         }
-      } catch {}                                  // rede fora: fica com o que veio da pessoa
+      } catch {} // rede fora: fica com o que veio da pessoa
     }
 
     if (!perms) return null;
@@ -234,16 +252,20 @@ async function a1RefreshPartnerPerms() {
     // relatado em produção, com o corretor vendo cartão que não era dele.
     if (veioDoPerfil) {
       const doPessoa = objeto(row.permissions) || {};
-      if (doPessoa.etapas !== undefined)             perms.etapas = doPessoa.etapas;
-      if (doPessoa.etapas_permitidas !== undefined)  perms.etapas_permitidas = doPessoa.etapas_permitidas;
+      if (doPessoa.etapas !== undefined) perms.etapas = doPessoa.etapas;
+      if (doPessoa.etapas_permitidas !== undefined) perms.etapas_permitidas = doPessoa.etapas_permitidas;
     }
 
     u.permissions = perms;
     u.perfil_id = row.perfil_id || null;
     if (row.type) u.type = row.type;
-    try { localStorage.setItem('a1_user', JSON.stringify(u)); } catch {}
+    try {
+      localStorage.setItem('a1_user', JSON.stringify(u));
+    } catch {}
     return u.permissions;
-  } catch { return null; }                        // erro de rede: mantém o que já tem
+  } catch {
+    return null;
+  } // erro de rede: mantém o que já tem
 }
 
 // Cache de módulos por sessão — evita 1 round-trip a cada página/navegação.
@@ -275,18 +297,29 @@ async function a1HasModule(moduleKey) {
   const ck = `${A1.slug || ''}:${moduleKey}`;
   if (ck in _a1ModMemo) return _a1ModMemo[ck];
   try {
-    if (sessionStorage.getItem(_A1_MOD_PREFIX + ck) === '1') { _a1ModMemo[ck] = true; return true; }
+    if (sessionStorage.getItem(_A1_MOD_PREFIX + ck) === '1') {
+      _a1ModMemo[ck] = true;
+      return true;
+    }
   } catch {}
   try {
     const res = await fetch(A1.rpc('a1_has_module'), {
-      method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_module_key: moduleKey })
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_module_key: moduleKey })
     });
     if (!res.ok) return null; // servidor indisponível — indeterminado, não cacheia
     const v = (await res.json()) === true;
     _a1ModMemo[ck] = v;
-    if (v) { try { sessionStorage.setItem(_A1_MOD_PREFIX + ck, '1'); } catch {} }
+    if (v) {
+      try {
+        sessionStorage.setItem(_A1_MOD_PREFIX + ck, '1');
+      } catch {}
+    }
     return v;
-  } catch { return null; } // erro de rede — indeterminado, não cacheia
+  } catch {
+    return null;
+  } // erro de rede — indeterminado, não cacheia
 }
 
 // Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
@@ -338,7 +371,9 @@ async function a1RequireModule(moduleKey) {
 async function a1ActiveCount(tenantId, excludeKey) {
   const since = new Date(Date.now() - 90_000).toISOString();
   const url = `${A1.rest('a1_presence')}?tenant_id=eq.${tenantId}&last_seen=gte.${encodeURIComponent(since)}&select=user_key`;
-  const rows = await fetch(url, { headers: A1.headers() }).then(r => r.json()).catch(() => []);
+  const rows = await fetch(url, { headers: A1.headers() })
+    .then(r => r.json())
+    .catch(() => []);
   if (!Array.isArray(rows)) return 0;
   const keys = new Set(rows.map(r => r.user_key).filter(k => k && k !== excludeKey));
   return keys.size;
@@ -352,7 +387,9 @@ async function a1TouchSession() {
   if (!A1.token) return true;
   try {
     const res = await fetch(A1.rpc('a1_touch_session'), {
-      method: 'POST', headers: A1.headers(), body: JSON.stringify({})
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({})
     });
     if (!res.ok) return true;
     if ((await res.json()) === false) return false;
@@ -360,7 +397,9 @@ async function a1TouchSession() {
     // A sessao de suporte e criada exclusivamente pelo Superadmin com service
     // role e recebe origem='suporte' no banco. Ela pode entrar para recuperar
     // dados sem reativar o cliente; a autorizacao real continua no banco.
-    try { if (sessionStorage.getItem('a1_sa_mode')) return true; } catch {}
+    try {
+      if (sessionStorage.getItem('a1_sa_mode')) return true;
+    } catch {}
 
     // Compatibilidade imediata enquanto a migration de suspensao ainda nao foi
     // aplicada: a tabela de tenants ja e consultavel pela propria sessao. Assim
@@ -368,7 +407,9 @@ async function a1TouchSession() {
     // antiga de a1_touch_session ainda devolve TRUE para tenant suspenso.
     const status = await a1TenantStatusAtual();
     return status !== 'suspended' && status !== 'cancelled';
-  } catch { return true; }
+  } catch {
+    return true;
+  }
 }
 
 async function a1TenantStatusAtual() {
@@ -382,15 +423,22 @@ async function a1TenantStatusAtual() {
     if (!res.ok) return null;
     const rows = await res.json();
     return Array.isArray(rows) && rows[0] ? rows[0].status || null : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // Encerra a sessão local e manda para o login explicando o motivo.
 function a1SessionEnded(motivo) {
   const slug = A1.slug || '';
   a1ClearModuleCache();
-  ['a1_token','a1_user','a1_slug'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
-  window.location.href = (slug ? `/${slug}/login` : '/') + '?motivo=' + encodeURIComponent(motivo || 'encerrada');
+  ['a1_token', 'a1_user', 'a1_slug'].forEach(k => {
+    try {
+      localStorage.removeItem(k);
+    } catch {}
+  });
+  window.location.href =
+    (slug ? `/${slug}/login` : '/') + '?motivo=' + encodeURIComponent(motivo || 'encerrada');
 }
 
 // So e chamado depois de o banco recusar a sessao. Evita dizer "outro acesso"
@@ -398,13 +446,15 @@ function a1SessionEnded(motivo) {
 async function a1MotivoSessaoEncerrada() {
   try {
     const res = await fetch(A1.rpc('a1_tenant_status_publico'), {
-      method: 'POST', headers: A1.headers(), body: JSON.stringify({ p_tenant_slug: A1.slug })
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_tenant_slug: A1.slug })
     });
     if (res.ok && (await res.json()) === 'suspended') return 'conta_suspensa';
   } catch {}
   // Bancos que ainda nao receberam a migration nao possuem o RPC acima, mas a
   // sessao antiga ainda consegue ler o status do proprio tenant.
-  if (await a1TenantStatusAtual() === 'suspended') return 'conta_suspensa';
+  if ((await a1TenantStatusAtual()) === 'suspended') return 'conta_suspensa';
   return 'outro_acesso';
 }
 
@@ -418,15 +468,17 @@ async function a1Heartbeat(moduleName) {
       method: 'POST',
       headers: A1.upsertHeaders(),
       body: JSON.stringify({
-        user_key:  `${user.tenant_id}::${user.id}`,
-        name:      user.name,
-        role:      user.role,
-        module:    moduleName,
+        user_key: `${user.tenant_id}::${user.id}`,
+        name: user.name,
+        role: user.role,
+        module: moduleName,
         last_seen: new Date().toISOString()
       })
     });
     return res.ok;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ═══ Modo manutenção ════════════════════════════════════════════════════════
@@ -456,18 +508,21 @@ function a1MsgManutencao(data) {
 async function a1ManutencaoEstado() {
   try {
     const res = await fetch(A1.rpc('a1_manutencao_estado'), {
-      method: 'POST', headers: A1.headers(), body: JSON.stringify({})
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({})
     });
     if (!res.ok) return null;
     const d = await res.json();
-    return (d && typeof d === 'object') ? d : null;
-  } catch { return null; }
+    return d && typeof d === 'object' ? d : null;
+  } catch {
+    return null;
+  }
 }
 
 function a1TelaManutencao(estado) {
   if (document.getElementById('a1-manutencao')) return;
-  const msg = (estado && estado.mensagem) ||
-    'Estamos fazendo uma manutenção preventiva no sistema.';
+  const msg = (estado && estado.mensagem) || 'Estamos fazendo uma manutenção preventiva no sistema.';
   let volta = '';
   if (estado && estado.ate) {
     const d = new Date(estado.ate);
@@ -475,20 +530,23 @@ function a1TelaManutencao(estado) {
   }
   const el = document.createElement('div');
   el.id = 'a1-manutencao';
-  el.setAttribute('style',
+  el.setAttribute(
+    'style',
     'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;' +
-    'justify-content:center;padding:1.5rem;background:#06322F;color:#EAFBF8;' +
-    "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center");
+      'justify-content:center;padding:1.5rem;background:#06322F;color:#EAFBF8;' +
+      "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center"
+  );
   el.innerHTML =
     '<div style="max-width:520px">' +
-      '<div style="font-size:.7rem;font-weight:700;letter-spacing:.35em;color:#3BF0DE;' +
-           'text-transform:uppercase;margin-bottom:1.5rem">Manutenção</div>' +
-      '<div style="font-size:1.55rem;line-height:1.35;margin-bottom:1rem">' +
-        a1EscapaTexto(msg) + '</div>' +
-      (volta ? `<div style="font-size:.95rem;color:#8FDDD3;margin-bottom:1.5rem">${volta}</div>` : '') +
-      '<div style="font-size:.85rem;line-height:1.6;color:rgba(143,221,211,.75)">' +
-        'Nenhum dado é perdido — tudo volta exatamente como você deixou.<br>' +
-        'Esta tela se atualiza sozinha assim que o sistema voltar.</div>' +
+    '<div style="font-size:.7rem;font-weight:700;letter-spacing:.35em;color:#3BF0DE;' +
+    'text-transform:uppercase;margin-bottom:1.5rem">Manutenção</div>' +
+    '<div style="font-size:1.55rem;line-height:1.35;margin-bottom:1rem">' +
+    a1EscapaTexto(msg) +
+    '</div>' +
+    (volta ? `<div style="font-size:.95rem;color:#8FDDD3;margin-bottom:1.5rem">${volta}</div>` : '') +
+    '<div style="font-size:.85rem;line-height:1.6;color:rgba(143,221,211,.75)">' +
+    'Nenhum dado é perdido — tudo volta exatamente como você deixou.<br>' +
+    'Esta tela se atualiza sozinha assim que o sistema voltar.</div>' +
     '</div>';
   document.body.appendChild(el);
 }
@@ -496,15 +554,17 @@ function a1TelaManutencao(estado) {
 // Escapa aqui dentro porque auth.js não tem acesso ao esc() das telas, e a
 // mensagem vem do banco: texto de terceiro entrando em innerHTML é injeção.
 function a1EscapaTexto(t) {
-  return String(t == null ? '' : t).replace(/[&<>"']/g,
-    c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  return String(t == null ? '' : t).replace(
+    /[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  );
 }
 
 let A1_EM_MANUTENCAO = false;
 
 async function a1ConferirManutencao() {
   const est = await a1ManutencaoEstado();
-  if (!est) return;                                  // não perguntei: não mexo
+  if (!est) return; // não perguntei: não mexo
   if (est.ativa && !A1_EM_MANUTENCAO) {
     A1_EM_MANUTENCAO = true;
     a1TelaManutencao(est);
@@ -527,7 +587,8 @@ function a1VigiarManutencao() {
 // esquecida aberta com sessão vencida — carga contínua e crescente, sem retorno
 // nenhum. Após 3 falhas seguidas (~2.5min), para de tentar.
 function a1StartHeartbeat(moduleName) {
-  let fails = 0, id = null;
+  let fails = 0,
+    id = null;
   const bater = async () => {
     // A chave geral do superadmin. Vai junto do heartbeat porque a batida já
     // existe: quem está dentro descobre a manutenção em até um ciclo (~50s),
@@ -542,7 +603,10 @@ function a1StartHeartbeat(moduleName) {
       return;
     }
     const ok = await a1Heartbeat(moduleName);
-    if (ok) { fails = 0; return; }
+    if (ok) {
+      fails = 0;
+      return;
+    }
     if (++fails >= 3 && id) clearInterval(id);
   };
   id = setInterval(bater, 50_000);
@@ -566,8 +630,9 @@ async function a1CreateUser({ name, cpf, password, role = 'user', email = '' }) 
     method: 'POST',
     headers: A1.returnHeaders(),
     body: JSON.stringify({
-      name, email,
-      cpf:           cpf.replace(/\D/g, ''),
+      name,
+      email,
+      cpf: cpf.replace(/\D/g, ''),
       password_hash,
       role
     })

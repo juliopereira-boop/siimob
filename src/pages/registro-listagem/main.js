@@ -1,11 +1,15 @@
 'use strict';
 
 const G = {
-  user: null, slug: '',
-  stages: [], cases: [],
-  empresas: [], ccas: [], analistas: [],
-  filters: { search:'', empr:'', banco:'', itbi:'' },
-  dashFilters: { empr:'', banco:'', cartorio:'', search:'' },
+  user: null,
+  slug: '',
+  stages: [],
+  cases: [],
+  empresas: [],
+  ccas: [],
+  analistas: [],
+  filters: { search: '', empr: '', banco: '', itbi: '' },
+  dashFilters: { empr: '', banco: '', cartorio: '', search: '' },
   activeCase: null,
   itbiStatus: ''
 };
@@ -25,23 +29,38 @@ function applyCustomLogo() {
 
 async function init() {
   applyCustomLogo();
-  try { G.user = a1RequireAuth(); } catch { return; }
+  try {
+    G.user = a1RequireAuth();
+  } catch {
+    return;
+  }
   // SEM await, a promessa não era esperada e o catch nunca pegava nada: a tela
   // seguia e pedia a1_cases mesmo para cliente sem a licença do Registro. A
   // regra da casa é que o módulo sem licença não chega nem a existir na tela.
-  try { await a1RequireModule('registro'); } catch { return; }
+  try {
+    await a1RequireModule('registro');
+  } catch {
+    return;
+  }
   G.slug = A1.slug;
 
   // O cabeçalho é montado por src/shared/ui/modulo-shell.js: marca, busca, abas de módulo
   // e a sub-barra desta tela. Seis telas tinham a sua cópia da mesma barra, com
   // o mesmo CSS repetido; a correção numa delas nunca chegava nas outras.
   await a1MontarShell(document.getElementById('sb-casco'), {
-    ativo:'registro', vista:'listagem',
-    sub:[{ rot:'Andamento', href:`/${G.slug}/registro` },
-         { rot:'Listagem',  href:`/${G.slug}/registro-listagem`, ativo:true }]
+    ativo: 'registro',
+    vista: 'listagem',
+    sub: [
+      { rot: 'Andamento', href: `/${G.slug}/registro` },
+      { rot: 'Listagem', href: `/${G.slug}/registro-listagem`, ativo: true }
+    ]
   });
   // Os links do editor de esteira ficam DENTRO desta tela, não na barra.
-  [['link-wf','repasse'],['link-wf-groups','repasse'],['link-wf-rg','registro']].forEach(([id,mod]) => {
+  [
+    ['link-wf', 'repasse'],
+    ['link-wf-groups', 'repasse'],
+    ['link-wf-rg', 'registro']
+  ].forEach(([id, mod]) => {
     const el = document.getElementById(id);
     if (el) el.href = `/${G.slug}/workflow?module=${mod}`;
   });
@@ -69,7 +88,8 @@ async function init() {
     loadData().then(() => {
       if (A1.impressaoTela(G.cases, G.stages) === antes) return;
       const rol = A1.fotoRolagem();
-      renderKanban(); renderList();
+      renderKanban();
+      renderList();
       A1.voltarRolagem(rol);
     });
   });
@@ -80,23 +100,33 @@ async function loadData() {
   const hp = { headers: A1.headers() };
   const [stages, cases, emps, ccas, anas] = await Promise.all([
     fetch(`${A1.rest('a1_stages')}?module_key=eq.registro&order=position.asc`, { headers: A1.headers() })
-      .then(r => r.json()).catch(() => []),
+      .then(r => r.json())
+      .catch(() => []),
     // `select=` explicito e A1.buscarTudo nao sao zelo: sem o select, o
     // PostgREST manda TODAS as colunas, e a1_cases guarda PDF em base64
     // (attachment_pdf, attachment_doc2, legacy_docs) — um processo com dois
     // anexos vira megabytes de JSON que a tela nem usa. E sem buscarTudo o
     // corte em 1.000 acontece EM SILENCIO: a tela mostra mil e diz que sao
     // todos, que e o pior jeito de errar um numero.
-    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,partner_name,broker_name,real_estate_name,manager_name,payload,observations,archived,created_at,updated_at`)
-      .then(r => r.linhas || []).catch(() => []),
-    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => []),
-    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => []),
-    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, hp).then(r => r.json()).catch(() => [])
+    A1.buscarTudo(
+      `${A1.rest('a1_cases')}?module_key=eq.registro&archived=eq.false&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,block,unit,region,contract_value,partner_name,broker_name,real_estate_name,manager_name,payload,observations,archived,created_at,updated_at`
+    )
+      .then(r => r.linhas || [])
+      .catch(() => []),
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, hp)
+      .then(r => r.json())
+      .catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, hp)
+      .then(r => r.json())
+      .catch(() => []),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, hp)
+      .then(r => r.json())
+      .catch(() => [])
   ]);
   G.stages = Array.isArray(stages) ? stages : [];
-  G.cases  = Array.isArray(cases)  ? cases  : [];
-  G.empresas  = Array.isArray(emps) ? emps : [];
-  G.ccas      = Array.isArray(ccas) ? ccas : [];
+  G.cases = Array.isArray(cases) ? cases : [];
+  G.empresas = Array.isArray(emps) ? emps : [];
+  G.ccas = Array.isArray(ccas) ? ccas : [];
   G.analistas = Array.isArray(anas) ? anas : [];
 
   // Populate datalists
@@ -118,15 +148,17 @@ function populateDL(id, items) {
 function filteredCases() {
   const { search, empr, banco, itbi } = G.filters;
   return G.cases.filter(c => {
-    if (empr  && c.development !== empr) return false;
+    if (empr && c.development !== empr) return false;
     if (banco && (c.payload?.banco_name || '') !== banco) return false;
-    if (itbi  && (c.payload?.itbi_status || '') !== itbi) return false;
+    if (itbi && (c.payload?.itbi_status || '') !== itbi) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (c.client_name || '').toLowerCase().includes(q)
-          || (c.client_cpf  || '').includes(q)
-          || (c.unit        || '').toLowerCase().includes(q)
-          || (c.development || '').toLowerCase().includes(q);
+      return (
+        (c.client_name || '').toLowerCase().includes(q) ||
+        (c.client_cpf || '').includes(q) ||
+        (c.unit || '').toLowerCase().includes(q) ||
+        (c.development || '').toLowerCase().includes(q)
+      );
     }
     return true;
   });
@@ -135,13 +167,12 @@ function filteredCases() {
 function dashCases() {
   const { empr, banco, cartorio, search } = G.dashFilters;
   return G.cases.filter(c => {
-    if (empr    && c.development !== empr) return false;
-    if (banco   && (c.payload?.banco_name    || '') !== banco)   return false;
+    if (empr && c.development !== empr) return false;
+    if (banco && (c.payload?.banco_name || '') !== banco) return false;
     if (cartorio && (c.payload?.cartorio_name || '') !== cartorio) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (c.client_name || '').toLowerCase().includes(q)
-          || (c.client_cpf  || '').includes(q);
+      return (c.client_name || '').toLowerCase().includes(q) || (c.client_cpf || '').includes(q);
     }
     return true;
   });
@@ -149,23 +180,23 @@ function dashCases() {
 
 function applyFilter() {
   G.filters.search = document.getElementById('rg-search').value.toLowerCase();
-  G.filters.empr   = document.getElementById('rg-filter-empr').value;
-  G.filters.banco  = document.getElementById('rg-filter-banco').value;
-  G.filters.itbi   = document.getElementById('rg-filter-itbi').value;
+  G.filters.empr = document.getElementById('rg-filter-empr').value;
+  G.filters.banco = document.getElementById('rg-filter-banco').value;
+  G.filters.itbi = document.getElementById('rg-filter-itbi').value;
   renderKanban();
 }
 
 function applyDashFilter() {
-  G.dashFilters.empr     = document.getElementById('dg-empr').value;
-  G.dashFilters.banco    = document.getElementById('dg-banco').value;
+  G.dashFilters.empr = document.getElementById('dg-empr').value;
+  G.dashFilters.banco = document.getElementById('dg-banco').value;
   G.dashFilters.cartorio = document.getElementById('dg-cartorio').value;
-  G.dashFilters.search   = document.getElementById('dg-search').value;
+  G.dashFilters.search = document.getElementById('dg-search').value;
   renderDashboard();
 }
 
 function clearDashFilters() {
-  G.dashFilters = { empr:'', banco:'', cartorio:'', search:'' };
-  ['dg-empr','dg-banco','dg-cartorio','dg-search'].forEach(id => {
+  G.dashFilters = { empr: '', banco: '', cartorio: '', search: '' };
+  ['dg-empr', 'dg-banco', 'dg-cartorio', 'dg-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -183,83 +214,126 @@ function renderDashboard() {
   const thisMonth = now.toISOString().slice(0, 7);
 
   // Populate dash filter selects
-  const allEmprs    = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
-  const allBancos   = [...new Set(G.cases.map(c => c.payload?.banco_name).filter(Boolean))];
+  const allEmprs = [...new Set(G.cases.map(c => c.development).filter(Boolean))];
+  const allBancos = [...new Set(G.cases.map(c => c.payload?.banco_name).filter(Boolean))];
   const allCartorios = [...new Set(G.cases.map(c => c.payload?.cartorio_name).filter(Boolean))];
-  populateSelect('dg-empr',    allEmprs,    'Todos empreendimentos', G.dashFilters.empr);
-  populateSelect('dg-banco',   allBancos,   'Todos os bancos',       G.dashFilters.banco);
-  populateSelect('dg-cartorio',allCartorios,'Todos os cartórios',    G.dashFilters.cartorio);
+  populateSelect('dg-empr', allEmprs, 'Todos empreendimentos', G.dashFilters.empr);
+  populateSelect('dg-banco', allBancos, 'Todos os bancos', G.dashFilters.banco);
+  populateSelect('dg-cartorio', allCartorios, 'Todos os cartórios', G.dashFilters.cartorio);
 
   // Also populate kanban filter selects
-  populateSelect('rg-filter-empr', allEmprs,  'Todos os empreendimentos', G.filters.empr);
-  populateSelect('rg-filter-banco',allBancos, 'Todos os bancos',          G.filters.banco);
-  populateSelect('rg-list-stage',  G.stages.map(s=>s.name), 'Todas as etapas', '');
+  populateSelect('rg-filter-empr', allEmprs, 'Todos os empreendimentos', G.filters.empr);
+  populateSelect('rg-filter-banco', allBancos, 'Todos os bancos', G.filters.banco);
+  populateSelect(
+    'rg-list-stage',
+    G.stages.map(s => s.name),
+    'Todas as etapas',
+    ''
+  );
   // Aqui havia um laço que desmarcava a etapa depois de montar as opções: a
   // cada salvar, a etapa escolhida na lista voltava para "Todas". E ele montava
   // um seletor CSS com o nome da etapa, que lança SyntaxError com aspas no nome
   // e abortava o painel inteiro. populateSelect mantém a escolha; o laço saiu.
 
   const finalStageIds = new Set(G.stages.filter(s => s.is_final).map(s => s.id));
-  const andamento  = cases.filter(c => !finalStageIds.has(c.stage_id));
-  const finalizados= cases.filter(c => finalStageIds.has(c.stage_id) && (c.updated_at||'').startsWith(thisMonth));
-  const itbiPend   = cases.filter(c => (c.payload?.itbi_status||'') === 'pendente');
-  const comExig    = cases.filter(c => !!(c.payload?.exig_desc));
+  const andamento = cases.filter(c => !finalStageIds.has(c.stage_id));
+  const finalizados = cases.filter(
+    c => finalStageIds.has(c.stage_id) && (c.updated_at || '').startsWith(thisMonth)
+  );
+  const itbiPend = cases.filter(c => (c.payload?.itbi_status || '') === 'pendente');
+  const comExig = cases.filter(c => !!c.payload?.exig_desc);
 
-  setEl('dkpi-total',       cases.length);
-  setEl('dkpi-andamento',   andamento.length);
+  setEl('dkpi-total', cases.length);
+  setEl('dkpi-andamento', andamento.length);
   setEl('dkpi-finalizados', finalizados.length);
-  setEl('dkpi-itbi-pend',   itbiPend.length);
-  setEl('dkpi-exig',        comExig.length);
+  setEl('dkpi-itbi-pend', itbiPend.length);
+  setEl('dkpi-exig', comExig.length);
 
   // VGV
   const vgv = cases.reduce((s, c) => s + (Number(c.contract_value) || 0), 0);
   setEl('dkpi-vgv', vgv ? 'R$ ' + fmtMoney(vgv) : '—');
 
   // Avg days
-  const days = cases
-    .map(c => (now - new Date(c.created_at)) / 86400000)
-    .filter(d => d >= 0);
-  setEl('dkpi-tempo', days.length ? Math.round(days.reduce((a,b)=>a+b,0)/days.length) + 'd' : '—');
+  const days = cases.map(c => (now - new Date(c.created_at)) / 86400000).filter(d => d >= 0);
+  setEl('dkpi-tempo', days.length ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) + 'd' : '—');
 
   // ITBI pago count
-  setEl('dkpi-itbi-pago', cases.filter(c => (c.payload?.itbi_status||'') === 'pago').length);
+  setEl('dkpi-itbi-pago', cases.filter(c => (c.payload?.itbi_status || '') === 'pago').length);
 
   // New (30 days)
-  const since30 = new Date(now - 30*86400000).toISOString();
+  const since30 = new Date(now - 30 * 86400000).toISOString();
   setEl('dkpi-novos', cases.filter(c => c.created_at >= since30).length);
 
   // Stage counts for donut + funil
   const stageMap = {};
-  G.stages.forEach(s => { stageMap[s.id] = { stage: s, count: 0 }; });
-  cases.forEach(c => { if (stageMap[c.stage_id]) stageMap[c.stage_id].count++; });
+  G.stages.forEach(s => {
+    stageMap[s.id] = { stage: s, count: 0 };
+  });
+  cases.forEach(c => {
+    if (stageMap[c.stage_id]) stageMap[c.stage_id].count++;
+  });
   const stageData = Object.values(stageMap).filter(x => x.count > 0);
 
-  renderDonutChart(stageData, document.getElementById('dg-donut-svg'), document.getElementById('dg-donut-legend'), cases.length);
+  renderDonutChart(
+    stageData,
+    document.getElementById('dg-donut-svg'),
+    document.getElementById('dg-donut-legend'),
+    cases.length
+  );
   renderFunil(stageData, cases.length);
-  renderDistList('dg-empr-list', groupBy(cases, c => c.development), '#3F6F9E');
-  renderDistList('dg-banco-list', groupBy(cases, c => c.payload?.banco_name), '#0E8C7F');
-  renderDistList('dg-cartorio-list', groupBy(cases, c => c.payload?.cartorio_name), '#3FB8A6');
+  renderDistList(
+    'dg-empr-list',
+    groupBy(cases, c => c.development),
+    '#3F6F9E'
+  );
+  renderDistList(
+    'dg-banco-list',
+    groupBy(cases, c => c.payload?.banco_name),
+    '#0E8C7F'
+  );
+  renderDistList(
+    'dg-cartorio-list',
+    groupBy(cases, c => c.payload?.cartorio_name),
+    '#3FB8A6'
+  );
 
   // Gargalo = non-final stage with most cases
   const nonFinal = stageData.filter(x => !x.stage.is_final);
-  const gargalo  = nonFinal.sort((a,b) => b.count - a.count)[0];
-  setEl('dkpi-gargalo',     gargalo ? gargalo.count : '—');
+  const gargalo = nonFinal.sort((a, b) => b.count - a.count)[0];
+  setEl('dkpi-gargalo', gargalo ? gargalo.count : '—');
   setEl('dkpi-gargalo-sub', gargalo ? gargalo.stage.name : '—');
 }
 
-const STAGE_COLORS = ['#0E8C7F','#3F6F9E','#3FB8A6','#0B7568','#C87E12','#B8433A','#6366f1','#0891b2','#84cc16','#f97316','#8b5cf6','#ec4899'];
+const STAGE_COLORS = [
+  '#0E8C7F',
+  '#3F6F9E',
+  '#3FB8A6',
+  '#0B7568',
+  '#C87E12',
+  '#B8433A',
+  '#6366f1',
+  '#0891b2',
+  '#84cc16',
+  '#f97316',
+  '#8b5cf6',
+  '#ec4899'
+];
 
 function renderDonutChart(stageData, svgEl, legendEl, total) {
-  const R = 46, cx = 56, cy = 56, sw = 14;
+  const R = 46,
+    cx = 56,
+    cy = 56,
+    sw = 14;
   const circ = 2 * Math.PI * R;
-  svgEl.innerHTML = stageData.length === 0
-    ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#E2E8E5" stroke-width="${sw}"/>`
-    : '';
+  svgEl.innerHTML =
+    stageData.length === 0
+      ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#E2E8E5" stroke-width="${sw}"/>`
+      : '';
 
   let cumLen = 0;
   stageData.forEach((item, i) => {
     const arcLen = (item.count / (total || 1)) * circ;
-    const color  = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+    const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', cx);
     circle.setAttribute('cy', cy);
@@ -277,8 +351,9 @@ function renderDonutChart(stageData, svgEl, legendEl, total) {
 
   // Center text
   const wrap = svgEl.parentElement.querySelector('.donut-center');
-  if (wrap) { wrap.querySelector('.donut-total').textContent = total; }
-  else {
+  if (wrap) {
+    wrap.querySelector('.donut-total').textContent = total;
+  } else {
     const div = document.createElement('div');
     div.className = 'donut-center';
     div.innerHTML = `<div class="donut-total">${total}</div><div class="donut-total-lbl">processos</div>`;
@@ -286,38 +361,43 @@ function renderDonutChart(stageData, svgEl, legendEl, total) {
     svgEl.parentElement.appendChild(div);
   }
 
-  legendEl.innerHTML = stageData.map((item, i) => {
-    const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
-    const pct   = total ? Math.round(item.count / total * 100) : 0;
-    return `<div class="donut-leg-row">
+  legendEl.innerHTML = stageData
+    .map((item, i) => {
+      const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+      const pct = total ? Math.round((item.count / total) * 100) : 0;
+      return `<div class="donut-leg-row">
       <div class="donut-leg-dot" style="background:${color}"></div>
       <div class="donut-leg-name">${esc(item.stage.name)}</div>
       <div class="donut-leg-count">${item.count}</div>
       <div class="donut-leg-pct">${pct}%</div>
     </div>`;
-  }).join('');
+    })
+    .join('');
 }
 
 function renderFunil(stageData, total) {
   const maxCount = Math.max(...stageData.map(x => x.count), 1);
   const nonFinalData = stageData.filter(x => !x.stage.is_final);
   const gargaloIdx = nonFinalData.length
-    ? nonFinalData.indexOf(nonFinalData.reduce((a,b) => b.count > a.count ? b : a))
+    ? nonFinalData.indexOf(nonFinalData.reduce((a, b) => (b.count > a.count ? b : a)))
     : -1;
 
-  document.getElementById('dg-funil-list').innerHTML = stageData.map((item, i) => {
-    const color   = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
-    const pct     = maxCount ? Math.round(item.count / maxCount * 100) : 0;
-    const pctTot  = total ? Math.round(item.count / total * 100) : 0;
-    const isGarg  = !item.stage.is_final && item === nonFinalData[gargaloIdx];
-    return `<div class="funil-row2">
+  document.getElementById('dg-funil-list').innerHTML =
+    stageData
+      .map((item, i) => {
+        const color = item.stage.color || STAGE_COLORS[i % STAGE_COLORS.length];
+        const pct = maxCount ? Math.round((item.count / maxCount) * 100) : 0;
+        const pctTot = total ? Math.round((item.count / total) * 100) : 0;
+        const isGarg = !item.stage.is_final && item === nonFinalData[gargaloIdx];
+        return `<div class="funil-row2">
       <div class="funil2-name" style="color:${color}">${esc(item.stage.name)}</div>
       <div class="funil2-bar-wrap"><div class="funil2-bar" style="width:${pct}%;background:${color}"></div></div>
       <div class="funil2-count">${item.count}</div>
       <div class="funil2-pct">${pctTot}%</div>
       <div class="funil2-badges">${isGarg ? '<span class="badge-gargalo">GARGALO</span>' : ''}</div>
     </div>`;
-  }).join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhum processo.</div>';
+      })
+      .join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhum processo.</div>';
 }
 
 function groupBy(cases, fn) {
@@ -326,27 +406,34 @@ function groupBy(cases, fn) {
     const key = fn(c) || '(sem informação)';
     map[key] = (map[key] || 0) + 1;
   });
-  return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
 }
 
 function renderDistList(elId, items, color) {
   const el = document.getElementById(elId);
   if (!el) return;
   const max = items.length ? items[0][1] : 1;
-  el.innerHTML = items.map(([name, count], i) => `
+  el.innerHTML =
+    items
+      .map(
+        ([name, count], i) => `
     <div class="dist-row">
-      <div class="dist-num">${i+1}</div>
+      <div class="dist-num">${i + 1}</div>
       <div class="dist-name">${esc(name)}</div>
-      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(count/max*100)}%;background:${color}"></div></div>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round((count / max) * 100)}%;background:${color}"></div></div>
       <div class="dist-val">${count}</div>
-    </div>`).join('') || '<div style="color:var(--t3);font-size:.75rem">Sem dados.</div>';
+    </div>`
+      )
+      .join('') || '<div style="color:var(--t3);font-size:.75rem">Sem dados.</div>';
 }
 
 // ─── Kanban ──────────────────────────────────────────────────────────────────────
 function renderKanban() {
   const board = document.getElementById('rg-kanban');
   const cases = filteredCases();
-  const now   = new Date();
+  const now = new Date();
   let total = 0;
 
   if (!G.stages || G.stages.length === 0) {
@@ -361,21 +448,25 @@ function renderKanban() {
     return;
   }
 
-  board.innerHTML = G.stages.map(stage => {
-    const stageCases = cases.filter(c => c.stage_id === stage.id);
-    total += stageCases.length;
-    const color = stage.color || '#0E8C7F';
-    return `<div class="k-col">
+  board.innerHTML = G.stages
+    .map(stage => {
+      const stageCases = cases.filter(c => c.stage_id === stage.id);
+      total += stageCases.length;
+      const color = stage.color || '#0E8C7F';
+      return `<div class="k-col">
       <div class="k-col-header" style="background:${color}">
         <span>${esc(stage.name)}</span>
         <span class="k-col-count">${stageCases.length}</span>
       </div>
       <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${stage.id}')">
-        ${stageCases.map(c => renderCard(c, color, now)).join('') ||
-          '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'}
+        ${
+          stageCases.map(c => renderCard(c, color, now)).join('') ||
+          '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'
+        }
       </div>
     </div>`;
-  }).join('');
+    })
+    .join('');
 
   const fc = cases.length;
   document.getElementById('rg-filter-count').textContent =
@@ -385,7 +476,7 @@ function renderKanban() {
 function renderCard(c, color, now) {
   const days = Math.floor((now - new Date(c.created_at)) / 86400000);
   const dCls = days > 30 ? 'alert' : days > 15 ? 'warn' : '';
-  const p    = c.payload || {};
+  const p = c.payload || {};
   const itbi = p.itbi_status || '';
   const exig = p.exig_desc;
 
@@ -405,11 +496,11 @@ function renderCard(c, color, now) {
     ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${esc(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
     ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
     <div class="kc-chips">
-      ${itbi === 'pago'    ? '<span class="chip chip-itbi-pago">ITBI Pago</span>'    : ''}
-      ${itbi === 'pendente'? '<span class="chip chip-itbi-pend">ITBI Pendente</span>': ''}
+      ${itbi === 'pago' ? '<span class="chip chip-itbi-pago">ITBI Pago</span>' : ''}
+      ${itbi === 'pendente' ? '<span class="chip chip-itbi-pend">ITBI Pendente</span>' : ''}
       ${itbi === 'vencido' ? '<span class="chip" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5">ITBI Vencido</span>' : ''}
       ${p.cartorio_name ? `<span class="chip chip-cartorio">${esc(p.cartorio_name)}</span>` : ''}
-      ${p.banco_name    ? `<span class="chip chip-banco">${esc(p.banco_name)}</span>` : ''}
+      ${p.banco_name ? `<span class="chip chip-banco">${esc(p.banco_name)}</span>` : ''}
     </div>
     <div class="kc-footer">
       <span class="kc-date">${fmtDate(c.created_at)}</span>
@@ -427,13 +518,21 @@ function onDragStart(e, id) {
   e.currentTarget.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
-function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
-function onDragOver(e, col) { e.preventDefault(); col.classList.add('drag-over'); }
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+}
+function onDragOver(e, col) {
+  e.preventDefault();
+  col.classList.add('drag-over');
+}
 function onDrop(e, stageId) {
   e.currentTarget.classList.remove('drag-over');
   if (!dragId) return;
   const c = G.cases.find(x => x.id === dragId);
-  if (!c || c.stage_id === stageId) { dragId = null; return; }
+  if (!c || c.stage_id === stageId) {
+    dragId = null;
+    return;
+  }
   const stage = G.stages.find(s => s.id === stageId);
   updateStage(c, stageId, stage?.name);
   dragId = null;
@@ -441,21 +540,23 @@ function onDrop(e, stageId) {
 
 async function updateStage(c, stageId, stageName) {
   const prev = c.stage_name;
-  c.stage_id   = stageId;
+  c.stage_id = stageId;
   c.stage_name = stageName;
   c.stage_entered_at = new Date().toISOString();
   renderKanban();
 
   await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
-    method: 'PATCH', headers: A1.headers(),
+    method: 'PATCH',
+    headers: A1.headers(),
     body: JSON.stringify({ stage_id: stageId, stage_name: stageName, stage_entered_at: c.stage_entered_at })
   });
   await fetch(A1.rest('a1_events'), {
-    method: 'POST', headers: A1.headers(),
+    method: 'POST',
+    headers: A1.headers(),
     body: JSON.stringify({
       tenant_id: G.user?.tenant_id,
-      case_id:   c.id,
-      type:      'stage_change',
+      case_id: c.id,
+      type: 'stage_change',
       description: `${prev} → ${stageName}`,
       actor_name: G.user?.name
     })
@@ -465,17 +566,19 @@ async function updateStage(c, stageId, stageName) {
 
 // ─── List View ─────────────────────────────────────────────────────────────────
 function renderList() {
-  const search   = (document.getElementById('rg-list-search')?.value || '').toLowerCase();
+  const search = (document.getElementById('rg-list-search')?.value || '').toLowerCase();
   const stageFilter = document.getElementById('rg-list-stage')?.value || '';
-  const itbiFilter  = document.getElementById('rg-list-itbi')?.value  || '';
+  const itbiFilter = document.getElementById('rg-list-itbi')?.value || '';
 
   const cases = G.cases.filter(c => {
     if (stageFilter && c.stage_name !== stageFilter) return false;
-    if (itbiFilter  && (c.payload?.itbi_status||'') !== itbiFilter) return false;
+    if (itbiFilter && (c.payload?.itbi_status || '') !== itbiFilter) return false;
     if (search) {
-      return (c.client_name||'').toLowerCase().includes(search)
-          || (c.client_cpf ||'').includes(search)
-          || (c.development||'').toLowerCase().includes(search);
+      return (
+        (c.client_name || '').toLowerCase().includes(search) ||
+        (c.client_cpf || '').includes(search) ||
+        (c.development || '').toLowerCase().includes(search)
+      );
     }
     return true;
   });
@@ -485,30 +588,33 @@ function renderList() {
 
   const now = new Date();
   document.getElementById('rg-list-tbody').innerHTML = cases.length
-    ? cases.map(c => {
-        const p    = c.payload || {};
-        const days = Math.floor((now - new Date(c.created_at)) / 86400000);
-        const itbi = p.itbi_status || '—';
-        const itbiCls = itbi==='pago'?'itbi-pill-pago':itbi==='vencido'?'itbi-pill-venc':'itbi-pill-pend';
-        const st   = G.stages.find(s => s.id === c.stage_id);
-        const stClr= st?.color || '#6B827D';
-        return `<tr onclick="openCase('${c.id}')" style="cursor:pointer">
+    ? cases
+        .map(c => {
+          const p = c.payload || {};
+          const days = Math.floor((now - new Date(c.created_at)) / 86400000);
+          const itbi = p.itbi_status || '—';
+          const itbiCls =
+            itbi === 'pago' ? 'itbi-pill-pago' : itbi === 'vencido' ? 'itbi-pill-venc' : 'itbi-pill-pend';
+          const st = G.stages.find(s => s.id === c.stage_id);
+          const stClr = st?.color || '#6B827D';
+          return `<tr onclick="openCase('${c.id}')" style="cursor:pointer">
           <td><span class="tbl-name">${esc(c.client_name)}</span></td>
-          <td><span class="tbl-cpf">${esc(c.client_cpf||'—')}</span></td>
-          <td>${esc(c.development||'—')}${c.unit?' · '+esc(c.unit):''}</td>
+          <td><span class="tbl-cpf">${esc(c.client_cpf || '—')}</span></td>
+          <td>${esc(c.development || '—')}${c.unit ? ' · ' + esc(c.unit) : ''}</td>
           <td><span style="display:inline-flex;align-items:center;gap:.3rem">
             <span style="width:7px;height:7px;border-radius:50%;background:${stClr};display:inline-block"></span>
-            ${esc(c.stage_name||'—')}</span></td>
-          <td>${esc(p.banco_name||'—')}</td>
-          <td>${esc(p.cartorio_name||'—')}</td>
+            ${esc(c.stage_name || '—')}</span></td>
+          <td>${esc(p.banco_name || '—')}</td>
+          <td>${esc(p.cartorio_name || '—')}</td>
           <td><span class="stage-pill ${itbiCls}">${itbi}</span></td>
-          <td class="tbl-mono">${p.itbi_valor?'R$'+fmtMoney(p.itbi_valor):'—'}</td>
-          <td class="tbl-mono">${esc(p.num_prenotacao||'—')}</td>
-          <td class="tbl-mono">${esc(p.num_matricula||'—')}</td>
+          <td class="tbl-mono">${p.itbi_valor ? 'R$' + fmtMoney(p.itbi_valor) : '—'}</td>
+          <td class="tbl-mono">${esc(p.num_prenotacao || '—')}</td>
+          <td class="tbl-mono">${esc(p.num_matricula || '—')}</td>
           <td class="tbl-mono">${days}d</td>
           <td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openCase('${c.id}')">Abrir</button></td>
         </tr>`;
-      }).join('')
+        })
+        .join('')
     : '<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--t3)">Nenhum processo encontrado.</td></tr>';
 }
 
@@ -520,51 +626,53 @@ function openCase(id) {
   const p = c.payload || {};
 
   document.getElementById('md-title').textContent = c.client_name;
-  document.getElementById('md-sub').textContent   = [c.development, c.unit].filter(Boolean).join(' / ') || '—';
+  document.getElementById('md-sub').textContent = [c.development, c.unit].filter(Boolean).join(' / ') || '—';
 
   // Stage select
   const sel = document.getElementById('md-stage-sel');
-  sel.innerHTML = G.stages.map(s =>
-    `<option value="${s.id}" ${s.id===c.stage_id?'selected':''}>${esc(s.name)}</option>`
-  ).join('');
+  sel.innerHTML = G.stages
+    .map(s => `<option value="${s.id}" ${s.id === c.stage_id ? 'selected' : ''}>${esc(s.name)}</option>`)
+    .join('');
 
   // Dados tab
-  setField('md-name',    c.client_name    || '');
-  setField('md-cpf',     c.client_cpf     || '');
-  setField('md-empr',    c.development    || '');
-  setField('md-unit',    c.unit           || '');
-  setField('md-block',   c.block          || '');
-  setField('md-valor',   c.contract_value || '');
-  setField('md-banco',   p.banco_name     || '');
-  setField('md-manager', c.manager_name   || '');
+  setField('md-name', c.client_name || '');
+  setField('md-cpf', c.client_cpf || '');
+  setField('md-empr', c.development || '');
+  setField('md-unit', c.unit || '');
+  setField('md-block', c.block || '');
+  setField('md-valor', c.contract_value || '');
+  setField('md-banco', p.banco_name || '');
+  setField('md-manager', c.manager_name || '');
   const vinc = document.getElementById('md-vinculos');
   if (vinc) vinc.innerHTML = camposDeVinculo(c, 'md-');
-  setField('md-obs',     c.observations   || '');
+  setField('md-obs', c.observations || '');
 
   // ITBI tab
-  setField('md-itbi-valor',   p.itbi_valor   || '');
-  setField('md-itbi-venc',    p.itbi_venc    || '');
+  setField('md-itbi-valor', p.itbi_valor || '');
+  setField('md-itbi-venc', p.itbi_venc || '');
   setField('md-itbi-pago-em', p.itbi_pago_em || '');
-  setField('md-itbi-url',     p.itbi_url     || '');
+  setField('md-itbi-url', p.itbi_url || '');
   G.itbiStatus = p.itbi_status || '';
   document.querySelectorAll('.itbi-radio-btn').forEach(btn => {
     btn.className = 'itbi-radio-btn' + (btn.dataset.val === G.itbiStatus ? ` active-${G.itbiStatus}` : '');
   });
 
   // Cartório tab
-  setField('md-cartorio',       p.cartorio_name    || '');
-  setField('md-protocolo-dt',   p.data_protocolo   || '');
-  setField('md-prenotacao',     p.num_prenotacao   || '');
-  setField('md-exig-dt',        p.exig_dt          || '');
-  setField('md-exig-desc',      p.exig_desc        || '');
-  setField('md-matricula',      p.num_matricula    || '');
-  setField('md-registro-dt',    p.data_registro    || '');
+  setField('md-cartorio', p.cartorio_name || '');
+  setField('md-protocolo-dt', p.data_protocolo || '');
+  setField('md-prenotacao', p.num_prenotacao || '');
+  setField('md-exig-dt', p.exig_dt || '');
+  setField('md-exig-desc', p.exig_desc || '');
+  setField('md-matricula', p.num_matricula || '');
+  setField('md-registro-dt', p.data_registro || '');
   setField('md-entrega-banco-dt', p.data_entrega_banco || '');
 
   // Mark as seen
   if (c.is_new) {
     fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
-      method:'PATCH', headers:A1.headers(), body:JSON.stringify({is_new:false})
+      method: 'PATCH',
+      headers: A1.headers(),
+      body: JSON.stringify({ is_new: false })
     });
     c.is_new = false;
   }
@@ -580,39 +688,41 @@ async function saveCase() {
 
   const payload = {
     ...(c.payload || {}),
-    banco_name:       val('md-banco'),
-    itbi_valor:       val('md-itbi-valor') || null,
-    itbi_venc:        val('md-itbi-venc')  || null,
-    itbi_status:      G.itbiStatus         || null,
-    itbi_pago_em:     val('md-itbi-pago-em') || null,
-    itbi_url:         val('md-itbi-url')     || null,
-    cartorio_name:    val('md-cartorio'),
-    data_protocolo:   val('md-protocolo-dt') || null,
-    num_prenotacao:   val('md-prenotacao')   || null,
-    exig_dt:          val('md-exig-dt')      || null,
-    exig_desc:        val('md-exig-desc')    || null,
-    num_matricula:    val('md-matricula')    || null,
-    data_registro:    val('md-registro-dt')  || null,
+    banco_name: val('md-banco'),
+    itbi_valor: val('md-itbi-valor') || null,
+    itbi_venc: val('md-itbi-venc') || null,
+    itbi_status: G.itbiStatus || null,
+    itbi_pago_em: val('md-itbi-pago-em') || null,
+    itbi_url: val('md-itbi-url') || null,
+    cartorio_name: val('md-cartorio'),
+    data_protocolo: val('md-protocolo-dt') || null,
+    num_prenotacao: val('md-prenotacao') || null,
+    exig_dt: val('md-exig-dt') || null,
+    exig_desc: val('md-exig-desc') || null,
+    num_matricula: val('md-matricula') || null,
+    data_registro: val('md-registro-dt') || null,
     data_entrega_banco: val('md-entrega-banco-dt') || null
   };
 
   const body = {
-    client_name:    val('md-name'),
-    client_cpf:     val('md-cpf'),
-    development:    val('md-empr'),
-    unit:           val('md-unit'),
-    block:          val('md-block'),
+    client_name: val('md-name'),
+    client_cpf: val('md-cpf'),
+    development: val('md-empr'),
+    unit: val('md-unit'),
+    block: val('md-block'),
     contract_value: val('md-valor') || null,
-    manager_name:   val('md-manager'),
-    empresa_id:        idOuNulo('md-empresa'),
+    manager_name: val('md-manager'),
+    empresa_id: idOuNulo('md-empresa'),
     correspondente_id: idOuNulo('md-correspondente'),
-    analista_id:       idOuNulo('md-analista'),
-    observations:   val('md-obs'),
+    analista_id: idOuNulo('md-analista'),
+    observations: val('md-obs'),
     payload
   };
 
   await fetch(`${A1.rest('a1_cases')}?id=eq.${c.id}`, {
-    method:'PATCH', headers:A1.headers(), body:JSON.stringify(body)
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify(body)
   });
 
   Object.assign(c, body);
@@ -626,8 +736,8 @@ async function saveCase() {
 async function changeStage() {
   if (!G.activeCase) return;
   const c = G.activeCase;
-  const stageId   = document.getElementById('md-stage-sel').value;
-  const stage     = G.stages.find(s => s.id === stageId);
+  const stageId = document.getElementById('md-stage-sel').value;
+  const stage = G.stages.find(s => s.id === stageId);
   await updateStage(c, stageId, stage?.name);
   document.getElementById('md-sub').textContent = [c.development, c.unit].filter(Boolean).join(' / ') || '—';
 }
@@ -636,7 +746,9 @@ async function archiveCase() {
   if (!G.activeCase) return;
   if (!confirm('Arquivar este processo?')) return;
   await fetch(`${A1.rest('a1_cases')}?id=eq.${G.activeCase.id}`, {
-    method:'PATCH', headers:A1.headers(), body:JSON.stringify({archived:true})
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify({ archived: true })
   });
   G.cases = G.cases.filter(c => c.id !== G.activeCase.id);
   closeModal('modal-det-bg');
@@ -647,16 +759,21 @@ async function archiveCase() {
 }
 
 async function loadEvents(caseId) {
-  const events = await fetch(
-    `${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=30`,
-    { headers: A1.headers() }
-  ).then(r => r.json()).catch(() => []);
+  const events = await fetch(`${A1.rest('a1_events')}?case_id=eq.${caseId}&order=created_at.desc&limit=30`, {
+    headers: A1.headers()
+  })
+    .then(r => r.json())
+    .catch(() => []);
 
   document.getElementById('md-events').innerHTML = events.length
-    ? events.map(e => `<div class="evt-item">
+    ? events
+        .map(
+          e => `<div class="evt-item">
         <div class="evt-date">${new Date(e.created_at).toLocaleString('pt-BR')}</div>
         <div>${esc(e.description || e.type)}</div>
-      </div>`).join('')
+      </div>`
+        )
+        .join('')
     : '<div style="color:var(--t3);font-size:.78rem">Sem histórico.</div>';
 }
 
@@ -669,52 +786,60 @@ function selectItbi(btn) {
 
 // ─── New Case Modal ────────────────────────────────────────────────────────────
 function openNewModal() {
-  ['n-name','n-cpf','n-phone','n-empr','n-block','n-unit','n-valor','n-banco','n-obs'].forEach(id => {
+  ['n-name', 'n-cpf', 'n-phone', 'n-empr', 'n-block', 'n-unit', 'n-valor', 'n-banco', 'n-obs'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   const sel = document.getElementById('n-stage');
-  sel.innerHTML = G.stages.map(s =>
-    `<option value="${s.id}" ${s.is_initial?'selected':''}>${esc(s.name)}</option>`
-  ).join('');
+  sel.innerHTML = G.stages
+    .map(s => `<option value="${s.id}" ${s.is_initial ? 'selected' : ''}>${esc(s.name)}</option>`)
+    .join('');
   openModal('modal-new-bg');
 }
 
 async function createCase() {
   const name = val('n-name').trim();
-  if (!name) { toast('Informe o nome do cliente.', 'error'); return; }
+  if (!name) {
+    toast('Informe o nome do cliente.', 'error');
+    return;
+  }
   const stageId = val('n-stage');
-  const stage   = G.stages.find(s => s.id === stageId) || G.stages[0];
+  const stage = G.stages.find(s => s.id === stageId) || G.stages[0];
 
   const payload = {
     banco_name: val('n-banco') || null
   };
 
   const body = {
-    tenant_id:      G.user?.tenant_id,
-    module_key:     'registro',
-    client_name:    name,
-    client_cpf:     val('n-cpf')   || null,
-    development:    val('n-empr')  || null,
-    block:          val('n-block') || null,
-    unit:           val('n-unit')  || null,
+    tenant_id: G.user?.tenant_id,
+    module_key: 'registro',
+    client_name: name,
+    client_cpf: val('n-cpf') || null,
+    development: val('n-empr') || null,
+    block: val('n-block') || null,
+    unit: val('n-unit') || null,
     contract_value: val('n-valor') || null,
-    manager_name:   val('n-manager') || null,
-    observations:   val('n-obs')   || null,
-    stage_id:       stage?.id,
-    stage_name:     stage?.name,
+    manager_name: val('n-manager') || null,
+    observations: val('n-obs') || null,
+    stage_id: stage?.id,
+    stage_name: stage?.name,
     stage_entered_at: new Date().toISOString(),
-    is_new:         true,
-    archived:       false,
+    is_new: true,
+    archived: false,
     payload
   };
 
   const res = await fetch(A1.rest('a1_cases'), {
-    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(body)
+    method: 'POST',
+    headers: A1.returnHeaders(),
+    body: JSON.stringify(body)
   });
   const created = await res.json();
   const card = Array.isArray(created) ? created[0] : created;
-  if (!card?.id) { toast('Erro ao criar processo.', 'error'); return; }
+  if (!card?.id) {
+    toast('Erro ao criar processo.', 'error');
+    return;
+  }
 
   G.cases.unshift(card);
   closeModal('modal-new-bg');
@@ -727,37 +852,52 @@ async function createCase() {
 
 // ─── Config / Stages ──────────────────────────────────────────────────────────
 function renderConfigStages() {
-  document.getElementById('cfg-stages-list').innerHTML = G.stages.map(s => `
+  document.getElementById('cfg-stages-list').innerHTML =
+    G.stages
+      .map(
+        s => `
     <div style="display:flex;align-items:center;gap:.65rem;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.55rem .875rem">
-      <div style="width:10px;height:10px;border-radius:50%;background:${s.color||'#ccc'};flex-shrink:0"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color || '#ccc'};flex-shrink:0"></div>
       <div style="flex:1;font-size:.8rem;font-weight:600">${esc(s.name)}</div>
       <div style="font-size:.68rem;color:var(--t3)">#${s.position}</div>
-      ${s.is_initial?'<span style="background:#E0E7FF;color:#3730A3;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">INICIAL</span>':''}
-      ${s.is_final  ?'<span style="background:#dbeafe;color:#1e40af;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">FINAL</span>':''}
-    </div>`).join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhuma etapa configurada.</div>';
+      ${s.is_initial ? '<span style="background:#E0E7FF;color:#3730A3;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">INICIAL</span>' : ''}
+      ${s.is_final ? '<span style="background:#dbeafe;color:#1e40af;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:3px">FINAL</span>' : ''}
+    </div>`
+      )
+      .join('') || '<div style="color:var(--t3);font-size:.78rem">Nenhuma etapa configurada.</div>';
 }
 
-function openStageModal() { openModal('modal-stage-bg'); }
+function openStageModal() {
+  openModal('modal-stage-bg');
+}
 
 async function saveStage() {
   const name = val('st-name').trim();
-  if (!name) { toast('Informe o nome da etapa.', 'error'); return; }
+  if (!name) {
+    toast('Informe o nome da etapa.', 'error');
+    return;
+  }
   const body = {
     tenant_id: G.user?.tenant_id,
-    module_key:'registro',
+    module_key: 'registro',
     name,
-    color:     document.getElementById('st-color').value,
-    position:  parseInt(val('st-pos')) || 1,
-    is_initial:document.getElementById('st-init').checked,
-    is_final:  document.getElementById('st-final').checked
+    color: document.getElementById('st-color').value,
+    position: parseInt(val('st-pos')) || 1,
+    is_initial: document.getElementById('st-init').checked,
+    is_final: document.getElementById('st-final').checked
   };
-  const res  = await fetch(A1.rest('a1_stages'), {
-    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(body)
+  const res = await fetch(A1.rest('a1_stages'), {
+    method: 'POST',
+    headers: A1.returnHeaders(),
+    body: JSON.stringify(body)
   });
   const [s] = await res.json();
-  if (!s?.id) { toast('Erro ao salvar etapa.', 'error'); return; }
+  if (!s?.id) {
+    toast('Erro ao salvar etapa.', 'error');
+    return;
+  }
   G.stages.push(s);
-  G.stages.sort((a,b) => a.position - b.position);
+  G.stages.sort((a, b) => a.position - b.position);
   renderConfigStages();
   closeModal('modal-stage-bg');
   toast('Etapa adicionada.', 'success');
@@ -769,30 +909,40 @@ async function saveStage() {
 // qualquer outra coisa vira a cor padrão. Cor esquisita é um detalhe visual;
 // cor que executa script é o cartão do vizinho aberto no navegador de quem
 // abriu o quadro.
-function cor(v, padrao){
+function cor(v, padrao) {
   const t = String(v == null ? '' : v).trim();
-  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : (padrao || '#0E8C7F');
+  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/.test(t) ? t : padrao || '#0E8C7F';
 }
 
 // ══════════ VÍNCULOS: empresa correspondente, usuário correspondente, analista ══
 // As três colunas são as mesmas dos outros módulos — empresa_id, correspondente_id
 // e analista_id — para que um processo possa ser seguido de ponta a ponta pelo
 // mesmo vínculo. Aqui eram texto solto (`manager_name`) ou nem existiam.
-function selVinculo(id, lista, selecionado, desabilitado){
-  return `<select id="${id}"${desabilitado ? ' disabled' : ''}>
+function selVinculo(id, lista, selecionado, desabilitado) {
+  return (
+    `<select id="${id}"${desabilitado ? ' disabled' : ''}>
     <option value="">— não definido —</option>` +
-    (Array.isArray(lista) ? lista : []).map(x =>
-      `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`
-    ).join('') + '</select>';
+    (Array.isArray(lista) ? lista : [])
+      .map(
+        x => `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`
+      )
+      .join('') +
+    '</select>'
+  );
 }
-function idOuNulo(id){ const el = document.getElementById(id); return (el && el.value) || null; }
+function idOuNulo(id) {
+  const el = document.getElementById(id);
+  return (el && el.value) || null;
+}
 
 // O Roteamento de Analistas ainda não existe. Quando existir, é AQUI que ele
 // passa a responder — e o campo de analista fica bloqueado, porque quem
 // escolhe passa a ser a regra, não a pessoa.
-function roteamentoDeAnalistasAtivo(){ return false; }
+function roteamentoDeAnalistasAtivo() {
+  return false;
+}
 
-function camposDeVinculo(c, prefixo){
+function camposDeVinculo(c, prefixo) {
   const roteia = roteamentoDeAnalistasAtivo();
   c = c || {};
   return `<div class="form-group"><label>Empresa correspondente</label>
@@ -811,12 +961,13 @@ function populateSelect(id, items, placeholder, selected) {
   // remontada com '' a cada carga, e a volta para a aba do navegador devolvia a
   // pessoa para "Todas as etapas".
   const manter = selected || el.value;
-  el.innerHTML = `<option value="">${placeholder}</option>` +
-    items.map(v => `<option value="${esc(v)}" ${v===manter?'selected':''}>${esc(v)}</option>`).join('');
+  el.innerHTML =
+    `<option value="">${placeholder}</option>` +
+    items.map(v => `<option value="${esc(v)}" ${v === manter ? 'selected' : ''}>${esc(v)}</option>`).join('');
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
-const TABS = ['dashboard','kanban','lista','config'];
+const TABS = ['dashboard', 'kanban', 'lista', 'config'];
 function switchTab(tab, clickedDdItem) {
   // Update tab-btn active state
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -844,7 +995,7 @@ function switchTab(tab, clickedDdItem) {
     if (el2) el2.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'kanban') renderKanban();
-  if (tab === 'lista')  renderList();
+  if (tab === 'lista') renderList();
   if (tab === 'config') renderConfigStages();
 }
 
@@ -870,15 +1021,23 @@ function switchModalTab(tab, el) {
   if (tab === 'hist' && G.activeCase) loadEvents(G.activeCase.id);
 }
 
-function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+function openModal(id) {
+  document.getElementById(id)?.classList.remove('hidden');
+}
+function closeModal(id) {
+  document.getElementById(id)?.classList.add('hidden');
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(str) {
   // String(str||'') engole o zero e o false: `esc(0)` devolvia string vazia, e a
   // tela mostrava um campo em branco onde o dado era 0. O teste tem de ser por
   // ausencia, nao por valor falsy.
-  return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 function val(id) {
   const el = document.getElementById(id);
@@ -900,7 +1059,7 @@ function fmtMoney(v) {
   return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 function toast(msg, type = 'info') {
-  const el   = document.getElementById('rg-toast');
+  const el = document.getElementById('rg-toast');
   const item = document.createElement('div');
   item.className = `toast-item toast-${type}`;
   item.textContent = msg;
@@ -910,7 +1069,7 @@ function toast(msg, type = 'info') {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    ['modal-det-bg','modal-new-bg','modal-stage-bg'].forEach(closeModal);
+    ['modal-det-bg', 'modal-new-bg', 'modal-stage-bg'].forEach(closeModal);
   }
 });
 

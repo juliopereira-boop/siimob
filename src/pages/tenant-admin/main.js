@@ -1,17 +1,25 @@
 // Texto vindo do banco nunca entra cru no HTML: um nome com "<" viraria tag.
 function esc(s) {
   if (s === null || s === undefined) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function init() {
   let user;
-  try { user = a1RequireAuth(['owner','admin']); } catch { return; }
+  try {
+    user = a1RequireAuth(['owner', 'admin']);
+  } catch {
+    return;
+  }
   a1StartHeartbeat('tenant-admin');
 
   const slug = A1.slug;
-  document.getElementById('nav-home').href        = `/${slug}/dashboard`;
+  document.getElementById('nav-home').href = `/${slug}/dashboard`;
   document.getElementById('user-display').textContent = `${user.name} · ${user.role}`;
 
   loadUsers();
@@ -24,7 +32,9 @@ async function loadUsers() {
     { headers: A1.headers() }
   ).then(r => r.json());
 
-  document.getElementById('users-tbody').innerHTML = users.map(u => `
+  document.getElementById('users-tbody').innerHTML = users
+    .map(
+      u => `
     <tr>
       <td>${esc(u.name)}</td>
       <td>${esc(u.cpf || '—')}</td>
@@ -36,17 +46,20 @@ async function loadUsers() {
           ${u.is_active ? 'Desativar' : 'Ativar'}
         </button>
       </td>
-    </tr>`).join('');
+    </tr>`
+    )
+    .join('');
 }
 
 async function loadPartners() {
-  const partners = await fetch(
-    `${A1.rest('a1_partners')}?order=created_at.asc`,
-    { headers: A1.headers() }
-  ).then(r => r.json());
+  const partners = await fetch(`${A1.rest('a1_partners')}?order=created_at.asc`, {
+    headers: A1.headers()
+  }).then(r => r.json());
 
   document.getElementById('partners-tbody').innerHTML = partners.length
-    ? partners.map(p => `
+    ? partners
+        .map(
+          p => `
         <tr>
           <td>${esc(p.name)}</td>
           <td><span class="badge badge-indigo">${esc(p.type)}</span></td>
@@ -57,14 +70,24 @@ async function loadPartners() {
             ${!p.approved ? `<button class="btn btn-primary" style="font-size:.75rem" onclick="approvePartner('${p.id}')">Aprovar</button>` : ''}
             <button class="btn btn-ghost" style="font-size:.75rem" onclick="togglePartner('${p.id}', ${p.is_active})">${p.is_active ? 'Desativar' : 'Ativar'}</button>
           </td>
-        </tr>`).join('')
+        </tr>`
+        )
+        .join('')
     : '<tr><td colspan="6" style="color:var(--muted)">Nenhum parceiro cadastrado.</td></tr>';
 }
 
-function openNewUser()     { document.getElementById('user-modal').style.display    = 'flex'; }
-function closeUserModal()  { document.getElementById('user-modal').style.display    = 'none'; }
-function openNewPartner()  { document.getElementById('partner-modal').style.display = 'flex'; }
-function closePartnerModal(){ document.getElementById('partner-modal').style.display = 'none'; }
+function openNewUser() {
+  document.getElementById('user-modal').style.display = 'flex';
+}
+function closeUserModal() {
+  document.getElementById('user-modal').style.display = 'none';
+}
+function openNewPartner() {
+  document.getElementById('partner-modal').style.display = 'flex';
+}
+function closePartnerModal() {
+  document.getElementById('partner-modal').style.display = 'none';
+}
 
 async function createUser() {
   const btn = document.getElementById('u-btn');
@@ -72,11 +95,11 @@ async function createUser() {
   btn.textContent = 'Criando...';
   try {
     await a1CreateUser({
-      name:     document.getElementById('u-name').value,
-      cpf:      document.getElementById('u-cpf').value,
-      email:    document.getElementById('u-email').value,
+      name: document.getElementById('u-name').value,
+      cpf: document.getElementById('u-cpf').value,
+      email: document.getElementById('u-email').value,
       password: document.getElementById('u-pw').value,
-      role:     document.getElementById('u-role').value
+      role: document.getElementById('u-role').value
     });
     closeUserModal();
     toast('Usuário criado.', 'success');
@@ -99,11 +122,11 @@ async function createPartner() {
     method: 'POST',
     headers: A1.returnHeaders(),
     body: JSON.stringify({
-      name:          document.getElementById('p-name').value,
-      type:          document.getElementById('p-type').value,
-      cpf:           document.getElementById('p-cpf').value.replace(/\D/g,''),
-      email:         document.getElementById('p-email').value,
-      phone:         document.getElementById('p-phone').value,
+      name: document.getElementById('p-name').value,
+      type: document.getElementById('p-type').value,
+      cpf: document.getElementById('p-cpf').value.replace(/\D/g, ''),
+      email: document.getElementById('p-email').value,
+      phone: document.getElementById('p-phone').value,
       password_hash: hash
     })
   });
@@ -114,7 +137,9 @@ async function createPartner() {
     loadPartners();
   } else {
     const err = await res.json();
-    document.getElementById('p-err').textContent = err?.message?.includes('unique') ? 'CPF já cadastrado.' : 'Erro ao cadastrar.';
+    document.getElementById('p-err').textContent = err?.message?.includes('unique')
+      ? 'CPF já cadastrado.'
+      : 'Erro ao cadastrar.';
     document.getElementById('p-err').style.display = 'block';
   }
   btn.disabled = false;
@@ -122,7 +147,8 @@ async function createPartner() {
 
 async function toggleUser(id, current) {
   await fetch(`${A1.rest('a1_users')}?id=eq.${id}`, {
-    method: 'PATCH', headers: A1.headers(),
+    method: 'PATCH',
+    headers: A1.headers(),
     body: JSON.stringify({ is_active: !current })
   });
   toast(current ? 'Usuário desativado.' : 'Usuário ativado.', 'success');
@@ -131,7 +157,8 @@ async function toggleUser(id, current) {
 
 async function approvePartner(id) {
   await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {
-    method: 'PATCH', headers: A1.headers(),
+    method: 'PATCH',
+    headers: A1.headers(),
     body: JSON.stringify({ approved: true })
   });
   toast('Parceiro aprovado.', 'success');
@@ -140,14 +167,15 @@ async function approvePartner(id) {
 
 async function togglePartner(id, current) {
   await fetch(`${A1.rest('a1_partners')}?id=eq.${id}`, {
-    method: 'PATCH', headers: A1.headers(),
+    method: 'PATCH',
+    headers: A1.headers(),
     body: JSON.stringify({ is_active: !current })
   });
   loadPartners();
 }
 
 function toast(msg, type = 'info') {
-  const el   = document.getElementById('a1-toast');
+  const el = document.getElementById('a1-toast');
   const item = document.createElement('div');
   item.className = `toast-item toast-${type}`;
   item.textContent = msg;
@@ -156,7 +184,10 @@ function toast(msg, type = 'info') {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeUserModal(); closePartnerModal(); }
+  if (e.key === 'Escape') {
+    closeUserModal();
+    closePartnerModal();
+  }
 });
 
 init();

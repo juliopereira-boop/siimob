@@ -17,15 +17,14 @@
 // lugar onde qualquer pessoa consegue mexer.
 
 const A1Avisos = (() => {
-
   // O tipo do usuário, no vocabulário do mural.
   function publicoDoUsuario(u) {
     if (!u) return '';
     if (u.role === 'owner' || u.role === 'admin') return 'gestor';
     if (u.role === 'partner') {
       const t = (u.type || '').toLowerCase();
-      if (t === 'analista')    return 'analista';
-      if (t === 'corretor')    return 'corretor';
+      if (t === 'analista') return 'analista';
+      if (t === 'corretor') return 'corretor';
       if (t === 'despachante') return 'despachante';
       return 'correspondente';
     }
@@ -46,7 +45,9 @@ const A1Avisos = (() => {
       const g = JSON.parse(localStorage.getItem(CHAVE_VISTOS) || 'null');
       if (!g || g.token !== A1.token) return [];
       return Array.isArray(g.ids) ? g.ids : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
 
   function marcarVistoNaSessao(id) {
@@ -55,12 +56,18 @@ const A1Avisos = (() => {
       const ids = vistosNestaSessao();
       if (ids.indexOf(id) === -1) ids.push(id);
       localStorage.setItem(CHAVE_VISTOS, JSON.stringify({ token: A1.token, ids }));
-    } catch { /* navegador sem espaço: o aviso repete, o que é o lado seguro */ }
+    } catch {
+      /* navegador sem espaço: o aviso repete, o que é o lado seguro */
+    }
   }
 
-  const esc = s => String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const esc = s =>
+    String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
   // Só aceitamos endereço de arquivo; um "javascript:..." vindo do banco não
   // pode virar link clicável na tela de ninguém.
@@ -133,11 +140,16 @@ const A1Avisos = (() => {
     document.head.appendChild(st);
   }
 
-  let fila = [], atual = 0, usuario = null;
+  let fila = [],
+    atual = 0,
+    usuario = null;
 
   function desenhar() {
     const a = fila[atual];
-    if (!a) { fechar(); return; }
+    if (!a) {
+      fechar();
+      return;
+    }
     let fundo = document.getElementById('a1-avisos');
     if (!fundo) {
       fundo = document.createElement('div');
@@ -154,15 +166,19 @@ const A1Avisos = (() => {
     const arte = img
       ? `<a href="${esc(img)}" target="_blank" rel="noopener noreferrer"
              title="Abrir a imagem em tamanho real"><img src="${esc(img)}" alt=""></a>`
-      : (vid ? (molde && idYt
+      : vid
+        ? molde && idYt
           ? `<iframe width="100%" height="300" style="border:0"
                src="https://www.youtube.com/embed/${esc(idYt)}" allowfullscreen
                title="Vídeo do aviso"></iframe>`
-          : `<video src="${esc(vid)}" controls></video>`)
-        : '');
+          : `<video src="${esc(vid)}" controls></video>`
+        : '';
 
-    const texto = (a.corpo || '').split(/\n{2,}/).filter(Boolean)
-      .map(par => `<p>${linkarTexto(esc(par)).replace(/\n/g,'<br>')}</p>`).join('');
+    const texto = (a.corpo || '')
+      .split(/\n{2,}/)
+      .filter(Boolean)
+      .map(par => `<p>${linkarTexto(esc(par)).replace(/\n/g, '<br>')}</p>`)
+      .join('');
 
     const link = urlSegura(a.link_url);
     const acao = link
@@ -185,22 +201,32 @@ const A1Avisos = (() => {
           <button class="av-x" onclick="A1Avisos.fechar()" aria-label="Fechar">&#x2715;</button>
         </div>
         ${arte ? `<div class="av-arte">${arte}</div>` : ''}
-        ${texto ? `
-          ${recolhido ? `
+        ${
+          texto
+            ? `
+          ${
+            recolhido
+              ? `
             <button class="av-mais" id="av-mais" aria-expanded="false" aria-controls="av-corpo"
                     onclick="A1Avisos.alternar()">
               <span>Ler o aviso completo</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-            </button>` : ''}
+            </button>`
+              : ''
+          }
           <div class="av-corpo" id="av-corpo"${recolhido ? ' hidden' : ''}>${texto}</div>
-        ` : ''}
+        `
+            : ''
+        }
         ${acao}
         <div class="av-rodape">
           <span class="av-conta">${fila.length > 1 ? `${atual + 1} de ${fila.length}` : ''}</span>
-          ${atual + 1 < fila.length
-            ? `<button class="av-btn btn-p av-btn-p" onclick="A1Avisos.proximo()">Próximo</button>`
-            : `<button class="av-btn av-btn-p" onclick="A1Avisos.fechar()">Entendi</button>`}
+          ${
+            atual + 1 < fila.length
+              ? `<button class="av-btn btn-p av-btn-p" onclick="A1Avisos.proximo()">Próximo</button>`
+              : `<button class="av-btn av-btn-p" onclick="A1Avisos.fechar()">Entendi</button>`
+          }
         </div>
       </div>`;
   }
@@ -213,7 +239,7 @@ const A1Avisos = (() => {
     b.setAttribute('aria-expanded', String(abrindo));
     c.hidden = !abrindo;
     b.querySelector('span').textContent = abrindo ? 'Fechar o texto' : 'Ler o aviso completo';
-    if (abrindo) c.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    if (abrindo) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   // Duas contas diferentes. No NAVEGADOR, "já mostrei nesta sessão" — é o que
@@ -225,7 +251,7 @@ const A1Avisos = (() => {
     try {
       await fetch(A1.rest('a1_avisos_lidos'), {
         method: 'POST',
-        headers: A1.headers({ 'Prefer': 'resolution=ignore-duplicates' }),
+        headers: A1.headers({ Prefer: 'resolution=ignore-duplicates' }),
         body: JSON.stringify({ aviso_id: aviso.id, user_key: chaveDoUsuario(usuario) })
       });
     } catch {}
@@ -234,14 +260,16 @@ const A1Avisos = (() => {
   function proximo() {
     marcarLido(fila[atual]);
     atual++;
-    if (atual >= fila.length) fechar(); else desenhar();
+    if (atual >= fila.length) fechar();
+    else desenhar();
   }
 
   function fechar() {
     marcarLido(fila[atual]);
     const el = document.getElementById('a1-avisos');
     if (el) el.remove();
-    fila = []; atual = 0;
+    fila = [];
+    atual = 0;
   }
 
   async function mostrar() {
@@ -249,22 +277,26 @@ const A1Avisos = (() => {
       usuario = A1.user;
       if (!usuario || !A1.token) return;
       const res = await fetch(A1.rpc('a1_avisos_para_mim'), {
-        method: 'POST', headers: A1.headers(),
+        method: 'POST',
+        headers: A1.headers(),
         body: JSON.stringify({
           p_publico: publicoDoUsuario(usuario),
           p_user_key: chaveDoUsuario(usuario)
         })
       });
-      if (!res.ok) return;                       // sem mural instalado: segue a vida
+      if (!res.ok) return; // sem mural instalado: segue a vida
       const lista = await res.json().catch(() => []);
       if (!Array.isArray(lista) || !lista.length) return;
       const jaVistos = vistosNestaSessao();
       const pendentes = lista.filter(a => jaVistos.indexOf(a.id) === -1);
       if (!pendentes.length) return;
-      fila = pendentes; atual = 0;
+      fila = pendentes;
+      atual = 0;
       estilo();
       desenhar();
-    } catch { /* aviso nunca pode atrapalhar quem está trabalhando */ }
+    } catch {
+      /* aviso nunca pode atrapalhar quem está trabalhando */
+    }
   }
 
   return { mostrar, fechar, proximo, alternar, publicoDoUsuario };

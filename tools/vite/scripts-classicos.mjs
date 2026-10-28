@@ -25,7 +25,9 @@ export default function scriptsClassicos() {
     name: 'siimob:scripts-classicos',
     apply: 'build',
     enforce: 'post',
-    configResolved(c) { raiz = c.root; },
+    configResolved(c) {
+      raiz = c.root;
+    },
 
     // Antes de o Vite ler o HTML, cada <script src> local vira uma marca sem
     // src. Assim ele não tenta (e não reclama de) empacotar o que não é módulo.
@@ -33,7 +35,7 @@ export default function scriptsClassicos() {
       order: 'pre',
       handler(html, ctx) {
         return html.replace(/<script src="([^"]+)"><\/script>/g, (tag, src) => {
-          if (/^(https?:)?\/\//.test(src)) return tag;          // CDN: fica como está
+          if (/^(https?:)?\/\//.test(src)) return tag; // CDN: fica como está
           const abs = src.startsWith('/') ? resolve(raiz, '.' + src) : resolve(dirname(ctx.filename), src);
           return `<script data-classico="${relative(raiz, abs).split(sep).join('/')}"></script>`;
         });
@@ -49,11 +51,16 @@ export default function scriptsClassicos() {
           if (!emitidos.has(rel)) {
             const codigo = readFileSync(resolve(raiz, rel), 'utf8');
             const { code } = await transform(codigo, {
-              loader: 'js', minify: true, target: 'esnext', charset: 'utf8', legalComments: 'none'
+              loader: 'js',
+              minify: true,
+              target: 'esnext',
+              charset: 'utf8',
+              legalComments: 'none'
             });
             const hash = createHash('sha256').update(code).digest('hex').slice(0, 8);
             const partes = rel.split('/');
-            const nome = partes[1] === 'pages' ? `${partes[2]}-${basename(rel, '.js')}` : basename(rel, '.js');
+            const nome =
+              partes[1] === 'pages' ? `${partes[2]}-${basename(rel, '.js')}` : basename(rel, '.js');
             const fileName = `static/js/${nome}-${hash}.js`;
             this.emitFile({ type: 'asset', fileName, source: code });
             emitidos.set(rel, fileName);

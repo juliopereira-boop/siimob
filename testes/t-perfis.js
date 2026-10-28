@@ -29,42 +29,67 @@ async function abrirConfig({ modulos = [] } = {}) {
   liberarModulos(modulos);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
-  const erros = [], pedidos = [];
+  const erros = [],
+    pedidos = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
-  p.on('console', m => { const t = m.text();
-    if (m.type() === 'error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::/.test(t)) erros.push('console: ' + t); });
+  p.on('console', m => {
+    const t = m.text();
+    if (m.type() === 'error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::/.test(t))
+      erros.push('console: ' + t);
+  });
   await p.addInitScript(() => {
     localStorage.setItem('a1_token', 'tok');
     localStorage.setItem('a1_slug', 'thecred');
-    localStorage.setItem('a1_user', JSON.stringify({ id:'u1', tenant_id:'t1', name:'Julio',
-      role:'owner', cpf:'99999999999', permissions:{} }));
+    localStorage.setItem(
+      'a1_user',
+      JSON.stringify({
+        id: 'u1',
+        tenant_id: 't1',
+        name: 'Julio',
+        role: 'owner',
+        cpf: '99999999999',
+        permissions: {}
+      })
+    );
     window.confirm = () => true;
     window.__POSTS = [];
     const f = window.fetch;
     window.fetch = function (u, o) {
-      if (o && o.method && o.method !== 'GET') window.__POSTS.push({ url:String(u), m:o.method, body:o.body });
+      if (o && o.method && o.method !== 'GET')
+        window.__POSTS.push({ url: String(u), m: o.method, body: o.body });
       return f.apply(this, arguments);
     };
   });
   await p.route(/supabase\.co/, r => {
     pedidos.push(r.request().method() + ' ' + r.request().url());
-    let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch (e) { d = []; }
-    r.fulfill({ status:200, contentType:'application/json',
-                headers:{ 'content-range':'0-1/2' }, body:JSON.stringify(d) });
+    let d;
+    try {
+      d = responder(r.request().url(), r.request().method(), r.request().postData());
+    } catch (e) {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
-  await p.goto(BASE + '/configuracoes.html', { waitUntil:'load' });
+  await p.goto(BASE + '/configuracoes.html', { waitUntil: 'load' });
   await p.waitForTimeout(1600);
   return { b, p, erros, pedidos };
 }
 
-const chaves = (p, classe) => p.evaluate(c =>
-  [...document.querySelectorAll('.' + c)].map(x => x.dataset.key), classe);
+const chaves = (p, classe) =>
+  p.evaluate(c => [...document.querySelectorAll('.' + c)].map(x => x.dataset.key), classe);
 
-const gravado = (p, re) => p.evaluate(r => {
-  const ult = (window.__POSTS || []).filter(x => new RegExp(r).test(x.url)).pop();
-  if (!ult) return null;
-  const c = JSON.parse(ult.body); return Array.isArray(c) ? c[0] : c;
-}, re.source);
+const gravado = (p, re) =>
+  p.evaluate(r => {
+    const ult = (window.__POSTS || []).filter(x => new RegExp(r).test(x.url)).pop();
+    if (!ult) return null;
+    const c = JSON.parse(ult.body);
+    return Array.isArray(c) ? c[0] : c;
+  }, re.source);
 
 (async () => {
   console.log('== SEM OS MÓDULOS NOVOS, SÓ AS PERMISSÕES DE REPASSE ==');
@@ -74,8 +99,11 @@ const gravado = (p, re) => p.evaluate(r => {
     await p.waitForTimeout(400);
 
     const ks = await chaves(p, 'co-perm');
-    checa('nenhuma permissão de Pré-análise no cadastro',
-      !ks.some(k => /^pa_|analisar_credito/.test(k)), ks.join(','));
+    checa(
+      'nenhuma permissão de Pré-análise no cadastro',
+      !ks.some(k => /^pa_|analisar_credito/.test(k)),
+      ks.join(',')
+    );
     checa('nenhuma de Venda', !ks.some(k => /^co_/.test(k)), ks.join(','));
     checa('as de Repasse continuam', ks.includes('criar_repasses') && ks.includes('alterar_etapa'));
 
@@ -86,11 +114,12 @@ const gravado = (p, re) => p.evaluate(r => {
     // t-ver-repasses.js). Voltar decorativa é que não pode — e quem vigia isso
     // é o teste de chave órfã no fim deste arquivo, que confere o projeto
     // inteiro. As outras duas continuam sem leitor nenhum e sem lugar aqui.
-    checa('as chaves decorativas continuam fora do formulário',
-      !ks.some(k => ['baixar_documentos','editar_perfil'].includes(k)),
-      ks.join(','));
-    checa('e "ver processos" está lá, agora que faz alguma coisa',
-      ks.includes('ver_repasses'), ks.join(','));
+    checa(
+      'as chaves decorativas continuam fora do formulário',
+      !ks.some(k => ['baixar_documentos', 'editar_perfil'].includes(k)),
+      ks.join(',')
+    );
+    checa('e "ver processos" está lá, agora que faz alguma coisa', ks.includes('ver_repasses'), ks.join(','));
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
@@ -98,20 +127,22 @@ const gravado = (p, re) => p.evaluate(r => {
 
   console.log('\n== LIBEROU O MÓDULO, AS PERMISSÕES DELE APARECEM SOZINHAS ==');
   {
-    const { b, p, erros } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
+    const { b, p, erros } = await abrirConfig({ modulos: ['PRE_ANALISE', 'COMERCIAL'] });
 
     for (const [abrir, classe, quem] of [
-      ['openCorretor(null)',        'co-perm', 'corretor'],
-      ['openAnalista(null)',        'an-perm', 'analista'],
-      ['openPartnerModal(null)',    'pt-perm', 'correspondente'],
+      ['openCorretor(null)', 'co-perm', 'corretor'],
+      ['openAnalista(null)', 'an-perm', 'analista'],
+      ['openPartnerModal(null)', 'pt-perm', 'correspondente']
     ]) {
       await p.evaluate(f => eval(f), abrir);
       await p.waitForTimeout(400);
       const ks = await chaves(p, classe);
-      checa(`${quem}: ganhou as permissões de Pré-análise`,
-        ks.includes('pa_ver') && ks.includes('pa_criar') && ks.includes('analisar_credito'), ks.join(','));
-      checa(`${quem}: e as de Venda`,
-        ks.includes('co_ver') && ks.includes('co_editar'), ks.join(','));
+      checa(
+        `${quem}: ganhou as permissões de Pré-análise`,
+        ks.includes('pa_ver') && ks.includes('pa_criar') && ks.includes('analisar_credito'),
+        ks.join(',')
+      );
+      checa(`${quem}: e as de Venda`, ks.includes('co_ver') && ks.includes('co_editar'), ks.join(','));
       // Uma chave, uma caixa. Duas caixas para a mesma chave e o formulário
       // passa a ter duas respostas para a mesma pergunta — vence a última lida.
       checa(`${quem}: nenhuma chave repetida`, new Set(ks).size === ks.length, ks.join(','));
@@ -120,10 +151,13 @@ const gravado = (p, re) => p.evaluate(r => {
     // Os cartões grandes do correspondente continuam sendo a única casa dessas
     // três: o montador as pula de propósito.
     const kp = await chaves(p, 'pt-perm');
-    checa('correspondente: gerente e visão geral seguem nos cartões grandes',
+    checa(
+      'correspondente: gerente e visão geral seguem nos cartões grandes',
       kp.filter(k => k === 'gerente').length === 1 &&
-      kp.filter(k => k === 'ver_todos_analistas').length === 1 &&
-      kp.filter(k => k === 'ver_todos_repasses').length === 1, kp.join(','));
+        kp.filter(k => k === 'ver_todos_analistas').length === 1 &&
+        kp.filter(k => k === 'ver_todos_repasses').length === 1,
+      kp.join(',')
+    );
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
@@ -131,7 +165,7 @@ const gravado = (p, re) => p.evaluate(r => {
 
   console.log('\n== O PERFIL MANDA: A TELA SEGUE ELE, NÃO AS MARCAS ==');
   {
-    const { b, p, erros } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
+    const { b, p, erros } = await abrirConfig({ modulos: ['PRE_ANALISE', 'COMERCIAL'] });
 
     // Clara tem perfil "Corretor" (criar_repasses:true) e marca solta dizendo
     // o contrário (criar_repasses:false). Se a tela mostrar a marca, ela está
@@ -142,22 +176,36 @@ const gravado = (p, re) => p.evaluate(r => {
     await p.evaluate(() => openCorretor('p30'));
     await p.waitForTimeout(500);
 
-    checa('a listagem mostra em que perfil cada um está',
-      /Corretor/.test(await p.locator('#corretor-tbody').innerText()));
-    checa('o cadastro abre com o perfil já escolhido',
-      await p.evaluate(() => document.getElementById('co-perfil').value) === 'pf1');
-    checa('a caixa segue o perfil, não a marca solta',
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked) === true);
+    checa(
+      'a listagem mostra em que perfil cada um está',
+      /Corretor/.test(await p.locator('#corretor-tbody').innerText())
+    );
+    checa(
+      'o cadastro abre com o perfil já escolhido',
+      (await p.evaluate(() => document.getElementById('co-perfil').value)) === 'pf1'
+    );
+    checa(
+      'a caixa segue o perfil, não a marca solta',
+      (await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked)) === true
+    );
     // A chave é 'ver_dashboard_repasse' e não a antiga 'ver_dashboard' global:
     // o dashboard virou uma permissão POR MÓDULO, e a chave global saiu do
     // catálogo. Clara tem a marca própria dizendo sim, e o perfil dela não a
     // concede — é esse par que dá sentido ao "mesmo a marca dizendo sim".
-    checa('e o que o perfil não dá fica desmarcado, mesmo a marca dizendo sim',
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked) === false);
-    checa('as caixas ficam travadas — clicar não prometeria nada',
-      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => c.disabled)));
-    checa('e a tela diz de onde vem a permissão',
-      /Corretor/.test(await p.locator('#co-perfil-aviso').innerText()));
+    checa(
+      'e o que o perfil não dá fica desmarcado, mesmo a marca dizendo sim',
+      (await p.evaluate(
+        () => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked
+      )) === false
+    );
+    checa(
+      'as caixas ficam travadas — clicar não prometeria nada',
+      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => c.disabled))
+    );
+    checa(
+      'e a tela diz de onde vem a permissão',
+      /Corretor/.test(await p.locator('#co-perfil-aviso').innerText())
+    );
 
     // Salvar não pode carimbar o perfil por cima das marcas próprias dela: se
     // o perfil um dia sair, ela volta ao que o gestor tinha marcado.
@@ -165,9 +213,11 @@ const gravado = (p, re) => p.evaluate(r => {
     await p.waitForTimeout(500);
     const g = await gravado(p, /a1_partners/);
     checa('grava o vínculo com o perfil', g && g.perfil_id === 'pf1', JSON.stringify(g && g.perfil_id));
-    checa('e preserva as marcas próprias, sem copiar as do perfil',
+    checa(
+      'e preserva as marcas próprias, sem copiar as do perfil',
       g && g.permissions.criar_repasses === false && g.permissions.ver_dashboard_repasse === true,
-      JSON.stringify(g && g.permissions));
+      JSON.stringify(g && g.permissions)
+    );
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
@@ -175,20 +225,30 @@ const gravado = (p, re) => p.evaluate(r => {
 
   console.log('\n== TIRAR O PERFIL DEVOLVE AS MARCAS DE ANTES ==');
   {
-    const { b, p, erros } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
+    const { b, p, erros } = await abrirConfig({ modulos: ['PRE_ANALISE', 'COMERCIAL'] });
     await p.evaluate(() => openCfgView('corretores'));
     await p.waitForTimeout(800);
     await p.evaluate(() => openCorretor('p30'));
     await p.waitForTimeout(500);
-    await p.evaluate(() => { const s = document.getElementById('co-perfil');
-      s.value = ''; perfilAplicado('co-perfil','co-perm'); });
+    await p.evaluate(() => {
+      const s = document.getElementById('co-perfil');
+      s.value = '';
+      perfilAplicado('co-perfil', 'co-perm');
+    });
     await p.waitForTimeout(200);
 
-    checa('as caixas voltam a ser editáveis',
-      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => !c.disabled)));
-    checa('e mostram de novo o que o gestor tinha marcado',
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked) === false &&
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked) === true);
+    checa(
+      'as caixas voltam a ser editáveis',
+      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => !c.disabled))
+    );
+    checa(
+      'e mostram de novo o que o gestor tinha marcado',
+      (await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked)) ===
+        false &&
+        (await p.evaluate(
+          () => document.querySelector('.co-perm[data-key="ver_dashboard_repasse"]').checked
+        )) === true
+    );
 
     await p.evaluate(() => saveCorretor());
     await p.waitForTimeout(500);
@@ -204,22 +264,32 @@ const gravado = (p, re) => p.evaluate(r => {
     // É como a1_perm() resolve: o join exige pf.ativo, então perfil desligado
     // cai de volta nas marcas da pessoa. A tela tem de dizer a mesma coisa —
     // se dissesse outra, o gestor confiaria na errada.
-    const { b, p, erros } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
+    const { b, p, erros } = await abrirConfig({ modulos: ['PRE_ANALISE', 'COMERCIAL'] });
     await p.evaluate(() => openCfgView('corretores'));
     await p.waitForTimeout(800);
     await p.evaluate(() => openCorretor('p30'));
     await p.waitForTimeout(500);
-    await p.evaluate(() => { const s = document.getElementById('co-perfil');
+    await p.evaluate(() => {
+      const s = document.getElementById('co-perfil');
       s.innerHTML += '<option value="pf3">Antigo (inativo)</option>';
-      s.value = 'pf3'; perfilAplicado('co-perfil','co-perm'); });
+      s.value = 'pf3';
+      perfilAplicado('co-perfil', 'co-perm');
+    });
     await p.waitForTimeout(200);
 
-    checa('as caixas continuam editáveis',
-      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => !c.disabled)));
-    checa('a permissão do perfil desligado NÃO é aplicada',
-      await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked) === false);
-    checa('e a tela explica que ele está inativo',
-      /inativo/i.test(await p.locator('#co-perfil-aviso').innerText()));
+    checa(
+      'as caixas continuam editáveis',
+      await p.evaluate(() => [...document.querySelectorAll('.co-perm')].every(c => !c.disabled))
+    );
+    checa(
+      'a permissão do perfil desligado NÃO é aplicada',
+      (await p.evaluate(() => document.querySelector('.co-perm[data-key="criar_repasses"]').checked)) ===
+        false
+    );
+    checa(
+      'e a tela explica que ele está inativo',
+      /inativo/i.test(await p.locator('#co-perfil-aviso').innerText())
+    );
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
@@ -227,33 +297,39 @@ const gravado = (p, re) => p.evaluate(r => {
 
   console.log('\n== A TELA DE PERFIS ==');
   {
-    const { b, p, erros } = await abrirConfig({ modulos:['PRE_ANALISE'] });
+    const { b, p, erros } = await abrirConfig({ modulos: ['PRE_ANALISE'] });
     await p.evaluate(() => openCfgView('perfis'));
     await p.waitForTimeout(700);
 
     checa('a sub-tela abre', await p.locator('#cfg-view-perfis').isVisible());
-    checa('lista os perfis cadastrados',
-      /Corretor/.test(await p.locator('#perfis-corpo').innerText()));
-    checa('e marca o inativo como tal',
-      /Inativo/.test(await p.locator('#perfis-corpo').innerText()));
+    checa('lista os perfis cadastrados', /Corretor/.test(await p.locator('#perfis-corpo').innerText()));
+    checa('e marca o inativo como tal', /Inativo/.test(await p.locator('#perfis-corpo').innerText()));
 
     await p.evaluate(() => perfilAbrir(null));
     await p.waitForTimeout(300);
     const grupos = await p.evaluate(() =>
-      [...document.querySelectorAll('#perfil-permissoes .pf-grupo-titulo')].map(x => x.textContent.trim()));
-    checa('o editor agrupa por módulo', grupos.includes('Repasse') && grupos.includes('Pré-análise'), grupos.join('|'));
-    checa('e não oferece o módulo que o cliente não tem',
-      !grupos.includes('Venda'), grupos.join('|'));
+      [...document.querySelectorAll('#perfil-permissoes .pf-grupo-titulo')].map(x => x.textContent.trim())
+    );
+    checa(
+      'o editor agrupa por módulo',
+      grupos.includes('Repasse') && grupos.includes('Pré-análise'),
+      grupos.join('|')
+    );
+    checa('e não oferece o módulo que o cliente não tem', !grupos.includes('Venda'), grupos.join('|'));
     // Perfil novo nasce fechado — com UMA exceção, e ela é deliberada:
     // 'ver_repasses' não concede nada, ela abre o módulo. Nascendo desmarcada,
     // o primeiro perfil criado trancaria para fora do Repasse todo mundo que
     // fosse vinculado a ele, e o gestor não teria como adivinhar a causa. Foi
     // exatamente o que aconteceu quando a chave nasceu, e é o que esta dupla de
     // verificações passa a vigiar: a exceção existe, e é só ela.
-    const marcadas = await p.$$eval('#perfil-permissoes .pf-perm',
-      els => els.filter(c => c.checked).map(c => c.dataset.chave));
-    checa('um perfil novo nasce fechado, menos no degrau que abre o módulo',
-      marcadas.join(',') === 'ver_repasses', marcadas.join(',') || '(nenhuma)');
+    const marcadas = await p.$$eval('#perfil-permissoes .pf-perm', els =>
+      els.filter(c => c.checked).map(c => c.dataset.chave)
+    );
+    checa(
+      'um perfil novo nasce fechado, menos no degrau que abre o módulo',
+      marcadas.join(',') === 'ver_repasses',
+      marcadas.join(',') || '(nenhuma)'
+    );
 
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
@@ -270,18 +346,36 @@ const gravado = (p, re) => p.evaluate(r => {
     await p.addInitScript(() => {
       localStorage.setItem('a1_token', 'tok');
       localStorage.setItem('a1_slug', 'thecred');
-      localStorage.setItem('a1_user', JSON.stringify({ id:'p21', tenant_id:'t1', name:'CCA',
-        role:'partner', type:'cca', cpf:'33344455566', permissions:{} }));
+      localStorage.setItem(
+        'a1_user',
+        JSON.stringify({
+          id: 'p21',
+          tenant_id: 't1',
+          name: 'CCA',
+          role: 'partner',
+          type: 'cca',
+          cpf: '33344455566',
+          permissions: {}
+        })
+      );
     });
     await p.route(/supabase\.co/, r => {
-      let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch (e) { d = []; }
-      r.fulfill({ status:200, contentType:'application/json',
-                  headers:{ 'content-range':'0-1/2' }, body:JSON.stringify(d) });
+      let d;
+      try {
+        d = responder(r.request().url(), r.request().method(), r.request().postData());
+      } catch (e) {
+        d = [];
+      }
+      r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': '0-1/2' },
+        body: JSON.stringify(d)
+      });
     });
-    await p.goto(BASE + '/configuracoes.html', { waitUntil:'load' });
+    await p.goto(BASE + '/configuracoes.html', { waitUntil: 'load' });
     await p.waitForTimeout(1600);
-    checa('o correspondente não vê o cartão de Perfis',
-      !(await p.locator('#cfg-card-perfis').isVisible()));
+    checa('o correspondente não vê o cartão de Perfis', !(await p.locator('#cfg-card-perfis').isVisible()));
     await b.close();
   }
 
@@ -298,7 +392,7 @@ const gravado = (p, re) => p.evaluate(r => {
 
     const arquivos = [];
     (function anda(dir) {
-      for (const f of fs.readdirSync(dir, { withFileTypes:true })) {
+      for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
         // dist/ é cópia minificada do src/: contar duas vezes esconderia órfãs.
         if (['node_modules', '.git', 'testes', 'dist'].includes(f.name)) continue;
         const alvo = path.join(dir, f.name);
@@ -325,32 +419,34 @@ const gravado = (p, re) => p.evaluate(r => {
     const mapasLeitores = new Set();
     for (const m of corpo.matchAll(/(?:perm|perms|permissions)\s*\??\[\s*([A-Za-z_$][\w$]*)\s*\[/g))
       mapasLeitores.add(m[1]);
-    for (const m of corpo.matchAll(/p_chave\s*:\s*([A-Za-z_$][\w$]*)\s*\[/g))
-      mapasLeitores.add(m[1]);
+    for (const m of corpo.matchAll(/p_chave\s*:\s*([A-Za-z_$][\w$]*)\s*\[/g)) mapasLeitores.add(m[1]);
 
     const lidasPorIndireacao = new Set();
     for (const nome of mapasLeitores) {
       // A declaração do mapa, até o fecho do literal: só as chaves que estão
       // DENTRO dele contam.
-      const decl = new RegExp(`(?:const|let|var)\\s+${nome}\\s*=\\s*([\\[{][\\s\\S]*?[\\]}])\\s*;`).exec(corpo);
+      const decl = new RegExp(`(?:const|let|var)\\s+${nome}\\s*=\\s*([\\[{][\\s\\S]*?[\\]}])\\s*;`).exec(
+        corpo
+      );
       if (!decl) continue;
       for (const s of decl[1].matchAll(/['"]([a-z_]+)['"]/g)) lidasPorIndireacao.add(s[1]);
     }
-    checa('a guarda enxerga o mapa que lê permissão por indireção',
+    checa(
+      'a guarda enxerga o mapa que lê permissão por indireção',
       mapasLeitores.size >= 1 && lidasPorIndireacao.size >= 1,
-      'mapas: ' + [...mapasLeitores].join(', '));
+      'mapas: ' + [...mapasLeitores].join(', ')
+    );
 
     for (const k of catalogo) {
       const leituras = [
-        new RegExp(`hasPerm\\(\\s*['"]${k}['"]`),        // telas
-        new RegExp(`a1_perm\\(\\s*'${k}'`),              // políticas e gatilhos
-        new RegExp(`->>\\s*'${k}'`),                     // jsonb no SQL
+        new RegExp(`hasPerm\\(\\s*['"]${k}['"]`), // telas
+        new RegExp(`a1_perm\\(\\s*'${k}'`), // políticas e gatilhos
+        new RegExp(`->>\\s*'${k}'`), // jsonb no SQL
         new RegExp(`\\b(perm|perms|permissions)\\s*\\??\\.${k}\\b`),
         new RegExp(`\\bp\\.${k}\\b|\\bperm\\.${k}\\b`),
-        new RegExp(`\\[['"]${k}['"]\\]`),
+        new RegExp(`\\[['"]${k}['"]\\]`)
       ];
-      checa(`'${k}' é lida por alguém`,
-        leituras.some(re => re.test(corpo)) || lidasPorIndireacao.has(k));
+      checa(`'${k}' é lida por alguém`, leituras.some(re => re.test(corpo)) || lidasPorIndireacao.has(k));
     }
   }
 

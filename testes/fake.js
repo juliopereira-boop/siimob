@@ -7,40 +7,236 @@ const XSS = `<img src=x onerror="window.__XSS=(window.__XSS||0)+1">`;
 const ASPA = `Aspa" onfocus="window.__XSS=(window.__XSS||0)+1" x="`;
 
 const D = {
-  tenants: [{id:'t1',name:'THE CRED',slug:'thecred',tipo_cliente:'construtora',max_users:10,plan_key:'pro',status:'active'}],
+  tenants: [
+    {
+      id: 't1',
+      name: 'THE CRED',
+      slug: 'thecred',
+      tipo_cliente: 'construtora',
+      max_users: 10,
+      plan_key: 'pro',
+      status: 'active'
+    }
+  ],
   stages: [
-    {id:'s1',name:'Documentação '+XSS,color:'#3D5CC8',group_key:'Centro',is_initial:true,is_final:false,position:1,module_key:'repasse'},
-    {id:'s2',name:'Análise',color:'#12B981',group_key:'Centro',is_initial:false,is_final:false,position:2,module_key:'repasse'},
-    {id:'s3',name:'Assinado',color:'#059669',group_key:'Centro',is_initial:false,is_final:true,position:3,module_key:'repasse'}],
+    {
+      id: 's1',
+      name: 'Documentação ' + XSS,
+      color: '#3D5CC8',
+      group_key: 'Centro',
+      is_initial: true,
+      is_final: false,
+      position: 1,
+      module_key: 'repasse'
+    },
+    {
+      id: 's2',
+      name: 'Análise',
+      color: '#12B981',
+      group_key: 'Centro',
+      is_initial: false,
+      is_final: false,
+      position: 2,
+      module_key: 'repasse'
+    },
+    {
+      id: 's3',
+      name: 'Assinado',
+      color: '#059669',
+      group_key: 'Centro',
+      is_initial: false,
+      is_final: true,
+      position: 3,
+      module_key: 'repasse'
+    }
+  ],
   cases: [
-    {id:'c1',tenant_id:'t1',module_key:'repasse',stage_id:'s1',evaluation_expiry:_prazo(-2),stage_name:'Documentação',client_name:'Maria '+XSS,client_cpf:'52998224725',
-     development:'Residencial das Flores',block:'B1',unit:'101',contract_value:250000,partner_name:'Correspondente A',
-     broker_name:'Ana Souza',real_estate_name:'Imob Alfa',manager_name:'João Analista',observations:'obs '+XSS,is_new:true,
-     created_at:'2026-08-01T10:00:00Z',stage_entered_at:'2026-08-01T10:00:00Z',
-     attachment_pdf:'data:application/pdf;base64,JVBERi0xLjQK', attachment_name:'contrato-antigo.pdf',
-     legacy_docs:[{id:'ld1',nome:'rg-antigo.pdf',data:'data:application/pdf;base64,JVBERi0xLjQK'}],
-     payload:{regional:'Centro',convenio:'Convênio Alfa',agencia:'1234 - Centro',modalidade:'Imóvel na planta',estado:'SP',cidade:'Campinas',
-              chave_que_nao_pode_sumir:'valor importante',data_venda:'2026-07-01'}},
-    {id:'c2',tenant_id:'t1',module_key:'repasse',evaluation_expiry:_prazo(0),stage_id:'s3',stage_name:'Assinado',client_name:'Pedro Lima',client_cpf:'11144477735',
-     development:'Parque das Águas',contract_value:180000,partner_name:'Correspondente B',broker_name:'Carla Dias',created_at:'2026-07-15T10:00:00Z',
-     stage_entered_at:'2026-08-20T10:00:00Z',payload:{regional:'Centro',data_venda:'2026-07-01'}},
-    {id:'c3',tenant_id:'t1',module_key:'repasse',evaluation_expiry:_prazo(5),stage_id:'s2',stage_name:'Análise',client_name:'Rui Santos',client_cpf:'52998224725',
-     development:'Residencial das Flores',contract_value:150000,partner_name:'Correspondente A',broker_name:'Diego Melo',created_at:'2026-07-10T10:00:00Z',
-     stage_entered_at:'2026-08-18T10:00:00Z',payload:{regional:'Centro',data_venda:'2026-08-08'}},
-    {id:'c4',tenant_id:'t1',module_key:'repasse',stage_id:'s2',stage_name:'Análise',client_name:'Ivo Costa',client_cpf:'11144477735',
-     development:'Parque das Águas',contract_value:90000,partner_name:'Correspondente A',broker_name:'Sem Equipe',created_at:'2026-07-05T10:00:00Z',
-     stage_entered_at:'2026-08-17T10:00:00Z',payload:{regional:'Centro'}}],
+    {
+      id: 'c1',
+      tenant_id: 't1',
+      module_key: 'repasse',
+      stage_id: 's1',
+      evaluation_expiry: _prazo(-2),
+      stage_name: 'Documentação',
+      client_name: 'Maria ' + XSS,
+      client_cpf: '52998224725',
+      development: 'Residencial das Flores',
+      block: 'B1',
+      unit: '101',
+      contract_value: 250000,
+      partner_name: 'Correspondente A',
+      broker_name: 'Ana Souza',
+      real_estate_name: 'Imob Alfa',
+      manager_name: 'João Analista',
+      observations: 'obs ' + XSS,
+      is_new: true,
+      created_at: '2026-08-01T10:00:00Z',
+      stage_entered_at: '2026-08-01T10:00:00Z',
+      attachment_pdf: 'data:application/pdf;base64,JVBERi0xLjQK',
+      attachment_name: 'contrato-antigo.pdf',
+      legacy_docs: [{ id: 'ld1', nome: 'rg-antigo.pdf', data: 'data:application/pdf;base64,JVBERi0xLjQK' }],
+      payload: {
+        regional: 'Centro',
+        convenio: 'Convênio Alfa',
+        agencia: '1234 - Centro',
+        modalidade: 'Imóvel na planta',
+        estado: 'SP',
+        cidade: 'Campinas',
+        chave_que_nao_pode_sumir: 'valor importante',
+        data_venda: '2026-07-01'
+      }
+    },
+    {
+      id: 'c2',
+      tenant_id: 't1',
+      module_key: 'repasse',
+      evaluation_expiry: _prazo(0),
+      stage_id: 's3',
+      stage_name: 'Assinado',
+      client_name: 'Pedro Lima',
+      client_cpf: '11144477735',
+      development: 'Parque das Águas',
+      contract_value: 180000,
+      partner_name: 'Correspondente B',
+      broker_name: 'Carla Dias',
+      created_at: '2026-07-15T10:00:00Z',
+      stage_entered_at: '2026-08-20T10:00:00Z',
+      payload: { regional: 'Centro', data_venda: '2026-07-01' }
+    },
+    {
+      id: 'c3',
+      tenant_id: 't1',
+      module_key: 'repasse',
+      evaluation_expiry: _prazo(5),
+      stage_id: 's2',
+      stage_name: 'Análise',
+      client_name: 'Rui Santos',
+      client_cpf: '52998224725',
+      development: 'Residencial das Flores',
+      contract_value: 150000,
+      partner_name: 'Correspondente A',
+      broker_name: 'Diego Melo',
+      created_at: '2026-07-10T10:00:00Z',
+      stage_entered_at: '2026-08-18T10:00:00Z',
+      payload: { regional: 'Centro', data_venda: '2026-08-08' }
+    },
+    {
+      id: 'c4',
+      tenant_id: 't1',
+      module_key: 'repasse',
+      stage_id: 's2',
+      stage_name: 'Análise',
+      client_name: 'Ivo Costa',
+      client_cpf: '11144477735',
+      development: 'Parque das Águas',
+      contract_value: 90000,
+      partner_name: 'Correspondente A',
+      broker_name: 'Sem Equipe',
+      created_at: '2026-07-05T10:00:00Z',
+      stage_entered_at: '2026-08-17T10:00:00Z',
+      payload: { regional: 'Centro' }
+    }
+  ],
   developments: [
-    {id:'d1',tenant_id:'t1',name:'Residencial das Flores',regional:'Centro',estado:'SP',cidade:'Campinas',tipo:'blocos',unit_count:2,units:['B1-101','B1-102'],qtd_blocos:1,pavimentos:1,unidades_pav:2},
-    {id:'d2',tenant_id:'t1',name:'Parque das Águas '+XSS,regional:'',tipo:'blocos',unit_count:0,units:[]},
-    {id:'d3',tenant_id:'t1',name:'Empreendimento Sem Processo',regional:'',tipo:'blocos',unit_count:0,units:[]}],
+    {
+      id: 'd1',
+      tenant_id: 't1',
+      name: 'Residencial das Flores',
+      regional: 'Centro',
+      estado: 'SP',
+      cidade: 'Campinas',
+      tipo: 'blocos',
+      unit_count: 2,
+      units: ['B1-101', 'B1-102'],
+      qtd_blocos: 1,
+      pavimentos: 1,
+      unidades_pav: 2
+    },
+    {
+      id: 'd2',
+      tenant_id: 't1',
+      name: 'Parque das Águas ' + XSS,
+      regional: '',
+      tipo: 'blocos',
+      unit_count: 0,
+      units: []
+    },
+    {
+      id: 'd3',
+      tenant_id: 't1',
+      name: 'Empreendimento Sem Processo',
+      regional: '',
+      tipo: 'blocos',
+      unit_count: 0,
+      units: []
+    }
+  ],
   partners: [
-    {id:'p1',tenant_id:'t1',type:'imobiliaria',name:'Imob Alfa '+ASPA,cpf:'11111111111',email:'a@x.com',is_active:true,approved:true},
-    {id:'p20',tenant_id:'t1',type:'imobiliaria',name:'Imob Recem Cadastrada',cpf:'22233344455',is_active:true,approved:true},
-    {id:'p21',tenant_id:'t1',type:'cca',name:'Usuario Novo CCA',cpf:'33344455566',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
-    {id:'p2',tenant_id:'t1',type:'analista',name:'João Analista',cpf:'22222222222',email:'j@x.com',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
-    {id:'p22',tenant_id:'t1',type:'analista',name:'Ana Analista',cpf:'22233344455',email:'a@x.com',is_active:true,approved:true,empresa_id:'e1',permissions:{}},
-    {id:'p3',tenant_id:'t1',type:'corretor',name:'Ana Souza',cpf:'33333333333',is_active:true,approved:true,permissions:{etapas:{s1:'editar'}},extra:{coordenador_id:'p7'}},
+    {
+      id: 'p1',
+      tenant_id: 't1',
+      type: 'imobiliaria',
+      name: 'Imob Alfa ' + ASPA,
+      cpf: '11111111111',
+      email: 'a@x.com',
+      is_active: true,
+      approved: true
+    },
+    {
+      id: 'p20',
+      tenant_id: 't1',
+      type: 'imobiliaria',
+      name: 'Imob Recem Cadastrada',
+      cpf: '22233344455',
+      is_active: true,
+      approved: true
+    },
+    {
+      id: 'p21',
+      tenant_id: 't1',
+      type: 'cca',
+      name: 'Usuario Novo CCA',
+      cpf: '33344455566',
+      is_active: true,
+      approved: true,
+      empresa_id: 'e1',
+      permissions: {}
+    },
+    {
+      id: 'p2',
+      tenant_id: 't1',
+      type: 'analista',
+      name: 'João Analista',
+      cpf: '22222222222',
+      email: 'j@x.com',
+      is_active: true,
+      approved: true,
+      empresa_id: 'e1',
+      permissions: {}
+    },
+    {
+      id: 'p22',
+      tenant_id: 't1',
+      type: 'analista',
+      name: 'Ana Analista',
+      cpf: '22233344455',
+      email: 'a@x.com',
+      is_active: true,
+      approved: true,
+      empresa_id: 'e1',
+      permissions: {}
+    },
+    {
+      id: 'p3',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Ana Souza',
+      cpf: '33333333333',
+      is_active: true,
+      approved: true,
+      permissions: { etapas: { s1: 'editar' } },
+      extra: { coordenador_id: 'p7' }
+    },
     // Vinculada ao perfil "Corretor". Existe para provar que o cadastro abre
     // seguindo o perfil, e não as marcas soltas — que aqui dizem o contrário
     // de propósito: criar_repasses:false enquanto o perfil diz true. A segunda
@@ -53,188 +249,732 @@ const D = {
     // (supabase/sql/2026-09-13_migra_dashboard_por_modulo.sql) fez nas linhas
     // reais exatamente o que está feito aqui. Mantê-la seria guardar no andaime
     // uma chave que o catálogo já não tem — caixa que o formulário nem monta.
-    {id:'p30',tenant_id:'t1',type:'corretor',name:'Clara Perfil',cpf:'55566677788',is_active:true,approved:true,perfil_id:'pf1',permissions:{criar_repasses:false,ver_dashboard_repasse:true,etapas:{s1:'editar'}}},
-    {id:'p4',tenant_id:'t1',type:'corretor',name:'Bruno '+XSS,cpf:'44444444444',is_active:true,approved:false,permissions:{},created_at:'2026-08-25T10:00:00Z',extra:{origem:'pre-cadastro',imobiliaria_nome:'Imob Alfa',enviado_em:'2026-08-25T10:00:00Z'}},
-    {id:'p5',tenant_id:'t1',type:'convenio',name:'Convênio Alfa',is_active:true,approved:true},
-    {id:'p6',tenant_id:'t1',type:'agencia',name:'Centro',is_active:true,approved:true,extra:{numero:'1234'}},
-    {id:'p13',tenant_id:'t1',type:'modalidade',name:'Imóvel na planta',is_active:true,approved:true},
-    {id:'p14',tenant_id:'t1',type:'modalidade',name:'Imóvel usado',is_active:true,approved:true},
-    {id:'p7',tenant_id:'t1',type:'coordenador',name:'Marcos Lima',is_active:true,approved:true},
-    {id:'p9',tenant_id:'t1',type:'coordenador',name:'Rita Alves',is_active:true,approved:true},
+    {
+      id: 'p30',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Clara Perfil',
+      cpf: '55566677788',
+      is_active: true,
+      approved: true,
+      perfil_id: 'pf1',
+      permissions: { criar_repasses: false, ver_dashboard_repasse: true, etapas: { s1: 'editar' } }
+    },
+    {
+      id: 'p4',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Bruno ' + XSS,
+      cpf: '44444444444',
+      is_active: true,
+      approved: false,
+      permissions: {},
+      created_at: '2026-08-25T10:00:00Z',
+      extra: { origem: 'pre-cadastro', imobiliaria_nome: 'Imob Alfa', enviado_em: '2026-08-25T10:00:00Z' }
+    },
+    { id: 'p5', tenant_id: 't1', type: 'convenio', name: 'Convênio Alfa', is_active: true, approved: true },
+    {
+      id: 'p6',
+      tenant_id: 't1',
+      type: 'agencia',
+      name: 'Centro',
+      is_active: true,
+      approved: true,
+      extra: { numero: '1234' }
+    },
+    {
+      id: 'p13',
+      tenant_id: 't1',
+      type: 'modalidade',
+      name: 'Imóvel na planta',
+      is_active: true,
+      approved: true
+    },
+    { id: 'p14', tenant_id: 't1', type: 'modalidade', name: 'Imóvel usado', is_active: true, approved: true },
+    { id: 'p7', tenant_id: 't1', type: 'coordenador', name: 'Marcos Lima', is_active: true, approved: true },
+    { id: 'p9', tenant_id: 't1', type: 'coordenador', name: 'Rita Alves', is_active: true, approved: true },
     // Carla e Diego existem para provar o filtro por imobiliária: cada uma na
     // sua. Sem DUAS imobiliárias diferentes o teste passaria trivialmente —
     // qualquer filtro devolveria a lista inteira e ninguém notaria.
-    {id:'p10',tenant_id:'t1',type:'corretor',name:'Carla Dias',cpf:'66666666666',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p7',imobiliaria_id:'p1'}},
-    {id:'p11',tenant_id:'t1',type:'corretor',name:'Diego Melo',cpf:'77777777777',is_active:true,approved:true,permissions:{},extra:{coordenador_id:'p9',imobiliaria_id:'p20'}},
+    {
+      id: 'p10',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Carla Dias',
+      cpf: '66666666666',
+      is_active: true,
+      approved: true,
+      permissions: {},
+      extra: { coordenador_id: 'p7', imobiliaria_id: 'p1' }
+    },
+    {
+      id: 'p11',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Diego Melo',
+      cpf: '77777777777',
+      is_active: true,
+      approved: true,
+      permissions: {},
+      extra: { coordenador_id: 'p9', imobiliaria_id: 'p20' }
+    },
     // Sem imobiliária no cadastro: aparece em qualquer uma. É a situação dos 37
     // corretores que existem hoje, e o motivo de o filtro não ser estrito.
-    {id:'p12',tenant_id:'t1',type:'corretor',name:'Sem Equipe',cpf:'12312312312',is_active:true,approved:true,permissions:{},extra:{}},
-    {id:'p8',tenant_id:'t1',type:'cca',name:'Usuário Corr',cpf:'55555555555',is_active:true,approved:true,empresa_id:'e1',permissions:{}}],
-  users: [{id:'u1',tenant_id:'t1',name:'Julio',cpf:'99999999999',role:'owner',is_active:true,last_seen:'2026-08-27T09:00:00Z'}],
-  config: [{key:'regionais',value:'["Centro","Sul"]'},{key:'crm_sources',value:'[{"id":"org1","name":"Indicação","active":true},{"id":"org2","name":"Portal","active":true},{"name":"Feirão legado","active":true}]'},{key:'commission',value:'{}'},{key:'wf_lock_repasse',value:'false'},{key:'doc_types',value:'["RG","CPF"]'}],
-  despachantes: [{id:'x1',nome:'Despachante '+XSS,email:'d@x.com',telefone:'11999999999'}],
-  bancos: [{id:'b1',nome:'Banco '+XSS,codigo:'001'},{id:'b2',nome:'Caixa',codigo:'104'}],
-  cartorios: [{id:'k1',nome:'Cartório '+XSS,municipio:'Campinas',uf:'SP'}],
-  estados: [{uf:'MG',nome:'Minas Gerais'},{uf:'SP',nome:'São Paulo'}],
-  municipios: {SP:['Campinas','Santos','São Paulo'], MG:['Belo Horizonte','Uberlândia']},
-  precad_links: [{token:'tok123',imobiliaria_nome:'Imob Alfa',expires_at:'2026-09-30T12:00:00Z',usos:1,revoked:false}],
-  corr_empresas: [{id:'e1',tenant_id:'t1',name:'Empresa Corr '+ASPA,cnpj:'00000000000000',is_active:true,regional:'Centro'},
-                  {id:'e2',tenant_id:'t1',name:'Correspondente Sem Processo',cnpj:'11111111111111',is_active:true}],
+    {
+      id: 'p12',
+      tenant_id: 't1',
+      type: 'corretor',
+      name: 'Sem Equipe',
+      cpf: '12312312312',
+      is_active: true,
+      approved: true,
+      permissions: {},
+      extra: {}
+    },
+    {
+      id: 'p8',
+      tenant_id: 't1',
+      type: 'cca',
+      name: 'Usuário Corr',
+      cpf: '55555555555',
+      is_active: true,
+      approved: true,
+      empresa_id: 'e1',
+      permissions: {}
+    }
+  ],
+  users: [
+    {
+      id: 'u1',
+      tenant_id: 't1',
+      name: 'Julio',
+      cpf: '99999999999',
+      role: 'owner',
+      is_active: true,
+      last_seen: '2026-08-27T09:00:00Z'
+    }
+  ],
+  config: [
+    { key: 'regionais', value: '["Centro","Sul"]' },
+    {
+      key: 'crm_sources',
+      value:
+        '[{"id":"org1","name":"Indicação","active":true},{"id":"org2","name":"Portal","active":true},{"name":"Feirão legado","active":true}]'
+    },
+    { key: 'commission', value: '{}' },
+    { key: 'wf_lock_repasse', value: 'false' },
+    { key: 'doc_types', value: '["RG","CPF"]' }
+  ],
+  despachantes: [{ id: 'x1', nome: 'Despachante ' + XSS, email: 'd@x.com', telefone: '11999999999' }],
+  bancos: [
+    { id: 'b1', nome: 'Banco ' + XSS, codigo: '001' },
+    { id: 'b2', nome: 'Caixa', codigo: '104' }
+  ],
+  cartorios: [{ id: 'k1', nome: 'Cartório ' + XSS, municipio: 'Campinas', uf: 'SP' }],
+  estados: [
+    { uf: 'MG', nome: 'Minas Gerais' },
+    { uf: 'SP', nome: 'São Paulo' }
+  ],
+  municipios: { SP: ['Campinas', 'Santos', 'São Paulo'], MG: ['Belo Horizonte', 'Uberlândia'] },
+  precad_links: [
+    {
+      token: 'tok123',
+      imobiliaria_nome: 'Imob Alfa',
+      expires_at: '2026-09-30T12:00:00Z',
+      usos: 1,
+      revoked: false
+    }
+  ],
+  corr_empresas: [
+    {
+      id: 'e1',
+      tenant_id: 't1',
+      name: 'Empresa Corr ' + ASPA,
+      cnpj: '00000000000000',
+      is_active: true,
+      regional: 'Centro'
+    },
+    {
+      id: 'e2',
+      tenant_id: 't1',
+      name: 'Correspondente Sem Processo',
+      cnpj: '11111111111111',
+      is_active: true
+    }
+  ],
   // ── Módulos novos ──────────────────────────────────────────────────────────
   // "Em análise" tem SLA de 24h e um processo parado há 3 dias: é assim que o
   // teste do prazo estourado prova alguma coisa em vez de só renderizar verde.
   pa_situacoes: [
-    {id:'ps1',tenant_id:'t1',nome:'Nova '+XSS,flag:'INICIAL',ordem:0,cor:'#6366f1',sla_horas:4,ativo:true},
-    {id:'ps2',tenant_id:'t1',nome:'Em análise',flag:null,ordem:1,cor:'#0ea5e9',sla_horas:24,ativo:true},
-    {id:'ps3',tenant_id:'t1',nome:'Aprovada',flag:'APROVADO',ordem:2,cor:'#22c55e',sla_horas:null,ativo:true},
-    {id:'ps4',tenant_id:'t1',nome:'Reprovada',flag:'REPROVADO',ordem:3,cor:'#ef4444',sla_horas:null,ativo:true}],
+    {
+      id: 'ps1',
+      tenant_id: 't1',
+      nome: 'Nova ' + XSS,
+      flag: 'INICIAL',
+      ordem: 0,
+      cor: '#6366f1',
+      sla_horas: 4,
+      ativo: true
+    },
+    {
+      id: 'ps2',
+      tenant_id: 't1',
+      nome: 'Em análise',
+      flag: null,
+      ordem: 1,
+      cor: '#0ea5e9',
+      sla_horas: 24,
+      ativo: true
+    },
+    {
+      id: 'ps3',
+      tenant_id: 't1',
+      nome: 'Aprovada',
+      flag: 'APROVADO',
+      ordem: 2,
+      cor: '#22c55e',
+      sla_horas: null,
+      ativo: true
+    },
+    {
+      id: 'ps4',
+      tenant_id: 't1',
+      nome: 'Reprovada',
+      flag: 'REPROVADO',
+      ordem: 3,
+      cor: '#ef4444',
+      sla_horas: null,
+      ativo: true
+    }
+  ],
   pa_transicoes: [
-    {id:'pt1',tenant_id:'t1',de_id:'ps1',para_id:'ps2',papeis:[],requisitos:{},acao:null,acao_modo:'CONFIRMAR',ativo:true},
-    {id:'pt2',tenant_id:'t1',de_id:'ps2',para_id:'ps3',papeis:[],requisitos:{},acao:'ENABLE_COMMERCIAL',acao_modo:'AUTO',ativo:true},
-    {id:'pt3',tenant_id:'t1',de_id:null,para_id:'ps4',papeis:[],requisitos:{},acao:null,acao_modo:'CONFIRMAR',ativo:true}],
-  pre_analises: (()=>{ const h=Date.now(); return [
-    {id:'pa1',tenant_id:'t1',codigo:'PA-001',empreendimento_id:'d1',unidade:'101 '+XSS,corretor_id:'p3',
-     imobiliaria_id:'p1',situacao_id:'ps2',situacao_em:new Date(h-72*36e5).toISOString(),versao:1,
-     criado_em:new Date(h-10*864e5).toISOString()},
-    {id:'pa2',tenant_id:'t1',codigo:'PA-002',empreendimento_id:'d2',unidade:'202',corretor_id:'p10',
-     situacao_id:'ps1',situacao_em:new Date(h-1*36e5).toISOString(),versao:1,
-     criado_em:new Date(h-2*864e5).toISOString()},
-    {id:'pa3',tenant_id:'t1',codigo:'PA-003',empreendimento_id:'d1',corretor_id:'p3',
-     situacao_id:'ps3',situacao_em:new Date(h-5*864e5).toISOString(),versao:2,
-     criado_em:new Date(h-20*864e5).toISOString()},
-    // pa4 é a única aprovada que ainda NÃO virou comercial. Sem ela o teste do
-    // botão "Habilitar Venda" não teria como acontecer: pa3 já tem o seu.
-    {id:'pa4',tenant_id:'t1',codigo:'PA-004',empreendimento_id:'d1',corretor_id:'p10',
-     situacao_id:'ps3',situacao_em:new Date(h-2*864e5).toISOString(),versao:1,
-     criado_em:new Date(h-6*864e5).toISOString()}]; })(),
+    {
+      id: 'pt1',
+      tenant_id: 't1',
+      de_id: 'ps1',
+      para_id: 'ps2',
+      papeis: [],
+      requisitos: {},
+      acao: null,
+      acao_modo: 'CONFIRMAR',
+      ativo: true
+    },
+    {
+      id: 'pt2',
+      tenant_id: 't1',
+      de_id: 'ps2',
+      para_id: 'ps3',
+      papeis: [],
+      requisitos: {},
+      acao: 'ENABLE_COMMERCIAL',
+      acao_modo: 'AUTO',
+      ativo: true
+    },
+    {
+      id: 'pt3',
+      tenant_id: 't1',
+      de_id: null,
+      para_id: 'ps4',
+      papeis: [],
+      requisitos: {},
+      acao: null,
+      acao_modo: 'CONFIRMAR',
+      ativo: true
+    }
+  ],
+  pre_analises: (() => {
+    const h = Date.now();
+    return [
+      {
+        id: 'pa1',
+        tenant_id: 't1',
+        codigo: 'PA-001',
+        empreendimento_id: 'd1',
+        unidade: '101 ' + XSS,
+        corretor_id: 'p3',
+        imobiliaria_id: 'p1',
+        situacao_id: 'ps2',
+        situacao_em: new Date(h - 72 * 36e5).toISOString(),
+        versao: 1,
+        criado_em: new Date(h - 10 * 864e5).toISOString()
+      },
+      {
+        id: 'pa2',
+        tenant_id: 't1',
+        codigo: 'PA-002',
+        empreendimento_id: 'd2',
+        unidade: '202',
+        corretor_id: 'p10',
+        situacao_id: 'ps1',
+        situacao_em: new Date(h - 1 * 36e5).toISOString(),
+        versao: 1,
+        criado_em: new Date(h - 2 * 864e5).toISOString()
+      },
+      {
+        id: 'pa3',
+        tenant_id: 't1',
+        codigo: 'PA-003',
+        empreendimento_id: 'd1',
+        corretor_id: 'p3',
+        situacao_id: 'ps3',
+        situacao_em: new Date(h - 5 * 864e5).toISOString(),
+        versao: 2,
+        criado_em: new Date(h - 20 * 864e5).toISOString()
+      },
+      // pa4 é a única aprovada que ainda NÃO virou comercial. Sem ela o teste do
+      // botão "Habilitar Venda" não teria como acontecer: pa3 já tem o seu.
+      {
+        id: 'pa4',
+        tenant_id: 't1',
+        codigo: 'PA-004',
+        empreendimento_id: 'd1',
+        corretor_id: 'p10',
+        situacao_id: 'ps3',
+        situacao_em: new Date(h - 2 * 864e5).toISOString(),
+        versao: 1,
+        criado_em: new Date(h - 6 * 864e5).toISOString()
+      }
+    ];
+  })(),
   pa_pessoas: [
-    {id:'pe1',tenant_id:'t1',tipo:'PF',documento:'52998224725',nome:'Maria Titular '+XSS,telefone:'11988887777',email:'m@x.com'},
-    {id:'pe2',tenant_id:'t1',tipo:'PF',documento:'11144477735',nome:'Pedro Titular'},
-    {id:'pe3',tenant_id:'t1',tipo:'PF',documento:'12345678909',nome:'Joana Associada'}],
+    {
+      id: 'pe1',
+      tenant_id: 't1',
+      tipo: 'PF',
+      documento: '52998224725',
+      nome: 'Maria Titular ' + XSS,
+      telefone: '11988887777',
+      email: 'm@x.com'
+    },
+    { id: 'pe2', tenant_id: 't1', tipo: 'PF', documento: '11144477735', nome: 'Pedro Titular' },
+    { id: 'pe3', tenant_id: 't1', tipo: 'PF', documento: '12345678909', nome: 'Joana Associada' }
+  ],
   pa_participantes: [
-    {id:'pp1',tenant_id:'t1',pre_analise_id:'pa1',pessoa_id:'pe1',papel:'TITULAR',renda_declarada:450000,fonte_renda:'CLT'},
-    {id:'pp2',tenant_id:'t1',pre_analise_id:'pa1',pessoa_id:'pe3',papel:'ASSOCIADO',renda_declarada:220000},
-    {id:'pp3',tenant_id:'t1',pre_analise_id:'pa2',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:300000},
-    {id:'pp4',tenant_id:'t1',pre_analise_id:'pa3',pessoa_id:'pe1',papel:'TITULAR',renda_declarada:450000},
-    {id:'pp5',tenant_id:'t1',pre_analise_id:'pa4',pessoa_id:'pe2',papel:'TITULAR',renda_declarada:380000}],
+    {
+      id: 'pp1',
+      tenant_id: 't1',
+      pre_analise_id: 'pa1',
+      pessoa_id: 'pe1',
+      papel: 'TITULAR',
+      renda_declarada: 450000,
+      fonte_renda: 'CLT'
+    },
+    {
+      id: 'pp2',
+      tenant_id: 't1',
+      pre_analise_id: 'pa1',
+      pessoa_id: 'pe3',
+      papel: 'ASSOCIADO',
+      renda_declarada: 220000
+    },
+    {
+      id: 'pp3',
+      tenant_id: 't1',
+      pre_analise_id: 'pa2',
+      pessoa_id: 'pe2',
+      papel: 'TITULAR',
+      renda_declarada: 300000
+    },
+    {
+      id: 'pp4',
+      tenant_id: 't1',
+      pre_analise_id: 'pa3',
+      pessoa_id: 'pe1',
+      papel: 'TITULAR',
+      renda_declarada: 450000
+    },
+    {
+      id: 'pp5',
+      tenant_id: 't1',
+      pre_analise_id: 'pa4',
+      pessoa_id: 'pe2',
+      papel: 'TITULAR',
+      renda_declarada: 380000
+    }
+  ],
   // decidido_em é coluna real de a1_pa_analises_credito e faltava aqui. Sem ela
   // o painel executivo não tem período de decisão: taxa de aprovação e tempo
   // até decisão davam "—" e nenhum teste provava a conta. É relativa a agora
   // para o teste não apodrecer quando a suíte rodar meses depois.
   // pc4 existe para a taxa não ser 100% — com só aprovações, um numerador
   // copiado no denominador passaria despercebido.
-  pa_credito: (()=>{ const h=Date.now(); return [
-    {id:'pc1',tenant_id:'t1',pre_analise_id:'pa3',versao:1,status:'APROVADO',valor_aprovado:20000000,
-     valor_subsidio:3000000,valor_fgts:1000000,valor_total:24000000,prestacao:150000,prazo_meses:360,
-     criado_em:'2026-08-20T10:00:00Z',decidido_em:new Date(h-8*864e5).toISOString()},
-    {id:'pc2',tenant_id:'t1',pre_analise_id:'pa1',versao:1,status:'EM_ANALISE',valor_total:null,criado_em:'2026-08-25T10:00:00Z'},
-    {id:'pc3',tenant_id:'t1',pre_analise_id:'pa4',versao:1,status:'APROVADO',valor_aprovado:15000000,
-     valor_subsidio:0,valor_fgts:0,valor_total:15000000,prestacao:120000,prazo_meses:360,
-     criado_em:'2026-08-29T10:00:00Z',decidido_em:new Date(h-3*864e5).toISOString()},
-    {id:'pc4',tenant_id:'t1',pre_analise_id:'pa2',versao:1,status:'REPROVADO',valor_total:null,
-     criado_em:new Date(h-4*864e5).toISOString(),decidido_em:new Date(h-1*864e5).toISOString()}]; })(),
+  pa_credito: (() => {
+    const h = Date.now();
+    return [
+      {
+        id: 'pc1',
+        tenant_id: 't1',
+        pre_analise_id: 'pa3',
+        versao: 1,
+        status: 'APROVADO',
+        valor_aprovado: 20000000,
+        valor_subsidio: 3000000,
+        valor_fgts: 1000000,
+        valor_total: 24000000,
+        prestacao: 150000,
+        prazo_meses: 360,
+        criado_em: '2026-08-20T10:00:00Z',
+        decidido_em: new Date(h - 8 * 864e5).toISOString()
+      },
+      {
+        id: 'pc2',
+        tenant_id: 't1',
+        pre_analise_id: 'pa1',
+        versao: 1,
+        status: 'EM_ANALISE',
+        valor_total: null,
+        criado_em: '2026-08-25T10:00:00Z'
+      },
+      {
+        id: 'pc3',
+        tenant_id: 't1',
+        pre_analise_id: 'pa4',
+        versao: 1,
+        status: 'APROVADO',
+        valor_aprovado: 15000000,
+        valor_subsidio: 0,
+        valor_fgts: 0,
+        valor_total: 15000000,
+        prestacao: 120000,
+        prazo_meses: 360,
+        criado_em: '2026-08-29T10:00:00Z',
+        decidido_em: new Date(h - 3 * 864e5).toISOString()
+      },
+      {
+        id: 'pc4',
+        tenant_id: 't1',
+        pre_analise_id: 'pa2',
+        versao: 1,
+        status: 'REPROVADO',
+        valor_total: null,
+        criado_em: new Date(h - 4 * 864e5).toISOString(),
+        decidido_em: new Date(h - 1 * 864e5).toISOString()
+      }
+    ];
+  })(),
   pa_documentos: [
-    {id:'pd1',tenant_id:'t1',pre_analise_id:'pa1',tipo:'RG / CNH',storage_key:'t1/pre-analise/pa1/rg.pdf',
-     nome_arquivo:'rg '+XSS+'.pdf',status:'ENVIADO',criado_em:'2026-08-25T10:00:00Z'},
-    {id:'pd2',tenant_id:'t1',pre_analise_id:'pa3',tipo:'Comprovante de renda',storage_key:'t1/pre-analise/pa3/renda.pdf',
-     nome_arquivo:'renda.pdf',status:'APROVADO',criado_em:'2026-08-21T10:00:00Z'},
+    {
+      id: 'pd1',
+      tenant_id: 't1',
+      pre_analise_id: 'pa1',
+      tipo: 'RG / CNH',
+      storage_key: 't1/pre-analise/pa1/rg.pdf',
+      nome_arquivo: 'rg ' + XSS + '.pdf',
+      status: 'ENVIADO',
+      criado_em: '2026-08-25T10:00:00Z'
+    },
+    {
+      id: 'pd2',
+      tenant_id: 't1',
+      pre_analise_id: 'pa3',
+      tipo: 'Comprovante de renda',
+      storage_key: 't1/pre-analise/pa3/renda.pdf',
+      nome_arquivo: 'renda.pdf',
+      status: 'APROVADO',
+      criado_em: '2026-08-21T10:00:00Z'
+    },
     // pa2 carrega o dossiê "com problema": uma pendência (para a taxa de
     // pendência e o Pareto por tipo) e um documento em versão 2 (para a taxa de
     // reenvio). Fica em pa2 de propósito — é a única pré-análise que nenhum
     // teste de dossiê abre, então nada existente muda de comportamento.
-    {id:'pd3',tenant_id:'t1',pre_analise_id:'pa2',tipo:'Comprovante de renda',storage_key:'t1/pre-analise/pa2/renda.pdf',
-     nome_arquivo:'renda-pendente.pdf',versao:1,status:'PENDENTE_ENVIO',criado_em:'2026-08-30T10:00:00Z'},
-    {id:'pd4',tenant_id:'t1',pre_analise_id:'pa2',tipo:'RG / CNH',storage_key:'t1/pre-analise/pa2/rg-v2.pdf',
-     nome_arquivo:'rg-v2.pdf',versao:2,status:'ENVIADO',criado_em:'2026-08-31T10:00:00Z'}],
+    {
+      id: 'pd3',
+      tenant_id: 't1',
+      pre_analise_id: 'pa2',
+      tipo: 'Comprovante de renda',
+      storage_key: 't1/pre-analise/pa2/renda.pdf',
+      nome_arquivo: 'renda-pendente.pdf',
+      versao: 1,
+      status: 'PENDENTE_ENVIO',
+      criado_em: '2026-08-30T10:00:00Z'
+    },
+    {
+      id: 'pd4',
+      tenant_id: 't1',
+      pre_analise_id: 'pa2',
+      tipo: 'RG / CNH',
+      storage_key: 't1/pre-analise/pa2/rg-v2.pdf',
+      nome_arquivo: 'rg-v2.pdf',
+      versao: 2,
+      status: 'ENVIADO',
+      criado_em: '2026-08-31T10:00:00Z'
+    }
+  ],
   pa_eventos: [
-    {id:1,tenant_id:'t1',pre_analise_id:'pa1',evento:'transicao',de_situacao:'ps1',para_situacao:'ps2',
-     ator_nome:'Julio '+XSS,detalhe:{justificativa:'documentos recebidos '+XSS},criado_em:'2026-08-25T11:00:00Z'}],
+    {
+      id: 1,
+      tenant_id: 't1',
+      pre_analise_id: 'pa1',
+      evento: 'transicao',
+      de_situacao: 'ps1',
+      para_situacao: 'ps2',
+      ator_nome: 'Julio ' + XSS,
+      detalhe: { justificativa: 'documentos recebidos ' + XSS },
+      criado_em: '2026-08-25T11:00:00Z'
+    }
+  ],
   co_situacoes: [
-    {id:'cs1',tenant_id:'t1',nome:'Proposta',flag:'INICIAL',ordem:0,cor:'#6366f1',sla_horas:24,ativo:true},
+    {
+      id: 'cs1',
+      tenant_id: 't1',
+      nome: 'Proposta',
+      flag: 'INICIAL',
+      ordem: 0,
+      cor: '#6366f1',
+      sla_horas: 24,
+      ativo: true
+    },
     // O SELO importa: 'Contrato assinado' é o fim da jornada da Venda, e é por
     // ele que o painel reconhece a venda ganha — não pelo documento. Sem o selo
     // aqui, o andaime nunca exercitaria a regra que os clientes reais usam.
-    {id:'cs2',tenant_id:'t1',nome:'Contrato assinado '+XSS,flag:'CONTRATO_ASSINADO',selo:'VENDIDO',ordem:1,cor:'#22c55e',sla_horas:null,ativo:true}],
+    {
+      id: 'cs2',
+      tenant_id: 't1',
+      nome: 'Contrato assinado ' + XSS,
+      flag: 'CONTRATO_ASSINADO',
+      selo: 'VENDIDO',
+      ordem: 1,
+      cor: '#22c55e',
+      sla_horas: null,
+      ativo: true
+    }
+  ],
   co_transicoes: [
-    {id:'ct1',tenant_id:'t1',de_id:'cs1',para_id:'cs2',papeis:[],requisitos:{contrato_assinado:true},
-     acao:'CREATE_REPASS',acao_modo:'AUTO',ativo:true}],
-  comerciais: (()=>{ const h=Date.now(); return [
-    {id:'co1',tenant_id:'t1',codigo:'CO-001',pre_analise_id:'pa3',empreendimento_id:'d1',unidade:'101',
-     corretor_id:'p3',situacao_id:'cs1',situacao_em:new Date(h-48*36e5).toISOString(),versao:1,
-     proposta:{valor_venda:26000000,valor_entrada:500000},repasse_case_id:null,
-     criado_em:new Date(h-5*864e5).toISOString(),
-     origem_snapshot:{capturado_em:'2026-08-22T10:00:00Z',
-       pre_analise:{id:'pa3',codigo:'PA-003',unidade:'101'},
-       credito:{versao:1,valor_aprovado:20000000,valor_subsidio:3000000,valor_fgts:1000000,
-                valor_total:24000000,prestacao:150000,prazo_meses:360},
-       participantes:[{pessoa_id:'pe1',nome:'Maria Titular '+XSS,papel:'TITULAR',renda_analisada:450000}]}},
-    // Ganho PELO SELO, sem contrato nenhum cadastrado: é o que os três clientes
-    // reais fazem — arrastam o cartão para a etapa de fim e nunca preenchem o
-    // documento. Antes de o selo mandar, este negócio não existia para nenhum
-    // KPI de dinheiro: contratos 0, VGV R$ 0, ticket traço, ciclo traço.
-    {id:'co2',tenant_id:'t1',codigo:'CO-002',pre_analise_id:null,empreendimento_id:'d1',unidade:'304',
-     corretor_id:'p3',situacao_id:'cs2',situacao_em:new Date(h-24*36e5).toISOString(),versao:1,
-     proposta:{valor_venda:21200000},repasse_case_id:null,
-     criado_em:new Date(h-9*864e5).toISOString(),
-     origem_snapshot:{capturado_em:'2026-09-06T10:00:00Z',avulsa:true}}]; })(),
+    {
+      id: 'ct1',
+      tenant_id: 't1',
+      de_id: 'cs1',
+      para_id: 'cs2',
+      papeis: [],
+      requisitos: { contrato_assinado: true },
+      acao: 'CREATE_REPASS',
+      acao_modo: 'AUTO',
+      ativo: true
+    }
+  ],
+  comerciais: (() => {
+    const h = Date.now();
+    return [
+      {
+        id: 'co1',
+        tenant_id: 't1',
+        codigo: 'CO-001',
+        pre_analise_id: 'pa3',
+        empreendimento_id: 'd1',
+        unidade: '101',
+        corretor_id: 'p3',
+        situacao_id: 'cs1',
+        situacao_em: new Date(h - 48 * 36e5).toISOString(),
+        versao: 1,
+        proposta: { valor_venda: 26000000, valor_entrada: 500000 },
+        repasse_case_id: null,
+        criado_em: new Date(h - 5 * 864e5).toISOString(),
+        origem_snapshot: {
+          capturado_em: '2026-08-22T10:00:00Z',
+          pre_analise: { id: 'pa3', codigo: 'PA-003', unidade: '101' },
+          credito: {
+            versao: 1,
+            valor_aprovado: 20000000,
+            valor_subsidio: 3000000,
+            valor_fgts: 1000000,
+            valor_total: 24000000,
+            prestacao: 150000,
+            prazo_meses: 360
+          },
+          participantes: [
+            { pessoa_id: 'pe1', nome: 'Maria Titular ' + XSS, papel: 'TITULAR', renda_analisada: 450000 }
+          ]
+        }
+      },
+      // Ganho PELO SELO, sem contrato nenhum cadastrado: é o que os três clientes
+      // reais fazem — arrastam o cartão para a etapa de fim e nunca preenchem o
+      // documento. Antes de o selo mandar, este negócio não existia para nenhum
+      // KPI de dinheiro: contratos 0, VGV R$ 0, ticket traço, ciclo traço.
+      {
+        id: 'co2',
+        tenant_id: 't1',
+        codigo: 'CO-002',
+        pre_analise_id: null,
+        empreendimento_id: 'd1',
+        unidade: '304',
+        corretor_id: 'p3',
+        situacao_id: 'cs2',
+        situacao_em: new Date(h - 24 * 36e5).toISOString(),
+        versao: 1,
+        proposta: { valor_venda: 21200000 },
+        repasse_case_id: null,
+        criado_em: new Date(h - 9 * 864e5).toISOString(),
+        origem_snapshot: { capturado_em: '2026-09-06T10:00:00Z', avulsa: true }
+      }
+    ];
+  })(),
   co_contratos: [
-    {id:'cc1',tenant_id:'t1',comercial_id:'co1',versao:1,status:'AGUARDANDO_ASSINATURA',
-     provedor:'Clicksign '+XSS,storage_key:'t1/comercial/co1/ct.pdf',criado_em:'2026-08-28T10:00:00Z'}],
+    {
+      id: 'cc1',
+      tenant_id: 't1',
+      comercial_id: 'co1',
+      versao: 1,
+      status: 'AGUARDANDO_ASSINATURA',
+      provedor: 'Clicksign ' + XSS,
+      storage_key: 't1/comercial/co1/ct.pdf',
+      criado_em: '2026-08-28T10:00:00Z'
+    }
+  ],
   co_eventos: [
-    {id:1,tenant_id:'t1',comercial_id:'co1',evento:'criado_da_pre_analise',para_situacao:'cs1',
-     ator_nome:'Julio',detalhe:{},criado_em:'2026-08-22T10:00:00Z'},
-    {id:2,tenant_id:'t1',comercial_id:'co2',evento:'situacao_alterada',para_situacao:'cs2',
-     ator_nome:'Julio',detalhe:{},criado_em:new Date(Date.now()-24*36e5).toISOString()}],
+    {
+      id: 1,
+      tenant_id: 't1',
+      comercial_id: 'co1',
+      evento: 'criado_da_pre_analise',
+      para_situacao: 'cs1',
+      ator_nome: 'Julio',
+      detalhe: {},
+      criado_em: '2026-08-22T10:00:00Z'
+    },
+    {
+      id: 2,
+      tenant_id: 't1',
+      comercial_id: 'co2',
+      evento: 'situacao_alterada',
+      para_situacao: 'cs2',
+      ator_nome: 'Julio',
+      detalhe: {},
+      criado_em: new Date(Date.now() - 24 * 36e5).toISOString()
+    }
+  ],
   integra_eventos: [],
   // A agenda da pessoa. Um compromisso com hora e uma tarefa sem — os dois
   // tipos —, no mes corrente, porque o calendario sempre pergunta por mes.
-  agenda: (()=>{ const d=new Date(); const pad=n=>String(n).padStart(2,'0');
-    const dia = n => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(Math.min(28, d.getDate()+n))}`;
+  agenda: (() => {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dia = n => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(Math.min(28, d.getDate() + n))}`;
     return [
-    {id:'ag1',tenant_id:'t1',dono:'u1',tipo:'compromisso',titulo:'Visita ao cliente '+XSS,
-     descricao:'levar contrato',local:'Residencial das Flores',data:dia(0),
-     hora_inicio:'14:00',hora_fim:null,caso_id:'c1',concluido_em:null},
-    {id:'ag2',tenant_id:'t1',dono:'u1',tipo:'tarefa',titulo:'Ligar para o banco',
-     descricao:null,local:null,data:dia(2),hora_inicio:null,hora_fim:null,
-     caso_id:null,concluido_em:null}]; })(),
+      {
+        id: 'ag1',
+        tenant_id: 't1',
+        dono: 'u1',
+        tipo: 'compromisso',
+        titulo: 'Visita ao cliente ' + XSS,
+        descricao: 'levar contrato',
+        local: 'Residencial das Flores',
+        data: dia(0),
+        hora_inicio: '14:00',
+        hora_fim: null,
+        caso_id: 'c1',
+        concluido_em: null
+      },
+      {
+        id: 'ag2',
+        tenant_id: 't1',
+        dono: 'u1',
+        tipo: 'tarefa',
+        titulo: 'Ligar para o banco',
+        descricao: null,
+        local: null,
+        data: dia(2),
+        hora_inicio: null,
+        hora_fim: null,
+        caso_id: null,
+        concluido_em: null
+      }
+    ];
+  })(),
 
-  stage_edges: [{from_id:'s1',to_id:'s2'},{from_id:'s2',to_id:'s3'}],
-  case_events: [{id:'ev1',case_id:'c1',type:'comment',description:'comentário '+XSS,actor_name:'Julio',created_at:'2026-08-02T10:00:00Z'}],
-  stage_flags: [{id:'fl1',tenant_id:'t1',name:'Urgente',color:'#dc2626'}],
+  stage_edges: [
+    { from_id: 's1', to_id: 's2' },
+    { from_id: 's2', to_id: 's3' }
+  ],
+  case_events: [
+    {
+      id: 'ev1',
+      case_id: 'c1',
+      type: 'comment',
+      description: 'comentário ' + XSS,
+      actor_name: 'Julio',
+      created_at: '2026-08-02T10:00:00Z'
+    }
+  ],
+  stage_flags: [{ id: 'fl1', tenant_id: 't1', name: 'Urgente', color: '#dc2626' }],
   // s1 = muitos processos recentes; s2 = poucos, mas parados há muito tempo
-  extras: (()=>{ const out=[]; const hoje=Date.now();
-    for(let i=0;i<20;i++) out.push({id:'x'+i,tenant_id:'t1',module_key:'repasse',stage_id:'s1',stage_name:'Documentação',
-      client_name:'Recente '+i,created_at:new Date(hoje-2*864e5).toISOString(),
-      stage_entered_at:new Date(hoje-2*864e5).toISOString(),payload:{}});
-    for(let i=0;i<3;i++) out.push({id:'y'+i,tenant_id:'t1',module_key:'repasse',stage_id:'s2',stage_name:'Análise',
-      client_name:'Parado '+i,created_at:new Date(hoje-90*864e5).toISOString(),
-      stage_entered_at:new Date(hoje-90*864e5).toISOString(),payload:{}});
-    return out; })(),
+  extras: (() => {
+    const out = [];
+    const hoje = Date.now();
+    for (let i = 0; i < 20; i++)
+      out.push({
+        id: 'x' + i,
+        tenant_id: 't1',
+        module_key: 'repasse',
+        stage_id: 's1',
+        stage_name: 'Documentação',
+        client_name: 'Recente ' + i,
+        created_at: new Date(hoje - 2 * 864e5).toISOString(),
+        stage_entered_at: new Date(hoje - 2 * 864e5).toISOString(),
+        payload: {}
+      });
+    for (let i = 0; i < 3; i++)
+      out.push({
+        id: 'y' + i,
+        tenant_id: 't1',
+        module_key: 'repasse',
+        stage_id: 's2',
+        stage_name: 'Análise',
+        client_name: 'Parado ' + i,
+        created_at: new Date(hoje - 90 * 864e5).toISOString(),
+        stage_entered_at: new Date(hoje - 90 * 864e5).toISOString(),
+        payload: {}
+      });
+    return out;
+  })(),
   // Perfis de acesso. O inativo não é enfeite: perfil desligado tem de deixar
   // de mandar, na tela e no banco, e é a única maneira de provar que a tela
   // não promete uma coisa que a1_perm() não cumpre.
   perfis: [
-    {id:'pf1',tenant_id:'t1',nome:'Corretor',descricao:'Vende e acompanha',ativo:true,
-     permissions:{criar_repasses:true, pa_ver:true, pa_criar:true, co_ver:true}},
-    {id:'pf2',tenant_id:'t1',nome:'Analista',ativo:true,
-     permissions:{editar_repasses:true, alterar_etapa:true, pa_ver:true, pa_editar:true,
-                  analisar_credito:true, co_ver:true}},
-    {id:'pf3',tenant_id:'t1',nome:'Antigo',ativo:false, permissions:{criar_repasses:true}},
+    {
+      id: 'pf1',
+      tenant_id: 't1',
+      nome: 'Corretor',
+      descricao: 'Vende e acompanha',
+      ativo: true,
+      permissions: { criar_repasses: true, pa_ver: true, pa_criar: true, co_ver: true }
+    },
+    {
+      id: 'pf2',
+      tenant_id: 't1',
+      nome: 'Analista',
+      ativo: true,
+      permissions: {
+        editar_repasses: true,
+        alterar_etapa: true,
+        pa_ver: true,
+        pa_editar: true,
+        analisar_credito: true,
+        co_ver: true
+      }
+    },
+    { id: 'pf3', tenant_id: 't1', nome: 'Antigo', ativo: false, permissions: { criar_repasses: true } }
   ],
-  stage_history: [], presence: [], leads: [], modules: [{key:'repasse',name:'Repasse',module_key:'repasse',tenant_id:'t1'}],
+  stage_history: [],
+  presence: [],
+  leads: [],
+  modules: [{ key: 'repasse', name: 'Repasse', module_key: 'repasse', tenant_id: 't1' }]
 };
 
 // Os 23 processos de "extras" existem para o KPI de gargalo (muitos recentes
 // numa etapa, poucos e parados em outra). Eles distorcem qualquer teste que
 // conte cartões, então ficam DESLIGADOS por padrão: quem precisa deles pede.
 let COM_EXTRAS = false;
-function usarExtras(v) { COM_EXTRAS = v !== false; }
+function usarExtras(v) {
+  COM_EXTRAS = v !== false;
+}
 
 // Licença dos módulos novos. Vazia por padrão — é a situação de TODO cliente
 // hoje, e é o que faz o teste "nenhum cliente foi afetado" significar alguma
 // coisa. Os módulos antigos seguem respondendo que sim, como sempre.
 let MODULOS_NOVOS = [];
-function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : []; }
+function liberarModulos(lista) {
+  MODULOS_NOVOS = Array.isArray(lista) ? lista : [];
+}
 
 // Os módulos ANTIGOS respondem que sim por padrão, porque é o que todo cliente
 // tem — e inverter isso quebraria a suíte inteira sem provar nada. Mas há tela
@@ -242,7 +982,9 @@ function liberarModulos(lista) { MODULOS_NOVOS = Array.isArray(lista) ? lista : 
 // existe com Repasse ou Pré-análise), e sem poder dizer "não" a prova seria
 // impossível de escrever. Daí a negação explícita, uma exceção por teste.
 let MODULOS_NEGADOS = [];
-function negarModulos(lista) { MODULOS_NEGADOS = Array.isArray(lista) ? lista : []; }
+function negarModulos(lista) {
+  MODULOS_NEGADOS = Array.isArray(lista) ? lista : [];
+}
 
 // Os tipos de documento do cliente. O padrão é a lista de STRINGS soltas que
 // telas antigas gravaram — é o que a maioria dos clientes tem hoje, e é o
@@ -251,16 +993,17 @@ function negarModulos(lista) { MODULOS_NEGADOS = Array.isArray(lista) ? lista : 
 const DOC_TYPES_PADRAO = '["RG","CPF"]';
 let DOC_TYPES = DOC_TYPES_PADRAO;
 function usarDocTypes(lista) {
-  DOC_TYPES = lista == null ? DOC_TYPES_PADRAO
-            : (typeof lista === 'string' ? lista : JSON.stringify(lista));
+  DOC_TYPES = lista == null ? DOC_TYPES_PADRAO : typeof lista === 'string' ? lista : JSON.stringify(lista);
 }
 
 // Modo manutenção. Nasce desligado — é assim que o sistema vive 99% do tempo,
 // e todo teste que não fala do assunto tem que ver o sistema no ar.
-let MANUTENCAO = { ativa:false, mensagem:null, ate:null };
+let MANUTENCAO = { ativa: false, mensagem: null, ate: null };
 function usarManutencao(estado) {
-  MANUTENCAO = estado == null ? { ativa:false, mensagem:null, ate:null }
-                              : { ativa:false, mensagem:null, ate:null, ...estado };
+  MANUTENCAO =
+    estado == null
+      ? { ativa: false, mensagem: null, ate: null }
+      : { ativa: false, mensagem: null, ate: null, ...estado };
 }
 
 function responder(url, metodo, corpo0) {
@@ -269,7 +1012,9 @@ function responder(url, metodo, corpo0) {
   const qs = u.search;
   if (p.includes('/rpc/a1_has_module')) {
     let chave = '';
-    try { chave = (JSON.parse(corpo0 || '{}') || {}).p_module_key || ''; } catch {}
+    try {
+      chave = (JSON.parse(corpo0 || '{}') || {}).p_module_key || '';
+    } catch {}
     if (MODULOS_NEGADOS.includes(chave)) return false;
     // 'crm' (Leads) entra aqui junto com os outros dois: modulo novo nasce
     // DESLIGADO para todo mundo, e o andaime tem de dizer a mesma coisa que o
@@ -280,16 +1025,42 @@ function responder(url, metodo, corpo0) {
     return true;
   }
   if (p.includes('/rpc/a1_pa_transicionar') || p.includes('/rpc/a1_co_transicionar'))
-    return { ok:true, situacao_id:'ps2' };
-  if (p.includes('/rpc/a1_pa_executar_acao')) return { ok:true, comercial_id:'co1' };
-  if (p.includes('/rpc/a1_co_executar_acao')) return { ok:true, repasse_case_id:'c1' };
-  if (p.includes('/rpc/a1_pa_ciclo_configuracoes')) return {configuracoes:[
-    {id:'cfg1',nome:'Equipe principal',ativo:true,modo:'LIVRE',empresa_id:'e1',empresa:'Empresa Corr',correspondente_id:'p8',correspondente:'Usuário Corr',proxima_ordem:1,
-     participantes:[{id:'cp1',analista_id:'p2',analista:'João Analista',ordem:1,recebidas:3,aprovadas:2}]},
-    {id:'cfg2',nome:'Equipe de contingência',ativo:false,modo:'DESEMPENHO',empresa_id:'e1',empresa:'Empresa Corr',correspondente_id:'p21',correspondente:'Usuario Novo CCA',proxima_ordem:1,participantes:[]}
-  ]};
-  if (p.includes('/rpc/a1_pa_ciclo_salvar_configuracao')) return {ok:true,config_id:'cfg1'};
-  if (p.includes('/rpc/a1_pa_ciclo_ativar')) return {ok:true,config_id:'cfg2'};
+    return { ok: true, situacao_id: 'ps2' };
+  if (p.includes('/rpc/a1_pa_executar_acao')) return { ok: true, comercial_id: 'co1' };
+  if (p.includes('/rpc/a1_co_executar_acao')) return { ok: true, repasse_case_id: 'c1' };
+  if (p.includes('/rpc/a1_pa_ciclo_configuracoes'))
+    return {
+      configuracoes: [
+        {
+          id: 'cfg1',
+          nome: 'Equipe principal',
+          ativo: true,
+          modo: 'LIVRE',
+          empresa_id: 'e1',
+          empresa: 'Empresa Corr',
+          correspondente_id: 'p8',
+          correspondente: 'Usuário Corr',
+          proxima_ordem: 1,
+          participantes: [
+            { id: 'cp1', analista_id: 'p2', analista: 'João Analista', ordem: 1, recebidas: 3, aprovadas: 2 }
+          ]
+        },
+        {
+          id: 'cfg2',
+          nome: 'Equipe de contingência',
+          ativo: false,
+          modo: 'DESEMPENHO',
+          empresa_id: 'e1',
+          empresa: 'Empresa Corr',
+          correspondente_id: 'p21',
+          correspondente: 'Usuario Novo CCA',
+          proxima_ordem: 1,
+          participantes: []
+        }
+      ]
+    };
+  if (p.includes('/rpc/a1_pa_ciclo_salvar_configuracao')) return { ok: true, config_id: 'cfg1' };
+  if (p.includes('/rpc/a1_pa_ciclo_ativar')) return { ok: true, config_id: 'cfg2' };
   // a1_perm() no banco começa com "when a1_e_gestor() then true": para quem não
   // é parceiro a resposta é sempre sim, sem consultar perfil nem marca. E o
   // navegador só chama esta RPC para gestor (src/shared/ui/modulo-shell.js) — o parceiro é
@@ -303,47 +1074,65 @@ function responder(url, metodo, corpo0) {
   // outro teste percebe.
   if (p.includes('/rpc/a1_resumo_geral')) {
     const casos = {};
-    ['crm','repasse','registro'].forEach(mk => {
+    ['crm', 'repasse', 'registro'].forEach(mk => {
       const etapas = D.stages.filter(s2 => s2.module_key === mk);
-      const linhas = D.cases.concat(COM_EXTRAS ? D.extras : [])
+      const linhas = D.cases
+        .concat(COM_EXTRAS ? D.extras : [])
         .filter(c => c.module_key === mk && c.archived !== true);
-      const _novo = c => Date.now() - new Date(c.created_at).getTime() < 7*864e5;
-      const _parado = c => Date.now() - new Date(c.stage_entered_at || c.created_at).getTime() > 30*864e5;
+      const _novo = c => Date.now() - new Date(c.created_at).getTime() < 7 * 864e5;
+      const _parado = c => Date.now() - new Date(c.stage_entered_at || c.created_at).getTime() > 30 * 864e5;
       const porEtapa = etapas.map(e => ({
-        id:e.id, nome:e.name, cor:e.color, fim:!!e.is_final,
+        id: e.id,
+        nome: e.name,
+        cor: e.color,
+        fim: !!e.is_final,
         n: linhas.filter(c => c.stage_id === e.id).length,
         novos: linhas.filter(c => c.stage_id === e.id && _novo(c)).length,
-        parados: linhas.filter(c => c.stage_id === e.id && _parado(c)).length }));
+        parados: linhas.filter(c => c.stage_id === e.id && _parado(c)).length
+      }));
       const abertas = porEtapa.filter(e => !e.fim);
-      casos[mk] = { total: linhas.length,
-        aberto:  abertas.reduce((t,e) => t + e.n, 0),
-        novos:   abertas.reduce((t,e) => t + e.novos, 0),
-        parados: abertas.reduce((t,e) => t + e.parados, 0),
-        etapas: porEtapa };
+      casos[mk] = {
+        total: linhas.length,
+        aberto: abertas.reduce((t, e) => t + e.n, 0),
+        novos: abertas.reduce((t, e) => t + e.novos, 0),
+        parados: abertas.reduce((t, e) => t + e.parados, 0),
+        etapas: porEtapa
+      };
     });
     const monta = (linhas, sits, campo, selosFim) => {
-      const _novo = x => Date.now() - new Date(x.criado_em).getTime() < 7*864e5;
-      const _parado = x => Date.now() - new Date(x.situacao_em || x.criado_em).getTime() > 30*864e5;
-      const etapas = sits.filter(s2 => s2.ativo !== false).map(s2 => ({
-        id:s2.id, nome:s2.nome, cor:s2.cor, fim: selosFim.indexOf(s2.selo) >= 0,
-        n: linhas.filter(x => x[campo] === s2.id).length,
-        novos: linhas.filter(x => x[campo] === s2.id && _novo(x)).length,
-        parados: linhas.filter(x => x[campo] === s2.id && _parado(x)).length }));
+      const _novo = x => Date.now() - new Date(x.criado_em).getTime() < 7 * 864e5;
+      const _parado = x => Date.now() - new Date(x.situacao_em || x.criado_em).getTime() > 30 * 864e5;
+      const etapas = sits
+        .filter(s2 => s2.ativo !== false)
+        .map(s2 => ({
+          id: s2.id,
+          nome: s2.nome,
+          cor: s2.cor,
+          fim: selosFim.indexOf(s2.selo) >= 0,
+          n: linhas.filter(x => x[campo] === s2.id).length,
+          novos: linhas.filter(x => x[campo] === s2.id && _novo(x)).length,
+          parados: linhas.filter(x => x[campo] === s2.id && _parado(x)).length
+        }));
       const abertas = etapas.filter(e => !e.fim);
-      return { total: linhas.length,
-        aberto:  abertas.reduce((t,e) => t + e.n, 0),
-        novos:   abertas.reduce((t,e) => t + e.novos, 0),
-        parados: abertas.reduce((t,e) => t + e.parados, 0),
-        etapas };
+      return {
+        total: linhas.length,
+        aberto: abertas.reduce((t, e) => t + e.n, 0),
+        novos: abertas.reduce((t, e) => t + e.novos, 0),
+        parados: abertas.reduce((t, e) => t + e.parados, 0),
+        etapas
+      };
     };
-    return { em:new Date().toISOString(), casos,
-      pre_analise: monta(D.pre_analises, D.pa_situacoes, 'situacao_id', ['FIM_POSITIVO','FIM_NEGATIVO']),
-      venda:       monta(D.comerciais, D.co_situacoes, 'situacao_id', ['VENDIDO','FIM_NEGATIVO']) };
+    return {
+      em: new Date().toISOString(),
+      casos,
+      pre_analise: monta(D.pre_analises, D.pa_situacoes, 'situacao_id', ['FIM_POSITIVO', 'FIM_NEGATIVO']),
+      venda: monta(D.comerciais, D.co_situacoes, 'situacao_id', ['VENDIDO', 'FIM_NEGATIVO'])
+    };
   }
   if (p.includes('/rpc/a1_manutencao_estado')) return MANUTENCAO;
   if (p.includes('/rpc/a1_touch_session')) return true;
   if (p.includes('/rpc/a1_ativos')) return 1;
-  if (p.includes('/rpc/')) return {ok:true};
+  if (p.includes('/rpc/')) return { ok: true };
   if (metodo !== 'GET') {
     // Devolve as linhas que foram enviadas, com id — é o que o PostgREST faz
     // com Prefer: return=representation. O talão fixo {id:'novo-1'} escondia
@@ -352,7 +1141,9 @@ function responder(url, metodo, corpo0) {
     // e com uma linha só de resposta ela não ligava nada — sem quebrar nada,
     // que é o pior jeito de falhar.
     let corpo = null;
-    try { corpo = JSON.parse(corpo0 || 'null'); } catch {}
+    try {
+      corpo = JSON.parse(corpo0 || 'null');
+    } catch {}
     const comId = (x, i) => Object.assign({ id: 'novo-' + (i + 1) }, x);
     if (Array.isArray(corpo)) return corpo.map(comId);
     if (corpo && typeof corpo === 'object') return [comId(corpo, 0)];
@@ -360,22 +1151,24 @@ function responder(url, metodo, corpo0) {
   }
 
   const t = p.split('/rest/v1/')[1] || '';
-  const filtroTipo = (qs.match(/type=eq\.([a-z_]+)/)||[])[1];
+  const filtroTipo = (qs.match(/type=eq\.([a-z_]+)/) || [])[1];
   // As telas de Repasse deixaram de pedir a1_partners oito vezes, uma por tipo,
   // e passaram a pedir UMA com type=in.(...). Sem modelar isto aqui, o falso
   // devolveria a tabela inteira e os filtros da tela ficariam verdes por acaso.
-  const filtroTipos = ((qs.match(/type=in\.\(([^)]*)\)/)||[])[1]||'')
-    .split(',').map(x=>x.trim()).filter(Boolean);
+  const filtroTipos = ((qs.match(/type=in\.\(([^)]*)\)/) || [])[1] || '')
+    .split(',')
+    .map(x => x.trim())
+    .filter(Boolean);
   if (t === 'a1_tenants') return D.tenants;
   if (t === 'a1_agenda') {
     // O POST devolve a linha criada, como o PostgREST com Prefer=representation
     // faz. Devolver lista vazia esconderia todo codigo que usa o id de volta —
     // foi assim que a semeadura da esteira deixou de ligar nada sem quebrar.
-    let r=D.agenda.slice();
-    const tipo=(qs.match(/tipo=eq\.([a-z_]+)/)||[])[1];
-    if(tipo) r=r.filter(x=>x.tipo===tipo);
-    if(/caso_id=not\.is\.null/.test(qs)) r=r.filter(x=>x.caso_id!=null);
-    if(/concluido_em=is\.null/.test(qs)) r=r.filter(x=>x.concluido_em==null);
+    let r = D.agenda.slice();
+    const tipo = (qs.match(/tipo=eq\.([a-z_]+)/) || [])[1];
+    if (tipo) r = r.filter(x => x.tipo === tipo);
+    if (/caso_id=not\.is\.null/.test(qs)) r = r.filter(x => x.caso_id != null);
+    if (/concluido_em=is\.null/.test(qs)) r = r.filter(x => x.concluido_em == null);
     return r;
   }
   if (t === 'a1_stages') return D.stages;
@@ -383,39 +1176,58 @@ function responder(url, metodo, corpo0) {
     // devolve SÓ as colunas pedidas, como o PostgREST faz — é o que prova que a
     // listagem deixou de baixar os anexos
     let r = COM_EXTRAS ? D.cases.concat(D.extras) : D.cases.slice();
-    const id = (qs.match(/id=eq\.([a-z0-9-]+)/)||[])[1];
-    if (id) r = r.filter(c=>c.id===id);
-    const sel = (qs.match(/select=([^&]*)/)||[])[1];
+    const id = (qs.match(/id=eq\.([a-z0-9-]+)/) || [])[1];
+    if (id) r = r.filter(c => c.id === id);
+    const sel = (qs.match(/select=([^&]*)/) || [])[1];
     if (!sel) return r;
-    const cols = decodeURIComponent(sel).split(',').map(s=>s.split(':').pop().trim());
-    return r.map(c => { const o={}; for(const k of cols) if(k in c) o[k]=c[k]; return o; });
+    const cols = decodeURIComponent(sel)
+      .split(',')
+      .map(s => s.split(':').pop().trim());
+    return r.map(c => {
+      const o = {};
+      for (const k of cols) if (k in c) o[k] = c[k];
+      return o;
+    });
   }
   // ── Módulos novos ──────────────────────────────────────────────────────────
   // Sem licença, as tabelas não devolvem NADA — é o que o RLS faz de verdade
   // quando a1_tem_modulo() responde não. O andaime tem de imitar isso, senão o
   // teste de "módulo desligado" aprovaria uma tela que na prática vazaria.
-  const TAB_PA = { a1_pa_situacoes:'pa_situacoes', a1_pa_transicoes:'pa_transicoes',
-                   a1_pre_analises:'pre_analises', a1_pa_pessoas:'pa_pessoas',
-                   a1_pa_participantes:'pa_participantes', a1_pa_analises_credito:'pa_credito',
-                   a1_pa_documentos:'pa_documentos', a1_pa_eventos:'pa_eventos' };
-  const TAB_CO = { a1_co_situacoes:'co_situacoes', a1_co_transicoes:'co_transicoes',
-                   a1_comerciais:'comerciais', a1_co_contratos:'co_contratos',
-                   a1_co_eventos:'co_eventos', a1_integra_eventos:'integra_eventos' };
+  const TAB_PA = {
+    a1_pa_situacoes: 'pa_situacoes',
+    a1_pa_transicoes: 'pa_transicoes',
+    a1_pre_analises: 'pre_analises',
+    a1_pa_pessoas: 'pa_pessoas',
+    a1_pa_participantes: 'pa_participantes',
+    a1_pa_analises_credito: 'pa_credito',
+    a1_pa_documentos: 'pa_documentos',
+    a1_pa_eventos: 'pa_eventos'
+  };
+  const TAB_CO = {
+    a1_co_situacoes: 'co_situacoes',
+    a1_co_transicoes: 'co_transicoes',
+    a1_comerciais: 'comerciais',
+    a1_co_contratos: 'co_contratos',
+    a1_co_eventos: 'co_eventos',
+    a1_integra_eventos: 'integra_eventos'
+  };
   if (TAB_PA[t] || TAB_CO[t]) {
     const mod = TAB_PA[t] ? 'PRE_ANALISE' : 'COMERCIAL';
     if (!MODULOS_NOVOS.includes(mod)) return [];
     let r = (D[TAB_PA[t] || TAB_CO[t]] || []).slice();
-    const filtroId = (qs.match(/[?&]id=eq\.([a-z0-9-]+)/)||[])[1];
+    const filtroId = (qs.match(/[?&]id=eq\.([a-z0-9-]+)/) || [])[1];
     if (filtroId) r = r.filter(x => x.id === filtroId);
-    const pai = (qs.match(/pre_analise_id=eq\.([a-z0-9-]+)/)||[])[1];
+    const pai = (qs.match(/pre_analise_id=eq\.([a-z0-9-]+)/) || [])[1];
     if (pai) r = r.filter(x => x.pre_analise_id === pai);
-    const com = (qs.match(/comercial_id=eq\.([a-z0-9-]+)/)||[])[1];
+    const com = (qs.match(/comercial_id=eq\.([a-z0-9-]+)/) || [])[1];
     if (com) r = r.filter(x => x.comercial_id === com);
-    const doc = (qs.match(/documento=eq\.(\d+)/)||[])[1];
+    const doc = (qs.match(/documento=eq\.(\d+)/) || [])[1];
     if (doc) r = r.filter(x => x.documento === doc);
-    const dentro = (qs.match(/(?:id|pre_analise_id)=in\.\(([^)]*)\)/)||[])[1];
-    if (dentro) { const ids = decodeURIComponent(dentro).split(',');
-      r = r.filter(x => ids.includes(x.id) || ids.includes(x.pre_analise_id)); }
+    const dentro = (qs.match(/(?:id|pre_analise_id)=in\.\(([^)]*)\)/) || [])[1];
+    if (dentro) {
+      const ids = decodeURIComponent(dentro).split(',');
+      r = r.filter(x => ids.includes(x.id) || ids.includes(x.pre_analise_id));
+    }
     if (/papel=eq\.TITULAR/.test(qs)) r = r.filter(x => x.papel === 'TITULAR');
     return r;
   }
@@ -426,8 +1238,8 @@ function responder(url, metodo, corpo0) {
     // ?key=eq.doc_types recebia a lista inteira e lia rows[0] — que é
     // 'regionais'. A tela achava que os tipos de documento do cliente eram
     // ["Centro","Sul"], e nenhum teste percebia porque nenhum olhava o conteúdo.
-    let r = D.config.map(c => c.key === 'doc_types' ? { ...c, value: DOC_TYPES } : c);
-    const chave = (qs.match(/[?&]key=eq\.([^&]+)/)||[])[1];
+    let r = D.config.map(c => (c.key === 'doc_types' ? { ...c, value: DOC_TYPES } : c));
+    const chave = (qs.match(/[?&]key=eq\.([^&]+)/) || [])[1];
     if (chave) r = r.filter(c => c.key === decodeURIComponent(chave));
     return r;
   }
@@ -443,13 +1255,13 @@ function responder(url, metodo, corpo0) {
   // andaime respondesse sempre a mesma lista, o teste de "sem licença não
   // aparece" passaria sem nada estar sendo testado.
   if (t === 'a1_tenant_modules')
-    return D.modules.concat(MODULOS_NOVOS.map(k => ({ tenant_id:'t1', module_key:k })));
+    return D.modules.concat(MODULOS_NOVOS.map(k => ({ tenant_id: 't1', module_key: k })));
   if (t === 'a1_corr_empresas') return D.corr_empresas;
   if (t === 'a1_precad_links') return D.precad_links;
   if (t === 'a1_estados') return D.estados;
   if (t === 'a1_municipios') {
-    const uf = (qs.match(/uf=eq\.([A-Z]{2})/)||[])[1];
-    return (D.municipios[uf]||[]).map(n=>({nome:n, uf, codigo_ibge:1}));
+    const uf = (qs.match(/uf=eq\.([A-Z]{2})/) || [])[1];
+    return (D.municipios[uf] || []).map(n => ({ nome: n, uf, codigo_ibge: 1 }));
   }
   if (t === 'despachantes') return D.despachantes;
   if (t === 'bancos') return D.bancos;
@@ -457,20 +1269,30 @@ function responder(url, metodo, corpo0) {
   if (t === 'a1_perfis') {
     let r = D.perfis.slice();
     if (/ativo=is\.true/.test(qs)) r = r.filter(x => x.ativo !== false);
-    const id = (qs.match(/id=eq\.([a-z0-9-]+)/)||[])[1];
+    const id = (qs.match(/id=eq\.([a-z0-9-]+)/) || [])[1];
     if (id) r = r.filter(x => x.id === id);
     return r;
   }
   if (t === 'a1_partners') {
     let r = D.partners;
-    if (filtroTipo) r = r.filter(x=>x.type===filtroTipo);
-    if (filtroTipos.length) r = r.filter(x=>filtroTipos.includes(x.type));
-    if (/approved=eq\.false/.test(qs)) r = r.filter(x=>x.approved===false);
-    if (/approved=eq\.true/.test(qs))  r = r.filter(x=>x.approved!==false);
-    const id = (qs.match(/id=eq\.([a-z0-9-]+)/)||[])[1];
-    if (id) r = r.filter(x=>x.id===id);
+    if (filtroTipo) r = r.filter(x => x.type === filtroTipo);
+    if (filtroTipos.length) r = r.filter(x => filtroTipos.includes(x.type));
+    if (/approved=eq\.false/.test(qs)) r = r.filter(x => x.approved === false);
+    if (/approved=eq\.true/.test(qs)) r = r.filter(x => x.approved !== false);
+    const id = (qs.match(/id=eq\.([a-z0-9-]+)/) || [])[1];
+    if (id) r = r.filter(x => x.id === id);
     return r;
   }
   return [];
 }
-module.exports = { responder, usarExtras, liberarModulos, XSS, ASPA, D, negarModulos, usarDocTypes, usarManutencao };
+module.exports = {
+  responder,
+  usarExtras,
+  liberarModulos,
+  XSS,
+  ASPA,
+  D,
+  negarModulos,
+  usarDocTypes,
+  usarManutencao
+};

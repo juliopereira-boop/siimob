@@ -34,36 +34,64 @@ const PAGINAS = ['repasse.html', 'andamento.html', 'listagem.html'];
 
 // Carla Dias tem extra.imobiliaria_id='p1' na base falsa, e p1 é a "Imob Alfa"
 // (cujo nome carrega a carga de XSS de aspa — de propósito).
-const CARLA = { id:'p10', tenant_id:'t1', name:'Carla Dias', role:'partner',
-                type:'corretor', cpf:'66666666666', permissions:{} };
+const CARLA = {
+  id: 'p10',
+  tenant_id: 't1',
+  name: 'Carla Dias',
+  role: 'partner',
+  type: 'corretor',
+  cpf: '66666666666',
+  permissions: {}
+};
 // Sem imobiliária nenhuma no cadastro.
-const ANA   = { id:'p3', tenant_id:'t1', name:'Ana Souza', role:'partner',
-                type:'corretor', cpf:'33333333333', permissions:{} };
+const ANA = {
+  id: 'p3',
+  tenant_id: 't1',
+  name: 'Ana Souza',
+  role: 'partner',
+  type: 'corretor',
+  cpf: '33333333333',
+  permissions: {}
+};
 
 async function abrirComo(pag, usuario) {
-  liberarModulos([]);                       // como todo cliente de hoje
+  liberarModulos([]); // como todo cliente de hoje
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
   await p.addInitScript(u => {
-    localStorage.setItem('a1_token','tok'); localStorage.setItem('a1_slug','thecred');
+    localStorage.setItem('a1_token', 'tok');
+    localStorage.setItem('a1_slug', 'thecred');
     localStorage.setItem('a1_user', JSON.stringify(u));
     window.__XSS = 0;
     window.confirm = () => true;
     window.__POSTS = [];
     const f = window.fetch;
-    window.fetch = function(url, o){
-      if (o && o.method && o.method !== 'GET') window.__POSTS.push({url:String(url), m:o.method, body:o.body});
+    window.fetch = function (url, o) {
+      if (o && o.method && o.method !== 'GET')
+        window.__POSTS.push({ url: String(url), m: o.method, body: o.body });
       return f.apply(this, arguments);
     };
   }, usuario);
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({status:200,contentType:'text/css',body:''}));
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, r =>
+    r.fulfill({ status: 200, contentType: 'text/css', body: '' })
+  );
   await p.route(/supabase\.co/, r => {
-    let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch { d = []; }
-    r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-1/2'},body:JSON.stringify(d)});
+    let d;
+    try {
+      d = responder(r.request().url(), r.request().method(), r.request().postData());
+    } catch {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
-  await p.goto(BASE + '/' + pag, { waitUntil:'load' });
+  await p.goto(BASE + '/' + pag, { waitUntil: 'load' });
   await p.waitForTimeout(1800);
   return { b, p, erros };
 }
@@ -81,16 +109,18 @@ async function abrirPerfil(p) {
 }
 
 // Visível de verdade, não só presente no DOM.
-const visivel = (p, sel) => p.evaluate(s => {
-  const el = document.querySelector(s);
-  if (!el) return false;
-  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-}, sel);
+const visivel = (p, sel) =>
+  p.evaluate(s => {
+    const el = document.querySelector(s);
+    if (!el) return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }, sel);
 
-const textoDoModal = p => p.evaluate(() => {
-  const m = document.getElementById('modal-profile-bg');
-  return m ? m.innerText : '';
-});
+const textoDoModal = p =>
+  p.evaluate(() => {
+    const m = document.getElementById('modal-profile-bg');
+    return m ? m.innerText : '';
+  });
 
 (async () => {
   const todosErros = [];
@@ -107,15 +137,17 @@ const textoDoModal = p => p.evaluate(() => {
       await p.click('#sb-avatar');
       await p.waitForTimeout(400);
       const menu = await p.locator('.sb-pop').textContent();
-      checa('o menu da conta oferece o cadastro da pessoa', /Meu cadastro/.test(menu), menu.slice(0,120));
-      checa('e "Sair" não é mais um clique acidental no avatar',
+      checa('o menu da conta oferece o cadastro da pessoa', /Meu cadastro/.test(menu), menu.slice(0, 120));
+      checa(
+        'e "Sair" não é mais um clique acidental no avatar',
         /Sair do sistema/.test(menu) && menu.indexOf('Meu cadastro') < menu.indexOf('Sair do sistema'),
-        menu.replace(/\s+/g,' ').slice(0,160));
+        menu.replace(/\s+/g, ' ').slice(0, 160)
+      );
       await p.keyboard.press('Escape');
       await p.waitForTimeout(200);
       await abrirPerfil(p);
 
-      checa('o perfil tem o campo Imobiliária', await p.locator('#prof-imob').count() === 1);
+      checa('o perfil tem o campo Imobiliária', (await p.locator('#prof-imob').count()) === 1);
       checa('e ele está visível', await visivel(p, '#prof-imob'));
 
       const valor = await p.inputValue('#prof-imob').catch(() => '');
@@ -144,7 +176,9 @@ const textoDoModal = p => p.evaluate(() => {
       // tem porta de escrita na própria linha. Antes, "não manda imobiliária"
       // dependia de a tela lembrar de não mandar; agora nem existe requisição
       // em que a imobiliária caberia — e a ausência do PATCH é o que prova isso.
-      await p.evaluate(() => { window.__POSTS = []; });
+      await p.evaluate(() => {
+        window.__POSTS = [];
+      });
       await p.click('#prof-save-btn');
       await p.waitForTimeout(700);
       const rpc = await p.evaluate(() => {
@@ -152,15 +186,20 @@ const textoDoModal = p => p.evaluate(() => {
         return x ? x.body : null;
       });
       const patchDireto = await p.evaluate(() =>
-        (window.__POSTS || []).filter(y => /a1_partners/.test(y.url) && y.m !== 'GET').map(y => y.m + ' ' + y.url));
+        (window.__POSTS || [])
+          .filter(y => /a1_partners/.test(y.url) && y.m !== 'GET')
+          .map(y => y.m + ' ' + y.url)
+      );
       checa('salvar o perfil passa pelo RPC a1_atualizar_meu_perfil', !!rpc, String(rpc));
       checa('e continua mandando o nome', rpc && /Carla Dias/.test(rpc), String(rpc));
-      checa('nenhuma escrita direta em a1_partners sai da tela',
-            patchDireto.length === 0, patchDireto.join(' / '));
-      checa('e não manda imobiliária nenhuma',
-            rpc && !/imobiliaria|extra/i.test(rpc), String(rpc));
+      checa(
+        'nenhuma escrita direta em a1_partners sai da tela',
+        patchDireto.length === 0,
+        patchDireto.join(' / ')
+      );
+      checa('e não manda imobiliária nenhuma', rpc && !/imobiliaria|extra/i.test(rpc), String(rpc));
 
-      checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
+      checa('nenhum XSS executou', (await p.evaluate(() => window.__XSS)) === 0);
       todosErros.push(...erros);
       await b.close();
     }
@@ -175,10 +214,10 @@ const textoDoModal = p => p.evaluate(() => {
       checa('sem vínculo, o campo Imobiliária não aparece', !(await visivel(p, '#prof-imob')));
 
       const txt = await textoDoModal(p);
-      checa('nem o rótulo "Imobiliária" sobra na tela', !/Imobili/i.test(txt), txt.replace(/\n/g,' | '));
-      checa('e nada de "undefined" no popup', !/undefined/i.test(txt), txt.replace(/\n/g,' | '));
+      checa('nem o rótulo "Imobiliária" sobra na tela', !/Imobili/i.test(txt), txt.replace(/\n/g, ' | '));
+      checa('e nada de "undefined" no popup', !/undefined/i.test(txt), txt.replace(/\n/g, ' | '));
 
-      checa('nenhum XSS executou', await p.evaluate(() => window.__XSS) === 0);
+      checa('nenhum XSS executou', (await p.evaluate(() => window.__XSS)) === 0);
       todosErros.push(...erros);
       await b.close();
     }

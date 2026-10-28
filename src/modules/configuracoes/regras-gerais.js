@@ -51,10 +51,10 @@ const A1_GERAL_PADRAO = {
 // não "false": esta é a diferença entre "o gestor decidiu desligar" e "ninguém
 // nunca abriu esta tela".
 function a1GeralNormalizar(bruto) {
-  const v = (bruto && typeof bruto === 'object') ? bruto : {};
+  const v = bruto && typeof bruto === 'object' ? bruto : {};
   const out = {};
   Object.keys(A1_GERAL_PADRAO).forEach(k => {
-    out[k] = (k in v) ? (v[k] === true || v[k] === 'true') : A1_GERAL_PADRAO[k];
+    out[k] = k in v ? v[k] === true || v[k] === 'true' : A1_GERAL_PADRAO[k];
   });
   return out;
 }
@@ -65,10 +65,15 @@ function a1GeralNormalizar(bruto) {
 // a1HasModule(), pelo mesmo motivo.
 async function a1GeralCarregar() {
   try {
-    const rows = await fetch(`${A1.rest('a1_config')}?key=eq.geral&select=value`, { headers: A1.headers() })
-      .then(r => r.ok ? r.json() : []);
+    const rows = await fetch(`${A1.rest('a1_config')}?key=eq.geral&select=value`, {
+      headers: A1.headers()
+    }).then(r => (r.ok ? r.json() : []));
     let bruto = null;
-    try { bruto = JSON.parse((rows && rows[0] && rows[0].value) || 'null'); } catch { bruto = null; }
+    try {
+      bruto = JSON.parse((rows && rows[0] && rows[0].value) || 'null');
+    } catch {
+      bruto = null;
+    }
     return a1GeralNormalizar(bruto);
   } catch {
     return a1GeralNormalizar(null);

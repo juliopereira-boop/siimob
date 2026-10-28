@@ -27,23 +27,48 @@ async function entrar(usuario, modulos) {
   // inclusive na que o próprio login dispara — e apagaria a sessão recém-criada
   // no instante em que a tela de destino abrisse, mandando a pessoa de volta
   // para o login. O andaime estaria provando um defeito que ele mesmo causou.
-  await p.addInitScript(() => { window.__XSS = 0; });
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status:200, contentType:'text/css', body:'' }));
+  await p.addInitScript(() => {
+    window.__XSS = 0;
+  });
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, r =>
+    r.fulfill({ status: 200, contentType: 'text/css', body: '' })
+  );
   await p.route(/supabase\.co/, r => {
     const url = r.request().url();
     // O login responde com a sessão do usuário que o teste está fingindo ser.
     if (/rpc\/a1_(partner_)?login/.test(url)) {
-      r.fulfill({ status:200, contentType:'application/json', body: JSON.stringify({
-        token:'tok', user_id:usuario.id, name:usuario.name, role:usuario.role,
-        type:usuario.type || null, tenant_id:'t1', tenant_name:'THE CRED',
-        plan:'pro', max_users:10, status:'active' }) });
+      r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          token: 'tok',
+          user_id: usuario.id,
+          name: usuario.name,
+          role: usuario.role,
+          type: usuario.type || null,
+          tenant_id: 't1',
+          tenant_name: 'THE CRED',
+          plan: 'pro',
+          max_users: 10,
+          status: 'active'
+        })
+      });
       return;
     }
-    let d; try { d = responder(url, r.request().method(), r.request().postData()); } catch { d = []; }
-    r.fulfill({ status:200, contentType:'application/json',
-                headers:{ 'content-range':'0-1/2' }, body: JSON.stringify(d) });
+    let d;
+    try {
+      d = responder(url, r.request().method(), r.request().postData());
+    } catch {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
-  await p.goto(BASE + '/thecred/login', { waitUntil:'load' });
+  await p.goto(BASE + '/thecred/login', { waitUntil: 'load' });
   await p.waitForTimeout(900);
   return { b, p, erros };
 }
@@ -71,12 +96,18 @@ async function preencher(p, painel, cpf) {
     const fn = /function redirectAfterLogin\(user\)\s*\{([\s\S]*?)\n\}/.exec(src);
     checa('redirectAfterLogin existe', !!fn);
     const corpo = fn ? fn[1] : '';
-    checa('o destino padrão é a tela Geral', /\/\$\{slug\}\/geral/.test(corpo), corpo.slice(0,200));
-    checa('e o despachante continua indo direto para o Registro',
-      /despachante[\s\S]*\/\$\{slug\}\/registro/.test(corpo), corpo.slice(0,300));
+    checa('o destino padrão é a tela Geral', /\/\$\{slug\}\/geral/.test(corpo), corpo.slice(0, 200));
+    checa(
+      'e o despachante continua indo direto para o Registro',
+      /despachante[\s\S]*\/\$\{slug\}\/registro/.test(corpo),
+      corpo.slice(0, 300)
+    );
     // A prova que impede a volta do comportamento antigo.
-    checa('NINGUÉM é mandado para o dashboard do Repasse no login',
-      !/\/\$\{slug\}\/repasse/.test(corpo), corpo.slice(0,300));
+    checa(
+      'NINGUÉM é mandado para o dashboard do Repasse no login',
+      !/\/\$\{slug\}\/repasse/.test(corpo),
+      corpo.slice(0, 300)
+    );
   }
 
   console.log('\n== O SUPERADMIN ACESSANDO UM CLIENTE TAMBÉM ABRE NA GERAL ==');
@@ -90,18 +121,27 @@ async function preencher(p, painel, cpf) {
     const fn = /async function acessarComo\([\s\S]*?\n\}/.exec(src);
     checa('acessarComo existe', !!fn);
     const corpo = fn ? fn[0] : '';
-    checa('o superadmin abre o cliente pela Geral',
-      /_home\s*=.*'geral'/.test(corpo), (corpo.match(/const _home[^\n]*/) || [''])[0]);
-    checa('e o despachante continua indo para o Registro',
-      /despachante.*'registro'/.test(corpo), (corpo.match(/const _home[^\n]*/) || [''])[0]);
+    checa(
+      'o superadmin abre o cliente pela Geral',
+      /_home\s*=.*'geral'/.test(corpo),
+      (corpo.match(/const _home[^\n]*/) || [''])[0]
+    );
+    checa(
+      'e o despachante continua indo para o Registro',
+      /despachante.*'registro'/.test(corpo),
+      (corpo.match(/const _home[^\n]*/) || [''])[0]
+    );
     // A prova que impede a volta: nenhuma escolha própria de módulo aqui.
-    checa('sem uma segunda regra escolhendo módulo por tipo de cliente',
-      !/ALL_MODULES[\s\S]{0,200}_order/.test(corpo), 'ainda há escolha própria de módulo');
+    checa(
+      'sem uma segunda regra escolhendo módulo por tipo de cliente',
+      !/ALL_MODULES[\s\S]{0,200}_order/.test(corpo),
+      'ainda há escolha própria de módulo'
+    );
   }
 
   console.log('\n== GESTOR ENTRA E CAI NA GERAL ==');
   {
-    const { b, p, erros } = await entrar({ id:'u1', name:'Julio', role:'owner' }, ['repasse']);
+    const { b, p, erros } = await entrar({ id: 'u1', name: 'Julio', role: 'owner' }, ['repasse']);
     await preencher(p, 'gestor', '999.999.999-99');
     checa('o navegador foi para /thecred/geral', /\/thecred\/geral/.test(p.url()), p.url());
     checa('e NÃO para o dashboard do Repasse', !/repasse/.test(p.url()), p.url());
@@ -113,8 +153,9 @@ async function preencher(p, painel, cpf) {
   {
     // Esta é a que o dono desfez de propósito: houve uma versão em que quem não
     // tinha permissão de painel era desviado daqui para o quadro do módulo.
-    const { b, p, erros } = await entrar(
-      { id:'p3', name:'Ana Souza', role:'partner', type:'corretor' }, ['repasse']);
+    const { b, p, erros } = await entrar({ id: 'p3', name: 'Ana Souza', role: 'partner', type: 'corretor' }, [
+      'repasse'
+    ]);
     await preencher(p, 'corretor', '333.333.333-33');
     checa('o corretor vai para /thecred/geral', /\/thecred\/geral/.test(p.url()), p.url());
     todosErros.push(...erros);
@@ -124,7 +165,9 @@ async function preencher(p, painel, cpf) {
   console.log('\n== DESPACHANTE É A ÚNICA EXCEÇÃO ==');
   {
     const { b, p, erros } = await entrar(
-      { id:'p20', name:'Dario Despacho', role:'partner', type:'despachante' }, ['registro']);
+      { id: 'p20', name: 'Dario Despacho', role: 'partner', type: 'despachante' },
+      ['registro']
+    );
     await preencher(p, 'despachante', '222.222.222-22');
     checa('o despachante vai direto para o Registro', /\/thecred\/registro/.test(p.url()), p.url());
     todosErros.push(...erros);
@@ -136,13 +179,16 @@ async function preencher(p, painel, cpf) {
     // Caminho real e esquecido: a pessoa tem o login nos favoritos e clica nele
     // já logada. login.html detecta a sessão e redireciona — e esse ramo é
     // OUTRO `redirectAfterLogin`, que já foi esquecido em mudanças passadas.
-    const { b, p, erros } = await entrar({ id:'u1', name:'Julio', role:'owner' }, ['repasse']);
+    const { b, p, erros } = await entrar({ id: 'u1', name: 'Julio', role: 'owner' }, ['repasse']);
     await p.evaluate(() => {
-      localStorage.setItem('a1_token','tok');
-      localStorage.setItem('a1_slug','thecred');
-      localStorage.setItem('a1_user', JSON.stringify({ id:'u1', tenant_id:'t1', name:'Julio', role:'owner' }));
+      localStorage.setItem('a1_token', 'tok');
+      localStorage.setItem('a1_slug', 'thecred');
+      localStorage.setItem(
+        'a1_user',
+        JSON.stringify({ id: 'u1', tenant_id: 't1', name: 'Julio', role: 'owner' })
+      );
     });
-    await p.goto(BASE + '/thecred/login', { waitUntil:'load' });
+    await p.goto(BASE + '/thecred/login', { waitUntil: 'load' });
     await p.waitForTimeout(1000);
     checa('a sessão em andamento também abre na Geral', /\/thecred\/geral/.test(p.url()), p.url());
     todosErros.push(...erros);

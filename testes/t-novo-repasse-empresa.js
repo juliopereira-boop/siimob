@@ -18,12 +18,16 @@
 // Aqui a troca é feita com selectOption, que dispara o evento de verdade.
 const { abrir, checa, resumo } = require('./comum');
 
-const UUID = /^[0-9a-f-]{8,}$|^p\d+$/i;   // ids reais são uuid; os do andaime são p2, p22...
+const UUID = /^[0-9a-f-]{8,}$|^p\d+$/i; // ids reais são uuid; os do andaime são p2, p22...
 
 async function corpoDoPost(p) {
   return p.evaluate(() => {
     const r = (window.__POSTS || []).filter(x => /\/a1_cases(\?|$)/.test(x.url) && x.m === 'POST');
-    try { return r.length ? JSON.parse(r[r.length - 1].body) : null; } catch { return null; }
+    try {
+      return r.length ? JSON.parse(r[r.length - 1].body) : null;
+    } catch {
+      return null;
+    }
   });
 }
 async function opcoes(p, id) {
@@ -45,10 +49,16 @@ async function opcoes(p, id) {
 
     const ana = await opcoes(p, 'n-manager');
     const reais = ana.filter(o => o.v);
-    checa('a lista de analistas é remontada para a empresa',
-      reais.some(o => o.t.includes('João Analista')), JSON.stringify(ana));
-    checa('e cada opção carrega o ID da analista, não o nome',
-      reais.length > 0 && reais.every(o => UUID.test(o.v) && o.v !== o.t), JSON.stringify(reais));
+    checa(
+      'a lista de analistas é remontada para a empresa',
+      reais.some(o => o.t.includes('João Analista')),
+      JSON.stringify(ana)
+    );
+    checa(
+      'e cada opção carrega o ID da analista, não o nome',
+      reais.length > 0 && reais.every(o => UUID.test(o.v) && o.v !== o.t),
+      JSON.stringify(reais)
+    );
 
     await p.selectOption('#n-manager', { label: 'João Analista' });
     await p.fill('#n-name', 'Cliente da Empresa');
@@ -56,13 +66,22 @@ async function opcoes(p, id) {
     await p.waitForTimeout(700);
 
     const corpo = await corpoDoPost(p);
-    checa('o POST leva analista_id = id da analista (era o nome, e o banco recusava)',
-      !!corpo && corpo.analista_id === 'p2', JSON.stringify(corpo && { analista_id: corpo.analista_id }));
-    checa('o POST leva empresa_id = id da empresa',
-      !!corpo && corpo.empresa_id === 'e1', JSON.stringify(corpo && { empresa_id: corpo.empresa_id }));
-    checa('e o nome continua indo em manager_name, que filtros e relatórios ainda leem',
-      !!corpo && corpo.manager_name === 'João Analista', JSON.stringify(corpo && { manager_name: corpo.manager_name }));
-    checa('nada de XSS', await p.evaluate(() => window.__XSS || 0) === 0);
+    checa(
+      'o POST leva analista_id = id da analista (era o nome, e o banco recusava)',
+      !!corpo && corpo.analista_id === 'p2',
+      JSON.stringify(corpo && { analista_id: corpo.analista_id })
+    );
+    checa(
+      'o POST leva empresa_id = id da empresa',
+      !!corpo && corpo.empresa_id === 'e1',
+      JSON.stringify(corpo && { empresa_id: corpo.empresa_id })
+    );
+    checa(
+      'e o nome continua indo em manager_name, que filtros e relatórios ainda leem',
+      !!corpo && corpo.manager_name === 'João Analista',
+      JSON.stringify(corpo && { manager_name: corpo.manager_name })
+    );
+    checa('nada de XSS', (await p.evaluate(() => window.__XSS || 0)) === 0);
     todosErros.push(...erros);
     await b.close();
   }
@@ -79,20 +98,31 @@ async function opcoes(p, id) {
     await p.evaluate(async () => {
       if (!G.empresasLoaded) await loadEmpresas();
       G.user = Object.assign({}, G.user, {
-        role:'partner', type:'cca', permissions:{ criar_repasses:true },
-        empresa_name: (G.empresas.find(e => e.id === 'e1') || {}).name || '' });
+        role: 'partner',
+        type: 'cca',
+        permissions: { criar_repasses: true },
+        empresa_name: (G.empresas.find(e => e.id === 'e1') || {}).name || ''
+      });
       if (typeof G.permsPorEtapa !== 'undefined') G.permsPorEtapa = null;
     });
-    checa('o andaime: este correspondente pode criar repasse',
-      await p.evaluate(() => podeCriarRepasse()) === true);
+    checa(
+      'o andaime: este correspondente pode criar repasse',
+      (await p.evaluate(() => podeCriarRepasse())) === true
+    );
     await p.evaluate(() => openNewCase());
     await p.waitForTimeout(900);
 
-    checa('a empresa do correspondente vem selecionada pelo id',
-      await p.inputValue('#n-partner') === 'e1', await p.inputValue('#n-partner'));
+    checa(
+      'a empresa do correspondente vem selecionada pelo id',
+      (await p.inputValue('#n-partner')) === 'e1',
+      await p.inputValue('#n-partner')
+    );
     const reais = (await opcoes(p, 'n-manager')).filter(o => o.v);
-    checa('e a lista de analistas dele também vem por id',
-      reais.length > 0 && reais.every(o => UUID.test(o.v) && o.v !== o.t), JSON.stringify(reais));
+    checa(
+      'e a lista de analistas dele também vem por id',
+      reais.length > 0 && reais.every(o => UUID.test(o.v) && o.v !== o.t),
+      JSON.stringify(reais)
+    );
     todosErros.push(...erros);
     await b.close();
   }

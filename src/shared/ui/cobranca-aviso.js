@@ -10,25 +10,40 @@
 // próprio. Nenhum dado de cobrança de um cliente alcança outro.
 
 const A1Cobranca = (() => {
-
   // ─── Contato da cobrança ───────────────────────────────────────────────────
   // Muda aqui e muda em todas as telas. Nada disso está espalhado no código.
   const CONTATO = {
     email: 'gestao@poupgestao.com',
     telefone: '(98) 98180-9264',
-    telefoneWhats: '5598981809264',       // usado no link do WhatsApp
+    telefoneWhats: '5598981809264', // usado no link do WhatsApp
     // true = só gestor e admin veem a tarja; false = todo mundo do cliente vê.
     // O modelo do mercado é mostrar para todos: a equipe cobra o gestor. Mas a
     // escolha é de quem cobra, não do código.
-    soGestor: false,
+    soGestor: false
   };
 
-  const esc = s => String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const esc = s =>
+    String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
-  const MESES = ['janeiro','fevereiro','março','abril','maio','junho',
-                 'julho','agosto','setembro','outubro','novembro','dezembro'];
+  const MESES = [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro'
+  ];
 
   // Mesma regra do superadmin: atraso marcado à mão, ou vencimento passado sem
   // pagamento.
@@ -50,14 +65,15 @@ const A1Cobranca = (() => {
 
     if (dia) {
       const registros = Object.keys(pagos).sort();
-      const inicio = registros.length ? registros[0]
-                                      : `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+      const inicio = registros.length
+        ? registros[0]
+        : `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
       for (let i = 0; i < 24; i++) {
         const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
-        const chave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        if (chave < inicio) break;                    // antes da cobrança existir
+        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (chave < inicio) break; // antes da cobrança existir
         const r = pagos[chave];
-        if (r && (r.paid || r.atraso)) continue;       // já resolvido ou já contado
+        if (r && (r.paid || r.atraso)) continue; // já resolvido ou já contado
         const venc = new Date(d.getFullYear(), d.getMonth(), dia, 23, 59, 59);
         if (agora > venc) fora.push(chave);
       }
@@ -106,9 +122,10 @@ const A1Cobranca = (() => {
     faixa.setAttribute('role', 'alert');
 
     const quantos = atrasados.length;
-    const detalhe = quantos === 1
-      ? `Mensalidade de <b>${esc(porExtenso(atrasados[0]))}</b> em aberto.`
-      : `<b>${quantos} mensalidades</b> em aberto (a mais antiga de ${esc(porExtenso(atrasados[0]))}).`;
+    const detalhe =
+      quantos === 1
+        ? `Mensalidade de <b>${esc(porExtenso(atrasados[0]))}</b> em aberto.`
+        : `<b>${quantos} mensalidades</b> em aberto (a mais antiga de ${esc(porExtenso(atrasados[0]))}).`;
 
     faixa.innerHTML =
       `Evite a suspensão do seu ambiente SIIMOB, entre em contato com ` +
@@ -126,18 +143,27 @@ const A1Cobranca = (() => {
       if (!u || !A1.token) return;
       if (CONTATO.soGestor && u.role !== 'owner' && u.role !== 'admin') return;
 
-      const res = await fetch(`${A1.rest('a1_config')}?key=eq.billing&select=value`,
-        { headers: A1.headers() });
-      if (!res.ok) return;                       // sem cobrança configurada: segue a vida
+      const res = await fetch(`${A1.rest('a1_config')}?key=eq.billing&select=value`, {
+        headers: A1.headers()
+      });
+      if (!res.ok) return; // sem cobrança configurada: segue a vida
       const linhas = await res.json().catch(() => []);
       if (!Array.isArray(linhas) || !linhas.length) return;
 
       let billing = linhas[0].value;
-      if (typeof billing === 'string') { try { billing = JSON.parse(billing); } catch { return; } }
+      if (typeof billing === 'string') {
+        try {
+          billing = JSON.parse(billing);
+        } catch {
+          return;
+        }
+      }
 
       const atrasados = mesesEmAtraso(billing);
       if (atrasados.length) desenhar(atrasados);
-    } catch { /* cobrança nunca pode derrubar a tela de quem está trabalhando */ }
+    } catch {
+      /* cobrança nunca pode derrubar a tela de quem está trabalhando */
+    }
   }
 
   return { verificar, mesesEmAtraso, CONTATO };

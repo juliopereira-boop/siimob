@@ -20,7 +20,10 @@ async function sairEVoltar(p, mudarDado) {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
     if (G.__mudar) {
       const carga = window.loadData;
-      window.loadData = async () => { await carga(); if (G.cases[0]) G.cases[0].updated_at = 'mudou-' + Date.now(); };
+      window.loadData = async () => {
+        await carga();
+        if (G.cases[0]) G.cases[0].updated_at = 'mudou-' + Date.now();
+      };
     }
     document.dispatchEvent(new Event('visibilitychange'));
   }, mudarDado);
@@ -43,21 +46,33 @@ async function sairEVoltar(p, mudarDado) {
         const op = [...s.options].find(o => o.value && comCaso.has(o.value));
         s.value = op.value;
         s.dispatchEvent(new Event('change', { bubbles: true }));
-        return { valor: op.value, linhas: document.querySelectorAll('#cases-tbody tr').length,
-                 total: G.cases.length };
+        return {
+          valor: op.value,
+          linhas: document.querySelectorAll('#cases-tbody tr').length,
+          total: G.cases.length
+        };
       });
-      checa('a etapa escolhida filtra a lista', escolha.linhas > 0 && escolha.linhas < escolha.total,
-            `(${escolha.linhas} de ${escolha.total})`);
+      checa(
+        'a etapa escolhida filtra a lista',
+        escolha.linhas > 0 && escolha.linhas < escolha.total,
+        `(${escolha.linhas} de ${escolha.total})`
+      );
       await sairEVoltar(p, mudar);
       const depois = await p.evaluate(() => ({
         valor: document.getElementById('tbl-stage-filter').value,
         linhas: document.querySelectorAll('#cases-tbody tr').length
       }));
-      checa('depois de voltar para a aba, a etapa continua escolhida', depois.valor === escolha.valor,
-            `(ficou "${depois.valor}")`);
-      checa('e a lista continua filtrada por ela', depois.linhas === escolha.linhas,
-            `(${depois.linhas} linhas)`);
-      checa('nenhum XSS disparou', await p.evaluate(() => window.__XSS) === 0);
+      checa(
+        'depois de voltar para a aba, a etapa continua escolhida',
+        depois.valor === escolha.valor,
+        `(ficou "${depois.valor}")`
+      );
+      checa(
+        'e a lista continua filtrada por ela',
+        depois.linhas === escolha.linhas,
+        `(${depois.linhas} linhas)`
+      );
+      checa('nenhum XSS disparou', (await p.evaluate(() => window.__XSS)) === 0);
       todosErros.push(...erros.map(e => pag + ': ' + e));
       await b.close();
     }
@@ -70,12 +85,15 @@ async function sairEVoltar(p, mudarDado) {
     const valor = await p.evaluate(() => {
       const s = document.getElementById('df-empr');
       const op = [...s.options].find(o => o.value);
-      s.value = op.value; s.dispatchEvent(new Event('change', { bubbles: true }));
+      s.value = op.value;
+      s.dispatchEvent(new Event('change', { bubbles: true }));
       return op.value;
     });
     await sairEVoltar(p, true);
-    checa('o empreendimento do filtro do dashboard continua escolhido',
-          await p.evaluate(() => document.getElementById('df-empr').value) === valor);
+    checa(
+      'o empreendimento do filtro do dashboard continua escolhido',
+      (await p.evaluate(() => document.getElementById('df-empr').value)) === valor
+    );
     todosErros.push(...erros.map(e => 'repasse.html: ' + e));
     await b.close();
   }
@@ -93,7 +111,11 @@ async function sairEVoltar(p, mudarDado) {
     checa('o quadro rola na horizontal (senão a prova é vazia)', antes > 0);
     await sairEVoltar(p, true);
     const depois = await p.evaluate(() => document.getElementById('kanban-board').scrollLeft);
-    checa('depois de voltar para a aba, o quadro está no mesmo lugar', depois === antes, `(${depois} vs ${antes})`);
+    checa(
+      'depois de voltar para a aba, o quadro está no mesmo lugar',
+      depois === antes,
+      `(${depois} vs ${antes})`
+    );
     todosErros.push(...erros.map(e => 'andamento.html: ' + e));
     await b.close();
   }
@@ -110,16 +132,21 @@ async function sairEVoltar(p, mudarDado) {
       const s = document.getElementById('rg-list-stage');
       const op = [...s.options].find(o => o.value);
       if (!op) return null;
-      s.value = op.value; s.dispatchEvent(new Event('change', { bubbles: true }));
+      s.value = op.value;
+      s.dispatchEvent(new Event('change', { bubbles: true }));
       return op.value;
     });
     checa('há etapa para escolher no Registro', !!valor);
     await sairEVoltar(p, true);
-    checa('depois de voltar para a aba, a etapa do Registro continua escolhida',
-          await p.evaluate(() => document.getElementById('rg-list-stage').value) === valor);
+    checa(
+      'depois de voltar para a aba, a etapa do Registro continua escolhida',
+      (await p.evaluate(() => document.getElementById('rg-list-stage').value)) === valor
+    );
     await p.evaluate(() => renderDashboard());
-    checa('e continua depois de o painel remontar as opções',
-          await p.evaluate(() => document.getElementById('rg-list-stage').value) === valor);
+    checa(
+      'e continua depois de o painel remontar as opções',
+      (await p.evaluate(() => document.getElementById('rg-list-stage').value)) === valor
+    );
     todosErros.push(...erros.map(e => pag + ': ' + e));
     await b.close();
   }

@@ -1,127 +1,220 @@
 const G = {
-  user:null, slug:null,
-  situacoes:[], transicoes:[], lista:[], pessoas:{},
-  corretores:[], imobiliarias:[], empreendimentos:[],
+  user: null,
+  slug: null,
+  situacoes: [],
+  transicoes: [],
+  lista: [],
+  pessoas: {},
+  corretores: [],
+  imobiliarias: [],
+  empreendimentos: [],
   // Os três campos de gente que o dono quer vinculativos em todos os módulos:
   // empresa correspondente (a1_corr_empresas), usuário correspondente
   // (a1_partners type=cca) e analista (a1_partners type=analista).
-  empresasCorr:[], correspondentes:[], analistas:[],
-  filtroSla:'', abaDossie:'dados',
-  atual:null, atualPart:[], atualCred:[], atualDocs:[], atualEv:[], atualCo:null, atualChecklist:[],
+  empresasCorr: [],
+  correspondentes: [],
+  analistas: [],
+  filtroSla: '',
+  abaDossie: 'dados',
+  atual: null,
+  atualPart: [],
+  atualCred: [],
+  atualDocs: [],
+  atualEv: [],
+  atualCo: null,
+  atualChecklist: [],
   // Veredito do banco sobre abrir a venda desta pré-análise: null = ainda não
   // perguntamos (ou não deu para perguntar), {ok:true} ou {ok:false,motivo}.
-  podeVender:null,
+  podeVender: null,
   // A coluna do selo e a do analista são novas. Enquanto o SQL não rodar no
   // cliente, a tela tem de continuar inteira — ver seloDaSituacao() e dosDados().
-  temSelo:false, temColunaAnalista:false,
+  temSelo: false,
+  temColunaAnalista: false,
   // ROTEAMENTO DE ANALISTAS — ainda não existe. Ver roteamentoDeAnalistasAtivo().
-  roteamentoAnalistas:false,
-  passo:1, rascunho:{}
+  roteamentoAnalistas: false,
+  passo: 1,
+  rascunho: {}
 };
 
 // ─── utilitários ─────────────────────────────────────────────────────────────
-function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function toast(msg,tipo='info'){ const w=document.getElementById('toast-wrap'); const d=document.createElement('div'); d.className='toast toast-'+tipo; d.textContent=msg; w.appendChild(d); setTimeout(()=>d.remove(),4200); }
-function fecharModal(id){ document.getElementById(id).classList.add('hidden'); }
-function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
-const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function toast(msg, tipo = 'info') {
+  const w = document.getElementById('toast-wrap');
+  const d = document.createElement('div');
+  d.className = 'toast toast-' + tipo;
+  d.textContent = msg;
+  w.appendChild(d);
+  setTimeout(() => d.remove(), 4200);
+}
+function fecharModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+function soDigitos(s) {
+  return String(s || '').replace(/\D/g, '');
+}
+const _brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 // Dinheiro é guardado em CENTAVOS, inteiro. Guardar reais em ponto flutuante é
 // como se acerta a soma do subsídio com o FGTS por um centavo e depois se
 // discute com o banco de quem é o erro.
-function brl(cent){ return _brl.format((Number(cent)||0)/100); }
-function valorEmReais(cent){ return (Number(cent||0)/100).toFixed(2).replace('.',','); }
-function mascaraMoeda(el){
-  const digitos = String(el && el.value || '').replace(/\D/g,'');
-  el.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR',{
-    minimumFractionDigits:2, maximumFractionDigits:2
-  }) : '';
+function brl(cent) {
+  return _brl.format((Number(cent) || 0) / 100);
 }
-function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
-function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
-function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
-function mascaraDoc(d){ d=soDigitos(d);
-  if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
-  if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
-  return d; }
+function valorEmReais(cent) {
+  return (Number(cent || 0) / 100).toFixed(2).replace('.', ',');
+}
+function mascaraMoeda(el) {
+  const digitos = String((el && el.value) || '').replace(/\D/g, '');
+  el.value = digitos
+    ? (Number(digitos) / 100).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    : '';
+}
+function paraCentavos(v) {
+  const n = Number(
+    String(v == null ? '' : v)
+      .replace(/\./g, '')
+      .replace(',', '.')
+  );
+  return isNaN(n) ? null : Math.round(n * 100);
+}
+function dataBR(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR');
+}
+function dataHoraBR(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d)
+    ? '—'
+    : d.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+}
+function mascaraDoc(d) {
+  d = soDigitos(d);
+  if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  return d;
+}
 
 // CPF conferido de verdade, com os dois dígitos. Um CPF digitado errado só
 // aparece semanas depois, quando o banco recusa o processo inteiro.
-function cpfValido(cpf){
+function cpfValido(cpf) {
   cpf = soDigitos(cpf);
   if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
   for (let t = 9; t < 11; t++) {
     let s = 0;
-    for (let i = 0; i < t; i++) s += parseInt(cpf[i],10) * ((t + 1) - i);
-    let d = (s * 10) % 11; if (d === 10) d = 0;
-    if (d !== parseInt(cpf[t],10)) return false;
+    for (let i = 0; i < t; i++) s += parseInt(cpf[i], 10) * (t + 1 - i);
+    let d = (s * 10) % 11;
+    if (d === 10) d = 0;
+    if (d !== parseInt(cpf[t], 10)) return false;
   }
   return true;
 }
 
-function copiarDocumento(event, documento){
-  event.preventDefault(); event.stopPropagation();
+function copiarDocumento(event, documento) {
+  event.preventDefault();
+  event.stopPropagation();
   const valor = soDigitos(documento);
   if (!valor) return;
-  const ok = () => toast('CPF copiado.','success');
+  const ok = () => toast('CPF copiado.', 'success');
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(valor).then(ok).catch(() => copiarDocumentoFallback(valor, ok));
+    navigator.clipboard
+      .writeText(valor)
+      .then(ok)
+      .catch(() => copiarDocumentoFallback(valor, ok));
   } else copiarDocumentoFallback(valor, ok);
 }
-function copiarDocumentoFallback(valor, ok){
+function copiarDocumentoFallback(valor, ok) {
   const campo = document.createElement('textarea');
-  campo.value = valor; campo.setAttribute('readonly','');
-  campo.style.position = 'fixed'; campo.style.opacity = '0';
-  document.body.appendChild(campo); campo.select();
-  try { document.execCommand('copy'); ok(); } finally { campo.remove(); }
+  campo.value = valor;
+  campo.setAttribute('readonly', '');
+  campo.style.position = 'fixed';
+  campo.style.opacity = '0';
+  document.body.appendChild(campo);
+  campo.select();
+  try {
+    document.execCommand('copy');
+    ok();
+  } finally {
+    campo.remove();
+  }
 }
-function ehGestor(){ return G.user && G.user.role !== 'partner'; }
-function perm(chave){
+function ehGestor() {
+  return G.user && G.user.role !== 'partner';
+}
+function perm(chave) {
   if (ehGestor()) return true;
   const p = (G.user && G.user.permissions) || {};
   return p.gerente === true || p[chave] === true;
 }
 
-
 // Tela de recusa do módulo. Diz QUAL permissão falta e ONDE pedi-la — "sem
 // acesso" sozinho manda a pessoa abrir chamado para descobrir o óbvio.
-function semAcessoAoModulo(){
+function semAcessoAoModulo() {
   const main = document.querySelector('.main') || document.body;
   main.innerHTML =
-    '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;'
-    + 'border:1px solid #E2E8E5;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
-    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Pré-análise</div>'
-    + '<div style="font-size:.85rem;color:#47615C;line-height:1.55">O seu cadastro não tem a '
-    + 'permissão <b>Ver pré-análises</b>. Peça ao gestor em Configurações (ou no perfil de '
-    + 'acesso vinculado a você).</div></div>';
+    '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;' +
+    'border:1px solid #E2E8E5;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">' +
+    '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Pré-análise</div>' +
+    '<div style="font-size:.85rem;color:#47615C;line-height:1.55">O seu cadastro não tem a ' +
+    'permissão <b>Ver pré-análises</b>. Peça ao gestor em Configurações (ou no perfil de ' +
+    'acesso vinculado a você).</div></div>';
 }
 
 // ─── SLA ─────────────────────────────────────────────────────────────────────
 // O relógio conta a partir de quando o processo ENTROU na situação atual, não
 // de quando foi criado. Um processo pode estar há 40 dias na esteira e há duas
 // horas na etapa que está travando — é a segunda informação que resolve o dia.
-function sla(pa){
+function sla(pa) {
   const s = G.situacoes.find(x => x.id === pa.situacao_id);
   const horas = s && s.sla_horas;
   const desde = pa.situacao_em || pa.criado_em;
-  const decorridas = desde ? (Date.now() - new Date(desde).getTime())/3600000 : 0;
-  if (!horas || horas <= 0) return { cls:'sla-nd', pct:0, txt:humano(decorridas), nivel:'nd' };
-  const pct = Math.min(100, (decorridas/horas)*100);
-  const nivel = pct >= 100 ? 'ex' : (pct >= 75 ? 'at' : 'ok');
+  const decorridas = desde ? (Date.now() - new Date(desde).getTime()) / 3600000 : 0;
+  if (!horas || horas <= 0) return { cls: 'sla-nd', pct: 0, txt: humano(decorridas), nivel: 'nd' };
+  const pct = Math.min(100, (decorridas / horas) * 100);
+  const nivel = pct >= 100 ? 'ex' : pct >= 75 ? 'at' : 'ok';
   const restam = horas - decorridas;
-  return { cls:'sla-'+nivel, pct, nivel,
-           txt: restam >= 0 ? ('faltam ' + humano(restam)) : ('há ' + humano(-restam)) };
+  return {
+    cls: 'sla-' + nivel,
+    pct,
+    nivel,
+    txt: restam >= 0 ? 'faltam ' + humano(restam) : 'há ' + humano(-restam)
+  };
 }
-function humano(h){
-  if (h < 1) return Math.max(0,Math.round(h*60)) + 'min';
+function humano(h) {
+  if (h < 1) return Math.max(0, Math.round(h * 60)) + 'min';
   if (h < 48) return Math.round(h) + 'h';
-  return Math.round(h/24) + 'd';
+  return Math.round(h / 24) + 'd';
 }
 
 // ─── boot ────────────────────────────────────────────────────────────────────
-async function init(){
-  try { G.user = a1RequireAuth(); } catch { return; }
-  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
-  try { await a1RequireModule('PRE_ANALISE'); } catch { return; }
+async function init() {
+  try {
+    G.user = a1RequireAuth();
+  } catch {
+    return;
+  }
+  await a1RefreshPartnerPerms();
+  G.user = A1.user || G.user;
+  try {
+    await a1RequireModule('PRE_ANALISE');
+  } catch {
+    return;
+  }
   G.slug = A1.slug;
 
   // pa_ver é a porta do módulo, e até agora ninguém a lia: a chave existia no
@@ -129,7 +222,10 @@ async function init(){
   // duas perguntas — a1RequireModule responde a primeira, esta responde a
   // segunda. A recusa que vale continua sendo do banco; isto evita a tela
   // montada e o "por que não aparece nada?".
-  if (!perm('pa_ver')) { semAcessoAoModulo(); return; }
+  if (!perm('pa_ver')) {
+    semAcessoAoModulo();
+    return;
+  }
 
   // Cabeçalho e abas vêm do shell — os mesmos de Dashboard, Repasse e Venda.
   // O botão de criar entra como ação do cabeçalho, e não como um botão solto
@@ -140,11 +236,13 @@ async function init(){
   // modulo. A tabela nao devolveria linha nenhuma, mas a promessa na tela ja e
   // o problema: o modulo desligado nao pode nem aparecer.
   const temModulo = await a1MontarShell(document.getElementById('shell'), {
-    ativo:'PRE_ANALISE', vista: a1VistaDaURL(),
-    acoes: '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
+    ativo: 'PRE_ANALISE',
+    vista: a1VistaDaURL(),
+    acoes:
+      '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
   });
   G.temComercial = temModulo && temModulo.COMERCIAL === true;
-  if (!G.temComercial){
+  if (!G.temComercial) {
     const abaCo = document.querySelector('#dos-tabs [data-dt="comercial"]');
     if (abaCo) abaCo.remove();
   }
@@ -170,70 +268,99 @@ async function init(){
   abrirDoLeadSeVeio();
 }
 
-async function carregar(){
+async function carregar() {
   const h = { headers: A1.headers() };
-  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda, resumoChecklist, cicloEstado] = await Promise.all([
-    fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
-    A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
-    // `extra` vem junto porque é onde mora a imobiliária do corretor
-    // (extra.imobiliaria_id). Pedir só id,name é o que deixava o assistente
-    // sem como saber de que imobiliária é quem está cadastrando — e o PostgREST
-    // entrega exatamente as colunas pedidas, sem avisar que faltou uma.
-    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name,extra&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    // Os tipos de documento sao cadastrados em Configuracoes > Tipos de
-    // documento, na aba deste modulo. Sem esta leitura, o cadastro existia e
-    // nao valia nada: a tela oferecia uma lista cravada no HTML, e o gestor
-    // configurava no vazio.
-    fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h).then(r=>r.json()).catch(()=>[]),
-    // ── Os três campos de gente ────────────────────────────────────────────
-    // A EMPRESA CORRESPONDENTE NÃO SAI DE a1_partners. Ela é linha de
-    // a1_corr_empresas, e é para lá que apontam tanto a1_partners.empresa_id
-    // quanto a1_pre_analises.empresa_id — é esse o id que a1_empresa_ator()
-    // compara dentro de a1_pa_visivel(). Alimentar este seletor com parceiros
-    // gravaria um id que a política nunca casa: o correspondente deixaria de
-    // enxergar o processo da própria empresa, e a tela não daria nenhum sinal.
-    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    // Estes dois, sim, são parceiros filtrados por tipo.
-    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name,empresa_id&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name,empresa_id&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
-    // SONDA DE COLUNA NOVA. O SQL deste sistema é rodado à mão pelo dono, no
-    // editor do Supabase — existe uma janela real entre a tela subir e a coluna
-    // existir. Nessa janela, um PATCH citando analista_id devolve 400 e derruba
-    // o salvamento INTEIRO, levando junto os campos que sempre funcionaram.
-    // Uma pergunta barata, em paralelo com o resto, evita isso. Pode sair daqui
-    // quando todos os clientes tiverem rodado o SQL do analista.
-    fetch(`${A1.rest('a1_pre_analises')}?select=analista_id&limit=1`, h).then(r=>r.ok).catch(()=>false)
-    ,
-    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'PRE_ANALISE'})}).then(r=>r.ok?r.json():{}).catch(()=>{}),
-    fetch(A1.rpc('a1_pa_ciclo_estado'),{method:'POST',headers:A1.headers(),body:'{}'}).then(r=>r.ok?r.json():{}).catch(()=>({}))
-  ]);
-  G.situacoes     = Array.isArray(sit)  ? sit  : [];
-  G.transicoes    = Array.isArray(tr)   ? tr   : [];
-  G.lista         = (pre && Array.isArray(pre.linhas)) ? pre.linhas : [];
-  G.corretores    = Array.isArray(corr) ? corr : [];
-  G.imobiliarias  = Array.isArray(imob) ? imob : [];
+  const [sit, tr, pre, corr, imob, empr, cfg, emps, ccas, anas, sonda, resumoChecklist, cicloEstado] =
+    await Promise.all([
+      fetch(`${A1.rest('a1_pa_situacoes')}?ativo=is.true&order=ordem.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      fetch(`${A1.rest('a1_pa_transicoes')}?ativo=is.true`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      A1.buscarTudo(`${A1.rest('a1_pre_analises')}?order=criado_em.desc`),
+      // `extra` vem junto porque é onde mora a imobiliária do corretor
+      // (extra.imobiliaria_id). Pedir só id,name é o que deixava o assistente
+      // sem como saber de que imobiliária é quem está cadastrando — e o PostgREST
+      // entrega exatamente as colunas pedidas, sem avisar que faltou uma.
+      fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name,extra&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      // Os tipos de documento sao cadastrados em Configuracoes > Tipos de
+      // documento, na aba deste modulo. Sem esta leitura, o cadastro existia e
+      // nao valia nada: a tela oferecia uma lista cravada no HTML, e o gestor
+      // configurava no vazio.
+      fetch(`${A1.rest('a1_config')}?key=eq.doc_types&select=value`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      // ── Os três campos de gente ────────────────────────────────────────────
+      // A EMPRESA CORRESPONDENTE NÃO SAI DE a1_partners. Ela é linha de
+      // a1_corr_empresas, e é para lá que apontam tanto a1_partners.empresa_id
+      // quanto a1_pre_analises.empresa_id — é esse o id que a1_empresa_ator()
+      // compara dentro de a1_pa_visivel(). Alimentar este seletor com parceiros
+      // gravaria um id que a política nunca casa: o correspondente deixaria de
+      // enxergar o processo da própria empresa, e a tela não daria nenhum sinal.
+      fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      // Estes dois, sim, são parceiros filtrados por tipo.
+      fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name,empresa_id&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name,empresa_id&order=name.asc`, h)
+        .then(r => r.json())
+        .catch(() => []),
+      // SONDA DE COLUNA NOVA. O SQL deste sistema é rodado à mão pelo dono, no
+      // editor do Supabase — existe uma janela real entre a tela subir e a coluna
+      // existir. Nessa janela, um PATCH citando analista_id devolve 400 e derruba
+      // o salvamento INTEIRO, levando junto os campos que sempre funcionaram.
+      // Uma pergunta barata, em paralelo com o resto, evita isso. Pode sair daqui
+      // quando todos os clientes tiverem rodado o SQL do analista.
+      fetch(`${A1.rest('a1_pre_analises')}?select=analista_id&limit=1`, h)
+        .then(r => r.ok)
+        .catch(() => false),
+      fetch(A1.rpc('a1_checklist_resumo'), {
+        method: 'POST',
+        headers: A1.headers(),
+        body: JSON.stringify({ p_modulo: 'PRE_ANALISE' })
+      })
+        .then(r => (r.ok ? r.json() : {}))
+        .catch(() => {}),
+      fetch(A1.rpc('a1_pa_ciclo_estado'), { method: 'POST', headers: A1.headers(), body: '{}' })
+        .then(r => (r.ok ? r.json() : {}))
+        .catch(() => ({}))
+    ]);
+  G.situacoes = Array.isArray(sit) ? sit : [];
+  G.transicoes = Array.isArray(tr) ? tr : [];
+  G.lista = pre && Array.isArray(pre.linhas) ? pre.linhas : [];
+  G.corretores = Array.isArray(corr) ? corr : [];
+  G.imobiliarias = Array.isArray(imob) ? imob : [];
   G.empreendimentos = Array.isArray(empr) ? empr : [];
-  G.empresasCorr    = Array.isArray(emps) ? emps : [];
+  G.empresasCorr = Array.isArray(emps) ? emps : [];
   G.correspondentes = Array.isArray(ccas) ? ccas : [];
-  G.analistas       = Array.isArray(anas) ? anas : [];
+  G.analistas = Array.isArray(anas) ? anas : [];
   G.temColunaAnalista = sonda === true;
-  G.resumoChecklist = (resumoChecklist && typeof resumoChecklist==='object') ? resumoChecklist : {};
+  G.resumoChecklist = resumoChecklist && typeof resumoChecklist === 'object' ? resumoChecklist : {};
   G.roteamentoAnalistas = cicloEstado && cicloEstado.ativo === true;
   // O PostgREST devolve todas as colunas quando não há `select=`, inclusive as
   // nulas — então a PRESENÇA da chave é a resposta sobre a coluna existir.
-  G.temSelo = !!G.situacoes.length && ('selo' in G.situacoes[0]);
+  G.temSelo = !!G.situacoes.length && 'selo' in G.situacoes[0];
   G.tiposDoc = lerTiposDoc(cfg);
 
   // O cadastro de quem está logado, quando é parceiro. É de lá que sai a
   // imobiliária dele — e a lista de corretores acima pode nem trazê-lo (o
   // analista e o correspondente não são type=corretor).
   G.meuParceiro = null;
-  if (G.user && G.user.role === 'partner' && G.user.id){
+  if (G.user && G.user.role === 'partner' && G.user.id) {
     const meu = await fetch(`${A1.rest('a1_partners')}?id=eq.${G.user.id}&select=id,name,extra`, h)
-      .then(r=>r.json()).catch(()=>[]);
+      .then(r => r.json())
+      .catch(() => []);
     G.meuParceiro = (Array.isArray(meu) && meu[0]) || null;
   }
 
@@ -244,7 +371,7 @@ async function carregar(){
   renderVista();
 }
 
-async function carregarTitulares(){
+async function carregarTitulares() {
   G.titulares = {};
   if (!G.lista.length) return;
   // in.(todos os ids) estourava a URL antes de o volume chegar perto do que o
@@ -252,24 +379,34 @@ async function carregarTitulares(){
   // de TODA linha, em silencio. buscarPorIds quebra em lotes que cabem.
   const linhas = await A1.buscarPorIds(
     `${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&select=pre_analise_id,pessoa_id,renda_declarada`,
-    'pre_analise_id', G.lista.map(p => p.id));
+    'pre_analise_id',
+    G.lista.map(p => p.id)
+  );
   const pids = [...new Set(linhas.map(l => l.pessoa_id).filter(Boolean))];
-  if (pids.length){
-    (await A1.buscarPorIds(`${A1.rest('a1_pa_pessoas')}?select=id,nome,documento,telefone`, 'id', pids))
-      .forEach(p => { G.pessoas[p.id] = p; });
+  if (pids.length) {
+    (
+      await A1.buscarPorIds(`${A1.rest('a1_pa_pessoas')}?select=id,nome,documento,telefone`, 'id', pids)
+    ).forEach(p => {
+      G.pessoas[p.id] = p;
+    });
   }
-  linhas.forEach(l => { G.titulares[l.pre_analise_id] = G.pessoas[l.pessoa_id] || null; });
+  linhas.forEach(l => {
+    G.titulares[l.pre_analise_id] = G.pessoas[l.pessoa_id] || null;
+  });
 }
 
-function preencherFiltros(){
+function preencherFiltros() {
   const fs = document.getElementById('f-situacao');
-  fs.innerHTML = '<option value="">Todas as situações</option>' +
+  fs.innerHTML =
+    '<option value="">Todas as situações</option>' +
     G.situacoes.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('');
   const fc = document.getElementById('f-corretor');
-  fc.innerHTML = '<option value="">Todos os corretores</option>' +
+  fc.innerHTML =
+    '<option value="">Todos os corretores</option>' +
     G.corretores.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   const fe = document.getElementById('f-empr');
-  fe.innerHTML = '<option value="">Todos os empreendimentos</option>' +
+  fe.innerHTML =
+    '<option value="">Todos os empreendimentos</option>' +
     G.empreendimentos.map(e => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
 }
 
@@ -282,9 +419,13 @@ function preencherFiltros(){
 // adotando em Configuracoes uma lista diferente da que a tela mostra.
 const TIPOS_DOC_PADRAO = a1DocsPadrao('PRE_ANALISE');
 
-function lerTiposDoc(cfg){
+function lerTiposDoc(cfg) {
   let lista = [];
-  try { lista = JSON.parse((cfg && cfg[0] && cfg[0].value) || '[]'); } catch { lista = []; }
+  try {
+    lista = JSON.parse((cfg && cfg[0] && cfg[0].value) || '[]');
+  } catch {
+    lista = [];
+  }
   if (!Array.isArray(lista)) lista = [];
   // O cru fica guardado: o seletor precisa só dos nomes, mas a regra de
   // documento obrigatorio precisa da marca, que se perderia no .map(name).
@@ -298,9 +439,9 @@ function lerTiposDoc(cfg){
 // Documento obrigatorio: quais faltam nesta pre-analise. Documento REPROVADO ou
 // SUBSTITUIDO nao conta como entregue — o tipo continua faltando. E a mesma
 // conta que a1_pa_docs_faltando faz no banco, que e quem tranca de verdade.
-function docsObrigatoriosFaltando(){
+function docsObrigatoriosFaltando() {
   const entregues = (G.atualDocs || [])
-    .filter(d => d && !['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].includes(d.status))
+    .filter(d => d && !['REPROVADO', 'SUBSTITUIDO', 'PENDENTE_ENVIO'].includes(d.status))
     .map(d => d.tipo);
   return a1DocsFaltando(G.tiposDocCru || [], 'PRE_ANALISE', entregues);
 }
@@ -317,22 +458,24 @@ function docsObrigatoriosFaltando(){
 // exigir marcação aqui tiraria a Pré-análise de todos eles de uma vez. A
 // restrição começa a valer no momento em que o gestor marca a primeira situação
 // da Pré-análise, que é quando ele de fato pediu por ela.
-function etapasDoUsuario(){
+function etapasDoUsuario() {
   const p = (G.user && G.user.permissions) || {};
-  return (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : {};
+  return p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas) ? p.etapas : {};
 }
-function moduloRestrito(){
+function moduloRestrito() {
   if (ehGestor()) return false;
   if (perm('gerente')) return false;
   const mapa = etapasDoUsuario();
   return G.situacoes.some(s => mapa[s.id] === 'ver' || mapa[s.id] === 'editar');
 }
-function nivelNaSituacao(id){
+function nivelNaSituacao(id) {
   if (!moduloRestrito()) return 'editar';
   const n = etapasDoUsuario()[id];
-  return (n === 'ver' || n === 'editar') ? n : null;
+  return n === 'ver' || n === 'editar' ? n : null;
 }
-function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
+function podeVerSituacao(id) {
+  return nivelNaSituacao(id) !== null;
+}
 
 // ─── De quem é o processo ────────────────────────────────────────────────────
 //
@@ -341,24 +484,32 @@ function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
 // gerente, corretor_id é o que a tela mandar; para os demais, o gatilho
 // reescreve com a1_ator(). Oferecer o campo a um corretor seria oferecer uma
 // escolha que o banco desfaz no instante seguinte.
-function mandaNaCarteira(){ return ehGestor() || perm('gerente'); }
+function mandaNaCarteira() {
+  return ehGestor() || perm('gerente');
+}
 
 // A imobiliária do corretor mora em extra.imobiliaria_id — o mesmo lugar em que
 // o pré-cadastro por link sempre a gravou e que o cadastro em Configurações
 // deixa editar. Sem ela, o campo do assistente nascia em branco e o corretor
 // escolhia (ou esquecia) a imobiliária dele mesmo.
-function minhaImobiliaria(){
+function minhaImobiliaria() {
   const e = G.meuParceiro && G.meuParceiro.extra;
   return (e && e.imobiliaria_id) || '';
 }
-function nomeImobiliaria(id){ const i = G.imobiliarias.find(x=>x.id===id); return i ? i.name : ''; }
-function nomeAnalista(id){ const a = G.analistas.find(x=>x.id===id); return a ? a.name : ''; }
+function nomeImobiliaria(id) {
+  const i = G.imobiliarias.find(x => x.id === id);
+  return i ? i.name : '';
+}
+function nomeAnalista(id) {
+  const a = G.analistas.find(x => x.id === id);
+  return a ? a.name : '';
+}
 
 // Corretor SEM imobiliária no cadastro aparece em qualquer imobiliária, de
 // propósito: hoje quase nenhum tem o vínculo preenchido, e um filtro estrito
 // esvaziaria o seletor no primeiro dia — o gestor concluiria que o sistema
 // quebrou. Quem TEM vínculo só aparece na imobiliária dele.
-function corretoresDaImobiliaria(imobId){
+function corretoresDaImobiliaria(imobId) {
   if (!imobId) return G.corretores;
   return G.corretores.filter(c => {
     const v = c.extra && c.extra.imobiliaria_id;
@@ -402,15 +553,15 @@ const SELO_FIM_NEGATIVO = 'FIM_NEGATIVO';
 // que o dia entre a tela subir e o SQL rodar seja um dia sem botão nenhum.
 // APAGAR quando todos os clientes tiverem o selo gravado.
 const SELO_DA_FLAG_LEGADA = {
-  INICIAL:   'INICIO',
-  APROVADO:  SELO_FIM_POSITIVO,
+  INICIAL: 'INICIO',
+  APROVADO: SELO_FIM_POSITIVO,
   REPROVADO: SELO_FIM_NEGATIVO,
   CANCELADO: SELO_FIM_NEGATIVO,
-  VENCIDO:   SELO_FIM_NEGATIVO,
+  VENCIDO: SELO_FIM_NEGATIVO,
   ENCERRADO: SELO_FIM_NEGATIVO
 };
 
-function seloDaSituacao(id){
+function seloDaSituacao(id) {
   const s = G.situacoes.find(x => x.id === id);
   if (!s) return null;
   if (s.selo) return s.selo;
@@ -419,33 +570,49 @@ function seloDaSituacao(id){
   if (G.temSelo) return null;
   return SELO_DA_FLAG_LEGADA[s.flag] || null;
 }
-function situacaoAbreVenda(id){ return seloDaSituacao(id) === SELO_FIM_POSITIVO; }
-function situacaoEncerra(id){   return seloDaSituacao(id) === SELO_FIM_NEGATIVO; }
+function situacaoAbreVenda(id) {
+  return seloDaSituacao(id) === SELO_FIM_POSITIVO;
+}
+function situacaoEncerra(id) {
+  return seloDaSituacao(id) === SELO_FIM_NEGATIVO;
+}
 
-function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
-function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
-function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
-function nomeEmpr(id){ const e = G.empreendimentos.find(x=>x.id===id); return e ? e.name : '—'; }
+function nomeSituacao(id) {
+  const s = G.situacoes.find(x => x.id === id);
+  return s ? s.nome : '—';
+}
+function corSituacao(id) {
+  const s = G.situacoes.find(x => x.id === id);
+  return (s && s.cor) || '#64748b';
+}
+function nomeCorretor(id) {
+  const c = G.corretores.find(x => x.id === id);
+  return c ? c.name : '—';
+}
+function nomeEmpr(id) {
+  const e = G.empreendimentos.find(x => x.id === id);
+  return e ? e.name : '—';
+}
 
 // ─── fila ────────────────────────────────────────────────────────────────────
-function filtrarSla(n){
+function filtrarSla(n) {
   G.filtroSla = n;
-  ['todos','ok','at','ex'].forEach(k => {
-    const b = document.getElementById('sla-'+k);
-    if (b) b.classList.toggle('on', (k==='todos' ? '' : k) === n);
+  ['todos', 'ok', 'at', 'ex'].forEach(k => {
+    const b = document.getElementById('sla-' + k);
+    if (b) b.classList.toggle('on', (k === 'todos' ? '' : k) === n);
   });
   renderVista();
 }
 
-function filtradas(){
-  const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
+function filtradas() {
+  const q = (document.getElementById('f-busca').value || '').trim().toLowerCase();
   const fs = document.getElementById('f-situacao').value;
   const fc = document.getElementById('f-corretor').value;
   const fe = document.getElementById('f-empr').value;
   const inicio = document.getElementById('f-inicio').value;
   const fim = document.getElementById('f-fim').value;
   return G.lista.filter(p => {
-    const dataCriacao = p.criado_em ? p.criado_em.slice(0,10) : '';
+    const dataCriacao = p.criado_em ? p.criado_em.slice(0, 10) : '';
     if (inicio && (!dataCriacao || dataCriacao < inicio)) return false;
     if (fim && (!dataCriacao || dataCriacao > fim)) return false;
     // Situação sem nada marcado é invisível para esta pessoa.
@@ -454,10 +621,11 @@ function filtradas(){
     if (fc && p.corretor_id !== fc) return false;
     if (fe && p.empreendimento_id !== fe) return false;
     if (G.filtroSla && sla(p).nivel !== G.filtroSla) return false;
-    if (q){
+    if (q) {
       const t = G.titulares[p.id];
-      const alvo = [p.codigo, p.unidade, t && t.nome, t && t.documento,
-                    nomeEmpr(p.empreendimento_id)].join(' ').toLowerCase();
+      const alvo = [p.codigo, p.unidade, t && t.nome, t && t.documento, nomeEmpr(p.empreendimento_id)]
+        .join(' ')
+        .toLowerCase();
       // A comparação só por dígitos serve para achar o CPF digitado sem
       // pontuação. Só vale quando o que foi digitado TEM dígito: sem essa
       // guarda, buscar "Pedro" vira buscar "" — e "" está dentro de tudo,
@@ -475,50 +643,54 @@ function filtradas(){
 //
 // Chamado antes de os dados chegarem, para o operador ver o quadro certo (com o
 // indicador de carregando) em vez de uma faixa em branco enquanto a busca corre.
-function aplicarVista(){
+function aplicarVista() {
   const v = a1VistaDaURL();
-  const rot = { listagem:'Listagem', dashboard:'Dashboard' }[v] || 'Andamento';
+  const rot = { listagem: 'Listagem', dashboard: 'Dashboard' }[v] || 'Andamento';
   document.getElementById('pg-vista').textContent = rot;
   document.getElementById('vista-andamento').style.display = v === 'andamento' ? '' : 'none';
-  document.getElementById('vista-listagem').style.display  = v === 'listagem'  ? '' : 'none';
+  document.getElementById('vista-listagem').style.display = v === 'listagem' ? '' : 'none';
   const pnl = document.getElementById('vista-painel');
   if (pnl) pnl.style.display = v === 'dashboard' ? '' : 'none';
   // Os filtros e a contagem sao das duas vistas de operacao. O painel tem o
   // proprio recorte de periodo, e duas barras de filtro na mesma tela dizendo
   // coisas diferentes sobre o mesmo dado e o comeco de uma ligacao ao suporte.
-  ['filtros','kpis','pg-cab'].forEach(id => {
+  ['filtros', 'kpis', 'pg-cab'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = v === 'dashboard' ? 'none' : '';
   });
   return v;
 }
 
-function renderVista(){
+function renderVista() {
   const v = aplicarVista();
   const linhas = filtradas();
   document.getElementById('fila-contagem').textContent =
-    `${linhas.length} de ${G.lista.length} pré-análise${G.lista.length===1?'':'s'}`;
+    `${linhas.length} de ${G.lista.length} pré-análise${G.lista.length === 1 ? '' : 's'}`;
   renderKpis();
 
-  if (v === 'dashboard'){
+  if (v === 'dashboard') {
     // O painel se carrega sozinho e cuida da propria licenca. Desenhar de novo
     // a cada filtro seria refazer a consulta inteira por causa de uma busca que
     // nem e dele.
     const alvo = document.getElementById('vista-painel');
-    if (alvo && !alvo.dataset.pronto){ alvo.dataset.pronto = '1'; a1PainelPreAnalise(alvo); }
+    if (alvo && !alvo.dataset.pronto) {
+      alvo.dataset.pronto = '1';
+      a1PainelPreAnalise(alvo);
+    }
     return;
   }
-  if (v === 'listagem') renderFila(linhas); else renderAndamento(linhas);
+  if (v === 'listagem') renderFila(linhas);
+  else renderAndamento(linhas);
 }
 
-function renderFila(linhas){
+function renderFila(linhas) {
   const wrap = document.getElementById('fila-wrap');
-  if (!G.situacoes.length){
+  if (!G.situacoes.length) {
     wrap.innerHTML = `<div class="vazio"><strong>A esteira ainda não foi configurada.</strong><br>
       Um gestor cria a esteira em <strong>Configurações &rsaquo; Workflow da Pré-análise</strong>.</div>`;
     return;
   }
-  if (!linhas.length){
+  if (!linhas.length) {
     wrap.innerHTML = `<div class="vazio">${G.lista.length ? 'Nenhuma pré-análise com esses filtros.' : 'Nenhuma pré-análise ainda.'}</div>`;
     return;
   }
@@ -528,14 +700,14 @@ function renderFila(linhas){
     </tr></thead><tbody>${linhas.map(linhaFila).join('')}</tbody></table>`;
 }
 
-function linhaFila(p){
+function linhaFila(p) {
   const t = G.titulares[p.id];
   const s = sla(p);
   return `<tr onclick="abrirDossie('${esc(p.id)}')" tabindex="0"
              onkeydown="if(event.key==='Enter')abrirDossie('${esc(p.id)}')">
     <td><div class="cli">${esc(t ? t.nome : 'Sem titular')}</div>
         <div class="sub">${t && t.documento ? esc(mascaraDoc(t.documento)) : '—'}</div></td>
-    <td class="cod">${esc(p.codigo || p.id.slice(0,8))}</td>
+    <td class="cod">${esc(p.codigo || p.id.slice(0, 8))}</td>
     <td>${esc(nomeEmpr(p.empreendimento_id))}${p.unidade ? ` <span class="sub">· un. ${esc(p.unidade)}</span>` : ''}</td>
     <td>${esc(nomeCorretor(p.corretor_id))}</td>
     <td><span class="sit" style="background:${esc(corSituacao(p.situacao_id))}">${esc(nomeSituacao(p.situacao_id))}</span></td>
@@ -545,7 +717,7 @@ function linhaFila(p){
   </tr>`;
 }
 
-function renderKpis(){
+function renderKpis() {
   const total = G.lista.length;
   const conta = n => G.lista.filter(p => sla(p).nivel === n).length;
   // Pelo selo, e não pela flag: o cliente que chama a etapa de "Deferida"
@@ -562,48 +734,64 @@ function renderKpis(){
 }
 
 // ─── andamento (quadro por situação) ─────────────────────────────────────────
-function renderAndamento(linhas){
+function renderAndamento(linhas) {
   const el = document.getElementById('kanban');
-  if (!G.situacoes.length){ el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`; return; }
-  el.innerHTML = G.situacoes.map(s => {
-    const dela = linhas.filter(p => p.situacao_id === s.id);
-    const avaliacao = dela.reduce((total,p) => total + (Number(p.valor_avaliacao_inicial) || 0), 0);
-    return `<div class="k-col">
+  if (!G.situacoes.length) {
+    el.innerHTML = `<div class="vazio">A esteira ainda não foi configurada.</div>`;
+    return;
+  }
+  el.innerHTML = G.situacoes
+    .map(s => {
+      const dela = linhas.filter(p => p.situacao_id === s.id);
+      const avaliacao = dela.reduce((total, p) => total + (Number(p.valor_avaliacao_inicial) || 0), 0);
+      return `<div class="k-col">
       <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
       <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">Avaliação: <strong>${esc(brl(avaliacao))}</strong></div>
       <div class="k-col-body" data-sit="${esc(s.id)}"
            ondragover="aoArrastarSobre(event)" ondrop="aoSoltar(event,this)"
-           ondragleave="this.classList.remove('drag-over')">${dela.map(cartao).join('') ||
-        '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
+           ondragleave="this.classList.remove('drag-over')">${
+             dela.map(cartao).join('') ||
+             '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'
+           }</div>
     </div>`;
-  }).join('');
+    })
+    .join('');
 }
 
-function cartao(p){
-  const t = G.titulares[p.id], s = sla(p);
-  const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
+function cartao(p) {
+  const t = G.titulares[p.id],
+    s = sla(p);
+  const cor = s.nivel === 'ex' ? 'var(--red)' : s.nivel === 'at' ? 'var(--amber)' : 'var(--green)';
   const arrasta = podeMoverPa(p);
   const documento = t && t.documento ? soDigitos(t.documento) : '';
   const desde = p.situacao_em || p.criado_em;
-  const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
+  const decorrido = desde
+    ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000))
+    : '—';
   return `<div class="pa-card" style="border-left-color:${cor}" data-id="${esc(p.id)}"
-    ${arrasta ? `draggable="true" ondragstart="aoComecarArrasto(event,this)"
-    ondragend="this.classList.remove('dragging')"` : ''}
+    ${
+      arrasta
+        ? `draggable="true" ondragstart="aoComecarArrasto(event,this)"
+    ondragend="this.classList.remove('dragging')"`
+        : ''
+    }
     onclick="abrirDossie('${esc(p.id)}')">
     <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
-    ${documento
-      ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
-      : '<div class="pa-line">CPF não informado</div>'}
-    <div class="pa-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(p.empreendimento_id))}${p.unidade?' · un. '+esc(p.unidade):''}</div>
+    ${
+      documento
+        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+        : '<div class="pa-line">CPF não informado</div>'
+    }
+    <div class="pa-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(p.empreendimento_id))}${p.unidade ? ' · un. ' + esc(p.unidade) : ''}</div>
     <div class="card-meta">
       <div class="pa-line"><span class="label">Imobiliária</span>${esc(nomeImobiliaria(p.imobiliaria_id) || 'Não informada')}</div>
       <div class="pa-line"><span class="label">Corretor</span>${esc(nomeCorretor(p.corretor_id))}</div>
       <div class="pa-line"><span class="label">Analista</span>${esc(nomeAnalista(p.analista_id) || 'Não informado')}</div>
     </div>
-    <div class="chips"><span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
+    <div class="chips"><span class="chip ${s.nivel === 'ex' ? 'r' : s.nivel === 'at' ? 'w' : ''}">${esc(s.txt)}</span>
       <span class="chip">${esc(decorrido)} na etapa</span></div>
-    ${(G.resumoChecklist||{})[p.id] && (G.resumoChecklist||{})[p.id].total ? `<div class="card-stage">Checklist: ${esc((G.resumoChecklist||{})[p.id].concluidos)}/${esc((G.resumoChecklist||{})[p.id].total)}</div>` : ''}
+    ${(G.resumoChecklist || {})[p.id] && (G.resumoChecklist || {})[p.id].total ? `<div class="card-stage">Checklist: ${esc((G.resumoChecklist || {})[p.id].concluidos)}/${esc((G.resumoChecklist || {})[p.id].total)}</div>` : ''}
     <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
   </div>`;
 }
@@ -618,7 +806,7 @@ function cartao(p){
 // pelo gatilho trg_pa_guarda ('situacao_so_muda_por_transicao'), e com razão:
 // pular o orquestrador é pular a aresta da esteira, o papel, o histórico e a
 // ação ligada à transição.
-function podeMoverPa(p){
+function podeMoverPa(p) {
   // Mover exige "editar" NA SITUAÇÃO ATUAL: quem só acompanha uma etapa não a
   // empurra para a seguinte.
   return !!p && perm('pa_mover') && nivelNaSituacao(p.situacao_id) === 'editar';
@@ -626,79 +814,110 @@ function podeMoverPa(p){
 
 // As situações de destino são as arestas que a esteira do cliente permite a
 // partir daqui. A tela não inventa caminho: mostra o que o banco aceita.
-function destinosDe(situacaoId){
+function destinosDe(situacaoId) {
   return G.transicoes
     .filter(t => t.de_id === null || t.de_id === situacaoId)
     .map(t => G.situacoes.find(s => s.id === t.para_id))
-    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== situacaoId);
+    .filter((s, i, a) => s && a.indexOf(s) === i && s.id !== situacaoId);
 }
 
-function aoComecarArrasto(e, el){
+function aoComecarArrasto(e, el) {
   el.classList.add('dragging');
   G.arrastando = el.dataset.id;
   e.dataTransfer.effectAllowed = 'move';
   // Sem algum dado no dataTransfer o Chromium cancela o arrasto antes do soltar.
-  try { e.dataTransfer.setData('text/plain', el.dataset.id); } catch {}
+  try {
+    e.dataTransfer.setData('text/plain', el.dataset.id);
+  } catch {}
 }
-function aoArrastarSobre(e){
-  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+function aoArrastarSobre(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
   e.currentTarget.classList.add('drag-over');
 }
-function aoSoltar(e, col){
-  e.preventDefault(); col.classList.remove('drag-over');
+function aoSoltar(e, col) {
+  e.preventDefault();
+  col.classList.remove('drag-over');
   const id = G.arrastando || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
   G.arrastando = null;
   if (id) moverCartao(id, col.dataset.sit);
 }
 
-async function moverCartao(id, paraId){
+async function moverCartao(id, paraId) {
   const p = G.lista.find(x => x.id === id);
   if (!p || !paraId || p.situacao_id === paraId) return;
 
-  if (!perm('pa_mover')){ toast(faltaPermissao('pa_mover','Mover a pré-análise'),'error'); return; }
-  if (nivelNaSituacao(p.situacao_id) !== 'editar'){
-    toast(`Em "${nomeSituacao(p.situacao_id)}" você só acompanha. Peça ao gestor a permissão de editar nesta situação.`,'error');
+  if (!perm('pa_mover')) {
+    toast(faltaPermissao('pa_mover', 'Mover a pré-análise'), 'error');
+    return;
+  }
+  if (nivelNaSituacao(p.situacao_id) !== 'editar') {
+    toast(
+      `Em "${nomeSituacao(p.situacao_id)}" você só acompanha. Peça ao gestor a permissão de editar nesta situação.`,
+      'error'
+    );
     return;
   }
   const destinos = destinosDe(p.situacao_id);
-  if (!destinos.some(s => s.id === paraId)){
-    toast(destinos.length
-      ? `A esteira não liga "${nomeSituacao(p.situacao_id)}" a "${nomeSituacao(paraId)}". Daqui dá para ir para: `
-        + destinos.map(s => s.nome).join(', ') + '.'
-      : `"${nomeSituacao(p.situacao_id)}" não tem saída desenhada. Ajuste em Configurações › Editor de Workflow.`,
-      'error');
+  if (!destinos.some(s => s.id === paraId)) {
+    toast(
+      destinos.length
+        ? `A esteira não liga "${nomeSituacao(p.situacao_id)}" a "${nomeSituacao(paraId)}". Daqui dá para ir para: ` +
+            destinos.map(s => s.nome).join(', ') +
+            '.'
+        : `"${nomeSituacao(p.situacao_id)}" não tem saída desenhada. Ajuste em Configurações › Editor de Workflow.`,
+      'error'
+    );
     return;
   }
 
   // Documento obrigatório: o banco tranca (a1_pa_transicionar), mas o aviso que
   // resolve o dia é este — e ele custa uma consulta só quando o cliente de fato
   // marcou algum tipo como obrigatório. Quem não usa o recurso não paga nada.
-  if (a1DocsObrigatorios(G.tiposDocCru || [], 'PRE_ANALISE').length){
-    const docs = await fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&select=tipo,status`,
-      { headers:A1.headers() }).then(r=>r.json()).catch(()=>null);
+  if (a1DocsObrigatorios(G.tiposDocCru || [], 'PRE_ANALISE').length) {
+    const docs = await fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&select=tipo,status`, {
+      headers: A1.headers()
+    })
+      .then(r => r.json())
+      .catch(() => null);
     // Não deu para perguntar: não inventa falta. A trava de verdade é do banco.
-    if (Array.isArray(docs)){
-      const entregues = docs.filter(d => d && !['REPROVADO','SUBSTITUIDO','PENDENTE_ENVIO'].includes(d.status))
-                            .map(d => d.tipo);
+    if (Array.isArray(docs)) {
+      const entregues = docs
+        .filter(d => d && !['REPROVADO', 'SUBSTITUIDO', 'PENDENTE_ENVIO'].includes(d.status))
+        .map(d => d.tipo);
       const falta = a1DocsFaltando(G.tiposDocCru || [], 'PRE_ANALISE', entregues);
-      if (falta.length){ toast(a1DocsAvisoFaltando(falta),'error'); return; }
+      if (falta.length) {
+        toast(a1DocsAvisoFaltando(falta), 'error');
+        return;
+      }
     }
   }
 
   const res = await fetch(A1.rpc('a1_pa_transicionar'), {
-    method:'POST', headers:A1.headers(),
+    method: 'POST',
+    headers: A1.headers(),
     // p_versao_esperada: se alguém moveu este processo enquanto o quadro estava
     // aberto, a chamada falha em vez de escrever por cima do que o outro fez.
-    body: JSON.stringify({ p_pre_analise:id, p_para:paraId, p_justificativa:null,
-                           p_versao_esperada:p.versao })
+    body: JSON.stringify({
+      p_pre_analise: id,
+      p_para: paraId,
+      p_justificativa: null,
+      p_versao_esperada: p.versao
+    })
   });
-  const j = await res.json().catch(()=>null);
+  const j = await res.json().catch(() => null);
   // O cartão só se move na tela DEPOIS de o banco confirmar. O Repasse já teve
   // o defeito oposto — movia primeiro, e o processo ficava na etapa nova até
   // alguém recarregar a página e descobrir que nunca tinha saído do lugar.
-  if (!res.ok){ toast(traduzErro(j),'error'); return; }
-  if (j && j.ok === false){ toast(traduzErro({ message:j.erro }),'error'); return; }
-  toast(`Movido para "${nomeSituacao(paraId)}".`,'success');
+  if (!res.ok) {
+    toast(traduzErro(j), 'error');
+    return;
+  }
+  if (j && j.ok === false) {
+    toast(traduzErro({ message: j.erro }), 'error');
+    return;
+  }
+  toast(`Movido para "${nomeSituacao(paraId)}".`, 'success');
   await carregar();
 }
 
@@ -707,22 +926,28 @@ async function moverCartao(id, paraId){
 // tela era garantir dois lugares mostrando totais diferentes do mesmo dado.
 
 // ══════════ ASSISTENTE ══════════
-function abrirAssistente(){
+function abrirAssistente() {
   // O console e o atalho não passam por botão. A mesma regra vale aqui, senão
   // esconder o botão seria decoração.
   if (!a1GeralPermite(G.geral, 'criar_pre_analise_avulsa')) {
-    toast('A criação avulsa de pré-análise está desligada em Configurações › Configurações Gerais.','error');
+    toast('A criação avulsa de pré-análise está desligada em Configurações › Configurações Gerais.', 'error');
     return;
   }
   G.passo = 1;
   // O corretor já entra com a imobiliária dele preenchida: é a única que faz
   // sentido, e deixá-la em branco fazia o processo nascer sem imobiliária.
-  G.rascunho = { empreendimento_id:'', unidade:'', valor_avaliacao_inicial:'',
-                 imobiliaria_id: mandaNaCarteira() ? '' : minhaImobiliaria(),
-                 corretor_id:'',
-                 titular:{ documento:'', nome:'', nascimento:'', telefone:'', email:'', estado_civil:'' },
-                 pessoaExistente:null,
-                 renda_declarada:'', fonte_renda:'', associados:[] };
+  G.rascunho = {
+    empreendimento_id: '',
+    unidade: '',
+    valor_avaliacao_inicial: '',
+    imobiliaria_id: mandaNaCarteira() ? '' : minhaImobiliaria(),
+    corretor_id: '',
+    titular: { documento: '', nome: '', nascimento: '', telefone: '', email: '', estado_civil: '' },
+    pessoaExistente: null,
+    renda_declarada: '',
+    fonte_renda: '',
+    associados: []
+  };
   aproveitarLead();
   document.getElementById('modal-nova').classList.remove('hidden');
   renderPasso();
@@ -737,14 +962,14 @@ function abrirAssistente(){
 //
 // O vinculo com o lead fica no rascunho e e gravado no processo: sem ele,
 // ninguem descobre depois de onde aquele negocio veio.
-function aproveitarLead(){
+function aproveitarLead() {
   const q = new URLSearchParams(location.search);
   if (!q.get('lead')) return;
   const t = G.rascunho.titular;
-  t.nome     = q.get('nome') || '';
+  t.nome = q.get('nome') || '';
   t.telefone = q.get('tel') || '';
-  t.email    = q.get('email') || '';
-  t.documento= q.get('cpf') || '';
+  t.email = q.get('email') || '';
+  t.documento = q.get('cpf') || '';
   G.rascunho.lead_id = q.get('lead');
   G.rascunho.unidade = q.get('unidade') || '';
   G.rascunho.corretor_id = q.get('corretor') || G.rascunho.corretor_id || null;
@@ -758,37 +983,48 @@ function aproveitarLead(){
 // O assistente abre sozinho quando a pessoa chega por "Criar pre-analise".
 // Sem isto, ela cairia na fila e teria de procurar o botao — tendo clicado
 // num botao que prometia justamente abrir o cadastro.
-function abrirDoLeadSeVeio(){
+function abrirDoLeadSeVeio() {
   const q = new URLSearchParams(location.search);
   if (!q.get('lead')) return;
-  setTimeout(() => { try { abrirAssistente(); } catch {} }, 250);
+  setTimeout(() => {
+    try {
+      abrirAssistente();
+    } catch {}
+  }, 250);
 }
 
-function renderPasso(){
+function renderPasso() {
   const n = G.passo;
-  [1,2,3].forEach(i => {
-    const el = document.getElementById('passo-'+i);
-    el.className = 'passo' + (i===n ? ' on' : (i<n ? ' ok' : ''));
+  [1, 2, 3].forEach(i => {
+    const el = document.getElementById('passo-' + i);
+    el.className = 'passo' + (i === n ? ' on' : i < n ? ' ok' : '');
   });
   document.getElementById('nova-sub').textContent =
-    `Passo ${n} de 3 — ` + ['o negócio e quem atende','quem é o titular','renda e associados'][n-1];
-  document.getElementById('nova-voltar').style.visibility = n===1 ? 'hidden' : 'visible';
-  document.getElementById('nova-avancar').textContent = n===3 ? 'Criar pré-análise' : 'Avançar';
-  document.getElementById('nova-body').innerHTML = [passo1,passo2,passo3][n-1]();
-  if (n===3) renderAssociados();
+    `Passo ${n} de 3 — ` + ['o negócio e quem atende', 'quem é o titular', 'renda e associados'][n - 1];
+  document.getElementById('nova-voltar').style.visibility = n === 1 ? 'hidden' : 'visible';
+  document.getElementById('nova-avancar').textContent = n === 3 ? 'Criar pré-análise' : 'Avançar';
+  document.getElementById('nova-body').innerHTML = [passo1, passo2, passo3][n - 1]();
+  if (n === 3) renderAssociados();
 }
 
-function passo1(){
+function passo1() {
   const r = G.rascunho;
   return `
     <div class="aviso i">A unidade aqui é <strong>referência de interesse</strong> e não reserva estoque.
     A reserva acontece na Venda, depois da aprovação.</div>
     <div class="fgrid">
       <div class="fg full"><label>Empreendimento *</label>
-        <select id="w-empr">${G.empreendimentos.length
-          ? '<option value="">Selecione…</option>' + G.empreendimentos.map(e =>
-              `<option value="${esc(e.id)}" ${e.id===r.empreendimento_id?'selected':''}>${esc(e.name)}</option>`).join('')
-          : '<option value="">Nenhum empreendimento cadastrado</option>'}</select></div>
+        <select id="w-empr">${
+          G.empreendimentos.length
+            ? '<option value="">Selecione…</option>' +
+              G.empreendimentos
+                .map(
+                  e =>
+                    `<option value="${esc(e.id)}" ${e.id === r.empreendimento_id ? 'selected' : ''}>${esc(e.name)}</option>`
+                )
+                .join('')
+            : '<option value="">Nenhum empreendimento cadastrado</option>'
+        }</select></div>
       <div class="fg"><label>Unidade de interesse</label>
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
       <div class="fg"><label>Valor de avaliação (R$)</label>
@@ -802,10 +1038,10 @@ function passo1(){
 // Imobiliária: o gestor escolhe, o corretor não. O vínculo dele está no
 // cadastro (extra.imobiliaria_id) e o banco o reforça na inserção — deixar o
 // seletor aberto era convidar a gravar a imobiliária de outra pessoa.
-function campoImobiliaria(r){
-  if (!mandaNaCarteira()){
+function campoImobiliaria(r) {
+  if (!mandaNaCarteira()) {
     const id = minhaImobiliaria();
-    if (id){
+    if (id) {
       const nome = nomeImobiliaria(id) || 'Sua imobiliária';
       return `<div class="fg"><label>Imobiliária</label>
         <select id="w-imob" disabled><option value="${esc(id)}">${esc(nome)}</option></select>
@@ -814,23 +1050,33 @@ function campoImobiliaria(r){
     // Sem vínculo no cadastro o campo continua aberto: travar um seletor vazio
     // impediria o corretor de trabalhar por causa de um cadastro incompleto.
     return `<div class="fg"><label>Imobiliária</label>
-      <select id="w-imob"><option value="">—</option>${G.imobiliarias.map(i =>
-        `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select>
+      <select id="w-imob"><option value="">—</option>${G.imobiliarias
+        .map(
+          i =>
+            `<option value="${esc(i.id)}" ${i.id === r.imobiliaria_id ? 'selected' : ''}>${esc(i.name)}</option>`
+        )
+        .join('')}</select>
       <div class="sub" style="margin-top:.25rem">seu cadastro não tem imobiliária — peça ao gestor para vincular</div></div>`;
   }
   return `<div class="fg"><label>Imobiliária</label>
-    <select id="w-imob" onchange="imobiliariaDoPasso1()"><option value="">—</option>${G.imobiliarias.map(i =>
-      `<option value="${esc(i.id)}" ${i.id===r.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>`;
+    <select id="w-imob" onchange="imobiliariaDoPasso1()"><option value="">—</option>${G.imobiliarias
+      .map(
+        i =>
+          `<option value="${esc(i.id)}" ${i.id === r.imobiliaria_id ? 'selected' : ''}>${esc(i.name)}</option>`
+      )
+      .join('')}</select></div>`;
 }
 
 // Corretor: só para quem manda na carteira. Este campo não existia, e por isso
 // a pré-análise aberta pelo gestor nascia sem corretor nenhum — sumindo do
 // filtro por corretor e da carteira de quem de fato atendeu o cliente.
-function campoCorretor(r){
+function campoCorretor(r) {
   if (!mandaNaCarteira()) return '';
   return `<div class="fg"><label>Corretor</label>
-    <select id="w-corretor" onchange="corretorDoPasso1()">${
-      opcoesCorretor(corretoresDaImobiliaria(r.imobiliaria_id), r.corretor_id)}</select></div>`;
+    <select id="w-corretor" onchange="corretorDoPasso1()">${opcoesCorretor(
+      corretoresDaImobiliaria(r.imobiliaria_id),
+      r.corretor_id
+    )}</select></div>`;
 }
 
 // Empresa correspondente, usuário correspondente e analista já no cadastro: é
@@ -840,45 +1086,59 @@ function campoCorretor(r){
 // A mesma regra do dossiê vale aqui: campo que o banco deste cliente não tem
 // não é desenhado, e campo que o Roteamento decide nasce bloqueado. Melhor
 // campo ausente do que campo que derruba a criação inteira.
-function camposDeGenteNoAssistente(r){
+function camposDeGenteNoAssistente(r) {
   const roteia = roteamentoDeAnalistasAtivo();
   let html = `<div class="fg"><label>Empresa correspondente</label>
-    <select id="w-empresa" ${roteia?'disabled':''}>${opcoesDe(G.empresasCorr, r.empresa_id, '— sem empresa —')}</select></div>
+    <select id="w-empresa" ${roteia ? 'disabled' : ''}>${opcoesDe(G.empresasCorr, r.empresa_id, '— sem empresa —')}</select></div>
     <div class="fg"><label>Usuário correspondente</label>
-    <select id="w-correspondente" ${roteia?'disabled':''}>${
-      opcoesDe(G.correspondentes, r.correspondente_id, '— sem correspondente —')}</select></div>`;
+    <select id="w-correspondente" ${roteia ? 'disabled' : ''}>${opcoesDe(
+      G.correspondentes,
+      r.correspondente_id,
+      '— sem correspondente —'
+    )}</select></div>`;
   if (G.temColunaAnalista) {
     html += `<div class="fg"><label>Analista</label>
-      <select id="w-analista" ${roteia ? 'disabled' : ''}>${
-        opcoesDe(G.analistas, r.analista_id, '— sem analista —')}</select>
+      <select id="w-analista" ${roteia ? 'disabled' : ''}>${opcoesDe(
+        G.analistas,
+        r.analista_id,
+        '— sem analista —'
+      )}</select>
       ${roteia ? '<div class="sub" style="margin-top:.25rem">Responsável definido automaticamente pelo Ciclo de Distribuição.</div>' : ''}</div>`;
   }
   return html;
 }
 
-function opcoesCorretor(lista, escolhido){
-  return '<option value="">— sem corretor definido —</option>' +
-    lista.map(c => `<option value="${esc(c.id)}" ${c.id===escolhido?' selected':''}>${esc(c.name)}</option>`).join('');
+function opcoesCorretor(lista, escolhido) {
+  return (
+    '<option value="">— sem corretor definido —</option>' +
+    lista
+      .map(
+        c => `<option value="${esc(c.id)}" ${c.id === escolhido ? ' selected' : ''}>${esc(c.name)}</option>`
+      )
+      .join('')
+  );
 }
 
 // Os dois campos se ajudam, sem que nenhum mande no outro: escolher a
 // imobiliária encurta a lista de corretores, e escolher um corretor com vínculo
 // acerta a imobiliária. Sem o segundo caminho o processo nasceria com o par
 // errado — corretor de uma imobiliária gravado na conta de outra.
-function imobiliariaDoPasso1(){
-  const si = document.getElementById('w-imob'), sc = document.getElementById('w-corretor');
+function imobiliariaDoPasso1() {
+  const si = document.getElementById('w-imob'),
+    sc = document.getElementById('w-corretor');
   G.rascunho.imobiliaria_id = si ? si.value : '';
   if (!sc) return;
   sc.innerHTML = opcoesCorretor(corretoresDaImobiliaria(G.rascunho.imobiliaria_id), sc.value);
   G.rascunho.corretor_id = sc.value;
 }
-function corretorDoPasso1(){
-  const si = document.getElementById('w-imob'), sc = document.getElementById('w-corretor');
+function corretorDoPasso1() {
+  const si = document.getElementById('w-imob'),
+    sc = document.getElementById('w-corretor');
   if (!sc) return;
   G.rascunho.corretor_id = sc.value;
   const c = G.corretores.find(x => x.id === sc.value);
   const v = c && c.extra && c.extra.imobiliaria_id;
-  if (si && !si.disabled && v && si.value !== v){
+  if (si && !si.disabled && v && si.value !== v) {
     si.value = v;
     imobiliariaDoPasso1();
     sc.value = c.id;
@@ -886,7 +1146,7 @@ function corretorDoPasso1(){
   }
 }
 
-function passo2(){
+function passo2() {
   const t = G.rascunho.titular;
   return `
     <div class="aviso i">Digite o CPF e clique em <strong>Buscar</strong>: se a pessoa já existe no cadastro,
@@ -902,22 +1162,32 @@ function passo2(){
       <div class="fg"><label>Nome completo *</label><input id="w-nome" value="${esc(t.nome)}"></div>
       <div class="fg"><label>Nascimento</label><input id="w-nasc" type="date" value="${esc(t.nascimento)}"></div>
       <div class="fg"><label>Estado civil</label>
-        <select id="w-ec">${['','Solteiro(a)','Casado(a)','União estável','Divorciado(a)','Viúvo(a)']
-          .map(o => `<option ${o===t.estado_civil?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+        <select id="w-ec">${['', 'Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)']
+          .map(o => `<option ${o === t.estado_civil ? 'selected' : ''}>${esc(o)}</option>`)
+          .join('')}</select></div>
       <div class="fg"><label>Telefone</label><input id="w-tel" value="${esc(t.telefone)}"></div>
       <div class="fg"><label>E-mail</label><input id="w-mail" type="email" value="${esc(t.email)}"></div>
     </div>`;
 }
 
-function passo3(){
+function passo3() {
   const r = G.rascunho;
   return `
     <div class="fgrid">
       <div class="fg"><label>Renda declarada do titular (R$)</label>
         <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
       <div class="fg"><label>Fonte da renda</label>
-        <select id="w-fonte">${['','CLT','Autônomo','Servidor público','Aposentado','Empresário','Informal']
-          .map(o => `<option ${o===r.fonte_renda?'selected':''}>${esc(o)}</option>`).join('')}</select></div>
+        <select id="w-fonte">${[
+          '',
+          'CLT',
+          'Autônomo',
+          'Servidor público',
+          'Aposentado',
+          'Empresário',
+          'Informal'
+        ]
+          .map(o => `<option ${o === r.fonte_renda ? 'selected' : ''}>${esc(o)}</option>`)
+          .join('')}</select></div>
     </div>
     <div class="sec-title">Associados (composição de renda)</div>
     <div id="w-assoc"></div>
@@ -926,67 +1196,104 @@ function passo3(){
     permissão para analisar. Quem cria a pré-análise não aprova o próprio crédito.</div>`;
 }
 
-function renderAssociados(){
+function renderAssociados() {
   const el = document.getElementById('w-assoc');
   if (!el) return;
   const as = G.rascunho.associados;
-  el.innerHTML = as.length ? as.map((a,i) => `
+  el.innerHTML = as.length
+    ? as
+        .map(
+          (a, i) => `
     <div class="fgrid" style="margin-bottom:.5rem;padding:.6rem;border:1px solid var(--border);border-radius:8px">
       <div class="fg"><label>CPF</label><input value="${esc(a.documento)}" oninput="G.rascunho.associados[${i}].documento=this.value"></div>
       <div class="fg"><label>Nome</label><input value="${esc(a.nome)}" oninput="G.rascunho.associados[${i}].nome=this.value"></div>
       <div class="fg"><label>Renda (R$)</label><input value="${esc(a.renda)}" inputmode="decimal" oninput="G.rascunho.associados[${i}].renda=this.value"></div>
       <div class="fg"><label>&nbsp;</label><button class="btn btn-danger btn-sm" type="button" onclick="remAssociado(${i})">Remover</button></div>
-    </div>`).join('') : '<div class="sub" style="margin-bottom:.5rem">Nenhum associado.</div>';
+    </div>`
+        )
+        .join('')
+    : '<div class="sub" style="margin-bottom:.5rem">Nenhum associado.</div>';
 }
-function addAssociado(){ guardarPasso(); G.rascunho.associados.push({documento:'',nome:'',renda:''}); renderPasso(); }
-function remAssociado(i){ guardarPasso(); G.rascunho.associados.splice(i,1); renderPasso(); }
+function addAssociado() {
+  guardarPasso();
+  G.rascunho.associados.push({ documento: '', nome: '', renda: '' });
+  renderPasso();
+}
+function remAssociado(i) {
+  guardarPasso();
+  G.rascunho.associados.splice(i, 1);
+  renderPasso();
+}
 
-function guardarPasso(){
-  const v = id => { const e = document.getElementById(id); return e ? e.value : undefined; };
+function guardarPasso() {
+  const v = id => {
+    const e = document.getElementById(id);
+    return e ? e.value : undefined;
+  };
   const r = G.rascunho;
-  if (G.passo === 1){
-    if (v('w-empr')    !== undefined) r.empreendimento_id = v('w-empr');
-    if (v('w-unidade') !== undefined) r.unidade           = v('w-unidade');
-    if (v('w-aval')    !== undefined) r.valor_avaliacao_inicial = v('w-aval');
-    if (v('w-imob')    !== undefined) r.imobiliaria_id    = v('w-imob');
-    if (v('w-corretor')!== undefined) r.corretor_id       = v('w-corretor');
+  if (G.passo === 1) {
+    if (v('w-empr') !== undefined) r.empreendimento_id = v('w-empr');
+    if (v('w-unidade') !== undefined) r.unidade = v('w-unidade');
+    if (v('w-aval') !== undefined) r.valor_avaliacao_inicial = v('w-aval');
+    if (v('w-imob') !== undefined) r.imobiliaria_id = v('w-imob');
+    if (v('w-corretor') !== undefined) r.corretor_id = v('w-corretor');
     // Só recolhe o que está na tela e habilitado — ver camposDeGenteNoAssistente.
-    [['w-empresa','empresa_id'], ['w-correspondente','correspondente_id'],
-     ['w-analista','analista_id']].forEach(([id, coluna]) => {
+    [
+      ['w-empresa', 'empresa_id'],
+      ['w-correspondente', 'correspondente_id'],
+      ['w-analista', 'analista_id']
+    ].forEach(([id, coluna]) => {
       const el = document.getElementById(id);
       if (el && !el.disabled) r[coluna] = el.value || null;
     });
   }
-  if (G.passo === 2){
+  if (G.passo === 2) {
     const t = r.titular;
-    if (v('w-doc')  !== undefined) t.documento  = v('w-doc');
-    if (v('w-nome') !== undefined) t.nome       = v('w-nome');
+    if (v('w-doc') !== undefined) t.documento = v('w-doc');
+    if (v('w-nome') !== undefined) t.nome = v('w-nome');
     if (v('w-nasc') !== undefined) t.nascimento = v('w-nasc');
-    if (v('w-ec')   !== undefined) t.estado_civil = v('w-ec');
-    if (v('w-tel')  !== undefined) t.telefone   = v('w-tel');
-    if (v('w-mail') !== undefined) t.email      = v('w-mail');
+    if (v('w-ec') !== undefined) t.estado_civil = v('w-ec');
+    if (v('w-tel') !== undefined) t.telefone = v('w-tel');
+    if (v('w-mail') !== undefined) t.email = v('w-mail');
   }
-  if (G.passo === 3){
+  if (G.passo === 3) {
     if (v('w-renda') !== undefined) r.renda_declarada = v('w-renda');
-    if (v('w-fonte') !== undefined) r.fonte_renda     = v('w-fonte');
+    if (v('w-fonte') !== undefined) r.fonte_renda = v('w-fonte');
   }
 }
 
-async function buscarPessoa(){
+async function buscarPessoa() {
   const doc = soDigitos(document.getElementById('w-doc').value);
   const msg = document.getElementById('w-doc-msg');
-  if (doc.length !== 11 && doc.length !== 14){ msg.textContent = 'Informe um CPF ou CNPJ completo.'; return; }
-  if (doc.length === 11 && !cpfValido(doc)){ msg.style.color = 'var(--red)'; msg.textContent = 'CPF inválido — confira os dígitos.'; return; }
-  msg.style.color = 'var(--t3)'; msg.textContent = 'buscando…';
-  const achou = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${doc}&select=*`, { headers:A1.headers() })
-    .then(r=>r.json()).catch(()=>[]);
-  if (Array.isArray(achou) && achou[0]){
+  if (doc.length !== 11 && doc.length !== 14) {
+    msg.textContent = 'Informe um CPF ou CNPJ completo.';
+    return;
+  }
+  if (doc.length === 11 && !cpfValido(doc)) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'CPF inválido — confira os dígitos.';
+    return;
+  }
+  msg.style.color = 'var(--t3)';
+  msg.textContent = 'buscando…';
+  const achou = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${doc}&select=*`, {
+    headers: A1.headers()
+  })
+    .then(r => r.json())
+    .catch(() => []);
+  if (Array.isArray(achou) && achou[0]) {
     const p = achou[0];
     const permiteDuplicado = a1GeralPermite(G.geral, 'permitir_cpf_duplicado');
     G.rascunho.pessoaExistente = null;
     G.rascunho.cpfDuplicadoBloqueado = !permiteDuplicado;
-    G.rascunho.titular = { documento:p.documento||'', nome:p.nome||'', nascimento:(p.nascimento||'').slice(0,10),
-                           telefone:p.telefone||'', email:p.email||'', estado_civil:p.estado_civil||'' };
+    G.rascunho.titular = {
+      documento: p.documento || '',
+      nome: p.nome || '',
+      nascimento: (p.nascimento || '').slice(0, 10),
+      telefone: p.telefone || '',
+      email: p.email || '',
+      estado_civil: p.estado_civil || ''
+    };
     renderPasso();
     const m2 = document.getElementById('w-doc-msg');
     m2.style.color = permiteDuplicado ? 'var(--t3)' : 'var(--red)';
@@ -1001,43 +1308,77 @@ async function buscarPessoa(){
   }
 }
 
-function passoAnterior(){ guardarPasso(); G.passo = Math.max(1, G.passo-1); renderPasso(); }
+function passoAnterior() {
+  guardarPasso();
+  G.passo = Math.max(1, G.passo - 1);
+  renderPasso();
+}
 
-async function passoSeguinte(){
+async function passoSeguinte() {
   guardarPasso();
   const r = G.rascunho;
-  if (G.passo === 1){
-    if (!r.empreendimento_id){ toast('Escolha o empreendimento.','error'); return; }
-    G.passo = 2; renderPasso(); return;
-  }
-  if (G.passo === 2){
-    const doc = soDigitos(r.titular.documento);
-    if (r.cpfDuplicadoBloqueado && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
-      toast('Este CPF já está cadastrado e a duplicidade está desativada.','error'); return;
+  if (G.passo === 1) {
+    if (!r.empreendimento_id) {
+      toast('Escolha o empreendimento.', 'error');
+      return;
     }
-    if (!r.titular.nome.trim()){ toast('O nome do titular é obrigatório.','error'); return; }
-    if (doc.length === 11 && !cpfValido(doc)){ toast('CPF do titular inválido.','error'); return; }
-    if (!doc){ toast('Informe o CPF ou CNPJ do titular.','error'); return; }
-    G.passo = 3; renderPasso(); return;
+    G.passo = 2;
+    renderPasso();
+    return;
+  }
+  if (G.passo === 2) {
+    const doc = soDigitos(r.titular.documento);
+    if (r.cpfDuplicadoBloqueado && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')) {
+      toast('Este CPF já está cadastrado e a duplicidade está desativada.', 'error');
+      return;
+    }
+    if (!r.titular.nome.trim()) {
+      toast('O nome do titular é obrigatório.', 'error');
+      return;
+    }
+    if (doc.length === 11 && !cpfValido(doc)) {
+      toast('CPF do titular inválido.', 'error');
+      return;
+    }
+    if (!doc) {
+      toast('Informe o CPF ou CNPJ do titular.', 'error');
+      return;
+    }
+    G.passo = 3;
+    renderPasso();
+    return;
   }
   await criarPreAnalise();
 }
 
-async function criarPreAnalise(){
+async function criarPreAnalise() {
   const btn = document.getElementById('nova-avancar');
-  btn.disabled = true; btn.textContent = 'Criando…';
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
   try {
-    const r = G.rascunho, tid = G.user.tenant_id;
+    const r = G.rascunho,
+      tid = G.user.tenant_id;
 
     // 1. Pessoa titular — reaproveita a existente em vez de duplicar.
     let pessoaId = r.pessoaExistente;
-    if (!pessoaId){
-      const corpo = { tenant_id:tid, tipo: soDigitos(r.titular.documento).length===14 ? 'PJ' : 'PF',
-                      documento: soDigitos(r.titular.documento), nome: r.titular.nome.trim(),
-                      nascimento: r.titular.nascimento || null, estado_civil: r.titular.estado_civil || null,
-                      telefone: r.titular.telefone || null, email: r.titular.email || null };
-      const res = await fetch(A1.rest('a1_pa_pessoas'), { method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
-      if (!res.ok) throw new Error(await mensagemErro(res, 'Não foi possível cadastrar a pessoa.', 'pa_criar'));
+    if (!pessoaId) {
+      const corpo = {
+        tenant_id: tid,
+        tipo: soDigitos(r.titular.documento).length === 14 ? 'PJ' : 'PF',
+        documento: soDigitos(r.titular.documento),
+        nome: r.titular.nome.trim(),
+        nascimento: r.titular.nascimento || null,
+        estado_civil: r.titular.estado_civil || null,
+        telefone: r.titular.telefone || null,
+        email: r.titular.email || null
+      };
+      const res = await fetch(A1.rest('a1_pa_pessoas'), {
+        method: 'POST',
+        headers: A1.returnHeaders(),
+        body: JSON.stringify(corpo)
+      });
+      if (!res.ok)
+        throw new Error(await mensagemErro(res, 'Não foi possível cadastrar a pessoa.', 'pa_criar'));
       pessoaId = ((await res.json())[0] || {}).id;
     }
     if (!pessoaId) throw new Error('Não foi possível identificar o titular.');
@@ -1046,63 +1387,100 @@ async function criarPreAnalise(){
     // corretor_id vai junto só quando quem cria manda na carteira: para o
     // corretor, o gatilho reescreve com a1_ator() de qualquer jeito, e mandar
     // um id seria sugerir uma escolha que ele não tem.
-    const corpoPa = { tenant_id:tid, empreendimento_id:r.empreendimento_id,
-                      unidade: r.unidade || null, imobiliaria_id: r.imobiliaria_id || null,
-                      valor_avaliacao_inicial: r.valor_avaliacao_inicial
-                        ? paraCentavos(r.valor_avaliacao_inicial) : null };
+    const corpoPa = {
+      tenant_id: tid,
+      empreendimento_id: r.empreendimento_id,
+      unidade: r.unidade || null,
+      imobiliaria_id: r.imobiliaria_id || null,
+      valor_avaliacao_inicial: r.valor_avaliacao_inicial ? paraCentavos(r.valor_avaliacao_inicial) : null
+    };
     if (mandaNaCarteira()) corpoPa.corretor_id = r.corretor_id || null;
     // Os três campos de gente entram só se o assistente os ofereceu — o
     // rascunho só tem a chave quando o campo existia e estava habilitado.
     // Assim a criação continua funcionando no cliente cujo banco ainda não
     // ganhou a coluna do analista, e o Roteamento não é atropelado.
     if (!roteamentoDeAnalistasAtivo()) {
-      ['empresa_id','correspondente_id','analista_id'].forEach(coluna => {
+      ['empresa_id', 'correspondente_id', 'analista_id'].forEach(coluna => {
         if (coluna in r) corpoPa[coluna] = r[coluna] || null;
       });
     }
     const resPa = await fetch(A1.rest('a1_pre_analises'), {
-      method:'POST', headers:A1.returnHeaders(), body: JSON.stringify(corpoPa) });
-    if (!resPa.ok) throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.', 'pa_criar'));
+      method: 'POST',
+      headers: A1.returnHeaders(),
+      body: JSON.stringify(corpoPa)
+    });
+    if (!resPa.ok)
+      throw new Error(await mensagemErro(resPa, 'Não foi possível criar a pré-análise.', 'pa_criar'));
     const pa = (await resPa.json())[0];
 
     // 3. Participantes.
-    const participantes = [{ tenant_id:tid, pre_analise_id:pa.id, pessoa_id:pessoaId, papel:'TITULAR',
-                             renda_declarada: paraCentavos(r.renda_declarada),
-                             fonte_renda: r.fonte_renda || null }];
-    for (const a of r.associados){
+    const participantes = [
+      {
+        tenant_id: tid,
+        pre_analise_id: pa.id,
+        pessoa_id: pessoaId,
+        papel: 'TITULAR',
+        renda_declarada: paraCentavos(r.renda_declarada),
+        fonte_renda: r.fonte_renda || null
+      }
+    ];
+    for (const a of r.associados) {
       if (!a.nome.trim()) continue;
       const docA = soDigitos(a.documento);
       let idA = null;
-      if (docA && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
-        const ex = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${docA}&select=id`, { headers:A1.headers() })
-          .then(x=>x.json()).catch(()=>[]);
-        idA = (Array.isArray(ex) && ex[0]) ? ex[0].id : null;
+      if (docA && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')) {
+        const ex = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${docA}&select=id`, {
+          headers: A1.headers()
+        })
+          .then(x => x.json())
+          .catch(() => []);
+        idA = Array.isArray(ex) && ex[0] ? ex[0].id : null;
       }
-      if (!idA){
-        const criada = await fetch(A1.rest('a1_pa_pessoas'), { method:'POST', headers:A1.returnHeaders(),
-          body: JSON.stringify({ tenant_id:tid, documento: docA || null, nome: a.nome.trim() }) })
-          .then(x => x.ok ? x.json() : []).catch(()=>[]);
+      if (!idA) {
+        const criada = await fetch(A1.rest('a1_pa_pessoas'), {
+          method: 'POST',
+          headers: A1.returnHeaders(),
+          body: JSON.stringify({ tenant_id: tid, documento: docA || null, nome: a.nome.trim() })
+        })
+          .then(x => (x.ok ? x.json() : []))
+          .catch(() => []);
         idA = (criada[0] || {}).id;
       }
-      if (idA) participantes.push({ tenant_id:tid, pre_analise_id:pa.id, pessoa_id:idA,
-                                    papel:'ASSOCIADO', renda_declarada: paraCentavos(a.renda) });
+      if (idA)
+        participantes.push({
+          tenant_id: tid,
+          pre_analise_id: pa.id,
+          pessoa_id: idA,
+          papel: 'ASSOCIADO',
+          renda_declarada: paraCentavos(a.renda)
+        });
     }
     const resPart = await fetch(A1.rest('a1_pa_participantes'), {
-      method:'POST', headers:A1.headers(), body: JSON.stringify(participantes) });
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify(participantes)
+    });
     // Pré-análise sem titular é uma casca: não tem nome de cliente na fila e
     // trava o checklist mais adiante. Se esta parte falhar, o aviso tem de dizer
     // que o processo existe e onde terminar o serviço — não "houve erro".
-    if (!resPart.ok) toast(await mensagemErro(resPart,
-      'A pré-análise foi criada, mas o titular não foi gravado. Abra o dossiê e confira a aba Pessoas.'),'error');
+    if (!resPart.ok)
+      toast(
+        await mensagemErro(
+          resPart,
+          'A pré-análise foi criada, mas o titular não foi gravado. Abra o dossiê e confira a aba Pessoas.'
+        ),
+        'error'
+      );
 
     fecharModal('modal-nova');
-    toast('Pré-análise criada.','success');
+    toast('Pré-análise criada.', 'success');
     await carregar();
     abrirDossie(pa.id);
-  } catch (e){
-    toast(e.message || 'Erro ao criar a pré-análise.','error');
+  } catch (e) {
+    toast(e.message || 'Erro ao criar a pré-análise.', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Criar pré-análise';
+    btn.disabled = false;
+    btn.textContent = 'Criar pré-análise';
   }
 }
 
@@ -1118,16 +1496,16 @@ async function criarPreAnalise(){
 // duas vezes, e nenhuma palavra que o gestor ache no formulário. O rótulo é
 // justamente a ponte entre o erro e a caixa que resolve.
 const PERM_ROTULO = {
-  pa_ver:           'Ver pré-análises',
-  pa_criar:         'Criar pré-análise',
-  pa_editar:        'Editar pré-análises',
-  pa_mover:         'Mover na esteira',
+  pa_ver: 'Ver pré-análises',
+  pa_criar: 'Criar pré-análise',
+  pa_editar: 'Editar pré-análises',
+  pa_mover: 'Mover na esteira',
   pa_iniciar_venda: 'Iniciar venda',
   analisar_credito: 'Analisar crédito e documentos'
 };
-function faltaPermissao(chave, oQueFalhou){
+function faltaPermissao(chave, oQueFalhou) {
   const rotulo = PERM_ROTULO[chave] || chave;
-  const inicio = oQueFalhou ? String(oQueFalhou).replace(/\.\s*$/,'') + ': ' : '';
+  const inicio = oQueFalhou ? String(oQueFalhou).replace(/\.\s*$/, '') + ': ' : '';
 
   // NÃO ACUSAR A PERMISSÃO QUANDO ELA ESTÁ LÁ.
   //
@@ -1142,27 +1520,40 @@ function faltaPermissao(chave, oQueFalhou){
   // investigar o lugar errado. Se a chave está marcada aqui, a tela diz o que
   // realmente sabe — que o banco recusou e a permissão não é o motivo.
   if (chave && perm(chave)) {
-    return inicio
-      + `o banco recusou, e NÃO é falta da permissão "${rotulo}" — ela está marcada no seu cadastro. `
-      + 'Avise o suporte com o horário exato; é regra de acesso do servidor, não configuração sua.';
+    return (
+      inicio +
+      `o banco recusou, e NÃO é falta da permissão "${rotulo}" — ela está marcada no seu cadastro. ` +
+      'Avise o suporte com o horário exato; é regra de acesso do servidor, não configuração sua.'
+    );
   }
-  return inicio
-    + `falta a permissão "${rotulo}" (${chave}). `
-    + 'Peça ao gestor em Configurações — no seu cadastro, ou no perfil de acesso vinculado a você.';
+  return (
+    inicio +
+    `falta a permissão "${rotulo}" (${chave}). ` +
+    'Peça ao gestor em Configurações — no seu cadastro, ou no perfil de acesso vinculado a você.'
+  );
 }
 
 // O PostgREST devolve o motivo em JSON. Mostrar "erro 401" para o operador não
 // ajuda ninguém; mostrar a regra que barrou e a permissão que resolve, sim.
 // `chave` é a permissão que a política daquela tabela exige — quem chama sabe
 // qual é, e sem ela a mensagem volta a ser um beco sem saída.
-async function mensagemErro(res, padrao, chave){
+async function mensagemErro(res, padrao, chave) {
   let m = '';
-  try { const j = await res.json(); m = (j && (j.message || j.hint || j.details)) || ''; } catch {}
+  try {
+    const j = await res.json();
+    m = (j && (j.message || j.hint || j.details)) || '';
+  } catch {}
   // Gatilho do dossiê: enviar documento é de todos, dar o veredito não.
   if (/sem_permissao_para_analisar_documento/.test(m))
     return faltaPermissao('analisar_credito', 'Aprovar ou reprovar documento');
   const falta = /documento_obrigatorio_faltando:\s*([^\n"}]*)/.exec(m);
-  if (falta) return a1DocsAvisoFaltando(falta[1].split(',').map(x=>x.trim()).filter(Boolean));
+  if (falta)
+    return a1DocsAvisoFaltando(
+      falta[1]
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean)
+    );
   if (/situacao_so_muda_por_transicao/.test(m))
     return 'Situação só muda pela esteira. Arraste o cartão no quadro ou use o botão Mover no dossiê.';
   if (/redistribuir_carteira_e_do_gestor/.test(m))
@@ -1171,55 +1562,72 @@ async function mensagemErro(res, padrao, chave){
     return 'Esse corretor não é deste cliente. Recarregue a tela e escolha de novo.';
   // 42501 e "permission denied" chegam quando o RLS nega; o 401 relatado em
   // produção vinha daqui — a política pedia uma chave que o corretor não tinha.
-  if (res.status === 401 || res.status === 403 ||
-      /row-level security|permission denied|42501/i.test(m))
+  if (res.status === 401 || res.status === 403 || /row-level security|permission denied|42501/i.test(m))
     return chave ? faltaPermissao(chave, padrao) : 'Você não tem permissão para isso.';
   return m || padrao;
 }
 
 // ══════════ DOSSIÊ ══════════
-async function abrirDossie(id){
+async function abrirDossie(id) {
   const pa = G.lista.find(p => p.id === id);
   if (!pa) return;
-  G.atual = pa; G.abaDossie = 'dados';
-  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
-    b.classList.toggle('active', b.dataset.dt === 'dados'));
+  G.atual = pa;
+  G.abaDossie = 'dados';
+  document
+    .querySelectorAll('#dos-tabs .modal-tab')
+    .forEach(b => b.classList.toggle('active', b.dataset.dt === 'dados'));
   document.getElementById('modal-dossie').classList.remove('hidden');
   document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
 
-  const h = { headers:A1.headers() };
+  const h = { headers: A1.headers() };
   const [part, cred, docs, ev, co, checklistOperacional] = await Promise.all([
-    fetch(`${A1.rest('a1_pa_participantes')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[]),
-    fetch(`${A1.rest('a1_pa_eventos')}?pre_analise_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_pa_participantes')}?pre_analise_id=eq.${id}&select=*`, h)
+      .then(r => r.json())
+      .catch(() => []),
+    fetch(`${A1.rest('a1_pa_analises_credito')}?pre_analise_id=eq.${id}&order=versao.desc`, h)
+      .then(r => r.json())
+      .catch(() => []),
+    fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${id}&order=criado_em.desc`, h)
+      .then(r => r.json())
+      .catch(() => []),
+    fetch(`${A1.rest('a1_pa_eventos')}?pre_analise_id=eq.${id}&order=criado_em.desc&limit=100`, h)
+      .then(r => r.json())
+      .catch(() => []),
     // Sem a licenca da Venda nao se pergunta nada a ele.
     G.temComercial
-      ? fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h).then(r=>r.json()).catch(()=>[])
-      : Promise.resolve([])
-    ,
-    fetch(A1.rpc('a1_checklist_listar'), {method:'POST',headers:A1.headers(),
-      body:JSON.stringify({p_modulo:'PRE_ANALISE',p_processo:id})})
-      .then(r=>r.ok?r.json():[]).catch(()=>[])
+      ? fetch(`${A1.rest('a1_comerciais')}?pre_analise_id=eq.${id}&select=*`, h)
+          .then(r => r.json())
+          .catch(() => [])
+      : Promise.resolve([]),
+    fetch(A1.rpc('a1_checklist_listar'), {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_modulo: 'PRE_ANALISE', p_processo: id })
+    })
+      .then(r => (r.ok ? r.json() : []))
+      .catch(() => [])
   ]);
   G.atualPart = Array.isArray(part) ? part : [];
   G.atualCred = Array.isArray(cred) ? cred : [];
   G.atualDocs = Array.isArray(docs) ? docs : [];
-  G.atualEv   = Array.isArray(ev)   ? ev   : [];
-  G.atualCo   = (Array.isArray(co) && co[0]) || null;
+  G.atualEv = Array.isArray(ev) ? ev : [];
+  G.atualCo = (Array.isArray(co) && co[0]) || null;
   G.atualChecklist = Array.isArray(checklistOperacional) ? checklistOperacional : [];
 
   const faltam = G.atualPart.map(p => p.pessoa_id).filter(pid => pid && !G.pessoas[pid]);
-  if (faltam.length){
+  if (faltam.length) {
     const pes = await fetch(`${A1.rest('a1_pa_pessoas')}?id=in.(${faltam.join(',')})&select=*`, h)
-      .then(r=>r.json()).catch(()=>[]);
-    (Array.isArray(pes)?pes:[]).forEach(p => { G.pessoas[p.id] = p; });
+      .then(r => r.json())
+      .catch(() => []);
+    (Array.isArray(pes) ? pes : []).forEach(p => {
+      G.pessoas[p.id] = p;
+    });
   }
 
   const t = G.titulares[id];
   document.getElementById('dos-titulo').textContent = t ? t.nome : 'Pré-análise sem titular';
   document.getElementById('dos-sub').textContent =
-    `${nomeEmpr(pa.empreendimento_id)}${pa.unidade ? ' · un. ' + pa.unidade : ''} · código ${pa.codigo || pa.id.slice(0,8)}`;
+    `${nomeEmpr(pa.empreendimento_id)}${pa.unidade ? ' · un. ' + pa.unidade : ''} · código ${pa.codigo || pa.id.slice(0, 8)}`;
   document.getElementById('dos-situacao').innerHTML =
     `<span class="sit" style="background:${esc(corSituacao(pa.situacao_id))}">${esc(nomeSituacao(pa.situacao_id))}</span>`;
   montarRodapeDossie();
@@ -1231,40 +1639,58 @@ async function abrirDossie(id){
   if (G.abaDossie === 'comercial') renderDossie();
 }
 
-function trocarAbaDossie(aba, el){
+function trocarAbaDossie(aba, el) {
   G.abaDossie = aba;
   document.querySelectorAll('#dos-tabs .modal-tab').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
   renderDossie();
 }
 
-function renderDossie(){
-  const f = { dados:dosDados, pessoas:dosPessoas, credito:dosCredito, documentos:dosDocumentos,
-              checklist:dosChecklist, historico:dosHistorico, comercial:dosComercial }[G.abaDossie];
+function renderDossie() {
+  const f = {
+    dados: dosDados,
+    pessoas: dosPessoas,
+    credito: dosCredito,
+    documentos: dosDocumentos,
+    checklist: dosChecklist,
+    historico: dosHistorico,
+    comercial: dosComercial
+  }[G.abaDossie];
   document.getElementById('dos-body').innerHTML = f ? f() : '';
 }
 
-function dosDados(){
-  const p = G.atual, s = sla(p);
+function dosDados() {
+  const p = G.atual,
+    s = sla(p);
   const podeEditar = perm('pa_editar') && nivelNaSituacao(p.situacao_id) === 'editar';
   return `
     <div class="fgrid">
       <div class="fg"><label>Empreendimento</label>
-        <select id="d-empr" ${podeEditar?'':'disabled'}>${G.empreendimentos.map(e =>
-          `<option value="${esc(e.id)}" ${e.id===p.empreendimento_id?'selected':''}>${esc(e.name)}</option>`).join('')}</select></div>
+        <select id="d-empr" ${podeEditar ? '' : 'disabled'}>${G.empreendimentos
+          .map(
+            e =>
+              `<option value="${esc(e.id)}" ${e.id === p.empreendimento_id ? 'selected' : ''}>${esc(e.name)}</option>`
+          )
+          .join('')}</select></div>
       <div class="fg"><label>Unidade de interesse</label>
-        <input id="d-unidade" value="${esc(p.unidade||'')}" ${podeEditar?'':'disabled'}></div>
+        <input id="d-unidade" value="${esc(p.unidade || '')}" ${podeEditar ? '' : 'disabled'}></div>
       <div class="fg"><label>Imobiliária</label>
-        <select id="d-imob" ${podeEditar && mandaNaCarteira() ? '' : 'disabled'}><option value="">—</option>${G.imobiliarias.map(i =>
-          `<option value="${esc(i.id)}" ${i.id===p.imobiliaria_id?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>
+        <select id="d-imob" ${podeEditar && mandaNaCarteira() ? '' : 'disabled'}><option value="">—</option>${G.imobiliarias
+          .map(
+            i =>
+              `<option value="${esc(i.id)}" ${i.id === p.imobiliaria_id ? 'selected' : ''}>${esc(i.name)}</option>`
+          )
+          .join('')}</select></div>
       <div class="fg"><label>Validade da pré-análise</label>
-        <input id="d-vence" type="date" value="${esc((p.vence_em||'').slice(0,10))}" ${podeEditar?'':'disabled'}></div>
+        <input id="d-vence" type="date" value="${esc((p.vence_em || '').slice(0, 10))}" ${podeEditar ? '' : 'disabled'}></div>
       <!-- Trocar o corretor é redistribuir carteira: gestor e gerente, e mais
            ninguém. Quem impõe é o gatilho a1_pa_guarda_update; aqui o campo
            deixa de ser um <input disabled> que não deixava nem o gestor mexer. -->
-      <div class="fg"><label>Corretor</label>${podeEditar && mandaNaCarteira()
-        ? `<select id="d-corretor">${opcoesCorretor(G.corretores, p.corretor_id)}</select>`
-        : `<input value="${esc(nomeCorretor(p.corretor_id))}" disabled>`}</div>
+      <div class="fg"><label>Corretor</label>${
+        podeEditar && mandaNaCarteira()
+          ? `<select id="d-corretor">${opcoesCorretor(G.corretores, p.corretor_id)}</select>`
+          : `<input value="${esc(nomeCorretor(p.corretor_id))}" disabled>`
+      }</div>
       ${campoEmpresa(p, podeEditar)}
       ${campoCorrespondente(p, podeEditar)}
       ${campoAnalista(p, podeEditar)}
@@ -1284,16 +1710,22 @@ function dosDados(){
 // processo em todos os módulos (menos Lead). Aqui eles são vinculativos de
 // verdade: empresa_id é o que a1_pa_visivel() usa para decidir se o
 // correspondente enxerga o processo, e não um rótulo.
-function opcoesDe(lista, escolhido, vazio){
-  return `<option value="">${esc(vazio)}</option>` + lista.map(x =>
-    `<option value="${esc(x.id)}" ${x.id===escolhido?'selected':''}>${esc(x.name)}</option>`).join('');
+function opcoesDe(lista, escolhido, vazio) {
+  return (
+    `<option value="">${esc(vazio)}</option>` +
+    lista
+      .map(
+        x => `<option value="${esc(x.id)}" ${x.id === escolhido ? 'selected' : ''}>${esc(x.name)}</option>`
+      )
+      .join('')
+  );
 }
 
 // Trocar a empresa é redistribuir carteira, igual a trocar o corretor: o
 // gatilho a1_pa_guarda_update recusa com 'redistribuir_carteira_e_do_gestor'.
 // Deixar o seletor aberto para o corretor derrubaria o PATCH INTEIRO, levando
 // junto os campos que ele pode salvar — e o erro nem falaria de empresa.
-function campoEmpresa(p, podeEditar){
+function campoEmpresa(p, podeEditar) {
   const roteia = roteamentoDeAnalistasAtivo();
   const nome = (G.empresasCorr.find(e => e.id === p.empresa_id) || {}).name || '—';
   if (roteia || !(podeEditar && mandaNaCarteira()))
@@ -1303,11 +1735,14 @@ function campoEmpresa(p, podeEditar){
     <select id="d-empresa">${opcoesDe(G.empresasCorr, p.empresa_id, '— sem empresa —')}</select></div>`;
 }
 
-function campoCorrespondente(p, podeEditar){
+function campoCorrespondente(p, podeEditar) {
   const roteia = roteamentoDeAnalistasAtivo();
   return `<div class="fg"><label>Usuário correspondente</label>
-    <select id="d-correspondente" ${podeEditar&&!roteia?'':'disabled'}>${
-      opcoesDe(G.correspondentes, p.correspondente_id, '— sem correspondente —')}</select></div>`;
+    <select id="d-correspondente" ${podeEditar && !roteia ? '' : 'disabled'}>${opcoesDe(
+      G.correspondentes,
+      p.correspondente_id,
+      '— sem correspondente —'
+    )}</select></div>`;
 }
 
 // CICLO DE DISTRIBUIÇÃO — a decisão é do banco; a tela só espelha a trava.
@@ -1318,26 +1753,31 @@ function campoCorrespondente(p, podeEditar){
 // o operador escolhe, o roteador reescreve, e os dois ficam achando que o outro
 // está errado.
 //
-function roteamentoDeAnalistasAtivo(){ return G.roteamentoAnalistas === true; }
+function roteamentoDeAnalistasAtivo() {
+  return G.roteamentoAnalistas === true;
+}
 
-function campoAnalista(p, podeEditar){
+function campoAnalista(p, podeEditar) {
   // Coluna ainda não criada no banco deste cliente: melhor campo ausente do que
   // campo que derruba o salvamento. Ver a sonda em carregar().
   if (!G.temColunaAnalista) return '';
   const roteia = roteamentoDeAnalistasAtivo();
   return `<div class="fg"><label>Analista</label>
-    <select id="d-analista" ${podeEditar && !roteia ? '' : 'disabled'}>${
-      opcoesDe(G.analistas, p.analista_id, '— sem analista —')}</select>
+    <select id="d-analista" ${podeEditar && !roteia ? '' : 'disabled'}>${opcoesDe(
+      G.analistas,
+      p.analista_id,
+      '— sem analista —'
+    )}</select>
     ${roteia ? `<div class="sub" style="margin-top:.25rem">Responsável definido automaticamente pelo Ciclo de Distribuição.</div>` : ''}</div>`;
 }
 
-async function salvarDados(){
+async function salvarDados() {
   const p = G.atual;
   const corpo = {
     empreendimento_id: document.getElementById('d-empr').value,
-    unidade:           document.getElementById('d-unidade').value || null,
-    imobiliaria_id:    document.getElementById('d-imob').value || null,
-    vence_em:          document.getElementById('d-vence').value || null
+    unidade: document.getElementById('d-unidade').value || null,
+    imobiliaria_id: document.getElementById('d-imob').value || null,
+    vence_em: document.getElementById('d-vence').value || null
   };
   // Só vai no corpo quando o campo existe — mandar corretor_id sem poder
   // trocá-lo derrubaria o PATCH inteiro em 'redistribuir_carteira_e_do_gestor'.
@@ -1349,40 +1789,53 @@ async function salvarDados(){
   // desabilitado é decisão que não é desta pessoa — o analista sob Roteamento,
   // por exemplo. Mandar qualquer um dos dois derruba o PATCH inteiro, e o
   // gestor perde também as alterações que PODIA fazer.
-  [['d-empresa','empresa_id'], ['d-correspondente','correspondente_id'],
-   ['d-analista','analista_id']].forEach(([id, coluna]) => {
+  [
+    ['d-empresa', 'empresa_id'],
+    ['d-correspondente', 'correspondente_id'],
+    ['d-analista', 'analista_id']
+  ].forEach(([id, coluna]) => {
     const el = document.getElementById(id);
     if (el && !el.disabled) corpo[coluna] = el.value || null;
   });
   const res = await fetch(`${A1.rest('a1_pre_analises')}?id=eq.${p.id}`, {
-    method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar.','pa_editar'),'error'); return; }
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify(corpo)
+  });
+  if (!res.ok) {
+    toast(await mensagemErro(res, 'Não foi possível salvar.', 'pa_editar'), 'error');
+    return;
+  }
   Object.assign(p, corpo);
-  toast('Dados salvos.','success');
+  toast('Dados salvos.', 'success');
   renderVista();
 }
 
-function dosPessoas(){
+function dosPessoas() {
   const linhas = G.atualPart
-    .slice().sort((a,b) => (a.papel==='TITULAR'?0:1) - (b.papel==='TITULAR'?0:1))
+    .slice()
+    .sort((a, b) => (a.papel === 'TITULAR' ? 0 : 1) - (b.papel === 'TITULAR' ? 0 : 1))
     .map(pt => {
       const pe = G.pessoas[pt.pessoa_id] || {};
       return `<div class="linha">
         <div><div class="nm">${esc(pe.nome || 'Sem nome')}
-          <span class="pill ${pt.papel==='TITULAR'?'nt':'wt'}">${esc(pt.papel)}</span></div>
-          <div class="mt">${esc(mascaraDoc(pe.documento||'') || 'sem documento')}
+          <span class="pill ${pt.papel === 'TITULAR' ? 'nt' : 'wt'}">${esc(pt.papel)}</span></div>
+          <div class="mt">${esc(mascaraDoc(pe.documento || '') || 'sem documento')}
             ${pe.telefone ? ' · ' + esc(pe.telefone) : ''}</div></div>
         <div style="text-align:right">
           <div class="nm">${pt.renda_declarada ? esc(brl(pt.renda_declarada)) : '—'}</div>
           <div class="mt">${esc(pt.fonte_renda || 'renda declarada')}</div></div>
       </div>`;
-    }).join('');
-  const soma = G.atualPart.reduce((a,p) => a + (Number(p.renda_declarada)||0), 0);
+    })
+    .join('');
+  const soma = G.atualPart.reduce((a, p) => a + (Number(p.renda_declarada) || 0), 0);
   const podeEditarPessoas = perm('pa_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
   return `${linhas || '<div class="sub">Nenhum participante.</div>'}
     <div class="linha" style="background:#fafbfc"><div class="nm">Renda familiar declarada</div>
       <div class="nm">${esc(brl(soma))}</div></div>
-    ${podeEditarPessoas ? `
+    ${
+      podeEditarPessoas
+        ? `
       <div style="margin-top:.8rem">
         <button class="btn btn-ghost btn-sm" type="button" onclick="abrirAdicionarPessoa()">+ Adicionar pessoa</button>
       </div>
@@ -1399,78 +1852,105 @@ function dosPessoas(){
           <button class="btn btn-primary btn-sm" type="button" onclick="salvarPessoaAdicional()">Vincular pessoa</button>
           <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('pa-adicionar-pessoa').style.display='none'">Cancelar</button>
         </div>
-      </div>` : ''}
+      </div>`
+        : ''
+    }
     <div class="aviso w" style="margin-top:.9rem">Mexer em participante depois de uma aprovação
     <strong>invalida a decisão de crédito</strong>. É proposital: aprovar com um número e negociar
     com outro é como o processo cai lá na frente.</div>`;
 }
 
-function abrirAdicionarPessoa(){
+function abrirAdicionarPessoa() {
   const el = document.getElementById('pa-adicionar-pessoa');
   if (el) el.style.display = '';
 }
 
-async function salvarPessoaAdicional(){
+async function salvarPessoaAdicional() {
   const pa = G.atual;
-  if (!pa || !perm('pa_editar') || nivelNaSituacao(pa.situacao_id) !== 'editar'){
-    toast('Você não tem permissão para editar pessoas nesta etapa.','error'); return;
+  if (!pa || !perm('pa_editar') || nivelNaSituacao(pa.situacao_id) !== 'editar') {
+    toast('Você não tem permissão para editar pessoas nesta etapa.', 'error');
+    return;
   }
   const nome = (document.getElementById('pa-pessoa-nome').value || '').trim();
   const documento = soDigitos(document.getElementById('pa-pessoa-doc').value);
-  if (!nome){ toast('Informe o nome da pessoa.','error'); return; }
-  if (documento && documento.length === 11 && !cpfValido(documento)){
-    toast('CPF inválido.','error'); return;
+  if (!nome) {
+    toast('Informe o nome da pessoa.', 'error');
+    return;
+  }
+  if (documento && documento.length === 11 && !cpfValido(documento)) {
+    toast('CPF inválido.', 'error');
+    return;
   }
   try {
     let pessoaId = null;
-    if (documento && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')){
-      const existentes = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${documento}&select=id`,
-        { headers:A1.headers() }).then(x => x.ok ? x.json() : []);
+    if (documento && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')) {
+      const existentes = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${documento}&select=id`, {
+        headers: A1.headers()
+      }).then(x => (x.ok ? x.json() : []));
       pessoaId = (existentes[0] || {}).id || null;
     }
-    if (!pessoaId){
+    if (!pessoaId) {
       const resPessoa = await fetch(A1.rest('a1_pa_pessoas'), {
-        method:'POST', headers:A1.returnHeaders(),
-        body:JSON.stringify({ tenant_id:G.user.tenant_id, tipo:'PF', documento:documento || null,
-          nome, telefone:(document.getElementById('pa-pessoa-tel').value || '').trim() || null })
+        method: 'POST',
+        headers: A1.returnHeaders(),
+        body: JSON.stringify({
+          tenant_id: G.user.tenant_id,
+          tipo: 'PF',
+          documento: documento || null,
+          nome,
+          telefone: (document.getElementById('pa-pessoa-tel').value || '').trim() || null
+        })
       });
-      if (!resPessoa.ok) throw new Error(await mensagemErro(resPessoa,'Não foi possível cadastrar a pessoa.','pa_editar'));
+      if (!resPessoa.ok)
+        throw new Error(await mensagemErro(resPessoa, 'Não foi possível cadastrar a pessoa.', 'pa_editar'));
       pessoaId = ((await resPessoa.json())[0] || {}).id;
     }
     if (!pessoaId) throw new Error('Não foi possível identificar a pessoa.');
-    if (G.atualPart.some(pt => pt.pessoa_id === pessoaId)){
-      toast('Esta pessoa já está vinculada à pré-análise.','warn'); return;
+    if (G.atualPart.some(pt => pt.pessoa_id === pessoaId)) {
+      toast('Esta pessoa já está vinculada à pré-análise.', 'warn');
+      return;
     }
     const resVinculo = await fetch(A1.rest('a1_pa_participantes'), {
-      method:'POST', headers:A1.headers(),
-      body:JSON.stringify({ tenant_id:G.user.tenant_id, pre_analise_id:pa.id, pessoa_id:pessoaId,
-        papel:'ASSOCIADO', renda_declarada:paraCentavos(document.getElementById('pa-pessoa-renda').value),
-        fonte_renda:(document.getElementById('pa-pessoa-fonte').value || '').trim() || null })
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({
+        tenant_id: G.user.tenant_id,
+        pre_analise_id: pa.id,
+        pessoa_id: pessoaId,
+        papel: 'ASSOCIADO',
+        renda_declarada: paraCentavos(document.getElementById('pa-pessoa-renda').value),
+        fonte_renda: (document.getElementById('pa-pessoa-fonte').value || '').trim() || null
+      })
     });
-    if (!resVinculo.ok) throw new Error(await mensagemErro(resVinculo,'Não foi possível vincular a pessoa.','pa_editar'));
-    toast('Pessoa vinculada.','success');
+    if (!resVinculo.ok)
+      throw new Error(await mensagemErro(resVinculo, 'Não foi possível vincular a pessoa.', 'pa_editar'));
+    toast('Pessoa vinculada.', 'success');
     await abrirDossie(pa.id);
   } catch (e) {
-    toast(e.message || 'Não foi possível vincular a pessoa.','error');
+    toast(e.message || 'Não foi possível vincular a pessoa.', 'error');
   }
 }
 
-function dosCredito(){
+function dosCredito() {
   const podeAnalisar = perm('analisar_credito');
   const rendaDeclarada = G.atualPart.reduce((s, pt) => s + (Number(pt.renda_declarada) || 0), 0);
-  const avaliacaoInicial = G.atual && G.atual.valor_avaliacao_inicial != null
-    ? Number(G.atual.valor_avaliacao_inicial) : null;
-  const hist = G.atualCred.map(c => `
+  const avaliacaoInicial =
+    G.atual && G.atual.valor_avaliacao_inicial != null ? Number(G.atual.valor_avaliacao_inicial) : null;
+  const hist = G.atualCred
+    .map(
+      c => `
     <div class="linha">
       <div><div class="nm">Versão ${c.versao}
-        <span class="pill ${c.status==='APROVADO'?'ok':c.status==='REPROVADO'?'no':c.status==='INVALIDADA'?'no':'wt'}">${esc(c.status)}</span></div>
+        <span class="pill ${c.status === 'APROVADO' ? 'ok' : c.status === 'REPROVADO' ? 'no' : c.status === 'INVALIDADA' ? 'no' : 'wt'}">${esc(c.status)}</span></div>
         <div class="mt">${esc(dataHoraBR(c.criado_em))}${c.motivo ? ' · ' + esc(c.motivo) : ''}</div></div>
       <div style="text-align:right">
         <div class="nm">${esc(brl(c.valor_total))}</div>
         <div class="mt">${c.prestacao ? esc(brl(c.prestacao)) + '/mês' : ''}${c.prazo_meses ? ' · ' + c.prazo_meses + 'm' : ''}</div></div>
-    </div>`).join('');
+    </div>`
+    )
+    .join('');
 
-  if (!podeAnalisar){
+  if (!podeAnalisar) {
     return `<div class="aviso i">Você não tem permissão para registrar decisão de crédito.
       Quem vende não aprova — é a permissão <strong>analisar_credito</strong> que libera esta aba.</div>
       ${hist || '<div class="sub">Nenhuma decisão registrada.</div>'}`;
@@ -1503,209 +1983,368 @@ function dosCredito(){
     <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarCredito()">Registrar decisão</button></div>`;
 }
 
-function gerarFichaAprovacao(){
+function gerarFichaAprovacao() {
   const analise = G.atualCred.find(c => c.status === 'APROVADO');
   const pa = G.atual;
-  if (!analise || !pa){ toast('Não há decisão aprovada para gerar a ficha.','error'); return; }
+  if (!analise || !pa) {
+    toast('Não há decisão aprovada para gerar a ficha.', 'error');
+    return;
+  }
   const titular = G.titulares[pa.id] || {};
   const win = window.open('', '_blank', 'noopener,noreferrer');
-  if (!win){ toast('O navegador bloqueou a janela do PDF. Libere pop-ups para o SIIMOB e tente novamente.','error'); return; }
-  const linha = (r,v) => '<div class="linha"><span>'+esc(r)+'</span><strong>'+esc(v)+'</strong></div>';
-  const estilo = '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#10233f;margin:0;background:#f5f7fb}.pagina{width:210mm;min-height:297mm;margin:auto;background:#fff;padding:20mm}.cab{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0E8C7F;padding-bottom:12px;margin-bottom:20px}.marca{font-size:22px;font-weight:800;color:#0E8C7F}h1{font-size:22px;margin:0 0 4px}.sub{font-size:12px;color:#64748b}.sec{font-size:12px;font-weight:800;color:#0E8C7F;text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px}.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}.campo{border:1px solid #dbe2ef;border-radius:6px;padding:9px}.rot{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700}.val{font-size:14px;font-weight:700;margin-top:3px}.linha{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #e6ebf3;padding:9px 0;font-size:13px}.resultado{margin:18px 0;padding:12px;border-radius:7px;background:#ecfdf3;color:#166534;font-weight:800}footer{position:fixed;bottom:14mm;font-size:10px;color:#64748b}@media print{body{background:#fff}.pagina{margin:0}.nao-imprimir{display:none}}';
-  const campo = (r,v) => '<div class="campo"><div class="rot">'+esc(r)+'</div><div class="val">'+esc(v)+'</div></div>';
-  const html = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha de aprovação - '+esc(titular.nome || pa.codigo || 'SIIMOB')+'</title><style>'+estilo+'</style></head><body><main class="pagina">'+
-    '<header class="cab"><div class="marca">SIIMOB</div><div class="sub">Ficha de aprovação de crédito</div></header><h1>Ficha de aprovação</h1><div class="sub">Emitida em '+esc(dataHoraBR(new Date().toISOString()))+'</div>'+
-    '<div class="sec">Cliente e negócio</div><div class="grade">'+campo('Titular',titular.nome || 'Não informado')+campo('CPF',titular.documento ? mascaraDoc(titular.documento) : 'Não informado')+campo('Empreendimento',nomeEmpr(pa.empreendimento_id))+campo('Unidade de interesse',pa.unidade || 'Não informada')+'</div>'+
-    '<div class="sec">Decisão de crédito</div><div class="resultado">APROVADO · versão '+esc(analise.versao)+'</div>'+
-    linha('Renda familiar considerada',brl(analise.renda_familiar))+linha('Valor financiado',brl(analise.valor_aprovado))+linha('Subsídio',brl(analise.valor_subsidio))+linha('FGTS',brl(analise.valor_fgts))+linha('Total aprovado',brl(analise.valor_total))+linha('Valor de avaliação',brl(analise.valor_avaliacao))+linha('Prestação',analise.prestacao ? brl(analise.prestacao) : '—')+linha('Prazo',analise.prazo_meses ? analise.prazo_meses+' meses' : '—')+
-    (analise.motivo ? '<div class="sec">Condicionante</div><div class="campo">'+esc(analise.motivo)+'</div>' : '')+(analise.justificativa ? '<div class="sec">Justificativa</div><div class="campo">'+esc(analise.justificativa)+'</div>' : '')+'<footer>SIIMOB · documento gerado a partir da decisão registrada no sistema</footer><button class="nao-imprimir" onclick="window.print()" style="margin-top:24px;padding:10px 14px">Salvar/Imprimir PDF</button></main></body></html>';
-  win.document.write(html); win.document.close(); win.focus(); win.print();
+  if (!win) {
+    toast('O navegador bloqueou a janela do PDF. Libere pop-ups para o SIIMOB e tente novamente.', 'error');
+    return;
+  }
+  const linha = (r, v) =>
+    '<div class="linha"><span>' + esc(r) + '</span><strong>' + esc(v) + '</strong></div>';
+  const estilo =
+    '*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#10233f;margin:0;background:#f5f7fb}.pagina{width:210mm;min-height:297mm;margin:auto;background:#fff;padding:20mm}.cab{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0E8C7F;padding-bottom:12px;margin-bottom:20px}.marca{font-size:22px;font-weight:800;color:#0E8C7F}h1{font-size:22px;margin:0 0 4px}.sub{font-size:12px;color:#64748b}.sec{font-size:12px;font-weight:800;color:#0E8C7F;text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px}.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}.campo{border:1px solid #dbe2ef;border-radius:6px;padding:9px}.rot{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700}.val{font-size:14px;font-weight:700;margin-top:3px}.linha{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #e6ebf3;padding:9px 0;font-size:13px}.resultado{margin:18px 0;padding:12px;border-radius:7px;background:#ecfdf3;color:#166534;font-weight:800}footer{position:fixed;bottom:14mm;font-size:10px;color:#64748b}@media print{body{background:#fff}.pagina{margin:0}.nao-imprimir{display:none}}';
+  const campo = (r, v) =>
+    '<div class="campo"><div class="rot">' + esc(r) + '</div><div class="val">' + esc(v) + '</div></div>';
+  const html =
+    '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha de aprovação - ' +
+    esc(titular.nome || pa.codigo || 'SIIMOB') +
+    '</title><style>' +
+    estilo +
+    '</style></head><body><main class="pagina">' +
+    '<header class="cab"><div class="marca">SIIMOB</div><div class="sub">Ficha de aprovação de crédito</div></header><h1>Ficha de aprovação</h1><div class="sub">Emitida em ' +
+    esc(dataHoraBR(new Date().toISOString())) +
+    '</div>' +
+    '<div class="sec">Cliente e negócio</div><div class="grade">' +
+    campo('Titular', titular.nome || 'Não informado') +
+    campo('CPF', titular.documento ? mascaraDoc(titular.documento) : 'Não informado') +
+    campo('Empreendimento', nomeEmpr(pa.empreendimento_id)) +
+    campo('Unidade de interesse', pa.unidade || 'Não informada') +
+    '</div>' +
+    '<div class="sec">Decisão de crédito</div><div class="resultado">APROVADO · versão ' +
+    esc(analise.versao) +
+    '</div>' +
+    linha('Renda familiar considerada', brl(analise.renda_familiar)) +
+    linha('Valor financiado', brl(analise.valor_aprovado)) +
+    linha('Subsídio', brl(analise.valor_subsidio)) +
+    linha('FGTS', brl(analise.valor_fgts)) +
+    linha('Total aprovado', brl(analise.valor_total)) +
+    linha('Valor de avaliação', brl(analise.valor_avaliacao)) +
+    linha('Prestação', analise.prestacao ? brl(analise.prestacao) : '—') +
+    linha('Prazo', analise.prazo_meses ? analise.prazo_meses + ' meses' : '—') +
+    (analise.motivo
+      ? '<div class="sec">Condicionante</div><div class="campo">' + esc(analise.motivo) + '</div>'
+      : '') +
+    (analise.justificativa
+      ? '<div class="sec">Justificativa</div><div class="campo">' + esc(analise.justificativa) + '</div>'
+      : '') +
+    '<footer>SIIMOB · documento gerado a partir da decisão registrada no sistema</footer><button class="nao-imprimir" onclick="window.print()" style="margin-top:24px;padding:10px 14px">Salvar/Imprimir PDF</button></main></body></html>';
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 
-function somarCredito(){
+function somarCredito() {
   const n = id => paraCentavos(document.getElementById(id).value) || 0;
   const t = n('c-fin') + n('c-sub') + n('c-fgts');
   document.getElementById('c-total').value = brl(t);
 }
 
-async function salvarCredito(){
-  const p = G.atual, n = id => paraCentavos(document.getElementById(id).value);
-  const fin = n('c-fin') || 0, sub = n('c-sub') || 0, fgts = n('c-fgts') || 0;
-  if (!fin && !sub && !fgts){ toast('Informe pelo menos um valor.','error'); return; }
+async function salvarCredito() {
+  const p = G.atual,
+    n = id => paraCentavos(document.getElementById(id).value);
+  const fin = n('c-fin') || 0,
+    sub = n('c-sub') || 0,
+    fgts = n('c-fgts') || 0;
+  if (!fin && !sub && !fgts) {
+    toast('Informe pelo menos um valor.', 'error');
+    return;
+  }
   const corpo = {
-    tenant_id: G.user.tenant_id, pre_analise_id: p.id,
+    tenant_id: G.user.tenant_id,
+    pre_analise_id: p.id,
     versao: (G.atualCred[0] ? G.atualCred[0].versao : 0) + 1,
     status: document.getElementById('c-status').value,
-    renda_familiar: n('c-renda'), valor_aprovado: fin, valor_subsidio: sub, valor_fgts: fgts,
-    valor_total: fin + sub + fgts, valor_avaliacao: n('c-aval'),
+    renda_familiar: n('c-renda'),
+    valor_aprovado: fin,
+    valor_subsidio: sub,
+    valor_fgts: fgts,
+    valor_total: fin + sub + fgts,
+    valor_avaliacao: n('c-aval'),
     prestacao: n('c-prest'),
-    prazo_meses: parseInt(document.getElementById('c-prazo').value,10) || null,
+    prazo_meses: parseInt(document.getElementById('c-prazo').value, 10) || null,
     motivo: document.getElementById('c-motivo').value || null,
     justificativa: document.getElementById('c-just').value || null,
     decidido_em: new Date().toISOString()
   };
   const res = await fetch(A1.rest('a1_pa_analises_credito'), {
-    method:'POST', headers:A1.returnHeaders(), body:JSON.stringify(corpo) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível registrar a decisão.','analisar_credito'),'error'); return; }
+    method: 'POST',
+    headers: A1.returnHeaders(),
+    body: JSON.stringify(corpo)
+  });
+  if (!res.ok) {
+    toast(await mensagemErro(res, 'Não foi possível registrar a decisão.', 'analisar_credito'), 'error');
+    return;
+  }
   const statusDecisao = corpo.status;
   G.atualCred.unshift((await res.json())[0] || corpo);
   // A aprovação pode ter avançado a etapa automaticamente no banco. Recarregar
   // evita que o dossiê diga "Aprovada" enquanto o quadro ainda mostra a coluna anterior.
   await carregar();
   await abrirDossie(p.id);
-  toast(statusDecisao === 'APROVADO'
-    ? 'Decisão registrada e processo avançado conforme o selo do workflow.'
-    : 'Decisão registrada.','success');
+  toast(
+    statusDecisao === 'APROVADO'
+      ? 'Decisão registrada e processo avançado conforme o selo do workflow.'
+      : 'Decisão registrada.',
+    'success'
+  );
 }
 
-function dosDocumentos(){
+function dosDocumentos() {
   const podeAnalisar = perm('analisar_credito');
-  const linhas = G.atualDocs.map(d => `
+  const linhas = G.atualDocs
+    .map(
+      d => `
     <div class="linha">
       <div><div class="nm">${esc(d.tipo)}</div>
         <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · ${esc(dataHoraBR(d.criado_em))}</div></div>
       <div style="display:flex;gap:.4rem;align-items:center">
-        <span class="pill ${d.status==='APROVADO'?'ok':d.status==='REPROVADO'?'no':'wt'}">${esc(d.status)}</span>
+        <span class="pill ${d.status === 'APROVADO' ? 'ok' : d.status === 'REPROVADO' ? 'no' : 'wt'}">${esc(d.status)}</span>
         <button class="btn btn-ghost btn-sm" onclick="baixarDoc('${esc(d.id)}')">Abrir</button>
-        ${podeAnalisar ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${esc(d.id)}','APROVADO')">Aprovar</button>
-          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${esc(d.id)}','REPROVADO')">Reprovar</button>` : ''}
+        ${
+          podeAnalisar
+            ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${esc(d.id)}','APROVADO')">Aprovar</button>
+          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${esc(d.id)}','REPROVADO')">Reprovar</button>`
+            : ''
+        }
       </div>
-    </div>`).join('');
+    </div>`
+    )
+    .join('');
   return `
     ${linhas || '<div class="sub">Nenhum documento enviado.</div>'}
-    ${perm('pa_editar') ? `
+    ${
+      perm('pa_editar')
+        ? `
       <div class="sec-title">Enviar documento</div>
       <div class="fgrid">
         <div class="fg"><label>Tipo</label>
           <select id="doc-tipo">${(G.tiposDoc || TIPOS_DOC_PADRAO)
-            .map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+            .map(t => `<option>${esc(t)}</option>`)
+            .join('')}</select></div>
         <div class="fg"><label>Arquivo</label><input type="file" id="doc-arq"></div>
       </div>
       <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-doc" onclick="enviarDoc()">Enviar</button></div>
       <div class="aviso i" style="margin-top:.9rem">Enviar é de todos; <strong>aprovar é de quem analisa</strong>.
-        Sem isso, uma transição que exige "documentos aprovados" seria satisfeita por quem enviou os documentos.</div>` : ''}`;
+        Sem isso, uma transição que exige "documentos aprovados" seria satisfeita por quem enviou os documentos.</div>`
+        : ''
+    }`;
 }
 
-async function enviarDoc(){
+async function enviarDoc() {
   const arq = document.getElementById('doc-arq').files[0];
-  if (!arq){ toast('Escolha um arquivo.','error'); return; }
-  if (arq.size > 20 * 1024 * 1024){ toast('Arquivo acima de 20 MB.','error'); return; }
-  const btn = document.getElementById('btn-doc'); btn.disabled = true; btn.textContent = 'Enviando…';
+  if (!arq) {
+    toast('Escolha um arquivo.', 'error');
+    return;
+  }
+  if (arq.size > 20 * 1024 * 1024) {
+    toast('Arquivo acima de 20 MB.', 'error');
+    return;
+  }
+  const btn = document.getElementById('btn-doc');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
   try {
-    const limpo = arq.name.replace(/[^\w.\-]+/g,'_').slice(-80);
+    const limpo = arq.name.replace(/[^\w.\-]+/g, '_').slice(-80);
     const chave = `${G.user.tenant_id}/pre-analise/${G.atual.id}/${Date.now()}_${limpo}`;
-    if (!await A1.storageUpload('case-documents', chave, arq)) throw new Error('Falha no envio do arquivo.');
+    if (!(await A1.storageUpload('case-documents', chave, arq)))
+      throw new Error('Falha no envio do arquivo.');
     const res = await fetch(A1.rest('a1_pa_documentos'), {
-      method:'POST', headers:A1.returnHeaders(),
-      body: JSON.stringify({ tenant_id:G.user.tenant_id, pre_analise_id:G.atual.id,
-        tipo: document.getElementById('doc-tipo').value, storage_key: chave,
-        nome_arquivo: arq.name, mime: arq.type || null })
+      method: 'POST',
+      headers: A1.returnHeaders(),
+      body: JSON.stringify({
+        tenant_id: G.user.tenant_id,
+        pre_analise_id: G.atual.id,
+        tipo: document.getElementById('doc-tipo').value,
+        storage_key: chave,
+        nome_arquivo: arq.name,
+        mime: arq.type || null
+      })
     });
-    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o documento.','pa_editar'));
+    if (!res.ok)
+      throw new Error(await mensagemErro(res, 'Não foi possível registrar o documento.', 'pa_editar'));
     G.atualDocs.unshift((await res.json())[0]);
-    toast('Documento enviado.','success');
+    toast('Documento enviado.', 'success');
     renderDossie();
-  } catch(e){ toast(e.message,'error'); }
-  finally { const b = document.getElementById('btn-doc'); if (b){ b.disabled = false; b.textContent = 'Enviar'; } }
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    const b = document.getElementById('btn-doc');
+    if (b) {
+      b.disabled = false;
+      b.textContent = 'Enviar';
+    }
+  }
 }
 
-async function baixarDoc(id){
-  const d = G.atualDocs.find(x => x.id === id); if (!d) return;
+async function baixarDoc(id) {
+  const d = G.atualDocs.find(x => x.id === id);
+  if (!d) return;
   const url = await A1.storageSignedUrl('case-documents', d.storage_key, 60);
-  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+  if (url) window.open(url, '_blank', 'noopener');
+  else toast('Não foi possível abrir o arquivo.', 'error');
 }
 
-async function analisarDoc(id, status){
+async function analisarDoc(id, status) {
   const res = await fetch(`${A1.rest('a1_pa_documentos')}?id=eq.${id}`, {
-    method:'PATCH', headers:A1.headers(),
-    body: JSON.stringify({ status, analisado_em: new Date().toISOString() }) });
-  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível analisar o documento.','analisar_credito'),'error'); return; }
-  const d = G.atualDocs.find(x => x.id === id); if (d) d.status = status;
-  toast(status === 'APROVADO' ? 'Documento aprovado.' : 'Documento reprovado.','success');
-  montarRodapeDossie(); renderDossie();
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify({ status, analisado_em: new Date().toISOString() })
+  });
+  if (!res.ok) {
+    toast(await mensagemErro(res, 'Não foi possível analisar o documento.', 'analisar_credito'), 'error');
+    return;
+  }
+  const d = G.atualDocs.find(x => x.id === id);
+  if (d) d.status = status;
+  toast(status === 'APROVADO' ? 'Documento aprovado.' : 'Documento reprovado.', 'success');
+  montarRodapeDossie();
+  renderDossie();
 }
 
 // O checklist não é decorativo: cada linha é exatamente uma condição que o
 // banco vai conferir na hora de destravar a Venda.
-function checklist(){
-  const temTitular  = G.atualPart.some(p => p.papel === 'TITULAR');
-  const aprovado    = G.atualCred.some(c => c.status === 'APROVADO');
-  const invalidada  = G.atualCred.some(c => c.status === 'INVALIDADA') && !aprovado;
-  const docsPend    = G.atualDocs.filter(d => d.status !== 'APROVADO').length;
+function checklist() {
+  const temTitular = G.atualPart.some(p => p.papel === 'TITULAR');
+  const aprovado = G.atualCred.some(c => c.status === 'APROVADO');
+  const invalidada = G.atualCred.some(c => c.status === 'INVALIDADA') && !aprovado;
+  const docsPend = G.atualDocs.filter(d => d.status !== 'APROVADO').length;
   return [
-    { ok: temTitular, txt:'Titular definido',
-      obs: temTitular ? '' : 'sem titular o cartão de Repasse não tem nome de cliente' },
-    { ok: G.atualPart.some(p => Number(p.renda_declarada) > 0), txt:'Renda declarada informada',
-      obs:'usada na composição de renda' },
-    { ok: G.atualDocs.length > 0, txt:'Documentos enviados', obs: G.atualDocs.length + ' arquivo(s)' },
-    { ok: docsPend === 0 && G.atualDocs.length > 0, txt:'Documentos analisados',
-      obs: docsPend ? docsPend + ' pendente(s)' : '' },
-    { ok: aprovado, txt:'Decisão de crédito aprovada e válida',
-      obs: invalidada ? 'havia uma aprovação, mas um dado material mudou e ela foi invalidada' : '' }
+    {
+      ok: temTitular,
+      txt: 'Titular definido',
+      obs: temTitular ? '' : 'sem titular o cartão de Repasse não tem nome de cliente'
+    },
+    {
+      ok: G.atualPart.some(p => Number(p.renda_declarada) > 0),
+      txt: 'Renda declarada informada',
+      obs: 'usada na composição de renda'
+    },
+    { ok: G.atualDocs.length > 0, txt: 'Documentos enviados', obs: G.atualDocs.length + ' arquivo(s)' },
+    {
+      ok: docsPend === 0 && G.atualDocs.length > 0,
+      txt: 'Documentos analisados',
+      obs: docsPend ? docsPend + ' pendente(s)' : ''
+    },
+    {
+      ok: aprovado,
+      txt: 'Decisão de crédito aprovada e válida',
+      obs: invalidada ? 'havia uma aprovação, mas um dado material mudou e ela foi invalidada' : ''
+    }
   ];
 }
 
-function dosChecklist(){
+function dosChecklist() {
   const podeMarcar = perm('pa_editar') && nivelNaSituacao(G.atual.situacao_id) === 'editar';
-  const padrao = checklist().map(i => `
+  const padrao = checklist()
+    .map(
+      i => `
     <div class="linha">
       <div><div class="nm">${i.ok ? '✓' : '○'} ${esc(i.txt)}</div>
         ${i.obs ? `<div class="mt">${esc(i.obs)}</div>` : ''}</div>
-      <span class="pill ${i.ok?'ok':'wt'}">${i.ok?'ok':'falta'}</span>
-    </div>`).join('');
-  const operacional = (G.atualChecklist || []).map(i => `
+      <span class="pill ${i.ok ? 'ok' : 'wt'}">${i.ok ? 'ok' : 'falta'}</span>
+    </div>`
+    )
+    .join('');
+  const operacional = (G.atualChecklist || [])
+    .map(
+      i => `
     <div class="linha">
-      <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar?'pointer':'default'}">
-        <input type="checkbox" ${i.concluido?'checked':''} ${podeMarcar && !i.automatico?'':'disabled'}
+      <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar ? 'pointer' : 'default'}">
+        <input type="checkbox" ${i.concluido ? 'checked' : ''} ${podeMarcar && !i.automatico ? '' : 'disabled'}
           onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
-        <div><div class="nm">${esc(i.nome)} ${i.obrigatorio?'<span class="pill wt" style="margin-left:.35rem">obrigatório</span>':''}</div>
-          ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : (i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : '')}</div>
+        <div><div class="nm">${esc(i.nome)} ${i.obrigatorio ? '<span class="pill wt" style="margin-left:.35rem">obrigatório</span>' : ''}</div>
+          ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
       </label>
-      <span class="pill ${i.concluido?'ok':'wt'}">${i.concluido?'feito':'pendente'}</span>
-    </div>`).join('');
+      <span class="pill ${i.concluido ? 'ok' : 'wt'}">${i.concluido ? 'feito' : 'pendente'}</span>
+    </div>`
+    )
+    .join('');
   return `${padrao}${operacional ? `<div class="sec-title" style="margin-top:1rem">Checklist operacional</div>${operacional}` : ''}`;
 }
-async function marcarChecklistOperacional(itemId, concluido){
-  const res = await fetch(A1.rpc('a1_checklist_marcar'), {method:'POST',headers:A1.headers(),
-    body:JSON.stringify({p_modulo:'PRE_ANALISE',p_processo:G.atual.id,p_item:itemId,p_concluido:concluido})});
-  if (!res.ok){ toast('Não foi possível atualizar o checklist.','error'); renderDossie(); return; }
-  const item=(G.atualChecklist||[]).find(i=>i.id===itemId);
-  if(item){ item.concluido=concluido; item.concluido_em=concluido?new Date().toISOString():null; }
-  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),
-    ator_nome:(G.user||{}).name||null,
-    ator_papel:G.user?.role==='partner' ? G.user.type : G.user?.role});
+async function marcarChecklistOperacional(itemId, concluido) {
+  const res = await fetch(A1.rpc('a1_checklist_marcar'), {
+    method: 'POST',
+    headers: A1.headers(),
+    body: JSON.stringify({
+      p_modulo: 'PRE_ANALISE',
+      p_processo: G.atual.id,
+      p_item: itemId,
+      p_concluido: concluido
+    })
+  });
+  if (!res.ok) {
+    toast('Não foi possível atualizar o checklist.', 'error');
+    renderDossie();
+    return;
+  }
+  const item = (G.atualChecklist || []).find(i => i.id === itemId);
+  if (item) {
+    item.concluido = concluido;
+    item.concluido_em = concluido ? new Date().toISOString() : null;
+  }
+  G.atualEv.unshift({
+    evento: 'checklist_atualizado',
+    criado_em: new Date().toISOString(),
+    ator_nome: (G.user || {}).name || null,
+    ator_papel: G.user?.role === 'partner' ? G.user.type : G.user?.role
+  });
   renderDossie();
-  toast('Checklist atualizado.','success');
+  toast('Checklist atualizado.', 'success');
 }
 
-function dosHistorico(){
+function dosHistorico() {
   if (!G.atualEv.length) return '<div class="sub">Sem histórico ainda.</div>';
-  return `<div class="timeline">${G.atualEv.map(e => {
-    const de = e.de_situacao ? nomeSituacao(e.de_situacao) : null;
-    const para = e.para_situacao ? nomeSituacao(e.para_situacao) : null;
-    const just = e.detalhe && e.detalhe.justificativa;
-    return `<div class="tl-item">
+  return `<div class="timeline">${G.atualEv
+    .map(e => {
+      const de = e.de_situacao ? nomeSituacao(e.de_situacao) : null;
+      const para = e.para_situacao ? nomeSituacao(e.para_situacao) : null;
+      const just = e.detalhe && e.detalhe.justificativa;
+      return `<div class="tl-item">
       <div class="tl-dot">${e.evento === 'transicao' ? '→' : e.evento === 'decisao_invalidada' ? '!' : '•'}</div>
       <div><div class="tl-desc">${esc(rotuloEvento(e.evento))}${
-        de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
-        para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
+        de && para
+          ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>`
+          : para
+            ? ` — <strong>${esc(para)}</strong>`
+            : ''
+      }</div>
         ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
         <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${a1AtorHistorico(e) ? ' · ' + esc(a1AtorHistorico(e)) : ''}</div></div>
-    </div>`; }).join('')}</div>
+    </div>`;
+    })
+    .join('')}</div>
   <div class="aviso i" style="margin-top:.9rem">O histórico só recebe linhas novas. Não se edita e não se
     apaga — nem pelo gestor, nem pela API.</div>`;
 }
-function rotuloEvento(e){
-  return { transicao:'Mudança de situação', pre_analise_criada:'Pré-análise criada', criado_da_pre_analise:'Venda criada',
-           decisao_invalidada:'Decisão de crédito invalidada',
-           decisao_credito_registrada:'Decisão de crédito registrada',
-           documento_enviado:'Documento enviado', documento_status_alterado:'Documento analisado',
-           participante_adicionado:'Pessoa adicionada', participante_removido:'Pessoa removida',
-           dados_atualizados:'Dados atualizados', checklist_atualizado:'Checklist atualizado', transicao_automatica_credito:'Avanço automático por aprovação' }[e] || e;
+function rotuloEvento(e) {
+  return (
+    {
+      transicao: 'Mudança de situação',
+      pre_analise_criada: 'Pré-análise criada',
+      criado_da_pre_analise: 'Venda criada',
+      decisao_invalidada: 'Decisão de crédito invalidada',
+      decisao_credito_registrada: 'Decisão de crédito registrada',
+      documento_enviado: 'Documento enviado',
+      documento_status_alterado: 'Documento analisado',
+      participante_adicionado: 'Pessoa adicionada',
+      participante_removido: 'Pessoa removida',
+      dados_atualizados: 'Dados atualizados',
+      checklist_atualizado: 'Checklist atualizado',
+      transicao_automatica_credito: 'Avanço automático por aprovação'
+    }[e] || e
+  );
 }
 
-function dosComercial(){
-  if (!G.atualCo){
+function dosComercial() {
+  if (!G.atualCo) {
     const p = G.atual;
     const abre = situacaoAbreVenda(p.situacao_id);
     const c = checklist();
@@ -1714,24 +2353,25 @@ function dosComercial(){
     // existe uma Venda" deixa o gestor adivinhando se falta configuração,
     // permissão ou etapa — três lugares diferentes para procurar.
     const ondeEstaOBotao = abre
-      ? (G.podeVender && G.podeVender.ok === false
-          ? `<div class="aviso w">O banco ainda não libera: <strong>${esc(G.podeVender.motivo)}</strong>.</div>`
-          : `<div class="aviso s">Esta etapa é o <strong>fim positivo</strong> da esteira: o botão verde
-             <strong>Iniciar venda</strong> está aqui embaixo.</div>`)
-      : (situacaoEncerra(p.situacao_id)
-          ? `<div class="aviso w">Esta etapa <strong>encerra</strong> o processo: a esteira termina aqui e
+      ? G.podeVender && G.podeVender.ok === false
+        ? `<div class="aviso w">O banco ainda não libera: <strong>${esc(G.podeVender.motivo)}</strong>.</div>`
+        : `<div class="aviso s">Esta etapa é o <strong>fim positivo</strong> da esteira: o botão verde
+             <strong>Iniciar venda</strong> está aqui embaixo.</div>`
+      : situacaoEncerra(p.situacao_id)
+        ? `<div class="aviso w">Esta etapa <strong>encerra</strong> o processo: a esteira termina aqui e
              não segue para a Venda.</div>`
-          : `<div class="aviso i">O botão <strong>Iniciar venda</strong> aparece quando o processo chega a
+        : `<div class="aviso i">O botão <strong>Iniciar venda</strong> aparece quando o processo chega a
              uma etapa marcada como <strong>fim positivo</strong> no Editor de Workflow — a etapa em que a
-             análise termina bem. Hoje ele está em <strong>${esc(nomeSituacao(p.situacao_id))}</strong>.</div>`);
+             análise termina bem. Hoje ele está em <strong>${esc(nomeSituacao(p.situacao_id))}</strong>.</div>`;
     return `${ondeEstaOBotao}
-      ${abre && faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f=>f.txt).join(', '))}.</div>` : ''}
+      ${abre && faltando.length ? `<div class="aviso w">Falta: ${esc(faltando.map(f => f.txt).join(', '))}.</div>` : ''}
       <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">A Venda nasce por
       <strong>ação da esteira</strong> — nunca por um cadastro paralelo. É isso que garante que ninguém
       pule a aprovação de crédito. E, quando ela nascer, <strong>esta pré-análise continua aqui</strong>:
       o cartão não se muda de módulo, ele fica como registro de por onde o lead passou.</p>`;
   }
-  const co = G.atualCo, snap = co.origem_snapshot || {};
+  const co = G.atualCo,
+    snap = co.origem_snapshot || {};
   const cr = snap.credito || {};
   return `
     <div class="aviso s">Venda criada em ${esc(dataHoraBR(co.criado_em))}.
@@ -1749,7 +2389,7 @@ function dosComercial(){
 }
 
 // ─── rodapé: ações e transições possíveis ────────────────────────────────────
-function montarRodapeDossie(){
+function montarRodapeDossie() {
   // A mudança de etapa continua no quadro. O seletor no rodapé foi removido:
   // duas portas para a mesma ação confundiam o fluxo e permitiam tentar mover
   // fora do contexto visual da esteira.
@@ -1769,23 +2409,26 @@ function montarRodapeDossie(){
 // A terceira não é enfeite: a1_pa_pode_criar_comercial é a mesma função que
 // a1_pa_executar_acao consulta antes de criar. Perguntar antes serve para
 // explicar; quem tranca continua sendo o banco.
-function montarBotaoVenda(){
+function montarBotaoVenda() {
   const acoes = document.getElementById('dos-acoes');
   if (!acoes) return;
   const p = G.atual;
 
-  if (G.atualCo){
+  if (G.atualCo) {
     acoes.innerHTML = `<span class="sub">Venda já criada — veja na aba Venda.</span>`;
     return;
   }
   // Sem licença e fora do fim positivo o botão não existe. Não nasce escondido:
   // o que não está no DOM ninguém acha com o inspetor nem com a busca.
-  if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)){ acoes.innerHTML = ''; return; }
+  if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)) {
+    acoes.innerHTML = '';
+    return;
+  }
 
   // Iniciar venda é uma capacidade separada de editar e mover. A mesma
   // regra é aplicada pela função SQL; esta checagem só evita oferecer um botão
   // que o banco necessariamente recusará.
-  if (!perm('pa_iniciar_venda')){
+  if (!perm('pa_iniciar_venda')) {
     acoes.innerHTML = '';
     return;
   }
@@ -1797,25 +2440,30 @@ function montarBotaoVenda(){
   const barrado = v && v.ok === false;
   acoes.innerHTML =
     `<button class="btn btn-venda btn-sm" id="btn-iniciar-venda" ${barrado ? 'disabled' : ''}
-             onclick="iniciarVenda()">Iniciar venda</button>`
-    + (barrado ? `<span class="recusa">Ainda não dá: ${esc(v.motivo)}.</span>` : '');
+             onclick="iniciarVenda()">Iniciar venda</button>` +
+    (barrado ? `<span class="recusa">Ainda não dá: ${esc(v.motivo)}.</span>` : '');
 }
 
 // O veredito do banco, perguntado uma vez por abertura de dossiê e de novo
 // sempre que algo que ele considera mudar (uma decisão de crédito registrada).
-async function conferirPodeVender(){
+async function conferirPodeVender() {
   const p = G.atual;
   G.podeVender = null;
   if (!p || !G.temComercial || G.atualCo || !situacaoAbreVenda(p.situacao_id)) return;
   try {
     const res = await fetch(A1.rpc('a1_pa_pode_criar_comercial'), {
-      method:'POST', headers:A1.headers(), body: JSON.stringify({ p_pre_analise:p.id }) });
-    if (!res.ok) return;                       // não deu para perguntar: segue em branco
-    const j = await res.json().catch(()=>null);
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_pre_analise: p.id })
+    });
+    if (!res.ok) return; // não deu para perguntar: segue em branco
+    const j = await res.json().catch(() => null);
     // A função devolve TEXT: null quando pode, a frase do que falta quando não.
-    const motivo = (typeof j === 'string' && j.trim()) ? j.trim() : null;
-    G.podeVender = motivo ? { ok:false, motivo } : { ok:true };
-  } catch { /* idem: silêncio vira "não sei", nunca "não pode" */ }
+    const motivo = typeof j === 'string' && j.trim() ? j.trim() : null;
+    G.podeVender = motivo ? { ok: false, motivo } : { ok: true };
+  } catch {
+    /* idem: silêncio vira "não sei", nunca "não pode" */
+  }
 }
 
 // A mudança de etapa da Pré-análise acontece SÓ no quadro, arrastando o cartão
@@ -1847,11 +2495,14 @@ async function conferirPodeVender(){
 // Desconto e comissão ficaram de fora de propósito: nenhuma regra os lê, eles se
 // negociam depois, e um campo a mais no caminho de quem só quer abrir a venda é
 // um campo que vai ser preenchido errado com pressa.
-function iniciarVenda(){
+function iniciarVenda() {
   const p = G.atual;
-  if (!p || !perm('pa_iniciar_venda')) { toast('Você não tem a permissão "Iniciar venda".','error'); return; }
+  if (!p || !perm('pa_iniciar_venda')) {
+    toast('Você não tem a permissão "Iniciar venda".', 'error');
+    return;
+  }
   const cr = ultimoCreditoAprovado();
-  G.rascunhoVenda = { unidade: p.unidade || '', venda:'', entrada:'', obs:'', condicoes:[] };
+  G.rascunhoVenda = { unidade: p.unidade || '', venda: '', entrada: '', obs: '', condicoes: [] };
   document.getElementById('venda-sub').textContent =
     `${nomeEmpr(p.empreendimento_id)} · ${G.titulares[p.id] ? G.titulares[p.id].nome : 'sem titular'}`;
   document.getElementById('venda-body').innerHTML = `
@@ -1885,7 +2536,7 @@ function iniciarVenda(){
   conferirVenda();
 }
 
-function ultimoCreditoAprovado(){
+function ultimoCreditoAprovado() {
   return (G.atualCred || []).find(c => c.status === 'APROVADO') || {};
 }
 
@@ -1893,7 +2544,7 @@ function ultimoCreditoAprovado(){
 // de o cartão nascer. É repetição, e é consciente: sem passo de build não há
 // como as duas telas compartilharem uma função, e descobrir que a venda não
 // cabe no crédito na hora de abrir vale mais do que descobrir na assinatura.
-function condicoesVendaDaTela(){
+function condicoesVendaDaTela() {
   return [...document.querySelectorAll('#v-condicoes .condicao-venda')].map(l => ({
     tipo: l.querySelector('[data-campo="tipo"]').value,
     quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
@@ -1901,38 +2552,48 @@ function condicoesVendaDaTela(){
     vencimento_inicial: l.querySelector('[data-campo="vencimento"]')?.value || null
   }));
 }
-function totalCondicoesVenda(condicoes){
+function totalCondicoesVenda(condicoes) {
   return condicoes.reduce((total, c) => total + c.quantidade * c.valor, 0);
 }
-function renderCondicoesVenda(){
-  const area = document.getElementById('v-condicoes'); if (!area) return;
+function renderCondicoesVenda() {
+  const area = document.getElementById('v-condicoes');
+  if (!area) return;
   const condicoes = G.rascunhoVenda.condicoes || [];
-  area.innerHTML = condicoes.map((c, i) => `
+  area.innerHTML =
+    condicoes
+      .map(
+        (c, i) => `
     <div class="fgrid condicao-venda" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
       <div class="fg"><label>Condição</label><select data-campo="tipo" onchange="sincronizarCondicoesVenda()">
-        ${['ATO','MENSAL','SEMESTRAL','ANUAL'].map(t => `<option value="${t}" ${c.tipo===t?'selected':''}>${({ATO:'Ato',MENSAL:'Parcelas mensais',SEMESTRAL:'Parcelas semestrais',ANUAL:'Parcelas anuais'})[t]}</option>`).join('')}
+        ${['ATO', 'MENSAL', 'SEMESTRAL', 'ANUAL'].map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${{ ATO: 'Ato', MENSAL: 'Parcelas mensais', SEMESTRAL: 'Parcelas semestrais', ANUAL: 'Parcelas anuais' }[t]}</option>`).join('')}
       </select></div>
       <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" oninput="sincronizarCondicoesVenda()"></div>
-      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" oninput="mascaraMoeda(this);sincronizarCondicoesVenda()"></div>
-      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial||'')}" onchange="sincronizarCondicoesVenda()"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" oninput="mascaraMoeda(this);sincronizarCondicoesVenda()"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial || '')}" onchange="sincronizarCondicoesVenda()"></div>
       <div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoVenda(${i})">Remover</button></div>
-    </div>`).join('') || '<div class="sub">Nenhuma condição adicionada. Use o botão + para montar a proposta.</div>';
+    </div>`
+      )
+      .join('') ||
+    '<div class="sub">Nenhuma condição adicionada. Use o botão + para montar a proposta.</div>';
 }
-function sincronizarCondicoesVenda(){
+function sincronizarCondicoesVenda() {
   G.rascunhoVenda.condicoes = condicoesVendaDaTela();
   conferirVenda();
 }
-function adicionarCondicaoVenda(){
+function adicionarCondicaoVenda() {
   G.rascunhoVenda.condicoes = condicoesVendaDaTela();
-  G.rascunhoVenda.condicoes.push({tipo:'ATO', quantidade:1, valor:0});
-  renderCondicoesVenda(); conferirVenda();
+  G.rascunhoVenda.condicoes.push({ tipo: 'ATO', quantidade: 1, valor: 0 });
+  renderCondicoesVenda();
+  conferirVenda();
 }
-function removerCondicaoVenda(indice){
+function removerCondicaoVenda(indice) {
   G.rascunhoVenda.condicoes = condicoesVendaDaTela().filter((_, i) => i !== indice);
-  renderCondicoesVenda(); conferirVenda();
+  renderCondicoesVenda();
+  conferirVenda();
 }
-function conferirVenda(){
-  const el = document.getElementById('v-conferencia'); if (!el) return;
+function conferirVenda() {
+  const el = document.getElementById('v-conferencia');
+  if (!el) return;
   const aprovado = Number(ultimoCreditoAprovado().valor_total) || 0;
   const vendaEl = document.getElementById('v-venda');
   const entradaEl = document.getElementById('v-entrada');
@@ -1940,45 +2601,57 @@ function conferirVenda(){
   const venda = paraCentavos(vendaEl.value) || 0;
   const esperado = Math.max(0, venda - aprovado);
   const entrada = totalCondicoesVenda(condicoesVendaDaTela());
-  entradaEl.value = venda ? (esperado/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
-  if (!venda || !aprovado){ el.innerHTML = ''; return; }
+  entradaEl.value = venda
+    ? (esperado / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '';
+  if (!venda || !aprovado) {
+    el.innerHTML = '';
+    return;
+  }
   const diferenca = entrada - esperado;
-  el.innerHTML = diferenca > 0
-    ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
-    : diferenca < 0
-      ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
-      : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
+  el.innerHTML =
+    diferenca > 0
+      ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
+      : diferenca < 0
+        ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
+        : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
 }
 
-async function confirmarIniciarVenda(){
+async function confirmarIniciarVenda() {
   const p = G.atual;
   const unidade = (document.getElementById('v-unidade').value || '').trim();
-  const venda   = paraCentavos(document.getElementById('v-venda').value);
+  const venda = paraCentavos(document.getElementById('v-venda').value);
   const condicoes = condicoesVendaDaTela();
   const entrada = Math.max(0, venda - (Number(ultimoCreditoAprovado().valor_total) || 0));
-  const obs     = (document.getElementById('v-obs').value || '').trim();
-  if (!venda){
-    toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.','error');
+  const obs = (document.getElementById('v-obs').value || '').trim();
+  if (!venda) {
+    toast('Informe o valor da venda — é por ele que o cartão existe na esteira da Venda.', 'error');
     return;
   }
 
   const btn = document.getElementById('venda-confirmar');
-  btn.disabled = true; btn.textContent = 'Criando…';
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
   try {
     // 1. O motor que já existe. Ele valida de novo tudo o que o botão checou na
     //    tela, cria o Comercial e NÃO encosta na pré-análise — que é o pedido
     //    central do dono: o cartão fica onde está, como registro do caminho.
     const res = await fetch(A1.rpc('a1_pa_executar_acao'), {
-      method:'POST', headers:A1.headers(),
-      body: JSON.stringify({ p_pre_analise:p.id, p_acao:'ENABLE_COMMERCIAL' }) });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok){ toast(traduzErro(j),'error'); return; }
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_pre_analise: p.id, p_acao: 'ENABLE_COMMERCIAL' })
+    });
+    const j = await res.json().catch(() => null);
+    if (!res.ok) {
+      toast(traduzErro(j), 'error');
+      return;
+    }
     // 200 com ok:false é o orquestrador dizendo "não" com o motivo na mão. A
     // frase dele é a informação inteira — trocá-la por "não foi possível"
     // apagaria justamente o que resolve.
-    if (j && j.ok === false){
-      toast('A venda não foi aberta: ' + (j.erro || 'a esteira barrou a ação.'),'error');
-      G.podeVender = j.erro ? { ok:false, motivo:j.erro } : null;
+    if (j && j.ok === false) {
+      toast('A venda não foi aberta: ' + (j.erro || 'a esteira barrou a ação.'), 'error');
+      G.podeVender = j.erro ? { ok: false, motivo: j.erro } : null;
       montarRodapeDossie();
       return;
     }
@@ -1988,25 +2661,37 @@ async function confirmarIniciarVenda(){
     // 2. As informações do passo, gravadas no cartão que acabou de nascer.
     //    Separado de propósito: a função do banco não recebe proposta, e
     //    inventar um parâmetro nela seria mexer no motor para não mexer na tela.
-    if (comercialId){
-      const corpo = { unidade: unidade || null,
-                      proposta: { valor_venda:venda, valor_entrada:entrada,
-                                  condicoes_pagamento:condicoes, observacoes: obs || null } };
+    if (comercialId) {
+      const corpo = {
+        unidade: unidade || null,
+        proposta: {
+          valor_venda: venda,
+          valor_entrada: entrada,
+          condicoes_pagamento: condicoes,
+          observacoes: obs || null
+        }
+      };
       const rp = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${comercialId}`, {
-        method:'PATCH', headers:A1.headers(), body: JSON.stringify(corpo) });
+        method: 'PATCH',
+        headers: A1.headers(),
+        body: JSON.stringify(corpo)
+      });
       // O cartão EXISTE mesmo que isto falhe. Dizer "erro ao iniciar a venda"
       // mandaria o corretor clicar de novo num botão que já não está mais lá —
       // e procurar um problema que não é o dele.
-      if (!rp.ok){
-        toast('A venda foi criada, mas a proposta não foi gravada: '
-          + await mensagemErro(rp, 'abra a Venda e preencha valor e unidade por lá.', 'co_editar'),'error');
+      if (!rp.ok) {
+        toast(
+          'A venda foi criada, mas a proposta não foi gravada: ' +
+            (await mensagemErro(rp, 'abra a Venda e preencha valor e unidade por lá.', 'co_editar')),
+          'error'
+        );
         await carregar();
         await abrirDossie(p.id);
         return;
       }
     }
 
-    toast('Venda criada. A pré-análise continua na esteira.','success');
+    toast('Venda criada. A pré-análise continua na esteira.', 'success');
     // Recarrega a fila: é o que mostra, na própria tela, que o processo não
     // sumiu de onde estava.
     await carregar();
@@ -2014,41 +2699,51 @@ async function confirmarIniciarVenda(){
     trocarAbaDossie('comercial', document.querySelector('#dos-tabs [data-dt="comercial"]'));
   } finally {
     const b = document.getElementById('venda-confirmar');
-    if (b){ b.disabled = false; b.textContent = 'Criar cartão na Venda'; }
+    if (b) {
+      b.disabled = false;
+      b.textContent = 'Criar cartão na Venda';
+    }
   }
 }
 
 // As funções do banco levantam exceção com um código curto. O operador precisa
 // da regra em português, não do identificador do PL/pgSQL.
-function traduzErro(j){
+function traduzErro(j) {
   const m = (j && (j.message || j.error)) || '';
   const mapa = {
-    nao_encontrado:            'Processo não encontrado.',
-    modulo_desabilitado:       'O módulo não está liberado para este cliente.',
-    sem_acesso:                'Este processo não é da sua carteira.',
+    nao_encontrado: 'Processo não encontrado.',
+    modulo_desabilitado: 'O módulo não está liberado para este cliente.',
+    sem_acesso: 'Este processo não é da sua carteira.',
     // Mover na esteira é pa_mover, chave própria desde que se separou de
     // pa_editar: quem corrige um cadastro não necessariamente empurra o
     // processo adiante. Dizer só "sem permissão" fazia o gestor procurar no
     // escuro qual caixa marcar — por isso a frase nomeia a chave certa.
-    sem_permissao:             faltaPermissao('pa_mover', 'Mover ou agir sobre esta pré-análise'),
-    versao_desatualizada:      'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
-    transicao_nao_permitida:   'A esteira do cliente não permite essa mudança a partir da situação atual.',
-    papel_nao_autorizado:      'Seu papel não pode fazer essa transição.',
-    documentos_pendentes:      'Esta transição exige todos os documentos aprovados.',
-    sem_aprovacao_valida:      'Não há decisão de crédito aprovada e válida.',
-    sem_titular:               'A pré-análise não tem titular.',
-    acao_desconhecida:         'Ação desconhecida.',
-    modulo_comercial_desabilitado:'O módulo Venda não está liberado para este cliente.'
+    sem_permissao: faltaPermissao('pa_mover', 'Mover ou agir sobre esta pré-análise'),
+    versao_desatualizada: 'Alguém alterou este processo enquanto você o tinha aberto. Recarregue a tela.',
+    transicao_nao_permitida: 'A esteira do cliente não permite essa mudança a partir da situação atual.',
+    papel_nao_autorizado: 'Seu papel não pode fazer essa transição.',
+    documentos_pendentes: 'Esta transição exige todos os documentos aprovados.',
+    sem_aprovacao_valida: 'Não há decisão de crédito aprovada e válida.',
+    sem_titular: 'A pré-análise não tem titular.',
+    acao_desconhecida: 'Ação desconhecida.',
+    modulo_comercial_desabilitado: 'O módulo Venda não está liberado para este cliente.'
   };
   // O banco manda o nome do que falta junto da mensagem. Repetir o nome e o
   // que faz o gestor resolver em vez de recarregar a tela.
   const falta = /documento_obrigatorio_faltando:\s*([^\n"}]*)/.exec(m);
-  if (falta) return a1DocsAvisoFaltando(falta[1].split(',').map(x=>x.trim()).filter(Boolean));
+  if (falta)
+    return a1DocsAvisoFaltando(
+      falta[1]
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean)
+    );
   for (const k in mapa) if (m.includes(k)) return mapa[k];
   return m || 'Não foi possível concluir a operação.';
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') document.querySelectorAll('.modal-bg:not(.hidden)').forEach(m => m.classList.add('hidden'));
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal-bg:not(.hidden)').forEach(m => m.classList.add('hidden'));
 });
 init();

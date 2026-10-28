@@ -26,11 +26,12 @@ if (A1.token && A1.slug === slug && A1.user) {
   if (!motivo) return;
   const box = document.getElementById('error-box');
   if (!box) return;
-  box.textContent = motivo === 'outro_acesso'
-    ? 'Sua sessão foi encerrada porque esta conta entrou em outro dispositivo. Cada login só pode estar ativo em um lugar por vez.'
-    : motivo === 'conta_suspensa'
-      ? 'CONTA SUSPENSA. Entre em contato com o suporte para regularizar o acesso.'
-      : 'Sua sessão foi encerrada. Entre novamente para continuar.';
+  box.textContent =
+    motivo === 'outro_acesso'
+      ? 'Sua sessão foi encerrada porque esta conta entrou em outro dispositivo. Cada login só pode estar ativo em um lugar por vez.'
+      : motivo === 'conta_suspensa'
+        ? 'CONTA SUSPENSA. Entre em contato com o suporte para regularizar o acesso.'
+        : 'Sua sessão foi encerrada. Entre novamente para continuar.';
   box.classList.remove('hidden');
 })();
 
@@ -60,7 +61,7 @@ const PANELS_DEF = [
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
       <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>`,
+    </svg>`
   },
   {
     key: 'cca',
@@ -72,7 +73,7 @@ const PANELS_DEF = [
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="5" width="20" height="14" rx="2"/>
       <line x1="2" y1="10" x2="22" y2="10"/>
-    </svg>`,
+    </svg>`
   },
   {
     key: 'corretor',
@@ -83,7 +84,7 @@ const PANELS_DEF = [
     color: '#0E8C7F',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
-    </svg>`,
+    </svg>`
   },
   {
     key: 'analista',
@@ -95,7 +96,7 @@ const PANELS_DEF = [
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
       <path d="M9 15l2 2 4-4"/>
-    </svg>`,
+    </svg>`
   },
   {
     key: 'despachante',
@@ -110,8 +111,8 @@ const PANELS_DEF = [
       <line x1="16" y1="13" x2="8" y2="13"/>
       <line x1="16" y1="17" x2="8" y2="17"/>
       <polyline points="10 9 9 9 8 9"/>
-    </svg>`,
-  },
+    </svg>`
+  }
 ];
 
 async function loadPanels() {
@@ -120,25 +121,31 @@ async function loadPanels() {
     try {
       const res = await fetch(A1.rpc('a1_public_tenant_info'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': A1_KEY, 'Authorization': `Bearer ${A1_KEY}` },
+        headers: { 'Content-Type': 'application/json', apikey: A1_KEY, Authorization: `Bearer ${A1_KEY}` },
         body: JSON.stringify({ p_slug: slug })
       });
       const data = await res.json();
       activeModules = data.modules || [];
-    } catch (e) { activeModules = []; }
+    } catch (e) {
+      activeModules = [];
+    }
   }
 
   const visible = PANELS_DEF.filter(p => !p.module || activeModules.includes(p.module));
   const container = document.getElementById('panels-container');
 
   if (!visible.length) {
-    container.innerHTML = '<p style="color:#6B827D;font-size:.83rem;text-align:center;padding:2rem 0">Nenhum painel disponível.</p>';
+    container.innerHTML =
+      '<p style="color:#6B827D;font-size:.83rem;text-align:center;padding:2rem 0">Nenhum painel disponível.</p>';
     return;
   }
 
   const cols = visible.length === 1 ? 1 : visible.length === 3 ? 1 : 2;
-  container.innerHTML = `<div class="panels-grid" style="grid-template-columns:repeat(${cols},1fr)">` +
-    visible.map(p => `
+  container.innerHTML =
+    `<div class="panels-grid" style="grid-template-columns:repeat(${cols},1fr)">` +
+    visible
+      .map(
+        p => `
       <div class="panel-card ${p.key}" onclick="selectPanel('${p.key}')">
         <div class="panel-card-icon">${p.icon}</div>
         <div class="panel-card-title">${p.label}</div>
@@ -148,7 +155,10 @@ async function loadPanels() {
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </div>
-      </div>`).join('') + `</div>`;
+      </div>`
+      )
+      .join('') +
+    `</div>`;
 }
 
 function selectPanel(key) {
@@ -189,18 +199,18 @@ function redirectAfterLogin(user) {
 }
 
 document.getElementById('cpf').addEventListener('input', e => {
-  let v = e.target.value.replace(/\D/g,'').slice(0,11);
-  if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
-  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
-  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
   e.target.value = v;
 });
 
 function togglePassword() {
   const input = document.getElementById('password');
-  const icon  = document.getElementById('eye-icon');
-  const show  = input.type === 'password';
-  input.type  = show ? 'text' : 'password';
+  const icon = document.getElementById('eye-icon');
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
   icon.innerHTML = show
     ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
     : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
@@ -209,7 +219,7 @@ function togglePassword() {
 async function doLogin(e) {
   e.preventDefault();
   const cpf = document.getElementById('cpf').value;
-  const pw  = document.getElementById('password').value;
+  const pw = document.getElementById('password').value;
   const btn = document.getElementById('btn-login');
   const err = document.getElementById('error-box');
   const panel = PANELS_DEF.find(p => p.key === activeRole);
@@ -228,10 +238,10 @@ async function doLogin(e) {
     }
     redirectAfterLogin(A1.user || {});
   } catch (ex) {
-    err.textContent  = ex.message;
+    err.textContent = ex.message;
     err.classList.remove('hidden');
     btn.disabled = false;
-    btn.textContent  = 'Entrar';
+    btn.textContent = 'Entrar';
   }
 }
 

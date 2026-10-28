@@ -44,10 +44,19 @@ const PAGINAS = ['repasse.html', 'andamento.html', 'listagem.html'];
 function baseCasos() {
   const casos = D.cases.map(c => ({ ...c, archived: false }));
   casos.push({
-    id:'c9', tenant_id:'t1', module_key:'repasse', stage_id:'s2', stage_name:'Análise',
-    client_name:'Cliente Arquivado ' + XSS, client_cpf:'11144477735',
-    development:'Parque das Águas', partner_name:'Correspondente A', archived:true,
-    created_at:'2026-06-01T10:00:00Z', stage_entered_at:'2026-06-01T10:00:00Z', payload:{}
+    id: 'c9',
+    tenant_id: 't1',
+    module_key: 'repasse',
+    stage_id: 's2',
+    stage_name: 'Análise',
+    client_name: 'Cliente Arquivado ' + XSS,
+    client_cpf: '11144477735',
+    development: 'Parque das Águas',
+    partner_name: 'Correspondente A',
+    archived: true,
+    created_at: '2026-06-01T10:00:00Z',
+    stage_entered_at: '2026-06-01T10:00:00Z',
+    payload: {}
   });
   return casos;
 }
@@ -56,32 +65,44 @@ function baseCasos() {
 // tela grava. Sem guardar, "arquivei e sumiu da lista" passaria com a tela
 // fazendo nada, porque a releitura devolveria os mesmos dados de sempre.
 async function abrir(pag, { falharPatch = false } = {}) {
-  const casos   = baseCasos();
-  const pedidos = [];   // tudo que não é GET — é aqui que o DELETE apareceria
-  const urls    = [];   // toda URL pedida — é aqui que o filtro archived aparece
+  const casos = baseCasos();
+  const pedidos = []; // tudo que não é GET — é aqui que o DELETE apareceria
+  const urls = []; // toda URL pedida — é aqui que o filtro archived aparece
 
   const b = await chromium.launch();
-  const p = await b.newPage({ viewport:{ width:1400, height:950 } });
+  const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
-  p.on('console', m => { const t = m.text();
-    if (m.type()==='error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::|403|400/.test(t))
-      erros.push('console: ' + t); });
+  p.on('console', m => {
+    const t = m.text();
+    if (m.type() === 'error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::|403|400/.test(t))
+      erros.push('console: ' + t);
+  });
 
   await p.addInitScript(() => {
-    localStorage.setItem('a1_token','tok');
-    localStorage.setItem('a1_slug','thecred');
-    localStorage.setItem('a1_user', JSON.stringify(
-      {id:'u1',tenant_id:'t1',name:'Julio',role:'owner',cpf:'99999999999'}));
+    localStorage.setItem('a1_token', 'tok');
+    localStorage.setItem('a1_slug', 'thecred');
+    localStorage.setItem(
+      'a1_user',
+      JSON.stringify({ id: 'u1', tenant_id: 't1', name: 'Julio', role: 'owner', cpf: '99999999999' })
+    );
     window.__XSS = 0;
     // O texto do confirm é parte do que se conserta: o antigo ("Arquivar este
     // repasse?") era vago sobre algo que na prática não tinha volta.
     window.__CONFIRMS = [];
-    window.confirm = m => { window.__CONFIRMS.push(String(m)); return true; };
+    window.confirm = m => {
+      window.__CONFIRMS.push(String(m));
+      return true;
+    };
   });
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({status:200,contentType:'text/css',body:''}));
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, r =>
+    r.fulfill({ status: 200, contentType: 'text/css', body: '' })
+  );
   await p.route(/supabase\.co/, r => {
-    const req = r.request(), u = req.url(), m = req.method(), corpo = req.postData();
+    const req = r.request(),
+      u = req.url(),
+      m = req.method(),
+      corpo = req.postData();
     urls.push(m + ' ' + u);
     if (m !== 'GET') pedidos.push({ m, u, corpo });
 
@@ -95,50 +116,81 @@ async function abrir(pag, { falharPatch = false } = {}) {
         if (id) r2 = r2.filter(c => c.id === id[1]);
         const sel = /select=([^&]*)/.exec(qs);
         if (sel) {
-          const cols = decodeURIComponent(sel[1]).split(',').map(s => s.split(':').pop().trim());
-          r2 = r2.map(c => { const o = {}; for (const k of cols) if (k in c) o[k] = c[k]; return o; });
+          const cols = decodeURIComponent(sel[1])
+            .split(',')
+            .map(s => s.split(':').pop().trim());
+          r2 = r2.map(c => {
+            const o = {};
+            for (const k of cols) if (k in c) o[k] = c[k];
+            return o;
+          });
         }
-        return r.fulfill({ status:200, contentType:'application/json',
-          headers:{ 'content-range': `0-${Math.max(r2.length-1,0)}/${r2.length}` },
-          body: JSON.stringify(r2) });
+        return r.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { 'content-range': `0-${Math.max(r2.length - 1, 0)}/${r2.length}` },
+          body: JSON.stringify(r2)
+        });
       }
       if (m === 'PATCH') {
         // A recusa do RLS, que é o que acontece com quem não pode editar.
-        if (falharPatch) return r.fulfill({ status:403, contentType:'application/json',
-          body: JSON.stringify({ message:'new row violates row-level security policy for table "a1_cases"' }) });
-        const id     = /(?:^|[?&])id=eq\.([a-z0-9-]+)/.exec(qs);
+        if (falharPatch)
+          return r.fulfill({
+            status: 403,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              message: 'new row violates row-level security policy for table "a1_cases"'
+            })
+          });
+        const id = /(?:^|[?&])id=eq\.([a-z0-9-]+)/.exec(qs);
         const dentro = /(?:^|[?&])id=in\.\(([^)]*)\)/.exec(qs);
         const alvo = id ? [id[1]] : dentro ? decodeURIComponent(dentro[1]).split(',') : [];
-        let corpoJson = {}; try { corpoJson = JSON.parse(corpo || '{}'); } catch {}
+        let corpoJson = {};
+        try {
+          corpoJson = JSON.parse(corpo || '{}');
+        } catch {}
         for (const c of casos) if (alvo.includes(c.id)) Object.assign(c, corpoJson);
-        return r.fulfill({ status:200, contentType:'application/json', body:'[]' });
+        return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       }
       // DELETE cai aqui e o banco ACEITA. É de propósito: com o dublê
       // recusando, uma tela que ainda apagasse falharia por causa do erro, e
       // não por estar apagando. A prova é a ausência do DELETE em `pedidos`.
-      return r.fulfill({ status:200, contentType:'application/json', body:'[]' });
+      return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     }
 
-    let d; try { d = responder(u, m, corpo); } catch { d = []; }
-    r.fulfill({ status:200, contentType:'application/json',
-      headers:{ 'content-range':'0-1/2' }, body: JSON.stringify(d) });
+    let d;
+    try {
+      d = responder(u, m, corpo);
+    } catch {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
 
-  await p.goto(BASE + '/' + pag, { waitUntil:'load' });
+  await p.goto(BASE + '/' + pag, { waitUntil: 'load' });
   await p.waitForTimeout(1700);
   return { b, p, erros, casos, pedidos, urls };
 }
 
-const deletes  = pedidos => pedidos.filter(x => x.m === 'DELETE' && /a1_cases/.test(x.u));
-const patchArq = (pedidos, valor) => pedidos.filter(x =>
-  x.m === 'PATCH' && /a1_cases/.test(x.u) && new RegExp(`"archived"\\s*:\\s*${valor}`).test(x.corpo || ''));
-const idsNaTela   = p => p.evaluate(() => (G.cases || []).map(c => c.id));
+const deletes = pedidos => pedidos.filter(x => x.m === 'DELETE' && /a1_cases/.test(x.u));
+const patchArq = (pedidos, valor) =>
+  pedidos.filter(
+    x =>
+      x.m === 'PATCH' && /a1_cases/.test(x.u) && new RegExp(`"archived"\\s*:\\s*${valor}`).test(x.corpo || '')
+  );
+const idsNaTela = p => p.evaluate(() => (G.cases || []).map(c => c.id));
 // Visível de verdade, não só presente no DOM — um botão dentro de uma aba
 // escondida existe, responde ao querySelector e não pode ser clicado.
-const visivel = (p, sel) => p.evaluate(s => {
-  const el = document.querySelector(s);
-  return !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-}, sel);
+const visivel = (p, sel) =>
+  p.evaluate(s => {
+    const el = document.querySelector(s);
+    return !!el && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }, sel);
 // repasse.html abre no Dashboard e guarda o quadro em #tab-repasse; em
 // andamento.html e listagem.html o quadro já é a tela. Lá a aba "Repasse" da
 // barra de cima é um LINK para /slug/andamento (outra página), então dentro de
@@ -154,10 +206,16 @@ const irParaOQuadro = async p => {
   await p.evaluate(() => switchTab('repasse', document.querySelector('.tab-btn')));
   await p.waitForTimeout(700);
 };
-const desenhado   = p => p.evaluate(() => (document.getElementById('kanban-board')?.innerHTML || '') +
-                                          (document.getElementById('cases-tbody')?.innerHTML || ''));
-const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-wrap .toast')]
-                                            .map(t => t.className + '|' + t.textContent));
+const desenhado = p =>
+  p.evaluate(
+    () =>
+      (document.getElementById('kanban-board')?.innerHTML || '') +
+      (document.getElementById('cases-tbody')?.innerHTML || '')
+  );
+const toastsDaTela = p =>
+  p.evaluate(() =>
+    [...document.querySelectorAll('#toast-wrap .toast')].map(t => t.className + '|' + t.textContent)
+  );
 
 (async () => {
   const todosErros = [];
@@ -171,17 +229,29 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     await p.click('#mc-arquivar').catch(() => {});
     await p.waitForTimeout(700);
 
-    checa(`${pag}: nenhum DELETE em a1_cases`, deletes(pedidos).length === 0,
-          deletes(pedidos).map(x => x.u).join(' '));
+    checa(
+      `${pag}: nenhum DELETE em a1_cases`,
+      deletes(pedidos).length === 0,
+      deletes(pedidos)
+        .map(x => x.u)
+        .join(' ')
+    );
     checa(`${pag}: saiu PATCH archived=true`, patchArq(pedidos, 'true').length === 1);
-    checa(`${pag}: o PATCH é do processo aberto`,
-          patchArq(pedidos, 'true').some(x => /id=eq\.c1/.test(x.u)));
-    checa(`${pag}: o processo continua no banco, agora arquivado`,
-          !!casos.find(c => c.id === 'c1' && c.archived === true));
+    checa(
+      `${pag}: o PATCH é do processo aberto`,
+      patchArq(pedidos, 'true').some(x => /id=eq\.c1/.test(x.u))
+    );
+    checa(
+      `${pag}: o processo continua no banco, agora arquivado`,
+      !!casos.find(c => c.id === 'c1' && c.archived === true)
+    );
     checa(`${pag}: e sai da lista da tela`, !(await idsNaTela(p)).includes('c1'));
-    checa(`${pag}: ficou trilha do arquivamento em a1_events`,
-          pedidos.some(x => x.m === 'POST' && /a1_events/.test(x.u) && /arquiv/i.test(x.corpo || '')));
-    todosErros.push(...erros); await b.close();
+    checa(
+      `${pag}: ficou trilha do arquivamento em a1_events`,
+      pedidos.some(x => x.m === 'POST' && /a1_events/.test(x.u) && /arquiv/i.test(x.corpo || ''))
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   // ── 2. O texto que a pessoa lê antes de confirmar ────────────────────────
@@ -197,11 +267,14 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     await p.click('#mc-arquivar').catch(() => {});
     await p.waitForTimeout(500);
     const texto = (await p.evaluate(() => window.__CONFIRMS.join('\n'))) || '';
-    checa('o confirm diz que NÃO é apagado', /não é apagado|nao e apagado/i.test(texto), texto.slice(0,120));
+    checa('o confirm diz que NÃO é apagado', /não é apagado|nao e apagado/i.test(texto), texto.slice(0, 120));
     checa('o confirm ensina o caminho de volta', /desarquiv/i.test(texto));
-    checa('o confirm manda quem quer apagar mesmo para a Exclusão definitiva',
-          /exclus[ãa]o definitiva/i.test(texto));
-    todosErros.push(...erros); await b.close();
+    checa(
+      'o confirm manda quem quer apagar mesmo para a Exclusão definitiva',
+      /exclus[ãa]o definitiva/i.test(texto)
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   // ── 3. A recusa do banco não pode virar "Arquivado" ──────────────────────
@@ -210,17 +283,22 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
   // recarregasse a página.
   console.log('\nBanco recusa: a tela não pode dizer que arquivou');
   for (const pag of PAGINAS) {
-    const { b, p, erros, pedidos } = await abrir(pag, { falharPatch:true });
+    const { b, p, erros, pedidos } = await abrir(pag, { falharPatch: true });
     await p.evaluate(() => openCard('c1'));
     await p.waitForTimeout(500);
     await p.click('#mc-arquivar').catch(() => {});
     await p.waitForTimeout(700);
     const toasts = await toastsDaTela(p);
-    checa(`${pag}: avisa o erro`, toasts.some(t => /toast-error/.test(t)), toasts.join(' / '));
+    checa(
+      `${pag}: avisa o erro`,
+      toasts.some(t => /toast-error/.test(t)),
+      toasts.join(' / ')
+    );
     checa(`${pag}: não anuncia sucesso`, !toasts.some(t => /toast-success/.test(t) && /rquivad/.test(t)));
     checa(`${pag}: o cartão continua na lista`, (await idsNaTela(p)).includes('c1'));
     checa(`${pag}: e nenhum DELETE de consolo`, deletes(pedidos).length === 0);
-    todosErros.push(...erros); await b.close();
+    todosErros.push(...erros);
+    await b.close();
   }
 
   // ── 4. Ver e desarquivar ─────────────────────────────────────────────────
@@ -229,10 +307,14 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
   for (const pag of PAGINAS) {
     const { b, p, erros, casos, pedidos, urls } = await abrir(pag);
 
-    checa(`${pag}: Arquivados não fica no cabeçalho global`,
-          await p.evaluate(() => !document.querySelector('.hdr #btn-arquivados')));
-    checa(`${pag}: a lista pede só os ativos`,
-          urls.some(u => /a1_cases\?.*archived=eq\.false/.test(u)));
+    checa(
+      `${pag}: Arquivados não fica no cabeçalho global`,
+      await p.evaluate(() => !document.querySelector('.hdr #btn-arquivados'))
+    );
+    checa(
+      `${pag}: a lista pede só os ativos`,
+      urls.some(u => /a1_cases\?.*archived=eq\.false/.test(u))
+    );
     checa(`${pag}: o arquivado não aparece por padrão`, !(await idsNaTela(p)).includes('c9'));
     checa(`${pag}: e o ativo aparece`, (await idsNaTela(p)).includes('c1'));
 
@@ -244,16 +326,16 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     // num botão dentro de um #tab-repasse escondido, o clique nunca acontecia
     // e a suíte acusava um defeito de arquivamento que não existe.
     await irParaOQuadro(p);
-    checa(`${pag}: o botão Arquivados está à vista dentro do Repasse`,
-          await visivel(p, '#btn-arquivados'));
+    checa(`${pag}: o botão Arquivados está à vista dentro do Repasse`, await visivel(p, '#btn-arquivados'));
 
     await p.click('#btn-arquivados').catch(() => {});
     await p.waitForTimeout(900);
-    checa(`${pag}: o botão "Ver arquivados" existe e troca a lista`,
-          (await idsNaTela(p)).includes('c9'));
+    checa(`${pag}: o botão "Ver arquivados" existe e troca a lista`, (await idsNaTela(p)).includes('c9'));
     checa(`${pag}: e tira os ativos de vista`, !(await idsNaTela(p)).includes('c1'));
-    checa(`${pag}: pediu archived=eq.true ao banco`,
-          urls.some(u => /a1_cases\?.*archived=eq\.true/.test(u)));
+    checa(
+      `${pag}: pediu archived=eq.true ao banco`,
+      urls.some(u => /a1_cases\?.*archived=eq\.true/.test(u))
+    );
     checa(`${pag}: o arquivado é desenhado`, /Cliente Arquivado/.test(await desenhado(p)));
 
     await p.evaluate(() => openCard('c9'));
@@ -266,12 +348,11 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     await p.click('#mc-desarquivar').catch(() => {});
     await p.waitForTimeout(700);
     checa(`${pag}: saiu PATCH archived=false`, patchArq(pedidos, 'false').length === 1);
-    checa(`${pag}: e o processo voltou no banco`,
-          !!casos.find(c => c.id === 'c9' && c.archived === false));
+    checa(`${pag}: e o processo voltou no banco`, !!casos.find(c => c.id === 'c9' && c.archived === false));
     checa(`${pag}: nenhum DELETE em todo o caminho`, deletes(pedidos).length === 0);
-    checa(`${pag}: o nome do arquivado não executou nada`,
-          await p.evaluate(() => window.__XSS === 0));
-    todosErros.push(...erros); await b.close();
+    checa(`${pag}: o nome do arquivado não executou nada`, await p.evaluate(() => window.__XSS === 0));
+    todosErros.push(...erros);
+    await b.close();
   }
 
   // ── 5. O lote da listagem ────────────────────────────────────────────────
@@ -280,26 +361,42 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
   console.log('\nlistagem.html: o lote arquiva, não exclui');
   {
     const { b, p, erros, casos, pedidos } = await abrir('listagem.html');
-    checa('o botão "Excluir selecionados" não existe mais',
-          await p.evaluate(() => !document.querySelector('[onclick="bulkDelete()"]')));
+    checa(
+      'o botão "Excluir selecionados" não existe mais',
+      await p.evaluate(() => !document.querySelector('[onclick="bulkDelete()"]'))
+    );
     await p.evaluate(() => {
-      document.querySelectorAll('#cases-tbody .row-chk').forEach(cb => { cb.checked = true; toggleRowSel(cb.value, cb); });
+      document.querySelectorAll('#cases-tbody .row-chk').forEach(cb => {
+        cb.checked = true;
+        toggleRowSel(cb.value, cb);
+      });
     });
     await p.waitForTimeout(200);
     await p.click('#bulk-arquivar').catch(() => {});
     await p.waitForTimeout(800);
 
-    checa('nenhum DELETE em lote', deletes(pedidos).length === 0,
-          deletes(pedidos).map(x => x.u).join(' '));
+    checa(
+      'nenhum DELETE em lote',
+      deletes(pedidos).length === 0,
+      deletes(pedidos)
+        .map(x => x.u)
+        .join(' ')
+    );
     const lote = patchArq(pedidos, 'true').filter(x => /id=in\./.test(x.u));
     checa('saiu um PATCH archived=true em lote', lote.length === 1);
     checa('o lote pegou mais de um processo', /id=in\.\([^)]*,/.test(lote[0]?.u || ''));
-    checa('e todos ficaram arquivados no banco',
-          ['c1','c2','c3','c4'].every(id => casos.find(c => c.id === id)?.archived === true));
+    checa(
+      'e todos ficaram arquivados no banco',
+      ['c1', 'c2', 'c3', 'c4'].every(id => casos.find(c => c.id === id)?.archived === true)
+    );
     const confirmado = await p.evaluate(() => window.__CONFIRMS.join('\n'));
-    checa('o confirm do lote também diz que não apaga',
-          /não são apagados|nao sao apagados/i.test(confirmado), confirmado.slice(0,120));
-    todosErros.push(...erros); await b.close();
+    checa(
+      'o confirm do lote também diz que não apaga',
+      /não são apagados|nao sao apagados/i.test(confirmado),
+      confirmado.slice(0, 120)
+    );
+    todosErros.push(...erros);
+    await b.close();
   }
 
   // ── 6. Os três vínculos por id ───────────────────────────────────────────
@@ -316,14 +413,19 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     const valores = await p.evaluate(() => ({
       empresa: [...document.getElementById('n-partner').options].map(o => o.value),
       usuario: [...document.getElementById('n-usuario').options].map(o => o.value),
-      analista:[...document.getElementById('n-manager').options].map(o => o.value),
+      analista: [...document.getElementById('n-manager').options].map(o => o.value)
     }));
-    checa(`${pag}: o seletor de empresa correspondente oferece o id do cadastro`,
-          valores.empresa.includes('e1'), valores.empresa.join(','));
-    checa(`${pag}: o de usuário correspondente também`,
-          valores.usuario.includes('p8'), valores.usuario.join(','));
-    checa(`${pag}: o de analista também`,
-          valores.analista.includes('p2'), valores.analista.join(','));
+    checa(
+      `${pag}: o seletor de empresa correspondente oferece o id do cadastro`,
+      valores.empresa.includes('e1'),
+      valores.empresa.join(',')
+    );
+    checa(
+      `${pag}: o de usuário correspondente também`,
+      valores.usuario.includes('p8'),
+      valores.usuario.join(',')
+    );
+    checa(`${pag}: o de analista também`, valores.analista.includes('p2'), valores.analista.join(','));
 
     await p.evaluate(() => {
       document.getElementById('n-name').value = 'Cliente do Vínculo';
@@ -335,34 +437,65 @@ const toastsDaTela= p => p.evaluate(() => [...document.querySelectorAll('#toast-
     await p.waitForTimeout(800);
     const post = pedidos.find(x => x.m === 'POST' && /a1_cases/.test(x.u));
     const corpo = post ? JSON.parse(post.corpo) : {};
-    checa(`${pag}: grava empresa_id`,        corpo.empresa_id === 'e1',        JSON.stringify(corpo.empresa_id));
-    checa(`${pag}: grava correspondente_id`, corpo.correspondente_id === 'p8', JSON.stringify(corpo.correspondente_id));
-    checa(`${pag}: grava analista_id`,       corpo.analista_id === 'p2',       JSON.stringify(corpo.analista_id));
+    checa(`${pag}: grava empresa_id`, corpo.empresa_id === 'e1', JSON.stringify(corpo.empresa_id));
+    checa(
+      `${pag}: grava correspondente_id`,
+      corpo.correspondente_id === 'p8',
+      JSON.stringify(corpo.correspondente_id)
+    );
+    checa(`${pag}: grava analista_id`, corpo.analista_id === 'p2', JSON.stringify(corpo.analista_id));
     // O texto continua valendo: é por ele que os filtros e os painéis de hoje
     // enxergam o processo. Gravar só o id deixaria o repasse novo fora de todos.
-    checa(`${pag}: e continua gravando o nome da empresa`,
-          corpo.partner_name === 'Empresa Corr ' + require('./fake').ASPA, JSON.stringify(corpo.partner_name));
-    checa(`${pag}: e o nome do analista`, corpo.manager_name === 'João Analista', JSON.stringify(corpo.manager_name));
+    checa(
+      `${pag}: e continua gravando o nome da empresa`,
+      corpo.partner_name === 'Empresa Corr ' + require('./fake').ASPA,
+      JSON.stringify(corpo.partner_name)
+    );
+    checa(
+      `${pag}: e o nome do analista`,
+      corpo.manager_name === 'João Analista',
+      JSON.stringify(corpo.manager_name)
+    );
 
     // Cartão de um processo ANTIGO: tem texto, não tem vínculo. Salvar não pode
     // apagar o texto — é o histórico de quem estava no processo, e há nome em
     // produção que não existe mais em cadastro nenhum.
-    await p.evaluate(() => { closeModal('modal-new-bg'); openCard('c1'); });
+    await p.evaluate(() => {
+      closeModal('modal-new-bg');
+      openCard('c1');
+    });
     await p.waitForTimeout(700);
     await p.evaluate(() => saveCase());
     await p.waitForTimeout(800);
-    const patch = pedidos.filter(x => x.m === 'PATCH' && /a1_cases\?id=eq\.c1/.test(x.u))
-                         .map(x => { try { return JSON.parse(x.corpo); } catch { return {}; } })
-                         .find(x => 'client_name' in x) || {};
-    checa(`${pag}: o cartão antigo preserva o texto do correspondente`,
-          patch.partner_name === 'Correspondente A', JSON.stringify(patch.partner_name));
-    checa(`${pag}: e o texto do analista`,
-          patch.manager_name === 'João Analista', JSON.stringify(patch.manager_name));
-    checa(`${pag}: e o cartão sabe mandar os três vínculos`,
-          'empresa_id' in patch && 'correspondente_id' in patch && 'analista_id' in patch,
-          Object.keys(patch).join(','));
+    const patch =
+      pedidos
+        .filter(x => x.m === 'PATCH' && /a1_cases\?id=eq\.c1/.test(x.u))
+        .map(x => {
+          try {
+            return JSON.parse(x.corpo);
+          } catch {
+            return {};
+          }
+        })
+        .find(x => 'client_name' in x) || {};
+    checa(
+      `${pag}: o cartão antigo preserva o texto do correspondente`,
+      patch.partner_name === 'Correspondente A',
+      JSON.stringify(patch.partner_name)
+    );
+    checa(
+      `${pag}: e o texto do analista`,
+      patch.manager_name === 'João Analista',
+      JSON.stringify(patch.manager_name)
+    );
+    checa(
+      `${pag}: e o cartão sabe mandar os três vínculos`,
+      'empresa_id' in patch && 'correspondente_id' in patch && 'analista_id' in patch,
+      Object.keys(patch).join(',')
+    );
     checa(`${pag}: nada foi apagado no caminho`, deletes(pedidos).length === 0);
-    todosErros.push(...erros); await b.close();
+    todosErros.push(...erros);
+    await b.close();
   }
 
   process.exit(resumo(todosErros));

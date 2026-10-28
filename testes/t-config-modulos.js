@@ -24,39 +24,65 @@ async function abrirConfig({ modulos = [], papel = 'owner' } = {}) {
   liberarModulos(modulos);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
-  const erros = [], pedidos = [];
+  const erros = [],
+    pedidos = [];
   p.on('pageerror', e => erros.push('JS: ' + e.message));
-  p.on('console', m => { const t = m.text();
-    if (m.type() === 'error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::/.test(t)) erros.push('console: ' + t); });
+  p.on('console', m => {
+    const t = m.text();
+    if (m.type() === 'error' && !/ERR_CONNECTION|ERR_TUNNEL|fonts\.g|favicon|net::/.test(t))
+      erros.push('console: ' + t);
+  });
   await p.addInitScript(pp => {
     localStorage.setItem('a1_token', 'tok');
     localStorage.setItem('a1_slug', 'thecred');
-    localStorage.setItem('a1_user', JSON.stringify({ id:'u1', tenant_id:'t1', name:'Julio',
-      role:pp, type:'cca', cpf:'99999999999', permissions:{} }));
+    localStorage.setItem(
+      'a1_user',
+      JSON.stringify({
+        id: 'u1',
+        tenant_id: 't1',
+        name: 'Julio',
+        role: pp,
+        type: 'cca',
+        cpf: '99999999999',
+        permissions: {}
+      })
+    );
     window.__XSS = 0;
     window.confirm = () => true;
     window.__POSTS = [];
     const f = window.fetch;
     window.fetch = function (u, o) {
-      if (o && o.method && o.method !== 'GET') window.__POSTS.push({ url:String(u), m:o.method, body:o.body });
+      if (o && o.method && o.method !== 'GET')
+        window.__POSTS.push({ url: String(u), m: o.method, body: o.body });
       return f.apply(this, arguments);
     };
   }, papel);
   await p.route(/supabase\.co/, r => {
     pedidos.push(r.request().method() + ' ' + r.request().url());
-    let d; try { d = responder(r.request().url(), r.request().method(), r.request().postData()); } catch (e) { d = []; }
-    r.fulfill({ status:200, contentType:'application/json',
-                headers:{ 'content-range':'0-1/2' }, body:JSON.stringify(d) });
+    let d;
+    try {
+      d = responder(r.request().url(), r.request().method(), r.request().postData());
+    } catch (e) {
+      d = [];
+    }
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-1/2' },
+      body: JSON.stringify(d)
+    });
   });
-  await p.goto(BASE + '/configuracoes.html', { waitUntil:'load' });
+  await p.goto(BASE + '/configuracoes.html', { waitUntil: 'load' });
   await p.waitForTimeout(1600);
   return { b, p, erros, pedidos };
 }
 
 const TABELAS_NOVAS = /a1_pa_situacoes|a1_pa_transicoes|a1_co_situacoes|a1_co_transicoes|a1_integra_eventos/;
 const rotulosDosCartoes = p =>
-  p.locator('#cfg-hub .cfg-hub-card:visible .cfg-card-label').allTextContents()
-   .then(l => l.map(x => x.trim()));
+  p
+    .locator('#cfg-hub .cfg-hub-card:visible .cfg-card-label')
+    .allTextContents()
+    .then(l => l.map(x => x.trim()));
 
 (async () => {
   // O hub sem licença nenhuma, para comparar com o hub licenciado logo abaixo.
@@ -67,38 +93,48 @@ const rotulosDosCartoes = p =>
     const { b, p, erros, pedidos } = await abrirConfig();
     CARTOES_SEM_LICENCA = await rotulosDosCartoes(p);
 
-    checa('o cartão do registro de integrações nem chega ao DOM',
-      (await p.locator('#cfg-card-integra').count()) === 0);
+    checa(
+      'o cartão do registro de integrações nem chega ao DOM',
+      (await p.locator('#cfg-card-integra').count()) === 0
+    );
     checa('nem a sub-tela dele', (await p.locator('#cfg-view-integra').count()) === 0);
 
-    checa('o roteador não conhece as telas novas', await p.evaluate(() =>
-      !CFG_VIEWS.includes('integra')));
-    checa('a busca do hub não acha "workflow da pré-análise"', await p.evaluate(() => {
-      filtrarHub('pré-análise');
-      const achou = [...document.querySelectorAll('#cfg-hub .cfg-hub-card:not(.oculto)')].length;
-      filtrarHub('');
-      return achou === 0;
-    }));
+    checa('o roteador não conhece as telas novas', await p.evaluate(() => !CFG_VIEWS.includes('integra')));
+    checa(
+      'a busca do hub não acha "workflow da pré-análise"',
+      await p.evaluate(() => {
+        filtrarHub('pré-análise');
+        const achou = [...document.querySelectorAll('#cfg-hub .cfg-hub-card:not(.oculto)')].length;
+        filtrarHub('');
+        return achou === 0;
+      })
+    );
 
     // O terceiro módulo dos tipos de documento existe no HTML e nasce
     // escondido. As permissões de Pré-análise já não estão no HTML: as caixas
     // dos cadastros são montadas do catálogo na hora de abrir, e sem licença o
     // catálogo não devolve nenhuma delas — provado em testes/t-perfis.js.
-    checa('#dt-mod-PRE_ANALISE continua escondido', await p.evaluate(() =>
-      document.getElementById('dt-mod-PRE_ANALISE').style.display === 'none'));
+    checa(
+      '#dt-mod-PRE_ANALISE continua escondido',
+      await p.evaluate(() => document.getElementById('dt-mod-PRE_ANALISE').style.display === 'none')
+    );
 
-    checa('a palavra "Pré-análise" não aparece no hub', await p.evaluate(() =>
-      !/Pr[ée]-an[áa]lise/i.test(document.getElementById('cfg-hub').innerText)));
-    checa('nenhuma consulta às tabelas dos módulos novos',
+    checa(
+      'a palavra "Pré-análise" não aparece no hub',
+      await p.evaluate(() => !/Pr[ée]-an[áa]lise/i.test(document.getElementById('cfg-hub').innerText))
+    );
+    checa(
+      'nenhuma consulta às tabelas dos módulos novos',
       !pedidos.some(u => TABELAS_NOVAS.test(u)),
-      pedidos.filter(u => TABELAS_NOVAS.test(u))[0] || '');
+      pedidos.filter(u => TABELAS_NOVAS.test(u))[0] || ''
+    );
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
   }
 
   console.log('\n== COM LICENÇA, OS CARTÕES APARECEM ==');
   {
-    const { b, p, erros, pedidos } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'] });
+    const { b, p, erros, pedidos } = await abrirConfig({ modulos: ['PRE_ANALISE', 'COMERCIAL'] });
 
     checa('cartão do registro de integrações', await p.locator('#cfg-card-integra').isVisible());
     // 5 de sempre + "Regras gerais" + "Área de risco" + "Leads". O último é o
@@ -108,11 +144,10 @@ const rotulosDosCartoes = p =>
     const _grupos = await p.evaluate(() =>
       [...document.querySelectorAll('#cfg-hub .cfg-grupo')]
         .filter(g => g.style.display !== 'none')
-        .map(g => (g.querySelector('.cfg-section-hdr') || {}).textContent || ''));
-    checa('o hub tem 7 grupos sem a licença de Leads', _grupos.length === 7,
-      JSON.stringify(_grupos));
-    checa('e o grupo Leads não é um deles', !_grupos.some(t => /Leads/.test(t)),
-      JSON.stringify(_grupos));
+        .map(g => (g.querySelector('.cfg-section-hdr') || {}).textContent || '')
+    );
+    checa('o hub tem 7 grupos sem a licença de Leads', _grupos.length === 7, JSON.stringify(_grupos));
+    checa('e o grupo Leads não é um deles', !_grupos.some(t => /Leads/.test(t)), JSON.stringify(_grupos));
     // Antes isto era uma contagem ("22 cartões viram 24"), e ela apodreceu: um
     // cartão novo e legítimo do próprio Repasse (Checklist operacional) fez o
     // número acusar defeito sem dizer qual cartão mudou.
@@ -120,40 +155,60 @@ const rotulosDosCartoes = p =>
     // A pergunta que importa não é quantos, é QUAIS a licença acrescenta. O
     // hub licenciado tem de ser o hub sem licença MAIS as duas configurações
     // próprias da Pré-análise: Ciclo de Distribuição e Registro de integrações.
-    const cards   = await rotulosDosCartoes(p);
-    const novos   = cards.filter(c => !CARTOES_SEM_LICENCA.includes(c));
+    const cards = await rotulosDosCartoes(p);
+    const novos = cards.filter(c => !CARTOES_SEM_LICENCA.includes(c));
     const sumiram = CARTOES_SEM_LICENCA.filter(c => !cards.includes(c));
-    checa('a licença acrescenta o Ciclo e o Registro de integrações',
+    checa(
+      'a licença acrescenta o Ciclo e o Registro de integrações',
       novos.join(' | ') === 'Ciclo de Distribuição | Registro de integrações' && sumiram.length === 0,
-      `novos: ${novos.join(', ') || '—'} | sumiram: ${sumiram.join(', ') || '—'}`);
-    checa('o terceiro módulo dos tipos de documento aparece', await p.evaluate(() =>
-      document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none'));
+      `novos: ${novos.join(', ') || '—'} | sumiram: ${sumiram.join(', ') || '—'}`
+    );
+    checa(
+      'o terceiro módulo dos tipos de documento aparece',
+      await p.evaluate(() => document.getElementById('dt-mod-PRE_ANALISE').style.display !== 'none')
+    );
 
     // Nada é consultado só por ter licença: o editor busca quando o gestor abre.
-    checa('abrir Configurações não consultou a esteira',
-      !pedidos.some(u => TABELAS_NOVAS.test(u)));
+    checa('abrir Configurações não consultou a esteira', !pedidos.some(u => TABELAS_NOVAS.test(u)));
 
     // O editor de esteira saiu daqui. Virou o mesmo quadro do Repasse, em
     // workflow.html, e os testes dele foram junto: testes/t-workflow-modulos.js.
     // Dois editores para a mesma coisa era o que o dono não queria.
-    checa('o workflow não ganha cartão por módulo — é um editor só',
-      (await p.locator('#cfg-card-wf-pa, #cfg-card-wf-co').count()) === 0);
-    checa('e o Editor de Workflow continua único no grupo', await p.evaluate(() =>
-      [...document.querySelectorAll('#cfg-cards-workflow .cfg-hub-card')]
-        .filter(c => /Editor de Workflow/.test(c.textContent)).length === 1));
+    checa(
+      'o workflow não ganha cartão por módulo — é um editor só',
+      (await p.locator('#cfg-card-wf-pa, #cfg-card-wf-co').count()) === 0
+    );
+    checa(
+      'e o Editor de Workflow continua único no grupo',
+      await p.evaluate(
+        () =>
+          [...document.querySelectorAll('#cfg-cards-workflow .cfg-hub-card')].filter(c =>
+            /Editor de Workflow/.test(c.textContent)
+          ).length === 1
+      )
+    );
 
     console.log('\n== REGISTRO DE INTEGRAÇÕES ==');
-    await p.evaluate(() => openCfgView('integra')); await p.waitForTimeout(700);
+    await p.evaluate(() => openCfgView('integra'));
+    await p.waitForTimeout(700);
     checa('a sub-tela abre', await p.locator('#cfg-view-integra').isVisible());
-    checa('e é só leitura: consulta e não grava', pedidos.some(u => /GET .*a1_integra_eventos/.test(u))
-      && await p.evaluate(() => !(window.__POSTS || []).some(x => /a1_integra_eventos/.test(x.url))));
-    checa('sem eventos, explica em vez de mostrar tabela vazia',
-      /Nenhuma integração registrada/.test(await p.locator('#integra-corpo').textContent()));
+    checa(
+      'e é só leitura: consulta e não grava',
+      pedidos.some(u => /GET .*a1_integra_eventos/.test(u)) &&
+        (await p.evaluate(() => !(window.__POSTS || []).some(x => /a1_integra_eventos/.test(x.url))))
+    );
+    checa(
+      'sem eventos, explica em vez de mostrar tabela vazia',
+      /Nenhuma integração registrada/.test(await p.locator('#integra-corpo').textContent())
+    );
 
-    await p.evaluate(() => closeCfgView()); await p.waitForTimeout(300);
+    await p.evaluate(() => closeCfgView());
+    await p.waitForTimeout(300);
     checa('voltar devolve o hub', await p.locator('#cfg-hub').isVisible());
-    checa('e esconde as telas novas', await p.evaluate(() =>
-      document.getElementById('cfg-view-integra').style.display === 'none'));
+    checa(
+      'e esconde as telas novas',
+      await p.evaluate(() => document.getElementById('cfg-view-integra').style.display === 'none')
+    );
 
     checa('nenhum XSS executou', (await p.evaluate(() => window.__XSS || 0)) === 0);
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
@@ -165,16 +220,24 @@ const rotulosDosCartoes = p =>
     // Com a licença liberada e tudo: quem escreve na esteira é gestor, e no
     // banco "gestor" é literalmente papel diferente de partner. Se o cartão
     // aparecesse, o correspondente levaria 403 em cada clique.
-    const { b, p, erros, pedidos } = await abrirConfig({ modulos:['PRE_ANALISE','COMERCIAL'], papel:'partner' });
-    checa('#cfg-card-integra não existe para o correspondente',
-      (await p.locator('#cfg-card-integra').count()) === 0);
+    const { b, p, erros, pedidos } = await abrirConfig({
+      modulos: ['PRE_ANALISE', 'COMERCIAL'],
+      papel: 'partner'
+    });
+    checa(
+      '#cfg-card-integra não existe para o correspondente',
+      (await p.locator('#cfg-card-integra').count()) === 0
+    );
     checa('nem a sub-tela', (await p.locator('#cfg-view-integra').count()) === 0);
-    checa('e nenhuma consulta às tabelas de configuração',
+    checa(
+      'e nenhuma consulta às tabelas de configuração',
       !pedidos.some(u => TABELAS_NOVAS.test(u)),
-      pedidos.filter(u => TABELAS_NOVAS.test(u))[0] || '');
+      pedidos.filter(u => TABELAS_NOVAS.test(u))[0] || ''
+    );
     checa('sem erro de JS', erros.length === 0, erros[0] || '');
     await b.close();
   }
 
-  const n = resumo([]); process.exit(n ? 1 : 0);
+  const n = resumo([]);
+  process.exit(n ? 1 : 0);
 })();

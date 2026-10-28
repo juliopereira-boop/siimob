@@ -19,14 +19,22 @@
 // deles cadastrada, e chegar sugerindo nome de documento por cima seria ruído.
 
 const A1_DOCS_PADRAO = {
-  PRE_ANALISE: ['RG / CNH', 'CPF', 'Comprovante de renda', 'Comprovante de residência',
-                'Certidão de estado civil', 'Extrato FGTS', 'Carteira de trabalho',
-                'Imposto de renda', 'Outro'],
+  PRE_ANALISE: [
+    'RG / CNH',
+    'CPF',
+    'Comprovante de renda',
+    'Comprovante de residência',
+    'Certidão de estado civil',
+    'Extrato FGTS',
+    'Carteira de trabalho',
+    'Imposto de renda',
+    'Outro'
+  ]
 };
 
 // A lista padrão do módulo, ou [] quando ele não tem uma. Quem chama usa o
 // tamanho para decidir se o botão "Usar lista padrão" faz sentido ali.
-function a1DocsPadrao(modulo){
+function a1DocsPadrao(modulo) {
   const l = A1_DOCS_PADRAO[modulo];
   return Array.isArray(l) ? l.slice() : [];
 }
@@ -41,27 +49,32 @@ function a1DocsPadrao(modulo){
 // texto 'false' (é como o front sempre leu), e `obrigatorio` só obriga com o
 // texto 'true'. Na dúvida, NÃO obriga — valor esquisito gravado por tela antiga
 // não pode travar a esteira de quem nunca pediu esta regra.
-function a1DocsObrigatorios(tipos, modulo){
+function a1DocsObrigatorios(tipos, modulo) {
   return (Array.isArray(tipos) ? tipos : [])
-    .filter(t => t && typeof t === 'object'
-              && (t.module || 'repasse') === modulo
-              && String(t.active) !== 'false'
-              && String(t.obrigatorio) === 'true'
-              && String(t.name || '').trim())
+    .filter(
+      t =>
+        t &&
+        typeof t === 'object' &&
+        (t.module || 'repasse') === modulo &&
+        String(t.active) !== 'false' &&
+        String(t.obrigatorio) === 'true' &&
+        String(t.name || '').trim()
+    )
     .map(t => String(t.name).trim());
 }
 
 // Quais tipos obrigatórios ainda não têm documento. `entregues` é a lista de
 // tipos já anexados, em texto — cada tela sabe de onde tira a sua.
-function a1DocsFaltando(tipos, modulo, entregues){
-  const tem = new Set((Array.isArray(entregues) ? entregues : [])
-    .map(x => String(x || '').trim()).filter(Boolean));
+function a1DocsFaltando(tipos, modulo, entregues) {
+  const tem = new Set(
+    (Array.isArray(entregues) ? entregues : []).map(x => String(x || '').trim()).filter(Boolean)
+  );
   return a1DocsObrigatorios(tipos, modulo).filter(n => !tem.has(n));
 }
 
 // A frase que o gestor lê. Existe aqui, e não em cada tela, porque um aviso
 // diferente em cada módulo faria a mesma regra parecer três regras.
-function a1DocsAvisoFaltando(faltando){
+function a1DocsAvisoFaltando(faltando) {
   const l = Array.isArray(faltando) ? faltando : [];
   if (!l.length) return '';
   return l.length === 1

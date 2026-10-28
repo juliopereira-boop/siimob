@@ -2,7 +2,8 @@
 // Replace these two values with your project's URL and anon key.
 // NEVER put the service role key here — that stays server-side only.
 const A1_URL = 'https://hmedoyrxcqgkkasivbsn.supabase.co';
-const A1_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWRveXJ4Y3Fna2thc2l2YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjQyMjUsImV4cCI6MjA5NzkwMDIyNX0.h3TspQHP6u9RN2inS8tUcpnkuVW3ymYNiWVJGJyQvaY';
+const A1_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWRveXJ4Y3Fna2thc2l2YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjQyMjUsImV4cCI6MjA5NzkwMDIyNX0.h3TspQHP6u9RN2inS8tUcpnkuVW3ymYNiWVJGJyQvaY';
 
 // ─── Slug extraction from URL ─────────────────────────────────────────────────
 // URL pattern: /slug/module  e.g. /construtora-abc/repasse
@@ -13,28 +14,37 @@ function getSlugFromURL() {
 
 // ─── Active session (populated by auth.js after login) ───────────────────────
 const A1 = {
-  get token()  { return localStorage.getItem('a1_token'); },
-  get slug()   { return localStorage.getItem('a1_slug')  || getSlugFromURL(); },
-  get user()   {
+  get token() {
+    return localStorage.getItem('a1_token');
+  },
+  get slug() {
+    return localStorage.getItem('a1_slug') || getSlugFromURL();
+  },
+  get user() {
     try {
       const u = JSON.parse(localStorage.getItem('a1_user') || 'null');
       // permissions é jsonb e normalmente chega como objeto. Se por qualquer
       // caminho vier como texto, todo `p.gerente` do sistema daria undefined e
       // a pessoa seria silenciosamente rebaixada. Normaliza num lugar só.
       if (u && typeof u.permissions === 'string') {
-        try { u.permissions = JSON.parse(u.permissions); } catch { u.permissions = {}; }
+        try {
+          u.permissions = JSON.parse(u.permissions);
+        } catch {
+          u.permissions = {};
+        }
       }
       return u;
+    } catch {
+      return null;
     }
-    catch { return null; }
   },
 
   // Base headers for ALL Supabase REST calls
   headers(extra = {}) {
     return {
-      'Content-Type':    'application/json',
-      'apikey':          A1_KEY,
-      'Authorization':  `Bearer ${A1_KEY}`,
+      'Content-Type': 'application/json',
+      apikey: A1_KEY,
+      Authorization: `Bearer ${A1_KEY}`,
       'x-session-token': this.token,
       ...extra
     };
@@ -42,11 +52,11 @@ const A1 = {
 
   // Upsert header (Supabase merge-duplicate pattern)
   upsertHeaders() {
-    return this.headers({ 'Prefer': 'resolution=merge-duplicates,return=representation' });
+    return this.headers({ Prefer: 'resolution=merge-duplicates,return=representation' });
   },
 
   returnHeaders() {
-    return this.headers({ 'Prefer': 'return=representation' });
+    return this.headers({ Prefer: 'return=representation' });
   },
 
   // Base REST URL
@@ -103,11 +113,11 @@ const A1 = {
   // página. Pedir isso em cada uma das 40 páginas é pagar a conta 40 vezes pelo
   // mesmo número. Agora ele é pedido UMA vez, na primeira página, e reusado.
   _chaveDeOrdem(url) {
-    if (/[?&]or=/.test(url)) return null;             // `or=` próprio: não dá para somar o nosso
+    if (/[?&]or=/.test(url)) return null; // `or=` próprio: não dá para somar o nosso
     const m = /[?&]order=([^&]+)/.exec(url);
     if (!m) return null;
     const partes = decodeURIComponent(m[1]).split(',');
-    if (partes.length !== 1) return null;             // ordem composta: fora do escopo
+    if (partes.length !== 1) return null; // ordem composta: fora do escopo
     const [col, dir] = partes[0].split('.');
     if (!col || /\./.test(col)) return null;
     return { col, desc: (dir || 'asc').toLowerCase().startsWith('desc') };
@@ -135,15 +145,21 @@ const A1 = {
     const porLote = Math.max(1, Math.floor(6000 / (String(unicos[0]).length + 1)));
     const lotes = [];
     for (let i = 0; i < unicos.length; i += porLote) lotes.push(unicos.slice(i, i + porLote));
-    const partes = await Promise.all(lotes.map(async lote => {
-      const sep = base.includes('?') ? '&' : '?';
-      const r = await this.buscarTudo(`${base}${sep}${coluna}=in.(${lote.join(',')})`, opcoes)
-        .catch(() => null);
-      // Lote que falha NAO vira lista vazia silenciosa: quem chama recebe menos
-      // linhas e, se quiser, compara com ids.length. O erro fica no console.
-      if (!r) { console.warn('buscarPorIds: um lote falhou em', base); return []; }
-      return r.linhas || [];
-    }));
+    const partes = await Promise.all(
+      lotes.map(async lote => {
+        const sep = base.includes('?') ? '&' : '?';
+        const r = await this.buscarTudo(`${base}${sep}${coluna}=in.(${lote.join(',')})`, opcoes).catch(
+          () => null
+        );
+        // Lote que falha NAO vira lista vazia silenciosa: quem chama recebe menos
+        // linhas e, se quiser, compara com ids.length. O erro fica no console.
+        if (!r) {
+          console.warn('buscarPorIds: um lote falhou em', base);
+          return [];
+        }
+        return r.linhas || [];
+      })
+    );
     return partes.flat();
   },
 
@@ -151,14 +167,17 @@ const A1 = {
     const tamanho = opcoes.tamanho || 1000;
     const tetoSeguranca = opcoes.teto || 50000;
     const linhas = [];
-    let total = null, inicio = 0, marco = null, semChave = false;
+    let total = null,
+      inicio = 0,
+      marco = null,
+      semChave = false;
     const chaveDaOrdem = opcoes.chave === false ? null : this._chaveDeOrdem(url);
 
     for (;;) {
       // Com chave, a faixa é sempre a primeira: quem anda é o filtro, não o
       // deslocamento. Sem chave, é o salto de antes.
       const de = marco ? 0 : inicio;
-      const cabecalhos = { 'Range-Unit': 'items', 'Range': `${de}-${de + tamanho - 1}` };
+      const cabecalhos = { 'Range-Unit': 'items', Range: `${de}-${de + tamanho - 1}` };
       // O total é pedido só na primeira volta. Nas seguintes ele já é conhecido.
       if (total == null) cabecalhos['Prefer'] = 'count=exact';
 
@@ -167,8 +186,9 @@ const A1 = {
         const op = chaveDaOrdem.desc ? 'lt' : 'gt';
         // "veio depois deste carimbo, OU tem o mesmo carimbo e vem depois no id"
         const c = chaveDaOrdem.col;
-        alvo += `&or=(${c}.${op}.${encodeURIComponent(marco.valor)},`
-             +  `and(${c}.eq.${encodeURIComponent(marco.valor)},id.${op}.${encodeURIComponent(marco.id)}))`;
+        alvo +=
+          `&or=(${c}.${op}.${encodeURIComponent(marco.valor)},` +
+          `and(${c}.eq.${encodeURIComponent(marco.valor)},id.${op}.${encodeURIComponent(marco.id)}))`;
       }
 
       const res = await fetch(alvo, { headers: this.headers(cabecalhos) });
@@ -189,8 +209,12 @@ const A1 = {
         // a tela tira a frase que nomeia a COLUNA que falta. Quem leu so o
         // status passou uma tarde procurando o que o banco ja tinha dito.
         const _corpo = await res.text().catch(() => '');
-        return { linhas, total: total ?? linhas.length, completo: false,
-                 erro: 'HTTP ' + res.status + (_corpo ? ': ' + _corpo.slice(0, 400) : '') };
+        return {
+          linhas,
+          total: total ?? linhas.length,
+          completo: false,
+          erro: 'HTTP ' + res.status + (_corpo ? ': ' + _corpo.slice(0, 400) : '')
+        };
       }
       const parte = await res.json().catch(() => []);
       if (!Array.isArray(parte)) {
@@ -200,10 +224,10 @@ const A1 = {
 
       // "0-999/2600" — o número depois da barra é o total de verdade.
       const faixa = res.headers.get('content-range') || '';
-      const t = parseInt((faixa.split('/')[1] || ''), 10);
+      const t = parseInt(faixa.split('/')[1] || '', 10);
       if (!isNaN(t) && total == null) total = t;
 
-      if (parte.length < tamanho) break;                 // acabou
+      if (parte.length < tamanho) break; // acabou
       if (total != null && linhas.length >= total) break; // já tem tudo
 
       const chave = semChave ? null : chaveDaOrdem;
@@ -237,8 +261,8 @@ const A1 = {
     const res = await fetch(`${A1_URL}/storage/v1/object/${bucket}/${path}`, {
       method: 'POST',
       headers: {
-        'apikey': A1_KEY,
-        'Authorization': `Bearer ${A1_KEY}`,
+        apikey: A1_KEY,
+        Authorization: `Bearer ${A1_KEY}`,
         'x-session-token': this.token,
         'x-upsert': 'true',
         'Content-Type': (file && file.type) || 'application/octet-stream'
@@ -253,8 +277,8 @@ const A1 = {
       const res = await fetch(`${A1_URL}/storage/v1/object/sign/${bucket}/${path}`, {
         method: 'POST',
         headers: {
-          'apikey': A1_KEY,
-          'Authorization': `Bearer ${A1_KEY}`,
+          apikey: A1_KEY,
+          Authorization: `Bearer ${A1_KEY}`,
           'x-session-token': this.token,
           'Content-Type': 'application/json'
         },
@@ -263,7 +287,9 @@ const A1 = {
       if (!res.ok) return null;
       const data = await res.json();
       return data && data.signedURL ? `${A1_URL}/storage/v1${data.signedURL}` : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   },
 
   async storageRemove(bucket, path) {
@@ -271,8 +297,8 @@ const A1 = {
       await fetch(`${A1_URL}/storage/v1/object/${bucket}`, {
         method: 'DELETE',
         headers: {
-          'apikey': A1_KEY,
-          'Authorization': `Bearer ${A1_KEY}`,
+          apikey: A1_KEY,
+          Authorization: `Bearer ${A1_KEY}`,
           'x-session-token': this.token,
           'Content-Type': 'application/json'
         },
@@ -297,8 +323,12 @@ const A1 = {
   //   3. cada palavra digitada precisa aparecer, em qualquer ordem:
   //      "maria silva" acha MARIA DA SILVA, que a frase exata não achava.
   normalBusca(s) {
-    return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase().replace(/\s+/g, ' ').trim();
+    return String(s == null ? '' : s)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
   },
   casaBusca(campos, consulta) {
     const q = this.normalBusca(consulta);
@@ -350,7 +380,10 @@ const A1 = {
     const caminho = el => {
       const p = [];
       while (el && el !== document.body) {
-        if (el.id) { p.unshift('#' + el.id); break; }
+        if (el.id) {
+          p.unshift('#' + el.id);
+          break;
+        }
         const pai = el.parentElement;
         p.unshift(pai ? [...pai.children].indexOf(el) : 0);
         el = pai;
@@ -368,10 +401,13 @@ const A1 = {
     for (const [p, top, left] of f.areas) {
       let el = document.body;
       for (const passo of p) {
-        el = typeof passo === 'string' ? document.getElementById(passo.slice(1)) : (el && el.children[passo]);
+        el = typeof passo === 'string' ? document.getElementById(passo.slice(1)) : el && el.children[passo];
         if (!el) break;
       }
-      if (el) { el.scrollTop = top; el.scrollLeft = left; }
+      if (el) {
+        el.scrollTop = top;
+        el.scrollLeft = left;
+      }
     }
     window.scrollTo(f.x, f.y);
   }

@@ -26,26 +26,30 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const A1_ICONES = {
-  geral:  '<path d="M3 13h8V3H3v10Zm10 8h8V11h-8v10ZM3 21h8v-6H3v6ZM13 9h8V3h-8v6Z"/>',
-  lead:   '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/>',
-  pre:    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
-  venda:  '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
-  repasse:'<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/>',
-  registro:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
-  config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.44.62.79.75H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
-  lupa:   '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
-  sino:   '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
-  troca:  '<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
+  geral: '<path d="M3 13h8V3H3v10Zm10 8h8V11h-8v10ZM3 21h8v-6H3v6ZM13 9h8V3h-8v6Z"/>',
+  lead: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/>',
+  pre: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
+  venda: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+  repasse: '<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/>',
+  registro: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
+  config:
+    '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.44.62.79.75H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+  lupa: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  sino: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  troca:
+    '<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
   calend: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  sair:   '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   pessoa: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-  lua:    '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
-  sol:    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  fluxo:  '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/>',
-  whatsapp:'<path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.3-4.9a8.4 8.4 0 1 1 16.2-3.8Z"/><path d="M8.2 7.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.7 1.7c.1.3 0 .5-.2.7l-.6.7c-.2.2-.1.4 0 .6.7 1.2 1.6 2.1 2.8 2.7.2.1.4.2.6 0l.8-1c.2-.2.4-.3.7-.2l1.8.8c.3.1.5.2.5.4 0 .2-.1 1.1-.5 1.6-.5.6-1.3.9-2.1.9-1.1 0-2.7-.5-4.5-2.1-2.1-1.8-3.4-4.1-3.5-5.5 0-.5.1-.9.3-1.2Z"/>'
+  lua: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  fluxo:
+    '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/>',
+  whatsapp:
+    '<path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.3-4.9a8.4 8.4 0 1 1 16.2-3.8Z"/><path d="M8.2 7.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.7 1.7c.1.3 0 .5-.2.7l-.6.7c-.2.2-.1.4 0 .6.7 1.2 1.6 2.1 2.8 2.7.2.1.4.2.6 0l.8-1c.2-.2.4-.3.7-.2l1.8.8c.3.1.5.2.5.4 0 .2-.1 1.1-.5 1.6-.5.6-1.3.9-2.1.9-1.1 0-2.7-.5-4.5-2.1-2.1-1.8-3.4-4.1-3.5-5.5 0-.5.1-.9.3-1.2Z"/>'
 };
 
-function a1Svg(nome, tam){
+function a1Svg(nome, tam) {
   const d = A1_ICONES[nome] || '';
   const t = tam || 16;
   return `<svg viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor"
@@ -55,18 +59,54 @@ function a1Svg(nome, tam){
 // `chave` e a mesma que a licenca usa em a1_tenant_modules. `sempre:true` e so
 // para o que nao depende de licenca.
 const A1_MODULOS = [
-  { chave:'crm',         rotulo:'Leads',       icone:'lead',
-    vistas:[['Andamento','crm'],['Listagem','crm?vista=listagem'],['Dashboard','crm?vista=dashboard']] },
-  { chave:'PRE_ANALISE', rotulo:'Pré-análise', icone:'pre',
-    vistas:[['Andamento','pre-analise'],['Listagem','pre-analise-listagem'],
-            ['Dashboard','pre-analise?vista=dashboard']] },
-  { chave:'COMERCIAL',   rotulo:'Venda',       icone:'venda',
-    vistas:[['Andamento','comercial'],['Listagem','comercial-listagem'],
-            ['Dashboard','comercial?vista=dashboard']] },
-  { chave:'repasse',     rotulo:'Repasse',     icone:'repasse',
-    vistas:[['Andamento','andamento'],['Listagem','listagem']] },
-  { chave:'registro',    rotulo:'Registro',    icone:'registro',
-    vistas:[['Andamento','registro'],['Listagem','registro-listagem']] }
+  {
+    chave: 'crm',
+    rotulo: 'Leads',
+    icone: 'lead',
+    vistas: [
+      ['Andamento', 'crm'],
+      ['Listagem', 'crm?vista=listagem'],
+      ['Dashboard', 'crm?vista=dashboard']
+    ]
+  },
+  {
+    chave: 'PRE_ANALISE',
+    rotulo: 'Pré-análise',
+    icone: 'pre',
+    vistas: [
+      ['Andamento', 'pre-analise'],
+      ['Listagem', 'pre-analise-listagem'],
+      ['Dashboard', 'pre-analise?vista=dashboard']
+    ]
+  },
+  {
+    chave: 'COMERCIAL',
+    rotulo: 'Venda',
+    icone: 'venda',
+    vistas: [
+      ['Andamento', 'comercial'],
+      ['Listagem', 'comercial-listagem'],
+      ['Dashboard', 'comercial?vista=dashboard']
+    ]
+  },
+  {
+    chave: 'repasse',
+    rotulo: 'Repasse',
+    icone: 'repasse',
+    vistas: [
+      ['Andamento', 'andamento'],
+      ['Listagem', 'listagem']
+    ]
+  },
+  {
+    chave: 'registro',
+    rotulo: 'Registro',
+    icone: 'registro',
+    vistas: [
+      ['Andamento', 'registro'],
+      ['Listagem', 'registro-listagem']
+    ]
+  }
 ];
 
 const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
@@ -86,40 +126,71 @@ const A1_DASHBOARD_PERMISSOES = {
 // Tipo desconhecido vira "Parceiro", nunca "Correspondente": chutar um papel
 // que a pessoa nao tem foi um defeito real — o mesmo corretor aparecia como
 // Corretor numa tela e Correspondente na outra.
-function a1RotuloPapel(user){
-  try { if (sessionStorage.getItem('a1_sa_mode')) return 'Superadmin'; } catch {}
-  if (!user || user.role !== 'partner') return user && user.role === 'owner' ? 'Gestor (proprietário)' : 'Gestor';
-  return { cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
-           analista:'Analista', coordenador:'Coordenador' }[user.type] || 'Parceiro';
+function a1RotuloPapel(user) {
+  try {
+    if (sessionStorage.getItem('a1_sa_mode')) return 'Superadmin';
+  } catch {}
+  if (!user || user.role !== 'partner')
+    return user && user.role === 'owner' ? 'Gestor (proprietário)' : 'Gestor';
+  return (
+    {
+      cca: 'Correspondente',
+      despachante: 'Despachante',
+      corretor: 'Corretor',
+      analista: 'Analista',
+      coordenador: 'Coordenador'
+    }[user.type] || 'Parceiro'
+  );
 }
 
 // O papel vem gravado junto do evento. Assim, se alguém mudar de Corretor
 // para Coordenador amanhã, o histórico de ontem continua dizendo quem ele era
 // no momento da ação.
-function a1RotuloPapelHistorico(papel){
-  return { superadmin:'Superadmin', owner:'Gestor (proprietário)', admin:'Gestor',
-    manager:'Gestor', user:'Usuário', viewer:'Consulta', partner:'Parceiro',
-    cca:'Correspondente', despachante:'Despachante', corretor:'Corretor',
-    analista:'Analista', coordenador:'Coordenador', imobiliaria:'Imobiliária' }[papel] || String(papel || '');
+function a1RotuloPapelHistorico(papel) {
+  return (
+    {
+      superadmin: 'Superadmin',
+      owner: 'Gestor (proprietário)',
+      admin: 'Gestor',
+      manager: 'Gestor',
+      user: 'Usuário',
+      viewer: 'Consulta',
+      partner: 'Parceiro',
+      cca: 'Correspondente',
+      despachante: 'Despachante',
+      corretor: 'Corretor',
+      analista: 'Analista',
+      coordenador: 'Coordenador',
+      imobiliaria: 'Imobiliária'
+    }[papel] || String(papel || '')
+  );
 }
-function a1AtorHistorico(evento){
-  const nome=evento && (evento.actor_name || evento.ator_nome || evento.criado_por_nome) || '';
-  const papel=a1RotuloPapelHistorico(evento && (evento.actor_role || evento.ator_papel || evento.criado_por_papel));
-  return [nome,papel].filter(Boolean).join(' · ');
+function a1AtorHistorico(evento) {
+  const nome = (evento && (evento.actor_name || evento.ator_nome || evento.criado_por_nome)) || '';
+  const papel = a1RotuloPapelHistorico(
+    evento && (evento.actor_role || evento.ator_papel || evento.criado_por_papel)
+  );
+  return [nome, papel].filter(Boolean).join(' · ');
 }
 
-function a1Esc(s){
+function a1Esc(s) {
   return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // As iniciais do avatar. Duas letras, do primeiro e do ultimo nome — "Júlio
 // César sousa pereira" vira JP, nao JC, porque e assim que a pessoa assina.
-function a1Iniciais(nome){
-  const p = String(nome || '').trim().split(/\s+/).filter(Boolean);
+function a1Iniciais(nome) {
+  const p = String(nome || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   if (!p.length) return '?';
-  if (p.length === 1) return p[0].slice(0,2).toUpperCase();
-  return (p[0][0] + p[p.length-1][0]).toUpperCase();
+  if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+  return (p[0][0] + p[p.length - 1][0]).toUpperCase();
 }
 
 // Quais modulos este cliente tem, perguntando todos de uma vez.
@@ -144,42 +215,25 @@ function a1Iniciais(nome){
 
 const A1_MODULO_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
 
-
-function a1Esperar(ms){
+function a1Esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
-function a1ModuloCacheChave(chave){
-
-  const tenant =
-    (A1.user && A1.user.tenant_id) ||
-    A1.slug ||
-    'sem-tenant';
+function a1ModuloCacheChave(chave) {
+  const tenant = (A1.user && A1.user.tenant_id) || A1.slug || 'sem-tenant';
 
   return `siimob:modulo:${tenant}:${chave}`;
 }
 
-
-function a1ModuloCacheLer(chave){
-
+function a1ModuloCacheLer(chave) {
   try {
-
-    const bruto =
-      localStorage.getItem(
-        a1ModuloCacheChave(chave)
-      );
+    const bruto = localStorage.getItem(a1ModuloCacheChave(chave));
 
     if (!bruto) return null;
 
-    const item =
-      JSON.parse(bruto);
+    const item = JSON.parse(bruto);
 
-    if (
-      !item ||
-      item.valor !== true ||
-      !item.em
-    ){
+    if (!item || item.valor !== true || !item.em) {
       return null;
     }
 
@@ -189,98 +243,58 @@ function a1ModuloCacheLer(chave){
 
       Ele não substitui a consulta real.
     */
-    if (
-      Date.now() - Number(item.em) >
-      A1_MODULO_CACHE_TTL
-    ){
-      localStorage.removeItem(
-        a1ModuloCacheChave(chave)
-      );
+    if (Date.now() - Number(item.em) > A1_MODULO_CACHE_TTL) {
+      localStorage.removeItem(a1ModuloCacheChave(chave));
 
       return null;
     }
 
     return true;
-
   } catch {
-
     return null;
-
   }
 }
 
-
-function a1ModuloCacheSalvar(chave, valor){
-
+function a1ModuloCacheSalvar(chave, valor) {
   try {
-
     /*
       Guardamos somente módulo confirmado como ATIVO.
 
       Nunca guardamos false como fallback para evitar que
       um módulo recém-liberado fique escondido por cache.
     */
-    if (valor === true){
-
+    if (valor === true) {
       localStorage.setItem(
         a1ModuloCacheChave(chave),
         JSON.stringify({
-          valor:true,
-          em:Date.now()
+          valor: true,
+          em: Date.now()
         })
       );
-
-    } else if (valor === false){
-
+    } else if (valor === false) {
       /*
         Se o servidor respondeu explicitamente false,
         remove qualquer confirmação antiga.
       */
-      localStorage.removeItem(
-        a1ModuloCacheChave(chave)
-      );
+      localStorage.removeItem(a1ModuloCacheChave(chave));
     }
-
   } catch {
-
     // localStorage indisponível não pode quebrar o sistema.
-
   }
 }
 
-
-async function a1HasModuleSeguro(chave){
-
-  const esperas = [
-    0,
-    250,
-    650,
-    1200
-  ];
+async function a1HasModuleSeguro(chave) {
+  const esperas = [0, 250, 650, 1200];
 
   let ultimoErro = null;
 
-
-  for (
-    let tentativa = 0;
-    tentativa < esperas.length;
-    tentativa++
-  ){
-
-    if (esperas[tentativa]){
-
-      await a1Esperar(
-        esperas[tentativa]
-      );
-
+  for (let tentativa = 0; tentativa < esperas.length; tentativa++) {
+    if (esperas[tentativa]) {
+      await a1Esperar(esperas[tentativa]);
     }
 
-
     try {
-
-      const valor =
-        await a1HasModule(chave);
-
+      const valor = await a1HasModule(chave);
 
       /*
         Só aceitamos respostas booleanas reais.
@@ -291,28 +305,15 @@ async function a1HasModuleSeguro(chave){
         Qualquer outra coisa será tratada
         como consulta inconclusiva.
       */
-      if (
-        valor === true ||
-        valor === false
-      ){
-
-        a1ModuloCacheSalvar(
-          chave,
-          valor
-        );
+      if (valor === true || valor === false) {
+        a1ModuloCacheSalvar(chave, valor);
 
         return valor;
       }
-
-
-    } catch (erro){
-
+    } catch (erro) {
       ultimoErro = erro;
-
     }
-
   }
-
 
   /*
     Todas as tentativas falharam.
@@ -322,26 +323,15 @@ async function a1HasModuleSeguro(chave){
 
     A segurança continua no backend/RLS.
   */
-  const cache =
-    a1ModuloCacheLer(chave);
+  const cache = a1ModuloCacheLer(chave);
 
-
-  if (cache === true){
-
-    console.warn(
-      `[SIIMOB] Consulta do módulo "${chave}" falhou. ` +
-      'Usando última confirmação válida.'
-    );
+  if (cache === true) {
+    console.warn(`[SIIMOB] Consulta do módulo "${chave}" falhou. ` + 'Usando última confirmação válida.');
 
     return true;
   }
 
-
-  console.error(
-    `[SIIMOB] Não foi possível verificar o módulo "${chave}".`,
-    ultimoErro || ''
-  );
-
+  console.error(`[SIIMOB] Não foi possível verificar o módulo "${chave}".`, ultimoErro || '');
 
   /*
     IMPORTANTE:
@@ -351,9 +341,7 @@ async function a1HasModuleSeguro(chave){
   return null;
 }
 
-
-async function a1ModulosDoCliente(){
-
+async function a1ModulosDoCliente() {
   // A sessão aberta pelo painel do Superadmin é uma sessão de suporte. Ela
   // já passa pelo guard de módulo em auth.js e precisa conservar o mesmo
   // comportamento ao montar o shell; do contrário, o guard liberava a URL,
@@ -364,35 +352,16 @@ async function a1ModulosDoCliente(){
     }
   } catch {}
 
-  const resultados =
-    await Promise.all(
-
-      A1_MODULOS.map(
-        modulo =>
-          a1HasModuleSeguro(
-            modulo.chave
-          )
-      )
-
-    );
-
+  const resultados = await Promise.all(A1_MODULOS.map(modulo => a1HasModuleSeguro(modulo.chave)));
 
   const tem = {};
 
-
-  A1_MODULOS.forEach(
-    (modulo, i) => {
-
-      tem[modulo.chave] =
-        resultados[i];
-
-    }
-  );
-
+  A1_MODULOS.forEach((modulo, i) => {
+    tem[modulo.chave] = resultados[i];
+  });
 
   return tem;
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DASHBOARDS
@@ -408,23 +377,15 @@ async function a1ModulosDoCliente(){
 // e a tela ficava incoerente.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function a1DashboardsDoCliente(modulosJaConsultados){
-
-  const chaves =
-    Object.keys(
-      A1_DASHBOARD_PERMISSOES
-    );
-
+async function a1DashboardsDoCliente(modulosJaConsultados) {
+  const chaves = Object.keys(A1_DASHBOARD_PERMISSOES);
 
   // Reaproveita a consulta do shell quando disponível. Algumas telas antigas
   // chamavam esta função sem argumento e acabavam transformando `undefined`
   // em um mapa vazio: todos os dashboards eram negados, inclusive ao suporte.
-  const licencas =
-    modulosJaConsultados || A1_SHELL.tem || await a1ModulosDoCliente();
+  const licencas = modulosJaConsultados || A1_SHELL.tem || (await a1ModulosDoCliente());
 
-
-  const user =
-    A1.user || {};
+  const user = A1.user || {};
 
   // Suporte/Superadmin não é um perfil do cliente e não deve herdar a matriz
   // de permissões do usuário usado para abrir a sessão. O backend continua
@@ -436,32 +397,14 @@ async function a1DashboardsDoCliente(modulosJaConsultados){
     }
   } catch {}
 
-
   /*
     Parceiros:
     o acesso aos dashboards acompanha
     os módulos efetivamente liberados.
   */
-  if (
-    user.role === 'partner'
-  ){
-
-    return Object.fromEntries(
-
-      chaves.map(
-        modulo => [
-
-          modulo,
-
-          licencas[modulo] === true
-
-        ]
-      )
-
-    );
-
+  if (user.role === 'partner') {
+    return Object.fromEntries(chaves.map(modulo => [modulo, licencas[modulo] === true]));
   }
-
 
   /*
     Usuários internos:
@@ -469,140 +412,76 @@ async function a1DashboardsDoCliente(modulosJaConsultados){
     a permissão de dashboard correspondente.
   */
 
-  const permissoes =
-    await Promise.all(
-
-      chaves.map(
-        async modulo => {
-
-          /*
+  const permissoes = await Promise.all(
+    chaves.map(async modulo => {
+      /*
             Se o módulo foi confirmado como não disponível,
             não precisa consultar permissão.
           */
-          if (
-            licencas[modulo] !== true
-          ){
-            return false;
-          }
+      if (licencas[modulo] !== true) {
+        return false;
+      }
 
+      const chavePermissao = A1_DASHBOARD_PERMISSOES[modulo];
 
-          const chavePermissao =
-            A1_DASHBOARD_PERMISSOES[modulo];
-
-
-          /*
+      /*
             Também damos pequenas tentativas para a permissão,
             evitando retirar a aba Geral por uma oscilação.
           */
-          const esperas = [
-            0,
-            250,
-            650
-          ];
+      const esperas = [0, 250, 650];
 
+      for (let tentativa = 0; tentativa < esperas.length; tentativa++) {
+        if (esperas[tentativa]) {
+          await a1Esperar(esperas[tentativa]);
+        }
 
-          for (
-            let tentativa = 0;
-            tentativa < esperas.length;
-            tentativa++
-          ){
+        try {
+          const r = await fetch(
+            A1.rpc('a1_perm'),
 
-            if (
-              esperas[tentativa]
-            ){
-
-              await a1Esperar(
-                esperas[tentativa]
-              );
-
+            {
+              method: 'POST',
+              headers: A1.headers(),
+              body: JSON.stringify({
+                p_chave: chavePermissao
+              })
             }
+          );
 
-
-            try {
-
-              const r =
-                await fetch(
-
-                  A1.rpc('a1_perm'),
-
-                  {
-                    method:'POST',
-                    headers:A1.headers(),
-                    body:JSON.stringify({
-                      p_chave:
-                        chavePermissao
-                    })
-                  }
-
-                );
-
-
-              if (!r.ok){
-                continue;
-              }
-
-
-              const resultado =
-                await r.json();
-
-
-              if (
-                resultado === true
-              ){
-                return true;
-              }
-
-
-              if (
-                resultado === false
-              ){
-                return false;
-              }
-
-
-            } catch {
-
-              // tenta novamente
-
-            }
-
+          if (!r.ok) {
+            continue;
           }
 
+          const resultado = await r.json();
 
-          return false;
+          if (resultado === true) {
+            return true;
+          }
 
+          if (resultado === false) {
+            return false;
+          }
+        } catch {
+          // tenta novamente
         }
-      )
+      }
 
-    );
-
-
-  return Object.fromEntries(
-
-    chaves.map(
-      (modulo, i) => [
-
-        modulo,
-
-        permissoes[i] === true
-
-      ]
-    )
-
+      return false;
+    })
   );
 
+  return Object.fromEntries(chaves.map((modulo, i) => [modulo, permissoes[i] === true]));
 }
 
-function a1PodeVerDashboardModulo(user, modulo, licencas){
+function a1PodeVerDashboardModulo(user, modulo, licencas) {
   if (!licencas || licencas[modulo] !== true || !user) return false;
   if (user.role !== 'partner') return true;
   const perms = user.permissions || {};
   return perms.gerente === true || perms[A1_DASHBOARD_PERMISSOES[modulo]] === true;
 }
 
-function a1PodeVerAlgumDashboard(user, licencas){
-  return Object.keys(A1_DASHBOARD_PERMISSOES)
-    .some(m => a1PodeVerDashboardModulo(user, m, licencas));
+function a1PodeVerAlgumDashboard(user, licencas) {
+  return Object.keys(A1_DASHBOARD_PERMISSOES).some(m => a1PodeVerDashboardModulo(user, m, licencas));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -632,28 +511,28 @@ const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" width="24" height="24" fill="no
      opcoes.acoes  — HTML de botoes extras a direita da sub-barra
    ═══════════════════════════════════════════════════════════════════════════ */
 
-let A1_SHELL = { tem:null, dash:null, montado:false };
+let A1_SHELL = { tem: null, dash: null, montado: false };
 
-async function a1MontarShell(alvo, opcoes){
+async function a1MontarShell(alvo, opcoes) {
   const o = opcoes || {};
   const user = A1.user || {};
   const slug = A1.slug || '';
   const ehParceiro = user.role === 'partner';
   let emSuporte = false;
-  try { emSuporte = sessionStorage.getItem('a1_sa_mode') === '1'; } catch {}
+  try {
+    emSuporte = sessionStorage.getItem('a1_sa_mode') === '1';
+  } catch {}
   const suporteEmContaSuspensa = emSuporte && user.status === 'suspended';
   const url = s => `/${a1Esc(slug)}/${s}`;
 
   a1ShellGarantirCSS();
 
-  const tem =
-  await a1ModulosDoCliente();
+  const tem = await a1ModulosDoCliente();
 
-const dash =
-  await a1DashboardsDoCliente(tem);
+  const dash = await a1DashboardsDoCliente(tem);
 
-A1_SHELL.tem = tem;
-A1_SHELL.dash = dash;
+  A1_SHELL.tem = tem;
+  A1_SHELL.dash = dash;
 
   // ── As abas de modulo ──
   const abas = [];
@@ -661,7 +540,7 @@ A1_SHELL.dash = dash;
   // aparece para quem pode ver o painel de PELO MENOS um modulo — quem nao pode
   // ver painel nenhum entra direto no quadro do modulo dele, e uma aba que so
   // abre uma tela vazia seria pior que aba nenhuma.
-  if (a1PodeVerAlgumDashboard(user, dash)){
+  if (a1PodeVerAlgumDashboard(user, dash)) {
     abas.push(`<a class="sb-mod${o.ativo === 'geral' ? ' ativo' : ''}" href="${url('geral')}">
       ${a1Svg('geral')}<span>Geral</span></a>`);
   }
@@ -670,36 +549,44 @@ A1_SHELL.dash = dash;
     abas.push(`<a class="sb-mod${o.ativo === m.chave ? ' ativo' : ''}" href="${url(a1Esc(m.vistas[0][1]))}">
       ${a1Svg(m.icone)}<span>${a1Esc(m.rotulo)}</span></a>`);
   });
-  if (!ehParceiro){
+  if (!ehParceiro) {
     abas.push(`<a class="sb-mod${o.ativo === 'config' ? ' ativo' : ''}" href="${url('configuracoes')}"
       title="Configurações">${a1Svg('config')}<span>Configurações</span></a>`);
   }
 
   // ── A sub-barra: as vistas DENTRO do modulo ativo ──
   let sub = '';
-  if (o.sub){
+  if (o.sub) {
     // Duas formas, porque ha dois tipos de vista no sistema: a que TROCA DE
     // PAGINA (href) e a que troca de aba dentro da mesma pagina (acao). Forcar
     // as duas a virarem link faria a segunda recarregar a tela inteira para
     // mostrar uma div que ja estava carregada.
-    sub = o.sub.map(v => {
-      const it = Array.isArray(v) ? { rot:v[0], href:v[1], ativo:v[2], n:v[3] } : v;
-      const conta = it.n != null ? `<span class="sb-sub-conta" ${it.id ? `id="${a1Esc(it.id)}"` : ''}>${a1Esc(String(it.n))}</span>` : '';
-      const marca = it.ativo ? ' ativo' : '';
-      return it.acao
-        ? `<button type="button" class="sb-sub-item${marca}" data-vista="${a1Esc(it.chave || it.rot)}"
+    sub = o.sub
+      .map(v => {
+        const it = Array.isArray(v) ? { rot: v[0], href: v[1], ativo: v[2], n: v[3] } : v;
+        const conta =
+          it.n != null
+            ? `<span class="sb-sub-conta" ${it.id ? `id="${a1Esc(it.id)}"` : ''}>${a1Esc(String(it.n))}</span>`
+            : '';
+        const marca = it.ativo ? ' ativo' : '';
+        return it.acao
+          ? `<button type="button" class="sb-sub-item${marca}" data-vista="${a1Esc(it.chave || it.rot)}"
              onclick="${a1Esc(it.acao)}">${a1Esc(it.rot)}${conta}</button>`
-        : `<a class="sb-sub-item${marca}" href="${a1Esc(it.href || '#')}">${a1Esc(it.rot)}${conta}</a>`;
-    }).join('');
+          : `<a class="sb-sub-item${marca}" href="${a1Esc(it.href || '#')}">${a1Esc(it.rot)}${conta}</a>`;
+      })
+      .join('');
   } else {
     const mod = A1_MODULOS.find(m => m.chave === o.ativo);
-    if (mod && tem[mod.chave]){
+    if (mod && tem[mod.chave]) {
       const vistaAtual = (o.vista || a1VistaDaURL()).toLowerCase();
       sub = mod.vistas
         .filter(([rot]) => rot !== 'Dashboard' || a1PodeVerDashboardModulo(user, mod.chave, dash))
-        .map(([rot, rota]) =>
-          `<a class="sb-sub-item${vistaAtual === rot.toLowerCase() ? ' ativo' : ''}"
-              href="${url(a1Esc(rota))}">${a1Esc(rot)}</a>`).join('');
+        .map(
+          ([rot, rota]) =>
+            `<a class="sb-sub-item${vistaAtual === rot.toLowerCase() ? ' ativo' : ''}"
+              href="${url(a1Esc(rota))}">${a1Esc(rot)}</a>`
+        )
+        .join('');
     }
   }
 
@@ -721,10 +608,10 @@ A1_SHELL.dash = dash;
         <div class="sb-cromo-dir">
           ${suporteEmContaSuspensa ? '<span role="status" title="Acesso administrativo em conta suspensa" style="padding:.3rem .65rem;border:1px solid #F59E0B;border-radius:999px;background:#FEF3C7;color:#92400E;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Suspensa</span>' : ''}
           <button class="sb-icone" type="button" title="Minha agenda" data-pop="agenda"
-            onclick="a1AgendaAbrir(event)">${a1Svg('calend',17)}</button>
+            onclick="a1AgendaAbrir(event)">${a1Svg('calend', 17)}</button>
           <button class="sb-icone" type="button" title="Avisos" data-pop="avisos"
             onclick="a1AvisosAbrir(event)">
-            ${a1Svg('sino',17)}<span class="sb-icone-selo" id="sb-avisos-n" data-zero="1" hidden>0</span></button>
+            ${a1Svg('sino', 17)}<span class="sb-icone-selo" id="sb-avisos-n" data-zero="1" hidden>0</span></button>
 
           <div class="sb-pessoa">
             <div class="sb-pessoa-txt">
@@ -738,11 +625,15 @@ A1_SHELL.dash = dash;
         </div>
       </div>
     </header>
-    ${sub || o.acoes ? `<nav class="sb-sub" aria-label="Vistas">${sub}
-      ${o.acoes ? `<span style="margin-left:auto;display:flex;align-items:center;gap:.4rem">${o.acoes}</span>` : ''}</nav>` : ''}
+    ${
+      sub || o.acoes
+        ? `<nav class="sb-sub" aria-label="Vistas">${sub}
+      ${o.acoes ? `<span style="margin-left:auto;display:flex;align-items:center;gap:.4rem">${o.acoes}</span>` : ''}</nav>`
+        : ''
+    }
     <div class="sb-paleta" id="sb-paleta" hidden onclick="if(event.target===this)a1PaletaFechar()">
       <div class="sb-paleta-cx" role="dialog" aria-label="Buscar">
-        <div class="sb-paleta-campo">${a1Svg('lupa',17)}
+        <div class="sb-paleta-campo">${a1Svg('lupa', 17)}
           <input id="sb-paleta-campo" type="text" placeholder="Ir para…" autocomplete="off"
                  oninput="a1PaletaFiltrar()" onkeydown="a1PaletaTecla(event)"></div>
         <div class="sb-paleta-lista" id="sb-paleta-lista"></div>
@@ -763,11 +654,13 @@ A1_SHELL.dash = dash;
 // punha uma segunda cópia no fim do <head>, que era o que fazia o cabeçalho
 // ganhar da tela; a ordem do index.css reproduz isso sem a segunda cópia e sem o
 // instante em que a tela aparecia sem estilo.
-function a1ShellGarantirCSS(){
-  if (!document.getElementById('sb-fonte')){
+function a1ShellGarantirCSS() {
+  if (!document.getElementById('sb-fonte')) {
     const f = document.createElement('link');
-    f.id = 'sb-fonte'; f.rel = 'stylesheet';
-    f.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap';
+    f.id = 'sb-fonte';
+    f.rel = 'stylesheet';
+    f.href =
+      'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap';
     document.head.appendChild(f);
   }
 }
@@ -775,16 +668,17 @@ function a1ShellGarantirCSS(){
 // Marca qual vista da sub-barra esta ativa. Existe porque as telas que trocam
 // de aba SEM recarregar tinham cada uma a sua linha para isso — e o dia em que
 // uma esquecesse, a barra ficaria mostrando a aba errada em silencio.
-function a1ShellVista(chave){
-  document.querySelectorAll('.sb-sub-item[data-vista]').forEach(el =>
-    el.classList.toggle('ativo', el.dataset.vista === chave));
+function a1ShellVista(chave) {
+  document
+    .querySelectorAll('.sb-sub-item[data-vista]')
+    .forEach(el => el.classList.toggle('ativo', el.dataset.vista === chave));
 }
 
 // Trocar o nome no cabecalho depois que a pessoa edita o proprio perfil. Antes
 // cada tela escrevia direto no #hdr-user dela; agora o nome mora num lugar so,
 // e a inicial do avatar acompanha — que era o detalhe que ninguem lembrava de
 // atualizar junto.
-function a1ShellNome(nome){
+function a1ShellNome(nome) {
   const el = document.querySelector('.sb-pessoa-nome');
   if (el) el.textContent = String(nome == null ? '' : nome);
   const av = document.querySelector('.sb-avatar');
@@ -793,7 +687,7 @@ function a1ShellNome(nome){
   if (hav) hav.textContent = a1Iniciais(nome);
 }
 
-function a1ShellIr(destino){
+function a1ShellIr(destino) {
   const slug = A1.slug || '';
   if (destino === 'agenda') location.href = `/${slug}/repasse?tab=agenda`;
   if (destino === 'avisos') location.href = `/${slug}/configuracoes?cfg=avisos`;
@@ -801,7 +695,7 @@ function a1ShellIr(destino){
 
 // Qual vista a URL esta pedindo. E o caminho que manda, para o link do menu e o
 // botao "voltar" do navegador continuarem valendo.
-function a1VistaDaURL(){
+function a1VistaDaURL() {
   const q = new URLSearchParams(location.search).get('vista');
   if (q === 'listagem' || q === 'andamento' || q === 'dashboard') return q;
   if (new URLSearchParams(location.search).get('tab') === 'dash') return 'dashboard';
@@ -815,43 +709,47 @@ function a1VistaDaURL(){
    paleta sem a porta.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-let A1_PALETA = { itens:[], filtrados:[], marcado:0 };
+let A1_PALETA = { itens: [], filtrados: [], marcado: 0 };
 
-function a1PaletaMontarIndice(tem, dash, user, slug){
+function a1PaletaMontarIndice(tem, dash, user, slug) {
   const url = s => `/${slug}/${s}`;
   const itens = [];
-  if (a1PodeVerAlgumDashboard(user, dash)) itens.push({ g:'Geral', r:'Visão geral', h:url('geral'), i:'geral' });
+  if (a1PodeVerAlgumDashboard(user, dash))
+    itens.push({ g: 'Geral', r: 'Visão geral', h: url('geral'), i: 'geral' });
   A1_MODULOS.forEach(m => {
     if (!tem[m.chave]) return;
     m.vistas.forEach(([rot, rota]) => {
       if (rot === 'Dashboard' && !a1PodeVerDashboardModulo(user, m.chave, dash)) return;
-      itens.push({ g:m.rotulo, r:`${m.rotulo} · ${rot}`, h:url(rota), i:m.icone });
+      itens.push({ g: m.rotulo, r: `${m.rotulo} · ${rot}`, h: url(rota), i: m.icone });
     });
   });
-  if (user.role !== 'partner'){
-    itens.push({ g:'Configurações', r:'Configurações', h:url('configuracoes'), i:'config' });
-    itens.push({ g:'Configurações', r:'Editor de esteira', h:url('workflow'), i:'fluxo' });
-    itens.push({ g:'Configurações', r:'Importar dados', h:url('importar'), i:'troca' });
+  if (user.role !== 'partner') {
+    itens.push({ g: 'Configurações', r: 'Configurações', h: url('configuracoes'), i: 'config' });
+    itens.push({ g: 'Configurações', r: 'Editor de esteira', h: url('workflow'), i: 'fluxo' });
+    itens.push({ g: 'Configurações', r: 'Importar dados', h: url('importar'), i: 'troca' });
   }
-  itens.push({ g:'Sessão', r:'Sair do sistema', h:'#sair', i:'sair' });
+  itens.push({ g: 'Sessão', r: 'Sair do sistema', h: '#sair', i: 'sair' });
   A1_PALETA.itens = itens;
 }
 
-function a1PaletaAbrir(){
+function a1PaletaAbrir() {
   const p = document.getElementById('sb-paleta');
   if (!p) return;
   p.hidden = false;
   const c = document.getElementById('sb-paleta-campo');
-  if (c){ c.value = ''; c.focus(); }
+  if (c) {
+    c.value = '';
+    c.focus();
+  }
   a1PaletaFiltrar();
   const b = document.getElementById('sb-busca-campo');
   if (b) b.blur();
 }
-function a1PaletaFechar(){
+function a1PaletaFechar() {
   const p = document.getElementById('sb-paleta');
   if (p) p.hidden = true;
 }
-function a1PaletaFiltrar(){
+function a1PaletaFiltrar() {
   const c = document.getElementById('sb-paleta-campo');
   const lista = document.getElementById('sb-paleta-lista');
   if (!lista) return;
@@ -860,59 +758,80 @@ function a1PaletaFiltrar(){
     ? A1_PALETA.itens.filter(x => a1Normal(x.r).includes(q) || a1Normal(x.g).includes(q))
     : A1_PALETA.itens.slice();
   A1_PALETA.marcado = 0;
-  if (!A1_PALETA.filtrados.length){
+  if (!A1_PALETA.filtrados.length) {
     lista.innerHTML = `<div class="sb-vazio"><p>Nada com esse nome. Tente o nome do módulo — Leads, Repasse, Registro.</p></div>`;
     return;
   }
-  let grupo = '', out = '';
+  let grupo = '',
+    out = '';
   A1_PALETA.filtrados.forEach((x, i) => {
-    if (x.g !== grupo){ grupo = x.g; out += `<div class="sb-paleta-grupo">${a1Esc(grupo)}</div>`; }
+    if (x.g !== grupo) {
+      grupo = x.g;
+      out += `<div class="sb-paleta-grupo">${a1Esc(grupo)}</div>`;
+    }
     out += `<a class="sb-paleta-item${i === 0 ? ' marcado' : ''}" data-i="${i}" href="${a1Esc(x.h)}"
-      onclick="return a1PaletaAbrirItem(${i},event)">${a1Svg(x.i,15)}<span>${a1Esc(x.r)}</span></a>`;
+      onclick="return a1PaletaAbrirItem(${i},event)">${a1Svg(x.i, 15)}<span>${a1Esc(x.r)}</span></a>`;
   });
   lista.innerHTML = out;
 }
-function a1PaletaAbrirItem(i, ev){
+function a1PaletaAbrirItem(i, ev) {
   const x = A1_PALETA.filtrados[i];
   if (!x) return false;
-  if (x.h === '#sair'){ if (ev) ev.preventDefault(); a1Logout(); return false; }
+  if (x.h === '#sair') {
+    if (ev) ev.preventDefault();
+    a1Logout();
+    return false;
+  }
   return true;
 }
-function a1PaletaTecla(ev){
-  if (ev.key === 'Escape'){ a1PaletaFechar(); return; }
+function a1PaletaTecla(ev) {
+  if (ev.key === 'Escape') {
+    a1PaletaFechar();
+    return;
+  }
   const n = A1_PALETA.filtrados.length;
   if (!n) return;
-  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp'){
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
     ev.preventDefault();
     A1_PALETA.marcado = (A1_PALETA.marcado + (ev.key === 'ArrowDown' ? 1 : n - 1)) % n;
     const lista = document.getElementById('sb-paleta-lista');
     [...lista.querySelectorAll('.sb-paleta-item')].forEach((el, i) =>
-      el.classList.toggle('marcado', i === A1_PALETA.marcado));
+      el.classList.toggle('marcado', i === A1_PALETA.marcado)
+    );
     const el = lista.querySelector('.sb-paleta-item.marcado');
-    if (el) el.scrollIntoView({ block:'nearest' });
+    if (el) el.scrollIntoView({ block: 'nearest' });
   }
-  if (ev.key === 'Enter'){
+  if (ev.key === 'Enter') {
     ev.preventDefault();
     const x = A1_PALETA.filtrados[A1_PALETA.marcado];
     if (!x) return;
-    if (x.h === '#sair') a1Logout(); else location.href = x.h;
+    if (x.h === '#sair') a1Logout();
+    else location.href = x.h;
   }
 }
 // Acento nao pode atrapalhar a busca: quem digita "pre analise" tem de achar
 // "Pré-análise". Normalizar na entrada e na comparacao, nos dois lados.
-function a1Normal(s){
-  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function a1Normal(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
-function a1BuscaSubmeter(ev){
+function a1BuscaSubmeter(ev) {
   ev.preventDefault();
   a1PaletaAbrir();
   const b = document.getElementById('sb-busca-campo');
   const c = document.getElementById('sb-paleta-campo');
-  if (b && c && b.value){ c.value = b.value; a1PaletaFiltrar(); }
+  if (b && c && b.value) {
+    c.value = b.value;
+    a1PaletaFiltrar();
+  }
   return false;
 }
 document.addEventListener('keydown', ev => {
-  if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'k' || ev.key === 'K')){
+  if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'k' || ev.key === 'K')) {
     ev.preventDefault();
     const p = document.getElementById('sb-paleta');
     if (p) (p.hidden ? a1PaletaAbrir : a1PaletaFechar)();
@@ -930,55 +849,64 @@ document.addEventListener('keydown', ev => {
 
 // Sorteio com semente. Math.random daria um ceu diferente a cada F5, e o que
 // muda sozinho o olho le como defeito.
-function a1Semente(txt){
+function a1Semente(txt) {
   let h = 2166136261;
-  for (let i = 0; i < String(txt).length; i++){
-    h ^= String(txt).charCodeAt(i); h = Math.imul(h, 16777619);
+  for (let i = 0; i < String(txt).length; i++) {
+    h ^= String(txt).charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
   return h >>> 0;
 }
-function a1Sorteio(semente){
+function a1Sorteio(semente) {
   let a = semente >>> 0;
-  return () => { a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 const A1_CEUS = {
   // [de cima, para baixo, cor da estrela, quantas]
-  madrugada:['#061726','#0C3A46','#CFE8F0', 46],
-  manha:    ['#1B6E7E','#4FA9A0','#FFFFFF',  0],
-  tarde:    ['#0E6A6E','#1E8C7C','#FFFFFF',  0],
-  entardecer:['#123E52','#B06A3C','#FFE6C2', 10],
-  noite:    ['#04202C','#0B5049','#DCEFEA', 38]
+  madrugada: ['#061726', '#0C3A46', '#CFE8F0', 46],
+  manha: ['#1B6E7E', '#4FA9A0', '#FFFFFF', 0],
+  tarde: ['#0E6A6E', '#1E8C7C', '#FFFFFF', 0],
+  entardecer: ['#123E52', '#B06A3C', '#FFE6C2', 10],
+  noite: ['#04202C', '#0B5049', '#DCEFEA', 38]
 };
-function a1FaseDoDia(h){
-  if (h < 5)  return 'madrugada';
+function a1FaseDoDia(h) {
+  if (h < 5) return 'madrugada';
   if (h < 11) return 'manha';
   if (h < 17) return 'tarde';
   if (h < 19) return 'entardecer';
   return 'noite';
 }
-function a1Saudacao(h){
-  if (h < 5)  return ['Boa madrugada','lua'];
-  if (h < 12) return ['Bom dia','sol'];
-  if (h < 18) return ['Boa tarde','sol'];
-  return ['Boa noite','lua'];
+function a1Saudacao(h) {
+  if (h < 5) return ['Boa madrugada', 'lua'];
+  if (h < 12) return ['Bom dia', 'sol'];
+  if (h < 18) return ['Boa tarde', 'sol'];
+  return ['Boa noite', 'lua'];
 }
 
-function a1Hero(alvo, opcoes){
+function a1Hero(alvo, opcoes) {
   const o = opcoes || {};
   const user = A1.user || {};
   const agora = new Date();
   const [saud, icone] = a1Saudacao(agora.getHours());
-  const primeiro = String(user.name || '').trim().split(/\s+/)[0] || 'Olá';
+  const primeiro =
+    String(user.name || '')
+      .trim()
+      .split(/\s+/)[0] || 'Olá';
   // O nome da empresa e gravado no login em a1_user.tenant_name. O login de
   // parceiro pode nao trazer — e ai vale o apelido do cliente, que sempre ha.
   const empresa = o.empresa || user.tenant_name || (A1.slug || '').toUpperCase();
 
-  const hoje = (o.hoje || []).filter(x => x && x.n).map(x =>
-    `<span class="${a1Esc(x.tom || '')}"><b>${a1Esc(String(x.n))}</b> ${a1Esc(x.rotulo)}</span>`).join('');
+  const hoje = (o.hoje || [])
+    .filter(x => x && x.n)
+    .map(x => `<span class="${a1Esc(x.tom || '')}"><b>${a1Esc(String(x.n))}</b> ${a1Esc(x.rotulo)}</span>`)
+    .join('');
 
   alvo.innerHTML = `
     <section class="sb-hero" id="sb-hero">
@@ -986,7 +914,7 @@ function a1Hero(alvo, opcoes){
       <div class="sb-hero-esq">
         <div class="sb-hero-av">${a1Esc(a1Iniciais(user.name))}</div>
         <div style="min-width:0">
-          <div class="sb-hero-saud">${a1Svg(icone,14)}<span>${a1Esc(saud)}</span></div>
+          <div class="sb-hero-saud">${a1Svg(icone, 14)}<span>${a1Esc(saud)}</span></div>
           <h1 class="sb-hero-nome">${a1Esc(primeiro)}</h1>
           ${empresa ? `<span class="sb-hero-emp">${a1Esc(empresa)}</span>` : ''}
         </div>
@@ -1000,24 +928,45 @@ function a1Hero(alvo, opcoes){
 
   a1DesenharCeu();
   a1RelogioLigar();
-  if (!a1Hero._resize){
+  if (!a1Hero._resize) {
     a1Hero._resize = true;
-    window.addEventListener('resize', () => a1DesenharCeu(), { passive:true });
+    window.addEventListener('resize', () => a1DesenharCeu(), { passive: true });
   }
 }
 
-function a1Hora(d){
-  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+function a1Hora(d) {
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
-const A1_DIAS = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-const A1_MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-function a1DataLonga(d){
+const A1_DIAS = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado'
+];
+const A1_MESES = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro'
+];
+function a1DataLonga(d) {
   return `${A1_DIAS[d.getDay()]}, ${d.getDate()} de ${A1_MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 // O relogio acerta no virar do minuto, nao de segundo em segundo: o numero so
 // muda de minuto em minuto, e acordar o navegador 60 vezes por minuto para
 // redesenhar o mesmo texto e gasto puro.
-function a1RelogioLigar(){
+function a1RelogioLigar() {
   if (a1RelogioLigar._t) clearTimeout(a1RelogioLigar._t);
   const passo = () => {
     const el = document.getElementById('sb-relogio');
@@ -1030,14 +979,16 @@ function a1RelogioLigar(){
   a1RelogioLigar._t = setTimeout(passo, (60 - d.getSeconds()) * 1000 + 200);
 }
 
-function a1DesenharCeu(){
+function a1DesenharCeu() {
   const c = document.getElementById('sb-ceu');
   const hero = document.getElementById('sb-hero');
   if (!c || !hero) return;
-  const L = hero.clientWidth, A = hero.clientHeight;
+  const L = hero.clientWidth,
+    A = hero.clientHeight;
   if (!L || !A) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  c.width = L * dpr; c.height = A * dpr;
+  c.width = L * dpr;
+  c.height = A * dpr;
   const g = c.getContext('2d');
   if (!g) return;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1045,34 +996,49 @@ function a1DesenharCeu(){
   const fase = a1FaseDoDia(new Date().getHours());
   const [cima, baixo, corEstrela, nEstrelas] = A1_CEUS[fase];
 
-  const grad = g.createLinearGradient(0, 0, L * .75, A);
-  grad.addColorStop(0, cima); grad.addColorStop(1, baixo);
-  g.fillStyle = grad; g.fillRect(0, 0, L, A);
+  const grad = g.createLinearGradient(0, 0, L * 0.75, A);
+  grad.addColorStop(0, cima);
+  grad.addColorStop(1, baixo);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, L, A);
 
   // Um claro difuso no canto direito, atras do relogio: da profundidade sem
   // desenhar nada que precise de explicacao.
-  const halo = g.createRadialGradient(L * .84, A * .28, 0, L * .84, A * .28, A * 1.5);
+  const halo = g.createRadialGradient(L * 0.84, A * 0.28, 0, L * 0.84, A * 0.28, A * 1.5);
   halo.addColorStop(0, 'rgba(255,255,255,.10)');
   halo.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = halo; g.fillRect(0, 0, L, A);
+  g.fillStyle = halo;
+  g.fillRect(0, 0, L, A);
 
   if (!nEstrelas) return;
   const rnd = a1Sorteio(a1Semente((A1.slug || 'siimob') + '|' + fase));
-  for (let i = 0; i < nEstrelas; i++){
-    const x = rnd() * L, y = rnd() * A * .88, r = rnd() * 1.1 + .35;
-    g.globalAlpha = .22 + rnd() * .55;
+  for (let i = 0; i < nEstrelas; i++) {
+    const x = rnd() * L,
+      y = rnd() * A * 0.88,
+      r = rnd() * 1.1 + 0.35;
+    g.globalAlpha = 0.22 + rnd() * 0.55;
     g.fillStyle = corEstrela;
-    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
   }
   // Uma estrela maior, com brilho de quatro pontas. E o unico ornamento da
   // tela inteira, e por isso ele pode existir.
-  const bx = L * (.26 + rnd() * .34), by = A * (.16 + rnd() * .3);
-  g.globalAlpha = 1; g.fillStyle = corEstrela;
-  g.beginPath(); g.arc(bx, by, 1.5, 0, Math.PI * 2); g.fill();
-  g.globalAlpha = .5; g.strokeStyle = corEstrela; g.lineWidth = .8;
+  const bx = L * (0.26 + rnd() * 0.34),
+    by = A * (0.16 + rnd() * 0.3);
+  g.globalAlpha = 1;
+  g.fillStyle = corEstrela;
   g.beginPath();
-  g.moveTo(bx - 6, by); g.lineTo(bx + 6, by);
-  g.moveTo(bx, by - 6); g.lineTo(bx, by + 6);
+  g.arc(bx, by, 1.5, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 0.5;
+  g.strokeStyle = corEstrela;
+  g.lineWidth = 0.8;
+  g.beginPath();
+  g.moveTo(bx - 6, by);
+  g.lineTo(bx + 6, by);
+  g.moveTo(bx, by - 6);
+  g.lineTo(bx, by + 6);
   g.stroke();
   g.globalAlpha = 1;
 }
@@ -1082,17 +1048,17 @@ function a1DesenharCeu(){
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // tom: 'marca' (padrao) | 'atento' | 'atraso' | 'info' | 'neutro'
-function a1Kpi(k){
+function a1Kpi(k) {
   const corpo = `<div class="sb-kpi-valor">${a1Esc(String(k.valor))}</div>
     <div class="sb-kpi-rot">${a1Esc(k.rotulo)}</div>
     ${k.sub ? `<div class="sb-kpi-sub">${a1Esc(k.sub)}</div>` : ''}`;
   const attrs = `class="sb-kpi" data-tom="${a1Esc(k.tom || 'marca')}"${k.titulo ? ` title="${a1Esc(k.titulo)}"` : ''}`;
   return k.href ? `<a ${attrs} href="${a1Esc(k.href)}">${corpo}</a>` : `<div ${attrs}>${corpo}</div>`;
 }
-function a1Kpis(lista){
+function a1Kpis(lista) {
   return `<div class="sb-kpis">${lista.map(a1Kpi).join('')}</div>`;
 }
-function a1Card(o){
+function a1Card(o) {
   return `<section class="sb-card">
     <div class="sb-card-cab">
       <div><div class="sb-card-tit">${a1Esc(o.titulo)}</div>
@@ -1102,8 +1068,8 @@ function a1Card(o){
     <div class="sb-card-corpo${o.justo ? ' justo' : ''}">${o.corpo || ''}</div>
   </section>`;
 }
-function a1Vazio(texto){
-  return `<div class="sb-vazio">${a1Svg('fluxo',26)}<p>${a1Esc(texto)}</p></div>`;
+function a1Vazio(texto) {
+  return `<div class="sb-vazio">${a1Svg('fluxo', 26)}<p>${a1Esc(texto)}</p></div>`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1125,7 +1091,7 @@ function a1Vazio(texto){
 
 const A1_POP = { aberto: null, agenda: { mes: null, ano: null, dia: null, itens: null }, avisos: null };
 
-function a1PopFechar(){
+function a1PopFechar() {
   document.querySelectorAll('.sb-pop').forEach(el => el.remove());
   const av = document.getElementById('sb-avatar');
   if (av) av.setAttribute('aria-expanded', 'false');
@@ -1134,7 +1100,7 @@ function a1PopFechar(){
 
 // Ancora o painel embaixo do botao que o chamou, e nunca para fora da tela: o
 // ultimo icone da direita abriria um painel metade fora do monitor.
-function a1PopAbrir(nome, botao, largura, html){
+function a1PopAbrir(nome, botao, largura, html) {
   const jaEstava = A1_POP.aberto === nome;
   a1PopFechar();
   if (jaEstava) return null;
@@ -1150,7 +1116,7 @@ function a1PopAbrir(nome, botao, largura, html){
   if (esq + L > window.innerWidth - 8) esq = window.innerWidth - 8 - L;
   el.style.width = L + 'px';
   el.style.left = esq + 'px';
-  el.style.top = (r.bottom + 8) + 'px';
+  el.style.top = r.bottom + 8 + 'px';
   A1_POP.aberto = nome;
   return el;
 }
@@ -1160,16 +1126,19 @@ document.addEventListener('click', ev => {
   if (ev.target.closest('.sb-pop') || ev.target.closest('[data-pop]')) return;
   a1PopFechar();
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape') a1PopFechar(); });
-window.addEventListener('resize', () => a1PopFechar(), { passive:true });
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') a1PopFechar();
+});
+window.addEventListener('resize', () => a1PopFechar(), { passive: true });
 
 /* ── A conta ───────────────────────────────────────────────────────────────
    O avatar encerrava a sessao com um clique. Um clique sem confirmacao, no
    canto onde todo sistema poe o perfil — quem ia ver o proprio cadastro caia
    na tela de login. Agora abre menu, e sair e o ultimo item.                */
 
-function a1MenuPessoa(ev){
-  ev.preventDefault(); ev.stopPropagation();
+function a1MenuPessoa(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
   const user = A1.user || {};
   const slug = A1.slug || '';
   const bt = ev.currentTarget;
@@ -1177,26 +1146,37 @@ function a1MenuPessoa(ev){
   // pessoa mora em Configuracoes — e o parceiro, que nao entra la, edita o
   // proprio perfil pela mesma funcao quando ela existir.
   const temPerfil = typeof openProfile === 'function';
-  const el = a1PopAbrir('pessoa', bt, 262, `
+  const el = a1PopAbrir(
+    'pessoa',
+    bt,
+    262,
+    `
     <div class="sb-menu-cab">
       <div class="sb-menu-av">${a1Esc(a1Iniciais(user.name))}</div>
       <div style="min-width:0">
         <div class="sb-menu-nome">${a1Esc(user.name || '')}</div>
         <div class="sb-menu-papel">${a1Esc(a1RotuloPapel(user))}${
-          user.tenant_name ? ' · ' + a1Esc(user.tenant_name) : ''}</div>
+          user.tenant_name ? ' · ' + a1Esc(user.tenant_name) : ''
+        }</div>
       </div>
     </div>
-    ${temPerfil
-      ? `<button class="sb-menu-item" type="button" onclick="a1PopFechar();openProfile()">
-           ${a1Svg('pessoa',15)} Meu cadastro</button>`
-      : `<a class="sb-menu-item" href="/${a1Esc(slug)}/repasse?perfil=1">
-           ${a1Svg('pessoa',15)} Meu cadastro</a>`}
+    ${
+      temPerfil
+        ? `<button class="sb-menu-item" type="button" onclick="a1PopFechar();openProfile()">
+           ${a1Svg('pessoa', 15)} Meu cadastro</button>`
+        : `<a class="sb-menu-item" href="/${a1Esc(slug)}/repasse?perfil=1">
+           ${a1Svg('pessoa', 15)} Meu cadastro</a>`
+    }
     <button class="sb-menu-item" type="button" onclick="a1PopFechar();a1PaletaAbrir()">
-      ${a1Svg('lupa',15)} Buscar no sistema <small style="margin-left:auto;color:var(--sb-tinta3);font-family:var(--sb-mono);font-size:.68rem">Ctrl K</small></button>
-    ${user.role !== 'partner'
-      ? `<a class="sb-menu-item" href="/${a1Esc(slug)}/configuracoes">${a1Svg('config',15)} Configurações</a>` : ''}
+      ${a1Svg('lupa', 15)} Buscar no sistema <small style="margin-left:auto;color:var(--sb-tinta3);font-family:var(--sb-mono);font-size:.68rem">Ctrl K</small></button>
+    ${
+      user.role !== 'partner'
+        ? `<a class="sb-menu-item" href="/${a1Esc(slug)}/configuracoes">${a1Svg('config', 15)} Configurações</a>`
+        : ''
+    }
     <button class="sb-menu-item saida" type="button" onclick="a1Logout()">
-      ${a1Svg('sair',15)} Sair do sistema</button>`);
+      ${a1Svg('sair', 15)} Sair do sistema</button>`
+  );
   if (el) bt.setAttribute('aria-expanded', 'true');
 }
 
@@ -1210,7 +1190,6 @@ function a1MenuPessoa(ev){
 
   /* ── Os avisos ──
 */
-
 
 /* ── A agenda ──────────────────────────────────────────────────────────────
    Mês na tela, eventos do dia escolhido.
@@ -1226,79 +1205,72 @@ function a1MenuPessoa(ev){
    imediatamente pelo evento "siimob:agenda-atualizada".
    ═══════════════════════════════════════════════════════════════════════════ */
 
-async function a1AgendaCarregar(ano, mes){
-  const pad = n => String(n).padStart(2,'0');
+async function a1AgendaCarregar(ano, mes) {
+  const pad = n => String(n).padStart(2, '0');
 
   const de = `${ano}-${pad(mes + 1)}-01`;
-  const ate = `${ano}-${pad(mes + 1)}-${pad(
-    new Date(ano, mes + 1, 0).getDate()
-  )}`;
+  const ate = `${ano}-${pad(mes + 1)}-${pad(new Date(ano, mes + 1, 0).getDate())}`;
 
   const h = {
     headers: A1.headers()
   };
 
-  const base =
-    `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
+  const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
 
   const [venc, ent, meus] = await Promise.all([
-
     /* Vencimentos de avaliação já existentes no Repasse */
     fetch(
       `${base}` +
-      `&evaluation_expiry=gte.${de}` +
-      `&evaluation_expiry=lte.${ate}` +
-      `&select=id,client_name,evaluation_expiry,stage_name` +
-      `&order=evaluation_expiry.asc` +
-      `&limit=300`,
+        `&evaluation_expiry=gte.${de}` +
+        `&evaluation_expiry=lte.${ate}` +
+        `&select=id,client_name,evaluation_expiry,stage_name` +
+        `&order=evaluation_expiry.asc` +
+        `&limit=300`,
       h
     )
-      .then(r => r.ok ? r.json() : [])
+      .then(r => (r.ok ? r.json() : []))
       .catch(() => []),
 
     /* Entrevistas já existentes no Repasse */
     fetch(
       `${base}` +
-      `&payload->>agendamento_data=gte.${de}` +
-      `&payload->>agendamento_data=lte.${ate}T23:59:59` +
-      `&select=id,client_name,stage_name,payload->>agendamento_data` +
-      `&order=created_at.desc` +
-      `&limit=300`,
+        `&payload->>agendamento_data=gte.${de}` +
+        `&payload->>agendamento_data=lte.${ate}T23:59:59` +
+        `&select=id,client_name,stage_name,payload->>agendamento_data` +
+        `&order=created_at.desc` +
+        `&limit=300`,
       h
     )
-      .then(r => r.ok ? r.json() : [])
+      .then(r => (r.ok ? r.json() : []))
       .catch(() => []),
 
     /* Eventos criados pela agenda */
     fetch(
       `${A1.rest('a1_agenda')}` +
-      `?data=gte.${de}` +
-      `&data=lte.${ate}` +
-      `&select=id,tipo,titulo,descricao,local,data,hora_inicio,hora_fim,caso_id,concluido_em` +
-      `&order=data.asc` +
-      `&limit=400`,
+        `?data=gte.${de}` +
+        `&data=lte.${ate}` +
+        `&select=id,tipo,titulo,descricao,local,data,hora_inicio,hora_fim,caso_id,concluido_em` +
+        `&order=data.asc` +
+        `&limit=400`,
       h
     )
-      .then(r => r.ok ? r.json() : [])
+      .then(r => (r.ok ? r.json() : []))
       .catch(() => [])
-
   ]);
 
   const itens = [];
-
 
   /* ─────────────────────────────────────────────────────────────
      AVALIAÇÕES DO REPASSE
      ───────────────────────────────────────────────────────────── */
 
   (Array.isArray(venc) ? venc : []).forEach(c => {
-
     const data = String(c.evaluation_expiry || '');
 
     if (data.length < 10) return;
 
     itens.push({
-      dia: data.slice(8,10),
+      dia: data.slice(8, 10),
 
       tipo: 'avaliacao',
 
@@ -1314,23 +1286,19 @@ async function a1AgendaCarregar(ano, mes){
 
       origem: 'repasse'
     });
-
   });
-
 
   /* ─────────────────────────────────────────────────────────────
      ENTREVISTAS DO REPASSE
      ───────────────────────────────────────────────────────────── */
 
   (Array.isArray(ent) ? ent : []).forEach(c => {
-
     const d = String(c.agendamento_data || '');
 
     if (d.length < 10) return;
 
     itens.push({
-
-      dia: d.slice(8,10),
+      dia: d.slice(8, 10),
 
       tipo: 'entrevista',
 
@@ -1342,21 +1310,17 @@ async function a1AgendaCarregar(ano, mes){
 
       id: c.id,
 
-      hora: d.slice(11,16),
+      hora: d.slice(11, 16),
 
       origem: 'repasse'
-
     });
-
   });
-
 
   /* ─────────────────────────────────────────────────────────────
      EVENTOS CRIADOS MANUALMENTE
      ───────────────────────────────────────────────────────────── */
 
   (Array.isArray(meus) ? meus : []).forEach(a => {
-
     const d = String(a.data || '');
 
     if (d.length < 10) return;
@@ -1364,20 +1328,13 @@ async function a1AgendaCarregar(ano, mes){
     const tipo = a1AgendaTipoReal(a.tipo);
 
     itens.push({
-
-      dia: d.slice(8,10),
+      dia: d.slice(8, 10),
 
       tipo,
 
       titulo: a.titulo || 'Sem título',
 
-      sub: [
-        a1AgendaRotuloTipo(tipo),
-        a.local,
-        a.descricao
-      ]
-        .filter(Boolean)
-        .join(' · '),
+      sub: [a1AgendaRotuloTipo(tipo), a.local, a.descricao].filter(Boolean).join(' · '),
 
       etapa: '',
 
@@ -1389,27 +1346,20 @@ async function a1AgendaCarregar(ano, mes){
 
       feito: !!a.concluido_em,
 
-      hora: a.hora_inicio
-        ? String(a.hora_inicio).slice(0,5)
-        : '',
+      hora: a.hora_inicio ? String(a.hora_inicio).slice(0, 5) : '',
 
       origem: 'agenda'
-
     });
-
   });
-
 
   return itens;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    TIPOS DA AGENDA
    ═══════════════════════════════════════════════════════════════ */
 
 const A1_AGENDA_CORES = {
-
   compromisso: 'var(--sb-mar)',
 
   tarefa: 'var(--sb-ametista)',
@@ -1417,9 +1367,7 @@ const A1_AGENDA_CORES = {
   avaliacao: 'var(--sb-acafrao)',
 
   entrevista: 'var(--sb-ardosia)'
-
 };
-
 
 /*
   Corrige também os nomes antigos.
@@ -1428,8 +1376,7 @@ const A1_AGENDA_CORES = {
   "meu" = compromisso.
 */
 
-function a1AgendaTipoReal(tipo){
-
+function a1AgendaTipoReal(tipo) {
   const t = String(tipo || '')
     .trim()
     .toLowerCase();
@@ -1450,57 +1397,40 @@ function a1AgendaTipoReal(tipo){
     return 'compromisso';
   }
 
-  if (
-    [
-      'compromisso',
-      'tarefa',
-      'avaliacao',
-      'entrevista'
-    ].includes(t)
-  ){
+  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t)) {
     return t;
   }
 
   return 'compromisso';
 }
 
-
-function a1AgendaRotuloTipo(tipo){
-
-  const real = a1AgendaTipoReal(tipo);
-
-  return {
-
-    compromisso: 'Compromisso',
-
-    tarefa: 'Tarefa',
-
-    avaliacao: 'Avaliação',
-
-    entrevista: 'Entrevista'
-
-  }[real] || 'Compromisso';
-
-}
-
-
-function a1CorDoTipo(tipo){
-
+function a1AgendaRotuloTipo(tipo) {
   const real = a1AgendaTipoReal(tipo);
 
   return (
-    A1_AGENDA_CORES[real] ||
-    'var(--sb-linha-forte)'
-  );
+    {
+      compromisso: 'Compromisso',
 
+      tarefa: 'Tarefa',
+
+      avaliacao: 'Avaliação',
+
+      entrevista: 'Entrevista'
+    }[real] || 'Compromisso'
+  );
 }
 
+function a1CorDoTipo(tipo) {
+  const real = a1AgendaTipoReal(tipo);
+
+  return A1_AGENDA_CORES[real] || 'var(--sb-linha-forte)';
+}
 
 /* ═══════════════════════════════════════════════════════════════
    NOVO EVENTO
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaGarantirAjustesCSS(){
+function a1AgendaGarantirAjustesCSS() {
   if (document.getElementById('sb-agenda-ajustes-css')) return;
 
   const style = document.createElement('style');
@@ -1547,28 +1477,16 @@ function a1AgendaGarantirAjustesCSS(){
   document.head.appendChild(style);
 }
 
-function a1AgendaNovo(){
-
-  const alvo =
-    document.getElementById('sb-agenda-corpo');
+function a1AgendaNovo() {
+  const alvo = document.getElementById('sb-agenda-corpo');
 
   if (!alvo) return;
 
+  const { ano, mes, dia } = A1_POP.agenda;
 
-  const {
-    ano,
-    mes,
-    dia
-  } = A1_POP.agenda;
+  const pad = n => String(n).padStart(2, '0');
 
-
-  const pad = n =>
-    String(n).padStart(2,'0');
-
-
-  const dataSel =
-    `${ano}-${pad(mes + 1)}-${pad(dia || 1)}`;
-
+  const dataSel = `${ano}-${pad(mes + 1)}-${pad(dia || 1)}`;
 
   alvo.innerHTML = `
 
@@ -1746,45 +1664,27 @@ function a1AgendaNovo(){
     </form>
   `;
 
-
-  const titulo =
-    document.getElementById('ag-titulo');
+  const titulo = document.getElementById('ag-titulo');
 
   if (titulo) {
     titulo.focus();
   }
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    TROCAR TIPO
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaTipo(bt){
+function a1AgendaTipo(bt) {
+  document.querySelectorAll('.sb-ag-tipo button').forEach(b => {
+    b.classList.toggle('on', b === bt);
+  });
 
-  document
-    .querySelectorAll('.sb-ag-tipo button')
-    .forEach(b => {
+  const wrap = document.getElementById('ag-hora-wrap');
 
-      b.classList.toggle(
-        'on',
-        b === bt
-      );
+  const campoHora = document.getElementById('ag-hora');
 
-    });
-
-
-  const wrap =
-    document.getElementById('ag-hora-wrap');
-
-  const campoHora =
-    document.getElementById('ag-hora');
-
-
-  const ehTarefa =
-    bt.dataset.tipo === 'tarefa';
-
+  const ehTarefa = bt.dataset.tipo === 'tarefa';
 
   /*
     Tarefa não precisa de horário.
@@ -1793,92 +1693,45 @@ function a1AgendaTipo(bt){
     podem ter horário.
   */
 
-  if (wrap){
-
-    wrap.style.visibility =
-      ehTarefa
-        ? 'hidden'
-        : '';
-
+  if (wrap) {
+    wrap.style.visibility = ehTarefa ? 'hidden' : '';
   }
 
-
-  if (
-    ehTarefa &&
-    campoHora
-  ){
-
+  if (ehTarefa && campoHora) {
     campoHora.value = '';
-
   }
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    SALVAR EVENTO
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaGravar(ev){
-
+async function a1AgendaGravar(ev) {
   ev.preventDefault();
 
+  const erro = document.getElementById('ag-erro');
 
-  const erro =
-    document.getElementById('ag-erro');
+  const bt = document.getElementById('ag-salvar');
 
+  const marcado = document.querySelector('.sb-ag-tipo button.on');
 
-  const bt =
-    document.getElementById('ag-salvar');
+  const tipo = marcado ? marcado.dataset.tipo : 'compromisso';
 
+  const titulo = (document.getElementById('ag-titulo').value || '').trim();
 
-  const marcado =
-    document.querySelector(
-      '.sb-ag-tipo button.on'
-    );
+  const data = document.getElementById('ag-data').value;
 
-
-  const tipo =
-    marcado
-      ? marcado.dataset.tipo
-      : 'compromisso';
-
-
-  const titulo =
-    (
-      document.getElementById('ag-titulo').value ||
-      ''
-    ).trim();
-
-
-  const data =
-    document.getElementById('ag-data').value;
-
-
-  if (
-    !titulo ||
-    !data
-  ){
+  if (!titulo || !data) {
     return false;
   }
 
+  const user = A1.user || {};
 
-  const user =
-    A1.user || {};
+  const campoHora = document.getElementById('ag-hora');
 
-
-  const campoHora =
-    document.getElementById('ag-hora');
-
-
-  const hora =
-    campoHora
-      ? campoHora.value || null
-      : null;
-
+  const hora = campoHora ? campoHora.value || null : null;
 
   const corpo = {
-
     tenant_id: user.tenant_id,
 
     dono: user.id,
@@ -1889,108 +1742,57 @@ async function a1AgendaGravar(ev){
 
     data,
 
-    hora_inicio:
-      tipo === 'tarefa'
-        ? null
-        : hora,
+    hora_inicio: tipo === 'tarefa' ? null : hora,
 
-    local:
-      (
-        document.getElementById('ag-local').value ||
-        ''
-      ).trim() || null,
+    local: (document.getElementById('ag-local').value || '').trim() || null,
 
-    descricao:
-      (
-        document.getElementById('ag-obs').value ||
-        ''
-      ).trim() || null
-
+    descricao: (document.getElementById('ag-obs').value || '').trim() || null
   };
-
 
   bt.disabled = true;
 
-  bt.textContent =
-    'Marcando…';
-
+  bt.textContent = 'Marcando…';
 
   try {
+    const r = await fetch(
+      A1.rest('a1_agenda'),
 
-    const r =
-      await fetch(
+      {
+        method: 'POST',
 
-        A1.rest('a1_agenda'),
+        headers: A1.headers(),
 
-        {
+        body: JSON.stringify(corpo)
+      }
+    );
 
-          method: 'POST',
-
-          headers: A1.headers(),
-
-          body: JSON.stringify(corpo)
-
-        }
-
-      );
-
-
-    if (!r.ok){
-
-      const txt =
-        await r
-          .text()
-          .catch(() => '');
-
+    if (!r.ok) {
+      const txt = await r.text().catch(() => '');
 
       erro.hidden = false;
 
-
       erro.textContent =
-        /a1_agenda/.test(txt) &&
-        /does not exist|relation/.test(txt)
-
+        /a1_agenda/.test(txt) && /does not exist|relation/.test(txt)
           ? 'A agenda ainda não foi criada no banco deste cliente.'
-
-          : (
-            'Não foi possível marcar: ' +
-            txt.slice(0,160)
-          );
-
+          : 'Não foi possível marcar: ' + txt.slice(0, 160);
 
       bt.disabled = false;
 
-      bt.textContent =
-        'Marcar';
-
+      bt.textContent = 'Marcar';
 
       return false;
-
     }
-
 
     /*
       Seleciona automaticamente a data
       do evento que acabou de ser criado.
     */
 
-    A1_POP.agenda.dia =
-      Number(
-        String(data).slice(8,10)
-      );
+    A1_POP.agenda.dia = Number(String(data).slice(8, 10));
 
+    const a = Number(data.slice(0, 4));
 
-    const a =
-      Number(
-        data.slice(0,4)
-      );
-
-
-    const m =
-      Number(
-        data.slice(5,7)
-      ) - 1;
-
+    const m = Number(data.slice(5, 7)) - 1;
 
     /*
       Se o usuário escolheu uma data
@@ -1998,17 +1800,11 @@ async function a1AgendaGravar(ev){
       o calendário muda para esse mês.
     */
 
-    if (
-      a !== A1_POP.agenda.ano ||
-      m !== A1_POP.agenda.mes
-    ){
-
+    if (a !== A1_POP.agenda.ano || m !== A1_POP.agenda.mes) {
       A1_POP.agenda.ano = a;
 
       A1_POP.agenda.mes = m;
-
     }
-
 
     /*
       Força nova consulta ao banco.
@@ -2016,13 +1812,11 @@ async function a1AgendaGravar(ev){
 
     A1_POP.agenda.itens = null;
 
-
     /*
       Redesenha imediatamente o popup.
     */
 
     await a1AgendaDesenhar();
-
 
     /*
       AVISA A TELA GERAL.
@@ -2032,174 +1826,95 @@ async function a1AgendaGravar(ev){
     */
 
     window.dispatchEvent(
-
       new CustomEvent(
-
         'siimob:agenda-atualizada',
 
         {
-
           detail: {
             tipo,
             data
           }
-
         }
-
       )
-
     );
-
-
-  } catch (e){
-
-
+  } catch (e) {
     erro.hidden = false;
 
-
-    erro.textContent =
-      'Não foi possível marcar: ' +
-      String(
-        e.message ||
-        e
-      ).slice(0,140);
-
+    erro.textContent = 'Não foi possível marcar: ' + String(e.message || e).slice(0, 140);
 
     bt.disabled = false;
 
-
-    bt.textContent =
-      'Marcar';
-
+    bt.textContent = 'Marcar';
   }
 
-
   return false;
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    CONCLUIR / REABRIR
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaConcluir(
-  id,
-  feito
-){
-
+async function a1AgendaConcluir(id, feito) {
   try {
-
     await fetch(
-
       `${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
 
       {
-
         method: 'PATCH',
 
         headers: A1.headers(),
 
         body: JSON.stringify({
-
-          concluido_em:
-            feito
-              ? null
-              : new Date().toISOString()
-
+          concluido_em: feito ? null : new Date().toISOString()
         })
-
       }
-
     );
-
 
     A1_POP.agenda.itens = null;
 
-
     await a1AgendaDesenhar();
 
-
-    window.dispatchEvent(
-
-      new CustomEvent(
-        'siimob:agenda-atualizada'
-      )
-
-    );
-
-
+    window.dispatchEvent(new CustomEvent('siimob:agenda-atualizada'));
   } catch {
-
     /* mantém o estado do banco */
-
   }
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    EXCLUIR
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaExcluir(id){
-
-  if (
-    !confirm(
-      'Excluir este item da sua agenda?'
-    )
-  ){
+async function a1AgendaExcluir(id) {
+  if (!confirm('Excluir este item da sua agenda?')) {
     return;
   }
 
-
   try {
-
     await fetch(
-
       `${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
 
       {
-
         method: 'DELETE',
 
         headers: A1.headers()
-
       }
-
     );
-
 
     A1_POP.agenda.itens = null;
 
-
     await a1AgendaDesenhar();
 
-
-    window.dispatchEvent(
-
-      new CustomEvent(
-        'siimob:agenda-atualizada'
-      )
-
-    );
-
-
+    window.dispatchEvent(new CustomEvent('siimob:agenda-atualizada'));
   } catch {
-
     /* mantém o estado do banco */
-
   }
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    ABRIR POPUP
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaAbrir(ev){
-
+async function a1AgendaAbrir(ev) {
   ev.preventDefault();
   ev.stopPropagation();
 
@@ -2208,15 +1923,19 @@ async function a1AgendaAbrir(ev){
   const bt = ev.currentTarget;
   const hoje = new Date();
 
-  if (A1_POP.agenda.mes == null){
+  if (A1_POP.agenda.mes == null) {
     A1_POP.agenda.mes = hoje.getMonth();
     A1_POP.agenda.ano = hoje.getFullYear();
     A1_POP.agenda.dia = hoje.getDate();
   }
 
-  const el = a1PopAbrir('agenda', bt, 330, `
+  const el = a1PopAbrir(
+    'agenda',
+    bt,
+    330,
+    `
     <div class="sb-pop-cab">
-      ${a1Svg('calend',16)}
+      ${a1Svg('calend', 16)}
 
       <div>
         <div class="sb-pop-tit">Minha agenda</div>
@@ -2256,7 +1975,8 @@ async function a1AgendaAbrir(ev){
         Agenda do Repasse
       </a>
     </div>
-  `);
+  `
+  );
 
   if (!el) return;
 
@@ -2265,56 +1985,38 @@ async function a1AgendaAbrir(ev){
   await a1AgendaDesenhar();
 }
 
-
 /* ═══════════════════════════════════════════════════════════════
    MUDAR MÊS
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaMes(passo){
-
+async function a1AgendaMes(passo) {
   A1_POP.agenda.mes += passo;
 
-
-  if (
-    A1_POP.agenda.mes < 0
-  ){
-
+  if (A1_POP.agenda.mes < 0) {
     A1_POP.agenda.mes = 11;
 
     A1_POP.agenda.ano--;
-
   }
 
-
-  if (
-    A1_POP.agenda.mes > 11
-  ){
-
+  if (A1_POP.agenda.mes > 11) {
     A1_POP.agenda.mes = 0;
 
     A1_POP.agenda.ano++;
-
   }
-
 
   A1_POP.agenda.dia = null;
 
-
   A1_POP.agenda.itens = null;
 
-
   await a1AgendaDesenhar();
-
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    SELECIONAR DIA
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaDia(d, ev){
-
-  if (ev){
+function a1AgendaDia(d, ev) {
+  if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
@@ -2333,96 +2035,49 @@ function a1AgendaDia(d, ev){
   return false;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════
    DESENHAR CALENDÁRIO
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaDesenhar(){
-
-  const alvo =
-    document.getElementById(
-      'sb-agenda-corpo'
-    );
-
+async function a1AgendaDesenhar() {
+  const alvo = document.getElementById('sb-agenda-corpo');
 
   if (!alvo) return;
 
-
-  const {
-    ano,
-    mes
-  } = A1_POP.agenda;
-
+  const { ano, mes } = A1_POP.agenda;
 
   /*
     Busca os dados somente quando necessário.
   */
 
-  if (
-    A1_POP.agenda.itens == null
-  ){
-
-    A1_POP.agenda.itens =
-      await a1AgendaCarregar(
-        ano,
-        mes
-      )
-        .catch(
-          () => []
-        );
-
+  if (A1_POP.agenda.itens == null) {
+    A1_POP.agenda.itens = await a1AgendaCarregar(ano, mes).catch(() => []);
 
     /*
       O popup pode ter sido fechado enquanto
       os dados carregavam.
     */
 
-    if (
-      !document.getElementById(
-        'sb-agenda-corpo'
-      )
-    ){
+    if (!document.getElementById('sb-agenda-corpo')) {
       return;
     }
-
   }
 
-
-  const itens =
-    A1_POP.agenda.itens || [];
-
+  const itens = A1_POP.agenda.itens || [];
 
   const porDia = {};
 
-
   itens.forEach(i => {
-
-    const dia =
-      Number(i.dia);
-
+    const dia = Number(i.dia);
 
     if (!dia) return;
 
-
-    (
-      porDia[dia] ||
-      (
-        porDia[dia] = []
-      )
-    ).push(i);
-
+    (porDia[dia] || (porDia[dia] = [])).push(i);
   });
 
+  const hoje = new Date();
 
-  const hoje =
-    new Date();
-
-
-  const ehMesAtual =
-    hoje.getMonth() === mes &&
-    hoje.getFullYear() === ano;
-
+  const ehMesAtual = hoje.getMonth() === mes && hoje.getFullYear() === ano;
 
   /*
     Quando troca de mês:
@@ -2430,48 +2085,19 @@ async function a1AgendaDesenhar(){
     - outro mês → seleciona dia 1
   */
 
-  if (
-    A1_POP.agenda.dia == null
-  ){
-
-    A1_POP.agenda.dia =
-      ehMesAtual
-        ? hoje.getDate()
-        : 1;
-
+  if (A1_POP.agenda.dia == null) {
+    A1_POP.agenda.dia = ehMesAtual ? hoje.getDate() : 1;
   }
 
+  const sel = A1_POP.agenda.dia;
 
-  const sel =
-    A1_POP.agenda.dia;
+  const primeiro = new Date(ano, mes, 1).getDay();
 
+  const nDias = new Date(ano, mes + 1, 0).getDate();
 
-  const primeiro =
-    new Date(
-      ano,
-      mes,
-      1
-    ).getDay();
-
-
-  const nDias =
-    new Date(
-      ano,
-      mes + 1,
-      0
-    ).getDate();
-
-
-  const nAnt =
-    new Date(
-      ano,
-      mes,
-      0
-    ).getDate();
-
+  const nAnt = new Date(ano, mes, 0).getDate();
 
   const cel = [];
-
 
   /*
     Dias do mês anterior.
@@ -2479,22 +2105,13 @@ async function a1AgendaDesenhar(){
     Continuam apenas visuais.
   */
 
-  for (
-    let i = primeiro - 1;
-    i >= 0;
-    i--
-  ){
-
+  for (let i = primeiro - 1; i >= 0; i--) {
     cel.push(
-
       `<span class="sb-cal-d fora">
         ${nAnt - i}
       </span>`
-
     );
-
   }
-
 
   /*
     TODOS OS DIAS DO MÊS ATUAL
@@ -2510,80 +2127,41 @@ async function a1AgendaDesenhar(){
     Portanto qualquer data pode ser clicada.
   */
 
-  for (
-    let d = 1;
-    d <= nDias;
-    d++
-  ){
-
-    const lista =
-      porDia[d] || [];
-
+  for (let d = 1; d <= nDias; d++) {
+    const lista = porDia[d] || [];
 
     const cls = [
-
       'sb-cal-d',
 
-      lista.length
-        ? 'tem'
-        : '',
+      lista.length ? 'tem' : '',
 
-      ehMesAtual &&
-      hoje.getDate() === d
-        ? 'hoje'
-        : '',
+      ehMesAtual && hoje.getDate() === d ? 'hoje' : '',
 
-      sel === d
-        ? 'sel'
-        : ''
-
+      sel === d ? 'sel' : ''
     ]
       .filter(Boolean)
       .join(' ');
-
 
     /*
       Pontinhos dos tipos presentes no dia.
     */
 
-    const tipos =
-      [
-        ...new Set(
-          lista.map(
-            i => a1AgendaTipoReal(i.tipo)
-          )
-        )
-      ];
+    const tipos = [...new Set(lista.map(i => a1AgendaTipoReal(i.tipo)))];
 
-
-    const pts =
-      lista.length
-
-        ? `
+    const pts = lista.length
+      ? `
 
           <span class="sb-cal-pt">
 
-            ${
-
-              tipos
-                .slice(0,4)
-                .map(
-
-                  tipo =>
-
-                    `<i style="background:${a1CorDoTipo(tipo)}"></i>`
-
-                )
-                .join('')
-
-            }
+            ${tipos
+              .slice(0, 4)
+              .map(tipo => `<i style="background:${a1CorDoTipo(tipo)}"></i>`)
+              .join('')}
 
           </span>
 
         `
-
-        : '';
-
+      : '';
 
     cel.push(`
   <button
@@ -2595,128 +2173,58 @@ async function a1AgendaDesenhar(){
     ${d}${pts}
   </button>
 `);
-
   }
-
 
   /*
     Completa última semana com dias
     do próximo mês apenas visuais.
   */
 
-  const sobra =
-    (
-      7 -
-      (
-        cel.length % 7
-      )
-    ) % 7;
+  const sobra = (7 - (cel.length % 7)) % 7;
 
-
-  for (
-    let i = 1;
-    i <= sobra;
-    i++
-  ){
-
+  for (let i = 1; i <= sobra; i++) {
     cel.push(
-
       `<span class="sb-cal-d fora">
         ${i}
       </span>`
-
     );
-
   }
-
 
   /*
     EVENTOS DO DIA SELECIONADO
   */
 
-  const doDia =
-    (
-      porDia[sel] ||
-      []
-    )
-      .slice()
-      .sort(
+  const doDia = (porDia[sel] || []).slice().sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
 
-        (a,b) =>
+  const lista = doDia.length
+    ? doDia
+        .map(i => {
+          const tipoReal = a1AgendaTipoReal(i.tipo);
 
-          (
-            a.hora ||
-            '99'
-          )
-            .localeCompare(
-
-              b.hora ||
-              '99'
-
-            )
-
-      );
-
-
-  const lista =
-    doDia.length
-
-      ? doDia
-          .map(i => {
-
-            const tipoReal =
-              a1AgendaTipoReal(
-                i.tipo
-              );
-
-
-            /*
+          /*
               Evento criado manualmente
               na a1_agenda.
             */
 
-            if (
-              i.agendaId
-            ){
-
-              return `
+          if (i.agendaId) {
+            return `
 
                 <div
                   class="sb-item"
-                  data-tom="${
-                    i.feito
-                      ? 'neutro'
-                      : 'marca'
-                  }"
+                  data-tom="${i.feito ? 'neutro' : 'marca'}"
                 >
 
                   <button
-                    class="sb-ag-check${
-                      i.feito
-                        ? ' on'
-                        : ''
-                    }"
+                    class="sb-ag-check${i.feito ? ' on' : ''}"
                     type="button"
-                    title="${
-                      i.feito
-                        ? 'Reabrir'
-                        : 'Concluir'
-                    }"
+                    title="${i.feito ? 'Reabrir' : 'Concluir'}"
                     onclick="a1AgendaConcluir(
                       '${a1Esc(i.agendaId)}',
                       ${i.feito ? 'true' : 'false'}
                     )"
-                    aria-label="${
-                      i.feito
-                        ? 'Reabrir'
-                        : 'Concluir'
-                    }"
+                    aria-label="${i.feito ? 'Reabrir' : 'Concluir'}"
                   >
-                    ${
-                      i.feito
-                        ? '✓'
-                        : ''
-                    }
+                    ${i.feito ? '✓' : ''}
                   </button>
 
 
@@ -2732,11 +2240,7 @@ async function a1AgendaDesenhar(){
 
                     <span
                       class="sb-item-t"
-                      ${
-                        i.feito
-                          ? 'style="text-decoration:line-through;color:var(--sb-tinta3)"'
-                          : ''
-                      }
+                      ${i.feito ? 'style="text-decoration:line-through;color:var(--sb-tinta3)"' : ''}
                     >
                       ${a1Esc(i.titulo)}
                     </span>
@@ -2753,7 +2257,6 @@ async function a1AgendaDesenhar(){
 
                   ${
                     i.hora
-
                       ? `
 
                         <span class="sb-item-q">
@@ -2763,7 +2266,6 @@ async function a1AgendaDesenhar(){
                         </span>
 
                       `
-
                       : ''
                   }
 
@@ -2781,23 +2283,17 @@ async function a1AgendaDesenhar(){
                 </div>
 
               `;
+          }
 
-            }
-
-
-            /*
+          /*
               Evento vindo do Repasse.
             */
 
-            return `
+          return `
 
               <a
                 class="sb-item"
-                data-tom="${
-                  tipoReal === 'entrevista'
-                    ? 'info'
-                    : 'atento'
-                }"
+                data-tom="${tipoReal === 'entrevista' ? 'info' : 'atento'}"
                 href="/${a1Esc(A1.slug || '')}/andamento?caso=${encodeURIComponent(i.id)}"
               >
 
@@ -2823,11 +2319,7 @@ async function a1AgendaDesenhar(){
 
                     ${a1Esc(i.sub)}
 
-                    ${
-                      i.etapa
-                        ? ' · ' + a1Esc(i.etapa)
-                        : ''
-                    }
+                    ${i.etapa ? ' · ' + a1Esc(i.etapa) : ''}
 
                   </span>
 
@@ -2836,7 +2328,6 @@ async function a1AgendaDesenhar(){
 
                 ${
                   i.hora
-
                     ? `
 
                       <span class="sb-item-q">
@@ -2846,18 +2337,15 @@ async function a1AgendaDesenhar(){
                       </span>
 
                     `
-
                     : ''
                 }
 
               </a>
 
             `;
-
-          })
-          .join('')
-
-      : `
+        })
+        .join('')
+    : `
 
         <div class="sb-vazio">
 
@@ -2873,7 +2361,6 @@ async function a1AgendaDesenhar(){
 
       `;
 
-
   /*
     LEGENDA
 
@@ -2881,42 +2368,22 @@ async function a1AgendaDesenhar(){
   */
 
   const legendaTipos = [
+    ['avaliacao', 'Avaliação'],
 
-    ['avaliacao','Avaliação'],
+    ['entrevista', 'Entrevista'],
 
-    ['entrevista','Entrevista'],
+    ['compromisso', 'Compromisso'],
 
-    ['compromisso','Compromisso'],
-
-    ['tarefa','Tarefa']
-
+    ['tarefa', 'Tarefa']
   ];
 
+  const legenda = legendaTipos
 
-  const legenda =
-    legendaTipos
+    .filter(([tipo]) => itens.some(item => a1AgendaTipoReal(item.tipo) === tipo))
 
-      .filter(
-
-        ([tipo]) =>
-
-          itens.some(
-
-            item =>
-
-              a1AgendaTipoReal(
-                item.tipo
-              ) === tipo
-
-          )
-
-      )
-
-      .map(
-
-        ([tipo, rotulo]) =>
-
-          `
+    .map(
+      ([tipo, rotulo]) =>
+        `
 
           <span>
 
@@ -2932,10 +2399,8 @@ async function a1AgendaDesenhar(){
           </span>
 
           `
-
-      )
-      .join('');
-
+    )
+    .join('');
 
   /*
     Mantém o mesmo layout original.
@@ -2978,29 +2443,14 @@ async function a1AgendaDesenhar(){
 
     <div class="sb-cal">
 
-      ${
-
-        [
-          'D',
-          'S',
-          'T',
-          'Q',
-          'Q',
-          'S',
-          'S'
-        ]
-          .map(
-
-            d =>
-
-              `<span class="sb-cal-dw">
+      ${['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+        .map(
+          d =>
+            `<span class="sb-cal-dw">
                 ${d}
               </span>`
-
-          )
-          .join('')
-
-      }
+        )
+        .join('')}
 
       ${cel.join('')}
 
@@ -3029,12 +2479,9 @@ async function a1AgendaDesenhar(){
     </div>
 
   `;
-
 }
 
-
 const A1_MESES_L = [
-
   'Janeiro',
 
   'Fevereiro',
@@ -3058,7 +2505,6 @@ const A1_MESES_L = [
   'Novembro',
 
   'Dezembro'
-
 ];
 
 /* ── Os avisos ─────────────────────────────────────────────────────────────
@@ -3068,80 +2514,128 @@ const A1_MESES_L = [
    hoje, lead novo sem dono. Aviso que nao pede nada e ruido, e sino que toca
    a toa o gestor aprende a ignorar.                                          */
 
-async function a1AvisosCarregar(){
+async function a1AvisosCarregar() {
   const hoje = new Date();
-  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const iso = d =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const hj = iso(hoje);
-  const em7 = iso(new Date(Date.now() + 7*864e5));
+  const em7 = iso(new Date(Date.now() + 7 * 864e5));
   const h = { headers: A1.headers() };
   const tem = A1_SHELL.tem || {};
   const pedidos = [];
 
-  if (tem.repasse){
+  if (tem.repasse) {
     const base = `${A1.rest('a1_cases')}?module_key=eq.repasse&archived=eq.false`;
-    pedidos.push(fetch(`${base}&evaluation_expiry=not.is.null&evaluation_expiry=lte.${em7}` +
-      `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=20`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => [])
-      .then(l => (Array.isArray(l) ? l : []).map(c => {
-        const d = String(c.evaluation_expiry).slice(0,10);
-        const dias = Math.round((new Date(d + 'T12:00:00') - new Date(hj + 'T12:00:00')) / 864e5);
-        return { peso: dias < 0 ? 0 : 1, tom: dias < 0 ? 'atraso' : 'atento',
-          titulo: c.client_name || 'Sem nome',
-          sub: 'Avaliação · ' + (c.stage_name || ''),
-          quando: dias < 0 ? `venceu há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`,
-          href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}` };
-      })));
-    pedidos.push(fetch(`${base}&payload->>agendamento_data=gte.${hj}&payload->>agendamento_data=lte.${hj}T23:59:59` +
-      `&select=id,client_name,stage_name,payload->>agendamento_data&limit=20`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => [])
-      .then(l => (Array.isArray(l) ? l : []).map(c => ({
-        peso: 0, tom: 'atento', titulo: c.client_name || 'Sem nome',
-        sub: 'Entrevista hoje' + (c.stage_name ? ' · ' + c.stage_name : ''),
-        quando: String(c.agendamento_data || '').slice(11,16),
-        href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}` }))));
+    pedidos.push(
+      fetch(
+        `${base}&evaluation_expiry=not.is.null&evaluation_expiry=lte.${em7}` +
+          `&select=id,client_name,evaluation_expiry,stage_name&order=evaluation_expiry.asc&limit=20`,
+        h
+      )
+        .then(r => (r.ok ? r.json() : []))
+        .catch(() => [])
+        .then(l =>
+          (Array.isArray(l) ? l : []).map(c => {
+            const d = String(c.evaluation_expiry).slice(0, 10);
+            const dias = Math.round((new Date(d + 'T12:00:00') - new Date(hj + 'T12:00:00')) / 864e5);
+            return {
+              peso: dias < 0 ? 0 : 1,
+              tom: dias < 0 ? 'atraso' : 'atento',
+              titulo: c.client_name || 'Sem nome',
+              sub: 'Avaliação · ' + (c.stage_name || ''),
+              quando: dias < 0 ? `venceu há ${-dias}d` : dias === 0 ? 'vence hoje' : `em ${dias}d`,
+              href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}`
+            };
+          })
+        )
+    );
+    pedidos.push(
+      fetch(
+        `${base}&payload->>agendamento_data=gte.${hj}&payload->>agendamento_data=lte.${hj}T23:59:59` +
+          `&select=id,client_name,stage_name,payload->>agendamento_data&limit=20`,
+        h
+      )
+        .then(r => (r.ok ? r.json() : []))
+        .catch(() => [])
+        .then(l =>
+          (Array.isArray(l) ? l : []).map(c => ({
+            peso: 0,
+            tom: 'atento',
+            titulo: c.client_name || 'Sem nome',
+            sub: 'Entrevista hoje' + (c.stage_name ? ' · ' + c.stage_name : ''),
+            quando: String(c.agendamento_data || '').slice(11, 16),
+            href: `/${A1.slug}/andamento?caso=${encodeURIComponent(c.id)}`
+          }))
+        )
+    );
   }
-  if (tem.crm){
-    const ontem = new Date(Date.now() - 2*864e5).toISOString();
-    pedidos.push(fetch(`${A1.rest('a1_cases')}?module_key=eq.crm&archived=eq.false&created_at=gte.${ontem}` +
-      `&select=id,client_name,stage_name,created_at&order=created_at.desc&limit=10`, h)
-      .then(r => r.ok ? r.json() : []).catch(() => [])
-      .then(l => (Array.isArray(l) ? l : []).map(c => ({
-        peso: 2, tom: 'marca', titulo: c.client_name || 'Sem nome',
-        sub: 'Lead novo' + (c.stage_name ? ' · ' + c.stage_name : ''),
-        quando: 'novo', href: `/${A1.slug}/crm?lead=${encodeURIComponent(c.id)}` }))));
+  if (tem.crm) {
+    const ontem = new Date(Date.now() - 2 * 864e5).toISOString();
+    pedidos.push(
+      fetch(
+        `${A1.rest('a1_cases')}?module_key=eq.crm&archived=eq.false&created_at=gte.${ontem}` +
+          `&select=id,client_name,stage_name,created_at&order=created_at.desc&limit=10`,
+        h
+      )
+        .then(r => (r.ok ? r.json() : []))
+        .catch(() => [])
+        .then(l =>
+          (Array.isArray(l) ? l : []).map(c => ({
+            peso: 2,
+            tom: 'marca',
+            titulo: c.client_name || 'Sem nome',
+            sub: 'Lead novo' + (c.stage_name ? ' · ' + c.stage_name : ''),
+            quando: 'novo',
+            href: `/${A1.slug}/crm?lead=${encodeURIComponent(c.id)}`
+          }))
+        )
+    );
   }
   const partes = await Promise.all(pedidos);
-  return partes.flat().sort((a,b) => a.peso - b.peso).slice(0, 30);
+  return partes
+    .flat()
+    .sort((a, b) => a.peso - b.peso)
+    .slice(0, 30);
 }
 
-async function a1AvisosAbrir(ev){
-  ev.preventDefault(); ev.stopPropagation();
+async function a1AvisosAbrir(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
   const bt = ev.currentTarget;
-  const el = a1PopAbrir('avisos', bt, 340, `
-    <div class="sb-pop-cab">${a1Svg('sino',16)}
+  const el = a1PopAbrir(
+    'avisos',
+    bt,
+    340,
+    `
+    <div class="sb-pop-cab">${a1Svg('sino', 16)}
       <div><div class="sb-pop-tit">Avisos</div>
         <div class="sb-pop-sub">O que pede ação agora</div></div>
       <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
     <div class="sb-pop-corpo" id="sb-avisos-corpo">
-      <div class="sb-vazio"><p>Carregando…</p></div></div>`);
+      <div class="sb-vazio"><p>Carregando…</p></div></div>`
+  );
   if (!el) return;
   const lista = await a1AvisosCarregar().catch(() => []);
   A1_POP.avisos = lista;
   const alvo = document.getElementById('sb-avisos-corpo');
   if (!alvo) return;
   alvo.innerHTML = lista.length
-    ? lista.map(a => `<a class="sb-item" data-tom="${a1Esc(a.tom)}" href="${a1Esc(a.href)}">
+    ? lista
+        .map(
+          a => `<a class="sb-item" data-tom="${a1Esc(a.tom)}" href="${a1Esc(a.href)}">
         <span class="sb-item-pt"></span>
         <span class="sb-item-tx"><span class="sb-item-t">${a1Esc(a.titulo)}</span>
           <span class="sb-item-s">${a1Esc(a.sub)}</span></span>
-        <span class="sb-item-q">${a1Esc(a.quando)}</span></a>`).join('')
-    : `<div class="sb-vazio">${a1Svg('fluxo',26)}<p>Nada pedindo atenção agora. Vencimentos, entrevistas do dia e leads novos aparecem aqui.</p></div>`;
+        <span class="sb-item-q">${a1Esc(a.quando)}</span></a>`
+        )
+        .join('')
+    : `<div class="sb-vazio">${a1Svg('fluxo', 26)}<p>Nada pedindo atenção agora. Vencimentos, entrevistas do dia e leads novos aparecem aqui.</p></div>`;
   a1AvisosContar(lista.filter(a => a.peso === 0).length);
 }
 
 // O numero no sininho conta so o que esta VENCIDO ou e de hoje. Contar tudo que
 // existe faria o numero nunca zerar, e numero que nunca zera deixa de ser lido.
-function a1AvisosContar(n){
+function a1AvisosContar(n) {
   const el = document.getElementById('sb-avisos-n');
   if (!el) return;
   el.textContent = String(n);
@@ -3150,9 +2644,11 @@ function a1AvisosContar(n){
 }
 
 // Ao montar o casco, o contador e calculado uma vez, em segundo plano.
-async function a1AvisosPrimeiraContagem(){
+async function a1AvisosPrimeiraContagem() {
   try {
     const lista = await a1AvisosCarregar();
     a1AvisosContar(lista.filter(a => a.peso === 0).length);
-  } catch { /* contador e conveniencia: falhar em silencio e melhor que alarmar */ }
+  } catch {
+    /* contador e conveniencia: falhar em silencio e melhor que alarmar */
+  }
 }
