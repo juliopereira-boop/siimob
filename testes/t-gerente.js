@@ -80,7 +80,7 @@ const anexar = p => p.evaluate(async () => {
 
   console.log('\n== GERENTE marcado DEPOIS do login (localStorage desatualizado) ==');
   { const semGerente = { ...PERMS_GERENTE, gerente:false, editar_repasses:false };
-    const { b, p, erros } = await abrirComo('andamento.html', semGerente, PERMS_GERENTE);
+    const { b, p } = await abrirComo('andamento.html', semGerente, PERMS_GERENTE);
     c('o boot puxou a permissão nova', await p.evaluate(() => !!(G.user.permissions||{}).gerente));
     await abrirCartao(p);
     c('sem tarja de somente leitura', (await tarja(p)) === '', await tarja(p));

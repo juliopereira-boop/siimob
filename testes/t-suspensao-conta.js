@@ -1,8 +1,5 @@
 // Regressao: suspender um tenant precisa bloquear login novo, sessao aberta,
 // todas as telas protegidas, preservando somente o acesso do Superadmin.
-const fs = require('fs');
-const path = require('path');
-const raiz = path.resolve(__dirname, '..');
 const { lerFonte: le, lerPagina } = require('./fonte');
 
 let ok = 0, bad = 0;
@@ -45,7 +42,7 @@ checa('cliente recebe aviso CONTA SUSPENSA',
   /CONTA SUSPENSA/.test(lerPagina('login')));
 
 for (const tela of ['geral.html', 'tenant-admin.html', 'workflow.html']) {
-  checa(`${tela} vigia a validade da sessao`, /a1StartHeartbeat\(/.test(le(tela)));
+  checa(`${tela} vigia a validade da sessao`, /a1StartHeartbeat\(/.test(lerPagina(tela)));
 }
 
 console.log(`\n${bad ? '>>> FALHAS: ' + bad : '>>> tudo passou'}  (${ok} verificações ok)`);

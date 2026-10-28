@@ -3715,7 +3715,7 @@ function parsePdf(text){
 
 // Parser da Ficha de Pré-cadastro do CVCRM
 function parseCvcrm(text){
-  const t=text.replace(/ /g,' ').replace(/\s+/g,' ').trim();
+  const t=text.replace(/\u00A0/g,' ').replace(/\s+/g,' ').trim();
   const m=(re)=>{const x=t.match(re);return x?x[1].trim():'';};
   const money=(s)=>s?s.replace(/R\$\s*/,'').trim():'';
   const d={};

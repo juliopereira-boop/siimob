@@ -22,8 +22,6 @@
 //   4. etapa com flag CANCELADO não é venda encerrada, mesmo tendo selo de fim
 //   5. cada módulo tem o SEU vocabulário de selo — FIM_POSITIVO é da
 //      Pré-análise e não encerra Venda nenhuma
-const fs = require('fs');
-const path = require('path');
 const { checa, resumo } = require('./comum');
 
 // ── Carrega paineis.js de verdade, sem navegador ────────────────────────────

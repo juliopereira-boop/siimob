@@ -1,8 +1,5 @@
-const fs = require('fs');
-const path = require('path');
 const assert = require('assert');
 
-const raiz = path.join(__dirname, '..');
 const { lerFonte, lerPagina } = require('./fonte');
 const cfg = lerPagina('configuracoes');
 const pa = lerPagina('pre-analise');

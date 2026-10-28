@@ -18,8 +18,6 @@
 //   3. linhas com o mesmo carimbo de tempo não somem nem se duplicam
 //   4. se o banco recusar o filtro por chave, a leitura NÃO quebra: volta para
 //      o salto por deslocamento e termina certo
-const fs = require('fs');
-const path = require('path');
 const { checa, resumo } = require('./comum');
 
 // ── Carrega o A1 de verdade, sem navegador ──────────────────────────────────

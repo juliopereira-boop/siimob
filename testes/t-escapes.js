@@ -20,11 +20,8 @@
 // Aqui não há navegador: as funções são lidas dos arquivos de verdade, e a
 // decodificação do atributo é refeita à mão, nas duas etapas em que o
 // navegador a faz. Copiar as funções para o teste provaria a cópia.
-const fs = require('fs');
-const path = require('path');
 const { checa, resumo } = require('./comum');
 
-const RAIZ = path.join(__dirname, '..');
 const { lerFonte, lerPagina } = require('./fonte');
 const lerArq = f => (/^[\w-]+\.html$/.test(f) ? lerPagina(f) : lerFonte(f));
 

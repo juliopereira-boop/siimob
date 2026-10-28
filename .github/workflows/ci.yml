@@ -9,6 +9,26 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Barato e rápido: pega defeito de código (chave duplicada, case repetido,
+  # código inalcançável) e formatação fora do padrão antes da suíte longa.
+  lint:
+    name: Lint e formatação
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
+      - name: Build
+        run: npm run build
+
   suite:
     name: Suíte de navegador
     runs-on: ubuntu-latest

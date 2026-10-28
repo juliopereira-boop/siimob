@@ -3,7 +3,6 @@ const { abrir, checa, resumo } = require('./comum');
   let f = 0;
   { const { b, p, erros } = await abrir('login.html');
     console.log('== LOGIN ==');
-    const paineis = await p.locator('.panel, [class*=panel]').count();
     checa('página monta', (await p.locator('input').count()) >= 2, `inputs=${await p.locator('input').count()}`);
     checa('tem campo de senha', (await p.locator('input[type=password]').count()) >= 1);
     f += resumo(erros); await b.close(); }

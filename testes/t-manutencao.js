@@ -13,7 +13,7 @@
 // testes abaixo é sobre o sistema continuar de pé.
 const { chromium } = require('playwright');
 const { responder } = require('./fake');
-const { abrir, checa, resumo } = require('./comum');
+const { checa, resumo } = require('./comum');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 
 // Abre uma tela com controle fino da resposta do banco à pergunta da chave:

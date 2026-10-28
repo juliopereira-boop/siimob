@@ -33,7 +33,7 @@ async function abrirComo(usuario, token, vistos) {
     const j = x => r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(x)});
     if (u.includes('/rpc/a1_avisos_para_mim')) {
       const corpo = JSON.parse(r.request().postData()||'{}');
-      const pub = corpo.p_publico, chave = corpo.p_user_key;
+      const pub = corpo.p_publico;
       // A função do banco NÃO esconde mais o que já foi lido: quem decide se
       // repete é o navegador, pelo token da sessão. A ordem é a mesma do SQL:
       // fixado primeiro, depois do mais novo para o mais velho.

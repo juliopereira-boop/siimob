@@ -54,10 +54,6 @@ async function abrirConfig({ modulos = [], papel = 'owner' } = {}) {
 }
 
 const TABELAS_NOVAS = /a1_pa_situacoes|a1_pa_transicoes|a1_co_situacoes|a1_co_transicoes|a1_integra_eventos/;
-const escritas = (p, re, metodo) => p.evaluate(([r, m]) =>
-  (window.__POSTS || []).filter(x => new RegExp(r).test(x.url) && (!m || x.m === m)),
-  [re.source, metodo || null]);
-
 const rotulosDosCartoes = p =>
   p.locator('#cfg-hub .cfg-hub-card:visible .cfg-card-label').allTextContents()
    .then(l => l.map(x => x.trim()));

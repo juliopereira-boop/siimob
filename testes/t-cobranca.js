@@ -206,7 +206,6 @@ const ultimoBilling = g => {
   { const { b, p } = await abrirCliente({ due_day: 1, paid: {} });
     const casos = await p.evaluate(() => {
       const f = A1Cobranca.mesesEmAtraso;
-      const y = new Date().getFullYear();
       return {
         vazioSemDia: f({ paid:{} }).length,
         soMarcado:   f({ paid:{ '2026-03': { atraso:true } } }),

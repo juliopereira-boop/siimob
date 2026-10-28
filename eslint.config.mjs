@@ -22,7 +22,10 @@ export default [
       'no-undef': 'off',
       'no-unused-vars': 'off',
       'no-redeclare': 'off',          // globais repetidos entre telas: fase 2
-      'no-empty': ['error', { allowEmptyCatch: true }]
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // 23 escapes desnecessários em regex antigas ([:\-], \/ dentro de classe).
+      // Inofensivos; ficam como aviso para não mexer em regex de produção por estilo.
+      'no-useless-escape': 'warn'
     }
   },
   {
@@ -33,7 +36,11 @@ export default [
       // window, document e os globais da tela existem
       globals: { ...globals.node, ...globals.browser }
     },
-    rules: { 'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }], 'no-undef': 'off' }
+    rules: {
+      'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
+      'no-undef': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }]
+    }
   },
   {
     files: ['**/*.mjs'],

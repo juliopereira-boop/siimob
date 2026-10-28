@@ -20,7 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { responder, liberarModulos, D } = require('./fake');
+const { responder, liberarModulos } = require('./fake');
 const { checa, resumo } = require('./comum');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 const RAIZ = path.join(__dirname, '..');

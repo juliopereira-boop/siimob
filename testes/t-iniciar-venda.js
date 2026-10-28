@@ -23,8 +23,6 @@
 const { chromium } = require('playwright');
 const { responder, liberarModulos, D } = require('./fake');
 const { checa, resumo } = require('./comum');
-const fs = require('fs');
-const path = require('path');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 
 const GESTOR   = { id:'u1',  tenant_id:'t1', name:'Julio', role:'owner', cpf:'99999999999' };

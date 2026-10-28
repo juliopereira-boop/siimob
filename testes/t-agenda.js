@@ -15,7 +15,7 @@
 //    TELA não pede ao banco o que ele vai recusar — senão o corretor digita,
 //    salva e leva um erro que não explica nada.
 const { chromium } = require('playwright');
-const { responder, liberarModulos, D } = require('./fake');
+const { responder, liberarModulos } = require('./fake');
 const { checa, resumo } = require('./comum');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 

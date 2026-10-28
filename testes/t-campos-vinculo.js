@@ -28,7 +28,7 @@
 // trava desligada, e o teste liga a trava pela mesma função que o roteamento vai
 // ligar um dia. Sem isso, "deixei preparado" seria uma frase, não um fato.
 const { chromium } = require('playwright');
-const { responder, liberarModulos, negarModulos, D } = require('./fake');
+const { responder, liberarModulos, negarModulos } = require('./fake');
 const { checa, resumo } = require('./comum');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 
@@ -423,7 +423,7 @@ const corpoDo = (p, filtro, metodo) => p.evaluate(([f, m]) => {
   // ══════════════════════════════════════════════════════════════════════════
   console.log('\nRegistro sem licença: a tela não lê processo nenhum');
   {
-    const { b, p, erros, pedidos } = await abrirRegistro({ semModulos:['registro','crm','repasse'] });
+    const { b, erros, pedidos } = await abrirRegistro({ semModulos:['registro','crm','repasse'] });
     checa('não pediu a1_cases para um módulo que o cliente não tem',
       !pedidos.some(x => x.url.includes('a1_cases')),
       pedidos.filter(x=>x.url.includes('a1_cases')).map(x=>x.url).join(' | '));
