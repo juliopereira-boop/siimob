@@ -1,3 +1,4 @@
+// @ts-check
 // ─── As rotas da Vercel no servidor de desenvolvimento e no preview ──────────
 //
 // `npm run dev` abre /cliente/repasse do mesmo jeito que a produção. No
@@ -19,6 +20,7 @@ function middleware(paraFonte) {
   };
 }
 
+/** @returns {import('vite').Plugin} */
 export default function rotasVercel() {
   return {
     name: 'siimob:rotas-vercel',

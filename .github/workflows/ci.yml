@@ -26,6 +26,8 @@ jobs:
         run: npm run lint
       - name: Prettier
         run: npm run format:check
+      - name: Tipos (arquivos com // @ts-check)
+        run: npm run tipos
       - name: Build
         run: npm run build
 

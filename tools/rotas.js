@@ -1,3 +1,4 @@
+// @ts-check
 // ─── As rotas do SIIMOB, lidas de vercel.json ────────────────────────────────
 //
 // POR QUE ESTE ARQUIVO EXISTE

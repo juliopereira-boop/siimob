@@ -27,6 +27,8 @@ npm run dev        # http://localhost:3000/<apelido-do-cliente>/login
 | `npm test -- t-x` | Só as suítes cujo nome contém `t-x`                                    |
 | `npm run lint`    | ESLint                                                                 |
 | `npm run format`  | Prettier em JS e CSS                                                   |
+| `npm run tipos`   | Checagem de tipos (TypeScript sobre JSDoc) nos arquivos com `// @ts-check` |
+| `npm run verificar` | Lint + formatação + tipos + suíte: o que a CI roda                   |
 
 Provas de banco (Postgres descartável): `PGPORT=5473 testes/sql/roda.sh`.
 

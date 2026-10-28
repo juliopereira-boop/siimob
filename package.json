@@ -14,14 +14,17 @@
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{js,css}\" \"testes/**/*.js\" \"tools/**/*.{js,mjs}\" \"scripts/**/*.js\" \"*.mjs\"",
     "format:check": "prettier --check \"src/**/*.{js,css}\" \"testes/**/*.js\" \"tools/**/*.{js,mjs}\" \"scripts/**/*.js\" \"*.mjs\"",
-    "verificar": "npm run lint && npm run format:check && npm test"
+    "verificar": "npm run lint && npm run format:check && npm run tipos && npm test",
+    "tipos": "tsc -p jsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "9.28.0",
+    "@types/node": "22.15.21",
     "eslint": "9.28.0",
     "globals": "16.2.0",
     "playwright": "1.56.1",
     "prettier": "3.5.3",
+    "typescript": "5.8.3",
     "vite": "6.3.5"
   }
 }

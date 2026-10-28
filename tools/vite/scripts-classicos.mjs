@@ -1,3 +1,4 @@
+// @ts-check
 // ─── Scripts clássicos no build ──────────────────────────────────────────────
 //
 // POR QUE ESTE PLUGIN EXISTE
@@ -19,6 +20,7 @@ import { transform } from 'esbuild';
 
 const MARCA = /<script data-classico="([^"]+)"><\/script>/g;
 
+/** @returns {import('vite').Plugin} */
 export default function scriptsClassicos() {
   let raiz;
   return {

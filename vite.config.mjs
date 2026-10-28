@@ -1,3 +1,4 @@
+// @ts-check
 // ─── Build do SIIMOB ────────────────────────────────────────────────────────
 //
 // Uma entrada por tela (src/pages/<tela>/index.html). O resultado em dist/ é o

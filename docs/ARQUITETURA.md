@@ -84,7 +84,7 @@ nomes de cliente.
 | 1 | Separação mecânica: CSS e JS fora do HTML, pastas, Vite, lint, testes contra o build. Comportamento idêntico, provado por captura de tela pixel a pixel e pela suíte. | **feita** |
 | 2 | Fim das cópias: Repasse (Dashboard, Andamento e Listagem eram três arquivos 96% iguais) vira uma tela; Registro idem; funções repetidas vão para `src/shared`. | próxima |
 | 3 | Módulos de verdade: trocar os `onclick` inline por eventos, `import`/`export` entre arquivos, fim dos globais. | |
-| 4 | Tipos em JSDoc com checagem (`checkJs`) na CI, arquivo por arquivo. | |
+| 4 | Tipos em JSDoc com checagem na CI, arquivo por arquivo (`// @ts-check` no topo). A base já está pronta: `jsconfig.json`, `npm run tipos` e o job da CI; hoje só as ferramentas (`tools/`, `vite.config.mjs`, `testes/fonte.js`) estão marcadas. | base pronta |
 
 ### Dívidas conhecidas
 

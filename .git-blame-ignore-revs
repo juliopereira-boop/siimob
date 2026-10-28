@@ -1,0 +1,3 @@
+# Commits só de formatação. O GitHub e `git blame --ignore-revs-file` pulam
+# estes commits, e a autoria de cada linha continua apontando para quem a escreveu.
+833e04fd917c0859f06c9b8708c8790175c06f06

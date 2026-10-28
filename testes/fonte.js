@@ -1,3 +1,4 @@
+// @ts-check
 // ─── O código-fonte, para os testes que conferem o que está escrito ──────────
 //
 // Alguns testes não abrem navegador: leem o arquivo e conferem uma regra no

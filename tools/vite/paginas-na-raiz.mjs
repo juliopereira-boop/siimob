@@ -1,3 +1,4 @@
+// @ts-check
 // ─── As páginas saem nos mesmos endereços de antes ───────────────────────────
 //
 // O código mora em src/pages/<tela>/index.html, mas o que está publicado hoje é
@@ -5,6 +6,7 @@
 // clientes, o servidor de testes e alguns redirecionamentos no próprio código.
 // Mudar o endereço publicado junto com a organização do código seria trocar
 // duas coisas de uma vez; este plugin mantém a primeira sem tocar na segunda.
+/** @returns {import('vite').Plugin} */
 export default function paginasNaRaiz() {
   return {
     name: 'siimob:paginas-na-raiz',
