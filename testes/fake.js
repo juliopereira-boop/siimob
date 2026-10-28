@@ -2,7 +2,14 @@
 // incluem caracteres perigosos, para provar que o HTML está escapado.
 // Prazo relativo a hoje: data fixa em andaime apodrece — o teste passa hoje e
 // falha em janeiro, e quem vier depois acha que quebrou o codigo.
-const _prazo = d => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
+// Data LOCAL (AAAA-MM-DD), do mesmo jeito que a tela calcula "hoje"
+// (hojeISO em geral/main.js). toISOString() é UTC: no Brasil, das 21h à
+// meia-noite, o "hoje" do banco falso já era amanhã, e os testes de prazo
+// falhavam sem defeito nenhum na tela.
+const _prazo = d => {
+  const t = new Date(Date.now() + d * 864e5);
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+};
 const XSS = `<img src=x onerror="window.__XSS=(window.__XSS||0)+1">`;
 const ASPA = `Aspa" onfocus="window.__XSS=(window.__XSS||0)+1" x="`;
 

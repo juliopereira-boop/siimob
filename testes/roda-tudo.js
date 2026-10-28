@@ -78,13 +78,34 @@ function servir() {
   });
 }
 
+// A saída de cada suíte continua aparecendo ao vivo, e também fica guardada:
+// se a suíte falhar, as linhas que dizem POR QUE (✗, erro de JS, exceção) são
+// repetidas no fim. O log da CI é lido de baixo para cima, e uma falha da
+// suíte 26 de 53 ficava enterrada no meio de duas mil linhas verdes.
+const MOTIVO = /✗|AssertionError|Error:|ERROS DE JS|^\s+(JS|console):/;
+
 function rodar(arquivo) {
   return new Promise(ok => {
     const p = spawn(process.execPath, [path.join(__dirname, arquivo)], {
-      stdio: 'inherit',
+      stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, PORTA_TESTE: String(PORTA) }
     });
-    p.on('close', codigo => ok(codigo === 0));
+    let saida = '';
+    p.stdout.on('data', d => {
+      process.stdout.write(d);
+      saida += d;
+    });
+    p.stderr.on('data', d => {
+      process.stderr.write(d);
+      saida += d;
+    });
+    p.on('close', codigo => {
+      const motivos = saida
+        .split('\n')
+        .filter(l => MOTIVO.test(l))
+        .slice(0, 25);
+      ok({ passou: codigo === 0, motivos });
+    });
   });
 }
 
@@ -107,14 +128,21 @@ function rodar(arquivo) {
   const falharam = [];
   for (const s of suites) {
     console.log('\n' + '━'.repeat(70) + '\n  ' + s + '\n' + '━'.repeat(70));
-    if (!(await rodar(s))) falharam.push(s);
+    const r = await rodar(s);
+    if (!r.passou) falharam.push({ suite: s, motivos: r.motivos });
   }
   servidor.close();
 
   console.log('\n' + '═'.repeat(70));
   if (falharam.length) {
     console.log(`REPROVADO — ${falharam.length} de ${suites.length} suítes falharam:`);
-    falharam.forEach(s => console.log('  · ' + s));
+    falharam.forEach(f => console.log('  · ' + f.suite));
+    for (const f of falharam) {
+      console.log('\n── ' + f.suite + ' ──');
+      (f.motivos.length ? f.motivos : ['(sem linha de motivo; veja a saída completa acima)']).forEach(l =>
+        console.log('  ' + l.trim().slice(0, 300))
+      );
+    }
     process.exit(1);
   }
   console.log(`APROVADO — ${suites.length} suítes, todas verdes.`);

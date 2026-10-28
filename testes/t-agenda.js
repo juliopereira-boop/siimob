@@ -298,7 +298,15 @@ const CORRETOR = {
       }
     });
     await p.fill('#t-desc', 'Retornar ao cliente');
-    await p.fill('#t-date', new Date().toISOString().slice(0, 10));
+    // Data local, como o calendário da tela: toISOString() é UTC e, no Brasil
+    // depois das 21h, já seria o dia seguinte.
+    await p.fill(
+      '#t-date',
+      await p.evaluate(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      })
+    );
     await p.evaluate(() => saveTask());
     await p.waitForTimeout(700);
     const post = await p.evaluate(() =>
