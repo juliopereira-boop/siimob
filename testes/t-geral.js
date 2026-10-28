@@ -271,6 +271,25 @@ async function pedidos(p) {
         return c.toDataURL() === antes;
       })
     );
+    // O cartão muda de altura sem a janela mudar (fonte da web que chega depois,
+    // linha do dia que aparece). O céu tem de acompanhar o CARTÃO; antes ele só
+    // escutava a janela e ficava esticado — só na CI, onde as fontes carregam.
+    checa(
+      'o céu acompanha o cartão quando ele muda de altura',
+      await p.evaluate(async () => {
+        const c = document.getElementById('sb-ceu'),
+          h = document.getElementById('sb-hero');
+        const s = document.createElement('style');
+        s.textContent = '.sb-hero-nome{font-size:3.2rem!important;line-height:1.4!important}';
+        document.head.appendChild(s);
+        await new Promise(ok => setTimeout(ok, 300));
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const ok = c.height === h.clientHeight * dpr;
+        s.remove();
+        await new Promise(ok2 => setTimeout(ok2, 300));
+        return ok;
+      })
+    );
 
     // Ctrl+K é o atalho que o dono pediu. Ele abre a paleta, e a paleta só
     // oferece porta que a pessoa pode abrir.

@@ -928,7 +928,17 @@ function a1Hero(alvo, opcoes) {
 
   a1DesenharCeu();
   a1RelogioLigar();
-  if (!a1Hero._resize) {
+  // O céu acompanha o tamanho do CARTÃO, não da janela. O cartão muda de altura
+  // sem a janela mudar (a fonte da web chega depois do primeiro desenho, a linha
+  // do dia aparece), e o canvas desenhado no tamanho antigo ficava esticado.
+  // Era isso que reprovava "o céu do cliente é sempre o mesmo" só na CI, onde as
+  // fontes do Google carregam de verdade.
+  const cartao = document.getElementById('sb-hero');
+  if (window.ResizeObserver && cartao) {
+    a1Hero._obs = a1Hero._obs || new ResizeObserver(() => a1DesenharCeu());
+    a1Hero._obs.disconnect();
+    a1Hero._obs.observe(cartao);
+  } else if (!a1Hero._resize) {
     a1Hero._resize = true;
     window.addEventListener('resize', () => a1DesenharCeu(), { passive: true });
   }
