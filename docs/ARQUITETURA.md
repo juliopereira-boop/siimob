@@ -94,3 +94,8 @@ nomes de cliente.
 - `configuracoes/main.js` carrega cópias antigas de funções do Repasse que não têm mais tela (código
   morto, a remover na fase 2).
 - `a1_has_module` (a porta da tela) não honra `expires_at`; o RLS honra.
+- **"Hoje" em UTC em 7 lugares das telas** (`new Date().toISOString().slice(0, 10)`): data padrão
+  da Agenda (repasse, andamento, listagem, configurações), "este mês" do painel do Registro, data de
+  contrato no Superadmin e nome do CSV de Leads. No Brasil, depois das 21h, eles usam o dia
+  seguinte. A correção (um `hojeISO()` único em `src/shared/utils`) muda comportamento, por isso
+  entra na fase 2 e não na 1.
