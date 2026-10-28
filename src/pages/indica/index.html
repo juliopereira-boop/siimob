@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IndicaSII — indique e ganhe 20% da primeira parcela | SIIMOB</title>
+  <meta name="description" content="Indique construtoras, imobiliárias e correspondentes para o SIIMOB. Contrato fechado, você recebe 20% da primeira parcela, uma única vez. Sem limite de indicações e com acompanhamento online.">
+  <link rel="canonical" href="https://siimob.com.br/indicasii">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SIIMOB">
+  <meta property="og:title" content="IndicaSII — indique e ganhe 20% da primeira parcela">
+  <meta property="og:description" content="Você conhece uma empresa que ainda controla repasse em planilha? Indique para o SIIMOB e receba 20% da primeira parcela que ela pagar.">
+  <meta property="og:url" content="https://siimob.com.br/indicasii">
+  <meta property="og:image" content="https://siimob.com.br/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IndicaSII — indique e ganhe 20% da primeira parcela">
+  <meta name="twitter:description" content="Indique empresas do mercado imobiliário para o SIIMOB e receba 20% da primeira parcela quando virar contrato.">
+  <meta name="twitter:image" content="https://siimob.com.br/icon-512.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/indica/style.css">
+</head>
+<body>
+
+<!-- ════════ HEADER ════════ -->
+<header class="topo" id="topo">
+  <div class="cx topo-in">
+    <a href="#" class="logo" aria-label="SIIMOB, página inicial do IndicaSII">
+      <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="siind1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="siind1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="siind1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="siind1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siind1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siind1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siind1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siind1d)"/></svg>
+      SIIMOB <small>IndicaSII</small>
+    </a>
+    <nav class="nav" id="nav" aria-label="Seções da página"></nav>
+    <div class="topo-acoes">
+      <a class="btn btn-2 btn-sm" href="#acompanhar" id="btn-login">Acompanhar</a>
+      <a class="btn btn-1 btn-sm" href="#cadastro">Criar conta</a>
+      <button class="hamb" id="hamb" aria-label="Abrir menu" aria-expanded="false" aria-controls="gaveta">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="gaveta" id="gaveta" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="gaveta-p">
+    <button class="gaveta-x" id="gaveta-x" aria-label="Fechar menu">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="gaveta-links"></div>
+    <a class="btn btn-2" href="#acompanhar" style="margin-top:.8rem">Acompanhar indicações</a>
+    <a class="btn btn-1" href="#cadastro" style="margin-top:.5rem">Criar conta</a>
+  </div>
+</div>
+
+<main>
+
+<!-- ════════ HERO ════════ -->
+<section class="hero" id="inicio">
+  <div class="cx hero-grade">
+    <div>
+      <span class="sobrancelha">Programa oficial de indicação</span>
+      <h1>Sua indicação pode valer <em id="hero-valor">R$ 300</em></h1>
+      <p class="lead">
+        Indique construtoras, imobiliárias e correspondentes que ainda controlam repasse
+        em planilha. Quando a indicação vira contrato, você recebe
+        <strong id="hero-perc">20%</strong> da primeira parcela que ela pagar — pagamento
+        único, sem recorrência. Você não precisa vender nada: a conversa comercial é nossa.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn btn-1 btn-lg" href="#cadastro">Quero indicar</a>
+        <a class="btn btn-2 btn-lg" href="#como-funciona">Ver como funciona</a>
+      </div>
+      <div class="provas">
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Sem limite de indicações</span>
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Acompanhamento online</span>
+        <span class="prova"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Não precisa ser cliente</span>
+      </div>
+    </div>
+
+    <!-- composição de interface, não foto de banco de imagem -->
+    <div class="visor" aria-hidden="true">
+      <div class="painel">
+        <div class="painel-topo">
+          <span class="bolinha"></span><span class="bolinha"></span><span class="bolinha"></span>
+          <span>Minhas indicações</span>
+        </div>
+        <div class="painel-corpo">
+          <div class="rot">Empresa indicada</div>
+          <div class="emp">Construtora Horizonte</div>
+          <div class="trilho">
+            <div class="no on"></div><div class="no on"></div><div class="no on"></div><div class="no on"></div>
+          </div>
+          <span class="selo-ok">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            Contrato fechado
+          </span>
+          <div class="ganho">
+            <div class="ganho-l">Sua recompensa</div>
+            <div class="ganho-v" id="visor-ganho">R$ 300</div>
+          </div>
+        </div>
+      </div>
+      <div class="fichas">
+        <div class="ficha"><b>3</b><span>indicações</span></div>
+        <div class="ficha"><b>2</b><span>em negociação</span></div>
+        <div class="ficha"><b style="color:var(--verde)">1</b><span>convertida</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ CAPTURA ════════ -->
+<section class="compacta" id="cadastro" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro" style="margin-bottom:2rem">
+      <h2>Preencha seus dados e comece</h2>
+      <p class="lead">Dois campos agora. Os dados da empresa que você quer indicar vêm na tela seguinte.</p>
+    </div>
+    <form class="captura" id="form-inicio" novalidate>
+      <div class="campo">
+        <label for="i-nome">Nome completo</label>
+        <input type="text" id="i-nome" name="nome" autocomplete="name" placeholder="Como você se chama"
+               aria-describedby="e-nome">
+        <div class="campo-erro oculto" id="e-nome" role="alert"></div>
+      </div>
+      <div class="campo">
+        <label for="i-fone">WhatsApp</label>
+        <input type="tel" id="i-fone" name="telefone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000"
+               autocomplete="tel" aria-describedby="e-fone">
+        <div class="campo-erro oculto" id="e-fone" role="alert"></div>
+      </div>
+      <button type="submit" class="btn btn-1 btn-lg" style="width:100%">Quero participar</button>
+      <p class="aviso-legal">
+        Ao continuar, você concorda com a <a href="#duvidas">política de privacidade</a> e com o
+        regulamento do programa. Usamos seus dados apenas para tratar da indicação e pagar a recompensa.
+      </p>
+    </form>
+  </div>
+</section>
+
+<!-- ════════ COMO FUNCIONA ════════ -->
+<section id="como-funciona">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Como funciona</span>
+      <h2>Indicar é simples</h2>
+      <p class="lead">Três passos. Você faz o primeiro; do segundo em diante, é com a gente.</p>
+    </div>
+    <div class="passos">
+      <article class="passo surge">
+        <span class="passo-n">01</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <h3>Faça a indicação</h3>
+        <p>Preencha o nome da empresa e, se souber, quem é o contato lá dentro. Leva menos de dois minutos e não exige nenhum compromisso seu.</p>
+      </article>
+      <article class="passo surge">
+        <span class="passo-n">02</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h3>Nosso time assume</h3>
+        <p>A equipe comercial entra em contato, apresenta o sistema e conduz a negociação. Você acompanha cada mudança pelo seu painel, sem precisar cobrar ninguém.</p>
+      </article>
+      <article class="passo surge">
+        <span class="passo-n">03</span>
+        <div class="icone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h3>Você recebe</h3>
+        <p>Contrato assinado e primeira parcela confirmada, os 20% dessa parcela ficam disponíveis no painel e vão para a chave PIX que você cadastrou. É um pagamento único, por indicação.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ SIMULADOR ════════ -->
+<section class="compacta" id="simulador">
+  <div class="cx">
+    <div class="sim surge">
+      <div>
+        <span class="sobrancelha" style="color:var(--azul-cl)">Estimativa de ganhos</span>
+        <h2>Veja quanto você pode ganhar</h2>
+        <p class="lead">Mexa nos controles. A conta é direta: <strong id="sim-formula">20%</strong> da <strong>primeira parcela</strong> que cada empresa pagar, vezes o número de indicações que virarem cliente. Não é percentual do contrato inteiro.</p>
+
+        <div class="sim-ctrl">
+          <div class="sim-lin">
+            <label class="sim-lab" for="sim-qtd">Indicações que viram contrato</label>
+            <output class="sim-val" id="sim-qtd-v" for="sim-qtd">1 indicação</output>
+          </div>
+          <input type="range" id="sim-qtd" min="1" max="10" step="1" value="1"
+                 aria-label="Número de indicações convertidas">
+        </div>
+
+        <div class="sim-ctrl">
+          <div class="sim-lin">
+            <label class="sim-lab" for="sim-val">Valor da primeira parcela</label>
+            <output class="sim-val" id="sim-val-v" for="sim-val">R$ 1.500</output>
+          </div>
+          <input type="range" id="sim-val" min="600" max="5000" step="50" value="1500"
+                 aria-label="Valor estimado da primeira parcela do contrato">
+        </div>
+      </div>
+
+      <div class="sim-res">
+        <div class="sim-res-l">Você pode ganhar</div>
+        <div class="sim-res-v" id="sim-total" aria-live="polite">R$ 300</div>
+        <div class="sim-res-c" id="sim-conta">20% de R$ 1.500 × 1 indicação</div>
+        <a class="btn btn-claro btn-lg" href="#cadastro" style="width:100%;margin-top:1.4rem">Começar a indicar</a>
+        <p class="sim-nota">Simulação. O valor real depende da primeira parcela do contrato que a empresa indicada fechar. A recompensa incide só sobre essa parcela e é paga uma única vez.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ QUANTO MAIS INDICA ════════ -->
+<section class="compacta">
+  <div class="cx duas">
+    <div class="surge">
+      <span class="sobrancelha">Sem teto</span>
+      <h2>Quanto mais você indica, mais pode ganhar</h2>
+      <p class="lead" style="margin-top:1rem">
+        Não existe limite de indicações nem prazo para participar. Cada empresa que você
+        apresenta é acompanhada separadamente, e cada contrato fechado gera a sua
+        recompensa sobre a primeira parcela dele — inclusive quando fecham no mesmo mês.
+      </p>
+      <p class="lead" style="margin-top:.9rem">
+        O painel mostra o andamento de cada uma, o que já está disponível para receber e
+        o que já foi pago. Nada de você ter que perguntar como ficou.
+      </p>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.6rem">Fazer minha primeira indicação</a>
+    </div>
+    <div class="escada surge" id="escada"></div>
+  </div>
+</section>
+
+<!-- ════════ DIFERENCIAIS ════════ -->
+<section id="diferenciais" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Diferenciais</span>
+      <h2>Por que vale a pena indicar o SIIMOB</h2>
+      <p class="lead">Indicar algo ruim queima a sua relação com quem você indicou. Estes são os motivos pelos quais você pode indicar sem medo.</p>
+    </div>
+    <div class="grade3" id="grade-dif"></div>
+  </div>
+</section>
+
+<!-- ════════ MÉTRICAS ════════ -->
+<section class="metricas compacta" id="numeros">
+  <div class="cx">
+    <div class="metricas-g" id="grade-metricas"></div>
+    <p class="metricas-nota oculto" id="metricas-nota">
+      Os números acima são espaços reservados. Substitua em <code>src/modules/indica/indica-config.js</code> antes de divulgar a página.
+    </p>
+  </div>
+</section>
+
+<!-- ════════ BENEFÍCIOS ════════ -->
+<section id="beneficios">
+  <div class="cx duas">
+    <div class="visor surge" aria-hidden="true">
+      <div class="painel">
+        <div class="painel-topo">
+          <span class="bolinha"></span><span class="bolinha"></span><span class="bolinha"></span>
+          <span>Painel do indicador</span>
+        </div>
+        <div class="painel-corpo" style="padding:1.1rem">
+          <div style="display:flex;flex-direction:column;gap:.55rem">
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Construtora Horizonte</div><div style="font-size:.75rem;color:var(--t3)">Teresina / PI</div></div>
+              <span class="selo-ok" style="font-size:.7rem;padding:.2rem .55rem">Fechado</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Imobiliária Meridiano</div><div style="font-size:.75rem;color:var(--t3)">Timon / MA</div></div>
+              <span style="font-size:.7rem;font-weight:800;background:#FEF3C7;color:#92400E;padding:.2rem .55rem;border-radius:99px">Proposta</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:var(--bg-2);border-radius:10px">
+              <div style="flex:1"><div style="font-weight:700;font-size:.88rem">Correspondente Aurora</div><div style="font-size:.75rem;color:var(--t3)">Altos / PI</div></div>
+              <span style="font-size:.7rem;font-weight:800;background:#EFF6FF;color:#1E40AF;padding:.2rem .55rem;border-radius:99px">Em contato</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="surge">
+      <span class="sobrancelha">Benefícios</span>
+      <h2>Transforme seu networking em oportunidade</h2>
+      <p class="lead" style="margin-top:1rem">
+        Você já conhece as empresas certas. Quem trabalha no setor convive todo dia com
+        construtora perdendo prazo por causa de planilha, e com corretor sem saber em que
+        pé está o processo do cliente dele.
+      </p>
+      <p class="lead" style="margin-top:.9rem">
+        Apresentar o SIIMOB a essas pessoas não custa nada a você e resolve um problema
+        real para elas. Se virar contrato, o retorno é seu.
+      </p>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.6rem">Quero começar a indicar</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ COMPARAÇÃO ════════ -->
+<section style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Dois caminhos</span>
+      <h2>Qual programa combina com você?</h2>
+      <p class="lead">Indicar de vez em quando e receber sobre a primeira parcela de cada contrato fechado, ou atuar comercialmente junto com a gente.</p>
+    </div>
+    <div class="comp" id="comp"></div>
+  </div>
+</section>
+
+<!-- ════════ SEGMENTOS ════════ -->
+<section id="segmentos">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Quem indicar</span>
+      <h2>Que tipo de empresa você pode indicar</h2>
+      <p class="lead">Se a empresa trabalha com repasse imobiliário e ainda controla isso em planilha ou no WhatsApp, ela se encaixa.</p>
+    </div>
+    <div class="grade3" id="grade-seg"></div>
+  </div>
+</section>
+
+<!-- ════════ DEPOIMENTOS ════════ -->
+<section id="depoimentos" style="background:var(--bg-2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda)">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Depoimentos</span>
+      <h2>O que dizem quem já indicou</h2>
+      <p class="lead">Histórias de quem apresentou o SIIMOB para alguém do setor.</p>
+    </div>
+    <div class="grade3" id="grade-dep"></div>
+    <div class="reservado-nota oculto" id="dep-nota">
+      Os depoimentos acima são espaços reservados. Substitua por textos reais, com autorização de quem falou, em <code>src/modules/indica/indica-config.js</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ════════ DÚVIDAS ════════ -->
+<section id="duvidas">
+  <div class="cx">
+    <div class="centro surge">
+      <span class="sobrancelha">Dúvidas</span>
+      <h2>Perguntas frequentes</h2>
+      <p class="lead">O que costumam perguntar antes de fazer a primeira indicação.</p>
+    </div>
+    <div class="faq" id="faq"></div>
+  </div>
+</section>
+
+<!-- ════════ CTA FINAL ════════ -->
+<section class="final compacta">
+  <div class="cx">
+    <h2>Comece a indicar hoje</h2>
+    <p>Cadastre-se, indique e acompanhe tudo em um só lugar. Sua primeira indicação leva dois minutos.</p>
+    <a class="btn btn-claro btn-lg" href="#cadastro">Quero começar agora</a>
+    <p class="final-nota">Cadastro rápido · Acompanhamento online · Sem limite de indicações</p>
+  </div>
+</section>
+
+<!-- ════════ ACOMPANHAR ════════ -->
+<section class="compacta" id="acompanhar">
+  <div class="cx">
+    <div class="centro surge" style="margin-bottom:2rem">
+      <span class="sobrancelha">Já indiquei</span>
+      <h2>Acompanhar minhas indicações</h2>
+      <p class="lead">Cole o link que você recebeu ao fazer a primeira indicação.</p>
+    </div>
+    <div class="captura" id="painel-entrar">
+      <div class="campo-erro oculto" id="p-erro" role="alert" style="margin-bottom:.8rem"></div>
+      <div class="campo">
+        <label for="p-token">Link ou código de acompanhamento</label>
+        <input type="text" id="p-token" placeholder="Cole aqui o link do seu painel">
+      </div>
+      <button class="btn btn-1 btn-lg" style="width:100%" onclick="entrarPainel()">Acompanhar</button>
+    </div>
+    <div id="painel-dados" class="oculto">
+      <div class="grade3" style="margin-top:0;margin-bottom:1.4rem" id="painel-totais"></div>
+      <div class="item" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+            <thead><tr>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Empresa</th>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Cidade</th>
+              <th style="text-align:left;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Situação</th>
+              <th style="text-align:right;padding:.8rem 1rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--borda)">Recompensa</th>
+            </tr></thead>
+            <tbody id="p-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <a class="btn btn-1 btn-lg" href="#cadastro" style="margin-top:1.4rem">Indicar outra empresa</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ════════ RODAPÉ ════════ -->
+<footer class="rodape">
+  <div class="cx">
+    <div class="rodape-g">
+      <div>
+        <span class="rodape-logo">SIIMOB</span>
+        <p class="rodape-desc">
+          O IndicaSII é o programa de indicação do SIIMOB, o sistema de gestão de
+          repasse imobiliário. Indique, acompanhe e receba.
+        </p>
+      </div>
+      <div>
+        <h4>Menu</h4>
+        <ul id="rodape-menu"></ul>
+      </div>
+      <div>
+        <h4>Links úteis</h4>
+        <ul>
+          <li><a href="/conheca">Site institucional</a></li>
+          <li><a href="#duvidas">Regulamento do programa</a></li>
+          <li><a href="#duvidas">Política de privacidade</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Acesso</h4>
+        <ul>
+          <li><a href="#acompanhar">Acompanhar indicações</a></li>
+          <li><a href="#cadastro">Criar conta</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rodape-fim">© <span id="ano"></span> SIIMOB. Todos os direitos reservados.</div>
+  </div>
+</footer>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/modules/indica/indica-config.js"></script>
+<script src="/src/pages/indica/main.js"></script>
+
+<script type="application/ld+json" id="ld-faq"></script>
+<script src="/src/pages/indica/schema-org.js"></script>
+</body>
+</html>

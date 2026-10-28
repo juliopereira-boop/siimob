@@ -3,10 +3,11 @@ const path = require('path');
 const assert = require('assert');
 
 const raiz = path.join(__dirname, '..');
-const cfg = fs.readFileSync(path.join(raiz, 'configuracoes.html'), 'utf8');
-const pa = fs.readFileSync(path.join(raiz, 'pre-analise.html'), 'utf8');
-const sql = fs.readFileSync(path.join(raiz, 'supabase/sql/2026-09-19_gestor_modulos_e_ciclo_distribuicao.sql'), 'utf8');
-const sqlMulti = fs.readFileSync(path.join(raiz, 'supabase/sql/2026-09-20_ciclo_distribuicao_configuracoes.sql'), 'utf8');
+const { lerFonte, lerPagina } = require('./fonte');
+const cfg = lerPagina('configuracoes');
+const pa = lerPagina('pre-analise');
+const sql = lerFonte('database/migrations/2026-09-19_gestor_modulos_e_ciclo_distribuicao.sql');
+const sqlMulti = lerFonte('database/migrations/2026-09-20_ciclo_distribuicao_configuracoes.sql');
 
 assert(cfg.includes('Módulos liberados'), 'cadastro do gestor deve falar em módulos');
 assert(cfg.includes('Sem módulos marcados, é Gestor Geral'), 'sem marca deve explicar o escopo geral');

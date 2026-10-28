@@ -1,0 +1,133 @@
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sb-ui);background:var(--sb-vellum);color:var(--sb-tinta);font-size:14px;-webkit-font-smoothing:antialiased}
+  input,button,select,textarea{font-family:inherit}
+  a{text-decoration:none;color:inherit}
+
+  /* ── As barras do pipeline por módulo ────────────────────────────────────
+     Uma linha por módulo licenciado. Cada faixa é uma etapa da esteira DAQUELE
+     cliente, na cor que ele cadastrou, com largura proporcional. É o mapa de
+     onde o trabalho está parado — e cabe num olhar, que é o ponto. */
+  .trilho{display:block;padding:.7rem 0;border-bottom:1px solid var(--sb-linha)}
+  .trilho:last-child{border-bottom:none}
+  .trilho-cab{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.45rem}
+  .trilho-nome{font-size:.8rem;font-weight:700;color:var(--sb-tinta)}
+  .trilho-n{font-family:var(--sb-mono);font-size:.72rem;color:var(--sb-tinta3);margin-left:auto}
+  .trilho-barra{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--sb-vellum);gap:1px}
+  .trilho-faixa{min-width:3px;transition:flex-grow .25s ease}
+  .trilho-leg{display:flex;flex-wrap:wrap;gap:.3rem .75rem;margin-top:.42rem}
+  .trilho-item{display:flex;align-items:center;gap:.3rem;font-size:.685rem;color:var(--sb-tinta3)}
+  .trilho-pt{width:7px;height:7px;border-radius:2px;flex:none}
+  .trilho-item b{color:var(--sb-tinta2);font-family:var(--sb-mono);font-weight:500}
+  a.trilho:hover .trilho-nome{color:var(--sb-mar-texto)}
+
+  /* ── A fila do dia ─────────────────────────────────────────────────────── */
+  .fila-linha{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;border-bottom:1px solid var(--sb-linha)}
+  .fila-linha:last-child{border-bottom:none}
+  .fila-linha:hover{background:var(--sb-vellum)}
+  .fila-tit{font-size:.79rem;font-weight:600;color:var(--sb-tinta);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fila-sub{font-size:.68rem;color:var(--sb-tinta3);margin-top:.1rem}
+  .fila-dir{margin-left:auto;flex:none;text-align:right}
+
+  /* ── Agenda ────────────────────────────────────────────────────────────── */
+  .cal-topo{display:flex;align-items:center;justify-content:space-between;padding:0 .2rem .6rem}
+  .cal-mes{font-size:.78rem;font-weight:700;color:var(--sb-tinta)}
+  .cal-nav{display:flex;gap:.2rem}
+  .cal-bt{width:26px;height:26px;border-radius:7px;border:1px solid var(--sb-linha);background:var(--sb-papel);color:var(--sb-tinta2);cursor:pointer;font-size:.8rem;line-height:1}
+  .cal-bt:hover{background:var(--sb-vellum)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal-dw{text-align:center;font-size:.62rem;font-weight:700;color:var(--sb-tinta3);padding:.25rem 0}
+  .cal-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.73rem;color:var(--sb-tinta2);font-variant-numeric:tabular-nums;border:0;background:transparent;padding:0;font-family:inherit}
+  .cal-d.fora{color:var(--sb-linha-forte)}
+  .cal-d:not(.fora){cursor:pointer}
+  .cal-d:not(.fora):hover{background:var(--sb-vellum)}
+  .cal-d.tem{font-weight:700;color:var(--sb-tinta)}
+  .cal-d.hoje{background:var(--sb-mar);color:#fff;font-weight:800}
+  .cal-pt{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+  .cal-pt i{width:4px;height:4px;border-radius:99px;display:block}
+  .cal-d.hoje .cal-pt i{background:#fff !important}
+  /* dias do calendário Geral continuam visualmente iguais,
+   mas agora podem ser buttons */
+button.cal-d{
+  border:0;
+  background:transparent;
+  padding:0;
+  margin:0;
+  width:100%;
+  font:inherit;
+  appearance:none;
+  -webkit-appearance:none;
+  cursor:pointer;
+}
+
+button.cal-d:hover{
+  background:var(--sb-vellum);
+}
+
+.cal-d.selecionado{
+  box-shadow:inset 0 0 0 2px var(--sb-mar);
+}
+
+.cal-d.hoje.selecionado{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.9);
+}
+
+.cal-dia-detalhe{
+  margin-top:.75rem;
+  padding-top:.65rem;
+  border-top:1px solid var(--sb-linha);
+}
+
+.cal-dia-detalhe-titulo{
+  font-size:.68rem;
+  font-weight:800;
+  color:var(--sb-tinta3);
+  margin-bottom:.45rem;
+  text-transform:uppercase;
+}
+
+.cal-dia-evento{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.48rem .15rem;
+  border-bottom:1px solid var(--sb-linha);
+}
+
+.cal-dia-evento:last-child{
+  border-bottom:none;
+}
+
+.cal-dia-evento-ponto{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  flex:none;
+}
+
+.cal-dia-evento-conteudo{
+  flex:1;
+  min-width:0;
+}
+
+.cal-dia-evento-titulo{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--sb-tinta);
+}
+
+.cal-dia-evento-sub{
+  margin-top:.08rem;
+  font-size:.66rem;
+  color:var(--sb-tinta3);
+}
+
+.cal-dia-evento-hora{
+  font-size:.68rem;
+  font-family:var(--sb-mono);
+  color:var(--sb-tinta3);
+}
+
+  .sb-esq{display:inline-block;height:1em;min-width:2.4em;border-radius:5px;
+    background:linear-gradient(90deg,var(--sb-vellum) 25%,#EDF1EF 50%,var(--sb-vellum) 75%);
+    background-size:200% 100%;animation:sb-onda 1.3s ease infinite;vertical-align:-.15em}
+  @keyframes sb-onda{0%{background-position:200% 0}100%{background-position:-200% 0}}

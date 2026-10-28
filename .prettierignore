@@ -1,0 +1,9 @@
+# HTML fica de fora: espaço entre elementos em linha muda o que aparece na tela,
+# e o Prettier reflui esses espaços. A marcação é revisada à mão.
+*.html
+dist/
+node_modules/
+public/
+database/
+docs/
+package-lock.json

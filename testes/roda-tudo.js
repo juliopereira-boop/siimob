@@ -4,12 +4,17 @@
 //
 //   npm test                 roda tudo
 //   npm test -- t-gerente    roda só os que casarem com o filtro
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const { carregarRotas, reescrever } = require('../tools/rotas');
 
-const RAIZ = path.join(__dirname, '..');
+const PROJETO = path.join(__dirname, '..');
+// A suíte roda contra o BUILD (dist/), não contra a fonte: é o dist que a
+// Vercel publica. Testar a fonte provaria um sistema que ninguém usa — um erro
+// do build (arquivo que não foi para o dist, ordem de CSS trocada) passaria.
+const RAIZ = path.join(PROJETO, 'dist');
 const PORTA = Number(process.env.PORTA_TESTE || 8099);
 const filtro = process.argv[2] || '';
 
@@ -22,30 +27,24 @@ const TIPOS = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; char
 // `/thecred/repasse` dava 404. Só que em produção é SEMPRE a segunda forma — e
 // o apelido do cliente é lido do próprio caminho (getSlugFromURL). Sem a
 // reescrita, nenhum teste exercitava esse caminho, e um defeito ali passaria
-// pela suíte inteira sem ninguém ver.
-//
-// As regras saem de vercel.json, o mesmo arquivo que a Vercel lê. Duas
-// leituras do MESMO arquivo não são duas verdades; duas LISTAS seriam.
-const REGRAS = (() => {
-  try {
-    const conf = JSON.parse(fs.readFileSync(path.join(RAIZ, 'vercel.json'), 'utf8'));
-    return (conf.rewrites || []).map(r => ({
-      re: new RegExp('^' + r.source
-            .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-            .replace(/:\w+/g, '[^/]+')
-            .replace(/\*/g, '.*') + '/?$'),
-      destino: r.destination
-    }));
-  } catch { return []; }
-})();
+// pela suíte inteira sem ninguém ver. As regras saem de vercel.json, por
+// tools/rotas.js — o mesmo leitor do servidor de desenvolvimento.
+const REGRAS = carregarRotas(PROJETO);
+
+// SEM_BUILD=1 pula o build (útil quando você acabou de rodar `npm run build`).
+function construir() {
+  if (process.env.SEM_BUILD === '1' && fs.existsSync(RAIZ)) return;
+  const r = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['vite', 'build', '--logLevel', 'error'],
+    { cwd: PROJETO, stdio: 'inherit' });
+  if (r.status !== 0) { console.error('\n>>> o build falhou; a suíte não roda contra código que não compila.'); process.exit(1); }
+}
 
 // Servidor mínimo em Node: um a menos entre "rodar o teste" e "ter python".
 function servir() {
   return new Promise((ok, erro) => {
     const s = http.createServer((req, res) => {
       const caminho = decodeURIComponent(req.url.split('?')[0]);
-      const regra = REGRAS.find(r => r.re.test(caminho));
-      const rel = (regra ? regra.destino : caminho).replace(/^\/+/, '');
+      const rel = reescrever(caminho, REGRAS).replace(/^\/+/, '');
       const alvo = path.resolve(RAIZ, rel || 'index.html');
       if (!alvo.startsWith(RAIZ)) { res.writeHead(403).end(); return; }   // nada fora da pasta
       fs.readFile(alvo, (e, dados) => {
@@ -75,6 +74,7 @@ function rodar(arquivo) {
 
   if (!suites.length) { console.error('nenhuma suíte casou com "' + filtro + '"'); process.exit(1); }
 
+  construir();
   const servidor = await servir();
   console.log(`servindo ${RAIZ} em http://localhost:${PORTA}\n`);
 

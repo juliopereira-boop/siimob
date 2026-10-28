@@ -1,0 +1,1046 @@
+const G = {
+  user:null, slug:null, situacoes:[], transicoes:[], lista:[], titulares:{},
+  corretores:[], imobiliarias:[], empreendimentos:[], filtroSla:'', vista:'andamento', modulos:{},
+  abaDossie:'proposta', atual:null, atualContratos:[], atualDocs:[], atualEv:[], atualChecklist:[], arrastando:null,
+  // Os três campos de vínculo — ver o bloco "OS TRÊS CAMPOS DE VÍNCULO" abaixo.
+  empresas:[], ccas:[], analistas:[]
+};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,tipo='info'){ const w=document.getElementById('toast-wrap'); const d=document.createElement('div'); d.className='toast toast-'+tipo; d.textContent=msg; w.appendChild(d); setTimeout(()=>d.remove(),4200); }
+function fecharModal(id){ document.getElementById(id).classList.add('hidden'); }
+function soDigitos(s){ return String(s||'').replace(/\D/g,''); }
+const _brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+function brl(cent){ return _brl.format((Number(cent)||0)/100); }
+function paraCentavos(v){ const n=Number(String(v==null?'':v).replace(/\./g,'').replace(',','.')); return isNaN(n)?null:Math.round(n*100); }
+function mascaraMoeda(el){
+  const digitos = String(el && el.value || '').replace(/\D/g,'');
+  el.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR',{
+    minimumFractionDigits:2, maximumFractionDigits:2
+  }) : '';
+}
+function dataBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); }
+function dataHoraBR(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function mascaraDoc(d){ d=soDigitos(d);
+  if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  return d; }
+function copiarDocumento(event, documento){
+  event.preventDefault(); event.stopPropagation();
+  const valor = soDigitos(documento);
+  if (!valor) return;
+  const ok = () => toast('CPF copiado.','success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(valor).then(ok).catch(() => copiarDocumentoFallback(valor, ok));
+  } else copiarDocumentoFallback(valor, ok);
+}
+function copiarDocumentoFallback(valor, ok){
+  const campo = document.createElement('textarea');
+  campo.value = valor; campo.setAttribute('readonly','');
+  campo.style.position = 'fixed'; campo.style.opacity = '0';
+  document.body.appendChild(campo); campo.select();
+  try { document.execCommand('copy'); ok(); } finally { campo.remove(); }
+}
+function ehGestor(){ return G.user && G.user.role !== 'partner'; }
+function perm(chave){ if (ehGestor()) return true;
+  const p = (G.user && G.user.permissions) || {};
+  return p.gerente === true || p[chave] === true; }
+
+function sla(co){
+  const s = G.situacoes.find(x => x.id === co.situacao_id);
+  const horas = s && s.sla_horas;
+  const desde = co.situacao_em || co.criado_em;
+  const decorridas = desde ? (Date.now() - new Date(desde).getTime())/3600000 : 0;
+  if (!horas || horas <= 0) return { cls:'sla-nd', pct:0, txt:humano(decorridas), nivel:'nd' };
+  const pct = Math.min(100, (decorridas/horas)*100);
+  const nivel = pct >= 100 ? 'ex' : (pct >= 75 ? 'at' : 'ok');
+  const restam = horas - decorridas;
+  return { cls:'sla-'+nivel, pct, nivel, txt: restam >= 0 ? ('faltam '+humano(restam)) : ('há '+humano(-restam)) };
+}
+
+// Tela de recusa do módulo. Diz QUAL permissão falta e ONDE pedi-la — "sem
+// acesso" sozinho manda a pessoa abrir chamado para descobrir o óbvio.
+function semAcessoAoModulo(){
+  const main = document.querySelector('.main') || document.body;
+  main.innerHTML =
+    '<div style="max-width:520px;margin:3rem auto;text-align:center;background:#fff;'
+    + 'border:1px solid #E2E8E5;border-radius:12px;padding:2rem 1.5rem;font-family:inherit">'
+    + '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem">Sem acesso à Venda</div>'
+    + '<div style="font-size:.85rem;color:#47615C;line-height:1.55">O seu cadastro não tem a '
+    + 'permissão <b>Ver negócios</b>. Peça ao gestor em Configurações (ou no perfil de '
+    + 'acesso vinculado a você).</div></div>';
+}
+function humano(h){ if (h<1) return Math.max(0,Math.round(h*60))+'min'; if (h<48) return Math.round(h)+'h'; return Math.round(h/24)+'d'; }
+
+// O nome do cliente e os valores vêm do SNAPSHOT gravado quando a Venda
+// nasceu — não de uma nova leitura da pré-análise. É essa a diferença entre
+// "o que foi aprovado" e "o que está lá agora".
+function titularDe(co){
+  const s = co.origem_snapshot || {};
+  return (s.participantes || []).find(x => x.papel === 'TITULAR') || (s.participantes || [])[0] || {};
+}
+function tituloDe(co){
+  const p = titularDe(co);
+  return p.nome || (G.titulares[co.id] && G.titulares[co.id].nome) || 'Sem titular';
+}
+function documentoDe(co){
+  const p = titularDe(co);
+  return p.documento || (G.titulares[co.id] && G.titulares[co.id].documento) || '';
+}
+function valorDe(co){ const c = (co.origem_snapshot || {}).credito || {}; return c.valor_total || 0; }
+
+// ══════════ OS TRÊS CAMPOS DE VÍNCULO ══════════
+//
+// Empresa correspondente, usuário correspondente e analista. É a mesma pergunta
+// em todo módulo (menos Lead): de quem é este processo. Guardamos o **id**,
+// nunca o nome. O Repasse liga parceiro ao processo por `broker_name` /
+// `manager_name` — texto — e foi assim que três analistas da S T passaram a
+// enxergar zero processos quando a regra "só o seu" entrou: bastou a grafia
+// divergir. Id não tem grafia.
+//
+// De onde vem cada lista:
+//
+//   empresa_id        →  a1_corr_empresas          (cadastro "Empresa correspondente")
+//   correspondente_id →  a1_partners type=cca      (o usuário do correspondente)
+//   analista_id       →  a1_partners type=analista
+//
+// A empresa NÃO sai de a1_partners, e isso é deliberado: `a1_partners.empresa_id`
+// tem chave estrangeira para `a1_corr_empresas`, e é essa empresa que
+// `a1_co_visivel(corretor_id, empresa_id)` compara com `a1_empresa_ator()` para
+// decidir se o correspondente enxerga o negócio. Apontar este campo para outra
+// tabela deixaria o correspondente sem ver a carteira da própria empresa — e
+// sem nada falhar na tela, que é o pior jeito de errar.
+function selVinculo(id, lista, selecionado, desabilitado){
+  return `<select id="${id}"${desabilitado ? ' disabled' : ''}>
+    <option value="">— não definido —</option>
+    ${lista.map(x => `<option value="${esc(x.id)}"${x.id === selecionado ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
+  </select>`;
+}
+// uuid não aceita string vazia. Sem isto, "— não definido —" vira '' e o banco
+// responde 22P02 "invalid input syntax for type uuid" — erro que não diz nada
+// para quem só queria tirar o analista do processo.
+function idOuNulo(id){ const el = document.getElementById(id); return (el && el.value) || null; }
+
+// ══════════ ROTEAMENTO DE ANALISTAS ══════════
+//
+// Ainda NÃO EXISTE — não há tabela, não há tela. Quando existir e estiver
+// **ativo e configurado** para o cliente, quem escolhe o analista é ele, e o
+// campo fica BLOQUEADO aqui: escolher à mão passaria por cima da distribuição,
+// que é justamente o que o roteamento veio impedir.
+//
+// ONDE LIGAR: troque o `false` abaixo pela leitura do estado do roteamento
+// deste cliente (ativo **e** com ao menos uma regra — ativo e vazio não
+// distribui nada e travaria o campo à toa). Nada mais precisa mudar: o dossiê
+// já pergunta por esta função ao desenhar o campo.
+//
+// Nasce desligada de propósito. Ligada sem roteamento por trás, o campo ficaria
+// morto e ninguém conseguiria atribuir analista a negócio nenhum.
+function roteamentoDeAnalistasAtivo(){ return false; }
+
+async function init(){
+  try { G.user = a1RequireAuth(); } catch { return; }
+  await a1RefreshPartnerPerms(); G.user = A1.user || G.user;
+  try { await a1RequireModule('COMERCIAL'); } catch { return; }
+  G.slug = A1.slug;
+
+  // co_ver é a porta do módulo, e até agora ninguém a lia: a chave existia no
+  // cadastro e não fazia nada. Licença do cliente e permissão da pessoa são
+  // duas perguntas — a1RequireModule responde a primeira, esta responde a
+  // segunda. A recusa que vale continua sendo do banco; isto evita a tela
+  // montada e o "por que não aparece nada?".
+  if (!perm('co_ver')) { semAcessoAoModulo(); return; }
+  // Quem manda na vista é o endereço, não um botão desta tela: assim o item do
+  // menu, o link colado no WhatsApp e o "voltar" do navegador chegam no mesmo
+  // lugar. São só duas — Andamento e Listagem —, iguais aos quadros antigos.
+  G.vista = a1VistaDaURL();
+  // A regra-mãe do cliente é lida ANTES de montar o shell, porque é ela que
+  // decide se o botão de criar chega a existir. Sem licença ou sem a regra, o
+  // elemento não nasce no DOM — não nasce escondido.
+  G.geral = await a1GeralCarregar();
+  const _podeVendaAvulsa = a1GeralPermite(G.geral, 'criar_venda_avulsa') && perm('co_editar');
+  G.modulos = await a1MontarShell(document.getElementById('shell'),
+    { ativo:'COMERCIAL', vista:G.vista,
+      acoes: _podeVendaAvulsa
+        ? '<button class="btn-hdr btn-hdr-primary" id="btn-venda-avulsa" onclick="abrirVendaAvulsa()">+ Nova Venda</button>'
+        : '' }) || {};
+  aplicarVista();
+  a1StartHeartbeat('comercial');
+  await carregar();
+  // O deep link ?id= vem da Pré-análise, que manda o usuário direto ao negócio.
+  // Vale em qualquer das duas vistas — o dossiê é um modal, não uma terceira tela.
+  const id = new URLSearchParams(location.search).get('id');
+  if (id) abrirDossie(id);
+}
+
+function aplicarVista(){
+  document.getElementById('vista-andamento').style.display = G.vista === 'andamento' ? '' : 'none';
+  document.getElementById('vista-listagem').style.display  = G.vista === 'listagem' ? '' : 'none';
+  const _pnl = document.getElementById('vista-painel');
+  if (_pnl){
+    _pnl.style.display = G.vista === 'dashboard' ? '' : 'none';
+    if (G.vista === 'dashboard' && !_pnl.dataset.pronto){ _pnl.dataset.pronto = '1'; a1PainelComercial(_pnl); }
+  }
+  // A barra de filtro e das vistas de operacao; o painel tem o proprio recorte.
+  ['filtros','kpis','pg-cab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = G.vista === 'dashboard' ? 'none' : '';
+  });
+}
+
+async function carregar(){
+  const h = { headers: A1.headers() };
+  const [sit, tr, co, corr, imob, empr, emps, ccas, anas, resumoChecklist] = await Promise.all([
+    fetch(`${A1.rest('a1_co_situacoes')}?ativo=is.true&order=ordem.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_co_transicoes')}?ativo=is.true`, h).then(r=>r.json()).catch(()=>[]),
+    A1.buscarTudo(`${A1.rest('a1_comerciais')}?order=criado_em.desc`),
+    fetch(`${A1.rest('a1_partners')}?type=eq.corretor&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.imobiliaria&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_developments')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    // Os três cadastros que alimentam os campos de vínculo. Vêm com a carga da
+    // tela para o dossiê abrir pronto — e não um seletor por vez, que é o que
+    // faz o gestor esperar em cada negócio que abre.
+    fetch(`${A1.rest('a1_corr_empresas')}?select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.cca&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[]),
+    fetch(`${A1.rest('a1_partners')}?type=eq.analista&select=id,name&order=name.asc`, h).then(r=>r.json()).catch(()=>[])
+    ,
+    fetch(A1.rpc('a1_checklist_resumo'),{method:'POST',headers:A1.headers(),body:JSON.stringify({p_modulo:'COMERCIAL'})}).then(r=>r.ok?r.json():{}).catch(()=>{})
+  ]);
+  G.situacoes = Array.isArray(sit) ? sit : [];
+  G.transicoes = Array.isArray(tr) ? tr : [];
+  G.lista = (co && Array.isArray(co.linhas)) ? co.linhas : [];
+  G.corretores = Array.isArray(corr) ? corr : [];
+  G.imobiliarias = Array.isArray(imob) ? imob : [];
+  G.empreendimentos = Array.isArray(empr) ? empr : [];
+  G.empresas  = Array.isArray(emps) ? emps : [];
+  G.ccas      = Array.isArray(ccas) ? ccas : [];
+  G.analistas = Array.isArray(anas) ? anas : [];
+  G.resumoChecklist = (resumoChecklist && typeof resumoChecklist==='object') ? resumoChecklist : {};
+  await carregarTitulares();
+  preencherFiltros();
+  renderVistas();
+}
+
+async function carregarTitulares(){
+  G.titulares = {};
+  const preIds = [...new Set(G.lista.map(c => c.pre_analise_id).filter(Boolean))];
+  if (!preIds.length) return;
+  // Mesma armadilha da Pré-análise: in.(todos os ids) passa de 16 KB de URL por
+  // volta de 450 negócios e vira 414 dentro de um catch — o titular sumia de
+  // toda linha sem ninguém ver erro. buscarPorIds quebra em lotes.
+  const partes = await A1.buscarPorIds(
+    `${A1.rest('a1_pa_participantes')}?papel=eq.TITULAR&select=pre_analise_id,pessoa_id`,
+    'pre_analise_id', preIds);
+  const pessoaIds = [...new Set(partes.map(p => p.pessoa_id).filter(Boolean))];
+  if (!pessoaIds.length) return;
+  const pessoas = await A1.buscarPorIds(
+    `${A1.rest('a1_pa_pessoas')}?select=id,nome,documento`, 'id', pessoaIds);
+  const porPessoa = Object.fromEntries(pessoas.map(p => [p.id, p]));
+  const porPre = Object.fromEntries(partes.map(p => [p.pre_analise_id, porPessoa[p.pessoa_id]]).filter(([, p]) => !!p));
+  G.lista.forEach(c => { if (porPre[c.pre_analise_id]) G.titulares[c.id] = porPre[c.pre_analise_id]; });
+}
+
+function preencherFiltros(){
+  document.getElementById('f-situacao').innerHTML = '<option value="">Todas as situações</option>' +
+    G.situacoes.map(s => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('');
+  document.getElementById('f-corretor').innerHTML = '<option value="">Todos os corretores</option>' +
+    G.corretores.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+// ─── Acesso por situação ─────────────────────────────────────────────────────
+//
+// Mesmo modelo do Repasse e da Pré-análise: o gestor marca, no cadastro da
+// pessoa, o que ela pode fazer em cada situação — nada, só ver, ou editar. O
+// mapa é um só para os três módulos, em permissions.etapas; as chaves são uuid
+// e não colidem entre tabelas.
+//
+// Enquanto o mapa não tiver NENHUMA situação deste módulo, o módulo não é
+// restrito. Sem essa regra, todo parceiro de hoje — que tem o mapa preenchido
+// só com etapas do Repasse — perderia a Venda inteiro de uma vez.
+function etapasDoUsuario(){
+  const p = (G.user && G.user.permissions) || {};
+  return (p.etapas && typeof p.etapas === 'object' && !Array.isArray(p.etapas)) ? p.etapas : {};
+}
+function moduloRestrito(){
+  if (ehGestor() || perm('gerente')) return false;
+  const mapa = etapasDoUsuario();
+  return G.situacoes.some(s => mapa[s.id] === 'ver' || mapa[s.id] === 'editar');
+}
+function nivelNaSituacao(id){
+  if (!moduloRestrito()) return 'editar';
+  const n = etapasDoUsuario()[id];
+  return (n === 'ver' || n === 'editar') ? n : null;
+}
+function podeVerSituacao(id){ return nivelNaSituacao(id) !== null; }
+
+// Mexer no negócio — proposta, contrato e mover na esteira — é a MESMA pergunta
+// nos quatro lugares em que ela aparece: a chave do módulo mais o nível na
+// situação atual. Estava copiada nos quatro; quando o quadro passou a arrastar,
+// uma quinta cópia seria a que ficaria para trás na próxima correção.
+function podeEditarNaSituacao(situacaoId){
+  return perm('co_editar') && nivelNaSituacao(situacaoId) === 'editar';
+}
+
+// As arestas que a esteira DO CLIENTE permite a partir daqui. A tela não
+// inventa caminho: quem desenha o fluxo é o gestor, em a1_co_transicoes, e o
+// banco recusa qualquer salto que não esteja lá (transicao_nao_permitida).
+// de_id nulo é a aresta "de qualquer situação".
+function destinosDe(situacaoId){
+  return G.transicoes
+    .filter(t => t.de_id === null || t.de_id === situacaoId)
+    .map(t => G.situacoes.find(s => s.id === t.para_id))
+    .filter((s,i,a) => s && a.indexOf(s) === i && s.id !== situacaoId);
+}
+
+function nomeSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return s ? s.nome : '—'; }
+function corSituacao(id){ const s = G.situacoes.find(x=>x.id===id); return (s && s.cor) || '#64748b'; }
+function nomeCorretor(id){ const c = G.corretores.find(x=>x.id===id); return c ? c.name : '—'; }
+function nomeImobiliaria(id){ const i = G.imobiliarias.find(x=>x.id===id); return i ? i.name : ''; }
+function nomeAnalista(id){ const a = G.analistas.find(x=>x.id===id); return a ? a.name : ''; }
+function nomeEmpr(id){ const e = G.empreendimentos.find(x=>x.id===id); return e ? e.name : '—'; }
+
+function filtrarSla(n){
+  G.filtroSla = n;
+  ['todos','ok','at','ex'].forEach(k => {
+    const b = document.getElementById('sla-'+k);
+    if (b) b.classList.toggle('on', (k==='todos'?'':k) === n);
+  });
+  renderVistas();
+}
+
+function filtradas(){
+  const q  = (document.getElementById('f-busca').value || '').trim().toLowerCase();
+  const fs = document.getElementById('f-situacao').value;
+  const fc = document.getElementById('f-corretor').value;
+  const inicio = document.getElementById('f-inicio').value;
+  const fim = document.getElementById('f-fim').value;
+  return G.lista.filter(c => {
+    const dataCriacao = c.criado_em ? c.criado_em.slice(0,10) : '';
+    if (inicio && (!dataCriacao || dataCriacao < inicio)) return false;
+    if (fim && (!dataCriacao || dataCriacao > fim)) return false;
+    // Situação sem nada marcado é invisível para esta pessoa.
+    if (!podeVerSituacao(c.situacao_id)) return false;
+    if (fs && c.situacao_id !== fs) return false;
+    if (fc && c.corretor_id !== fc) return false;
+    if (G.filtroSla && sla(c).nivel !== G.filtroSla) return false;
+    if (q){
+      const alvo = [c.codigo, c.unidade, tituloDe(c), nomeEmpr(c.empreendimento_id)].join(' ').toLowerCase();
+      const nums = soDigitos(q);
+      if (!alvo.includes(q) && !(nums && soDigitos(alvo).includes(nums))) return false;
+    }
+    return true;
+  });
+}
+
+// As duas vistas mostram o MESMO recorte, então são desenhadas juntas: trocar
+// de vista é só trocar qual delas aparece, sem esperar por outra renderização e
+// sem risco de uma ficar com o filtro antigo.
+function renderVistas(){
+  const linhas = filtradas();
+  document.getElementById('fila-contagem').textContent =
+    `${linhas.length} de ${G.lista.length} negócio${G.lista.length===1?'':'s'}`;
+  renderKpis();
+  renderListagem(linhas);
+  renderAndamento(linhas);
+}
+
+// Sem esteira as duas vistas dizem a MESMA coisa. O Andamento é a vista que
+// abre por padrão e ficava só com "não foi configurada", sem dizer a quem pedir.
+const SEM_ESTEIRA = `<div class="vazio"><strong>A esteira da Venda ainda não foi configurada.</strong><br>
+  Um gestor cria a esteira em <strong>Configurações &rsaquo; Workflow da Venda</strong>.</div>`;
+
+function renderListagem(linhas){
+  const wrap = document.getElementById('fila-wrap');
+  if (!G.situacoes.length){ wrap.innerHTML = SEM_ESTEIRA; return; }
+  if (!linhas.length){
+    wrap.innerHTML = `<div class="vazio">${G.lista.length
+      ? 'Nenhum negócio com esses filtros.'
+      : 'Nenhum negócio ainda. A Venda nasce a partir de uma pré-análise aprovada.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = `<table class="fila"><thead><tr>
+      <th>Cliente</th><th>Código</th><th>Empreendimento</th><th>Corretor</th>
+      <th>Valor aprovado</th><th>Situação</th><th>Prazo da etapa</th><th>Repasse</th>
+    </tr></thead><tbody>${linhas.map(linhaFila).join('')}</tbody></table>`;
+}
+
+function linhaFila(c){
+  const s = sla(c);
+  return `<tr onclick="abrirDossie('${esc(c.id)}')" tabindex="0"
+             onkeydown="if(event.key==='Enter')abrirDossie('${esc(c.id)}')">
+    <td><div class="cli">${esc(tituloDe(c))}</div></td>
+    <td class="cod">${esc(c.codigo || c.id.slice(0,8))}</td>
+    <td>${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ` <span class="sub">· un. ${esc(c.unidade)}</span>` : ''}</td>
+    <td>${esc(nomeCorretor(c.corretor_id))}</td>
+    <td class="val">${esc(brl(valorDe(c)))}</td>
+    <td><span class="sit" style="background:${esc(corSituacao(c.situacao_id))}">${esc(nomeSituacao(c.situacao_id))}</span></td>
+    <td><div class="sla ${s.cls}"><div class="sla-track"><div class="sla-fill" style="width:${s.pct.toFixed(0)}%"></div></div>
+        <span class="sla-txt">${esc(s.txt)}</span></div></td>
+    <td>${c.repasse_case_id ? '<span class="pill ok">criado</span>' : '<span class="pill wt">não</span>'}</td>
+  </tr>`;
+}
+
+function renderKpis(){
+  const conta = n => G.lista.filter(c => sla(c).nivel === n).length;
+  const soma  = G.lista.reduce((a,c) => a + valorDe(c), 0);
+  const comRepasse = G.lista.filter(c => c.repasse_case_id).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi-card v"><div class="kpi-label">Negócios</div><div class="kpi-value">${G.lista.length}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">Valor em esteira</div>
+      <div class="kpi-value" style="font-size:1.15rem">${esc(brl(soma))}</div></div>
+    <div class="kpi-card a"><div class="kpi-label">Atenção</div><div class="kpi-value">${conta('at')}</div></div>
+    <div class="kpi-card r"><div class="kpi-label">Estourado</div><div class="kpi-value">${conta('ex')}</div></div>
+    <div class="kpi-card g"><div class="kpi-label">Repasse criado</div><div class="kpi-value">${comRepasse}</div></div>`;
+}
+
+function renderAndamento(linhas){
+  const el = document.getElementById('kanban');
+  if (!G.situacoes.length){ el.innerHTML = SEM_ESTEIRA; return; }
+  el.innerHTML = G.situacoes.map(s => {
+    const dela = linhas.filter(c => c.situacao_id === s.id);
+    const vgv = dela.reduce((total,c) => total + valorDe(c), 0);
+    return `<div class="k-col">
+      <div class="k-col-header" style="background:${esc(s.cor || '#64748b')}">
+        <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
+      <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">VGV: <strong>${esc(brl(vgv))}</strong></div>
+      <div class="k-col-body" data-situacao-id="${esc(s.id)}"
+           ondragover="coDragOver(event)" ondragleave="coDragLeave(event)" ondrop="coDrop(event,this)"
+        >${dela.map(cartao).join('') ||
+        '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function cartao(c){
+  const s = sla(c);
+  const cor = s.nivel==='ex' ? 'var(--red)' : s.nivel==='at' ? 'var(--amber)' : 'var(--green)';
+  const mover = podeMoverComercial(c);
+  const documento = soDigitos(documentoDe(c));
+  const desde = c.situacao_em || c.criado_em;
+  const decorrido = desde ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000)) : '—';
+  return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}"
+    ${mover ? 'draggable="true" ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"' : ''}
+    style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
+    <div class="co-name">${esc(tituloDe(c))}</div>
+    ${documento
+      ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+      : '<div class="co-line">CPF não informado</div>'}
+    <div class="co-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(c.empreendimento_id))}${c.unidade?' · un. '+esc(c.unidade):''}</div>
+    <div class="card-meta">
+      <div class="co-line"><span class="label">Imobiliária</span>${esc(nomeImobiliaria(c.imobiliaria_id) || 'Não informada')}</div>
+      <div class="co-line"><span class="label">Corretor</span>${esc(nomeCorretor(c.corretor_id))}</div>
+      <div class="co-line"><span class="label">Analista</span>${esc(nomeAnalista(c.analista_id) || 'Não informado')}</div>
+    </div>
+    <div class="chips"><span class="chip val">${esc(brl(valorDe(c)))}</span>
+      <span class="chip ${s.nivel==='ex'?'r':s.nivel==='at'?'w':''}">${esc(s.txt)}</span>
+      <span class="chip">${esc(decorrido)} na etapa</span>
+      ${c.repasse_case_id ? '<span class="chip">repasse ✓</span>' : ''}</div>
+    ${(G.resumoChecklist||{})[c.id] && (G.resumoChecklist||{})[c.id].total ? `<div class="card-stage">Checklist: ${esc((G.resumoChecklist||{})[c.id].concluidos)}/${esc((G.resumoChecklist||{})[c.id].total)}</div>` : ''}
+    <div class="card-stage">Na etapa desde ${esc(dataHoraBR(desde))}</div>
+  </div>`;
+}
+
+// ══════════ ARRASTAR O CARTÃO ENTRE COLUNAS ══════════
+//
+// Por que isto existe: o quadro da Venda nasceu só de leitura. O cartão não
+// tinha `draggable`, a coluna não tinha `ondrop`, e quem vinha do Repasse — onde
+// arrastar funciona — puxava o cartão, nada acontecia e não havia erro nenhum
+// para explicar. "Não faz nada" é o pior defeito: não deixa o que consertar.
+// Mover só existia enterrado no rodapé do dossiê, depois de abrir o negócio.
+//
+// O que NÃO se faz aqui, e é o ponto todo:
+//
+//  1. Não se dá PATCH em situacao_id. A esteira mora no Postgres
+//     (a1_co_transicionar) e um gatilho recusa a edição direta — ele distingue o
+//     orquestrador por set_config('a1.orquestrador','1',true), que o navegador
+//     não tem como ligar. Tela que tenta o atalho leva erro e nada anda.
+//  2. Não se move o cartão no DOM antes da resposta. Em repasse.html o moveCard
+//     já teve exatamente esse defeito: o banco recusava, a tela desenhava a
+//     mudança assim mesmo e o gestor via o processo na etapa nova até recarregar
+//     a página. Aqui quem redesenha é carregar(), lendo do servidor, e só depois
+//     de o banco dizer sim.
+function coDragStart(e, el){
+  const co = G.lista.find(c => c.id === el.dataset.id);
+  if (!co){ e.preventDefault(); return; }
+  if (!podeMoverComercial(co)){ e.preventDefault(); return; }
+  G.arrastando = co.id;
+  el.classList.add('arrastando');
+  if (e.dataTransfer){
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', co.id); } catch {}
+  }
+}
+function coDragEnd(e, el){ el.classList.remove('arrastando'); G.arrastando = null; }
+function coDragOver(e){
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('sobre');
+}
+function coDragLeave(e){ e.currentTarget.classList.remove('sobre'); }
+function coDrop(e, col){
+  e.preventDefault();
+  col.classList.remove('sobre');
+  const id = G.arrastando ||
+    (e.dataTransfer && e.dataTransfer.getData && e.dataTransfer.getData('text/plain')) || '';
+  G.arrastando = null;
+  if (id) moverCartao(id, col.dataset.situacaoId);
+}
+
+async function moverCartao(id, paraId){
+  const co = G.lista.find(c => c.id === id);
+  if (!co || !paraId || co.situacao_id === paraId) return;
+  if (!podeMoverComercial(co)){
+    toast('Você não tem a permissão "Mover na esteira" da Venda, ou esta etapa é apenas de acompanhamento.','error');
+    return;
+  }
+  // Soltar numa coluna que a esteira não liga é o caso mais comum de "não
+  // moveu". Dizer QUAIS destinos existem resolve; "não pode" sozinho manda o
+  // gestor adivinhar qual é o caminho certo.
+  const destinos = destinosDe(co.situacao_id);
+  if (!destinos.some(s => s.id === paraId)){
+    toast(destinos.length
+      ? `A esteira não liga "${nomeSituacao(co.situacao_id)}" a "${nomeSituacao(paraId)}". `
+        + `Daqui dá para ir a: ${destinos.map(s => s.nome).join(', ')}.`
+      : `"${nomeSituacao(co.situacao_id)}" não tem saída desenhada na esteira. `
+        + 'Um gestor desenha o caminho em Configurações › Workflow da Venda.','error');
+    return;
+  }
+  await transicionar(co, paraId, null);
+}
+
+// O único caminho de transição desta tela — o do arrasto e o do rodapé do
+// dossiê. Duas cópias divergiriam, e a que ficasse para trás seria justamente a
+// que deixa de conferir a resposta.
+async function transicionar(co, para, justificativa){
+  const res = await fetch(A1.rpc('a1_co_transicionar'), {
+    method:'POST', headers:A1.headers(),
+    body: JSON.stringify({ p_comercial:co.id, p_para:para,
+      p_justificativa:justificativa, p_versao_esperada:co.versao })
+  });
+  const j = await res.json().catch(()=>null);
+  if (!res.ok){
+    const cru = (j && (j.message || j.error)) || '';
+    toast(traduzErro(j),'error');
+    // Trava otimista: quem perdeu a corrida está olhando um estado velho. Dizer
+    // "recarregue a tela" e não recarregar é passar a conta para o usuário.
+    if (cru.includes('versao_desatualizada')) await carregar();
+    return false;
+  }
+  // A esteira também recusa devolvendo 200 com ok:false (ação entre módulos
+  // bloqueada). O código curto que vem em `erro` é para o log, não para gente.
+  if (j && j.ok === false){ toast(traduzErro({ message:j.erro }),'error'); return false; }
+  toast(j && j.repasse_case_id ? 'Situação alterada e cartão de Repasse criado.' : 'Situação alterada.','success');
+  await carregar();
+  return true;
+}
+
+// ══════════ DOSSIÊ ══════════
+async function abrirDossie(id){
+  let co = G.lista.find(c => c.id === id);
+  if (!co){
+    const r = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${id}&select=*`, { headers:A1.headers() })
+      .then(x=>x.json()).catch(()=>[]);
+    co = (Array.isArray(r) && r[0]) || null;
+    if (!co){ toast('Negócio não encontrado ou fora da sua carteira.','error'); return; }
+  }
+  G.atual = co; G.abaDossie = 'proposta'; G.condicoesProposta = null;
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.dt === 'proposta'));
+  document.getElementById('modal-dossie').classList.remove('hidden');
+  document.getElementById('dos-body').innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
+
+  const h = { headers:A1.headers() };
+  const [ct, docs, ev, checklistOperacional] = await Promise.all([
+    fetch(`${A1.rest('a1_co_contratos')}?comercial_id=eq.${id}&order=versao.desc`, h).then(r=>r.json()).catch(()=>[]),
+    co.pre_analise_id
+      ? fetch(`${A1.rest('a1_pa_documentos')}?pre_analise_id=eq.${co.pre_analise_id}&order=criado_em.desc`, h).then(r=>r.json()).catch(()=>[])
+      : Promise.resolve([]),
+    fetch(`${A1.rest('a1_co_eventos')}?comercial_id=eq.${id}&order=criado_em.desc&limit=100`, h).then(r=>r.json()).catch(()=>[])
+    ,
+    fetch(A1.rpc('a1_checklist_listar'), {method:'POST',headers:A1.headers(),
+      body:JSON.stringify({p_modulo:'COMERCIAL',p_processo:id})})
+      .then(r=>r.ok?r.json():[]).catch(()=>[])
+  ]);
+  G.atualContratos = Array.isArray(ct) ? ct : [];
+  G.atualDocs = Array.isArray(docs) ? docs : [];
+  G.atualEv = Array.isArray(ev) ? ev : [];
+  G.atualChecklist = Array.isArray(checklistOperacional) ? checklistOperacional : [];
+
+  document.getElementById('dos-titulo').textContent = tituloDe(co);
+  document.getElementById('dos-sub').textContent =
+    `${nomeEmpr(co.empreendimento_id)}${co.unidade ? ' · un. ' + co.unidade : ''} · código ${co.codigo || co.id.slice(0,8)}`;
+  document.getElementById('dos-situacao').innerHTML =
+    `<span class="sit" style="background:${esc(corSituacao(co.situacao_id))}">${esc(nomeSituacao(co.situacao_id))}</span>`;
+  montarRodape();
+  renderDossie();
+}
+
+function trocarAbaDossie(aba, el){
+  G.abaDossie = aba;
+  document.querySelectorAll('#dos-tabs .modal-tab').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderDossie();
+}
+
+function renderDossie(){
+  const f = { proposta:dosProposta, origem:dosOrigem, contrato:dosContrato,
+              documentos:dosDocumentos, checklist:dosChecklist, historico:dosHistorico, repasse:dosRepasse }[G.abaDossie];
+  document.getElementById('dos-body').innerHTML = f ? f() : '';
+  // A conferência dos recursos próprios tem de aparecer ao ABRIR a proposta já
+  // salva, não só quando alguém digita. Ligada só ao oninput, ela ficava
+  // invisível justamente para quem abre o negócio para conferir.
+  if (G.abaDossie === 'proposta') {
+    renderCondicoesProposta();
+    conferirProposta();
+  }
+}
+
+function dosProposta(){
+  const co = G.atual, p = co.proposta || {}, pode = podeEditarNaSituacao(co.situacao_id);
+  const cr = (co.origem_snapshot || {}).credito || {};
+  const aprovado = cr.valor_total || 0;
+  return `
+    <div class="fgrid">
+      <div class="fg"><label>Valor da venda (R$)</label>
+        <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda/100).toFixed(2).replace('.',',')) : ''}"
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this);conferirProposta()"></div>
+      <div class="fg"><label>Recursos próprios necessários (R$)</label>
+        <input id="p-entrada" value="" inputmode="decimal" disabled></div>
+      <div class="fg"><label>Desconto concedido (R$)</label>
+        <input id="p-desc" value="${p.desconto != null ? esc((p.desconto/100).toFixed(2).replace('.',',')) : ''}"
+               inputmode="decimal" ${pode?'':'disabled'} oninput="mascaraMoeda(this)"></div>
+      <div class="fg"><label>Comissão (%)</label>
+        <input id="p-com" type="number" step="0.01" min="0" max="100" value="${esc(p.comissao_pct != null ? p.comissao_pct : '')}" ${pode?'':'disabled'}></div>
+      <div class="fg full"><label>Observações da negociação</label>
+        <textarea id="p-obs" rows="3" ${pode?'':'disabled'}>${esc(p.observacoes || '')}</textarea></div>
+    </div>
+    <div class="sec-title">Condições de pagamento</div>
+    <div id="p-condicoes"></div>
+    ${pode ? '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoProposta()">+ Adicionar condição</button>' : ''}
+    <div id="p-conferencia" style="margin-top:.9rem"></div>
+    ${secaoVinculos(co, pode)}
+    <div class="sec-title">Crédito aprovado na origem</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total aprovado</label><input value="${esc(brl(aprovado))}" disabled></div>
+    </div>
+    ${pode ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarProposta()">Salvar proposta</button></div>` : ''}`;
+}
+
+// Quem responde por este negócio. Três seletores, três colunas de a1_comerciais.
+//
+// A empresa só o gestor troca: o gatilho a1_comerciais_trava (2026-09-04) recusa
+// mudança em corretor_id/empresa_id de quem não é gestor com
+// `redistribuir_carteira_e_do_gestor` — redistribuir carteira é decisão de
+// gestão, não de quem está no negócio. Desenhar o campo aberto e deixar o banco
+// recusar depois seria prometer o que não se cumpre.
+function secaoVinculos(co, pode){
+  const podeEmpresa  = pode && (ehGestor() || perm('gerente'));
+  const roteando     = roteamentoDeAnalistasAtivo();
+  return `
+    <div class="sec-title">Quem responde por este negócio</div>
+    <div class="fgrid">
+      <div class="fg"><label>Imobiliária</label><input value="${esc(nomeImobiliaria(co.imobiliaria_id) || 'Não informada')}" disabled></div>
+      <div class="fg"><label>Corretor</label><input value="${esc(nomeCorretor(co.corretor_id) || 'Não informado')}" disabled></div>
+      <div class="fg"><label>Empresa correspondente</label>
+        ${selVinculo('p-empresa', G.empresas, co.empresa_id, !podeEmpresa)}
+        ${pode && !podeEmpresa ? '<div class="sub" style="margin-top:.25rem">Trocar a empresa é do gestor: é ela que decide quem enxerga o negócio.</div>' : ''}</div>
+      <div class="fg"><label>Usuário correspondente</label>
+        ${selVinculo('p-correspondente', G.ccas, co.correspondente_id, !pode)}</div>
+      <div class="fg"><label>Analista</label>
+        ${selVinculo('p-analista', G.analistas, co.analista_id, !pode || roteando)}
+        ${roteando ? '<div class="sub" style="margin-top:.25rem">Quem escolhe o analista é o <strong>Roteamento de Analistas</strong>, não este campo.</div>' : ''}</div>
+    </div>`;
+}
+
+// O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
+// descobrir na negociação do que na assinatura.
+function condicoesPropostaDaTela(){
+  return [...document.querySelectorAll('#p-condicoes .condicao-proposta')].map(l => ({
+    tipo: l.querySelector('[data-campo="tipo"]').value,
+    quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
+    valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0,
+    vencimento_inicial: l.querySelector('[data-campo="vencimento"]')?.value || null
+  }));
+}
+function condicoesAtuaisProposta(){
+  const p = G.atual.proposta || {};
+  if (Array.isArray(G.condicoesProposta)) return G.condicoesProposta;
+  if (Array.isArray(p.condicoes_pagamento)) return p.condicoes_pagamento;
+  return p.valor_entrada ? [{tipo:'ATO',quantidade:1,valor:p.valor_entrada}] : [];
+}
+function totalCondicoesProposta(condicoes){
+  return condicoes.reduce((total, c) => total + c.quantidade * c.valor, 0);
+}
+function renderCondicoesProposta(){
+  const area = document.getElementById('p-condicoes'); if (!area) return;
+  const pode = podeEditarNaSituacao(G.atual.situacao_id);
+  const condicoes = condicoesAtuaisProposta();
+  area.innerHTML = condicoes.map((c, i) => `
+    <div class="fgrid condicao-proposta" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode?'':'disabled'} onchange="sincronizarCondicoesProposta()">
+        ${['ATO','MENSAL','SEMESTRAL','ANUAL'].map(t => `<option value="${t}" ${c.tipo===t?'selected':''}>${({ATO:'Ato',MENSAL:'Parcelas mensais',SEMESTRAL:'Parcelas semestrais',ANUAL:'Parcelas anuais'})[t]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode?'':'disabled'} oninput="sincronizarCondicoesProposta()"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '')}" ${pode?'':'disabled'} oninput="mascaraMoeda(this);sincronizarCondicoesProposta()"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial||'')}" ${pode?'':'disabled'} onchange="sincronizarCondicoesProposta()"></div>
+      ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoProposta(${i})">Remover</button></div>` : ''}
+    </div>`).join('') || '<div class="sub">Nenhuma condição registrada.</div>';
+}
+function sincronizarCondicoesProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  conferirProposta();
+}
+function adicionarCondicaoProposta(){
+  G.condicoesProposta = condicoesPropostaDaTela();
+  G.condicoesProposta.push({tipo:'ATO',quantidade:1,valor:0,vencimento_inicial:null});
+  renderCondicoesProposta(); conferirProposta();
+}
+function removerCondicaoProposta(indice){
+  G.condicoesProposta = condicoesPropostaDaTela().filter((_,i) => i !== indice);
+  renderCondicoesProposta(); conferirProposta();
+}
+function conferirProposta(){
+  const el = document.getElementById('p-conferencia'); if (!el) return;
+  const cr = (G.atual.origem_snapshot || {}).credito || {};
+  const aprovado = Number(cr.valor_total) || 0;
+  const vendaEl = document.getElementById('p-venda');
+  const entradaEl = document.getElementById('p-entrada');
+  mascaraMoeda(vendaEl);
+  const venda = paraCentavos(vendaEl.value) || 0;
+  const esperado = Math.max(0, venda - aprovado);
+  const entrada = totalCondicoesProposta(condicoesPropostaDaTela());
+  entradaEl.value = venda ? (esperado/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  if (!venda || !aprovado){ el.innerHTML = ''; return; }
+  const diferenca = entrada - esperado;
+  el.innerHTML = diferenca > 0
+    ? `<div class="aviso w">As condições ultrapassam os recursos próprios necessários em <strong>${esc(brl(diferenca))}</strong>.</div>`
+    : diferenca < 0
+      ? `<div class="aviso w">Faltam <strong>${esc(brl(-diferenca))}</strong> nas condições para completar os recursos próprios.</div>`
+      : `<div class="aviso s">Condições de pagamento fecham exatamente os recursos próprios.</div>`;
+}
+
+async function salvarProposta(){
+  const co = G.atual;
+  const condicoes = condicoesPropostaDaTela();
+  const proposta = {
+    valor_venda:   paraCentavos(document.getElementById('p-venda').value),
+    valor_entrada: Math.max(0, (paraCentavos(document.getElementById('p-venda').value)||0) - (Number(((co.origem_snapshot||{}).credito||{}).valor_total)||0)),
+    condicoes_pagamento: condicoes,
+    desconto:      paraCentavos(document.getElementById('p-desc').value),
+    comissao_pct:  parseFloat(document.getElementById('p-com').value) || null,
+    observacoes:   document.getElementById('p-obs').value || null
+  };
+  // Os três vínculos vão no MESMO salvamento. Botão próprio para eles seria mais
+  // um lugar de onde sair sem salvar: o gestor troca o analista, fecha o dossiê
+  // e jura que trocou.
+  const corpo = {
+    proposta,
+    empresa_id:        idOuNulo('p-empresa'),
+    correspondente_id: idOuNulo('p-correspondente'),
+    analista_id:       idOuNulo('p-analista')
+  };
+  const res = await fetch(`${A1.rest('a1_comerciais')}?id=eq.${co.id}`, {
+    method:'PATCH', headers:A1.headers(), body:JSON.stringify(corpo) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível salvar a proposta.'),'error'); return; }
+  Object.assign(co, corpo);
+  toast('Proposta salva.','success');
+  renderVistas();
+}
+
+function dosOrigem(){
+  const s = G.atual.origem_snapshot || {};
+  const cr = s.credito || {}, pa = s.pre_analise || {}, ps = s.participantes || [];
+  // O atalho para a Pré-análise no fim só sai se o cliente TIVER o módulo. A
+  // barra de abas antiga o mostrava sempre, e quem clicava batia numa tela que
+  // o módulo desligado devolve na porta.
+  return `
+    <div class="aviso i">Esta é a <strong>fotografia</strong> do que foi aprovado no momento em que o
+      negócio nasceu. Se a pré-análise mudar depois, isto <em>não</em> muda — e é de propósito:
+      o que entrou em negociação foi isto.</div>
+    <div class="sec-title" style="margin-top:0">Pré-análise de origem</div>
+    <div class="fgrid">
+      <div class="fg"><label>Código</label><input value="${esc(pa.codigo || (pa.id||'').slice(0,8))}" disabled></div>
+      <div class="fg"><label>Unidade</label><input value="${esc(pa.unidade || '—')}" disabled></div>
+      <div class="fg"><label>Capturado em</label><input value="${esc(dataHoraBR(s.capturado_em))}" disabled></div>
+      <div class="fg"><label>Versão do crédito</label><input value="${esc(cr.versao != null ? cr.versao : '—')}" disabled></div>
+    </div>
+    <div class="sec-title">Participantes na aprovação</div>
+    ${ps.length ? ps.map(p => `
+      <div class="linha"><div><div class="nm">${esc(p.nome || '—')}
+        <span class="pill ${p.papel==='TITULAR'?'nt':'wt'}">${esc(p.papel||'')}</span></div></div>
+        <div class="nm">${esc(brl(p.renda_analisada))}</div></div>`).join('')
+      : '<div class="sub">sem participantes registrados</div>'}
+    <div class="sec-title">Valores aprovados</div>
+    <div class="fgrid">
+      <div class="fg"><label>Financiado</label><input value="${esc(brl(cr.valor_aprovado))}" disabled></div>
+      <div class="fg"><label>Subsídio</label><input value="${esc(brl(cr.valor_subsidio))}" disabled></div>
+      <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
+      <div class="fg"><label>Total</label><input value="${esc(brl(cr.valor_total))}" disabled></div>
+      <div class="fg"><label>Prestação</label><input value="${esc(brl(cr.prestacao))}" disabled></div>
+      <div class="fg"><label>Prazo</label><input value="${cr.prazo_meses ? esc(cr.prazo_meses)+' meses' : '—'}" disabled></div>
+    </div>
+    ${G.atual.pre_analise_id && G.modulos.PRE_ANALISE ? `<div style="margin-top:1rem">
+      <a class="btn btn-ghost btn-sm" href="/${esc(G.slug)}/pre-analise">Abrir a Pré-análise ↗</a></div>` : ''}`;
+}
+
+function dosContrato(){
+  const pode = podeEditarNaSituacao(G.atual.situacao_id);
+  // co_contrato existe exatamente para isto e não era lida por ninguém: quem
+  // vende não carimba o próprio contrato como assinado, senão exigir contrato
+  // assinado numa transição deixa de ser exigência. Era analisar_credito, que
+  // é a decisão de CRÉDITO — outra coisa.
+  const podeAssinar = ehGestor() || perm('gerente') || perm('co_contrato');
+  const linhas = G.atualContratos.map(c => `
+    <div class="linha">
+      <div><div class="nm">Versão ${c.versao}
+        <span class="pill ${c.status==='ASSINADO'?'ok':c.status==='CANCELADO'?'no':'wt'}">${esc(c.status)}</span></div>
+        <div class="mt">${esc(dataHoraBR(c.criado_em))}${c.provedor ? ' · ' + esc(c.provedor) : ''}${
+          c.assinado_em ? ' · assinado em ' + esc(dataBR(c.assinado_em)) : ''}</div></div>
+      <div style="display:flex;gap:.4rem">
+        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" onclick="baixarContrato('${esc(c.id)}')">Abrir</button>` : ''}
+        ${podeAssinar && c.status !== 'ASSINADO' && c.status !== 'CANCELADO'
+          ? `<button class="btn btn-primary btn-sm" onclick="marcarAssinado('${esc(c.id)}')">Marcar assinado</button>` : ''}
+      </div>
+    </div>`).join('');
+  return `
+    ${linhas || '<div class="sub">Nenhum contrato registrado.</div>'}
+    ${pode ? `
+      <div class="sec-title">Novo contrato</div>
+      <div class="fgrid">
+        <div class="fg"><label>Situação</label>
+          <select id="ct-status">
+            <option value="EM_CONFECCAO">Em confecção</option>
+            <option value="GERADO">Gerado</option>
+            <option value="AGUARDANDO_ASSINATURA">Aguardando assinatura</option>
+          </select></div>
+        <div class="fg"><label>Provedor de assinatura</label>
+          <input id="ct-prov" placeholder="ex.: Clicksign, D4Sign"></div>
+        <div class="fg full"><label>Arquivo (opcional)</label><input type="file" id="ct-arq"></div>
+      </div>
+      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-ct" onclick="criarContrato()">Registrar contrato</button></div>` : ''}
+    ${podeAssinar ? '' : `<div class="aviso i" style="margin-top:.9rem">Marcar um contrato como
+      <strong>assinado</strong> é de quem tem permissão para isso. Se quem vende pudesse carimbar
+      sozinho, a exigência de contrato assinado deixaria de ser exigência.</div>`}`;
+}
+
+async function criarContrato(){
+  const btn = document.getElementById('btn-ct'); btn.disabled = true; btn.textContent = 'Registrando…';
+  try {
+    const arq = document.getElementById('ct-arq').files[0];
+    let chave = null;
+    if (arq){
+      if (arq.size > 20*1024*1024) throw new Error('Arquivo acima de 20 MB.');
+      const limpo = arq.name.replace(/[^\w.\-]+/g,'_').slice(-80);
+      chave = `${G.user.tenant_id}/comercial/${G.atual.id}/${Date.now()}_${limpo}`;
+      if (!await A1.storageUpload('case-documents', chave, arq)) throw new Error('Falha no envio do arquivo.');
+    }
+    const res = await fetch(A1.rest('a1_co_contratos'), {
+      method:'POST', headers:A1.returnHeaders(),
+      body: JSON.stringify({ tenant_id:G.user.tenant_id, comercial_id:G.atual.id,
+        versao: (G.atualContratos[0] ? G.atualContratos[0].versao : 0) + 1,
+        status: document.getElementById('ct-status').value,
+        provedor: document.getElementById('ct-prov').value || null,
+        storage_key: chave })
+    });
+    if (!res.ok) throw new Error(await mensagemErro(res,'Não foi possível registrar o contrato.'));
+    G.atualContratos.unshift((await res.json())[0]);
+    toast('Contrato registrado.','success');
+    montarRodape(); renderDossie();
+  } catch(e){ toast(e.message,'error'); }
+  finally { const b = document.getElementById('btn-ct'); if (b){ b.disabled = false; b.textContent = 'Registrar contrato'; } }
+}
+
+async function marcarAssinado(id){
+  const res = await fetch(`${A1.rest('a1_co_contratos')}?id=eq.${id}`, {
+    method:'PATCH', headers:A1.headers(),
+    body: JSON.stringify({ status:'ASSINADO', assinado_em: new Date().toISOString() }) });
+  if (!res.ok){ toast(await mensagemErro(res,'Não foi possível marcar como assinado.'),'error'); return; }
+  const c = G.atualContratos.find(x => x.id === id);
+  if (c){ c.status = 'ASSINADO'; c.assinado_em = new Date().toISOString(); }
+  toast('Contrato marcado como assinado.','success');
+  montarRodape(); renderDossie();
+}
+
+async function baixarContrato(id){
+  const c = G.atualContratos.find(x => x.id === id); if (!c || !c.storage_key) return;
+  const url = await A1.storageSignedUrl('case-documents', c.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
+function dosDocumentos(){
+  const linhas = G.atualDocs.map(d => `
+    <div class="linha">
+      <div><div class="nm">${esc(d.tipo)}</div>
+        <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · enviado em ${esc(dataHoraBR(d.criado_em))}</div></div>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span class="pill ${d.status==='APROVADO'?'ok':d.status==='REPROVADO'?'no':'wt'}">${esc(d.status)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${esc(d.id)}')">Abrir</button>
+      </div>
+    </div>`).join('');
+  return `
+    <div class="aviso i">Estes documentos pertencem à Pré-análise de origem. Eles seguem disponíveis aqui sem cópia duplicada, mantendo o histórico e a versão original.</div>
+    ${linhas || '<div class="sub">Nenhum documento foi enviado na Pré-análise.</div>'}`;
+}
+async function baixarDocumentoOrigem(id){
+  const d = G.atualDocs.find(x => x.id === id); if (!d) return;
+  const url = await A1.storageSignedUrl('case-documents', d.storage_key, 60);
+  if (url) window.open(url, '_blank', 'noopener'); else toast('Não foi possível abrir o arquivo.','error');
+}
+
+function dosChecklist(){
+  const podeMarcar = podeEditarNaSituacao(G.atual.situacao_id);
+  const itens = G.atualChecklist || [];
+  if(!itens.length) return '<div class="sub">Nenhum item configurado para o checklist da Venda.</div>';
+  return itens.map(i => `
+    <div class="linha">
+      <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar?'pointer':'default'}">
+        <input type="checkbox" ${i.concluido?'checked':''} ${podeMarcar && !i.automatico?'':'disabled'}
+          onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
+        <div><div class="nm">${esc(i.nome)} ${i.obrigatorio?'<span class="pill wt" style="margin-left:.35rem">obrigatório</span>':''}</div>
+          ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : (i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : '')}</div>
+      </label>
+      <span class="pill ${i.concluido?'ok':'wt'}">${i.concluido?'feito':'pendente'}</span>
+    </div>`).join('');
+}
+async function marcarChecklistOperacional(itemId, concluido){
+  const res = await fetch(A1.rpc('a1_checklist_marcar'), {method:'POST',headers:A1.headers(),
+    body:JSON.stringify({p_modulo:'COMERCIAL',p_processo:G.atual.id,p_item:itemId,p_concluido:concluido})});
+  if (!res.ok){ toast('Não foi possível atualizar o checklist.','error'); renderDossie(); return; }
+  const item=(G.atualChecklist||[]).find(i=>i.id===itemId);
+  if(item){ item.concluido=concluido; item.concluido_em=concluido?new Date().toISOString():null; }
+  G.atualEv.unshift({evento:'checklist_atualizado',criado_em:new Date().toISOString(),
+    ator_nome:(G.user||{}).name||null,
+    ator_papel:G.user?.role==='partner' ? G.user.type : G.user?.role});
+  renderDossie();
+  toast('Checklist atualizado.','success');
+}
+
+function dosHistorico(){
+  if (!G.atualEv.length) return '<div class="sub">Sem histórico ainda.</div>';
+  return `<div class="timeline">${G.atualEv.map(e => {
+    const de = e.de_situacao ? nomeSituacao(e.de_situacao) : null;
+    const para = e.para_situacao ? nomeSituacao(e.para_situacao) : null;
+    const just = e.detalhe && e.detalhe.justificativa;
+    return `<div class="tl-item">
+      <div class="tl-dot">${e.evento === 'transicao' ? '→' : e.evento === 'repasse_criado' ? '✓' : '•'}</div>
+      <div><div class="tl-desc">${esc(rotuloEvento(e.evento))}${
+        de && para ? ` — <strong>${esc(de)}</strong> para <strong>${esc(para)}</strong>` :
+        para ? ` — <strong>${esc(para)}</strong>` : ''}</div>
+        ${just ? `<div class="tl-meta">${esc(just)}</div>` : ''}
+        <div class="tl-meta">${esc(dataHoraBR(e.criado_em))}${a1AtorHistorico(e) ? ' · ' + esc(a1AtorHistorico(e)) : ''}</div></div>
+    </div>`; }).join('')}</div>`;
+}
+function rotuloEvento(e){
+  return { transicao:'Mudança de situação', criado_da_pre_analise:'Criado a partir da pré-análise',
+           repasse_criado:'Cartão de Repasse criado', dados_atualizados:'Dados da venda atualizados',
+           contrato_registrado:'Contrato registrado', contrato_status_alterado:'Situação do contrato alterada', checklist_atualizado:'Checklist atualizado' }[e] || e;
+}
+
+function dosRepasse(){
+  const co = G.atual;
+  if (co.repasse_case_id){
+    return `<div class="aviso s">O cartão de Repasse deste negócio já foi criado.</div>
+      <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O vínculo é único: um comercial gera
+      um cartão e só um. Clicar de novo devolve o mesmo — não cria um segundo, mesmo com dois cliques
+      simultâneos ou duas abas abertas.</p>
+      <div style="margin-top:1rem"><a class="btn btn-primary btn-sm" href="/${esc(G.slug)}/andamento">Abrir o Repasse ↗</a></div>`;
+  }
+  const assinado = G.atualContratos.some(c => c.status === 'ASSINADO');
+  return `<div class="aviso i">Ainda não existe cartão de Repasse para este negócio.</div>
+    ${assinado ? '<div class="aviso s">Há contrato assinado.</div>'
+               : '<div class="aviso w">Não há contrato assinado. Exigir contrato assinado antes do repasse é <strong>opção do cliente</strong>, marcada na transição da esteira — não é regra fixa do sistema.</div>'}
+    <p style="font-size:.82rem;line-height:1.5;color:var(--t2)">O cartão de Repasse nasce sozinho
+    quando o negócio chega à situação marcada com o selo <strong>VENDIDO</strong> na esteira da Venda
+    — é só arrastar o cartão para lá no Andamento. Ele nasce na etapa inicial que o próprio cliente
+    configurou no workflow de Repasse, com o nome do titular e os valores aprovados. Se o Repasse
+    ainda não estiver apto, a esteira recusa a mudança e explica o motivo, em vez de deixar uma venda
+    vendida sem repasse correspondente.</p>`;
+}
+
+function podeMoverComercial(co){
+  return !!co && perm('co_mover') && nivelNaSituacao(co.situacao_id) === 'editar';
+}
+function montarRodape(){
+  const co = G.atual;
+  const acoes = document.getElementById('dos-acoes');
+  acoes.innerHTML = co.repasse_case_id
+    ? '<span class="sub">Repasse já criado.</span>'
+    : (podeMoverComercial(co) ? '<span class="sub">A criação de Repasse ocorre pelo selo VENDIDO da esteira.</span>' : '');
+}
+
+// O rodapé do dossiê não move e não cria mais nada — e as duas funções que
+// faziam isso saíram junto com os controles que as chamavam. moverSituacao()
+// lia um #dos-mover removido de propósito (duas portas para a mesma ação
+// deixavam mover o negócio fora do contexto visual da esteira) e criarRepasse()
+// lia um #btn-repasse que deixou de existir quando a criação do Repasse passou
+// a ser consequência do selo VENDIDO, dentro da mesma transação da esteira.
+// Ambas ficaram lendo null: função morta que estoura é pior que função ausente.
+// Quem move o negócio é o arrastar do quadro (moverCartao → transicionar), e é
+// a própria a1_co_transicionar que devolve o repasse_case_id quando cria.
+
+async function mensagemErro(res, padrao){
+  try {
+    const j = await res.json();
+    const m = j && (j.message || j.hint || j.details);
+    if (res.status === 401 || res.status === 403 || /row-level security/i.test(m||''))
+      return 'Você não tem permissão para isso.';
+    if (/situacao_so_muda_por_transicao/.test(m||''))
+      return 'A situação só muda pela esteira, não por edição direta.';
+    if (/snapshot_da_aprovacao/.test(m||''))
+      return 'A fotografia do crédito aprovado não pode ser reescrita.';
+    if (/vinculo_de_repasse/.test(m||''))
+      return 'O vínculo com o Repasse é criado pela ação, não à mão.';
+    if (/sem_permissao_para_marcar_contrato_assinado/.test(m||''))
+      return 'Você não tem permissão para marcar contrato como assinado.';
+    if (/redistribuir_carteira_e_do_gestor/.test(m||''))
+      return 'Trocar a empresa correspondente ou o corretor do negócio é do gestor — '
+           + 'é isso que decide quem enxerga o negócio. Peça a um gestor, ou a permissão "Gerente".';
+    // A coluna que falta é o caso mais mudo de todos: o PostgREST recusa, a tela
+    // diz "não foi possível" e ninguém descobre que é SQL que não foi rodado.
+    const _col = /(?:Could not find the '|column a1_comerciais\.)([a-z_]+)'?/.exec(m || '');
+    if (_col && /PGRST204|does not exist|schema cache/i.test(m))
+      return `O banco ainda não tem a coluna "${_col[1]}" em a1_comerciais. Rode o SQL do módulo `
+           + 'Venda (pasta sql/) antes de usar esta tela — sem a coluna nada aqui salva.';
+    return m || padrao;
+  } catch { return padrao; }
+}
+
+// O banco recusa com um código curto — quem lê é uma pessoa, e ela precisa
+// saber O QUE FAZER. "Não foi possível" manda abrir chamado para descobrir o
+// óbvio; por isso cada mensagem aqui termina no lugar onde se resolve.
+function traduzErro(j){
+  const m = (j && (j.message || j.error)) || '';
+  const mapa = {
+    nao_encontrado:          'Negócio não encontrado. Recarregue a tela — ele pode ter sido movido ou excluído.',
+    modulo_desabilitado:     'O módulo Venda não está liberado para este cliente. Quem libera é o suporte do SIIMOB.',
+    venda_avulsa_desligada:  'A criação avulsa de venda está desligada em Configurações › Configurações Gerais.',
+    esteira_sem_situacao_inicial: 'A esteira da Venda não tem situação inicial cadastrada. Configure o workflow antes.',
+    empreendimento_fora_do_cliente: 'Esse empreendimento não é deste cliente.',
+    sem_acesso:              'Este negócio não é da sua carteira.',
+    sem_permissao:           'Você não tem a permissão "Mover na esteira" da Venda. Peça ao gestor '
+                           + 'em Configurações › cadastro da pessoa, ou no perfil de acesso vinculado a você.',
+    versao_desatualizada:    'Alguém alterou este negócio enquanto você o tinha aberto. A tela foi recarregada '
+                           + 'com a situação atual; confira e tente de novo.',
+    transicao_nao_permitida: 'A esteira deste cliente não liga essas duas situações. Um gestor desenha o '
+                           + 'caminho em Configurações › Workflow da Venda.',
+    papel_nao_autorizado:    'Esta transição está reservada a outros papéis na esteira. Um gestor ajusta quem '
+                           + 'pode fazê-la em Configurações › Workflow da Venda.',
+    contrato_nao_assinado:   'Esta transição exige contrato assinado. Registre o contrato na aba Contrato e '
+                           + 'peça a quem tem a permissão que o marque como assinado.',
+    sem_titular:             'Sem titular: o cartão de Repasse exige o nome do cliente. Confira os '
+                           + 'participantes na aba Origem.',
+    repasse_sem_etapa:       'O cliente não tem etapa cadastrada no workflow de Repasse. Crie a primeira etapa '
+                           + 'em Configurações › Editor de Workflow.',
+    modulo_repasse_desabilitado:'O módulo Repasse não está liberado para este cliente, então o cartão não pode nascer.',
+    acao_desconhecida:       'Ação desconhecida.'
+  };
+  for (const k in mapa) if (m.includes(k)) return mapa[k];
+  if (/row-level security/i.test(m)) return 'O banco recusou a alteração: você não tem acesso a este negócio.';
+  return m || 'Não foi possível concluir a operação.';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-bg:not(.hidden)').forEach(m => m.classList.add('hidden'));
+});
+init();

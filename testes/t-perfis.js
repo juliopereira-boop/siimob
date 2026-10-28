@@ -7,7 +7,7 @@
 // com perfil não vale mais pelas marcas soltas do cadastro dela — nem na tela,
 // nem no banco.
 //
-// ARMADILHA 1 — a caixa decorativa. O catálogo (js/permissoes.js) promete que
+// ARMADILHA 1 — a caixa decorativa. O catálogo (src/shared/auth/permissoes.js) promete que
 // só entra chave que alguma tela ou política de fato lê. Uma caixa que não faz
 // nada é pior que uma caixa ausente: a ausente o gestor percebe, a que não faz
 // nada ele acredita. O teste do fim deste arquivo lê o código do projeto e
@@ -292,14 +292,15 @@ const gravado = (p, re) => p.evaluate(r => {
     // a1_perm('x'). Escrever a chave num formulário não conta — foi exatamente
     // assim que ver_repasses, baixar_documentos e editar_perfil passaram anos
     // sendo marcadas sem efeito nenhum.
-    const cat = fs.readFileSync(path.join(RAIZ, 'js/permissoes.js'), 'utf8');
+    const cat = fs.readFileSync(path.join(RAIZ, 'src/shared/auth/permissoes.js'), 'utf8');
     const catalogo = [...cat.matchAll(/\{\s*chave:'([a-z_]+)'/g)].map(m => m[1]);
     checa('o catálogo foi lido', catalogo.length >= 14, 'n=' + catalogo.length);
 
     const arquivos = [];
     (function anda(dir) {
       for (const f of fs.readdirSync(dir, { withFileTypes:true })) {
-        if (f.name === 'node_modules' || f.name === '.git' || f.name === 'testes') continue;
+        // dist/ é cópia minificada do src/: contar duas vezes esconderia órfãs.
+        if (['node_modules', '.git', 'testes', 'dist'].includes(f.name)) continue;
         const alvo = path.join(dir, f.name);
         if (f.isDirectory()) anda(alvo);
         else if (/\.(html|js|sql)$/.test(f.name) && f.name !== 'permissoes.js') arquivos.push(alvo);
@@ -311,7 +312,7 @@ const gravado = (p, re) => p.evaluate(r => {
     //
     // As cinco permissões de dashboard (uma por módulo) não aparecem escritas
     // em nenhum `hasPerm('...')`: quem as lê é A1_DASHBOARD_PERMISSOES, em
-    // js/modulo-shell.js, um mapa módulo→chave que a tela indexa
+    // src/shared/ui/modulo-shell.js, um mapa módulo→chave que a tela indexa
     // (`perms[A1_DASHBOARD_PERMISSOES[modulo]]`) e manda para o banco
     // (`p_chave: A1_DASHBOARD_PERMISSOES[m]`). É leitura de verdade — some a
     // marca, some a aba do Dashboard — só que dinâmica.

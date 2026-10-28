@@ -253,7 +253,7 @@ async function preencherAssistente(p){
   // para ele a permissão É o motivo e existe o que marcar.
   //
   // A chave aqui é pa_mover, e não pa_editar: mover na esteira virou permissão
-  // própria (js/permissoes.js + a1_pa_transicionar, que passou a exigir
+  // própria (src/shared/auth/permissoes.js + a1_pa_transicionar, que passou a exigir
   // a1_perm('pa_mover')). Quem corrige o cadastro de um processo não
   // necessariamente pode empurrá-lo adiante — e quem já tinha pa_editar ganhou
   // pa_mover na migração, então ninguém perdeu poder no caminho.

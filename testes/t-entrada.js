@@ -65,10 +65,9 @@ async function preencher(p, painel, cpf) {
 
   console.log('== O REDIRECIONAMENTO, LIDO DO PRÓPRIO CÓDIGO ==');
   {
-    // Sem navegador: a regra está escrita em login.html e é dela que o sistema
+    // Sem navegador: a regra está escrita na tela de login e é dela que o sistema
     // depende. Se alguém trocar '/geral' por outra coisa, é aqui que aparece.
-    const fs = require('fs');
-    const src = fs.readFileSync(require('path').join(__dirname, '..', 'login.html'), 'utf8');
+    const src = require('./fonte').lerPagina('login');
     const fn = /function redirectAfterLogin\(user\)\s*\{([\s\S]*?)\n\}/.exec(src);
     checa('redirectAfterLogin existe', !!fn);
     const corpo = fn ? fn[1] : '';
@@ -87,8 +86,7 @@ async function preencher(p, painel, cpf) {
     // a mesma pergunta — o superadmin escolhia o primeiro módulo licenciado,
     // na ordem do tipo de cliente. Duas regras para "por onde o sistema abre"
     // divergem no primeiro ajuste, e foi exatamente o que aconteceu.
-    const fs = require('fs');
-    const src = fs.readFileSync(require('path').join(__dirname, '..', 'superadmin.html'), 'utf8');
+    const src = require('./fonte').lerPagina('superadmin');
     const fn = /async function acessarComo\([\s\S]*?\n\}/.exec(src);
     checa('acessarComo existe', !!fn);
     const corpo = fn ? fn[0] : '';

@@ -31,7 +31,7 @@ const { checa, resumo } = require('./comum');
 // globais que ele toca, devolvendo as funções reais. Copiar o cálculo para o
 // teste provaria a cópia, não o sistema.
 function carregar() {
-  const codigo = fs.readFileSync(path.join(__dirname, '..', 'js', 'paineis.js'), 'utf8');
+  const codigo = require('./fonte').lerFonte('src/modules/paineis/paineis.js');
   const doc = { getElementById: () => null, querySelectorAll: () => [], head: { appendChild(){} },
                 createElement: () => ({ style: {}, setAttribute(){}, appendChild(){} }),
                 addEventListener(){} };

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fazer uma indicação — IndicaSII | SIIMOB</title>
+  <meta name="description" content="Complete seu cadastro e indique uma empresa para o SIIMOB.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/indica-cadastro/style.css">
+</head>
+<body>
+
+<div class="topo">
+  <div class="cx topo-in">
+    <a href="/indicasii" class="logo">
+      <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="siind1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siind1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siind1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="siind1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siind1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siind1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siind1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siind1d)"/></svg>
+      SIIMOB <small>IndicaSII</small>
+    </a>
+    <a href="/indicasii" class="volta">← Voltar</a>
+  </div>
+</div>
+
+<main>
+  <div class="cx">
+
+    <div id="v-form">
+      <div class="trilha">
+        <b>Passo 2 de 2</b>
+        <span class="bar on"></span><span class="bar on"></span>
+      </div>
+      <h1>Complete e envie sua indicação</h1>
+      <p class="lead">
+        Seus dados servem para reconhecermos a indicação e pagar a recompensa.
+        Os da empresa, para nossa equipe entrar em contato.
+      </p>
+
+      <form class="caixa" id="form" novalidate>
+        <div class="msg m-erro oculto" id="erro" role="alert"></div>
+
+        <div class="secao">Seus dados</div>
+        <div class="campo">
+          <label for="f-nome">Nome completo *</label>
+          <input type="text" id="f-nome" autocomplete="name" placeholder="Como você se chama">
+          <div class="erro-c oculto" id="e-nome"></div>
+        </div>
+        <div class="linha">
+          <div class="campo">
+            <label for="f-doc">CPF ou CNPJ *</label>
+            <input type="text" id="f-doc" inputmode="numeric" maxlength="18" placeholder="000.000.000-00">
+            <div class="dica">É por ele que reconhecemos suas indicações.</div>
+            <div class="erro-c oculto" id="e-doc"></div>
+          </div>
+          <div class="campo">
+            <label for="f-fone">WhatsApp</label>
+            <input type="tel" id="f-fone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel">
+          </div>
+        </div>
+        <div class="linha">
+          <div class="campo">
+            <label for="f-email">E-mail</label>
+            <input type="email" id="f-email" placeholder="voce@email.com" autocomplete="email">
+          </div>
+          <div class="campo">
+            <label for="f-pix">Chave PIX</label>
+            <input type="text" id="f-pix" placeholder="Para onde vai a recompensa">
+            <div class="dica">Pode preencher depois, antes do primeiro pagamento.</div>
+          </div>
+        </div>
+
+        <div class="secao">A empresa que você indica</div>
+        <div class="campo">
+          <label for="f-empresa">Nome da empresa *</label>
+          <input type="text" id="f-empresa" placeholder="Construtora, imobiliária ou correspondente">
+          <div class="erro-c oculto" id="e-empresa"></div>
+        </div>
+        <div class="linha">
+          <div class="campo">
+            <label for="f-cnome">Quem é o contato lá</label>
+            <input type="text" id="f-cnome" placeholder="Nome de quem decide">
+          </div>
+          <div class="campo">
+            <label for="f-cfone">Telefone do contato</label>
+            <input type="tel" id="f-cfone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+        <div class="linha">
+          <div class="campo">
+            <label for="f-cemail">E-mail do contato</label>
+            <input type="email" id="f-cemail" placeholder="contato@empresa.com">
+          </div>
+          <div class="campo">
+            <label for="f-porte">Tamanho</label>
+            <select id="f-porte">
+              <option value="">Não sei</option>
+              <option>Até 10 usuários</option>
+              <option>De 10 a 30 usuários</option>
+              <option>De 30 a 60 usuários</option>
+              <option>Mais de 60 usuários</option>
+            </select>
+          </div>
+        </div>
+        <div class="linha">
+          <div class="campo">
+            <label for="f-cidade">Cidade</label>
+            <input type="text" id="f-cidade" placeholder="Cidade da empresa">
+          </div>
+          <div class="campo">
+            <label for="f-uf">Estado</label>
+            <select id="f-uf"><option value="">Selecione</option></select>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="f-obs">Alguma observação</label>
+          <textarea id="f-obs" rows="3" placeholder="O que eles usam hoje, qual a dificuldade, quem apresentar..."></textarea>
+        </div>
+
+        <!-- A regra da recompensa fica escrita no momento do aceite, e não só no
+             regulamento: é aqui que a pessoa decide, e "20% do contrato" lido
+             solto significa outra coisa. -->
+        <p style="font-size:.82rem;line-height:1.6;color:var(--t2);background:#F1F5F9;
+                  border:1px solid #E2E8E5;border-radius:10px;padding:.8rem .9rem;margin-top:1.4rem">
+          <strong style="color:var(--t1)">Como é a recompensa:</strong> 20% da
+          <strong style="color:var(--t1)">primeira parcela</strong> paga pela empresa indicada,
+          uma única vez, depois que o contrato for assinado e essa parcela confirmada.
+          Não é percentual do valor total do contrato e não é recorrente.
+        </p>
+
+        <label class="aceite">
+          <input type="checkbox" id="f-aceite">
+          <span>Li e aceito o <a href="/indicasii#duvidas">regulamento do programa</a> e a
+                <a href="/indicasii#duvidas">política de privacidade</a>. Autorizo o contato com a empresa indicada.</span>
+        </label>
+        <div class="erro-c oculto" id="e-aceite" style="margin-bottom:.8rem"></div>
+
+        <button type="submit" class="btn btn-1" id="btn" style="width:100%">Enviar indicação</button>
+      </form>
+    </div>
+
+    <div id="v-ok" class="oculto">
+      <div class="caixa fim">
+        <div class="fim-ico">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0F9D6E" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h1>Indicação recebida</h1>
+        <p class="lead" style="margin-bottom:0">
+          Obrigado, <b id="ok-nome"></b>. Nossa equipe entra em contato com a empresa.
+          Guarde o link abaixo: é por ele que você acompanha o andamento e o quanto tem a receber.
+        </p>
+        <div class="link-box">
+          <input type="text" id="ok-link" readonly onclick="this.select()" aria-label="Link do seu painel">
+          <button class="btn btn-1" id="btn-copiar" onclick="copiar()">Copiar</button>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-2" onclick="outra()">Indicar outra empresa</button>
+          <a class="btn btn-2" id="ir-painel" href="#">Ver meu painel</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/modules/indica/indica-config.js"></script>
+<script src="/src/pages/indica-cadastro/main.js"></script>
+</body>
+</html>

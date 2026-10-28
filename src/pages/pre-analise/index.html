@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pré-análise — SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/pre-analise/index.css">
+</head>
+<body>
+
+<div id="shell"></div>
+<!-- O PAINEL DESTE MODULO.
+     Ele ja existia em src/modules/paineis/paineis.js, mas so era alcancavel pelo seletor de
+     painel do dashboard do Repasse — um modulo tinha de passar por outro para
+     mostrar os proprios numeros. Agora e a terceira vista da propria tela,
+     ao lado de Andamento e Listagem, como em qualquer modulo. -->
+<div id="vista-painel" style="display:none;padding:1.1rem 1.15rem 3rem;max-width:1560px;margin:0 auto"></div>
+
+<div class="main">
+
+  <div class="pg-hdr" id="pg-cab">
+    <h1 class="pg-titulo">Pré-análise</h1>
+    <span class="pg-vista" id="pg-vista"></span>
+  </div>
+
+  <!-- KPIs e barra de filtros ficam FORA das vistas: são os mesmos números e os
+       mesmos filtros nas duas, e duplicá-los era o caminho mais curto para uma
+       delas parar de filtrar sem ninguém perceber. -->
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="toolbar" id="filtros">
+    <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." oninput="renderVista()" style="min-width:220px">
+    <select id="f-situacao" onchange="renderVista()"><option value="">Todas as situações</option></select>
+    <select id="f-corretor" onchange="renderVista()"><option value="">Todos os corretores</option></select>
+    <select id="f-empr"     onchange="renderVista()"><option value="">Todos os empreendimentos</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVista()">
+    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVista()">
+    <div class="seg" role="group" aria-label="Filtro de prazo">
+      <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
+      <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
+      <button id="sla-at"     onclick="filtrarSla('at')">Atenção</button>
+      <button id="sla-ex"     onclick="filtrarSla('ex')">Estourado</button>
+    </div>
+    <div style="flex:1"></div>
+    <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
+  </div>
+
+  <div id="vista-andamento" style="display:none">
+    <div class="kanban" id="kanban"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+
+  <div id="vista-listagem" style="display:none">
+    <div class="tbl-wrap" id="fila-wrap"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+
+</div>
+
+<!-- ══════════ ASSISTENTE — NOVA PRÉ-ANÁLISE ══════════ -->
+<div class="modal-bg hidden" id="modal-nova">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Nova Pré-análise</div>
+           <div class="modal-sub" id="nova-sub">Passo 1 de 3 — o negócio</div></div>
+      <button class="modal-close" onclick="fecharModal('modal-nova')" aria-label="Fechar">×</button>
+    </div>
+    <div class="passos">
+      <div class="passo on" id="passo-1"><span class="n">1</span> Negócio</div>
+      <div class="passo"    id="passo-2"><span class="n">2</span> Titular</div>
+      <div class="passo"    id="passo-3"><span class="n">3</span> Renda</div>
+    </div>
+    <div class="modal-body" id="nova-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="nova-voltar" onclick="passoAnterior()" style="visibility:hidden">Voltar</button>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="fecharModal('modal-nova')">Cancelar</button>
+        <button class="btn btn-primary" id="nova-avancar" onclick="passoSeguinte()">Avançar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DOSSIÊ 360º ══════════ -->
+<div class="modal-bg hidden" id="modal-dossie">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="dos-titulo"></div>
+        <div class="modal-sub"  id="dos-sub"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span id="dos-situacao"></span>
+        <button class="modal-close" onclick="fecharModal('modal-dossie')" aria-label="Fechar">×</button>
+      </div>
+    </div>
+    <div class="modal-tabs" id="dos-tabs">
+      <button class="modal-tab active" data-dt="dados"   onclick="trocarAbaDossie('dados',this)">Dados</button>
+      <button class="modal-tab" data-dt="pessoas"        onclick="trocarAbaDossie('pessoas',this)">Pessoas</button>
+      <button class="modal-tab" data-dt="credito"        onclick="trocarAbaDossie('credito',this)">Crédito</button>
+      <button class="modal-tab" data-dt="documentos"     onclick="trocarAbaDossie('documentos',this)">Documentos</button>
+      <button class="modal-tab" data-dt="checklist"      onclick="trocarAbaDossie('checklist',this)">Checklist</button>
+      <button class="modal-tab" data-dt="historico"      onclick="trocarAbaDossie('historico',this)">Histórico</button>
+      <button class="modal-tab" data-dt="comercial"      onclick="trocarAbaDossie('comercial',this)">Venda</button>
+    </div>
+    <div class="modal-body" id="dos-body"></div>
+    <div class="modal-foot">
+      <div id="dos-acoes" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ INICIAR VENDA — as informações que faltam ══════════
+     O motor já existe no banco (a1_pa_executar_acao → a1_criar_comercial) e ele
+     recebe só o id da pré-análise. O que a Venda mostra na proposta, portanto,
+     ninguém tinha como preencher no nascimento: o cartão chegava lá vazio e a
+     conferência dos recursos próprios — o aviso mais útil daquela tela, que diz
+     quanto falta nas condições para fechar o que o crédito não cobre — ficava
+     muda até alguém digitar. É isto que este passo resolve. -->
+<div class="modal-bg hidden" id="modal-venda">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Iniciar venda</div>
+           <div class="modal-sub" id="venda-sub"></div></div>
+      <button class="modal-close" onclick="fecharModal('modal-venda')" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body" id="venda-body"></div>
+    <div class="modal-foot">
+      <div class="recusa">A pré-análise <strong>continua na esteira</strong> depois disto — ela é o
+        registro de por onde o lead passou.</div>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
+        <button class="btn btn-venda" id="venda-confirmar" onclick="confirmarIniciarVenda()">Criar cartão na Venda</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/shared/ui/modulo-shell.js"></script>
+<script src="/src/modules/paineis/paineis.js"></script>
+<script src="/src/modules/documentos/documentos.js"></script>
+<script src="/src/modules/configuracoes/regras-gerais.js"></script>
+<script src="/src/shared/ui/avisos.js"></script>
+<script src="/src/shared/ui/cobranca-aviso.js"></script>
+<script src="/src/pages/pre-analise/main.js"></script>
+</body>
+</html>

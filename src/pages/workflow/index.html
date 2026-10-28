@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor de Workflow — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="stylesheet" href="/src/pages/workflow/index.css">
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="wf-toolbar">
+  <div class="wf-title" style="display:flex;align-items:center;gap:.55rem">
+    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="siwf1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siwf1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siwf1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="siwf1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siwf1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siwf1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siwf1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siwf1d)"/></svg>
+    Editor de Workflow
+    <span id="wf-module-label">— Repasse</span>
+  </div>
+  <!-- Os módulos liberados, um botão cada. O <select> continua no HTML por
+       compatibilidade com quem chega por ?module= e some quando os botões
+       aparecem. -->
+  <div id="wf-modulos" class="wf-modulos" style="display:none"></div>
+  <select class="wf-module-sel" id="module-sel" onchange="changeModule(this.value)"></select>
+  <button class="btn btn-primary" onclick="openNewStage()">+ Nova Etapa</button>
+  <button class="btn btn-ghost" onclick="autoLayout()">Auto-organizar</button>
+  <button class="btn btn-ghost" id="wf-lock-btn" onclick="toggleWfLock()" title="Quando bloqueado, o processo só anda para uma etapa ligada por seta">Workflow: —</button>
+  <a class="btn btn-ghost" id="back-btn" href="">← Voltar</a>
+</div>
+
+<!-- Connecting indicator -->
+<div id="conn-indicator">Clique no ponto <strong>esquerdo</strong> da etapa destino — ESC para cancelar</div>
+
+<!-- Canvas -->
+<div class="wf-wrap" id="wf-wrap">
+  <div class="wf-canvas" id="wf-canvas">
+    <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,1 L5,3.5 L0,6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+        </marker>
+        <marker id="arr-temp" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,1 L5,3.5 L0,6" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+</div>
+
+<!-- Hint bar -->
+<div class="hint-bar">
+  <span><kbd>Arrastar</kbd> nó para reposicionar</span>
+  <span>Clique no ponto <kbd>direito ●</kbd> para iniciar conexão</span>
+  <span>Clique na seta para <kbd>remover conexão</kbd></span>
+  <span><kbd>ESC</kbd> cancelar</span>
+</div>
+
+<!-- Edit panel -->
+<div class="edit-panel" id="edit-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+    <div style="font-size:.9rem;font-weight:800">Editar Etapa</div>
+    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" onclick="closeEditPanel()">✕</button>
+  </div>
+
+  <label>Nome da etapa</label>
+  <input type="text" id="ep-name" placeholder="Ex: Em análise">
+
+  <label>Cor</label>
+  <div class="color-row" id="color-row"></div>
+
+  <!-- Regional saiu do workflow: agora é um cadastro em Configurações › Regionais,
+       e cada processo escolhe a regional no novo repasse. O campo fica oculto para
+       preservar o group_key já existente das etapas (retrocompatibilidade). -->
+  <input type="hidden" id="ep-group">
+
+  <label>Posição na ordem</label>
+  <input type="number" id="ep-position" min="0" placeholder="0">
+
+  <!-- Nos módulos novos a classificação é um enum de escolha única no banco:
+       um seletor, e não três caixinhas. "Inicial" e "Aprovado" ao mesmo tempo é
+       um estado que não existe. -->
+  <div id="ep-esteira" style="display:none">
+    <label>Classificação</label>
+    <select id="ep-flag"></select>
+    <label>Selo da etapa</label>
+    <select id="ep-selo"></select>
+    <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
+      O selo define o papel da etapa no fluxo; não depende do nome dela.
+    </div>
+    <label>Prazo desta etapa, em horas</label>
+    <input type="number" id="ep-sla" min="0" max="8760" placeholder="sem prazo">
+    <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
+      Em branco = sem prazo: a fila mostra há quanto tempo o processo está parado,
+      mas não pinta de vermelho.
+    </div>
+  </div>
+
+  <div id="ep-propriedades">
+  <div class="ep-section">Propriedades</div>
+  <div class="toggle-row">
+    <span class="toggle-label">Etapa inicial (início do fluxo)</span>
+    <label class="toggle"><input type="checkbox" id="ep-initial"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+  </div>
+  <div class="toggle-row">
+    <span class="toggle-label">Etapa final (conclusão)</span>
+    <label class="toggle"><input type="checkbox" id="ep-final"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+  </div>
+  <div class="toggle-row" style="border:none">
+    <span class="toggle-label">Etapa pendente (destaque visual)</span>
+    <label class="toggle"><input type="checkbox" id="ep-pending"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+  </div>
+  </div>
+
+  <div style="display:flex;gap:.5rem;margin-top:1.25rem">
+    <button class="btn btn-primary" style="flex:1" onclick="saveStage()">Salvar</button>
+    <button class="btn btn-danger" onclick="deleteStage()">Excluir</button>
+  </div>
+  <div id="ep-err" style="color:#fca5a5;font-size:.75rem;margin-top:.5rem;display:none"></div>
+</div>
+
+<!-- Painel da transição. Só existe nos módulos novos, onde a seta não é um
+     traço: é ela que carrega a AÇÃO que provoca efeito em outro módulo. -->
+<div class="edit-panel" id="tr-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+    <div style="font-size:.9rem;font-weight:800">Editar transição</div>
+    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" onclick="fecharTransicao()">✕</button>
+  </div>
+
+  <div id="tr-de-para" style="font-size:.78rem;color:#8892a4;margin-bottom:1rem;line-height:1.5"></div>
+
+  <label>Ação disparada</label>
+  <select id="tr-acao" onchange="pintarModo()"></select>
+
+  <label>Quando</label>
+  <select id="tr-modo">
+    <option value="CONFIRMAR">o operador confirma</option>
+    <option value="AUTO">automático, junto com a mudança</option>
+  </select>
+  <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
+    <strong>Automático</strong> executa a ação na mesma transação da mudança de situação:
+    ou valem as duas coisas, ou nenhuma.
+  </div>
+
+  <div class="ep-section">Requisito</div>
+  <div id="tr-requisitos"></div>
+
+  <label>Papéis que podem mover</label>
+  <input type="text" id="tr-papeis" placeholder="todos">
+  <div style="font-size:.68rem;color:#6b7280;margin-top:.35rem;line-height:1.45">
+    Em branco = qualquer um com permissão de editar. Para restringir, liste os tipos
+    separados por vírgula (ex.: <code>analista, coordenador</code>). Gestor nunca é
+    barrado por este campo.
+  </div>
+
+  <div style="display:flex;gap:.5rem;margin-top:1.25rem">
+    <button class="btn btn-primary" style="flex:1" onclick="salvarTransicao()">Salvar</button>
+    <button class="btn btn-danger" onclick="apagarTransicao()">Remover</button>
+  </div>
+  <div id="tr-err" style="color:#fca5a5;font-size:.75rem;margin-top:.5rem;display:none"></div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/shared/ui/avisos.js"></script>
+<script src="/src/shared/ui/cobranca-aviso.js"></script>
+<script src="/src/pages/workflow/main.js"></script>
+</body>
+</html>

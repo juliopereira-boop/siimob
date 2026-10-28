@@ -1,5 +1,5 @@
 // Seletor de painel do Dashboard e os painéis executivos de Pré-análise e
-// Venda (js/paineis.js).
+// Venda (src/modules/paineis/paineis.js).
 //
 // A primeira seção é a que não se negocia: o cliente que só tem Repasse — que é
 // TODO cliente hoje — precisa ver o Dashboard exatamente como sempre viu. Sem

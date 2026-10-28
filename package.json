@@ -2,16 +2,18 @@
   "name": "siimob",
   "private": true,
   "version": "1.0.0",
-  "description": "SIIMOB — sistema de repasse imobiliário. Site estático servido pela Vercel; o banco é Supabase.",
+  "description": "SIIMOB — sistema de repasse imobiliário. Front em Vite (multipágina), banco Supabase, publicado pela Vercel.",
   "scripts": {
-    "servidor": "python3 -m http.server 8099",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "local": "node scripts/servidor-local.js",
     "test": "node testes/roda-tudo.js",
     "teste": "node testes/roda-tudo.js",
-    "teste:um": "node --",
-    "dev": "node servidor-local.js",
-    "local": "node servidor-local.js"
+    "teste:um": "node --"
   },
   "devDependencies": {
-    "playwright": "^1.47.0"
+    "playwright": "1.56.1",
+    "vite": "6.3.5"
   }
 }

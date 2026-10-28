@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/crm/index.css">
+</head>
+<body>
+<div id="sb-casco"></div>
+
+<div class="main" id="conteudo">
+  <div id="tab-config" style="display:none"></div>
+  <div id="tab-dash" style="display:none"></div>
+  <div id="tab-tarefas" style="display:none"></div>
+  <!-- LISTAGEM. O quadro mostra onde o lead ESTA; a listagem mostra a carteira
+       inteira de uma vez, ordenavel, com o que o gestor precisa para cobrar.
+       Todo outro modulo do sistema tem as duas vistas; Leads era o unico sem. -->
+  <div id="tab-lista" style="display:none">
+    <div class="toolbar">
+      <input type="search" id="ll-busca" placeholder="Nome, telefone, e-mail..." oninput="renderLista()">
+      <select id="ll-etapa" onchange="renderLista()"><option value="">Todas as etapas</option></select>
+      <select id="ll-origem" onchange="renderLista()"><option value="">Todas as origens</option></select>
+      <select id="ll-corretor" onchange="renderLista()"><option value="">Todos os corretores</option></select>
+      <select id="ll-temp" onchange="renderLista()">
+        <option value="">Qualquer temperatura</option><option value="Quente">Quente</option>
+        <option value="Morno">Morno</option><option value="Frio">Frio</option></select>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportarLeads()">Exportar CSV</button>
+      <span id="ll-conta" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="panel" style="overflow:auto"><div id="ll-corpo"></div></div>
+  </div>
+  <div id="tab-funil">
+    <div class="toolbar">
+      <select id="pipe-sel" class="pipe-sel" onchange="onPipeChange()"></select>
+      <input type="search" id="lead-search" placeholder="Buscar lead, telefone..." oninput="renderFunil()">
+      <select id="lead-src-filter" onchange="renderFunil()"><option value="">Todas as origens</option></select>
+      <div style="flex:1"></div>
+      <span id="lead-count" style="font-size:.72rem;color:var(--t3)"></span>
+    </div>
+    <div class="kanban" id="kanban"><div class="spinner" style="margin:2rem"></div></div>
+  </div>
+</div>
+
+<!-- New lead -->
+<div class="modal-bg hidden" id="modal-new">
+  <div class="modal">
+    <div class="modal-hdr"><div><div class="modal-title">Novo Lead</div><div class="modal-sub">Cadastre e qualifique o lead</div></div><button class="modal-close" onclick="closeModal('modal-new')">×</button></div>
+    <div class="modal-body">
+      <!-- CRIAR LEAD SAO TRES CAMPOS.
+           Quem cadastra lead esta com o cliente ao telefone, e o formulario
+           pedia dezoito coisas antes de deixar salvar — entao o corretor
+           anotava no papel e cadastrava depois, ou nao cadastrava. O resto
+           continua aqui, atras de um botao: quem tem a informacao na mao
+           preenche na hora; quem nao tem, salva e volta depois. -->
+      <div class="fgrid">
+        <div class="fg full"><label>Nome *</label><input id="n-name" placeholder="Nome do lead" autocomplete="off"></div>
+        <div class="fg"><label>Telefone / WhatsApp</label><input id="n-phone" placeholder="(00) 00000-0000" inputmode="tel"></div>
+        <div class="fg"><label>E-mail</label><input id="n-email" type="email" autocomplete="off"></div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="n-mais" onclick="alternarMaisLead()"
+        style="margin-top:.9rem;width:100%;justify-content:center">
+        + Adicionar informações complementares</button>
+
+      <div id="n-extra" hidden>
+      <div class="sec-title">Origem e responsável</div>
+      <div class="fgrid">
+        <div class="fg"><label>Origem / Campanha</label><select id="n-source"><option value="">— selecione —</option></select></div>
+        <div class="fg"><label>Corretor responsável</label><select id="n-broker"><option value="">— sem corretor —</option></select></div>
+        <div class="fg" id="n-imob-wrap"><label>Imobiliária</label><select id="n-imob"><option value="">— sem imobiliária —</option></select></div>
+      </div>
+      <div class="sec-title">Funil</div>
+      <div class="fgrid">
+        <div class="fg"><label>Pipeline</label><select id="n-pipe" onchange="fillPipeStages('n-pipe','n-stage')"></select></div>
+        <div class="fg"><label>Etapa inicial</label><select id="n-stage"></select></div>
+      </div>
+      <div class="sec-title">Qualificação</div>
+      <div class="fgrid">
+        <div class="fg"><label>Finalidade</label><select id="n-finalidade"><option value="">—</option><option>Compra</option><option>Locação</option><option>Investimento</option></select></div>
+        <div class="fg"><label>Tipologia</label><select id="n-tipo"><option value="">—</option><option>Apartamento</option><option>Casa</option><option>Cobertura</option><option>Terreno</option><option>Comercial/Sala</option><option>Galpão</option><option>Rural</option></select></div>
+        <div class="fg"><label>Dormitórios</label><input id="n-dorms" type="number" min="0"></div>
+        <div class="fg"><label>Vagas</label><input id="n-vagas" type="number" min="0"></div>
+        <div class="fg full"><label>Bairro / Região de interesse</label><input id="n-bairro"></div>
+        <div class="fg"><label>Faixa de preço — mín (R$)</label><input id="n-preco-min" type="number" step="1000"></div>
+        <div class="fg"><label>Faixa de preço — máx (R$)</label><input id="n-preco-max" type="number" step="1000"></div>
+        <div class="fg"><label>Valor do negócio (R$)</label><input id="n-value" type="number" step="0.01"></div>
+        <div class="fg"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="n-fgts"> Possui FGTS</label></div>
+        <div class="fg"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="n-permuta"> Tem imóvel p/ permuta</label></div>
+        <div class="fg full"><label>Observações</label><textarea id="n-obs" rows="2"></textarea></div>
+      </div>
+      </div><!-- /n-extra -->
+    </div>
+    <div class="modal-foot"><span id="n-dica" style="font-size:.7rem;color:var(--t3)">Nome basta para salvar.</span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createLead()">Criar lead</button></div></div>
+  </div>
+</div>
+
+<!-- Manage lead -->
+<div class="modal-bg hidden" id="modal-lead">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-title" id="ml-title"></div><div class="modal-sub" id="ml-sub"></div></div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <!-- EM QUALQUER ETAPA. Nao ha selo de automacao no Leads e nao precisa
+             haver: o dono foi explicito — de toda etapa o corretor pode abrir a
+             pre-analise. Amarrar isso a uma etapa "certa" seria inventar uma
+             regra de processo que o cliente nao pediu, e que ele teria de
+             descobrir errando. O botao so aparece com o modulo licenciado. -->
+        <button class="btn btn-primary btn-sm" id="ml-pre" style="display:none"
+          onclick="criarPreAnaliseDoLead()" title="Abrir uma pré-análise já com os dados deste lead">
+          Criar pré-análise</button>
+        <select id="ml-stage" onchange="changeLeadStage()" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
+        <button class="modal-close" onclick="closeModal('modal-lead')">×</button></div>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-mt="dados" onclick="switchLeadTab('dados',this)">Dados</button>
+      <button class="modal-tab" data-mt="qual" onclick="switchLeadTab('qual',this)">Qualificação</button>
+      <button class="modal-tab" data-mt="prop" onclick="switchLeadTab('prop',this)">Proposta</button>
+      <button class="modal-tab" data-mt="tarefa" onclick="switchLeadTab('tarefa',this)">Tarefa</button>
+      <button class="modal-tab" data-mt="hist" onclick="switchLeadTab('hist',this)">Histórico</button>
+    </div>
+    <div class="modal-body" id="ml-body"></div>
+    <div class="modal-foot"><button class="btn btn-danger btn-sm" onclick="archiveLead()">Arquivar</button><div style="display:flex;gap:.45rem"><button class="wa" style="padding:.5rem .8rem" onclick="waLead()">WhatsApp</button><button class="btn btn-ghost" onclick="closeModal('modal-lead')">Fechar</button><button class="btn btn-primary" onclick="saveLeadRouter()">Salvar</button></div></div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/shared/ui/modulo-shell.js"></script>
+<script src="/src/shared/ui/avisos.js"></script>
+<script src="/src/shared/ui/cobranca-aviso.js"></script>
+<script src="/src/pages/crm/main.js"></script>
+</body>
+</html>

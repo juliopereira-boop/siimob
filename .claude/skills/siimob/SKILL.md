@@ -33,15 +33,25 @@ estiver errado, quem é o cliente que descobre, e como?*
 
 ## Arquitetura em uma tela
 
-- **HTML/JS estático. Sem build, sem bundler, sem servidor de aplicação, sem
-  worker.** Cada página é um `.html` na raiz com o CSS e o JS embutidos.
-  Editar o arquivo é publicar; não existe passo de compilação.
+- **Front em Vite, multipágina. Sem servidor de aplicação, sem worker.** Cada
+  tela é uma pasta `src/pages/<tela>/` com `index.html` (marcação), `main.js`
+  (comportamento), `style.css` e, quando usa estilo compartilhado, `index.css`
+  (ordem da cascata). `npm run build` gera `dist/`, que é o que a Vercel
+  publica: as páginas saem na raiz com os nomes de sempre (`/repasse.html`), e
+  JS/CSS em `/static` com hash. Ver `docs/ARQUITETURA.md`.
+- **O JS das telas ainda é script clássico, não módulo ES.** As funções são
+  globais porque os `onclick="..."` as chamam pelo nome; o plugin
+  `tools/vite/scripts-classicos.mjs` só minifica e põe hash. Converter para
+  módulo é a fase 3 da reestruturação, tela por tela — não converta um arquivo
+  solto, ou os handlers dele param de achar as funções.
 - **Banco: Supabase (Postgres + PostgREST + RLS + Storage).** O navegador fala
   direto com a API REST usando a chave `anon` pública e um cabeçalho
   `x-session-token`. **Toda a autorização real é RLS.** O que a tela esconde é
   conveniência; o que protege é a política.
-- **Hospedagem: Vercel, servindo a branch `main`.** As rotas bonitas
-  (`/:slug/repasse`) são `rewrites` em `vercel.json`.
+- **Hospedagem: Vercel, servindo a branch `main`** (`buildCommand` e
+  `outputDirectory` estão em `vercel.json`). As rotas bonitas
+  (`/:slug/repasse`) são `rewrites` em `vercel.json`, lidas por `tools/rotas.js`
+  também no `npm run dev`, no preview e na suíte.
 - **Autenticação é própria**, não é o Auth do Supabase: `a1_login` /
   `a1_partner_login` gravam uma linha em `a1_sessions` e devolvem o token.
 
@@ -55,18 +65,20 @@ navegador → PostgREST (chave anon + x-session-token) → RLS → dados
 
 | Caminho | Papel |
 |---|---|
-| `js/config.js` | `A1` — `rest()`, `rpc()`, `headers()`, `upsertHeaders()`, `returnHeaders()`, `buscarTudo()`. Toda chamada passa por aqui. |
-| `js/auth.js` | Login, sessão, `a1RequireAuth`, `a1RefreshPartnerPerms`, `a1HasModule`, heartbeat, teto de simultâneos. |
-| `js/permissoes.js` | **O catálogo de permissões.** Fonte única do que existe e em que módulo vive. |
-| `js/modulo-shell.js` | Cabeçalho e abas comuns aos módulos: `a1MontarShell`, `A1_ORDEM_PAINEIS`, `a1VistaDaURL`. |
-| `js/paineis.js` | Dashboards de Pré-análise e Comercial. |
-| `repasse.html` / `andamento.html` / `listagem.html` | Dashboard, quadro (kanban) e listagem do Repasse. **São três cópias com muito código repetido** — ver Dívidas. |
-| `pre-analise.html` / `comercial.html` | Módulos novos (fila com SLA, assistente, dossiê). |
-| `configuracoes.html` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
-| `workflow.html` | Editor de esteira em quadro, com um botão por módulo licenciado. |
-| `superadmin.html` | Painel do dono: clientes, planos, licenças de módulo, monitor de acessos, "Acessar como". |
-| `sql/` | Migrações, uma por assunto, nomeadas `AAAA-MM-DD_assunto.sql`. |
-| `testes/` | Suíte de navegador (Playwright) + `testes/sql/` (provas contra um Postgres descartável). |
+| `src/shared/api/config.js` | `A1` — `rest()`, `rpc()`, `headers()`, `upsertHeaders()`, `returnHeaders()`, `buscarTudo()`. Toda chamada passa por aqui. |
+| `src/shared/auth/auth.js` | Login, sessão, `a1RequireAuth`, `a1RefreshPartnerPerms`, `a1HasModule`, heartbeat, teto de simultâneos. |
+| `src/shared/auth/permissoes.js` | **O catálogo de permissões.** Fonte única do que existe e em que módulo vive. |
+| `src/shared/ui/modulo-shell.js` | Cabeçalho e abas comuns aos módulos: `a1MontarShell`, `A1_ORDEM_PAINEIS`, `a1VistaDaURL`. |
+| `src/modules/paineis/paineis.js` | Dashboards de Pré-análise e Comercial. |
+| `src/pages/repasse` / `andamento` / `listagem` | Dashboard, quadro (kanban) e listagem do Repasse. **São três cópias com muito código repetido** — ver Dívidas. |
+| `src/pages/pre-analise` / `comercial` | Módulos novos (fila com SLA, assistente, dossiê). |
+| `src/pages/configuracoes` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
+| `src/pages/workflow` | Editor de esteira em quadro, com um botão por módulo licenciado. |
+| `src/pages/superadmin` | Painel do dono: clientes, planos, licenças de módulo, monitor de acessos, "Acessar como". |
+| `src/styles/siimob.css` | Estilo do cabeçalho comum e tokens. Entra pelo `index.css` de cada tela, DEPOIS do CSS dela. |
+| `database/migrations/` | Migrações, uma por assunto, nomeadas `AAAA-MM-DD_assunto.sql`. |
+| `testes/` | Suíte de navegador (Playwright, contra o `dist/`) + `testes/sql/` (provas contra um Postgres descartável). `testes/fonte.js` lê o código das telas para os testes sem navegador. |
+| `tools/` | Plugins do Vite e o leitor das rotas de `vercel.json`. |
 
 ## O modelo de segurança no banco
 
@@ -169,7 +181,7 @@ Configurações: é regra do dono, "tudo que for de configuração vai estar em 
 
 ## Permissões e Perfis
 
-`js/permissoes.js` é o catálogo. Cada entrada declara `chave`, `modulo`,
+`src/shared/auth/permissoes.js` é o catálogo. Cada entrada declara `chave`, `modulo`,
 `rotulo`, `ajuda` e `lida_em` (onde a chave é consumida de verdade).
 
 **A regra que sustenta o arquivo:** só entra chave que alguma tela ou alguma
@@ -221,7 +233,7 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 Duas frentes, e **as duas rodam antes de qualquer entrega**:
 
 ```bash
-npm test                    # 22 suítes de navegador (Chromium de verdade)
+npm test                    # build + 53 suítes de navegador (Chromium de verdade), contra o dist/
 npm test -- t-perfis        # só as que casarem com o filtro
 
 # Provas de banco, num Postgres descartável (rodar como usuário postgres):
@@ -273,7 +285,7 @@ nenhum, era decisão do dono.
 **O SQL é rodado à mão pelo dono, no editor do Supabase.** Não existe migração
 automática. Então:
 
-1. Um arquivo por assunto em `sql/`, nomeado `AAAA-MM-DD_assunto.sql`.
+1. Um arquivo por assunto em `database/migrations/`, nomeado `AAAA-MM-DD_assunto.sql`.
 2. Escrito para **rodar de novo sem problema** (`if not exists`,
    `create or replace`, `drop policy if exists`).
 3. No topo, um bloco explicando **por que o arquivo existe** e o que ele
@@ -306,10 +318,12 @@ não num documento separado.
 
 ## Dívidas conhecidas (não são bugs novos — são o mapa)
 
-- **`repasse.html` / `andamento.html` / `listagem.html` são triplicadas.** Muita
-  lógica repetida três vezes, e correção em uma esquece as outras. Duas decisões
-  pendentes do dono: (a) juntar numa página com parâmetro de vista; (b) adotar
-  um passo de build (Vite + TypeScript) ou continuar em JS puro.
+- **As telas `repasse` / `andamento` / `listagem` são triplicadas.** Muita
+  lógica repetida três vezes, e correção em uma esquece as outras. O dono
+  decidiu (28/10): reestruturação em fases — 1) separação e Vite (feita),
+  2) juntar as cópias, 3) módulos ES, 4) tipos em JSDoc com checagem. Durante
+  a reestruturação a `main` fica congelada; correção urgente passa pelo Claude,
+  que aplica nos dois lados.
 - **`a1_has_module` (a porta da tela) não honra `expires_at`.** O RLS honra. Uma
   licença vencida ainda desenha a aba, mas não entrega dado.
 - **A paleta é azul `#3D5CC8`**, não a verde-azulada da marca.

@@ -3,17 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 const raiz = path.resolve(__dirname, '..');
-const le = arq => fs.readFileSync(path.join(raiz, arq), 'utf8');
+const { lerFonte: le, lerPagina } = require('./fonte');
 
 let ok = 0, bad = 0;
 const checa = (nome, valor) => valor
   ? (ok++, console.log('  ✓ ' + nome))
   : (bad++, console.log('  ✗ ' + nome));
 
-const sql = le('sql/2026-09-19_suspensao_conta_imediata.sql');
-const auth = le('js/auth.js');
-const sa = le('superadmin.html');
-const shell = le('js/modulo-shell.js');
+const sql = le('database/migrations/2026-09-19_suspensao_conta_imediata.sql');
+const auth = le('src/shared/auth/auth.js');
+const sa = lerPagina('superadmin');
+const shell = le('src/shared/ui/modulo-shell.js');
 
 checa('a identidade central aceita somente tenant ativo ou trial',
   /t\.status in \('active', 'trial'\)/.test(sql));
@@ -42,7 +42,7 @@ checa('sessao do Superadmin preserva o status suspenso',
 checa('shell mostra etiqueta Suspensa apenas no suporte',
   /suporteEmContaSuspensa/.test(shell) && />Suspensa<\/span>/.test(shell));
 checa('cliente recebe aviso CONTA SUSPENSA',
-  /CONTA SUSPENSA/.test(le('login.html')));
+  /CONTA SUSPENSA/.test(lerPagina('login')));
 
 for (const tela of ['geral.html', 'tenant-admin.html', 'workflow.html']) {
   checa(`${tela} vigia a validade da sessao`, /a1StartHeartbeat\(/.test(le(tela)));

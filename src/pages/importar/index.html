@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Importar base — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/importar/style.css">
+</head>
+<body>
+  <div class="topo">
+    <b style="display:inline-flex;align-items:center;gap:.5rem"><svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="siimp1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siimp1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siimp1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="siimp1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siimp1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siimp1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siimp1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siimp1d)"/></svg>SIIMOB</b>
+    <span style="font-size:.82rem;opacity:.9">Importar base</span>
+    <a id="voltar" href="#">← Voltar ao sistema</a>
+  </div>
+
+  <div class="wrap">
+
+    <!-- 1. arquivo -->
+    <div class="painel">
+      <div class="titulo"><span class="n">1</span> Arquivo</div>
+      <div class="zona" id="zona" onclick="document.getElementById('arq').click()">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6B827D" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
+        <h3>Escolha a planilha ou arraste até aqui</h3>
+        <div class="sub">Aceita .xlsx e .csv. O arquivo é lido dentro do seu navegador — nada é enviado antes de você conferir.</div>
+      </div>
+      <input type="file" id="arq" accept=".xlsx,.csv" class="hidden" onchange="escolheu(this.files[0])">
+      <div id="arq-info" class="hidden" style="margin-top:.85rem"></div>
+    </div>
+
+    <!-- 2. colunas -->
+    <div class="painel hidden" id="p-colunas">
+      <div class="titulo"><span class="n">2</span> De onde vem cada informação</div>
+      <div class="sub" style="margin-bottom:.9rem">
+        Reconheci as colunas pelo cabeçalho. Confira e ajuste o que estiver trocado.
+      </div>
+      <div class="grade" id="mapa"></div>
+      <div style="margin-top:1rem;display:flex;gap:.5rem;align-items:center">
+        <button class="btn btn-p btn-lg" onclick="conferir()">Conferir a base</button>
+        <span class="sub" id="mapa-obs"></span>
+      </div>
+    </div>
+
+    <!-- 3. conferência -->
+    <div class="painel hidden" id="p-conf">
+      <div class="titulo"><span class="n">3</span> O que vai acontecer</div>
+      <div id="conf-resumo"></div>
+      <div id="conf-corpo"></div>
+    </div>
+
+    <!-- 4. etapas -->
+    <div class="painel hidden" id="p-etapas">
+      <div class="titulo"><span class="n">4</span> Em que etapa cada processo entra</div>
+      <div class="sub" style="margin-bottom:.9rem">
+        Cada situação da planilha vira uma etapa do seu workflow. O que ficar em
+        <b>Não importar</b> deixa aquelas linhas de fora.
+      </div>
+      <div class="rolagem"><table>
+        <thead><tr><th>Situação na planilha</th><th style="width:70px">Linhas</th><th>Etapa no SIIMOB</th></tr></thead>
+        <tbody id="tb-etapas"></tbody>
+      </table></div>
+    </div>
+
+    <!-- 5. importar -->
+    <div class="painel hidden" id="p-importar">
+      <div class="titulo"><span class="n">5</span> Importar</div>
+      <div id="imp-antes">
+        <div class="aviso a-info" id="imp-resumo"></div>
+        <button class="btn btn-p btn-lg" id="btn-importar" onclick="importar()">Importar agora</button>
+        <span class="sub" style="margin-left:.6rem">Pode rodar de novo depois: o que já existe é reaproveitado, não duplicado.</span>
+      </div>
+      <div id="imp-durante" class="hidden">
+        <div class="barra"><div id="barra"></div></div>
+        <div class="sub" id="imp-passo" style="margin-bottom:.7rem"></div>
+        <div class="reg" id="reg"></div>
+      </div>
+    </div>
+
+  </div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/shared/utils/xlsx-leve.js"></script>
+<script src="/src/pages/importar/main.js"></script>
+</body>
+</html>

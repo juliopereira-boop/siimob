@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/styles/alpha.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="siten1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siten1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="siten1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="siten1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siten1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siten1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siten1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siten1d)"/></svg>SIIMOB</div>
+    <div class="sidebar-nav">
+      <a href="" class="nav-item" id="nav-home"><span class="nav-item-icon">⬡</span> Dashboard</a>
+    </div>
+    <div class="sidebar-footer">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
+      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title">Administração</div>
+    </div>
+
+    <div style="padding:1.5rem;max-width:52rem">
+      <!-- Users section -->
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span>Usuários</span>
+        <button class="btn btn-primary" onclick="openNewUser()">+ Novo usuário</button>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:2rem">
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>CPF</th><th>Função</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="6" style="color:var(--muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Partners section -->
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span>Parceiros</span>
+        <button class="btn btn-primary" onclick="openNewPartner()">+ Novo parceiro</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>Tipo</th><th>CPF</th><th>Status</th><th>Aprovado</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="partners-tbody">
+            <tr><td colspan="6" style="color:var(--muted)">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New User Modal -->
+<div id="user-modal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo usuário</div>
+      <button class="btn btn-ghost" onclick="closeUserModal()" style="padding:.4rem .75rem">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome</label><input id="u-name" type="text"></div>
+      <div class="form-group"><label>CPF</label><input id="u-cpf" type="text" maxlength="14"></div>
+      <div class="form-group"><label>E-mail</label><input id="u-email" type="email"></div>
+      <div class="form-group"><label>Senha inicial</label><input id="u-pw" type="password"></div>
+      <div class="form-group">
+        <label>Função</label>
+        <select id="u-role">
+          <option value="user">Usuário</option>
+          <option value="manager">Gerente</option>
+          <option value="admin">Admin</option>
+          <option value="viewer">Somente visualização</option>
+        </select>
+      </div>
+      <div id="u-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
+      <button class="btn btn-primary" id="u-btn" onclick="createUser()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Partner Modal -->
+<div id="partner-modal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo parceiro</div>
+      <button class="btn btn-ghost" onclick="closePartnerModal()" style="padding:.4rem .75rem">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome</label><input id="p-name" type="text"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="p-type">
+          <option value="partner">Parceiro</option>
+          <option value="broker">Corretor</option>
+          <option value="dispatcher">Despachante</option>
+          <option value="agent">Agente</option>
+        </select>
+      </div>
+      <div class="form-group"><label>CPF</label><input id="p-cpf" type="text" maxlength="14"></div>
+      <div class="form-group"><label>E-mail</label><input id="p-email" type="email"></div>
+      <div class="form-group"><label>Telefone</label><input id="p-phone" type="tel"></div>
+      <div class="form-group"><label>Senha de acesso</label><input id="p-pw" type="password"></div>
+      <div id="p-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePartnerModal()">Cancelar</button>
+      <button class="btn btn-primary" id="p-btn" onclick="createPartner()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<div id="a1-toast"></div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/shared/ui/avisos.js"></script>
+<script src="/src/shared/ui/cobranca-aviso.js"></script>
+<script src="/src/pages/tenant-admin/main.js"></script>
+</body>
+</html>

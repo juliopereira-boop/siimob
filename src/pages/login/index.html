@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/login/style.css">
+</head>
+<body>
+
+<!-- ── Left panel ── -->
+<div class="left-panel">
+  <div class="left-content">
+    <div class="left-logo" style="gap:.6rem"><svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="silog1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silog1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silog1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="silog1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#silog1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#silog1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#silog1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#silog1d)"/></svg><span style="font-weight:900;letter-spacing:-.04em">SIIMOB</span></div>
+    <div class="left-tagline">Gestão inteligente <span>do início ao fim</span></div>
+    <div class="left-sub">Repasse, registro e controle em uma única plataforma.</div>
+    <div class="tenant-badge">
+      <div class="tenant-dot"></div>
+      <span id="tenant-slug-display">—</span>
+    </div>
+  </div>
+  <div class="left-footer">© 2025 SIIMOB · Todos os direitos reservados</div>
+</div>
+
+<!-- ── Right panel ── -->
+<div class="right-panel">
+  <div class="right-inner">
+
+    <!-- Step 1: Panel selection -->
+    <div id="step-panels">
+      <div class="right-header">
+        <h1>Painéis de acesso</h1>
+        <p>Selecione seu tipo de acesso para continuar</p>
+      </div>
+      <div id="panels-container">
+        <!-- loading skeleton -->
+        <div class="loading-panels">
+          <div class="skel-row"><div class="skel"></div><div class="skel"></div></div>
+          <div class="skel-row"><div class="skel"></div></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:2rem">
+        <a href="/" style="font-size:.73rem;color:var(--t3);transition:color .15s" onmouseover="this.style.color='#47615C'" onmouseout="this.style.color='#6B827D'">← Trocar empresa</a>
+      </div>
+    </div>
+
+    <!-- Step 2: Login form -->
+    <div id="step-login" class="hidden">
+      <button class="back-btn" onclick="backToPanels()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar aos painéis
+      </button>
+      <div class="role-badge" id="role-badge"></div>
+      <div class="form-title">Bem-vindo de volta</div>
+
+      <div class="error-box hidden" id="error-box"></div>
+
+      <form id="login-form" onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label>CPF</label>
+          <div class="input-wrap">
+            <input id="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"
+                   autocomplete="username" maxlength="14" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1.25rem">
+          <label>Senha</label>
+          <div class="input-wrap">
+            <input id="password" type="password" placeholder="••••••••"
+                   autocomplete="current-password" required class="has-toggle">
+            <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePassword()" tabindex="-1" aria-label="Mostrar senha">
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-login" id="btn-login">Entrar</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/auth/auth.js"></script>
+<script src="/src/pages/login/main.js"></script>
+</body>
+</html>

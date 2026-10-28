@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Superadmin — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/superadmin/style.css">
+</head>
+<body>
+
+<!-- ═══════ AUTH GATE ═══════ -->
+<div id="auth-gate" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-top-bar"></div>
+    <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="sisup1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="sisup1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="sisup1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup1d)"/></svg><span>SI<span style="color:#3FB8A6">IMOB</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
+    <div class="auth-sub">Superadmin</div>
+    <div class="form-group" style="margin-bottom:.875rem">
+      <label>Service Role Key</label>
+      <input id="sa-key-input" type="password" placeholder="eyJhbGciOiJ..." autocomplete="off">
+    </div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Supabase URL</label>
+      <input id="sa-url-input" type="text" placeholder="https://xxx.supabase.co">
+    </div>
+    <div id="sa-auth-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:6px;padding:.5rem .75rem;font-size:.78rem;font-weight:500;margin-bottom:.875rem"></div>
+    <button class="btn btn-primary" style="width:100%;padding:.7rem;font-size:.85rem" onclick="saAuth()">Entrar como Superadmin</button>
+    <div style="margin-top:.875rem;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:.5rem .75rem;font-size:.72rem;color:#92400e;font-weight:500">
+      Nunca compartilhe a Service Role Key. Use apenas neste painel seguro.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MAIN PANEL ═══════ -->
+<div id="sa-panel" style="display:none">
+  <div class="sa-hdr">
+    <div class="sa-hdr-inner">
+      <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup2a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sisup2b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sisup2c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sisup2d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup2a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup2b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup2c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup2d)"/></svg>SIIMOB <span>CRM</span></div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span class="sa-warn-badge">Service Role ativo</span>
+        <span class="sa-badge" id="sa-tenant-count">— clientes</span>
+        <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.15)" onclick="saLogout()">Sair</button>
+      </div>
+    </div>
+    <div class="sa-tabs">
+      <div class="sa-tab active" onclick="switchSaTab('clientes',this)">Clientes</div>
+      <div class="sa-tab" onclick="switchSaTab('modulos',this)">Módulos</div>
+      <div class="sa-tab" onclick="switchSaTab('planos',this)">Planos</div>
+      <div class="sa-tab" onclick="switchSaTab('melhorias',this)" id="tab-melhorias">
+        Melhorias
+        <span id="feedback-badge" style="display:none;margin-left:.4rem;background:#7c3aed;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
+      </div>
+      <div class="sa-tab" onclick="switchSaTab('interessados',this)" id="tab-interessados">
+        Interessados
+        <span id="leads-badge" style="display:none;margin-left:.4rem;background:#0E8C7F;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
+      </div>
+      <div class="sa-tab" onclick="switchSaTab('esteiras',this)">Esteiras</div>
+      <div class="sa-tab" onclick="switchSaTab('monitor',this)">Monitor</div>
+      <div class="sa-tab" onclick="switchSaTab('avisos',this)">Mural de Avisos</div>
+      <div class="sa-tab" onclick="switchSaTab('indica',this)">IndicaSII</div>
+      <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
+    </div>
+  </div>
+
+  <div class="sa-body">
+
+    <!-- ══ TAB: Clientes ══ -->
+    <div id="satab-clientes">
+
+      <div class="kpi-row" id="sa-kpis">
+        <div class="kpi-c k-em"><div class="kpi-lbl">Total Clientes</div><div class="kpi-val" id="kpi-total">—</div></div>
+        <div class="kpi-c k-blue"><div class="kpi-lbl">Ativos</div><div class="kpi-val" id="kpi-ativos">—</div></div>
+        <div class="kpi-c k-amber"><div class="kpi-lbl">Trial</div><div class="kpi-val" id="kpi-trial">—</div></div>
+        <div class="kpi-c k-red"><div class="kpi-lbl">Suspensos</div><div class="kpi-val" id="kpi-susp">—</div></div>
+      </div>
+
+      <!-- New tenant form -->
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr">
+          <div class="section-title">Novo cliente</div>
+        </div>
+        <div class="form-grid" style="margin-bottom:.875rem">
+          <div class="form-group"><label>Nome da empresa *</label><input id="n-name" placeholder="Construtora ABC"></div>
+          <div class="form-group"><label>Slug (URL) *</label><input id="n-slug" placeholder="construtora-abc"></div>
+          <div class="form-group"><label>E-mail *</label><input id="n-email" type="email" placeholder="contato@empresa.com"></div>
+          <div class="form-group"><label>CNPJ</label><input id="n-cnpj" placeholder="00.000.000/0000-00"></div>
+          <div class="form-group"><label>Tipo de cliente *</label>
+            <select id="n-tipo">
+              <option value="construtora">Construtora</option>
+              <option value="imobiliaria">Imobiliária</option>
+              <option value="correspondente_bancario">Correspondente Bancário</option>
+              <option value="despachante">Despachante</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Plano</label>
+            <select id="n-plan" onchange="toggleCustomLimit()">
+              <option value="starter">Starter (3 usuários)</option>
+              <option value="pro">Pro (10 usuários)</option>
+              <option value="enterprise">Enterprise (30 usuários)</option>
+              <option value="custom">Customizado</option>
+            </select>
+          </div>
+          <div class="form-group" id="n-custom-limit-wrap" style="display:none">
+            <label>Limite de usuários *</label>
+            <input id="n-custom-limit" type="number" min="1" placeholder="Ex.: 15">
+          </div>
+          <div class="form-group"><label>Trial (dias, 0=sem trial)</label><input id="n-trial" type="number" value="14" min="0"></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:.875rem;margin-top:.25rem">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--emerald);margin-bottom:.65rem">Usuário owner (obrigatório)</div>
+          <div class="form-grid cols-2" style="max-width:640px">
+            <div class="form-group"><label>Nome do responsável *</label><input id="n-owner-name" placeholder="João Silva"></div>
+            <div class="form-group"><label>CPF do responsável *</label><input id="n-owner-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="form-group"><label>Senha inicial *</label><input id="n-owner-pw" type="password" placeholder="mínimo 6 caracteres"></div>
+          </div>
+        </div>
+        <div style="margin-top:.875rem;display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-primary" onclick="createTenant()">Criar cliente + usuário</button>
+          <div id="n-err" style="display:none;font-size:.78rem;color:#B8433A;font-weight:500"></div>
+        </div>
+      </div>
+
+      <!-- Tenants table -->
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div class="section-title">Clientes cadastrados</div>
+          <input type="text" id="tenant-search" placeholder="Filtrar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:180px" oninput="filterTenants()">
+        </div>
+        <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
+          <table>
+            <thead><tr>
+              <th>Empresa</th><th>Slug</th><th>Tipo</th><th>Plano</th><th>Usuários</th>
+              <th>Status</th><th>Trial expira</th><th>Módulos ativos</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="tenant-tbody">
+              <tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Módulos ══ -->
+    <div id="satab-modulos" style="display:none">
+
+      <!-- Selector -->
+      <div class="panel" style="padding:1.1rem;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
+          <div class="form-group" style="min-width:220px">
+            <label>Cliente</label>
+            <select id="mod-tenant" onchange="loadTenantModulesFor()"><option value="">Selecione um cliente...</option></select>
+          </div>
+          <div class="form-group">
+            <label>Validade (vazio = permanente)</label>
+            <input id="mod-expires" type="date">
+          </div>
+        </div>
+      </div>
+
+      <!-- Module cards grid -->
+      <div id="mod-grid-wrap">
+        <div style="text-align:center;padding:3rem;color:var(--t3);font-size:.82rem">Selecione um cliente para gerenciar os módulos.</div>
+      </div>
+
+      <!-- All modules table -->
+      <div class="panel" style="overflow:hidden;margin-top:1.25rem">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border)">
+          <div class="section-title">Todos os módulos ativos</div>
+        </div>
+        <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
+          <table>
+            <thead><tr><th>Cliente</th><th>Módulo</th><th>Desbloqueado em</th><th>Expira em</th><th>Por</th><th></th></tr></thead>
+            <tbody id="all-modules-tbody"><tr><td colspan="6" style="padding:1.5rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Planos ══ -->
+    <div id="satab-planos" style="display:none">
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border)">
+          <div class="section-title">Planos disponíveis</div>
+        </div>
+        <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
+          <table>
+            <thead><tr><th>Key</th><th>Nome</th><th>Max usuários</th><th>Preço</th></tr></thead>
+            <tbody id="plans-tbody"><tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:.875rem;font-size:.75rem;color:var(--t3);padding:0 .25rem">
+        Para alterar planos ou preços, edite diretamente na tabela <code style="font-family:DM Mono,monospace;background:#f1f5f9;padding:.1rem .3rem;border-radius:3px">a1_plans</code> do Supabase.
+      </div>
+    </div>
+
+    <!-- ══ TAB: Melhorias ══ -->
+    <div id="satab-melhorias" style="display:none">
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="section-title">Sugestões de melhoria</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviadas pelos usuários do sistema</div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <select id="fb-filter-status" onchange="loadFeedback()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+              <option value="">Todas</option>
+              <option value="pending">Pendentes</option>
+              <option value="accepted">Aceitas</option>
+              <option value="rejected">Rejeitadas</option>
+            </select>
+          </div>
+        </div>
+        <div id="feedback-list" style="padding:.5rem 0">
+          <div style="padding:2rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Interessados (leads da landing page) ══ -->
+    <div id="satab-interessados" style="display:none">
+      <div class="kpi-row" style="margin-bottom:1.25rem">
+        <div class="kpi-c k-em"><div class="kpi-lbl">Total</div><div class="kpi-val" id="lead-k-total">—</div></div>
+        <div class="kpi-c k-blue"><div class="kpi-lbl">Novos</div><div class="kpi-val" id="lead-k-novo">—</div></div>
+        <div class="kpi-c k-amber"><div class="kpi-lbl">Em negociação</div><div class="kpi-val" id="lead-k-nego">—</div></div>
+        <div class="kpi-c k-red"><div class="kpi-lbl">Ganhos</div><div class="kpi-val" id="lead-k-ganho">—</div></div>
+      </div>
+      <div class="panel" style="overflow:hidden">
+        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+          <div>
+            <div class="section-title">Interessados na plataforma</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviados pelo formulário da página <a href="/conheca" target="_blank" style="color:#0E8C7F">/conheca</a></div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <select id="lead-filter" onchange="renderLeads()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+              <option value="">Todos</option>
+              <option value="novo">Novos</option>
+              <option value="contatado">Contatados</option>
+              <option value="negociando">Negociando</option>
+              <option value="ganho">Ganhos</option>
+              <option value="perdido">Perdidos</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadLeads()">Atualizar</button>
+          </div>
+        </div>
+        <div id="leads-list" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: IndicaSII ══ -->
+    <div id="satab-indica" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">IndicaSII — indicações recebidas</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">
+              Quem indicou vê o andamento no painel dele. Ao marcar como fechado e informar o valor, a recompensa é calculada sozinha.
+            </div>
+          </div>
+          <div id="indica-resumo" style="font-size:.8rem;color:var(--t2);text-align:right"></div>
+        </div>
+        <div id="indica-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Mural de Avisos ══ -->
+    <div id="satab-monitor" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Monitor de acessos</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">
+              Quem está no sistema agora e quanto se acessou por período. Não conta as suas
+              próprias entradas de suporte.
+            </div>
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center">
+            <select id="mon-janela" onchange="loadMonitor()"
+              style="font-size:.78rem;padding:.35rem .5rem;border:1px solid var(--border);border-radius:7px">
+              <option value="hora">Últimas 24 horas</option>
+              <option value="dia" selected>Últimos 30 dias</option>
+              <option value="semana">Últimas 12 semanas</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadMonitor()">Atualizar</button>
+            <label style="font-size:.72rem;color:var(--t3);display:flex;align-items:center;gap:.3rem">
+              <input type="checkbox" id="mon-auto" onchange="alternarAutoMonitor()"> a cada 30s
+            </label>
+          </div>
+        </div>
+        <div id="mon-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem"></div>
+      </div>
+
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-title" style="margin-bottom:.2rem">Acessos no período</div>
+        <div style="font-size:.72rem;color:var(--t3);margin-bottom:.9rem" id="mon-grafico-leg"></div>
+        <div id="mon-grafico" style="overflow-x:auto"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem">
+        <div class="panel" style="padding:1.25rem">
+          <div class="section-title" style="margin-bottom:.9rem">Online agora</div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Nome</th><th>Cliente</th><th>Onde</th><th>Visto</th></tr></thead>
+            <tbody id="mon-online"><tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="panel" style="padding:1.25rem">
+          <div class="section-title" style="margin-bottom:.2rem">Por cliente, no período</div>
+          <div style="font-size:.72rem;color:var(--t3);margin-bottom:.9rem">
+            <b>Acessos</b> é quantas vezes se entrou; <b>usuários</b>, quantas pessoas diferentes.
+            Nenhum dos dois diz nada sobre estarem juntas — para isso é a última coluna,
+            que é a comparada com o teto do plano.
+          </div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Cliente</th><th>Acessos</th><th>Usuários</th>
+              <th title="Maior número de pessoas do cliente dentro do sistema ao mesmo tempo, medido no instante de cada login">Máx. simultâneo</th>
+              <th>Último</th></tr></thead>
+            <tbody id="mon-clientes"><tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="satab-avisos" style="display:none">
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Mural de Avisos</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">Publique um aviso e ele aparece num pop-up para quem entrar no sistema. O aviso volta a cada login, até você despublicar ou definir uma data de expiração.</div>
+          </div>
+          <button class="btn btn-primary" onclick="abrirAviso(null)">+ Novo aviso</button>
+        </div>
+        <div id="avisos-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Plataforma ══ -->
+    <!-- ══ TAB: Esteiras (Pré-análise e Venda) ══ -->
+    <div id="satab-esteiras" style="display:none">
+      <div class="panel" style="padding:1.1rem;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
+          <div class="form-group" style="min-width:230px">
+            <label>Cliente</label>
+            <select id="est-tenant" onchange="carregarEsteira()"><option value="">Selecione um cliente...</option></select>
+          </div>
+          <div class="form-group" style="min-width:180px">
+            <label>Módulo</label>
+            <select id="est-modulo" onchange="carregarEsteira()">
+              <option value="PRE_ANALISE">Pré-análise</option>
+              <option value="COMERCIAL">Venda</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarEsteira()">Recarregar</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem;line-height:1.5">
+          A <strong>situação</strong> diz onde o processo está. A <strong>transição</strong> é a seta
+          entre duas situações — e é nela que mora a <strong>ação</strong>, que é o que provoca efeito
+          em outro módulo. Manter as duas coisas separadas é o que evita um simples "mudar de status"
+          acabar criando registro em outro lugar sem ninguém pedir.
+        </div>
+      </div>
+
+      <div id="est-corpo">
+        <div style="text-align:center;padding:3rem;color:var(--t3);font-size:.82rem">
+          Selecione um cliente para configurar a esteira.</div>
+      </div>
+    </div>
+
+    <div id="satab-plataforma" style="display:none">
+
+      <!-- ══ A chave geral ══
+           Fica no topo da aba porque é a coisa mais pesada que esta tela faz:
+           ligada, ninguém entra no sistema. Só o superadmin continua passando —
+           ele fala com o banco pela service_role key, que não passa por
+           a1_login nem por RLS. Por isso esta chave não tranca quem a girou. -->
+      <div class="panel" id="manut-painel" style="padding:1.25rem;margin-bottom:1.25rem;border-left:4px solid #6B827D">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Modo Manutenção</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">Com a chave ligada, <strong>ninguém consegue entrar</strong> e quem já está dentro vê o aviso de manutenção no lugar do sistema. Você continua com acesso a esta tela.</div>
+          </div>
+          <div id="manut-selo" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.3rem .6rem;border-radius:999px;background:#F1F5F9;color:#47615C">—</div>
+        </div>
+
+        <div id="manut-corpo" style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:.85rem">
+            <div class="form-group" style="margin:0">
+              <label>Mensagem para quem tentar entrar</label>
+              <textarea id="manut-msg" rows="2" placeholder="Manutenção preventiva. O sistema volta às 11h."
+                style="width:100%;resize:vertical"></textarea>
+              <div style="font-size:.67rem;color:var(--t3);margin-top:.3rem">Aparece na tela de login e no aviso de quem já está dentro. Em branco, o sistema usa um texto padrão.</div>
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label>Volta automaticamente em</label>
+              <input type="datetime-local" id="manut-ate" style="width:100%">
+              <!-- A rede de segurança da chave esquecida. Sem `ate`, uma chave
+                   ligada numa sexta à noite se descobre na segunda de manhã,
+                   pelo telefone do cliente. -->
+              <div style="font-size:.67rem;color:var(--t3);margin-top:.3rem">Passada essa hora, o sistema volta sozinho mesmo que ninguém desligue a chave. Deixe em branco para manter desligado até você voltar aqui.</div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 250px;display:flex;flex-direction:column;gap:.6rem">
+            <button id="manut-btn-ligar" class="btn btn-danger" onclick="manutLigar()" style="width:100%">Desligar o sistema</button>
+            <button id="manut-btn-desligar" class="btn btn-primary" onclick="manutDesligar()" style="width:100%;display:none">Reativar o sistema</button>
+            <button class="btn btn-ghost btn-sm" onclick="manutCarregar()" style="width:100%">Recarregar estado</button>
+            <div id="manut-detalhe" style="font-size:.68rem;color:var(--t3);line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:1rem">
+          <div>
+            <div class="section-title">Logo da Plataforma</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">Exibida no cabeçalho de todas as páginas. A logo substitui o símbolo padrão.</div>
+          </div>
+        </div>
+
+        <input type="hidden" id="logo-pending-data">
+        <canvas id="logo-canvas" style="display:none"></canvas>
+
+        <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
+          <!-- Preview -->
+          <div style="flex:0 0 220px">
+            <div id="logo-preview-box" style="background:#0E8C7F;border-radius:10px;min-height:70px;display:flex;align-items:center;justify-content:center;padding:1rem 1.25rem">
+              <img id="logo-preview" src="" alt="" style="display:none;max-width:100%;max-height:52px;object-fit:contain">
+              <span id="logo-empty-msg" style="font-size:.72rem;color:rgba(255,255,255,.5)">Sem logo personalizada</span>
+            </div>
+            <div style="font-size:.67rem;color:var(--t3);margin-top:.4rem;text-align:center">Preview no fundo do header</div>
+          </div>
+
+          <!-- Controls -->
+          <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:.85rem">
+            <div>
+              <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.35rem">Arquivo de imagem</div>
+              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="handleLogoFile(event)">
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logo-file-input').click()">Selecionar arquivo</button>
+                <span id="logo-file-name" style="font-size:.72rem;color:var(--t3)">PNG, SVG, JPG ou WebP</span>
+              </div>
+            </div>
+
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;color:var(--t1)">
+              <input type="checkbox" id="logo-rm-white" checked style="accent-color:#0E8C7F;width:14px;height:14px;cursor:pointer">
+              Remover fundo branco automaticamente
+            </label>
+            <div style="font-size:.7rem;color:var(--t3);margin-top:-.5rem">Pixels brancos e quase-brancos ficam transparentes, isolando apenas o símbolo.</div>
+
+            <div style="display:flex;gap:.5rem;margin-top:.1rem">
+              <button id="logo-save-btn" class="btn btn-primary btn-sm" onclick="saveLogoUpload()" style="display:none">Salvar logo</button>
+              <button id="logo-clear-btn" class="btn btn-danger btn-sm" onclick="clearLogoUpload()" style="display:none">Remover logo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Limite de Despachantes ═══════ -->
+<div class="modal-bg hidden" id="modal-desp-limit" onclick="if(event.target===this)closeDespLimitModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Limite de Despachantes</div>
+        <div style="font-size:.73rem;color:var(--t3);margin-top:.1rem">Módulo Registro — Correspondente Bancário</div>
+      </div>
+      <button class="modal-close" onclick="closeDespLimitModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.83rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">
+        Quantos usuários do tipo <strong>Despachante</strong> este cliente poderá cadastrar?
+      </p>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Número máximo de despachantes</label>
+        <input id="desp-limit-input" type="number" min="1" max="999" placeholder="Ex: 2"
+          style="width:100%" onkeydown="if(event.key==='Enter')confirmDespLimit()">
+      </div>
+      <div id="desp-limit-err" style="color:#B8433A;font-size:.75rem;display:none;margin-bottom:.5rem;font-weight:500"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="closeDespLimitModal()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmDespLimit()">Liberar módulo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Usuários do tenant ═══════ -->
+<div class="modal-bg hidden" id="modal-users">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Usuários — <span id="um-tenant-name"></span></div>
+        <div style="font-size:.73rem;color:var(--t3);margin-top:.1rem">Owner/Admin têm acesso total ao tenant</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-users')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#f7f8fb;border-radius:8px;padding:.875rem;margin-bottom:1rem">
+        <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.65rem">Criar novo usuário</div>
+        <div class="form-grid cols-2">
+          <div class="form-group"><label>Nome</label><input id="um-name" type="text"></div>
+          <div class="form-group"><label>CPF</label><input id="um-cpf" type="text" maxlength="14"></div>
+          <div class="form-group"><label>Senha</label><input id="um-pw" type="password"></div>
+          <div class="form-group"><label>Função</label>
+            <select id="um-role">
+              <option value="owner">Owner (dono)</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Gerente</option>
+              <option value="user" selected>Usuário</option>
+              <option value="viewer">Somente visualização</option>
+            </select>
+          </div>
+        </div>
+        <div id="um-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.5rem;font-weight:500"></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" onclick="createUserForTenant()">Criar usuário</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>CPF</th><th>Função</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="um-tbody"><tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Cobrança ═══════ -->
+<div class="modal-bg hidden" id="modal-cobranca">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div><div class="modal-title">Cobrança — <span id="cob-name"></span></div><div style="font-size:.73rem;color:var(--t3);margin-top:.1rem" id="cob-email"></div></div>
+      <button class="modal-close" onclick="closeModal('modal-cobranca')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-2" style="margin-bottom:1rem">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>E-mail do financeiro (para onde a cobrança é enviada)</label>
+          <input id="cob-email-input" type="email" placeholder="financeiro@empresa.com.br" onchange="cobPersistMeta()">
+          <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Deixe em branco para usar o e-mail do cadastro do cliente.</div>
+        </div>
+        <div class="form-group"><label>Dia de vencimento</label><input id="cob-day" type="number" min="1" max="28" placeholder="Ex.: 10" onchange="cobPersistMeta()"></div>
+        <div class="form-group"><label>Valor mensal (R$)</label><input id="cob-valor" type="text" placeholder="Ex.: 199,00" onchange="cobPersistMeta()"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
+        <button class="btn btn-ghost btn-xs" onclick="cobYear(-1)">◀</button>
+        <b id="cob-year" style="font-size:.9rem"></b>
+        <button class="btn btn-ghost btn-xs" onclick="cobYear(1)">▶</button>
+        <div style="flex:1"></div>
+        <span id="cob-status" style="font-size:.75rem;font-weight:700"></span>
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:.5rem">Clique no mês para girar entre <b>Pendente</b> → <b>Pago</b> → <b>Em atraso</b>. Mês em atraso faz o cliente ver a tarja de cobrança dentro do sistema dele.</div>
+      <div id="cob-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem"></div>
+      <div id="cob-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
+    </div>
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cobranca')">Fechar</button>
+      <div style="display:flex;gap:.45rem">
+        <button class="btn btn-ghost" onclick="mailtoCobranca()">Abrir no e-mail</button>
+        <button class="btn btn-primary" onclick="sendCobranca()">Enviar cobrança</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: Gerar Contrato ═══════ -->
+<div class="modal-bg hidden" id="modal-contrato-bg">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Gerar Contrato de Prestação de Serviços (SaaS)</div>
+        <div style="font-size:.71rem;color:var(--t3);margin-top:.1rem">Dados da Contratada são salvos automaticamente para o próximo contrato</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-contrato-bg')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1.35rem">
+
+      <!-- CONTRATADA -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--emerald);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--emerald)">Contratada — Seus dados</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group" style="grid-column:1/-1"><label>Razão Social *</label><input id="ct-sa-razao_social" type="text" placeholder="Empresa Tecnologia Ltda"></div>
+          <div class="form-group"><label>CNPJ *</label><input id="ct-sa-cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"></div>
+          <div class="form-group"><label>E-mail</label><input id="ct-sa-email" type="email" placeholder="contato@empresa.com"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Endereço completo (Rua, Nº, Bairro) *</label><input id="ct-sa-endereco" type="text" placeholder="Rua das Flores, 100, Centro"></div>
+          <div class="form-group"><label>Cidade / UF *</label><input id="ct-sa-cidade_uf" type="text" placeholder="São Paulo / SP" oninput="autoForo()"></div>
+          <div class="form-group"><label>CEP</label><input id="ct-sa-cep" type="text" placeholder="00000-000" maxlength="9"></div>
+          <div class="form-group"><label>Nome do Representante Legal *</label><input id="ct-sa-rep_legal" type="text" placeholder="João da Silva"></div>
+          <div class="form-group"><label>CPF do Representante</label><input id="ct-sa-cpf_rep" type="text" placeholder="000.000.000-00" maxlength="14"></div>
+        </div>
+      </div>
+
+      <!-- CONTRATANTE -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--blue)">Contratante — Dados do cliente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group" style="grid-column:1/-1"><label>Razão Social *</label><input id="ct-cli-name" type="text"></div>
+          <div class="form-group"><label>CNPJ</label><input id="ct-cli-cnpj" type="text" placeholder="00.000.000/0000-00"></div>
+          <div class="form-group"><label>E-mail</label><input id="ct-cli-email" type="email"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Endereço completo</label><input id="ct-cli-endereco" type="text" placeholder="Rua, Nº, Bairro, Cidade - UF"></div>
+          <div class="form-group"><label>Nome do Representante Legal</label><input id="ct-cli-rep" type="text" placeholder="Maria Souza"></div>
+          <div class="form-group"><label>CPF do Representante</label><input id="ct-cli-cpf_rep" type="text" placeholder="000.000.000-00" maxlength="14"></div>
+        </div>
+      </div>
+
+      <!-- CONDIÇÕES -->
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin-bottom:.65rem;padding-bottom:.4rem;border-bottom:2px solid var(--amber)">Condições do contrato</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="form-group"><label>Plano</label><input id="ct-plan-display" type="text" readonly style="background:#f7f8fb;color:var(--t2);font-weight:600"></div>
+          <div class="form-group"><label>Dia de vencimento</label><input id="ct-billing-day" type="number" min="1" max="28" placeholder="Ex.: 10"></div>
+          <div class="form-group"><label>Valor mensal (R$) *</label><input id="ct-valor-plan" type="text" placeholder="Ex.: 299,00"></div>
+          <div class="form-group"><label>Data do contrato</label><input id="ct-data" type="date"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Foro (cidade para resolução de conflitos)</label><input id="ct-foro" type="text" placeholder="Ex.: São Paulo"></div>
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:.875rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-contrato-bg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="gerarContratoPDF()" style="background:#7c3aed">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Gerar Contrato PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="sa-toast"></div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/pages/superadmin/main.js"></script>
+
+<div class="modal-bg hidden" id="modal-aviso">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="aviso-titulo-modal">Novo aviso</div>
+      <button class="modal-close" onclick="closeModal('modal-aviso')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="av-erro" class="hidden" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-bottom:.9rem"></div>
+      <div class="form-group full"><label>Título *</label>
+        <input id="av-titulo" type="text" placeholder="Ex.: Manutenção programada no sábado">
+      </div>
+      <div class="form-group full"><label>Texto</label>
+        <textarea id="av-corpo" rows="5" placeholder="Escreva o aviso. Linha em branco separa parágrafo."></textarea>
+        <div style="font-size:.68rem;color:var(--t3);margin-top:.25rem">
+          Endereço escrito no meio do texto já vira link clicável sozinho. Para uma ação
+          principal, use o botão abaixo — ninguém clica em link perdido no meio do parágrafo.
+        </div>
+      </div>
+
+      <div class="form-group"><label>Link do botão</label>
+        <input id="av-link" type="text" placeholder="https://siimob.com.br/indicasii">
+        <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Deixe em branco para o aviso não ter botão.</div>
+      </div>
+      <div class="form-group"><label>Texto do botão</label>
+        <input id="av-link-texto" type="text" placeholder="Saiba mais">
+      </div>
+
+      <div class="form-group full"><label>Imagem</label>
+        <input id="av-imagem" type="text" placeholder="Link da imagem, ou envie um arquivo abaixo"
+               oninput="pintarPreviaAviso()">
+        <div style="font-size:.7rem;color:var(--t3);margin:.3rem 0 .4rem">
+          Banner pronto do IndicaSII:
+          <code style="cursor:pointer;text-decoration:underline"
+                onclick="document.getElementById('av-imagem').value='https://siimob.com.br/assets/banners/indicasii-mural.jpg';pintarPreviaAviso()"
+          >/assets/banners/indicasii-mural.jpg</code>
+        </div>
+        <input id="av-img-arq" type="file" accept="image/*" onchange="subirArquivoAviso(this,'imagem')">
+        <div id="av-img-prev" style="margin-top:.5rem"></div>
+      </div>
+
+      <div class="form-group full"><label>Vídeo</label>
+        <input id="av-video" type="text" placeholder="Link do YouTube/Vimeo, ou envie um arquivo abaixo">
+        <input id="av-vid-arq" type="file" accept="video/*" style="margin-top:.4rem" onchange="subirArquivoAviso(this,'video')">
+        <div id="av-vid-prev" style="margin-top:.4rem;font-size:.75rem;color:var(--t3)"></div>
+      </div>
+
+      <div class="form-group full"><label>Quem vê este aviso</label>
+        <div style="font-size:.72rem;color:var(--t3);margin:-.2rem 0 .5rem">Nenhum marcado = todo mundo vê.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.75rem">
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="gestor"> Gestores</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="correspondente"> Correspondentes</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="analista"> Analistas</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="corretor"> Corretores</label>
+          <label style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;cursor:pointer"><input type="checkbox" class="av-pub" value="despachante"> Despachantes</label>
+        </div>
+      </div>
+
+      <div class="form-group full"><label>Para quais clientes</label>
+        <div style="font-size:.72rem;color:var(--t3);margin:-.2rem 0 .5rem">Nenhum marcado = todos os clientes.</div>
+        <div id="av-tenants" style="display:flex;flex-direction:column;gap:.3rem;max-height:180px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group"><label>Expira em <span style="color:var(--t3);font-weight:400">(opcional)</span></label>
+          <input id="av-expira" type="date">
+        </div>
+        <div class="form-group"><label>Comportamento</label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;cursor:pointer;padding-top:.4rem">
+            <input type="checkbox" id="av-fixado"> Fixado (aparece sempre, não some ao ler)
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
+      <button class="btn btn-ghost" onclick="closeModal('modal-aviso')">Cancelar</button>
+      <button class="btn btn-ghost" id="av-btn-rascunho" onclick="salvarAviso(false)">Salvar rascunho</button>
+      <button class="btn btn-primary" id="av-btn-publicar" onclick="salvarAviso(true)">Publicar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

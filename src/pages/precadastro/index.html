@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Cadastro de corretor — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+  <link rel="stylesheet" href="/src/pages/precadastro/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo"><svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="sipre1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="sipre1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="sipre1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="sipre1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sipre1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sipre1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sipre1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sipre1d)"/></svg>SIIMOB</div>
+
+    <!-- Carregando o link -->
+    <div class="card" id="v-load">
+      <div class="sub" style="margin:0;text-align:center">Verificando o link...</div>
+    </div>
+
+    <!-- Link inválido / vencido -->
+    <div class="card hidden" id="v-invalido">
+      <div class="title">Link indisponível</div>
+      <div class="sub" id="invalido-txt"></div>
+      <div class="sub" style="margin:0">Peça um novo link a quem te enviou este.</div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="card hidden" id="v-form">
+      <div class="badge"><span id="badge-txt"></span></div>
+      <div class="title">Cadastro de corretor</div>
+      <div class="sub">
+        Preencha seus dados de acesso. O cadastro é enviado para aprovação —
+        você poderá entrar assim que for liberado.
+      </div>
+
+      <div class="msg msg-err hidden" id="form-err"></div>
+
+      <div class="fg">
+        <label>Nome completo *</label>
+        <input type="text" id="f-nome" autocomplete="name" placeholder="Seu nome">
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>CPF *</label>
+          <input type="text" id="f-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+          <div class="hint">É o seu login.</div>
+        </div>
+        <div class="fg">
+          <label>Telefone</label>
+          <input type="text" id="f-fone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000">
+        </div>
+      </div>
+      <div class="fg">
+        <label>E-mail</label>
+        <input type="email" id="f-email" autocomplete="email" placeholder="voce@email.com">
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>Senha *</label>
+          <input type="password" id="f-senha" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="fg">
+          <label>Repetir senha *</label>
+          <input type="password" id="f-senha2" autocomplete="new-password" placeholder="Digite de novo">
+        </div>
+      </div>
+
+      <button class="btn" id="btn-enviar" onclick="enviar()">Enviar cadastro</button>
+      <div class="foot">Seus dados são usados apenas para criar seu acesso.</div>
+    </div>
+
+    <!-- Enviado -->
+    <div class="card hidden" id="v-ok">
+      <div class="done">
+        <div class="done-ico">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="title">Cadastro enviado</div>
+        <div class="sub">
+          Seu cadastro foi enviado para aprovação. Assim que for liberado por
+          <b id="ok-empresa"></b>, você já poderá entrar com o seu CPF e a senha que acabou de criar.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="/src/shared/api/config.js"></script>
+<script src="/src/pages/precadastro/main.js"></script>
+</body>
+</html>

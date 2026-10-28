@@ -1,0 +1,4 @@
+/* Ordem da cascata desta tela, igual à do HTML original: o que vem depois
+   ganha nos empates. Um arquivo só por tela, para o build não reordenar. */
+@import '../../styles/alpha.css';
+@import './style.css';

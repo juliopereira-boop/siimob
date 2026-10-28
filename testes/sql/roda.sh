@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sobe um Postgres descartável, carrega os arquivos de sql/ que os módulos novos
+# Sobe um Postgres descartável, carrega os arquivos de database/migrations/ que os módulos novos
 # precisam e roda a prova de segurança contra eles. Nada toca produção.
 #
 #   testes/sql/roda.sh              usa um Postgres já de pé em $PGPORT
@@ -13,27 +13,27 @@ psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $BANCO"
 trap 'psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO" >/dev/null' EXIT
 
 for f in testes/sql/base-falsa.sql \
-         sql/2026-09-04_identidade.sql \
-         sql/2026-09-04_pre_analise.sql \
-         sql/2026-09-04_comercial.sql \
-         sql/2026-09-04_gatilhos.sql \
-         sql/2026-09-06_travas_sessao_e_parceiro.sql \
-         sql/2026-09-08_suporte_nao_ocupa_vaga.sql \
-         sql/2026-09-08_perfis_de_acesso.sql \
-         sql/2026-09-09_documento_obrigatorio.sql \
-         sql/2026-09-09_visibilidade_repasse_1_conferir.sql \
-         sql/2026-09-09_visibilidade_repasse_2_ligar.sql \
-         sql/2026-09-10_corretor_analista_so_o_seu.sql \
-         sql/2026-09-10_modo_manutencao.sql \
-         sql/2026-09-10_criar_repasse_trava.sql \
-         sql/2026-09-10_chaves_dos_modulos.sql \
-         sql/2026-09-11_exclusao_definitiva.sql \
-         sql/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql \
-         sql/2026-09-11_quem_cadastra_pessoa_rele.sql \
-         sql/2026-09-11_partes_por_id.sql \
-         sql/2026-09-11_registro_arquivar.sql \
-         sql/2026-09-12_visibilidade_da_atribuicao_1_conferir.sql \
-         sql/2026-09-12_visibilidade_da_atribuicao_2_ligar.sql; do
+         database/migrations/2026-09-04_identidade.sql \
+         database/migrations/2026-09-04_pre_analise.sql \
+         database/migrations/2026-09-04_comercial.sql \
+         database/migrations/2026-09-04_gatilhos.sql \
+         database/migrations/2026-09-06_travas_sessao_e_parceiro.sql \
+         database/migrations/2026-09-08_suporte_nao_ocupa_vaga.sql \
+         database/migrations/2026-09-08_perfis_de_acesso.sql \
+         database/migrations/2026-09-09_documento_obrigatorio.sql \
+         database/migrations/2026-09-09_visibilidade_repasse_1_conferir.sql \
+         database/migrations/2026-09-09_visibilidade_repasse_2_ligar.sql \
+         database/migrations/2026-09-10_corretor_analista_so_o_seu.sql \
+         database/migrations/2026-09-10_modo_manutencao.sql \
+         database/migrations/2026-09-10_criar_repasse_trava.sql \
+         database/migrations/2026-09-10_chaves_dos_modulos.sql \
+         database/migrations/2026-09-11_exclusao_definitiva.sql \
+         database/migrations/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql \
+         database/migrations/2026-09-11_quem_cadastra_pessoa_rele.sql \
+         database/migrations/2026-09-11_partes_por_id.sql \
+         database/migrations/2026-09-11_registro_arquivar.sql \
+         database/migrations/2026-09-12_visibilidade_da_atribuicao_1_conferir.sql \
+         database/migrations/2026-09-12_visibilidade_da_atribuicao_2_ligar.sql; do
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done

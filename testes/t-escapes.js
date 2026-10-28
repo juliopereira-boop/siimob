@@ -25,7 +25,8 @@ const path = require('path');
 const { checa, resumo } = require('./comum');
 
 const RAIZ = path.join(__dirname, '..');
-const lerArq = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
+const { lerFonte, lerPagina } = require('./fonte');
+const lerArq = f => (/^[\w-]+\.html$/.test(f) ? lerPagina(f) : lerFonte(f));
 
 // Extrai as declarações de esc/escJs do arquivo e as avalia. Um arquivo pode
 // ter mais de uma declaração de esc (superadmin.html tem duas, no mesmo escopo

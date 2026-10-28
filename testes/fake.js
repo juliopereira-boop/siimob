@@ -292,7 +292,7 @@ function responder(url, metodo, corpo0) {
   if (p.includes('/rpc/a1_pa_ciclo_ativar')) return {ok:true,config_id:'cfg2'};
   // a1_perm() no banco começa com "when a1_e_gestor() then true": para quem não
   // é parceiro a resposta é sempre sim, sem consultar perfil nem marca. E o
-  // navegador só chama esta RPC para gestor (js/modulo-shell.js) — o parceiro é
+  // navegador só chama esta RPC para gestor (src/shared/ui/modulo-shell.js) — o parceiro é
   // resolvido pelas permissões já carregadas na sessão. Sem esta linha a RPC
   // caía no {ok:true} genérico lá embaixo, que não é `true`, e o dono do cliente
   // ficava sem NENHUM dashboard: o andaime é que mentia, não a tela.

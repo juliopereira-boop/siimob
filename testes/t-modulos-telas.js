@@ -5,7 +5,7 @@
 // abas não aparecem e as tabelas não são consultadas.
 const { abrir, checa, resumo } = require('./comum');
 
-// As abas de módulo do casco (js/modulo-shell.js). Elas deixaram de ser HTML
+// As abas de módulo do casco (src/shared/ui/modulo-shell.js). Elas deixaram de ser HTML
 // fixo com id por tela — `#link-pre-analise` e companhia não existem mais —, e
 // isso é o ponto: o id repetido em seis arquivos era a dívida. O que identifica
 // uma aba agora é o rótulo e o destino.
@@ -101,7 +101,7 @@ const vistasDoCasco = p => p.$$eval('.sb-sub-item',
     // As vistas do módulo moram na sub-barra, e não num menu suspenso: menu que
     // só abre no hover esconde a segunda vista de quem usa teclado ou toque.
     // Três vistas, e a terceira é nova: o painel da Pré-análise existia em
-    // js/paineis.js mas só era alcançável pelo seletor do dashboard do Repasse
+    // src/modules/paineis/paineis.js mas só era alcançável pelo seletor do dashboard do Repasse
     // — um módulo tinha de passar por outro para mostrar os próprios números.
     const itens = await vistasDoCasco(p);
     checa('e a sub-barra da Pré-análise oferece Andamento, Listagem e Dashboard',
@@ -411,7 +411,7 @@ const vistasDoCasco = p => p.$$eval('.sb-sub-item',
     checa('o nome do cliente vem do snapshot da aprovação', /Maria Titular/.test(corpo));
     checa('mostra o valor aprovado', /240\.000,00/.test(corpo));
 
-    // O cabeçalho passou a ser o de js/modulo-shell.js, o mesmo dos quadros
+    // O cabeçalho passou a ser o de src/shared/ui/modulo-shell.js, o mesmo dos quadros
     // antigos. Era a divergência que fazia esta tela parecer outro produto.
     const abas = await abasDoCasco(p);
     const rotulos = abas.map(a => a.rot);
