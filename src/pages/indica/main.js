@@ -10,13 +10,6 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 const $ = id => document.getElementById(id);
-const esc = s =>
-  String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 const reservado = s =>
   String(s || '')
     .trim()
@@ -184,7 +177,7 @@ $('grade-seg').innerHTML = INDICA.segmentos
     <div class="seg-corpo">
       <h3>${esc(s.titulo)}</h3>
       <p>${esc(s.texto)}</p>
-      <button class="seg-cta" onclick="indicarSegmento('${esc(s.titulo)}')">
+      <button class="seg-cta" onclick="indicarSegmento('${escJs(s.titulo)}')">
         Indicar empresa
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>

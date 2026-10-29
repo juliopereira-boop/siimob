@@ -40,13 +40,6 @@ const MODS = [
   { chave: 'registro', rotulo: 'Registro', rota: 'registro', casos: 'registro', icone: 'registro' }
 ];
 
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 const n0 = n => Number(n || 0).toLocaleString('pt-BR');
 
 // evaluation_expiry as vezes chega como 'AAAA-MM-DD' e as vezes como carimbo
@@ -54,10 +47,6 @@ const n0 = n => Number(n || 0).toLocaleString('pt-BR');
 // virava "em NaNd" na tela. Normaliza uma vez, aqui, e o resto do arquivo lê
 // sempre dez caracteres.
 const soData = v => String(v || '').slice(0, 10);
-const hojeISO = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
 const diasAte = iso =>
   Math.round((new Date(soData(iso) + 'T12:00:00') - new Date(hojeISO() + 'T12:00:00')) / 864e5);
 

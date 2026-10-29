@@ -70,7 +70,10 @@ navegador → PostgREST (chave anon + x-session-token) → RLS → dados
 | `src/shared/auth/permissoes.js` | **O catálogo de permissões.** Fonte única do que existe e em que módulo vive. |
 | `src/shared/ui/modulo-shell.js` | Cabeçalho e abas comuns aos módulos: `a1MontarShell`, `A1_ORDEM_PAINEIS`, `a1VistaDaURL`. |
 | `src/modules/paineis/paineis.js` | Dashboards de Pré-análise e Comercial. |
-| `src/pages/repasse` / `andamento` / `listagem` | Dashboard, quadro (kanban) e listagem do Repasse. **São três cópias com muito código repetido** — ver Dívidas. |
+| `src/pages/repasse` | Dashboard, quadro (kanban) e listagem do Repasse: **uma tela, três vistas**. A rota decide (`VISTA` no topo do `main.js`): `/repasse` → dashboard, `/andamento` → quadro, `/listagem` → lista. |
+| `src/pages/registro` | Quadro e listagem do Registro, idem (`/registro`, `/registro-listagem`). |
+| `src/shared/utils/texto.js` | `esc()` e `escJs()`: o ÚNICO escape. Nenhuma tela declara o seu (`t-escapes` reprova). Dentro de string JS num `onclick`, é `escJs`, nunca `esc`. |
+| `src/shared/utils/datas.js` | `hojeISO()`: "hoje" no fuso de quem usa. `toISOString().slice(0,10)` é UTC e erra depois das 21h. |
 | `src/pages/pre-analise` / `comercial` | Módulos novos (fila com SLA, assistente, dossiê). |
 | `src/pages/configuracoes` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
 | `src/pages/workflow` | Editor de esteira em quadro, com um botão por módulo licenciado. |
@@ -212,8 +215,11 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 
 ## Convenções do front
 
-- `esc()` em **tudo** que vem do banco e entra em `innerHTML`. Inclusive aspas
-  simples, quando o texto cai dentro de um `onclick="...'...'"`.
+- `esc()` em **tudo** que vem do banco e entra em `innerHTML`. Quando o texto
+  cai dentro de uma string JS num handler (`onclick="f('${...}')"`), é
+  `escJs()`: o navegador decodifica o atributo antes de rodar o JS, e `esc()`
+  sozinho deixa `\` e `'` quebrarem a string. Os dois vêm de
+  `src/shared/utils/texto.js`; nenhuma tela declara o seu.
 - Funções chamadas por `onclick` precisam estar no **escopo global**. Definir
   dentro de `init()` faz o atributo não enxergar — já quebrou o seletor de
   painel.
@@ -318,12 +324,10 @@ não num documento separado.
 
 ## Dívidas conhecidas (não são bugs novos — são o mapa)
 
-- **As telas `repasse` / `andamento` / `listagem` são triplicadas.** Muita
-  lógica repetida três vezes, e correção em uma esquece as outras. O dono
-  decidiu (28/10): reestruturação em fases — 1) separação e Vite (feita),
-  2) juntar as cópias, 3) módulos ES, 4) tipos em JSDoc com checagem. Durante
-  a reestruturação a `main` fica congelada; correção urgente passa pelo Claude,
-  que aplica nos dois lados.
+- **Reestruturação em fases** (decisão do dono, 28/10): 1) separação e Vite e
+  2) fim das cópias estão feitas; faltam 3) módulos ES (trocar os onclick por
+  eventos) e 4) tipos em JSDoc com checagem. Durante a reestruturação a `main`
+  fica congelada; correção urgente passa pelo Claude, que aplica nos dois lados.
 - **`a1_has_module` (a porta da tela) não honra `expires_at`.** O RLS honra. Uma
   licença vencida ainda desenha a aba, mas não entrega dado.
 - **A paleta é azul `#3D5CC8`**, não a verde-azulada da marca.

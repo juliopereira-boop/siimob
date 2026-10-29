@@ -58,6 +58,19 @@ const G = {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
+// Qual vista esta tela mostra. Dashboard, Andamento e Listagem eram três
+// arquivos 96% iguais, e uma correção feita num deles não chegava aos outros
+// (o histórico do processo, a permissão de criar, o espaço não separável do
+// importador do CV: cada um tinha ficado para trás em alguma cópia). Agora são
+// uma tela só, e o endereço decide a vista:
+//   /cliente/repasse   → Dashboard
+//   /cliente/andamento → quadro
+//   /cliente/listagem  → lista
+const VISTA = /\/andamento(\.html)?\/?$/.test(location.pathname)
+  ? 'andamento'
+  : /\/listagem(\.html)?\/?$/.test(location.pathname)
+    ? 'listagem'
+    : 'dashboard';
 function applyCustomLogo() {
   const logo = localStorage.getItem('a1_platform_logo');
   if (!logo) return;
@@ -193,39 +206,60 @@ async function init() {
     return;
   }
   G.slug = A1.slug;
-  // Calculado antes de carregar quaisquer cards: assim um painel não autorizado
-  // nunca é desenhado por um instante enquanto a permissão chega do servidor.
-  const _dashLicencas = await a1DashboardsDoCliente();
-  G.dashboardsPermitidos = A1_ORDEM_PAINEIS.filter(m => a1PodeVerDashboardModulo(G.user, m, _dashLicencas));
-  G.permiteDashboard = a1PodeVerAlgumDashboard(G.user, _dashLicencas);
+  if (VISTA === 'dashboard') {
+    // Calculado antes de carregar quaisquer cards: assim um painel não autorizado
+    // nunca é desenhado por um instante enquanto a permissão chega do servidor.
+    const _dashLicencas = await a1DashboardsDoCliente();
+    G.dashboardsPermitidos = A1_ORDEM_PAINEIS.filter(m => a1PodeVerDashboardModulo(G.user, m, _dashLicencas));
+    G.permiteDashboard = a1PodeVerAlgumDashboard(G.user, _dashLicencas);
+  }
 
   // O rótulo sai de src/shared/ui/modulo-shell.js, o mesmo que a Pré-análise e a Venda
   // usam. Aqui havia uma cópia que chamava de "Correspondente" todo parceiro
   // que não fosse despachante — o corretor aparecia com o papel de outra pessoa.
   const roleLabel = a1RotuloPapel(G.user);
-  // O cabeçalho inteiro — marca, abas de módulo, busca e o nome de quem está
-  // logado — vem de src/shared/ui/modulo-shell.js. Esta tela tinha a sua cópia da barra,
-  // e outras cinco telas tinham a delas: seis cabeçalhos para o mesmo sistema,
-  // e quem trocava de tela achava que tinha trocado de produto.
-  const _subDashboard = [];
-  if (G.permiteDashboard) _subDashboard.push({ rot: 'Dashboard', href: `/${G.slug}/repasse`, ativo: true });
-  _subDashboard.push(
-    { rot: 'Andamento', href: `/${G.slug}/andamento` },
-    { rot: 'Listagem', href: `/${G.slug}/listagem` }
-  );
-  await a1MontarShell(document.getElementById('sb-casco'), {
-    ativo: 'geral',
-    vista: 'dashboard',
-    perfil: true,
-    sub: _subDashboard
+  // O cabeçalho é montado por src/shared/ui/modulo-shell.js: marca, busca, abas de módulo
+  // e a sub-barra desta tela. Seis telas tinham a sua cópia da mesma barra, com
+  // o mesmo CSS repetido; a correção numa delas nunca chegava nas outras.
+  if (VISTA === 'dashboard') {
+    const _subDashboard = [];
+    if (G.permiteDashboard) _subDashboard.push({ rot: 'Dashboard', href: `/${G.slug}/repasse`, ativo: true });
+    _subDashboard.push(
+      { rot: 'Andamento', href: `/${G.slug}/andamento` },
+      { rot: 'Listagem', href: `/${G.slug}/listagem` }
+    );
+    await a1MontarShell(document.getElementById('sb-casco'), {
+      ativo: 'geral',
+      vista: 'dashboard',
+      perfil: true,
+      sub: _subDashboard
+    });
+  } else {
+    await a1MontarShell(document.getElementById('sb-casco'), {
+      ativo: 'repasse',
+      vista: VISTA,
+      perfil: true,
+      sub: [
+        { rot: 'Dashboard do Repasse', href: `/${G.slug}/repasse` },
+        { rot: 'Andamento', href: `/${G.slug}/andamento`, ativo: VISTA === 'andamento' },
+        { rot: 'Listagem', href: `/${G.slug}/listagem`, ativo: VISTA === 'listagem' }
+      ]
+    });
+  }
+  // Os links do editor de esteira ficam DENTRO desta tela, não na barra.
+  [
+    ['link-wf', 'repasse'],
+    ['link-wf-groups', 'repasse'],
+    ['link-wf-rg', 'registro']
+  ].forEach(([id, mod]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = `/${G.slug}/workflow?module=${mod}`;
   });
+
   // Item 1: esconde itens exclusivos do gestor ANTES de qualquer await (evita o "flash" p/ o usuário correspondente)
   // Item 2: mostra o ícone de perfil para o usuário correspondente
   if (G.user.role === 'partner') {
-    // A aba de Configurações e as de outros módulos já não são desenhadas pelo
-    // casco para quem é parceiro — a decisão passou a ser tomada num lugar só.
-    // Continuam aqui os itens que são DESTA tela, e só eles.
-    ['link-wf', 'link-wf-groups'].forEach(id => {
+    ['link-config', 'link-wf', 'link-wf-groups', 'tab-registro-group'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -240,29 +274,40 @@ async function init() {
       semAcessoAoRepasse();
       return;
     }
-    // Dashboard é autorizado pela chave do respectivo módulo. A chave genérica
-    // antiga não pode decidir por Pré-análise/Venda/Repasse.
+    // A chave global `ver_dashboard` foi APOSENTADA: 2026-09-13_migra_dashboard_por_modulo
+    // separou o dashboard por módulo e APAGA essa chave de todas as linhas. Como
+    // hasPerm() trata ausente como false nestas telas, continuar perguntando por
+    // ela tirava o Dashboard de TODO parceiro depois do SQL rodar — inclusive de
+    // quem foi migrado para ver_dashboard_repasse:true. É a dívida da triplicação
+    // mordendo: repasse.html foi atualizado e estas duas cópias ficaram para trás.
+    if (!hasPerm('ver_dashboard_repasse')) {
+      const _dl = document.getElementById('link-dashboard');
+      if (_dl) _dl.style.display = 'none';
+    }
   }
-  // Acesso direto não redireciona nem começa a carregar cartões para depois
-  // voltar. O menu já nasceu sem a opção e a URL forçada recebe um estado
-  // estável; RLS continua sendo a barreira dos dados no servidor.
-  if (!G.permiteDashboard) {
-    document.getElementById('tab-dashboard').innerHTML =
-      `<div class="empty-state" role="alert" style="margin:2rem auto;max-width:640px">
+  // No Dashboard, quem não tem painel nenhum recebe o aviso, e nada mais é
+  // carregado. Acesso direto não redireciona nem começa a carregar cartões para
+  // depois voltar: o menu já nasceu sem a opção e a URL forçada recebe um estado
+  // estável. RLS continua sendo a barreira dos dados no servidor.
+  if (VISTA === 'dashboard' && !G.permiteDashboard) {
+    const _dash = document.getElementById('tab-dashboard');
+    _dash.innerHTML = `<div class="empty-state" role="alert" style="margin:2rem auto;max-width:640px">
       <div style="font-size:2rem;margin-bottom:.65rem" aria-hidden="true">🔒</div>
       <b>Você não possui permissão para acessar este recurso.</b>
       <div style="margin-top:.4rem;color:var(--t3)">Peça ao gestor a permissão de dashboard do módulo.</div>
     </div>`;
+    _dash.style.display = '';
     a1StartHeartbeat('repasse');
     return;
   }
-  // Os endereços das abas saem do casco, que os monta a partir da licença. O
-  // que sobrou aqui são os dois links do editor de esteira, que vivem dentro
-  // desta tela e não na barra. Eles podem não existir — daí a conferência.
-  ['link-wf', 'link-wf-groups'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.href = `/${G.slug}/workflow?module=repasse`;
-  });
+
+  // A área da vista aparece já aqui, vazia e com "Carregando", em vez de
+  // esperar a carga inteira. É depois das travas de parceiro acima de
+  // propósito: quem não tem acesso já saiu, e o botão de novo repasse já
+  // obedece à permissão antes de ficar à vista.
+  aplicarBotaoNovoRepasse();
+  if (VISTA === 'dashboard') document.getElementById('tab-dashboard').style.display = '';
+  else switchView(VISTA);
 
   // tenant já iniciado em paralelo lá em cima
   G.tenant = await _tenantP;
@@ -379,34 +424,33 @@ async function init() {
     }
   }
   applyPartnerRestrictions();
-  // O painel de Repasse só é renderizado quando está explicitamente permitido.
-  // Os painéis de Pré-análise/Venda são montados por montarSeletorPainel().
-  if (G.dashboardsPermitidos.includes('repasse')) renderDashboard();
-  await montarSeletorPainel();
+  if (VISTA === 'dashboard') {
+    // O painel de Repasse só é renderizado quando está explicitamente permitido.
+    // Os painéis de Pré-análise/Venda são montados por montarSeletorPainel().
+    if (G.dashboardsPermitidos.includes('repasse')) renderDashboard();
+    await montarSeletorPainel();
+    renderPipeline();
+    renderList();
+    loadFlags();
+    a1StartHeartbeat('repasse');
+
+    // Endereços antigos (?view=, ?tab=config) continuam levando ao lugar certo.
+    const _params = new URLSearchParams(location.search);
+    const _view = _params.get('view');
+    if (_params.get('tab') === 'config') window.location.replace(`/${G.slug}/configuracoes`);
+    else if (_view === 'andamento' || _view === 'listagem') window.location.replace(`/${G.slug}/${_view}`);
+    return;
+  }
   renderPipeline();
   renderList();
   loadFlags();
-  a1StartHeartbeat('repasse');
-
-  // Backward-compat: redirect old ?view= / ?tab= deep-links to new standalone pages
-  const _params = new URLSearchParams(location.search);
-  const _view = _params.get('view');
-  const _tab = _params.get('tab');
-  if (_tab === 'config') {
-    window.location.replace(`/${G.slug}/configuracoes`);
-    return;
-  } else if (_view === 'andamento') {
-    window.location.replace(`/${G.slug}/andamento`);
-    return;
-  } else if (_view === 'listagem') {
-    window.location.replace(`/${G.slug}/listagem`);
-    return;
-  }
+  document.getElementById('tab-dashboard').style.display = 'none';
+  document.getElementById('tab-repasse').style.display = '';
+  document.getElementById('tab-config').style.display = 'none';
+  G.activeTab = 'repasse';
+  switchView(VISTA);
+  a1StartHeartbeat(VISTA);
 }
-
-// ─── Escopo por usuário ───────────────────────────────────────────────────────
-// Cada usuário enxerga as próprias operações. "Visão completa" libera ver as dos
-// outros; editar continua restrito ao que é dele, salvo liberação no cartão.
 function souGestorUser() {
   return !!G.user && G.user.role !== 'partner';
 }
@@ -567,6 +611,12 @@ function hasPerm(key) {
   if (G.user.role !== 'partner') return true;
   const p = G.user.permissions || {};
   if (p.gerente) return true; // Gerente = acesso total, como o gestor
+  // criar_repasses AUSENTE vale NÃO PODE, e isto tem de ser igual nas três telas.
+  // A política do banco usa a1_perm(), que trata chave ausente como negativa; se
+  // aqui o padrão fosse `true`, um correspondente sem a chave veria o botão,
+  // preencheria o formulário inteiro e só então o banco recusaria a gravação.
+  // repasse.html já estava assim; andamento e listagem ficaram para trás — a
+  // mesma dívida da triplicação que já mordeu em ver_dashboard.
   const defaults = {
     ver_repasses: true,
     criar_repasses: false,
@@ -603,6 +653,13 @@ function podeCriarRepasse() {
   if (!G.user || G.user.role !== 'partner') return true;
   // A criação manual é operação da retaguarda: somente Analista e
   // Correspondente (CCA), sempre com a permissão marcada positivamente.
+  //
+  // Esta linha faltava aqui e em listagem.html — estava só em repasse.html. É a
+  // dívida da triplicação: a política do banco
+  // (a1_cases_repasse_create_capability) exige o tipo desde 2026-09-13, e sem
+  // ela estas duas telas ofereceriam o botão a um corretor com a chave marcada
+  // para o banco recusar a gravação depois. Botão que mente é pior que botão
+  // ausente: a pessoa preenche o formulário inteiro antes de descobrir.
   const tipo = String(G.user.type || '').toLowerCase();
   if (!['analista', 'cca'].includes(tipo)) return false;
   // Rede fora não é autorização — e o localStorage guarda o retrato do login,
@@ -760,10 +817,9 @@ async function motivoDoErro(res) {
 function applyPartnerRestrictions() {
   if (G.user.role !== 'partner') return;
 
-  // Ocultar aba de configurações
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    if (btn.textContent.trim().startsWith('Configurac')) btn.style.display = 'none';
-  });
+  // Ocultar link de configurações
+  const cfgLink = document.getElementById('link-config');
+  if (cfgLink) cfgLink.style.display = 'none';
   // Ocultar links de workflow (dentro de configurações)
   ['link-wf', 'link-wf-groups'].forEach(id => {
     const el = document.getElementById(id);
@@ -777,10 +833,10 @@ function applyPartnerRestrictions() {
   // (o cartão do correspondente fixo, por exemplo, mexe em G.user).
   aplicarBotaoNovoRepasse();
 
-  // A autorização é calculada no boot a partir das permissões específicas.
-  if (G.permiteDashboard === false) {
-    const dashBtn = document.querySelector('.tab-btn[onclick*="dashboard"]');
-    if (dashBtn) dashBtn.style.display = 'none';
+  // Idem: a chave por módulo, não a global aposentada.
+  if (!hasPerm('ver_dashboard_repasse')) {
+    const dashLink = document.getElementById('link-dashboard');
+    if (dashLink) dashLink.style.display = 'none';
   }
 }
 
@@ -1064,13 +1120,6 @@ function closeCfgView() {
   CFG_VIEWS.forEach(v => (document.getElementById('cfg-view-' + v).style.display = 'none'));
 }
 
-// CÓDIGO PARADO. switchView não é chamada em lugar nenhum DESTE arquivo — e ela
-// é a única chamadora de switchTab. As duas ficaram de quando esta tela tinha
-// abas próprias; hoje a navegação é por página. Fica no lugar porque apagar
-// codigo de tela em producao sem necessidade e risco de graça, mas NÃO SE
-// CONSERTA AQUI: o que roda de verdade e o switchView de andamento.html e
-// listagem.html, onde ele ainda e chamado. Mexer so nesta copia cria uma
-// verdade a mais sobre a mesma navegacao, e nenhuma delas roda.
 function switchView(view) {
   G.currentView = view;
   document.querySelectorAll('.dd-item').forEach(d => d.classList.remove('active'));
@@ -1080,6 +1129,10 @@ function switchView(view) {
   document.getElementById('view-andamento').style.display = view === 'andamento' ? '' : 'none';
   document.getElementById('view-listagem').style.display = view === 'listagem' ? '' : 'none';
   document.getElementById('view-label').textContent = view === 'andamento' ? 'Andamento' : 'Listagem';
+  // O relatório em planilha exporta a lista filtrada: o botão é da Listagem.
+  const _exp = document.getElementById('btn-exportar');
+  if (_exp) _exp.style.display = view === 'listagem' ? '' : 'none';
+  document.title = (view === 'andamento' ? 'Andamento' : 'Listagem') + ' — SIIMOB';
 
   // Make sure we're on the repasse tab
   if (G.activeTab !== 'repasse') {
@@ -1280,10 +1333,6 @@ function caseRepasseValue(c) {
     if (t > 0) return t;
   }
   return caseUnitValue(c);
-}
-function caseFinanciado(c) {
-  const vr = c.payload && c.payload.valores;
-  return brNum(vr && (vr.valor_aprovado ?? vr.valor_divida));
 }
 function caseIsFinal(c) {
   return !!(stageMap()[c.stage_id] && stageMap()[c.stage_id].is_final);
@@ -1859,7 +1908,7 @@ function renderKanban() {
       </div>
       <div class="k-col-fin">
         <span>VGV <b style="color:var(--blue)">${fmtBRLShort(lista.reduce((a, c) => a + caseUnitValue(c), 0))}</b></span>
-        <span>Financiado <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a, c) => a + caseFinanciado(c), 0))}</b></span>
+        <span>Repasse <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a, c) => a + caseRepasseValue(c), 0))}</b></span>
       </div>
       <div class="k-col-body" data-stage-id="${s.id}" data-render="${primeiros.length}"
            onscroll="onColScroll(this)"
@@ -1907,7 +1956,7 @@ function renderCard(c, stage) {
         <span class="badge-days ${dc}" title="Desde ${fmtDT(since)}">${days}d na etapa</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="copyCpf(event,'${esc(c.client_cpf)}')">${fmtCpf(c.client_cpf)}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" onclick="copyCpf(event,'${escJs(c.client_cpf)}')">${fmtCpf(c.client_cpf)}</div>` : ''}
     <div class="kc-prop">
       ${c.development ? `<span class="empr">${esc(c.development)}</span>` : ''}
       ${c.block || c.unit ? ` <span style="color:var(--t3);font-size:.68rem">· ${c.block ? 'Bl ' + esc(c.block) : ''}${c.block && c.unit ? ' ' : ''}${c.unit ? 'Un ' + esc(c.unit) : ''}</span>` : ''}
@@ -2665,7 +2714,7 @@ function renderModalHist() {
       const items = [];
       const c = G.editingCaseData || {};
       // Cadastro do cliente (data e hora)
-      if (c.created_at)
+      if (c.created_at && !(Array.isArray(evts) && evts.some(ev => ev.type === 'created')))
         items.push({
           ts: c.created_at,
           cls: 'created',
@@ -2680,7 +2729,9 @@ function renderModalHist() {
           cls: 'stage',
           icon: 'E',
           desc: `Entrou na etapa <b>${esc(h.stage_name || '')}</b>`,
-          meta: h.exited_at ? `saiu em ${fmtDT(h.exited_at)}` : 'etapa atual'
+          meta: [h.exited_at ? `saiu em ${fmtDT(h.exited_at)}` : 'etapa atual', a1AtorHistorico(h)]
+            .filter(Boolean)
+            .join(' · ')
         })
       );
       // Demais eventos (status, comentarios, edicoes, documentos) — stage_change ja coberto acima
@@ -3680,7 +3731,7 @@ function openAgendamento(caseId, e) {
     document.getElementById('agd-date').value = d || '';
     document.getElementById('agd-time').value = (t || '').slice(0, 5);
   } else {
-    document.getElementById('agd-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('agd-date').value = hojeISO();
     document.getElementById('agd-time').value = '09:00';
   }
   document.getElementById('agd-obs').value = c?.payload?.agendamento_obs || '';
@@ -4018,10 +4069,169 @@ function toggleAgdDay(dayEl) {
 }
 
 // ─── List view ────────────────────────────────────────────────────────────────
+// ── Seleção e vinculação em lote (listagem) ──────────────────────────────────
+function toggleRowSel(id, el) {
+  ensureVincLists();
+  if (!G.selCases) G.selCases = new Set();
+  if (el.checked) G.selCases.add(id);
+  else G.selCases.delete(id);
+  updateBulkBar();
+}
+function toggleSelectAll(el) {
+  ensureVincLists();
+  if (!G.selCases) G.selCases = new Set();
+  document.querySelectorAll('#cases-tbody .row-chk').forEach(cb => {
+    cb.checked = el.checked;
+    if (el.checked) G.selCases.add(cb.value);
+    else G.selCases.delete(cb.value);
+  });
+  updateBulkBar();
+}
+function clearSelection() {
+  G.selCases = new Set();
+  document.querySelectorAll('#cases-tbody .row-chk').forEach(cb => (cb.checked = false));
+  const ca = document.getElementById('chk-all');
+  if (ca) ca.checked = false;
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const n = G.selCases ? G.selCases.size : 0;
+  const bar = document.getElementById('bulk-bar');
+  if (bar) bar.style.display = n ? 'flex' : 'none';
+  const bc = document.getElementById('bulk-count');
+  if (bc) bc.textContent = `${n} selecionado${n !== 1 ? 's' : ''}`;
+}
+function populateBulkSelects() {
+  const be = document.getElementById('bulk-empr');
+  if (be)
+    be.innerHTML =
+      '<option value="">Vincular empreendimento...</option>' +
+      (G.empreendimentos || []).map(d => `<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  const bc = document.getElementById('bulk-corr');
+  if (bc)
+    bc.innerHTML =
+      '<option value="">Vincular correspondente...</option>' +
+      (Array.isArray(G.empresas) ? G.empresas : [])
+        .filter(e => e.is_active !== false)
+        .map(e => `<option value="${esc(e.name)}">${esc(e.name)}</option>`)
+        .join('');
+  const bcw = document.getElementById('bulk-corr-wrap');
+  if (bcw && G.isCorrTenant) bcw.style.display = 'none';
+}
+async function ensureVincLists() {
+  if (!G.emprLoaded) {
+    try {
+      await loadEmpreendimentos();
+    } catch {}
+  }
+  if (!G.empresasLoaded) {
+    try {
+      await loadEmpresas();
+    } catch {}
+  }
+  populateBulkSelects();
+}
+async function bulkPatch(patch) {
+  const ids = [...(G.selCases || [])];
+  if (!ids.length) return;
+  await fetch(`${A1.rest('a1_cases')}?id=in.(${ids.join(',')})`, {
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify(patch)
+  }).catch(() => {});
+  for (const c of G.cases) {
+    if (G.selCases.has(c.id)) Object.assign(c, patch);
+  }
+  clearSelection();
+  renderList();
+  renderKanban();
+  renderDashboard();
+  populateFilterOptions();
+}
+async function bulkVincEmpr() {
+  const v = document.getElementById('bulk-empr').value;
+  if (!v) {
+    toast('Escolha um empreendimento', 'error');
+    return;
+  }
+  await bulkPatch({ development: v });
+  toast('Empreendimento vinculado', 'success');
+}
+async function bulkVincCorr() {
+  const v = document.getElementById('bulk-corr').value;
+  if (!v) {
+    toast('Escolha um correspondente', 'error');
+    return;
+  }
+  await bulkPatch({ partner_name: v });
+  toast('Correspondente vinculado', 'success');
+}
+function toggleDupView() {
+  G.dupOnly = !G.dupOnly;
+  const b = document.getElementById('btn-dup');
+  if (b) {
+    b.classList.toggle('btn-primary', G.dupOnly);
+    b.classList.toggle('btn-ghost', !G.dupOnly);
+    b.textContent = G.dupOnly ? 'Ver todos' : 'CPFs duplicados';
+  }
+  clearSelection();
+  renderList();
+}
+async function bulkArquivar() {
+  // Era bulkDelete: DELETE em lote, atrás de um confirm de uma linha, sem
+  // auditoria e sem volta. O mesmo defeito do "Arquivar", só que em escala —
+  // um clique podia destruir dezenas de processos de uma vez.
+  const ids = [...(G.selCases || [])];
+  if (!ids.length) {
+    toast('Selecione ao menos um processo', 'error');
+    return;
+  }
+  if (
+    !confirm(
+      `Arquivar ${ids.length} processo(s)?\n\n` +
+        `Eles saem do quadro e da listagem, mas NÃO SÃO APAGADOS: continuam no banco ` +
+        `e podem ser trazidos de volta pelo botão Arquivados (desarquivar).\n\n` +
+        `Para apagar de verdade, com registro de quem apagou, use ` +
+        `Configurações › Exclusão definitiva — um processo por vez, de propósito.`
+    )
+  )
+    return;
+  const res = await fetch(`${A1.rest('a1_cases')}?id=in.(${ids.join(',')})`, {
+    method: 'PATCH',
+    headers: A1.headers(),
+    body: JSON.stringify({ archived: true })
+  }).catch(() => null);
+  if (!res || !res.ok) {
+    toast(await motivoDoArquivar(res), 'error');
+    return;
+  }
+  G.cases = G.cases.filter(c => !G.selCases.has(c.id));
+  clearSelection();
+  renderList();
+  renderKanban();
+  renderDashboard();
+  populateFilterOptions();
+  toast(`${ids.length} processo(s) arquivado(s).`, 'success');
+}
+
 function renderList() {
   const stageF = document.getElementById('tbl-stage-filter')?.value || '';
   const sm = stageMap();
-  const filtered = filteredCases().filter(c => !stageF || c.stage_id === stageF);
+  let filtered = filteredCases().filter(c => !stageF || c.stage_id === stageF);
+  if (G.dupOnly) {
+    const _n = x => String(x || '').replace(/\D/g, '');
+    const _cnt = {};
+    for (const c of G.cases) {
+      const k = _n(c.client_cpf);
+      if (k) _cnt[k] = (_cnt[k] || 0) + 1;
+    }
+    filtered = filtered
+      .filter(c => {
+        const k = _n(c.client_cpf);
+        return k && _cnt[k] > 1;
+      })
+      .sort((a, b) => _n(a.client_cpf).localeCompare(_n(b.client_cpf)));
+  }
   document.getElementById('tbl-count').textContent =
     `${filtered.length} repasse${filtered.length !== 1 ? 's' : ''}`;
   document.getElementById('cases-tbody').innerHTML =
@@ -4039,6 +4249,7 @@ function renderList() {
             reprovado: 'pill-reprovado'
           }[entSt] || 'pill-espera';
         return `<tr>
+      <td style="text-align:center"><input type="checkbox" class="row-chk" value="${c.id}" ${G.selCases && G.selCases.has(c.id) ? 'checked' : ''} onclick="toggleRowSel('${c.id}',this)"></td>
       <td><span class="tbl-name">${esc(c.client_name)}</span>${c.is_new ? '<span class="badge-novo" style="margin-left:.4rem">NOVO</span>' : ''}</td>
       <td><span class="tbl-cpf">${fmtCpf(c.client_cpf || '')}</span></td>
       <td>${esc(c.development || '—')}${c.unit ? ` <span style="color:var(--t3)">Un ${esc(c.unit)}</span>` : ''}</td>
@@ -4051,7 +4262,7 @@ function renderList() {
     </tr>`;
       })
       .join('') ||
-    `<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:2rem">Nenhum repasse encontrado.</td></tr>`;
+    `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:2rem">Nenhum repasse encontrado.</td></tr>`;
 }
 
 // ─── Flags ────────────────────────────────────────────────────────────────────
@@ -4182,7 +4393,7 @@ function renderPartnerTable() {
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
         <button class="pt-act" onclick="openPartnerModal('${p.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deletePartner('${p.id}','${esc(p.name)}')">Excluir</button>
+        <button class="pt-act danger" onclick="deletePartner('${p.id}','${escJs(p.name)}')">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -4522,7 +4733,7 @@ function renderEmpresaTable() {
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
         <button class="pt-act" onclick="openEmpresaModal('${e.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpresa('${e.id}','${esc(e.name)}')">Excluir</button>
+        <button class="pt-act danger" onclick="deleteEmpresa('${e.id}','${escJs(e.name)}')">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -4647,7 +4858,7 @@ function renderEmprList() {
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count || 0} unidades</td>
       <td style="display:flex;gap:.35rem">
         <button class="pt-act" onclick="editEmpreendimento('${d.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${esc(d.name)}')">Excluir</button>
+        <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${escJs(d.name)}')">Excluir</button>
       </td>
     </tr>`
       )
@@ -4915,7 +5126,7 @@ function renderImobList() {
       <td><span class="status-dot ${i.is_active ? 'active' : 'inactive'}"></span>${i.is_active ? 'Ativa' : 'Inativa'}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openImob(${JSON.stringify(i).replace(/"/g, '&quot;')})">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${esc(i.name)}')">Excluir</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${escJs(i.name)}')">Excluir</button>
       </td>
     </tr>`
     )
@@ -5061,7 +5272,7 @@ function renderAnalistaList() {
     <td>${a.is_active !== false ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
     <td><div style="display:flex;gap:.3rem">
       <button class="btn btn-ghost btn-sm" onclick="openAnalista(${JSON.stringify(a).replace(/"/g, '&quot;')})">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${esc(a.name)}')">Excluir</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${escJs(a.name)}')">Excluir</button>
     </div></td>
   </tr>`
     )
@@ -5308,7 +5519,10 @@ function parsePdf(text) {
 
 // Parser da Ficha de Pré-cadastro do CVCRM
 function parseCvcrm(text) {
-  const t = text.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const t = text
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const m = re => {
     const x = t.match(re);
     return x ? x[1].trim() : '';
@@ -5818,45 +6032,6 @@ function v(id) {
   const el = document.getElementById(id);
   return el ? el.value.trim() : '';
 }
-// `String(s||'')` apagava o ZERO e o FALSE: esc(0) devolvia string vazia, e
-// qualquer unidade "0", contagem 0 ou marca false saía em branco na tela. Os
-// arquivos mais novos (comercial, pre-analise, crm, importar, indica, avisos)
-// já usam a forma abaixo; estes três ficaram para trás.
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// ESCAPE PARA DENTRO DE STRING JS, que é outro problema e precisa de outra função.
-//
-// `onclick="f('${esc(x)}')"` NÃO está protegido por esc(). Escapar a aspa como
-// entidade HTML não resolve: o parser decodifica `&#39;` de volta para `'` ANTES
-// de o JavaScript ler o atributo, e a string se quebra do mesmo jeito. Uma
-// regional chamada `a'); alert(1);//` — e regional é texto que o gestor digita
-// em Configurações — executa.
-//
-// A ordem importa: primeiro escapa para JS (a contrabarra antes da aspa, senão
-// a contrabarra nova seria escapada de novo), depois escapa para atributo HTML.
-// superadmin.html já fazia isto à mão em 6 lugares; aqui vira função com nome.
-// A quebra de linha também: dentro de literal de string JS ela é ERRO DE
-// SINTAXE, e o onclick inteiro deixa de compilar — o botão vira enfeite que não
-// faz nada, em silêncio. Nome com quebra de linha chega por colagem e por
-// importação de planilha, que é de onde vêm os cadastros de despachante e banco.
-// U+2028/U+2029 são quebras para o JS mesmo não sendo \n.
-function escJs(s) {
-  return esc(
-    String(s == null ? '' : s)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'")
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/\u2028/g, '\\u2028')
-      .replace(/\u2029/g, '\\u2029')
-  );
-}
 function fmtDateHour(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -5921,6 +6096,102 @@ function closeModal(id) {
     G.editingCaseData = null;
   }
 }
+// ─── Relatório em planilha ────────────────────────────────────────────────────
+// Exporta exatamente o que os filtros estão mostrando. CSV com ponto e vírgula
+// e BOM, que é o que o Excel em português abre direto, sem assistente de
+// importação e sem quebrar acentos.
+function csvCampo(v) {
+  if (v === null || v === undefined) return '';
+  const t = String(v).replace(/"/g, '""');
+  return /[";\n\r]/.test(t) ? `"${t}"` : t;
+}
+function dataBR(d) {
+  if (!d) return '';
+  const x = new Date(d);
+  return isNaN(x) ? '' : x.toLocaleDateString('pt-BR');
+}
+function numeroBR(v) {
+  const n = Number(v);
+  return v === null || v === undefined || v === '' || isNaN(n) ? '' : n.toFixed(2).replace('.', ',');
+}
+
+function exportarPlanilha() {
+  const linhas = filteredCases();
+  if (!linhas.length) {
+    toast('Nenhum processo nos filtros atuais para exportar.', 'info');
+    return;
+  }
+  const sm = stageMap();
+
+  const colunas = [
+    ['ID', c => c.id],
+    ['Cliente', c => c.client_name],
+    ['CPF', c => c.client_cpf],
+    ['Telefone', c => c.client_phone],
+    ['E-mail', c => c.client_email],
+    ['Empreendimento', c => c.development],
+    ['Bloco', c => c.block],
+    ['Unidade', c => c.unit],
+    ['Etapa', c => (sm[c.stage_id] || {}).name || c.stage_name],
+    ['Dias na etapa', c => daysSince(c.stage_entered_at)],
+    ['Regional', c => (c.payload || {}).regional],
+    ['Convênio', c => (c.payload || {}).convenio],
+    ['Agência', c => (c.payload || {}).agencia],
+    ['Coordenador', c => _coordenadorDoCorretor(c.broker_name)],
+    ['Modalidade', c => (c.payload || {}).modalidade],
+    ['Data da Venda', c => dataBR((c.payload || {}).data_venda)],
+    ['Estado', c => (c.payload || {}).estado],
+    ['Cidade', c => (c.payload || {}).cidade],
+    ['Correspondente', c => c.partner_name],
+    ['Usuário Correspondente', c => (c.payload || {}).usuario_correspondente],
+    ['Imobiliária', c => c.real_estate_name],
+    ['Corretor', c => c.broker_name],
+    ['Analista', c => c.manager_name],
+    ['Entrevista', c => (c.payload || {}).entrevista_status || 'pendente'],
+    ['Valor do contrato', c => numeroBR(caseUnitValue(c))],
+    ['Valor de repasse', c => numeroBR(caseRepasseValue(c))],
+    ['Data de assinatura', c => dataBR(((c.payload || {}).valores || {}).data_assinatura)],
+    ['Previsão de repasse', c => dataBR(((c.payload || {}).valores || {}).data_previsao_repasse)],
+    ['Venc. avaliação', c => dataBR(c.evaluation_expiry)],
+    ['Criado em', c => dataBR(c.created_at)],
+    ['Observações', c => c.observations]
+  ];
+
+  const corpo = [
+    colunas.map(x => csvCampo(x[0])).join(';'),
+    ...linhas.map(c =>
+      colunas
+        .map(x => {
+          try {
+            return csvCampo(x[1](c));
+          } catch {
+            return '';
+          }
+        })
+        .join(';')
+    )
+  ].join('\r\n');
+
+  const hoje = new Date();
+  const carimbo = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const blob = new Blob(['\uFEFF' + corpo], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `processos-${carimbo}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  const total = G.cases.length;
+  toast(
+    `Relatório gerado com ${linhas.length} processo(s)` +
+      (linhas.length !== total ? ` (de ${total}, conforme os filtros).` : '.'),
+    'success'
+  );
+}
+
 function toast(msg, type = 'info') {
   const wrap = document.getElementById('toast-wrap');
   const d = document.createElement('div');
@@ -6310,14 +6581,17 @@ async function saveCartorio() {
 // cada volta redesenhava tudo: a etapa escolhida voltava para "Todas" e o quadro
 // e a lista voltavam para o começo (THE CRED, 27/10). Agora só se redesenha o que
 // mudou de fato, e com a rolagem devolvida ao lugar.
+// Volta para a aba do navegador: busca de novo (alguém pode ter mexido em outra
+// aba, no workflow, no celular), mas a tela fica como a pessoa deixou. Só se
+// redesenha o que mudou de fato, e com a rolagem devolvida ao lugar.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || !G.user) return;
   const antes = A1.impressaoTela(G.cases, G.stages);
   loadData().then(() => {
     if (A1.impressaoTela(G.cases, G.stages) === antes) return;
     const rol = A1.fotoRolagem();
-    renderDashboard();
-    if (G.activeTab === 'repasse') {
+    if (G.activeTab === 'dashboard') renderDashboard();
+    else {
       renderPipeline();
       renderList();
     }

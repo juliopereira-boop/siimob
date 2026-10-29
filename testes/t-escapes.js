@@ -85,90 +85,105 @@ const ATAQUES = [
   '&#39;); alert(4);//' // a entidade escrita à mão pelo atacante
 ];
 
-const TELAS = ['repasse.html', 'andamento.html', 'listagem.html'];
-const TODAS = TELAS.concat([
-  'configuracoes.html',
-  'registro.html',
-  'registro-listagem.html',
-  'superadmin.html'
-]);
+// Desde a fase 2 da reestruturação o escape é UM só: src/shared/utils/texto.js.
+// Antes cada tela tinha o seu, em quatro versões (só duas escapavam a aspa
+// simples). O que se confere agora: a função única faz o certo, e TODA tela que
+// desenha dado do banco a carrega e não redefine a própria.
+const ESCAPE = 'src/shared/utils/texto.js';
+const TELAS_COM_ESC = [
+  'comercial',
+  'configuracoes',
+  'crm',
+  'geral',
+  'importar',
+  'indica',
+  'pre-analise',
+  'registro',
+  'repasse',
+  'superadmin',
+  'tenant-admin',
+  'workflow'
+];
 
 (async () => {
   console.log('== esc() NÃO PODE ENGOLIR O ZERO ==');
-  for (const arq of TODAS) {
-    const F = funcoesDe(arq);
-    if (!F) {
-      checa(arq + ': tem esc()', false, 'nenhuma declaração encontrada');
-      continue;
-    }
-    checa(arq + ': esc(0) devolve "0"', F.esc(0) === '0', JSON.stringify(F.esc(0)));
-    checa(arq + ': esc(false) devolve "false"', F.esc(false) === 'false', JSON.stringify(F.esc(false)));
-    checa(
-      arq + ': esc(null) e esc(undefined) continuam vazios',
-      F.esc(null) === '' && F.esc(undefined) === '',
-      JSON.stringify([F.esc(null), F.esc(undefined)])
-    );
-    checa(
-      arq + ': e a marcação continua escapada',
-      F.esc('<b>"x"&</b>') === '&lt;b&gt;&quot;x&quot;&amp;&lt;/b&gt;',
-      F.esc('<b>"x"&</b>')
-    );
-  }
+  const F = funcoesDe(ESCAPE);
+  checa('o arquivo de escape declara esc() e escJs()', !!F && !!F.escJs);
+  checa('esc(0) devolve "0"', F.esc(0) === '0', JSON.stringify(F.esc(0)));
+  checa('esc(false) devolve "false"', F.esc(false) === 'false', JSON.stringify(F.esc(false)));
+  checa(
+    'esc(null) e esc(undefined) continuam vazios',
+    F.esc(null) === '' && F.esc(undefined) === '',
+    JSON.stringify([F.esc(null), F.esc(undefined)])
+  );
+  checa(
+    'e a marcação continua escapada',
+    F.esc('<b>"x"&</b>') === '&lt;b&gt;&quot;x&quot;&amp;&lt;/b&gt;',
+    F.esc('<b>"x"&</b>')
+  );
+  checa('e a aspa simples também (atributo entre aspas simples)', F.esc("a'b") === 'a&#39;b', F.esc("a'b"));
 
   console.log('\n== escJs() SOBREVIVE ÀS DUAS DECODIFICAÇÕES ==');
-  for (const arq of TELAS) {
-    const F = funcoesDe(arq);
-    checa(arq + ': tem escJs()', !!F.escJs);
-    if (!F.escJs) continue;
-    let todosOk = true,
-      primeiroErro = '';
-    for (const dado of ATAQUES) {
-      // Exatamente o formato que as telas geram.
-      const atributo = `f('${F.escJs(dado)}')`;
-      let recebido;
-      try {
-        recebido = oQueAFuncaoRecebe(decodificaAtributo(atributo));
-      } catch (e) {
-        recebido = '(não compilou: ' + e.message + ')';
-      }
-      if (recebido !== dado) {
-        todosOk = false;
-        if (!primeiroErro) primeiroErro = JSON.stringify(dado) + ' virou ' + JSON.stringify(recebido);
-      }
+  let todosOk = true,
+    primeiroErro = '';
+  for (const dado of ATAQUES) {
+    // Exatamente o formato que as telas geram.
+    const atributo = `f('${F.escJs(dado)}')`;
+    let recebido;
+    try {
+      recebido = oQueAFuncaoRecebe(decodificaAtributo(atributo));
+    } catch (e) {
+      recebido = '(não compilou: ' + e.message + ')';
     }
-    checa(arq + ': o dado chega inteiro à função, em todos os ataques', todosOk, primeiroErro);
-    // A aspa dupla também tem de estar escapada como entidade, senão o ATRIBUTO
-    // fecha antes do onclick terminar e o resto vira marcação.
+    if (recebido !== dado) {
+      todosOk = false;
+      if (!primeiroErro) primeiroErro = JSON.stringify(dado) + ' virou ' + JSON.stringify(recebido);
+    }
+  }
+  checa('o dado chega inteiro à função, em todos os ataques', todosOk, primeiroErro);
+  // A aspa dupla também tem de estar escapada como entidade, senão o ATRIBUTO
+  // fecha antes do onclick terminar e o resto vira marcação.
+  checa(
+    'a aspa dupla sai como entidade, e não fecha o atributo',
+    !F.escJs('x"); alert(2);//').includes('"'),
+    F.escJs('x"); alert(2);//')
+  );
+
+  console.log('\n== TODA TELA USA O ESCAPE ÚNICO ==');
+  for (const tela of TELAS_COM_ESC) {
+    const html = lerFonte(`src/pages/${tela}/index.html`);
+    const js = lerFonte(`src/pages/${tela}/main.js`);
+    const iEsc = html.indexOf('/src/shared/utils/texto.js');
+    const iMain = html.indexOf(`/src/pages/${tela}/main.js`);
+    checa(`${tela}: carrega o escape antes do código da tela`, iEsc > -1 && iEsc < iMain);
     checa(
-      arq + ': a aspa dupla sai como entidade, e não fecha o atributo',
-      !F.escJs('x"); alert(2);//').includes('"'),
-      F.escJs('x"); alert(2);//')
+      `${tela}: e não redefine esc() nem escJs()`,
+      !/^(function\s+(esc|escJs)\b|(const|let|var)\s+(esc|escJs)\s*=)/m.test(js)
     );
   }
 
-  console.log('\n== NENHUM onclick INTERPOLA COM esc() ==');
+  console.log('\n== NENHUM HANDLER INTERPOLA COM esc() ==');
   // A regressão que este bloco pega: alguém acrescenta um botão novo copiando um
-  // vizinho antigo e volta a usar esc() dentro de string JS. O padrão é buscado
-  // no arquivo cru, não no resultado — é o código que precisa estar certo.
-  for (const arq of TELAS) {
-    const s = lerArq(arq);
-    // `onclick="algo('${esc(` — esc seguido de parêntese, não escJs.
-    const ruins = [...s.matchAll(/onclick="[^"]*\('\$\{esc\(/g)].filter(m => {
-      // O trecho dentro do próprio comentário que explica o problema não conta.
+  // vizinho antigo e volta a usar esc() dentro de string JS de um onclick,
+  // ondrop, onchange... O padrão é buscado no arquivo cru, não no resultado.
+  for (const tela of TELAS_COM_ESC) {
+    const s = lerFonte(`src/pages/${tela}/main.js`);
+    const ruins = [...s.matchAll(/on[a-z]+="[^"]*'\$\{esc\(/g)].filter(m => {
       const linha = s.slice(s.lastIndexOf('\n', m.index) + 1, s.indexOf('\n', m.index));
       return !/^\s*\/\//.test(linha);
     });
     checa(
-      arq + ': nenhuma interpolação em string JS usa esc()',
+      `${tela}: nenhuma interpolação em string JS usa esc()`,
       ruins.length === 0,
       ruins.length + ' ocorrência(s)'
     );
-    checa(
-      arq + ': e os sítios que existem usam escJs()',
-      (s.match(/onclick="[^"]*\('\$\{escJs\(/g) || []).length >= 4,
-      String((s.match(/onclick="[^"]*\('\$\{escJs\(/g) || []).length)
-    );
   }
+  const rep = lerPagina('repasse');
+  checa(
+    'e o Repasse usa escJs() nos sítios que existem',
+    (rep.match(/onclick="[^"]*\('\$\{escJs\(/g) || []).length >= 4,
+    String((rep.match(/onclick="[^"]*\('\$\{escJs\(/g) || []).length)
+  );
 
   process.exit(resumo([]) ? 1 : 0);
 })();

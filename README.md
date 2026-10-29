@@ -36,7 +36,7 @@ Provas de banco (Postgres descartável): `PGPORT=5473 testes/sql/roda.sh`.
 
 ```
 src/
-  pages/<tela>/        uma pasta por tela
+  pages/<tela>/        uma pasta por tela (repasse e registro têm várias vistas; a rota decide)
     index.html         só marcação
     main.js            comportamento da tela
     style.css          estilo da tela

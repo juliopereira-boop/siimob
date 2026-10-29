@@ -304,19 +304,19 @@ function renderEsteira() {
             (s, i) => `
           <tr>
             <td style="color:var(--t3)">${i + 1}</td>
-            <td><input value="${esc(s.nome)}" onchange="editarSituacao('${esc(s.id)}','nome',this.value)"
+            <td><input value="${esc(s.nome)}" onchange="editarSituacao('${escJs(s.id)}','nome',this.value)"
                        style="width:100%;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td><select onchange="editarSituacao('${esc(s.id)}','flag',this.value)"
+            <td><select onchange="editarSituacao('${escJs(s.id)}','flag',this.value)"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="">—</option>
                   ${d.flags.map(f => `<option value="${f}" ${s.flag === f ? 'selected' : ''}>${f}</option>`).join('')}
                 </select></td>
-            <td><input type="color" value="${esc(s.cor || '#64748b')}" onchange="editarSituacao('${esc(s.id)}','cor',this.value)"
+            <td><input type="color" value="${esc(s.cor || '#64748b')}" onchange="editarSituacao('${escJs(s.id)}','cor',this.value)"
                        style="width:44px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0;cursor:pointer"></td>
             <td><input type="number" min="0" max="8760" value="${s.sla_horas == null ? '' : s.sla_horas}"
-                       placeholder="sem prazo" onchange="editarSituacao('${esc(s.id)}','sla_horas',this.value)"
+                       placeholder="sem prazo" onchange="editarSituacao('${escJs(s.id)}','sla_horas',this.value)"
                        style="width:92px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td><button class="btn btn-danger btn-xs" onclick="apagarSituacao('${esc(s.id)}')">Apagar</button></td>
+            <td><button class="btn btn-danger btn-xs" onclick="apagarSituacao('${escJs(s.id)}')">Apagar</button></td>
           </tr>`
           )
           .join('')}
@@ -345,20 +345,20 @@ function renderEsteira() {
           .map(
             t => `
           <tr>
-            <td><select onchange="editarTransicao('${esc(t.id)}','de_id',this.value||null)"
+            <td><select onchange="editarTransicao('${escJs(t.id)}','de_id',this.value||null)"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="">qualquer situação</option>
                   ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.de_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${esc(t.id)}','para_id',this.value)"
+            <td><select onchange="editarTransicao('${escJs(t.id)}','para_id',this.value)"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.para_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${esc(t.id)}','acao',this.value||null)"
+            <td><select onchange="editarTransicao('${escJs(t.id)}','acao',this.value||null)"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   ${d.acoes.map(([v, r]) => `<option value="${v}" ${(t.acao || '') === v ? 'selected' : ''}>${esc(r)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${esc(t.id)}','acao_modo',this.value)"
+            <td><select onchange="editarTransicao('${escJs(t.id)}','acao_modo',this.value)"
                         ${t.acao ? '' : 'disabled'}
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="CONFIRMAR" ${t.acao_modo === 'CONFIRMAR' ? 'selected' : ''}>o operador confirma</option>
@@ -369,14 +369,14 @@ function renderEsteira() {
                 ([k, r]) => `
                   <label style="display:flex;align-items:center;gap:.3rem;font-size:.71rem;color:var(--t2);cursor:pointer">
                     <input type="checkbox" ${(t.requisitos || {})[k] ? 'checked' : ''}
-                           onchange="editarRequisito('${esc(t.id)}','${k}',this.checked)"
+                           onchange="editarRequisito('${escJs(t.id)}','${k}',this.checked)"
                            style="accent-color:#0E8C7F;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`
               )
               .join('')}</td>
             <td><input value="${esc((t.papeis || []).join(', '))}" placeholder="todos"
-                       onchange="editarPapeis('${esc(t.id)}',this.value)"
+                       onchange="editarPapeis('${escJs(t.id)}',this.value)"
                        style="width:130px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem"></td>
-            <td><button class="btn btn-danger btn-xs" onclick="apagarTransicao('${esc(t.id)}')">Apagar</button></td>
+            <td><button class="btn btn-danger btn-xs" onclick="apagarTransicao('${escJs(t.id)}')">Apagar</button></td>
           </tr>`
           )
           .join('')}
@@ -1268,7 +1268,7 @@ function renderLeads() {
           </select>
         </td>
         <td style="padding:.7rem .8rem;text-align:right">
-          <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteLead('${l.id}','${esc(l.name).replace(/'/g, "\\'")}')">Excluir</button>
+          <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteLead('${l.id}','${escJs(l.name)}')">Excluir</button>
         </td>
       </tr>`;
       })
@@ -1643,17 +1643,17 @@ function renderTenantsTable(list) {
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
           <button class="btn btn-xs" style="background:#0E8C7F;color:#fff"
             title="${t.status === 'suspended' ? 'Acessar em modo suporte — cliente suspenso' : 'Acessar cliente'}"
-            onclick="accessTenant('${t.id}','${esc(t.slug)}','${esc(t.name).replace(/'/g, "\\'")}')">Acessar</button>
-          <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${esc(t.name).replace(/'/g, "\\'")}')" title="Usuários">Usuários</button>
+            onclick="accessTenant('${t.id}','${escJs(t.slug)}','${escJs(t.name)}')">Acessar</button>
+          <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${escJs(t.name)}')" title="Usuários">Usuários</button>
           <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
           <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
-          <button class="btn btn-ghost btn-xs" style="color:#0d9488;border-color:#ccfbf1" onclick="openCobranca('${t.id}','${esc(t.name).replace(/'/g, "\\'")}','${esc(t.email || '')}')">Cobrança<span id="cob-hint-${t.id}" style="margin-left:.3rem;font-size:.62rem;font-weight:700"></span></button>
+          <button class="btn btn-ghost btn-xs" style="color:#0d9488;border-color:#ccfbf1" onclick="openCobranca('${t.id}','${escJs(t.name)}','${escJs(t.email || '')}')">Cobrança<span id="cob-hint-${t.id}" style="margin-left:.3rem;font-size:.62rem;font-weight:700"></span></button>
           ${
             t.status !== 'suspended'
               ? `<button class="btn btn-danger btn-xs" onclick="suspendTenant('${t.id}')">Suspender</button>`
               : `<button class="btn btn-warn btn-xs" onclick="reactivateTenant('${t.id}')">Reativar</button>`
           }
-          <button class="btn btn-danger btn-xs" style="background:#7f1d1d;color:#fff;border-color:#991b1b" onclick="deleteTenant('${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">Excluir</button>
+          <button class="btn btn-danger btn-xs" style="background:#7f1d1d;color:#fff;border-color:#991b1b" onclick="deleteTenant('${t.id}','${escJs(t.name)}')">Excluir</button>
         </div>
       </td>
     </tr>`;
@@ -2030,10 +2030,10 @@ async function loadTenantUsers() {
   ]);
 
   const t = TENANTS.find(x => x.id === ACTIVE_TENANT_ID) || {};
-  const arg = v =>
-    String(v == null ? '' : v)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'");
+  // Era um escape próprio que tratava \ e ', mas não a aspa dupla: um nome com "
+  // fechava o atributo onclick="..." e injetava outro atributo. escJs trata as
+  // duas camadas (string JS e atributo HTML).
+  const arg = escJs;
   const botaoAcessar = (id, papel, nome) =>
     t.slug
       ? `<button class="btn btn-xs" style="background:#0d9488;color:#fff"
@@ -2369,17 +2369,6 @@ async function acessarComo(tenantId, slug, tenantName, userId, papel, nome) {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function esc(str) {
-  // String(str||'') engole o zero e o false: `esc(0)` devolvia string vazia, e a
-  // tela mostrava um campo em branco onde o dado era 0. O teste tem de ser por
-  // ausencia, nao por valor falsy.
-  return String(str == null ? '' : str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 function setEl(id, v) {
   const el = document.getElementById(id);
   if (el) el.textContent = v;
@@ -2761,18 +2750,6 @@ async function loadFeedback() {
     .join('');
 }
 
-// SEGUNDA definicao de esc neste arquivo (a primeira esta la em cima). Sao
-// declaracoes de funcao no mesmo escopo global: esta aqui VENCE, e e ela que
-// roda em todo o arquivo. As duas estao corrigidas para nao engolir 0/false;
-// se um dia forem unificadas, e esta que fica.
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 async function setFeedbackStatus(id, status) {
   const res = await fetch(`${saRest('a1_feedback')}?id=eq.${id}`, {
     method: 'PATCH',
@@ -2821,7 +2798,7 @@ function openContrato(tenantId) {
       : '';
 
   // Default date = today
-  document.getElementById('ct-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ct-data').value = hojeISO();
 
   // Restore saved contratada data
   const saved = JSON.parse(localStorage.getItem('sa_contratada') || '{}');

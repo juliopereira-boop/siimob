@@ -24,13 +24,6 @@ const G = {
   analistas: []
 };
 
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 function toast(msg, tipo = 'info') {
   const w = document.getElementById('toast-wrap');
   const d = document.createElement('div');
@@ -537,8 +530,8 @@ function renderListagem(linhas) {
 
 function linhaFila(c) {
   const s = sla(c);
-  return `<tr onclick="abrirDossie('${esc(c.id)}')" tabindex="0"
-             onkeydown="if(event.key==='Enter')abrirDossie('${esc(c.id)}')">
+  return `<tr onclick="abrirDossie('${escJs(c.id)}')" tabindex="0"
+             onkeydown="if(event.key==='Enter')abrirDossie('${escJs(c.id)}')">
     <td><div class="cli">${esc(tituloDe(c))}</div></td>
     <td class="cod">${esc(c.codigo || c.id.slice(0, 8))}</td>
     <td>${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ` <span class="sub">· un. ${esc(c.unidade)}</span>` : ''}</td>
@@ -600,11 +593,11 @@ function cartao(c) {
     : '—';
   return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}"
     ${mover ? 'draggable="true" ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"' : ''}
-    style="border-left-color:${cor}" onclick="abrirDossie('${esc(c.id)}')">
+    style="border-left-color:${cor}" onclick="abrirDossie('${escJs(c.id)}')">
     <div class="co-name">${esc(tituloDe(c))}</div>
     ${
       documento
-        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${escJs(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
         : '<div class="co-line">CPF não informado</div>'
     }
     <div class="co-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ' · un. ' + esc(c.unidade) : ''}</div>
@@ -1078,10 +1071,10 @@ function dosContrato() {
           c.assinado_em ? ' · assinado em ' + esc(dataBR(c.assinado_em)) : ''
         }</div></div>
       <div style="display:flex;gap:.4rem">
-        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" onclick="baixarContrato('${esc(c.id)}')">Abrir</button>` : ''}
+        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" onclick="baixarContrato('${escJs(c.id)}')">Abrir</button>` : ''}
         ${
           podeAssinar && c.status !== 'ASSINADO' && c.status !== 'CANCELADO'
-            ? `<button class="btn btn-primary btn-sm" onclick="marcarAssinado('${esc(c.id)}')">Marcar assinado</button>`
+            ? `<button class="btn btn-primary btn-sm" onclick="marcarAssinado('${escJs(c.id)}')">Marcar assinado</button>`
             : ''
         }
       </div>
@@ -1196,7 +1189,7 @@ function dosDocumentos() {
         <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · enviado em ${esc(dataHoraBR(d.criado_em))}</div></div>
       <div style="display:flex;gap:.4rem;align-items:center">
         <span class="pill ${d.status === 'APROVADO' ? 'ok' : d.status === 'REPROVADO' ? 'no' : 'wt'}">${esc(d.status)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${esc(d.id)}')">Abrir</button>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${escJs(d.id)}')">Abrir</button>
       </div>
     </div>`
     )
@@ -1223,7 +1216,7 @@ function dosChecklist() {
     <div class="linha">
       <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar ? 'pointer' : 'default'}">
         <input type="checkbox" ${i.concluido ? 'checked' : ''} ${podeMarcar && !i.automatico ? '' : 'disabled'}
-          onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
+          onchange="marcarChecklistOperacional('${escJs(i.id)}',this.checked)">
         <div><div class="nm">${esc(i.nome)} ${i.obrigatorio ? '<span class="pill wt" style="margin-left:.35rem">obrigatório</span>' : ''}</div>
           ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
       </label>

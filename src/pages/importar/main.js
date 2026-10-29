@@ -52,14 +52,6 @@ function casar(valor, lista, campo = 'name') {
   return { tipo: 'nenhum' };
 }
 
-const esc = s =>
-  String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
 // ── Colunas que o importador entende ─────────────────────────────────────────
 const CAMPOS = [
   { chave: 'data', rotulo: 'Data da venda', dicas: ['DATA', 'FECHAMENTO', 'VENDA'] },
@@ -262,7 +254,7 @@ async function conferir() {
             v,
             'alerta',
             'mais de uma cidade com esse nome',
-            `<select onchange="G.cidadeEscolha['${esc(v)}']=this.value">
+            `<select onchange="G.cidadeEscolha['${escJs(v)}']=this.value">
              ${usar.map(m => `<option value="${esc(m.nome)}|${esc(m.uf)}">${esc(m.nome)} / ${esc(m.uf)}</option>`).join('')}
            </select>`,
             true
@@ -441,7 +433,7 @@ function montarEtapas() {
       return `<tr>
       <td><b>${esc(sit)}</b>${escolhida ? '' : ' <span class="marca m-alerta">sem etapa igual</span>'}</td>
       <td class="mono">${n}</td>
-      <td><select onchange="G.deEtapa['${esc(sit)}']=this.value; resumoImport();">
+      <td><select onchange="G.deEtapa['${escJs(sit)}']=this.value; resumoImport();">
         ${G.etapas.map(e => `<option value="${esc(e.id)}"${G.deEtapa[sit] === e.id ? ' selected' : ''}>${esc(e.name)}</option>`).join('')}
         <option value="">— Não importar estas linhas —</option>
       </select></td></tr>`;

@@ -1250,7 +1250,7 @@ function renderLista() {
           tp = leadTemp(sc);
         const ts = taskState(l);
         const fone = (l.client_phone || '').replace(/\D/g, '');
-        return `<tr style="cursor:pointer" onclick="openLead('${esc(l.id)}')">
+        return `<tr style="cursor:pointer" onclick="openLead('${escJs(l.id)}')">
         <td><b>${esc(l.client_name || 'Sem nome')}</b>
           <div style="font-size:.69rem;color:var(--t3)">${
             [l.client_phone, l.client_email].filter(Boolean).map(esc).join(' · ') || '—'
@@ -1263,10 +1263,10 @@ function renderLista() {
         <td style="white-space:nowrap;color:var(--t3)">${fmtDate(l.created_at)}</td>
         <td style="white-space:nowrap;text-align:right">${
           fone
-            ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${esc(fone)}','${esc(l.id)}')">${a1Svg('whatsapp', 15)}</button> `
+            ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${escJs(fone)}','${escJs(l.id)}')">${a1Svg('whatsapp', 15)}</button> `
             : ''
         }
-          <button class="mini-btn" onclick="event.stopPropagation();openLead('${esc(l.id)}')">Abrir</button></td>
+          <button class="mini-btn" onclick="event.stopPropagation();openLead('${escJs(l.id)}')">Abrir</button></td>
       </tr>`;
       })
       .join('')}</tbody></table>`;
@@ -1317,7 +1317,7 @@ function exportarLeads() {
   const csv = '\ufeff' + [cols.map(escCsv).join(';')].concat(corpo).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `leads-${hojeISO()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
@@ -2414,13 +2414,6 @@ function closeModal(id) {
 function val(id) {
   const el = document.getElementById(id);
   return el ? String(el.value).trim() : '';
-}
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 function fmtBRL(v) {
   return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

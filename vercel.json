@@ -41,11 +41,19 @@
     },
     {
       "source": "/:slug/andamento",
-      "destination": "/andamento.html"
+      "destination": "/repasse.html"
     },
     {
       "source": "/:slug/listagem",
-      "destination": "/listagem.html"
+      "destination": "/repasse.html"
+    },
+    {
+      "source": "/andamento.html",
+      "destination": "/repasse.html"
+    },
+    {
+      "source": "/listagem.html",
+      "destination": "/repasse.html"
     },
     {
       "source": "/:slug/registro",
@@ -53,7 +61,11 @@
     },
     {
       "source": "/:slug/registro-listagem",
-      "destination": "/registro-listagem.html"
+      "destination": "/registro.html"
+    },
+    {
+      "source": "/registro-listagem.html",
+      "destination": "/registro.html"
     },
     {
       "source": "/:slug/crm",

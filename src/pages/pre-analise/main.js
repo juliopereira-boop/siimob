@@ -36,14 +36,6 @@ const G = {
   rascunho: {}
 };
 
-// ─── utilitários ─────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 function toast(msg, tipo = 'info') {
   const w = document.getElementById('toast-wrap');
   const d = document.createElement('div');
@@ -703,8 +695,8 @@ function renderFila(linhas) {
 function linhaFila(p) {
   const t = G.titulares[p.id];
   const s = sla(p);
-  return `<tr onclick="abrirDossie('${esc(p.id)}')" tabindex="0"
-             onkeydown="if(event.key==='Enter')abrirDossie('${esc(p.id)}')">
+  return `<tr onclick="abrirDossie('${escJs(p.id)}')" tabindex="0"
+             onkeydown="if(event.key==='Enter')abrirDossie('${escJs(p.id)}')">
     <td><div class="cli">${esc(t ? t.nome : 'Sem titular')}</div>
         <div class="sub">${t && t.documento ? esc(mascaraDoc(t.documento)) : '—'}</div></td>
     <td class="cod">${esc(p.codigo || p.id.slice(0, 8))}</td>
@@ -776,11 +768,11 @@ function cartao(p) {
     ondragend="this.classList.remove('dragging')"`
         : ''
     }
-    onclick="abrirDossie('${esc(p.id)}')">
+    onclick="abrirDossie('${escJs(p.id)}')">
     <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
     ${
       documento
-        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${esc(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${escJs(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
         : '<div class="pa-line">CPF não informado</div>'
     }
     <div class="pa-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(p.empreendimento_id))}${p.unidade ? ' · un. ' + esc(p.unidade) : ''}</div>
@@ -2107,11 +2099,11 @@ function dosDocumentos() {
         <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · ${esc(dataHoraBR(d.criado_em))}</div></div>
       <div style="display:flex;gap:.4rem;align-items:center">
         <span class="pill ${d.status === 'APROVADO' ? 'ok' : d.status === 'REPROVADO' ? 'no' : 'wt'}">${esc(d.status)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="baixarDoc('${esc(d.id)}')">Abrir</button>
+        <button class="btn btn-ghost btn-sm" onclick="baixarDoc('${escJs(d.id)}')">Abrir</button>
         ${
           podeAnalisar
-            ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${esc(d.id)}','APROVADO')">Aprovar</button>
-          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${esc(d.id)}','REPROVADO')">Reprovar</button>`
+            ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${escJs(d.id)}','APROVADO')">Aprovar</button>
+          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${escJs(d.id)}','REPROVADO')">Reprovar</button>`
             : ''
         }
       </div>
@@ -2259,7 +2251,7 @@ function dosChecklist() {
     <div class="linha">
       <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar ? 'pointer' : 'default'}">
         <input type="checkbox" ${i.concluido ? 'checked' : ''} ${podeMarcar && !i.automatico ? '' : 'disabled'}
-          onchange="marcarChecklistOperacional('${esc(i.id)}',this.checked)">
+          onchange="marcarChecklistOperacional('${escJs(i.id)}',this.checked)">
         <div><div class="nm">${esc(i.nome)} ${i.obrigatorio ? '<span class="pill wt" style="margin-left:.35rem">obrigatório</span>' : ''}</div>
           ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
       </label>

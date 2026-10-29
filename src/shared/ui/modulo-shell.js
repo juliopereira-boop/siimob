@@ -173,12 +173,15 @@ function a1AtorHistorico(evento) {
   return [nome, papel].filter(Boolean).join(' · ');
 }
 
+// O mesmo escape de src/shared/utils/texto.js (esc), com nome próprio porque o
+// casco também roda em telas que ainda não carregam aquele arquivo.
 function a1Esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // As iniciais do avatar. Duas letras, do primeiro e do ultimo nome — "Júlio

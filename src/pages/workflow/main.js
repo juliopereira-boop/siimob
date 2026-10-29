@@ -1,14 +1,3 @@
-// Texto vindo do banco nunca entra cru no HTML: um nome com "<" viraria tag.
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 const NODE_W = 215;
 const PORT_Y = 50; // y offset from node top to port center
@@ -312,7 +301,7 @@ function montarBotoesDeModulo(liberados) {
   caixa.innerHTML = meus
     .map(
       m =>
-        `<button type="button" class="wf-mod-btn" data-mod="${esc(m.key)}" onclick="changeModule('${esc(m.key)}')"
+        `<button type="button" class="wf-mod-btn" data-mod="${esc(m.key)}" onclick="changeModule('${escJs(m.key)}')"
        title="Workflow de ${esc(m.label)}"><span aria-hidden="true">${m.icone}</span> ${esc(m.label)}</button>`
     )
     .join('');

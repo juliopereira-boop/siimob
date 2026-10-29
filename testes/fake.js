@@ -855,7 +855,11 @@ const D = {
   agenda: (() => {
     const d = new Date();
     const pad = n => String(n).padStart(2, '0');
-    const dia = n => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(Math.min(28, d.getDate() + n))}`;
+    // O teto é o último dia DO MÊS, não 28: com 28, nos dias 29 a 31 o
+    // compromisso "de hoje" caía no dia 28 e o teste da agenda reprovava sem
+    // defeito nenhum na tela.
+    const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const dia = n => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(Math.min(ultimo, d.getDate() + n))}`;
     return [
       {
         id: 'ag1',

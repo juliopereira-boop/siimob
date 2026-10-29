@@ -27,6 +27,13 @@ function applyCustomLogo() {
   });
 }
 
+// Quadro e Listagem do Registro eram dois arquivos, e a Listagem tinha ficado
+// para trás: criar processo por ela perdia o telefone e os vínculos, e arquivar
+// ou salvar dizia "ok" mesmo com o banco recusando. Agora são uma tela só, e o
+// endereço decide a vista: /cliente/registro → quadro, /cliente/registro-listagem
+// → lista.
+const VISTA = /\/registro-listagem(\.html)?\/?$/.test(location.pathname) ? 'lista' : 'kanban';
+
 async function init() {
   applyCustomLogo();
   try {
@@ -49,12 +56,13 @@ async function init() {
   // o mesmo CSS repetido; a correção numa delas nunca chegava nas outras.
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo: 'registro',
-    vista: 'andamento',
+    vista: VISTA === 'lista' ? 'listagem' : 'andamento',
     sub: [
-      { rot: 'Andamento', href: `/${G.slug}/registro`, ativo: true },
-      { rot: 'Listagem', href: `/${G.slug}/registro-listagem` }
+      { rot: 'Andamento', href: `/${G.slug}/registro`, ativo: VISTA === 'kanban' },
+      { rot: 'Listagem', href: `/${G.slug}/registro-listagem`, ativo: VISTA === 'lista' }
     ]
   });
+  document.title = VISTA === 'lista' ? 'Registro — Listagem — SIIMOB' : 'Registro — SIIMOB';
   // Os links do editor de esteira ficam DENTRO desta tela, não na barra.
   [
     ['link-wf', 'repasse'],
@@ -65,6 +73,10 @@ async function init() {
     if (el) el.href = `/${G.slug}/workflow?module=${mod}`;
   });
 
+  // A vista certa aparece já aqui, antes da carga. O painel nascia visível e
+  // ficava na frente durante toda a carga: o mesmo "flash" do Repasse.
+  document.getElementById(VISTA === 'lista' ? 'tab-lista' : 'tab-kanban').style.display = '';
+
   await loadData();
   // Os filtros pertencem à carga, não à aba: quem entra direto no quadro ou na
   // listagem tem de encontrá-los prontos.
@@ -73,12 +85,11 @@ async function init() {
     renderKanban();
     renderList();
   }
-  // Kanban is the default view — hide dashboard, show kanban
   const tabDash = document.getElementById('tab-dashboard');
   if (tabDash) tabDash.style.display = 'none';
-  const tabKanban = document.getElementById('tab-kanban');
-  if (tabKanban) tabKanban.style.display = '';
-  a1StartHeartbeat('registro');
+  document.getElementById('tab-kanban').style.display = VISTA === 'kanban' ? '' : 'none';
+  document.getElementById('tab-lista').style.display = VISTA === 'lista' ? '' : 'none';
+  a1StartHeartbeat(VISTA === 'lista' ? 'registro-listagem' : 'registro');
 
   // Volta para a aba do navegador: busca de novo (alguém pode ter mexido em outra
   // aba, no workflow, no celular), mas a tela fica como a pessoa deixou. Antes,
@@ -312,7 +323,7 @@ function popularFiltros() {
 function renderDashboard() {
   const cases = dashCases();
   const now = new Date();
-  const thisMonth = now.toISOString().slice(0, 7);
+  const thisMonth = hojeISO(now).slice(0, 7);
 
   popularFiltros();
 
@@ -539,7 +550,7 @@ function renderKanban() {
         <span>${esc(stage.name)}</span>
         <span class="k-col-count">${stageCases.length}</span>
       </div>
-      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${esc(stage.id)}')">
+      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${escJs(stage.id)}')">
         ${
           stageCases.map(c => renderCard(c, color, now)).join('') ||
           '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'
@@ -563,9 +574,9 @@ function renderCard(c, color, now) {
 
   return `<div class="k-card" style="border-left-color:${cor(color)}"
     draggable="true"
-    ondragstart="onDragStart(event,'${esc(c.id)}')"
+    ondragstart="onDragStart(event,'${escJs(c.id)}')"
     ondragend="onDragEnd(event)"
-    onclick="openCase('${esc(c.id)}')">
+    onclick="openCase('${escJs(c.id)}')">
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
@@ -574,7 +585,7 @@ function renderCard(c, color, now) {
         <span class="badge-days ${dCls}">${days}d</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${esc(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${escJs(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
     ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
     <div class="kc-chips">
       ${itbi === 'pago' ? '<span class="chip chip-itbi-pago">ITBI Pago</span>' : ''}
@@ -678,7 +689,7 @@ function renderList() {
             itbi === 'pago' ? 'itbi-pill-pago' : itbi === 'vencido' ? 'itbi-pill-venc' : 'itbi-pill-pend';
           const st = G.stages.find(s => s.id === c.stage_id);
           const stClr = st?.color || '#6B827D';
-          return `<tr onclick="openCase('${esc(c.id)}')" style="cursor:pointer">
+          return `<tr onclick="openCase('${escJs(c.id)}')" style="cursor:pointer">
           <td><span class="tbl-name">${esc(c.client_name)}</span></td>
           <td><span class="tbl-cpf">${esc(c.client_cpf || '—')}</span></td>
           <td>${esc(c.development || '—')}${c.unit ? ' · ' + esc(c.unit) : ''}</td>
@@ -1137,17 +1148,6 @@ function closeModal(id) {
   document.getElementById(id)?.classList.add('hidden');
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function esc(str) {
-  // String(str||'') engole o zero e o false: `esc(0)` devolvia string vazia, e a
-  // tela mostrava um campo em branco onde o dado era 0. O teste tem de ser por
-  // ausencia, nao por valor falsy.
-  return String(str == null ? '' : str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 function val(id) {
   const el = document.getElementById(id);
   return el ? el.value : '';

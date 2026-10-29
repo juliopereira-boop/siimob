@@ -16,12 +16,16 @@
 </head>
 <body>
 
+<!-- ═══════ HEADER ═══════ -->
 <div id="sb-casco"></div>
 
 <div class="main">
 
   <!-- ══════════ DASHBOARD ══════════ -->
-  <div id="tab-dashboard">
+  <!-- Nasce escondido, como as duas outras vistas: quem decide qual aparece é
+       o init, pela rota (/repasse, /andamento, /listagem). Visível de saída, o
+       painel vazio ficava na frente durante a carga das outras vistas. -->
+  <div id="tab-dashboard" style="display:none">
 
     <!-- Seletor de painel. Nasce escondido e só aparece quando o cliente tem
          mais de um módulo: um seletor de uma opção só é ruído, e é exatamente
@@ -225,7 +229,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
       <div class="regional-tabs" id="regional-tabs"></div>
       <div style="display:flex;align-items:center;gap:.5rem">
-        <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Andamento</span>
+        <span id="view-label" style="font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Listagem</span>
         <!-- O "+ Novo Repasse" voltou. Ele era um atalho no cabeçalho global e
              saiu em 05a1c6d junto com o de Arquivados, porque atalho de Repasse
              não pertence ao topo de um sistema de vários módulos. Só que o
@@ -273,31 +277,48 @@
         <option value="reprovado">Reprovada</option>
       </select>
       <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Limpar filtros</button>
+      <button class="btn btn-primary btn-sm" id="btn-exportar" style="display:none" onclick="exportarPlanilha()" title="Exporta exatamente os processos que estão filtrados agora">Gerar relatório</button>
       <span id="filter-count"></span>
     </div>
 
     <!-- Andamento view (kanban) -->
-    <div id="view-andamento">
-      <div class="kanban-wrap" id="kanban-board"></div>
+    <div id="view-andamento" style="display:none">
+      <div class="kanban-wrap" id="kanban-board"><div style="color:var(--t3);font-size:.8rem;padding:1rem">Carregando...</div></div>
     </div>
 
     <!-- Listagem view (table) -->
     <div id="view-listagem" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <span id="tbl-count" style="font-size:.73rem;color:var(--t3)"></span>
-        <select id="tbl-stage-filter" style="padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem">
-          <option value="">Todas as etapas</option>
-        </select>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-ghost btn-sm" id="btn-dup" onclick="toggleDupView()">CPFs duplicados</button>
+          <select id="tbl-stage-filter" style="padding:.35rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem">
+            <option value="">Todas as etapas</option>
+          </select>
+        </div>
+      </div>
+      <div id="bulk-bar" style="display:none;align-items:center;gap:.5rem;flex-wrap:wrap;background:#EEF2FF;border:1px solid #c7d2fe;border-radius:8px;padding:.55rem .8rem;margin-bottom:.6rem">
+        <span id="bulk-count" style="font-size:.78rem;font-weight:700;color:#3730A3"></span>
+        <div style="flex:1"></div>
+        <select id="bulk-empr" style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem"><option value="">Vincular empreendimento...</option></select>
+        <button class="btn btn-primary btn-sm" onclick="bulkVincEmpr()">Vincular</button>
+        <span id="bulk-corr-wrap" style="display:flex;gap:.4rem;align-items:center">
+          <select id="bulk-corr" style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem"><option value="">Vincular correspondente...</option></select>
+          <button class="btn btn-primary btn-sm" onclick="bulkVincCorr()">Vincular</button>
+        </span>
+        <button class="btn btn-ghost btn-sm" id="bulk-arquivar" onclick="bulkArquivar()">Arquivar selecionados</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Limpar seleção</button>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width:34px"><input type="checkbox" id="chk-all" onclick="toggleSelectAll(this)"></th>
               <th>Cliente</th><th>CPF</th><th>Empreendimento</th><th>Etapa</th>
               <th>Correspondente</th><th>Valor</th><th>Entrevista</th><th>Dias</th><th></th>
             </tr>
           </thead>
-          <tbody id="cases-tbody"></tbody>
+          <tbody id="cases-tbody"><tr><td colspan="99" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1350,6 +1371,8 @@
 </div>
 
 <script src="/src/shared/api/config.js"></script>
+<script src="/src/shared/utils/texto.js"></script>
+<script src="/src/shared/utils/datas.js"></script>
 <script src="/src/shared/auth/auth.js"></script>
 <script src="/src/shared/ui/modulo-shell.js"></script>
 <script src="/src/modules/documentos/documentos.js"></script>

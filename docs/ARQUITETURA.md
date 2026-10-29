@@ -82,20 +82,28 @@ nomes de cliente.
 | Fase | Escopo | Estado |
 |------|--------|--------|
 | 1 | Separação mecânica: CSS e JS fora do HTML, pastas, Vite, lint, testes contra o build. Comportamento idêntico, provado por captura de tela pixel a pixel e pela suíte. | **feita** |
-| 2 | Fim das cópias: Repasse (Dashboard, Andamento e Listagem eram três arquivos 96% iguais) vira uma tela; Registro idem; funções repetidas vão para `src/shared`. | próxima |
+| 2 | Fim das cópias: Repasse (Dashboard, Andamento e Listagem eram três arquivos 96% iguais) virou uma tela, e o Registro (Quadro e Listagem) outra; a rota decide a vista. Código morto do `configuracoes` removido (85 funções, provado por alcançabilidade). Escape único (`esc`/`escJs`) e `hojeISO` em `src/shared/utils`. | **feita** |
 | 3 | Módulos de verdade: trocar os `onclick` inline por eventos, `import`/`export` entre arquivos, fim dos globais. | |
 | 4 | Tipos em JSDoc com checagem na CI, arquivo por arquivo (`// @ts-check` no topo). A base já está pronta: `jsconfig.json`, `npm run tipos` e o job da CI; hoje só as ferramentas (`tools/`, `vite.config.mjs`, `testes/fonte.js`) estão marcadas. | base pronta |
 
+### Uma tela, várias vistas
+
+`src/pages/repasse` atende `/cliente/repasse` (Dashboard), `/cliente/andamento` (quadro) e
+`/cliente/listagem` (lista); `src/pages/registro` atende `/cliente/registro` (quadro) e
+`/cliente/registro-listagem` (lista). As rotas de `vercel.json` levam todos esses endereços (e os
+antigos `/andamento.html`, `/listagem.html`, `/registro-listagem.html`) para a mesma página, e a
+constante `VISTA` no topo do `main.js` lê o caminho e decide o que aparece. Uma correção vale para
+todas as vistas de uma vez.
+
+Ao juntar as cópias, as correções que existiam em só uma delas foram preservadas e passaram a valer
+para todas: o histórico do processo com o autor (Andamento), o espaço não separável no importador
+do CV (Andamento), a seleção em lote e a planilha (Listagem), o seletor de painel (Dashboard) e, no
+Registro, telefone e vínculos ao criar processo, conferência da resposta ao salvar e arquivar, e
+cores e ids escapados (que a cópia da Listagem não tinha).
+
 ### Dívidas conhecidas
 
-- `repasse`, `andamento` e `listagem` ainda são três cópias (fase 2). Uma correção numa precisa ir
-  às outras duas.
 - ~1.350 handlers `onclick` inline dependem de funções globais (fase 3).
-- `configuracoes/main.js` carrega cópias antigas de funções do Repasse que não têm mais tela (código
-  morto, a remover na fase 2).
+- `toast`, `openModal`/`closeModal` e as formatações de data e dinheiro ainda têm versões diferentes
+  por tela (o visual de cada uma difere); viram componentes em `src/shared/ui` na fase 3.
 - `a1_has_module` (a porta da tela) não honra `expires_at`; o RLS honra.
-- **"Hoje" em UTC em 7 lugares das telas** (`new Date().toISOString().slice(0, 10)`): data padrão
-  da Agenda (repasse, andamento, listagem, configurações), "este mês" do painel do Registro, data de
-  contrato no Superadmin e nome do CSV de Leads. No Brasil, depois das 21h, eles usam o dia
-  seguinte. A correção (um `hojeISO()` único em `src/shared/utils`) muda comportamento, por isso
-  entra na fase 2 e não na 1.

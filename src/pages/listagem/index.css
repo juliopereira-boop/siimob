@@ -1,7 +1,0 @@
-/* Ordem da cascata desta tela: o que vem depois ganha nos empates.
-   O CSS do cabeçalho vem DEPOIS do da tela. Era o efeito real de antes: o
-   modulo-shell injetava uma segunda cópia do siimob.css no fim do <head>, e
-   essa cópia ganhava do <style> da tela. Um arquivo só por tela, para o
-   build não reordenar. */
-@import './style.css';
-@import '../../styles/siimob.css';
