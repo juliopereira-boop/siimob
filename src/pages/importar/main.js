@@ -12,6 +12,16 @@
 // palpite silencioso — vira aviso.
 // ═════════════════════════════════════════════════════════════════════════════
 
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { a1RefreshPartnerPerms, a1RequireAuth, a1StartHeartbeat } from '../../shared/auth/auth.js';
+import { XLSX } from '../../shared/utils/xlsx-leve.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ conferir, escolheu, importar, passo, resumoImport });
+exporVariavel('G', () => G);
+exporVariavel('val', () => val);
 const G = {
   user: null,
   slug: null,

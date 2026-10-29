@@ -1,3 +1,53 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import {
+  a1RefreshPartnerPerms,
+  a1RequireAuth,
+  a1RequireModule,
+  a1StartHeartbeat
+} from '../../shared/auth/auth.js';
+import { a1AtorHistorico, a1MontarShell, a1VistaDaURL } from '../../shared/ui/modulo-shell.js';
+import { a1PainelComercial } from '../../modules/paineis/paineis.js';
+import { a1GeralCarregar, a1GeralPermite } from '../../modules/configuracoes/regras-gerais.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  abrirDossie,
+  adicionarCondicaoProposta,
+  aplicarVista,
+  baixarContrato,
+  baixarDocumentoOrigem,
+  carregar,
+  coDragEnd,
+  coDragLeave,
+  coDragOver,
+  coDragStart,
+  coDrop,
+  conferirProposta,
+  copiarDocumento,
+  criarContrato,
+  fecharModal,
+  filtradas,
+  filtrarSla,
+  marcarAssinado,
+  marcarChecklistOperacional,
+  mascaraMoeda,
+  moverCartao,
+  nivelNaSituacao,
+  perm,
+  removerCondicaoProposta,
+  renderDossie,
+  renderVistas,
+  roteamentoDeAnalistasAtivo,
+  salvarProposta,
+  sincronizarCondicoesProposta,
+  toast,
+  trocarAbaDossie
+});
+exporVariavel('G', () => G);
 const G = {
   user: null,
   slug: null,
@@ -224,8 +274,12 @@ function idOuNulo(id) {
 //
 // Nasce desligada de propósito. Ligada sem roteamento por trás, o campo ficaria
 // morto e ninguém conseguiria atribuir analista a negócio nenhum.
+// O mesmo interruptor da Pré-análise: o Roteamento de Analistas, quando vier,
+// liga G.roteamentoAnalistas. Até lá ninguém liga, e o resultado é o de sempre
+// (falso). Antes esta função devolvia false fixo, e o teste só conseguia ligá-la
+// trocando a função pelo window, o que um módulo ES não enxerga.
 function roteamentoDeAnalistasAtivo() {
-  return false;
+  return G.roteamentoAnalistas === true;
 }
 
 async function init() {

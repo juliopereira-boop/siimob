@@ -1,3 +1,72 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import {
+  a1RefreshPartnerPerms,
+  a1RequireAuth,
+  a1RequireModule,
+  a1StartHeartbeat
+} from '../../shared/auth/auth.js';
+import { a1AtorHistorico, a1MontarShell, a1VistaDaURL } from '../../shared/ui/modulo-shell.js';
+import { a1PainelPreAnalise } from '../../modules/paineis/paineis.js';
+import {
+  a1DocsAvisoFaltando,
+  a1DocsFaltando,
+  a1DocsObrigatorios,
+  a1DocsPadrao
+} from '../../modules/documentos/documentos.js';
+import { a1GeralCarregar, a1GeralPermite } from '../../modules/configuracoes/regras-gerais.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  abrirAdicionarPessoa,
+  abrirAssistente,
+  abrirDossie,
+  addAssociado,
+  adicionarCondicaoVenda,
+  analisarDoc,
+  aoArrastarSobre,
+  aoComecarArrasto,
+  aoSoltar,
+  aplicarVista,
+  baixarDoc,
+  buscarPessoa,
+  carregar,
+  checklist,
+  conferirVenda,
+  confirmarIniciarVenda,
+  copiarDocumento,
+  corretorDoPasso1,
+  enviarDoc,
+  fecharModal,
+  filtradas,
+  filtrarSla,
+  gerarFichaAprovacao,
+  imobiliariaDoPasso1,
+  iniciarVenda,
+  marcarChecklistOperacional,
+  mascaraMoeda,
+  moverCartao,
+  nivelNaSituacao,
+  passoAnterior,
+  passoSeguinte,
+  perm,
+  remAssociado,
+  removerCondicaoVenda,
+  renderDossie,
+  renderVista,
+  roteamentoDeAnalistasAtivo,
+  salvarCredito,
+  salvarDados,
+  salvarPessoaAdicional,
+  sincronizarCondicoesVenda,
+  somarCredito,
+  toast,
+  trocarAbaDossie
+});
+exporVariavel('G', () => G);
 const G = {
   user: null,
   slug: null,

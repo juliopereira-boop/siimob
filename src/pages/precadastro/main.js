@@ -1,3 +1,10 @@
+import { A1_KEY, A1_URL } from '../../shared/api/config.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ enviar });
+exporVariavel('$', () => $);
+exporVariavel('ver', () => ver);
 // A página é pública: não existe sessão aqui. Toda escrita passa pelas funções
 // a1_precad_info / a1_precad_enviar, que rodam com privilégio próprio no banco
 // e fazem exatamente duas coisas — conferir o link e criar o corretor SEM acesso.

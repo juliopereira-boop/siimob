@@ -81,13 +81,14 @@ async function abrirComo(pag, permsLocal, permsBanco, opc = {}) {
   });
   await p.goto(BASE + '/' + pag, { waitUntil: 'load' });
   await p.waitForTimeout(1800);
-  // captura os avisos que o sistema mostra
+  // Captura os avisos que o sistema mostra, olhando a tela: cada toast é um
+  // elemento novo em #toast-wrap. (Antes o teste trocava window.toast; num módulo
+  // ES a tela chama a própria função, e a troca não seria vista.)
   await p.evaluate(() => {
-    const t = window.toast;
-    window.toast = (m, k) => {
-      window.__TOASTS.push(m);
-      return t && t(m, k);
-    };
+    const wrap = document.getElementById('toast-wrap');
+    new MutationObserver(ms =>
+      ms.forEach(m => m.addedNodes.forEach(n => n.textContent && window.__TOASTS.push(n.textContent)))
+    ).observe(wrap, { childList: true });
   });
   return { b, p, erros, consultas };
 }

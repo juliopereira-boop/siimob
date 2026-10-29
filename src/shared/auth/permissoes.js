@@ -17,7 +17,7 @@
 // Onde cada uma é lida está escrito no campo `lida_em` — e é conferido por
 // testes/t-perfis.js, que falha se alguém acrescentar chave decorativa.
 
-const A1_PERMISSOES = [
+export const A1_PERMISSOES = [
   // ── Geral: valem em qualquer módulo ────────────────────────────────────────
   {
     chave: 'gerente',
@@ -231,7 +231,7 @@ const A1_PERMISSOES = [
 // Um perfil recém-criado começa fechado. É de propósito: o que não foi
 // explicitamente liberado fica fechado, e um perfil novo que já nascesse podendo
 // tudo seria o contrário disso.
-const A1_PERFIS_MODELO = [
+export const A1_PERFIS_MODELO = [
   { nome: 'Corretor', permissoes: ['ver_repasses', 'pa_ver', 'pa_criar', 'co_ver'] },
   {
     nome: 'Analista',
@@ -284,12 +284,12 @@ const A1_PERFIS_MODELO = [
 // As permissões que valem para um cliente, dado o que ele tem licenciado.
 // `tem` é o objeto { PRE_ANALISE:true, ... } que a1MontarShell devolve, ou
 // qualquer coisa que responda a chave => booleano.
-function a1PermissoesDisponiveis(tem) {
+export function a1PermissoesDisponiveis(tem) {
   const ligado = m => !m || (tem && tem[m] === true);
   return A1_PERMISSOES.filter(p => ligado(p.modulo));
 }
 
-function a1PermissoesPorModulo(tem) {
+export function a1PermissoesPorModulo(tem) {
   const grupos = new Map();
   a1PermissoesDisponiveis(tem).forEach(p => {
     const k = p.modulo || 'geral';
@@ -299,7 +299,7 @@ function a1PermissoesPorModulo(tem) {
   return grupos;
 }
 
-const A1_ROTULO_MODULO = {
+export const A1_ROTULO_MODULO = {
   geral: 'Vale em todos os módulos',
   crm: 'Leads',
   repasse: 'Repasse',
@@ -314,7 +314,7 @@ const A1_ROTULO_MODULO = {
 // as duas fontes valendo (perfil E marcas soltas na pessoa) traria de volta o
 // problema que o perfil veio resolver: ninguém saberia dizer, olhando a tela,
 // por que fulano consegue e beltrano não.
-function a1PermissoesEfetivas(pessoa, perfil) {
+export function a1PermissoesEfetivas(pessoa, perfil) {
   if (perfil && perfil.permissions && typeof perfil.permissions === 'object') return perfil.permissions;
   return (pessoa && pessoa.permissions) || {};
 }

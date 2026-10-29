@@ -56,11 +56,17 @@ do `siimob.css` no fim do `<head>`. Um arquivo só por tela também impede o bui
 - JS e CSS em `/static`, com hash no nome e cache de um ano (`vercel.json`). Um deploy novo gera
   nomes novos, então nenhum navegador fica com código velho.
 
-**Scripts clássicos.** O código das telas ainda é script clássico, não módulo ES: as funções são
-globais porque os `onclick="..."` do HTML as chamam pelo nome. O Vite só empacota módulos, então o
-plugin `tools/vite/scripts-classicos.mjs` minifica e põe hash nesses scripts sem mudar a semântica.
-O esbuild, sem formato de saída, não renomeia nada do nível de cima, e o alvo `esnext` não reescreve
-sintaxe nenhuma.
+**Módulos ES.** Cada arquivo de `src/` é um módulo: o que usa de outro arquivo vem por `import`, e
+o que oferece sai por `export`. Cada tela tem um único `<script type="module">` (o `main.js` dela),
+que importa os módulos compartilhados na mesma ordem em que antes eram carregados. O Vite empacota a
+árvore de cada tela e separa o que é comum (`config`, `auth`...) em arquivos cacheados entre telas.
+O lint roda com `no-undef` ligado: nome usado sem `import` é erro.
+
+**O que o HTML alcança.** O HTML ainda chama funções pelo nome (`onclick="abrirCaso(...)"`), e o
+navegador procura esse nome no escopo global. Cada módulo diz, no topo, numa lista explícita
+(`expor({...})`, de `src/shared/utils/expor.js`), o que o HTML e a suíte de testes podem chamar; o
+resto é privado. Antes, todo nome de todo arquivo era global. A lista encolhe à medida que os
+handlers viram eventos (fase 3b).
 
 **Rotas.** `tools/rotas.js` lê as reescritas de `vercel.json`. É usado pelo servidor de
 desenvolvimento, pelo preview, pela suíte de testes e pelo servidor local, para que todos se
@@ -83,7 +89,8 @@ nomes de cliente.
 |------|--------|--------|
 | 1 | Separação mecânica: CSS e JS fora do HTML, pastas, Vite, lint, testes contra o build. Comportamento idêntico, provado por captura de tela pixel a pixel e pela suíte. | **feita** |
 | 2 | Fim das cópias: Repasse (Dashboard, Andamento e Listagem eram três arquivos 96% iguais) virou uma tela, e o Registro (Quadro e Listagem) outra; a rota decide a vista. Código morto do `configuracoes` removido (85 funções, provado por alcançabilidade). Escape único (`esc`/`escJs`) e `hojeISO` em `src/shared/utils`. | **feita** |
-| 3 | Módulos de verdade: trocar os `onclick` inline por eventos, `import`/`export` entre arquivos, fim dos globais. | |
+| 3a | Módulos de verdade: todo arquivo é módulo ES, com `import`/`export`; o global deixou de ser "tudo" e virou a lista explícita de `expor()`; lint com `no-undef`. | **feita** |
+| 3b | Handlers inline viram eventos (`data-acao` com delegação), tela por tela; a lista de `expor()` encolhe junto. | próxima |
 | 4 | Tipos em JSDoc com checagem na CI, arquivo por arquivo (`// @ts-check` no topo). A base já está pronta: `jsconfig.json`, `npm run tipos` e o job da CI; hoje só as ferramentas (`tools/`, `vite.config.mjs`, `testes/fonte.js`) estão marcadas. | base pronta |
 
 ### Uma tela, várias vistas

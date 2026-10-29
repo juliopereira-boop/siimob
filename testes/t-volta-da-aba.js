@@ -15,16 +15,12 @@ const { abrir, checa, resumo } = require('./comum');
 
 async function sairEVoltar(p, mudarDado) {
   await p.evaluate(mudar => {
-    // Para provar também o caminho que redesenha: um processo "mudou" lá fora.
-    if (mudar && G.cases[0]) G.__mudar = true;
+    // Para provar também o caminho que redesenha: o que está na tela fica
+    // diferente do que o banco vai devolver, como se um processo tivesse mudado
+    // lá fora. (Antes o teste trocava window.loadData; num módulo ES a tela chama
+    // a própria função, e a troca não seria vista.)
+    if (mudar && G.cases[0]) G.cases[0].updated_at = 'antes-' + Date.now();
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
-    if (G.__mudar) {
-      const carga = window.loadData;
-      window.loadData = async () => {
-        await carga();
-        if (G.cases[0]) G.cases[0].updated_at = 'mudou-' + Date.now();
-      };
-    }
     document.dispatchEvent(new Event('visibilitychange'));
   }, mudarDado);
   await p.waitForTimeout(900);

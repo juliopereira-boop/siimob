@@ -1,5 +1,91 @@
-'use strict';
+import { A1_URL } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { hojeISO } from '../../shared/utils/datas.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
 
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  abrirAviso,
+  accessTenant,
+  acessarComo,
+  alternarAutoMonitor,
+  alternarPublicacao,
+  apagarSituacao,
+  autoForo,
+  carregarEsteira,
+  changePlan,
+  clearLogoUpload,
+  closeDespLimitModal,
+  closeModal,
+  cobPersistMeta,
+  cobToggle,
+  cobYear,
+  confirmDespLimit,
+  createTenant,
+  createUserForTenant,
+  deleteLead,
+  deleteTenant,
+  deleteUser,
+  editarPapeis,
+  editarRequisito,
+  editarSituacao,
+  editarTransicao,
+  estadoMes,
+  excluirAviso,
+  filterTenants,
+  gerarContratoPDF,
+  handleLogoFile,
+  loadFeedback,
+  loadLeads,
+  loadMonitor,
+  loadTenantModulesFor,
+  lockModuleFor,
+  mailtoCobranca,
+  manutCarregar,
+  manutDesligar,
+  manutLigar,
+  marcarPagoIndicacao,
+  mudarStatusIndicacao,
+  mudarValorIndicacao,
+  novaSituacao,
+  novaTransicao,
+  openCobranca,
+  openContrato,
+  openUsersModal,
+  pintarPreviaAviso,
+  reactivateTenant,
+  renderCobranca,
+  renderLeads,
+  resetPw,
+  saAuth,
+  saLogout,
+  salvarAviso,
+  saveLogoUpload,
+  semearEsteira,
+  semearTransicoes,
+  sendCobranca,
+  setFeedbackStatus,
+  setLeadStatus,
+  setUserLimit,
+  subirArquivoAviso,
+  suspendTenant,
+  switchSaTab,
+  tirarArquivoAviso,
+  toast,
+  toggleCustomLimit,
+  toggleUser,
+  unlockModuleFor
+});
+exporVariavel(
+  'ACTIVE_TENANT_ID',
+  () => ACTIVE_TENANT_ID,
+  v => (ACTIVE_TENANT_ID = v)
+);
+exporVariavel(
+  'COB',
+  () => COB,
+  v => (COB = v)
+);
 let SA_URL = '';
 let SA_KEY = '';
 let TENANTS = [];

@@ -28,7 +28,8 @@
 // Mora em a1_config, chave 'geral', como o resto das configurações do cliente.
 // Lida por pre-analise.html, comercial.html e pelas três telas do Repasse.
 
-const A1_GERAL_PADRAO = {
+import { A1 } from '../../shared/api/config.js';
+export const A1_GERAL_PADRAO = {
   // Pré-análise sem depender de Lead. Hoje é o único jeito que existe, então
   // ligada; quando o módulo de Lead entrar, o cliente que quiser funil fechado
   // desliga aqui e a pré-análise passa a nascer só de um Lead.
@@ -50,7 +51,7 @@ const A1_GERAL_PADRAO = {
 // O que está gravado, com o padrão por baixo. Chave ausente vale o padrão, e
 // não "false": esta é a diferença entre "o gestor decidiu desligar" e "ninguém
 // nunca abriu esta tela".
-function a1GeralNormalizar(bruto) {
+export function a1GeralNormalizar(bruto) {
   const v = bruto && typeof bruto === 'object' ? bruto : {};
   const out = {};
   Object.keys(A1_GERAL_PADRAO).forEach(k => {
@@ -63,7 +64,7 @@ function a1GeralNormalizar(bruto) {
 // o comportamento de hoje. "Não consegui perguntar" nunca pode virar "não pode"
 // numa regra que governa o botão de criar — é a mesma disciplina de
 // a1HasModule(), pelo mesmo motivo.
-async function a1GeralCarregar() {
+export async function a1GeralCarregar() {
   try {
     const rows = await fetch(`${A1.rest('a1_config')}?key=eq.geral&select=value`, {
       headers: A1.headers()
@@ -81,7 +82,7 @@ async function a1GeralCarregar() {
 }
 
 // O atalho que as telas usam. `G.geral` é preenchido no boot de cada uma.
-function a1GeralPermite(geral, chave) {
+export function a1GeralPermite(geral, chave) {
   const g = a1GeralNormalizar(geral);
   return g[chave] === true;
 }

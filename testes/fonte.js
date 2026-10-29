@@ -19,4 +19,16 @@ function lerPagina(tela) {
   return [html, ...scripts.map(f => lerFonte(f))].join('\n');
 }
 
-module.exports = { RAIZ, lerFonte, lerPagina };
+// O código de um módulo ES, pronto para rodar fora do navegador (new Function):
+// sem os import (o teste injeta as dependências como parâmetros), sem `export`
+// e sem a exposição ao window (expor/exporVariavel). Os testes que conferem uma
+// função de verdade, e não uma cópia dela, leem o arquivo e passam por aqui.
+function comoScript(codigo) {
+  return codigo
+    .replace(/^import\s[\s\S]*?;[ \t]*$/gm, '')
+    .replace(/^expor\(\{[\s\S]*?\}\);[ \t]*$/gm, '')
+    .replace(/^exporVariavel\([\s\S]*?\);[ \t]*$/gm, '')
+    .replace(/^export\s+/gm, '');
+}
+
+module.exports = { RAIZ, lerFonte, lerPagina, comoScript };

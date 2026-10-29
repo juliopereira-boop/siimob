@@ -416,7 +416,7 @@ const corpoDo = (p, filtro, metodo) =>
 
     // Liga a trava pela mesma função que o roteamento vai ligar um dia.
     await passo(p, 'ligar a trava e redesenhar o dossiê', () => {
-      window.roteamentoDeAnalistasAtivo = () => true;
+      G.roteamentoAnalistas = true;
       renderDossie();
     });
     await p.waitForTimeout(300);
@@ -549,7 +549,7 @@ const corpoDo = (p, filtro, metodo) =>
     checa(
       'o analista do Registro também obedece o Roteamento',
       await p.evaluate(() => {
-        window.roteamentoDeAnalistasAtivo = () => true;
+        G.roteamentoAnalistas = true;
         openCase('rc2');
         const e = document.getElementById('md-analista');
         return !!e && e.disabled === true;

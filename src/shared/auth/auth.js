@@ -1,6 +1,11 @@
 // ─── auth.js — depends on config.js ─────────────────────────────────────────
 
-async function hashPassword(plain) {
+import { A1, A1_KEY } from '../api/config.js';
+import { expor } from '../utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ a1Logout });
+export async function hashPassword(plain) {
   const enc = new TextEncoder().encode(plain + '::a1');
   const buf = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf))
@@ -9,7 +14,7 @@ async function hashPassword(plain) {
 }
 
 // Login: returns session object or throws
-async function a1Login(slug, cpf, password) {
+export async function a1Login(slug, cpf, password) {
   a1ClearModuleCache();
   const res = await fetch(A1.rpc('a1_login'), {
     method: 'POST',
@@ -70,7 +75,7 @@ async function a1Login(slug, cpf, password) {
 }
 
 // Partner login (external brokers/dispatchers)
-async function a1PartnerLogin(slug, cpf, password) {
+export async function a1PartnerLogin(slug, cpf, password) {
   a1ClearModuleCache();
   const res = await fetch(A1.rpc('a1_partner_login'), {
     method: 'POST',
@@ -129,7 +134,7 @@ async function a1PartnerLogin(slug, cpf, password) {
   return data;
 }
 
-async function a1Logout() {
+export async function a1Logout() {
   try {
     // libera o slot de acesso simultâneo imediatamente
     const u = A1.user;
@@ -156,7 +161,7 @@ async function a1Logout() {
 
 // Call at top of every protected page
 // redirects to login if no valid session; returns user object
-function a1RequireAuth(allowedRoles = null) {
+export function a1RequireAuth(allowedRoles = null) {
   const token = A1.token;
   const user = A1.user;
   const slug = A1.slug;
@@ -181,7 +186,7 @@ function a1RequireAuth(allowedRoles = null) {
 // novo — na prática, o gestor liberava o acesso e o usuário seguia bloqueado.
 // Chamado no boot de cada página: agora basta atualizar a página (F5).
 // Vale para QUALQUER parceiro; a versão anterior só atualizava type==='cca'.
-async function a1RefreshPartnerPerms() {
+export async function a1RefreshPartnerPerms() {
   const u = A1.user;
   if (!u || u.role !== 'partner' || !u.id) return null;
   try {
@@ -270,12 +275,12 @@ async function a1RefreshPartnerPerms() {
 
 // Cache de módulos por sessão — evita 1 round-trip a cada página/navegação.
 // É limpo no login/logout para refletir mudanças de plano/liberação.
-const _a1ModMemo = {};
+export const _a1ModMemo = {};
 // Prefixo v2: invalida de uma vez as entradas "não liberado" que ficaram
 // gravadas por engano nos navegadores (ver a1HasModule). Sem isso, quem já
 // tinha o cache envenenado continuaria trancado até limpar o navegador.
-const _A1_MOD_PREFIX = 'a1_mod2_';
-function a1ClearModuleCache() {
+export const _A1_MOD_PREFIX = 'a1_mod2_';
+export function a1ClearModuleCache() {
   for (const k in _a1ModMemo) delete _a1ModMemo[k];
   try {
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
@@ -293,7 +298,7 @@ function a1ClearModuleCache() {
 // tratar os dois como false trancava o cliente fora do sistema por uma falha
 // passageira. Só resultado POSITIVO é persistido; negativo fica só em memória
 // (revalidado no próximo carregamento, que é barato).
-async function a1HasModule(moduleKey) {
+export async function a1HasModule(moduleKey) {
   const ck = `${A1.slug || ''}:${moduleKey}`;
   if (ck in _a1ModMemo) return _a1ModMemo[ck];
   try {
@@ -325,7 +330,7 @@ async function a1HasModule(moduleKey) {
 // Resolve a "home" do cliente: o primeiro módulo que ele realmente possui.
 // Ordem de preferência — CRM (início da jornada) antes de repasse/registro.
 // As sondagens rodam em paralelo (memoizadas) para não empilhar round-trips.
-async function a1ModuleHome() {
+export async function a1ModuleHome() {
   const slug = A1.slug || '';
   const order = ['crm', 'repasse', 'registro'];
   const have = await Promise.all(order.map(m => a1HasModule(m)));
@@ -336,7 +341,7 @@ async function a1ModuleHome() {
 // Module guard — se o cliente não tem o módulo, redireciona para o módulo que ele
 // possui (ex.: imobiliária cai no /crm em vez de ver o repasse). Só mostra a tela
 // bloqueada quando o cliente não tem nenhum módulo.
-async function a1RequireModule(moduleKey) {
+export async function a1RequireModule(moduleKey) {
   if (sessionStorage.getItem('a1_sa_mode')) return; // SA impersonation bypasses module check
   const has = await a1HasModule(moduleKey);
   if (has === true) return;
@@ -368,7 +373,7 @@ async function a1RequireModule(moduleKey) {
 // navegador não alcança. Contar por a1_presence era furável: essa tabela é
 // escrita pelo próprio cliente, então bastava não bater (ou apagar a linha) para
 // sumir da contagem. Mantida apenas para exibição de "quem está online".
-async function a1ActiveCount(tenantId, excludeKey) {
+export async function a1ActiveCount(tenantId, excludeKey) {
   const since = new Date(Date.now() - 90_000).toISOString();
   const url = `${A1.rest('a1_presence')}?tenant_id=eq.${tenantId}&last_seen=gte.${encodeURIComponent(since)}&select=user_key`;
   const rows = await fetch(url, { headers: A1.headers() })
@@ -383,7 +388,7 @@ async function a1ActiveCount(tenantId, excludeKey) {
 // FALSE = a conta entrou em outro aparelho (sessão única) ou a vaga foi perdida:
 // o servidor já encerrou a sessão e o usuário precisa entrar de novo.
 // Falha de rede NÃO derruba ninguém — só a recusa explícita do servidor.
-async function a1TouchSession() {
+export async function a1TouchSession() {
   if (!A1.token) return true;
   try {
     const res = await fetch(A1.rpc('a1_touch_session'), {
@@ -412,7 +417,7 @@ async function a1TouchSession() {
   }
 }
 
-async function a1TenantStatusAtual() {
+export async function a1TenantStatusAtual() {
   const u = A1.user;
   if (!u || !u.tenant_id) return null;
   try {
@@ -429,7 +434,7 @@ async function a1TenantStatusAtual() {
 }
 
 // Encerra a sessão local e manda para o login explicando o motivo.
-function a1SessionEnded(motivo) {
+export function a1SessionEnded(motivo) {
   const slug = A1.slug || '';
   a1ClearModuleCache();
   ['a1_token', 'a1_user', 'a1_slug'].forEach(k => {
@@ -443,7 +448,7 @@ function a1SessionEnded(motivo) {
 
 // So e chamado depois de o banco recusar a sessao. Evita dizer "outro acesso"
 // quando a causa real foi a suspensao administrativa da conta.
-async function a1MotivoSessaoEncerrada() {
+export async function a1MotivoSessaoEncerrada() {
   try {
     const res = await fetch(A1.rpc('a1_tenant_status_publico'), {
       method: 'POST',
@@ -460,7 +465,7 @@ async function a1MotivoSessaoEncerrada() {
 
 // Presence heartbeat. Retorna true/false (sucesso) — usado por a1StartHeartbeat
 // para parar de tentar quando a sessão está claramente inválida/expirada.
-async function a1Heartbeat(moduleName) {
+export async function a1Heartbeat(moduleName) {
   const user = A1.user;
   if (!user || !A1.token) return true; // nada a fazer, não é falha
   try {
@@ -491,7 +496,7 @@ async function a1Heartbeat(moduleName) {
 // a1_sessao(), chamada por TODA política em TODA consulta. Custo alto e
 // permanente para uma janela que dura duas horas por mês.
 
-function a1MsgManutencao(data) {
+export function a1MsgManutencao(data) {
   const base = (data && data.mensagem) || 'O sistema está em manutenção no momento.';
   if (!data || !data.ate) return base;
   const d = new Date(data.ate);
@@ -505,7 +510,7 @@ function a1MsgManutencao(data) {
 // descobrir a tela de quem deveria estar parado. Null = não mexe em nada.
 // Banco sem a função (SQL ainda não rodado) cai aqui também, e o sistema segue
 // funcionando como antes.
-async function a1ManutencaoEstado() {
+export async function a1ManutencaoEstado() {
   try {
     const res = await fetch(A1.rpc('a1_manutencao_estado'), {
       method: 'POST',
@@ -520,7 +525,7 @@ async function a1ManutencaoEstado() {
   }
 }
 
-function a1TelaManutencao(estado) {
+export function a1TelaManutencao(estado) {
   if (document.getElementById('a1-manutencao')) return;
   const msg = (estado && estado.mensagem) || 'Estamos fazendo uma manutenção preventiva no sistema.';
   let volta = '';
@@ -553,16 +558,16 @@ function a1TelaManutencao(estado) {
 
 // Escapa aqui dentro porque auth.js não tem acesso ao esc() das telas, e a
 // mensagem vem do banco: texto de terceiro entrando em innerHTML é injeção.
-function a1EscapaTexto(t) {
+export function a1EscapaTexto(t) {
   return String(t == null ? '' : t).replace(
     /[&<>"']/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
   );
 }
 
-let A1_EM_MANUTENCAO = false;
+export let A1_EM_MANUTENCAO = false;
 
-async function a1ConferirManutencao() {
+export async function a1ConferirManutencao() {
   const est = await a1ManutencaoEstado();
   if (!est) return; // não perguntei: não mexo
   if (est.ativa && !A1_EM_MANUTENCAO) {
@@ -577,7 +582,7 @@ async function a1ConferirManutencao() {
 
 // Para as telas que não têm heartbeat (tenant-admin, workflow). Onde há
 // heartbeat, a conferência já anda junto com ele.
-function a1VigiarManutencao() {
+export function a1VigiarManutencao() {
   a1ConferirManutencao();
   return setInterval(a1ConferirManutencao, 50_000);
 }
@@ -586,7 +591,7 @@ function a1VigiarManutencao() {
 // limite, o setInterval martelava o banco a cada 50s PARA SEMPRE em qualquer aba
 // esquecida aberta com sessão vencida — carga contínua e crescente, sem retorno
 // nenhum. Após 3 falhas seguidas (~2.5min), para de tentar.
-function a1StartHeartbeat(moduleName) {
+export function a1StartHeartbeat(moduleName) {
   let fails = 0,
     id = null;
   const bater = async () => {
@@ -615,7 +620,7 @@ function a1StartHeartbeat(moduleName) {
 }
 
 // User creation with limit check
-async function a1CreateUser({ name, cpf, password, role = 'user', email = '' }) {
+export async function a1CreateUser({ name, cpf, password, role = 'user', email = '' }) {
   const canAdd = await fetch(A1.rpc('a1_can_add_user'), {
     method: 'POST',
     headers: A1.headers(),

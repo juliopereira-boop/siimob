@@ -8,7 +8,7 @@
 // de "hoje" pergunta aqui.
 
 // AAAA-MM-DD do dia local (o que a pessoa vê no relógio do computador).
-function hojeISO(d = new Date()) {
+export function hojeISO(d = new Date()) {
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

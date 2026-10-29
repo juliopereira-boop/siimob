@@ -39,11 +39,14 @@ estiver errado, quem é o cliente que descobre, e como?*
   (ordem da cascata). `npm run build` gera `dist/`, que é o que a Vercel
   publica: as páginas saem na raiz com os nomes de sempre (`/repasse.html`), e
   JS/CSS em `/static` com hash. Ver `docs/ARQUITETURA.md`.
-- **O JS das telas ainda é script clássico, não módulo ES.** As funções são
-  globais porque os `onclick="..."` as chamam pelo nome; o plugin
-  `tools/vite/scripts-classicos.mjs` só minifica e põe hash. Converter para
-  módulo é a fase 3 da reestruturação, tela por tela — não converta um arquivo
-  solto, ou os handlers dele param de achar as funções.
+- **Todo arquivo de `src/` é módulo ES.** O que um arquivo usa de outro vem
+  por `import` (o lint, com `no-undef`, reprova nome sem import). O HTML ainda
+  chama funções pelo nome (`onclick`), então cada módulo lista no topo, em
+  `expor({...})`, o que o HTML e os testes alcançam; o resto é privado. Função
+  nova chamada por `onclick` tem de entrar nessa lista, ou o clique dá
+  ReferenceError. Teste que precisa ligar um comportamento muda o ESTADO (por
+  exemplo `G.roteamentoAnalistas = true`), não troca a função pelo window: a
+  tela chama a própria função e não veria a troca.
 - **Banco: Supabase (Postgres + PostgREST + RLS + Storage).** O navegador fala
   direto com a API REST usando a chave `anon` pública e um cabeçalho
   `x-session-token`. **Toda a autorização real é RLS.** O que a tela esconde é

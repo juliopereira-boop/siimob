@@ -16,7 +16,12 @@
 // a1_avisos_para_mim, no banco. Decidir isso no navegador seria decidir num
 // lugar onde qualquer pessoa consegue mexer.
 
-const A1Avisos = (() => {
+import { A1 } from '../api/config.js';
+import { esc } from '../utils/texto.js';
+import { expor, exporVariavel } from '../utils/expor.js';
+
+exporVariavel('A1Avisos', () => A1Avisos);
+export const A1Avisos = (() => {
   // O tipo do usuário, no vocabulário do mural.
   function publicoDoUsuario(u) {
     if (!u) return '';

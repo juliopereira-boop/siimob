@@ -14,9 +14,13 @@
 //             HTML não basta: &#39; vira ' de novo e fecha a string. escJs
 //             escapa para JS primeiro e para HTML por cima, as duas camadas.
 
+import { expor } from './expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ escJs });
 // Ausente vira vazio; 0 e false continuam aparecendo (String(x || '') engolia
 // o zero, e a tela mostrava em branco um dado que era 0).
-function esc(s) {
+export function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -25,7 +29,7 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
-function escJs(s) {
+export function escJs(s) {
   return esc(
     String(s == null ? '' : s)
       .replace(/\\/g, '\\\\')

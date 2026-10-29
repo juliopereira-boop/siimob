@@ -1,3 +1,7 @@
+import '../../shared/api/config.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+exporVariavel('painel', () => painel);
 // Pré-análise, Venda e Repasse usam o painel unificado. O parâmetro vem
 // do shell, que já decidiu o primeiro painel permitido para o perfil.
 const slug = (function () {

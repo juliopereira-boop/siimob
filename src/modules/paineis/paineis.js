@@ -43,6 +43,24 @@
 //
 // Depende de: config.js (A1), auth.js (a1HasModule) e das telas que o incluem.
 
+import { a1DocsFaltando, a1DocsObrigatorios } from '../documentos/documentos.js';
+import { A1 } from '../../shared/api/config.js';
+import { a1HasModule } from '../../shared/auth/auth.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  pnDesenharCO,
+  pnDesenharPA,
+  pnEsc,
+  pnPodeVerRanking,
+  pnRank,
+  pnTrocarData,
+  pnTrocarEmpreendimento,
+  pnTrocarPeriodo
+});
+exporVariavel('PN', () => PN);
+exporVariavel('PN_PERSONALIZADO', () => PN_PERSONALIZADO);
 // ─── Estado ──────────────────────────────────────────────────────────────────
 // Os dados brutos ficam guardados aqui para a troca de período não render outra
 // rodada de consultas: o recorte é aritmética sobre linhas que já estão na mão.
@@ -52,9 +70,9 @@
 // `empr` é o filtro de empreendimento: o único recorte que não é tempo e não
 // expõe ninguém. Filtro por pessoa não entra aqui de propósito — seria um jeito
 // oblíquo de montar o ranking nominal que o corte de agregado acabou de fechar.
-const PN = { dias: 90, de: '', ate: '', empr: '', pa: null, co: null };
+export const PN = { dias: 90, de: '', ate: '', empr: '', pa: null, co: null };
 
-const PN_PERIODOS = [
+export const PN_PERIODOS = [
   [30, '30 dias'],
   [90, '90 dias'],
   [180, '180 dias'],
@@ -63,14 +81,14 @@ const PN_PERIODOS = [
 ];
 // Sentinela do recorte manual. -1 e não 0 porque 0 já significa "todo o
 // histórico" — dois sentidos no mesmo valor é como um seletor passa a mentir.
-const PN_PERSONALIZADO = -1;
+export const PN_PERSONALIZADO = -1;
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
 // A aspa SIMPLES entra aqui junto com as outras, e nao e capricho: os valores
 // escapados por esta funcao vao para dentro de onclick="location.href='...'",
 // ou seja, para dentro de uma string JS delimitada por aspa simples. Escapar
 // so a aspa dupla fecharia o atributo e deixaria a simples abrir codigo.
-function pnEsc(s) {
+export function pnEsc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -79,34 +97,34 @@ function pnEsc(s) {
     .replace(/'/g, '&#39;');
 }
 
-const _pnBRL = new Intl.NumberFormat('pt-BR', {
+export const _pnBRL = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
   maximumFractionDigits: 0
 });
 // Dinheiro é bigint em CENTAVOS no banco inteiro. Dividir por 100 na hora de
 // mostrar é o único lugar onde a conversão acontece.
-function pnBRL(cent) {
+export function pnBRL(cent) {
   return _pnBRL.format((Number(cent) || 0) / 100);
 }
 
-function pnPct(x) {
+export function pnPct(x) {
   if (x == null || !isFinite(x)) return '—';
   return (x * 100).toFixed(x < 0.1 ? 1 : 0).replace('.', ',') + '%';
 }
-function pnDias(h) {
+export function pnDias(h) {
   if (h == null || !isFinite(h)) return '—';
   return (h / 24).toFixed(h < 24 ? 1 : 0).replace('.', ',') + 'd';
 }
-function pnHoras(h) {
+export function pnHoras(h) {
   if (h == null || !isFinite(h)) return '—';
   if (h < 48) return Math.round(h) + 'h';
   return Math.round(h / 24) + 'd';
 }
-function pnLinhas(r) {
+export function pnLinhas(r) {
   return Array.isArray(r) ? r : (r && r.linhas) || [];
 }
-function pnMs(iso) {
+export function pnMs(iso) {
   const t = iso ? new Date(iso).getTime() : NaN;
   return isNaN(t) ? null : t;
 }
@@ -116,14 +134,14 @@ function pnMs(iso) {
 // o JS rodar, então um &#39; volta a ser aspa e fecha a string. Percent-encoding
 // tira aspa, sinal de menor e barra de circulação e ainda deixa o slug normal
 // ([a-z0-9-]) intacto.
-function pnRota(caminho) {
+export function pnRota(caminho) {
   return '/' + encodeURIComponent(A1.slug || '') + '/' + caminho;
 }
 
 // Percentil com interpolação linear — o mesmo método do percentile_cont, que o
 // PostgREST não expõe. Fazer no navegador é o caminho que pre-analise.html e
 // comercial.html já usam; o dia em que virar consulta SQL, o número não muda.
-function pnPercentil(valores, p) {
+export function pnPercentil(valores, p) {
   const v = valores.filter(x => typeof x === 'number' && isFinite(x)).sort((a, b) => a - b);
   if (!v.length) return null;
   const pos = (v.length - 1) * p;
@@ -137,7 +155,7 @@ function pnPercentil(valores, p) {
 // .sec-title vêm do repasse.html de propósito: o painel novo tem de parecer a
 // mesma tela, e duplicar a regra aqui é o caminho conhecido para as duas
 // versarem a cor de um jeito diferente na próxima manutenção.
-const PN_CSS = `
+export const PN_CSS = `
 .pn-topo{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem}
 .pn-titulo{font-size:1rem;font-weight:800;letter-spacing:-.02em}
 .pn-titulo small{display:block;font-size:.7rem;font-weight:600;color:var(--t3);letter-spacing:0;margin-top:.15rem}
@@ -188,7 +206,7 @@ table.pn-tbl tbody tr:hover{background:#f7f9fc}
 @media(max-width:700px){.pn-evolucao{gap:1px;height:140px}.pn-evol-col i{width:48%}}
 `;
 
-function pnCSS() {
+export function pnCSS() {
   if (document.getElementById('pn-css')) return;
   const st = document.createElement('style');
   st.id = 'pn-css';
@@ -199,7 +217,7 @@ function pnCSS() {
 // ─── Blocos de desenho ───────────────────────────────────────────────────────
 // Todo cartão nasce com title=. Um KPI sem definição escrita ao lado vira
 // discussão na reunião: cada um lê o número do jeito que lhe convém.
-function pnKpi(o) {
+export function pnKpi(o) {
   const val = o.valor == null ? '—' : o.valor;
   const tam = String(val).length > 9 ? 'font-size:1.15rem' : '';
   return `<div class="kpi-card ${pnEsc(o.cor || 'kpi-blue')}" title="${pnEsc(o.titulo || '')}">
@@ -209,7 +227,7 @@ function pnKpi(o) {
   </div>`;
 }
 
-function pnSpark(valores, titulo) {
+export function pnSpark(valores, titulo) {
   if (!valores.length) return '';
   const max = Math.max(...valores, 1);
   return (
@@ -220,7 +238,7 @@ function pnSpark(valores, titulo) {
 }
 
 // etapas: [{nome, n, titulo, tempo, tempoTitulo}]
-function pnFunil(etapas) {
+export function pnFunil(etapas) {
   const topo = etapas.length ? etapas[0].n : 0;
   return etapas
     .map(e => {
@@ -236,7 +254,7 @@ function pnFunil(etapas) {
     .join('');
 }
 
-function pnPainelBox(titulo, nota, conteudo) {
+export function pnPainelBox(titulo, nota, conteudo) {
   return `<div class="panel pn-secao" style="padding:1.15rem">
     <div class="sec-title">${pnEsc(titulo)}</div>
     ${nota ? `<div class="pn-nota">${pnEsc(nota)}</div>` : ''}
@@ -244,7 +262,7 @@ function pnPainelBox(titulo, nota, conteudo) {
   </div>`;
 }
 
-function pnEvolucao(pontos) {
+export function pnEvolucao(pontos) {
   if (!pontos || !pontos.length) return '<div class="pn-vazio">Sem movimento no período.</div>';
   const max = Math.max(1, ...pontos.map(p => Math.max(p.entradas, p.vendas)));
   return `<div class="pn-evolucao">${pontos
@@ -257,13 +275,13 @@ function pnEvolucao(pontos) {
     <div class="pn-evol-leg"><span>Entradas</span><span>Vendas pelo selo</span></div>`;
 }
 
-function pnAviso(texto, tipo) {
+export function pnAviso(texto, tipo) {
   return `<div class="pn-aviso ${tipo === 'info' ? 'i' : ''}">${pnEsc(texto)}</div>`;
 }
 
 // A barra de filtros. As datas só aparecem no recorte manual: dois campos de
 // data sempre visíveis, e desligados, convidam a preencher o que não vai valer.
-function pnSeletorPeriodo(painel, empreendimentos) {
+export function pnSeletorPeriodo(painel, empreendimentos) {
   const opt = (v, r, sel) =>
     `<option value="${pnEsc(String(v))}"${sel ? ' selected' : ''}>${pnEsc(r)}</option>`;
   const periodo =
@@ -294,14 +312,14 @@ function pnSeletorPeriodo(painel, empreendimentos) {
   return `<div class="pn-filtros">${periodo}${datas}${empr}</div>`;
 }
 
-function pnRedesenhar(painel) {
+export function pnRedesenhar(painel) {
   const alvo = document.getElementById('painel-modulo');
   if (!alvo) return;
   if (painel === 'PRE_ANALISE') pnDesenharPA(alvo);
   else pnDesenharCO(alvo);
 }
 
-function pnTrocarPeriodo(dias, painel) {
+export function pnTrocarPeriodo(dias, painel) {
   const n = Number(dias);
   PN.dias = isNaN(n) ? 0 : n;
   // Sair do recorte manual limpa as datas: deixá-las guardadas faria o painel
@@ -314,7 +332,7 @@ function pnTrocarPeriodo(dias, painel) {
   pnRedesenhar(painel);
 }
 
-function pnTrocarData(qual, valor, painel) {
+export function pnTrocarData(qual, valor, painel) {
   const v = String(valor || '');
   PN[qual === 'de' ? 'de' : 'ate'] = v;
   // Datas invertidas não viram painel vazio com cara de "não há nada": a outra
@@ -326,14 +344,14 @@ function pnTrocarData(qual, valor, painel) {
   pnRedesenhar(painel);
 }
 
-function pnTrocarEmpreendimento(id, painel) {
+export function pnTrocarEmpreendimento(id, painel) {
   PN.empr = String(id || '');
   pnRedesenhar(painel);
 }
 
 // Painel filtrado que não diz que está filtrado é como um número errado se
 // instala: alguém lê "18 vendas" e leva para a reunião como o total do cliente.
-function pnRotuloEmpreendimento(empreendimentos) {
+export function pnRotuloEmpreendimento(empreendimentos) {
   if (!PN.empr) return '';
   const e = (empreendimentos || []).find(x => x && x.id === PN.empr);
   return ' · ' + (e ? e.name : 'empreendimento filtrado');
@@ -344,7 +362,7 @@ function pnRotuloEmpreendimento(empreendimentos) {
 // por id — a taxa de reprovação por tipo, por exemplo, contaria documento de
 // processo que sumiu da tela. Por isso o filtro leva junto todo mundo que
 // aponta para os sobreviventes.
-function pnFiltrarPorEmpreendimento(d, principal, chave, dependentes) {
+export function pnFiltrarPorEmpreendimento(d, principal, chave, dependentes) {
   if (!PN.empr) return d;
   const vivos = {};
   const linhas = (d[principal] || []).filter(x => x.empreendimento_id === PN.empr);
@@ -358,40 +376,40 @@ function pnFiltrarPorEmpreendimento(d, principal, chave, dependentes) {
   return out;
 }
 
-function pnPersonalizado() {
+export function pnPersonalizado() {
   return PN.dias === PN_PERSONALIZADO;
 }
 
 // Um recorte manual só vale quando tem pelo menos uma ponta. Enquanto a pessoa
 // ainda está preenchendo a primeira data, a outra ponta fica aberta em vez de
 // zerar o painel — tela que pisca vazia entre dois cliques parece defeito.
-function pnData(txt, fimDoDia) {
+export function pnData(txt, fimDoDia) {
   const t = Date.parse(String(txt || '') + (fimDoDia ? 'T23:59:59.999' : 'T00:00:00'));
   return isNaN(t) ? null : t;
 }
-function pnInicio() {
+export function pnInicio() {
   if (pnPersonalizado()) return pnData(PN.de, false) ?? 0;
   return PN.dias ? Date.now() - PN.dias * 864e5 : 0;
 }
 // Toda janela rápida termina AGORA; só o recorte manual pode ter fim no passado.
 // Antes desta entrega não existia limite superior nenhum, e um período de 30
 // dias contava também o que viesse com data no futuro.
-function pnFim() {
+export function pnFim() {
   if (pnPersonalizado()) return pnData(PN.ate, true) ?? Date.now();
   return Date.now();
 }
 // Existe recorte de tempo? É o que decide se a safra do funil é o período ou o
 // histórico inteiro.
-function pnTemCorte() {
+export function pnTemCorte() {
   return pnPersonalizado() ? !!(PN.de || PN.ate) : PN.dias > 0;
 }
 // O tamanho da janela, em ms. É a régua do "vs. período anterior": comparar 90
 // dias com um recorte manual de 12 dias daria um crescimento inventado.
-function pnJanela() {
+export function pnJanela() {
   if (!pnTemCorte()) return null;
   return pnPersonalizado() ? Math.max(864e5, pnFim() - pnInicio()) : PN.dias * 864e5;
 }
-function pnRotuloPeriodo() {
+export function pnRotuloPeriodo() {
   if (pnPersonalizado()) {
     if (PN.de && PN.ate) return 'de ' + pnDataBR(PN.de) + ' a ' + pnDataBR(PN.ate);
     if (PN.de) return 'a partir de ' + pnDataBR(PN.de);
@@ -401,7 +419,7 @@ function pnRotuloPeriodo() {
   const p = PN_PERIODOS.find(x => x[0] === PN.dias);
   return PN.dias ? 'últimos ' + (p ? p[1] : PN.dias + ' dias') : 'todo o histórico';
 }
-function pnDataBR(iso) {
+export function pnDataBR(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
   return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || '');
 }
@@ -409,7 +427,7 @@ function pnDataBR(iso) {
 // Quando a licença não está confirmada, o painel não busca nada. Esconder é
 // conveniência; quem forçar continua barrado pelo RLS — mas uma consulta a
 // tabela de módulo desligado é exatamente o que o dono do produto proibiu.
-function pnSemLicenca(alvo, modulo, indeterminado) {
+export function pnSemLicenca(alvo, modulo, indeterminado) {
   alvo.innerHTML = indeterminado
     ? pnAviso(
         'Não foi possível confirmar a licença do módulo ' + modulo + ' agora. Nenhum dado foi consultado.'
@@ -417,14 +435,14 @@ function pnSemLicenca(alvo, modulo, indeterminado) {
     : pnAviso('O módulo ' + modulo + ' não está liberado para este cliente.');
 }
 
-function pnCarregando(nome) {
+export function pnCarregando(nome) {
   return `<div class="pn-vazio"><div class="spinner"></div><div style="margin-top:.6rem">Carregando o painel de ${pnEsc(nome)}…</div></div>`;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // PRÉ-ANÁLISE
 // ═════════════════════════════════════════════════════════════════════════════
-async function a1PainelPreAnalise(alvo) {
+export async function a1PainelPreAnalise(alvo) {
   pnCSS();
   const lic = await a1HasModule('PRE_ANALISE');
   if (lic !== true) {
@@ -442,7 +460,7 @@ async function a1PainelPreAnalise(alvo) {
   pnDesenharPA(alvo);
 }
 
-async function pnCarregarPA() {
+export async function pnCarregarPA() {
   const h = { headers: A1.headers() };
   // A Venda é outro módulo e outra licença: sem ele, a conversão para o
   // Venda marcaria 0% numa operação que nem tem a etapa.
@@ -536,11 +554,11 @@ async function pnCarregarPA() {
 // continuem não colidindo: no dia em que a Venda ganhar um FIM_POSITIVO com
 // outro sentido, a Pré-análise passa a encerrar por um selo que não é dela.
 // Separado, cada módulo pergunta pelo seu.
-const PN_SELOS_FIM = {
+export const PN_SELOS_FIM = {
   PRE_ANALISE: ['FIM_POSITIVO', 'FIM_NEGATIVO'],
   COMERCIAL: ['VENDIDO', 'FIM_NEGATIVO']
 };
-function pnEncerrada(s, modulo) {
+export function pnEncerrada(s, modulo) {
   if (!s || !s.selo) return false;
   const lista = PN_SELOS_FIM[modulo];
   // Módulo não informado seria a fusão de volta pela porta dos fundos: melhor
@@ -549,9 +567,9 @@ function pnEncerrada(s, modulo) {
   return lista.indexOf(s.selo) >= 0;
 }
 
-const PN_PA_TERMINAIS = ['REPROVADO', 'CANCELADO', 'ENCERRADO'];
+export const PN_PA_TERMINAIS = ['REPROVADO', 'CANCELADO', 'ENCERRADO'];
 
-function pnCalcPA(d) {
+export function pnCalcPA(d) {
   const inicio = pnInicio();
   const sitPorId = {};
   d.situacoes.forEach(s => {
@@ -875,7 +893,7 @@ function pnCalcPA(d) {
 // A régua agora é `ver_consolidado_financeiro`. Sem ela o painel não esconde o
 // painel: troca cada número em R$ pela mesma informação em quantidade. A pessoa
 // continua enxergando o próprio trabalho; o caixa é que para de aparecer.
-function pnEhGestor() {
+export function pnEhGestor() {
   const u = A1.user || {};
   return u.role !== 'partner' || u.permissions?.gerente === true;
 }
@@ -883,12 +901,12 @@ function pnEhGestor() {
 // Coordenador saiu do ranking INTEIRO. Ele tem visão completa da carteira, então
 // o RLS lhe entrega tudo — e o quadro listava nominalmente corretores de OUTRO
 // coordenador. Ele continua vendo ranking: o da equipe dele, filtrado abaixo.
-function pnPodeVerRanking() {
+export function pnPodeVerRanking() {
   const u = A1.user || {};
   return pnEhGestor() || u.type === 'coordenador';
 }
 
-function pnPodeVerConsolidado() {
+export function pnPodeVerConsolidado() {
   const u = A1.user || {};
   if (pnEhGestor()) return true;
   return u.permissions?.ver_consolidado_financeiro === true;
@@ -896,17 +914,17 @@ function pnPodeVerConsolidado() {
 
 // Dinheiro na tela só com o corte de agregado. Para os demais, traço — e o
 // motivo escrito no title, senão o número vira "o painel quebrou".
-const PN_SEM_CONSOLIDADO =
+export const PN_SEM_CONSOLIDADO =
   'Valores consolidados em R$ dependem da permissão "Ver valores consolidados (R$)". ' +
   'Sem ela o painel mostra quantidade, não soma — os mesmos processos, sem o caixa do cliente.';
-function pnDinheiro(cent) {
+export function pnDinheiro(cent) {
   return pnPodeVerConsolidado() ? pnBRL(cent) : '—';
 }
 
-const PN_RANK_MIN = 5; // abaixo disto a posição é sorteio, não classificação
-const PN_RANK_TOPO = 8; // a lista para no 8º: nunca se publica quem está embaixo
+export const PN_RANK_MIN = 5; // abaixo disto a posição é sorteio, não classificação
+export const PN_RANK_TOPO = 8; // a lista para no 8º: nunca se publica quem está embaixo
 
-function pnRank(linhas, chave, nomes, valorFn, okFn) {
+export function pnRank(linhas, chave, nomes, valorFn, okFn) {
   const m = {};
   linhas.forEach(x => {
     const id = x[chave];
@@ -935,7 +953,7 @@ function pnRank(linhas, chave, nomes, valorFn, okFn) {
     .sort((a, b) => b.valor - a.valor || b.total - a.total || b.fechados - a.fechados);
 }
 
-function pnRankHtml(lista, fmt, sub) {
+export function pnRankHtml(lista, fmt, sub) {
   const topo = (lista || []).slice(0, PN_RANK_TOPO);
   if (!topo.length) return '<div class="pn-vazio">Sem dados vinculados no período.</div>';
   return (
@@ -977,14 +995,14 @@ function pnRankHtml(lista, fmt, sub) {
 
 // Mediana do time, anonimizada. É a régua que substitui o ranking para quem não
 // pode ver nome de terceiro: dá referência sem expor colega nenhum.
-function pnMedianaDe(lista, campo) {
+export function pnMedianaDe(lista, campo) {
   return pnPercentil(
     (lista || []).map(r => Number(r[campo]) || 0),
     0.5
   );
 }
 
-function pnFaixa(rotulo, valor, dica) {
+export function pnFaixa(rotulo, valor, dica) {
   return (
     '<div class="pn-faixa" title="' +
     pnEsc(dica || '') +
@@ -1001,7 +1019,7 @@ function pnFaixa(rotulo, valor, dica) {
 // classificação diz o mesmo: número solto, ou ranking em que a pessoa não
 // aparece, não corrige rota, desengaja. Agora vêm três réguas: o próprio
 // período anterior, a mediana anônima do time e a taxa.
-function pnMinhaPerformance(o) {
+export function pnMinhaPerformance(o) {
   const eu = o.eu,
     antes = o.antes;
   if (!eu) return '<div class="pn-vazio">' + pnEsc(o.vazio) + '</div>';
@@ -1042,7 +1060,7 @@ function pnMinhaPerformance(o) {
   return '<div class="pn-faixas">' + caixas.join('') + '</div>';
 }
 
-function pnRankBox(titulo, descricao, grupos, pessoal) {
+export function pnRankBox(titulo, descricao, grupos, pessoal) {
   if (!pnPodeVerRanking())
     return pnPainelBox('Minha performance', pessoal.descricao || descricao, pnMinhaPerformance(pessoal));
   return pnPainelBox(
@@ -1061,7 +1079,7 @@ function pnRankBox(titulo, descricao, grupos, pessoal) {
 // mandá-lo para `corretor_id`, como fazia o ramo `else` de antes, produzia um
 // bloco vazio com o rótulo "Minha performance", que lê como "você não produziu
 // nada". Nulo aqui vira uma frase honesta: este painel não mede o seu papel.
-function pnChavePessoalPA(u) {
+export function pnChavePessoalPA(u) {
   return u.type === 'analista'
     ? 'analista_id'
     : u.type === 'cca'
@@ -1071,7 +1089,7 @@ function pnChavePessoalPA(u) {
         : null;
 }
 
-function pnBlocoRankingsPA(d) {
+export function pnBlocoRankingsPA(d) {
   const nomes = {};
   (d.parceiros || []).forEach(p => (nomes[p.id] = p.name || 'Sem nome'));
   (d.empresas || []).forEach(e => (nomes[e.id] = e.name || 'Sem empresa'));
@@ -1135,7 +1153,7 @@ function pnBlocoRankingsPA(d) {
   );
 }
 
-function pnBlocoRankingsCO(d) {
+export function pnBlocoRankingsCO(d) {
   const nomes = {},
     porId = {};
   (d.parceiros || []).forEach(p => {
@@ -1234,7 +1252,7 @@ function pnBlocoRankingsCO(d) {
   );
 }
 
-function pnDesenharPA(alvo) {
+export function pnDesenharPA(alvo) {
   // O filtro é aplicado ANTES do cálculo e vale para tudo que vem depois —
   // cartões, funil, fila e rankings leem o mesmo recorte. Um quadro filtrado ao
   // lado de um ranking do cliente inteiro seria a mesma tela dizendo duas
@@ -1533,7 +1551,7 @@ function pnDesenharPA(alvo) {
 // Campos que dependem de cadastro que o schema ainda não tem. Aparecem com um
 // traço e o motivo escrito: quem procura o número descobre o que falta ligar,
 // em vez de achar que o painel esqueceu.
-function pnNaoCalculavel(itens) {
+export function pnNaoCalculavel(itens) {
   return `<div class="panel pn-secao" style="padding:1.15rem">
     <div class="sec-title">Depende de cadastro que ainda não existe</div>
     <div class="pn-faixas">${itens
@@ -1548,7 +1566,7 @@ function pnNaoCalculavel(itens) {
 // ═════════════════════════════════════════════════════════════════════════════
 // COMERCIAL
 // ═════════════════════════════════════════════════════════════════════════════
-async function a1PainelComercial(alvo) {
+export async function a1PainelComercial(alvo) {
   pnCSS();
   const lic = await a1HasModule('COMERCIAL');
   if (lic !== true) {
@@ -1566,7 +1584,7 @@ async function a1PainelComercial(alvo) {
   pnDesenharCO(alvo);
 }
 
-async function pnCarregarCO() {
+export async function pnCarregarCO() {
   const h = { headers: A1.headers() };
   const r = await Promise.all([
     fetch(`${A1.rest('a1_co_situacoes')}?select=id,nome,flag,cor,sla_horas,ordem,selo&order=ordem.asc`, h)
@@ -1599,13 +1617,13 @@ async function pnCarregarCO() {
   };
 }
 
-const PN_CO_TERMINAIS = ['CANCELADO', 'ENCERRADO'];
-const PN_CT_GERADO = ['GERADO', 'AGUARDANDO_ASSINATURA', 'ASSINADO'];
+export const PN_CO_TERMINAIS = ['CANCELADO', 'ENCERRADO'];
+export const PN_CT_GERADO = ['GERADO', 'AGUARDANDO_ASSINATURA', 'ASSINADO'];
 
 // O dinheiro do negócio. proposta é jsonb livre, sem constraint: valor_venda
 // pode simplesmente não existir, e aí vale o valor_total do crédito capturado
 // no snapshot — a mesma regra que valorDe() usa em comercial.html.
-function pnValorCO(co) {
+export function pnValorCO(co) {
   const p = co.proposta || {};
   if (p.valor_venda != null) return Number(p.valor_venda) || 0;
   // credito vem projetado da consulta; o origem_snapshot inteiro é o caminho de
@@ -1615,7 +1633,7 @@ function pnValorCO(co) {
   return Number(cred.valor_total) || 0;
 }
 
-function pnCalcCO(d) {
+export function pnCalcCO(d) {
   const inicio = pnInicio();
   const sitPorId = {};
   d.situacoes.forEach(s => {
@@ -2062,7 +2080,7 @@ function pnCalcCO(d) {
   };
 }
 
-function pnDesenharCO(alvo) {
+export function pnDesenharCO(alvo) {
   const d = pnFiltrarPorEmpreendimento(PN.co, 'com', 'id', {
     contratos: 'comercial_id',
     eventos: 'comercial_id'

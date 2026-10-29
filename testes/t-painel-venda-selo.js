@@ -29,7 +29,8 @@ const { checa, resumo } = require('./comum');
 // globais que ele toca, devolvendo as funções reais. Copiar o cálculo para o
 // teste provaria a cópia, não o sistema.
 function carregar() {
-  const codigo = require('./fonte').lerFonte('src/modules/paineis/paineis.js');
+  const { lerFonte, comoScript } = require('./fonte');
+  const codigo = comoScript(lerFonte('src/modules/paineis/paineis.js'));
   const doc = {
     getElementById: () => null,
     querySelectorAll: () => [],

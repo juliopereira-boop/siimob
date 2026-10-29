@@ -1,5 +1,9 @@
-'use strict';
+import { A1, A1_KEY, getSlugFromURL } from '../../shared/api/config.js';
+import { a1Login, a1ManutencaoEstado, a1MsgManutencao, a1PartnerLogin } from '../../shared/auth/auth.js';
+import { expor } from '../../shared/utils/expor.js';
 
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ backToPanels, doLogin, selectPanel, togglePassword });
 function applyCustomLogo() {
   const logo = localStorage.getItem('a1_platform_logo');
   if (!logo) return;

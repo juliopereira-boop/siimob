@@ -9,7 +9,16 @@
 // Nenhum número da página é escrito à mão — tudo sai de src/modules/indica/indica-config.js.
 // ═════════════════════════════════════════════════════════════════════════════
 
-const $ = id => document.getElementById(id);
+import { A1_KEY, A1_URL } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { INDICA } from '../../modules/indica/indica-config.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ alternarFaq, entrarPainel, indicarSegmento });
+exporVariavel('$', () => $);
+exporVariavel('comissao', () => comissao);
+export const $ = id => document.getElementById(id);
 const reservado = s =>
   String(s || '')
     .trim()

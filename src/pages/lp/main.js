@@ -1,3 +1,4 @@
+import { A1_KEY, A1_URL } from '../../shared/api/config.js';
 /* ── Assinatura: pipeline vivo ────────────────────────────────────────────
    Um processo trava na Conformidade, acumula dias, vira âmbar e é capturado.
    É a promessa do produto contada em movimento — não é enfeite.            */

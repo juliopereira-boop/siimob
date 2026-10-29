@@ -6,7 +6,7 @@
 // é editar este arquivo, e nada mais.
 // ═════════════════════════════════════════════════════════════════════════════
 
-const INDICA = {
+export const INDICA = {
   marca: 'SIIMOB',
   programa: 'IndicaSII',
   siteInstitucional: '/conheca',

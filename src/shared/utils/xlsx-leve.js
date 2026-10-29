@@ -6,7 +6,7 @@
 //
 // Lê também .csv, que é o que sai quando alguém exporta de outro sistema.
 
-const XLSX = (() => {
+export const XLSX = (() => {
   // ── zip ────────────────────────────────────────────────────────────────────
   // Procura o fim do diretório central (assinatura PK\x05\x06) a partir do fim
   // do arquivo — é ali que ficam os ponteiros para cada arquivo de dentro.

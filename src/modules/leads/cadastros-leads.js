@@ -30,15 +30,25 @@
 // perdido: quem já cadastrou origens continua com elas.
 //
 // Depende de: config.js, e de cfgModsCartao/cfgModsVista de configuracoes.html.
+//
+// toast, cfgModsCartao e cfgModsVista são da tela de Configurações, que as expõe
+// (expor() em src/pages/configuracoes/main.js). Este módulo as usa pelo global
+// de propósito: ele só é carregado por aquela tela.
+/* global toast, cfgModsCartao, cfgModsVista */
 
-const LEADS_CAD_KEYMAP = { origens: 'crm_sources', corretores: 'crm_brokers' };
-function leadsCadChave(k) {
+import { A1 } from '../../shared/api/config.js';
+import { expor } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ leadsCadAbrir, leadsCadEditar, leadsCadExcluir, leadsCadGravar, leadsEsc, leadsMontarConfig });
+export const LEADS_CAD_KEYMAP = { origens: 'crm_sources', corretores: 'crm_brokers' };
+export function leadsCadChave(k) {
   return LEADS_CAD_KEYMAP[k] || 'crm_cad_' + k;
 }
 
 // A ordem é a de uso: o que se mexe toda semana em cima, o que se configura uma
 // vez na vida embaixo.
-const LEADS_CAD = [
+export const LEADS_CAD = [
   {
     key: 'origens',
     rotulo: 'Origens de lead',
@@ -162,9 +172,9 @@ const LEADS_CAD = [
   }
 ];
 
-const LEADS_CAD_DADOS = {};
+export const LEADS_CAD_DADOS = {};
 
-function leadsEsc(s) {
+export function leadsEsc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -172,7 +182,7 @@ function leadsEsc(s) {
     .replace(/"/g, '&quot;');
 }
 
-async function leadsCadCarregar(k) {
+export async function leadsCadCarregar(k) {
   const linhas = await fetch(`${A1.rest('a1_config')}?key=eq.${leadsCadChave(k)}&select=value`, {
     headers: A1.headers()
   })
@@ -193,7 +203,7 @@ async function leadsCadCarregar(k) {
   return LEADS_CAD_DADOS[k];
 }
 
-async function leadsCadSalvar(k) {
+export async function leadsCadSalvar(k) {
   const r = await fetch(A1.rest('a1_config'), {
     method: 'POST',
     headers: A1.upsertHeaders(),
@@ -208,7 +218,7 @@ async function leadsCadSalvar(k) {
   if (!r.ok) throw new Error(await r.text().catch(() => 'erro ao salvar'));
 }
 
-function leadsCadDef(k) {
+export function leadsCadDef(k) {
   return LEADS_CAD.find(c => c.key === k);
 }
 
@@ -216,7 +226,7 @@ function leadsCadDef(k) {
 // Uma só, montada do catálogo. Catorze telas escritas à mão seriam catorze
 // lugares para o botão "Excluir" se comportar de um jeito diferente.
 
-async function leadsCadAbrir(k) {
+export async function leadsCadAbrir(k) {
   const def = leadsCadDef(k);
   const alvo = document.getElementById('leads-cad-' + k);
   if (!def || !alvo) return;
@@ -227,7 +237,7 @@ async function leadsCadAbrir(k) {
   leadsCadDesenhar(k);
 }
 
-function leadsCadDesenhar(k) {
+export function leadsCadDesenhar(k) {
   const def = leadsCadDef(k);
   const alvo = document.getElementById('leads-cad-' + k);
   if (!def || !alvo) return;
@@ -268,7 +278,7 @@ function leadsCadDesenhar(k) {
     }`;
 }
 
-function leadsCadEditar(k, i) {
+export function leadsCadEditar(k, i) {
   const def = leadsCadDef(k);
   const wrap = document.getElementById('leads-cad-form-' + k);
   if (!def || !wrap) return;
@@ -299,7 +309,7 @@ function leadsCadEditar(k, i) {
   if (p) p.focus();
 }
 
-async function leadsCadGravar(k, i) {
+export async function leadsCadGravar(k, i) {
   const def = leadsCadDef(k);
   if (!def) return;
   const item = {};
@@ -347,7 +357,7 @@ async function leadsCadGravar(k, i) {
   }
 }
 
-async function leadsCadExcluir(k, i) {
+export async function leadsCadExcluir(k, i) {
   const lista = LEADS_CAD_DADOS[k] || [];
   const it = lista[i];
   if (!it) return;
@@ -373,11 +383,11 @@ async function leadsCadExcluir(k, i) {
 // licenciado. Sem licença, nem o cartão nem a sub-tela entram no DOM — o que
 // não está no DOM ninguém acha com a busca do hub nem com o inspetor.
 
-const LEADS_ICONE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B7568"
+export const LEADS_ICONE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B7568"
   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>`;
 
-function leadsMontarConfig() {
+export function leadsMontarConfig() {
   if (typeof cfgModsCartao !== 'function' || typeof cfgModsVista !== 'function') return;
   const grade = document.getElementById('cfg-cards-leads');
   if (!grade) return;

@@ -1,3 +1,26 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc } from '../../shared/utils/texto.js';
+import { hojeISO } from '../../shared/utils/datas.js';
+import { a1RequireAuth, a1StartHeartbeat } from '../../shared/auth/auth.js';
+import {
+  a1AgendaCarregar,
+  a1AgendaTipoReal,
+  a1Card,
+  a1CorDoTipo,
+  a1Hero,
+  a1Kpis,
+  a1MontarShell,
+  a1PopAbrir,
+  a1Svg,
+  a1Vazio
+} from '../../shared/ui/modulo-shell.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({ mudarMes, selecionarDiaAgenda });
+exporVariavel('G', () => G);
 /* ═══════════════════════════════════════════════════════════════════════════
    GERAL — a tela inicial do SIIMOB
 
@@ -80,8 +103,10 @@ async function init() {
   a1Hero(document.getElementById('hero'), { hoje: linhaDoDia() });
   desenhar();
 
-  if (typeof a1AvisosIniciar === 'function') a1AvisosIniciar();
-  if (typeof a1CobrancaAviso === 'function') a1CobrancaAviso();
+  // O mural de avisos e a tarja de cobrança começam sozinhos (DOMContentLoaded,
+  // em src/shared/ui). Aqui havia duas chamadas a a1AvisosIniciar e
+  // a1CobrancaAviso, nomes que não existem desde 17/09: o typeof sempre dava
+  // 'undefined' e nada era chamado. O lint de módulo (no-undef) as achou.
 }
 
 /* ── Os números ───────────────────────────────────────────────────────────── */

@@ -3,7 +3,8 @@
 //
 // Uma entrada por tela (src/pages/<tela>/index.html). O resultado em dist/ é o
 // que a Vercel publica: as páginas na raiz com os nomes de sempre, e JS/CSS em
-// /static com hash no nome (cache longo sem risco de versão velha).
+// /static com hash no nome (cache longo sem risco de versão velha). Cada tela é
+// um módulo ES que importa o que usa: o Vite empacota a árvore de imports dela.
 //
 //   npm run dev       servidor de desenvolvimento, com as rotas de vercel.json
 //   npm run build     gera dist/
@@ -11,7 +12,6 @@
 import { defineConfig } from 'vite';
 import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import scriptsClassicos from './tools/vite/scripts-classicos.mjs';
 import paginasNaRaiz from './tools/vite/paginas-na-raiz.mjs';
 import rotasVercel from './tools/vite/rotas-vercel.mjs';
 
@@ -30,7 +30,7 @@ export default defineConfig({
     assetsDir: 'static',
     rollupOptions: { input: telas }
   },
-  plugins: [scriptsClassicos(), paginasNaRaiz(), rotasVercel()],
+  plugins: [paginasNaRaiz(), rotasVercel()],
   server: { port: 3000, strictPort: true },
   preview: { port: 4173 }
 });

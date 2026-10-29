@@ -1,5 +1,45 @@
-'use strict';
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { hojeISO } from '../../shared/utils/datas.js';
+import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
+import { a1AtorHistorico, a1MontarShell } from '../../shared/ui/modulo-shell.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
 
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  applyDashFilter,
+  applyFilter,
+  applyListFilter,
+  archiveCase,
+  changeStage,
+  clearDashFilters,
+  closeModal,
+  cor,
+  createCase,
+  dashCases,
+  filteredCases,
+  onDragEnd,
+  onDragOver,
+  onDragStart,
+  onDrop,
+  openCase,
+  openNewModal,
+  openStageModal,
+  renderDashboard,
+  renderFunil,
+  roteamentoDeAnalistasAtivo,
+  saveCase,
+  saveStage,
+  selectItbi,
+  switchModalTab,
+  switchTab,
+  toast,
+  updateStage,
+  val
+});
+exporVariavel('G', () => G);
 const G = {
   user: null,
   slug: '',
@@ -133,8 +173,12 @@ function idOuNulo(id) {
 // O Roteamento de Analistas ainda não existe. Quando existir, é AQUI que ele
 // passa a responder — e o campo de analista fica bloqueado, porque quem
 // escolhe passa a ser a regra, não a pessoa.
+// O mesmo interruptor da Pré-análise: o Roteamento de Analistas, quando vier,
+// liga G.roteamentoAnalistas. Até lá ninguém liga, e o resultado é o de sempre
+// (falso). Antes esta função devolvia false fixo, e o teste só conseguia ligá-la
+// trocando a função pelo window, o que um módulo ES não enxerga.
 function roteamentoDeAnalistasAtivo() {
-  return false;
+  return G.roteamentoAnalistas === true;
 }
 
 function camposDeVinculo(c, prefixo) {

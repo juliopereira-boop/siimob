@@ -1,19 +1,22 @@
+import { expor, exporVariavel } from '../utils/expor.js';
+
+exporVariavel('A1_URL', () => A1_URL);
 // ─── Supabase connection ─────────────────────────────────────────────────────
 // Replace these two values with your project's URL and anon key.
 // NEVER put the service role key here — that stays server-side only.
-const A1_URL = 'https://hmedoyrxcqgkkasivbsn.supabase.co';
-const A1_KEY =
+export const A1_URL = 'https://hmedoyrxcqgkkasivbsn.supabase.co';
+export const A1_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWRveXJ4Y3Fna2thc2l2YnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjQyMjUsImV4cCI6MjA5NzkwMDIyNX0.h3TspQHP6u9RN2inS8tUcpnkuVW3ymYNiWVJGJyQvaY';
 
 // ─── Slug extraction from URL ─────────────────────────────────────────────────
 // URL pattern: /slug/module  e.g. /construtora-abc/repasse
-function getSlugFromURL() {
+export function getSlugFromURL() {
   const parts = window.location.pathname.replace(/^\//, '').split('/');
   return parts[0] || null;
 }
 
 // ─── Active session (populated by auth.js after login) ───────────────────────
-const A1 = {
+export const A1 = {
   get token() {
     return localStorage.getItem('a1_token');
   },

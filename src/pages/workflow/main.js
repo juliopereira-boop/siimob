@@ -1,3 +1,54 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { a1RequireAuth, a1StartHeartbeat, a1VigiarManutencao } from '../../shared/auth/auth.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  abrirTransicao,
+  apagarTransicao,
+  autoLayout,
+  changeModule,
+  closeEditPanel,
+  deleteStage,
+  fecharTransicao,
+  openEdit,
+  openNewStage,
+  pintarModo,
+  render,
+  salvarTransicao,
+  saveStage,
+  semearEsteira,
+  toast,
+  toggleWfLock
+});
+exporVariavel(
+  'MODULE',
+  () => MODULE,
+  v => (MODULE = v)
+);
+exporVariavel(
+  'counts',
+  () => counts,
+  v => (counts = v)
+);
+exporVariavel(
+  'drag',
+  () => drag,
+  v => (drag = v)
+);
+exporVariavel(
+  'edges',
+  () => edges,
+  v => (edges = v)
+);
+exporVariavel(
+  'stages',
+  () => stages,
+  v => (stages = v)
+);
 // ─── Constants ────────────────────────────────────────────────────────────────
 const NODE_W = 215;
 const PORT_Y = 50; // y offset from node top to port center

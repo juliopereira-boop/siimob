@@ -1,3 +1,5 @@
+import { INDICA } from '../../modules/indica/indica-config.js';
+import { $ } from './main.js';
 // Schema.org só com o que a página realmente mostra.
 $('ld-faq').textContent = JSON.stringify({
   '@context': 'https://schema.org',

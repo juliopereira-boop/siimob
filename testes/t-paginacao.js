@@ -26,7 +26,8 @@ const { checa, resumo } = require('./comum');
 // — o mesmo objeto que a tela usa. Copiar a função para o teste provaria a
 // cópia, não o sistema.
 function carregarA1(fetchFalso) {
-  const codigo = require('./fonte').lerFonte('src/shared/api/config.js');
+  const { lerFonte, comoScript } = require('./fonte');
+  const codigo = comoScript(lerFonte('src/shared/api/config.js'));
   const janela = {
     localStorage: { getItem: () => 'tok', setItem: () => {} },
     location: { pathname: '/thecred/repasse' },

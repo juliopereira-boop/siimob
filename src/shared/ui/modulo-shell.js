@@ -18,6 +18,39 @@
 // publicos (a1MontarShell, A1_ORDEM_PAINEIS, a1VistaDaURL, a1RotuloPapel)
 // continuam valendo para as telas que ja os chamam.
 
+import { A1 } from '../api/config.js';
+import { a1HasModule, a1Logout } from '../auth/auth.js';
+import { expor, exporVariavel } from '../utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  a1AgendaAbrir,
+  a1AgendaConcluir,
+  a1AgendaDesenhar,
+  a1AgendaDia,
+  a1AgendaExcluir,
+  a1AgendaGravar,
+  a1AgendaMes,
+  a1AgendaNovo,
+  a1AgendaTipo,
+  a1AgendaTipoReal,
+  a1AvisosAbrir,
+  a1BuscaSubmeter,
+  a1CorDoTipo,
+  a1DesenharCeu,
+  a1Esc,
+  a1MenuPessoa,
+  a1PaletaAbrir,
+  a1PaletaAbrirItem,
+  a1PaletaFechar,
+  a1PaletaFiltrar,
+  a1PaletaTecla,
+  a1PopAbrir,
+  a1PopFechar,
+  a1ShellVista,
+  a1Svg
+});
+exporVariavel('A1_ORDEM_PAINEIS', () => A1_ORDEM_PAINEIS);
 /* ═══════════════════════════════════════════════════════════════════════════
    1. OS MODULOS
    A ordem e a ordem do PROCESSO: o lead vira pre-analise, que vira venda, que
@@ -25,7 +58,7 @@
    modulo de despachante.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const A1_ICONES = {
+export const A1_ICONES = {
   geral: '<path d="M3 13h8V3H3v10Zm10 8h8V11h-8v10ZM3 21h8v-6H3v6ZM13 9h8V3h-8v6Z"/>',
   lead: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/>',
   pre: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
@@ -49,7 +82,7 @@ const A1_ICONES = {
     '<path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.3-4.9a8.4 8.4 0 1 1 16.2-3.8Z"/><path d="M8.2 7.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.7 1.7c.1.3 0 .5-.2.7l-.6.7c-.2.2-.1.4 0 .6.7 1.2 1.6 2.1 2.8 2.7.2.1.4.2.6 0l.8-1c.2-.2.4-.3.7-.2l1.8.8c.3.1.5.2.5.4 0 .2-.1 1.1-.5 1.6-.5.6-1.3.9-2.1.9-1.1 0-2.7-.5-4.5-2.1-2.1-1.8-3.4-4.1-3.5-5.5 0-.5.1-.9.3-1.2Z"/>'
 };
 
-function a1Svg(nome, tam) {
+export function a1Svg(nome, tam) {
   const d = A1_ICONES[nome] || '';
   const t = tam || 16;
   return `<svg viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor"
@@ -58,7 +91,7 @@ function a1Svg(nome, tam) {
 
 // `chave` e a mesma que a licenca usa em a1_tenant_modules. `sempre:true` e so
 // para o que nao depende de licenca.
-const A1_MODULOS = [
+export const A1_MODULOS = [
   {
     chave: 'crm',
     rotulo: 'Leads',
@@ -109,9 +142,9 @@ const A1_MODULOS = [
   }
 ];
 
-const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
+export const A1_ORDEM_PAINEIS = ['PRE_ANALISE', 'COMERCIAL', 'repasse'];
 
-const A1_DASHBOARD_PERMISSOES = {
+export const A1_DASHBOARD_PERMISSOES = {
   crm: 'ver_dashboard_lead',
   PRE_ANALISE: 'ver_dashboard_pre_analise',
   COMERCIAL: 'ver_dashboard_venda',
@@ -126,7 +159,7 @@ const A1_DASHBOARD_PERMISSOES = {
 // Tipo desconhecido vira "Parceiro", nunca "Correspondente": chutar um papel
 // que a pessoa nao tem foi um defeito real — o mesmo corretor aparecia como
 // Corretor numa tela e Correspondente na outra.
-function a1RotuloPapel(user) {
+export function a1RotuloPapel(user) {
   try {
     if (sessionStorage.getItem('a1_sa_mode')) return 'Superadmin';
   } catch {}
@@ -146,7 +179,7 @@ function a1RotuloPapel(user) {
 // O papel vem gravado junto do evento. Assim, se alguém mudar de Corretor
 // para Coordenador amanhã, o histórico de ontem continua dizendo quem ele era
 // no momento da ação.
-function a1RotuloPapelHistorico(papel) {
+export function a1RotuloPapelHistorico(papel) {
   return (
     {
       superadmin: 'Superadmin',
@@ -165,7 +198,7 @@ function a1RotuloPapelHistorico(papel) {
     }[papel] || String(papel || '')
   );
 }
-function a1AtorHistorico(evento) {
+export function a1AtorHistorico(evento) {
   const nome = (evento && (evento.actor_name || evento.ator_nome || evento.criado_por_nome)) || '';
   const papel = a1RotuloPapelHistorico(
     evento && (evento.actor_role || evento.ator_papel || evento.criado_por_papel)
@@ -175,7 +208,7 @@ function a1AtorHistorico(evento) {
 
 // O mesmo escape de src/shared/utils/texto.js (esc), com nome próprio porque o
 // casco também roda em telas que ainda não carregam aquele arquivo.
-function a1Esc(s) {
+export function a1Esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -186,7 +219,7 @@ function a1Esc(s) {
 
 // As iniciais do avatar. Duas letras, do primeiro e do ultimo nome — "Júlio
 // César sousa pereira" vira JP, nao JC, porque e assim que a pessoa assina.
-function a1Iniciais(nome) {
+export function a1Iniciais(nome) {
   const p = String(nome || '')
     .trim()
     .split(/\s+/)
@@ -216,19 +249,19 @@ function a1Iniciais(nome) {
 // 5. o usuário não precisa atualizar, limpar cache ou fazer nada.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const A1_MODULO_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+export const A1_MODULO_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
 
-function a1Esperar(ms) {
+export function a1Esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function a1ModuloCacheChave(chave) {
+export function a1ModuloCacheChave(chave) {
   const tenant = (A1.user && A1.user.tenant_id) || A1.slug || 'sem-tenant';
 
   return `siimob:modulo:${tenant}:${chave}`;
 }
 
-function a1ModuloCacheLer(chave) {
+export function a1ModuloCacheLer(chave) {
   try {
     const bruto = localStorage.getItem(a1ModuloCacheChave(chave));
 
@@ -258,7 +291,7 @@ function a1ModuloCacheLer(chave) {
   }
 }
 
-function a1ModuloCacheSalvar(chave, valor) {
+export function a1ModuloCacheSalvar(chave, valor) {
   try {
     /*
       Guardamos somente módulo confirmado como ATIVO.
@@ -286,7 +319,7 @@ function a1ModuloCacheSalvar(chave, valor) {
   }
 }
 
-async function a1HasModuleSeguro(chave) {
+export async function a1HasModuleSeguro(chave) {
   const esperas = [0, 250, 650, 1200];
 
   let ultimoErro = null;
@@ -344,7 +377,7 @@ async function a1HasModuleSeguro(chave) {
   return null;
 }
 
-async function a1ModulosDoCliente() {
+export async function a1ModulosDoCliente() {
   // A sessão aberta pelo painel do Superadmin é uma sessão de suporte. Ela
   // já passa pelo guard de módulo em auth.js e precisa conservar o mesmo
   // comportamento ao montar o shell; do contrário, o guard liberava a URL,
@@ -380,7 +413,7 @@ async function a1ModulosDoCliente() {
 // e a tela ficava incoerente.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function a1DashboardsDoCliente(modulosJaConsultados) {
+export async function a1DashboardsDoCliente(modulosJaConsultados) {
   const chaves = Object.keys(A1_DASHBOARD_PERMISSOES);
 
   // Reaproveita a consulta do shell quando disponível. Algumas telas antigas
@@ -476,14 +509,14 @@ async function a1DashboardsDoCliente(modulosJaConsultados) {
   return Object.fromEntries(chaves.map((modulo, i) => [modulo, permissoes[i] === true]));
 }
 
-function a1PodeVerDashboardModulo(user, modulo, licencas) {
+export function a1PodeVerDashboardModulo(user, modulo, licencas) {
   if (!licencas || licencas[modulo] !== true || !user) return false;
   if (user.role !== 'partner') return true;
   const perms = user.permissions || {};
   return perms.gerente === true || perms[A1_DASHBOARD_PERMISSOES[modulo]] === true;
 }
 
-function a1PodeVerAlgumDashboard(user, licencas) {
+export function a1PodeVerAlgumDashboard(user, licencas) {
   return Object.keys(A1_DASHBOARD_PERMISSOES).some(m => a1PodeVerDashboardModulo(user, m, licencas));
 }
 
@@ -496,7 +529,7 @@ function a1PodeVerAlgumDashboard(user, licencas) {
 
 // width/height no próprio SVG: se o CSS ainda não chegou, a marca nasce do
 // tamanho do cabeçalho em vez de ocupar a tela inteira. O CSS continua mandando.
-const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" width="24" height="24" fill="none" aria-hidden="true">
+export const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" width="24" height="24" fill="none" aria-hidden="true">
 <defs><linearGradient id="sbm" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
 <stop offset="0%" stop-color="#3FB8A6"/><stop offset="100%" stop-color="#0E8C7F"/></linearGradient></defs>
 <path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sbm)"/>
@@ -514,9 +547,9 @@ const A1_MARCA_SVG = `<svg viewBox="0 0 100 100" width="24" height="24" fill="no
      opcoes.acoes  — HTML de botoes extras a direita da sub-barra
    ═══════════════════════════════════════════════════════════════════════════ */
 
-let A1_SHELL = { tem: null, dash: null, montado: false };
+export let A1_SHELL = { tem: null, dash: null, montado: false };
 
-async function a1MontarShell(alvo, opcoes) {
+export async function a1MontarShell(alvo, opcoes) {
   const o = opcoes || {};
   const user = A1.user || {};
   const slug = A1.slug || '';
@@ -657,7 +690,7 @@ async function a1MontarShell(alvo, opcoes) {
 // punha uma segunda cópia no fim do <head>, que era o que fazia o cabeçalho
 // ganhar da tela; a ordem do index.css reproduz isso sem a segunda cópia e sem o
 // instante em que a tela aparecia sem estilo.
-function a1ShellGarantirCSS() {
+export function a1ShellGarantirCSS() {
   if (!document.getElementById('sb-fonte')) {
     const f = document.createElement('link');
     f.id = 'sb-fonte';
@@ -671,7 +704,7 @@ function a1ShellGarantirCSS() {
 // Marca qual vista da sub-barra esta ativa. Existe porque as telas que trocam
 // de aba SEM recarregar tinham cada uma a sua linha para isso — e o dia em que
 // uma esquecesse, a barra ficaria mostrando a aba errada em silencio.
-function a1ShellVista(chave) {
+export function a1ShellVista(chave) {
   document
     .querySelectorAll('.sb-sub-item[data-vista]')
     .forEach(el => el.classList.toggle('ativo', el.dataset.vista === chave));
@@ -681,7 +714,7 @@ function a1ShellVista(chave) {
 // cada tela escrevia direto no #hdr-user dela; agora o nome mora num lugar so,
 // e a inicial do avatar acompanha — que era o detalhe que ninguem lembrava de
 // atualizar junto.
-function a1ShellNome(nome) {
+export function a1ShellNome(nome) {
   const el = document.querySelector('.sb-pessoa-nome');
   if (el) el.textContent = String(nome == null ? '' : nome);
   const av = document.querySelector('.sb-avatar');
@@ -690,7 +723,7 @@ function a1ShellNome(nome) {
   if (hav) hav.textContent = a1Iniciais(nome);
 }
 
-function a1ShellIr(destino) {
+export function a1ShellIr(destino) {
   const slug = A1.slug || '';
   if (destino === 'agenda') location.href = `/${slug}/repasse?tab=agenda`;
   if (destino === 'avisos') location.href = `/${slug}/configuracoes?cfg=avisos`;
@@ -698,7 +731,7 @@ function a1ShellIr(destino) {
 
 // Qual vista a URL esta pedindo. E o caminho que manda, para o link do menu e o
 // botao "voltar" do navegador continuarem valendo.
-function a1VistaDaURL() {
+export function a1VistaDaURL() {
   const q = new URLSearchParams(location.search).get('vista');
   if (q === 'listagem' || q === 'andamento' || q === 'dashboard') return q;
   if (new URLSearchParams(location.search).get('tab') === 'dash') return 'dashboard';
@@ -712,9 +745,9 @@ function a1VistaDaURL() {
    paleta sem a porta.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-let A1_PALETA = { itens: [], filtrados: [], marcado: 0 };
+export let A1_PALETA = { itens: [], filtrados: [], marcado: 0 };
 
-function a1PaletaMontarIndice(tem, dash, user, slug) {
+export function a1PaletaMontarIndice(tem, dash, user, slug) {
   const url = s => `/${slug}/${s}`;
   const itens = [];
   if (a1PodeVerAlgumDashboard(user, dash))
@@ -735,7 +768,7 @@ function a1PaletaMontarIndice(tem, dash, user, slug) {
   A1_PALETA.itens = itens;
 }
 
-function a1PaletaAbrir() {
+export function a1PaletaAbrir() {
   const p = document.getElementById('sb-paleta');
   if (!p) return;
   p.hidden = false;
@@ -748,11 +781,11 @@ function a1PaletaAbrir() {
   const b = document.getElementById('sb-busca-campo');
   if (b) b.blur();
 }
-function a1PaletaFechar() {
+export function a1PaletaFechar() {
   const p = document.getElementById('sb-paleta');
   if (p) p.hidden = true;
 }
-function a1PaletaFiltrar() {
+export function a1PaletaFiltrar() {
   const c = document.getElementById('sb-paleta-campo');
   const lista = document.getElementById('sb-paleta-lista');
   if (!lista) return;
@@ -777,7 +810,7 @@ function a1PaletaFiltrar() {
   });
   lista.innerHTML = out;
 }
-function a1PaletaAbrirItem(i, ev) {
+export function a1PaletaAbrirItem(i, ev) {
   const x = A1_PALETA.filtrados[i];
   if (!x) return false;
   if (x.h === '#sair') {
@@ -787,7 +820,7 @@ function a1PaletaAbrirItem(i, ev) {
   }
   return true;
 }
-function a1PaletaTecla(ev) {
+export function a1PaletaTecla(ev) {
   if (ev.key === 'Escape') {
     a1PaletaFechar();
     return;
@@ -814,7 +847,7 @@ function a1PaletaTecla(ev) {
 }
 // Acento nao pode atrapalhar a busca: quem digita "pre analise" tem de achar
 // "Pré-análise". Normalizar na entrada e na comparacao, nos dois lados.
-function a1Normal(s) {
+export function a1Normal(s) {
   return String(s || '')
     .toLowerCase()
     .normalize('NFD')
@@ -822,7 +855,7 @@ function a1Normal(s) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
-function a1BuscaSubmeter(ev) {
+export function a1BuscaSubmeter(ev) {
   ev.preventDefault();
   a1PaletaAbrir();
   const b = document.getElementById('sb-busca-campo');
@@ -852,7 +885,7 @@ document.addEventListener('keydown', ev => {
 
 // Sorteio com semente. Math.random daria um ceu diferente a cada F5, e o que
 // muda sozinho o olho le como defeito.
-function a1Semente(txt) {
+export function a1Semente(txt) {
   let h = 2166136261;
   for (let i = 0; i < String(txt).length; i++) {
     h ^= String(txt).charCodeAt(i);
@@ -860,7 +893,7 @@ function a1Semente(txt) {
   }
   return h >>> 0;
 }
-function a1Sorteio(semente) {
+export function a1Sorteio(semente) {
   let a = semente >>> 0;
   return () => {
     a |= 0;
@@ -871,7 +904,7 @@ function a1Sorteio(semente) {
   };
 }
 
-const A1_CEUS = {
+export const A1_CEUS = {
   // [de cima, para baixo, cor da estrela, quantas]
   madrugada: ['#061726', '#0C3A46', '#CFE8F0', 46],
   manha: ['#1B6E7E', '#4FA9A0', '#FFFFFF', 0],
@@ -879,21 +912,21 @@ const A1_CEUS = {
   entardecer: ['#123E52', '#B06A3C', '#FFE6C2', 10],
   noite: ['#04202C', '#0B5049', '#DCEFEA', 38]
 };
-function a1FaseDoDia(h) {
+export function a1FaseDoDia(h) {
   if (h < 5) return 'madrugada';
   if (h < 11) return 'manha';
   if (h < 17) return 'tarde';
   if (h < 19) return 'entardecer';
   return 'noite';
 }
-function a1Saudacao(h) {
+export function a1Saudacao(h) {
   if (h < 5) return ['Boa madrugada', 'lua'];
   if (h < 12) return ['Bom dia', 'sol'];
   if (h < 18) return ['Boa tarde', 'sol'];
   return ['Boa noite', 'lua'];
 }
 
-function a1Hero(alvo, opcoes) {
+export function a1Hero(alvo, opcoes) {
   const o = opcoes || {};
   const user = A1.user || {};
   const agora = new Date();
@@ -947,10 +980,10 @@ function a1Hero(alvo, opcoes) {
   }
 }
 
-function a1Hora(d) {
+export function a1Hora(d) {
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
-const A1_DIAS = [
+export const A1_DIAS = [
   'Domingo',
   'Segunda-feira',
   'Terça-feira',
@@ -959,7 +992,7 @@ const A1_DIAS = [
   'Sexta-feira',
   'Sábado'
 ];
-const A1_MESES = [
+export const A1_MESES = [
   'janeiro',
   'fevereiro',
   'março',
@@ -973,13 +1006,13 @@ const A1_MESES = [
   'novembro',
   'dezembro'
 ];
-function a1DataLonga(d) {
+export function a1DataLonga(d) {
   return `${A1_DIAS[d.getDay()]}, ${d.getDate()} de ${A1_MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 // O relogio acerta no virar do minuto, nao de segundo em segundo: o numero so
 // muda de minuto em minuto, e acordar o navegador 60 vezes por minuto para
 // redesenhar o mesmo texto e gasto puro.
-function a1RelogioLigar() {
+export function a1RelogioLigar() {
   if (a1RelogioLigar._t) clearTimeout(a1RelogioLigar._t);
   const passo = () => {
     const el = document.getElementById('sb-relogio');
@@ -992,7 +1025,7 @@ function a1RelogioLigar() {
   a1RelogioLigar._t = setTimeout(passo, (60 - d.getSeconds()) * 1000 + 200);
 }
 
-function a1DesenharCeu() {
+export function a1DesenharCeu() {
   const c = document.getElementById('sb-ceu');
   const hero = document.getElementById('sb-hero');
   if (!c || !hero) return;
@@ -1061,17 +1094,17 @@ function a1DesenharCeu() {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // tom: 'marca' (padrao) | 'atento' | 'atraso' | 'info' | 'neutro'
-function a1Kpi(k) {
+export function a1Kpi(k) {
   const corpo = `<div class="sb-kpi-valor">${a1Esc(String(k.valor))}</div>
     <div class="sb-kpi-rot">${a1Esc(k.rotulo)}</div>
     ${k.sub ? `<div class="sb-kpi-sub">${a1Esc(k.sub)}</div>` : ''}`;
   const attrs = `class="sb-kpi" data-tom="${a1Esc(k.tom || 'marca')}"${k.titulo ? ` title="${a1Esc(k.titulo)}"` : ''}`;
   return k.href ? `<a ${attrs} href="${a1Esc(k.href)}">${corpo}</a>` : `<div ${attrs}>${corpo}</div>`;
 }
-function a1Kpis(lista) {
+export function a1Kpis(lista) {
   return `<div class="sb-kpis">${lista.map(a1Kpi).join('')}</div>`;
 }
-function a1Card(o) {
+export function a1Card(o) {
   return `<section class="sb-card">
     <div class="sb-card-cab">
       <div><div class="sb-card-tit">${a1Esc(o.titulo)}</div>
@@ -1081,7 +1114,7 @@ function a1Card(o) {
     <div class="sb-card-corpo${o.justo ? ' justo' : ''}">${o.corpo || ''}</div>
   </section>`;
 }
-function a1Vazio(texto) {
+export function a1Vazio(texto) {
   return `<div class="sb-vazio">${a1Svg('fluxo', 26)}<p>${a1Esc(texto)}</p></div>`;
 }
 
@@ -1102,9 +1135,13 @@ function a1Vazio(texto) {
    numa.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const A1_POP = { aberto: null, agenda: { mes: null, ano: null, dia: null, itens: null }, avisos: null };
+export const A1_POP = {
+  aberto: null,
+  agenda: { mes: null, ano: null, dia: null, itens: null },
+  avisos: null
+};
 
-function a1PopFechar() {
+export function a1PopFechar() {
   document.querySelectorAll('.sb-pop').forEach(el => el.remove());
   const av = document.getElementById('sb-avatar');
   if (av) av.setAttribute('aria-expanded', 'false');
@@ -1113,7 +1150,7 @@ function a1PopFechar() {
 
 // Ancora o painel embaixo do botao que o chamou, e nunca para fora da tela: o
 // ultimo icone da direita abriria um painel metade fora do monitor.
-function a1PopAbrir(nome, botao, largura, html) {
+export function a1PopAbrir(nome, botao, largura, html) {
   const jaEstava = A1_POP.aberto === nome;
   a1PopFechar();
   if (jaEstava) return null;
@@ -1149,7 +1186,7 @@ window.addEventListener('resize', () => a1PopFechar(), { passive: true });
    canto onde todo sistema poe o perfil — quem ia ver o proprio cadastro caia
    na tela de login. Agora abre menu, e sair e o ultimo item.                */
 
-function a1MenuPessoa(ev) {
+export function a1MenuPessoa(ev) {
   ev.preventDefault();
   ev.stopPropagation();
   const user = A1.user || {};
@@ -1218,7 +1255,7 @@ function a1MenuPessoa(ev) {
    imediatamente pelo evento "siimob:agenda-atualizada".
    ═══════════════════════════════════════════════════════════════════════════ */
 
-async function a1AgendaCarregar(ano, mes) {
+export async function a1AgendaCarregar(ano, mes) {
   const pad = n => String(n).padStart(2, '0');
 
   const de = `${ano}-${pad(mes + 1)}-01`;
@@ -1372,7 +1409,7 @@ async function a1AgendaCarregar(ano, mes) {
    TIPOS DA AGENDA
    ═══════════════════════════════════════════════════════════════ */
 
-const A1_AGENDA_CORES = {
+export const A1_AGENDA_CORES = {
   compromisso: 'var(--sb-mar)',
 
   tarefa: 'var(--sb-ametista)',
@@ -1389,7 +1426,7 @@ const A1_AGENDA_CORES = {
   "meu" = compromisso.
 */
 
-function a1AgendaTipoReal(tipo) {
+export function a1AgendaTipoReal(tipo) {
   const t = String(tipo || '')
     .trim()
     .toLowerCase();
@@ -1417,7 +1454,7 @@ function a1AgendaTipoReal(tipo) {
   return 'compromisso';
 }
 
-function a1AgendaRotuloTipo(tipo) {
+export function a1AgendaRotuloTipo(tipo) {
   const real = a1AgendaTipoReal(tipo);
 
   return (
@@ -1433,7 +1470,7 @@ function a1AgendaRotuloTipo(tipo) {
   );
 }
 
-function a1CorDoTipo(tipo) {
+export function a1CorDoTipo(tipo) {
   const real = a1AgendaTipoReal(tipo);
 
   return A1_AGENDA_CORES[real] || 'var(--sb-linha-forte)';
@@ -1443,7 +1480,7 @@ function a1CorDoTipo(tipo) {
    NOVO EVENTO
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaGarantirAjustesCSS() {
+export function a1AgendaGarantirAjustesCSS() {
   if (document.getElementById('sb-agenda-ajustes-css')) return;
 
   const style = document.createElement('style');
@@ -1490,7 +1527,7 @@ function a1AgendaGarantirAjustesCSS() {
   document.head.appendChild(style);
 }
 
-function a1AgendaNovo() {
+export function a1AgendaNovo() {
   const alvo = document.getElementById('sb-agenda-corpo');
 
   if (!alvo) return;
@@ -1688,7 +1725,7 @@ function a1AgendaNovo() {
    TROCAR TIPO
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaTipo(bt) {
+export function a1AgendaTipo(bt) {
   document.querySelectorAll('.sb-ag-tipo button').forEach(b => {
     b.classList.toggle('on', b === bt);
   });
@@ -1719,7 +1756,7 @@ function a1AgendaTipo(bt) {
    SALVAR EVENTO
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaGravar(ev) {
+export async function a1AgendaGravar(ev) {
   ev.preventDefault();
 
   const erro = document.getElementById('ag-erro');
@@ -1867,7 +1904,7 @@ async function a1AgendaGravar(ev) {
    CONCLUIR / REABRIR
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaConcluir(id, feito) {
+export async function a1AgendaConcluir(id, feito) {
   try {
     await fetch(
       `${A1.rest('a1_agenda')}?id=eq.${encodeURIComponent(id)}`,
@@ -1897,7 +1934,7 @@ async function a1AgendaConcluir(id, feito) {
    EXCLUIR
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaExcluir(id) {
+export async function a1AgendaExcluir(id) {
   if (!confirm('Excluir este item da sua agenda?')) {
     return;
   }
@@ -1927,7 +1964,7 @@ async function a1AgendaExcluir(id) {
    ABRIR POPUP
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaAbrir(ev) {
+export async function a1AgendaAbrir(ev) {
   ev.preventDefault();
   ev.stopPropagation();
 
@@ -2002,7 +2039,7 @@ async function a1AgendaAbrir(ev) {
    MUDAR MÊS
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaMes(passo) {
+export async function a1AgendaMes(passo) {
   A1_POP.agenda.mes += passo;
 
   if (A1_POP.agenda.mes < 0) {
@@ -2028,7 +2065,7 @@ async function a1AgendaMes(passo) {
    SELECIONAR DIA
    ═══════════════════════════════════════════════════════════════ */
 
-function a1AgendaDia(d, ev) {
+export function a1AgendaDia(d, ev) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -2052,7 +2089,7 @@ function a1AgendaDia(d, ev) {
    DESENHAR CALENDÁRIO
    ═══════════════════════════════════════════════════════════════ */
 
-async function a1AgendaDesenhar() {
+export async function a1AgendaDesenhar() {
   const alvo = document.getElementById('sb-agenda-corpo');
 
   if (!alvo) return;
@@ -2494,7 +2531,7 @@ async function a1AgendaDesenhar() {
   `;
 }
 
-const A1_MESES_L = [
+export const A1_MESES_L = [
   'Janeiro',
 
   'Fevereiro',
@@ -2527,7 +2564,7 @@ const A1_MESES_L = [
    hoje, lead novo sem dono. Aviso que nao pede nada e ruido, e sino que toca
    a toa o gestor aprende a ignorar.                                          */
 
-async function a1AvisosCarregar() {
+export async function a1AvisosCarregar() {
   const hoje = new Date();
   const iso = d =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -2611,7 +2648,7 @@ async function a1AvisosCarregar() {
     .slice(0, 30);
 }
 
-async function a1AvisosAbrir(ev) {
+export async function a1AvisosAbrir(ev) {
   ev.preventDefault();
   ev.stopPropagation();
   const bt = ev.currentTarget;
@@ -2648,7 +2685,7 @@ async function a1AvisosAbrir(ev) {
 
 // O numero no sininho conta so o que esta VENCIDO ou e de hoje. Contar tudo que
 // existe faria o numero nunca zerar, e numero que nunca zera deixa de ser lido.
-function a1AvisosContar(n) {
+export function a1AvisosContar(n) {
   const el = document.getElementById('sb-avisos-n');
   if (!el) return;
   el.textContent = String(n);
@@ -2657,7 +2694,7 @@ function a1AvisosContar(n) {
 }
 
 // Ao montar o casco, o contador e calculado uma vez, em segundo plano.
-async function a1AvisosPrimeiraContagem() {
+export async function a1AvisosPrimeiraContagem() {
   try {
     const lista = await a1AvisosCarregar();
     a1AvisosContar(lista.filter(a => a.peso === 0).length);

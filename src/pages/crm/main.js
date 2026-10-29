@@ -1,3 +1,57 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc, escJs } from '../../shared/utils/texto.js';
+import { hojeISO } from '../../shared/utils/datas.js';
+import { a1HasModule, a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
+import { a1AtorHistorico, a1MontarShell, a1ShellVista, a1Svg } from '../../shared/ui/modulo-shell.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor, exporVariavel } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  addInteraction,
+  addStage,
+  alternarMaisLead,
+  archiveLead,
+  cadDel,
+  cadEdit,
+  cadSave,
+  cadToggle,
+  changeLeadStage,
+  clearTask,
+  closeCfgView,
+  closeModal,
+  createLead,
+  criarPreAnaliseDoLead,
+  dDrop,
+  dOver,
+  dStart,
+  dashPeriodo,
+  deleteStage,
+  exportarLeads,
+  fillPipeStages,
+  moveStage,
+  onPipeChange,
+  openCfgView,
+  openLead,
+  openNewLead,
+  ordenarLista,
+  renderFunil,
+  renderLista,
+  renderStageList,
+  saveLead,
+  saveLeadRouter,
+  saveProposta,
+  saveTask,
+  switchLeadTab,
+  switchTab,
+  toast,
+  updateStage,
+  val,
+  waLead,
+  waTo
+});
+exporVariavel('G', () => G);
 const G = {
   user: null,
   slug: null,

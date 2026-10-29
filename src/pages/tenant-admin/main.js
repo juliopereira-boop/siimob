@@ -1,3 +1,29 @@
+import { A1 } from '../../shared/api/config.js';
+import { esc } from '../../shared/utils/texto.js';
+import {
+  a1CreateUser,
+  a1RequireAuth,
+  a1StartHeartbeat,
+  a1VigiarManutencao,
+  hashPassword
+} from '../../shared/auth/auth.js';
+import '../../shared/ui/avisos.js';
+import '../../shared/ui/cobranca-aviso.js';
+import { expor } from '../../shared/utils/expor.js';
+
+// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+expor({
+  approvePartner,
+  closePartnerModal,
+  closeUserModal,
+  createPartner,
+  createUser,
+  openNewPartner,
+  openNewUser,
+  toast,
+  togglePartner,
+  toggleUser
+});
 async function init() {
   let user;
   try {

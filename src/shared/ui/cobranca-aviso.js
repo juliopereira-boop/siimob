@@ -9,7 +9,12 @@
 // Como a1_config é isolado por cliente na RLS, cada empresa lê apenas o
 // próprio. Nenhum dado de cobrança de um cliente alcança outro.
 
-const A1Cobranca = (() => {
+import { A1 } from '../api/config.js';
+import { esc } from '../utils/texto.js';
+import { expor, exporVariavel } from '../utils/expor.js';
+
+exporVariavel('A1Cobranca', () => A1Cobranca);
+export const A1Cobranca = (() => {
   // ─── Contato da cobrança ───────────────────────────────────────────────────
   // Muda aqui e muda em todas as telas. Nada disso está espalhado no código.
   const CONTATO = {
