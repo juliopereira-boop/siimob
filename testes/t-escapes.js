@@ -153,9 +153,12 @@ const TELAS_COM_ESC = [
   for (const tela of TELAS_COM_ESC) {
     const html = lerFonte(`src/pages/${tela}/index.html`);
     const js = lerFonte(`src/pages/${tela}/main.js`);
-    const iEsc = html.indexOf('/src/shared/utils/texto.js');
-    const iMain = html.indexOf(`/src/pages/${tela}/main.js`);
-    checa(`${tela}: carrega o escape antes do código da tela`, iEsc > -1 && iEsc < iMain);
+    // Módulo ES: a tela carrega só o main.js, e o escape chega por import.
+    checa(
+      `${tela}: importa o escape único`,
+      html.includes(`<script type="module" src="/src/pages/${tela}/main.js">`) &&
+        /^import \{[^}]*\besc\b[^}]*\} from '\.\.\/\.\.\/shared\/utils\/texto\.js';$/m.test(js)
+    );
     checa(
       `${tela}: e não redefine esc() nem escJs()`,
       !/^(function\s+(esc|escJs)\b|(const|let|var)\s+(esc|escJs)\s*=)/m.test(js)

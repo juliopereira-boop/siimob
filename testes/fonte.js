@@ -15,7 +15,10 @@ const lerFonte = rel => fs.readFileSync(path.join(RAIZ, rel), 'utf8');
 function lerPagina(tela) {
   const dir = path.join('src/pages', tela.replace(/\.html$/, ''));
   const html = lerFonte(path.join(dir, 'index.html'));
-  const scripts = [...html.matchAll(/<script src="\/(src\/pages\/[^"]+\.js)"><\/script>/g)].map(m => m[1]);
+  // O módulo da tela (<script type="module">) e algum script clássico irmão.
+  const scripts = [
+    ...html.matchAll(/<script (?:type="module" )?src="\/(src\/pages\/[^"]+\.js)"><\/script>/g)
+  ].map(m => m[1]);
   return [html, ...scripts.map(f => lerFonte(f))].join('\n');
 }
 
