@@ -82,7 +82,8 @@ function servir() {
 // se a suíte falhar, as linhas que dizem POR QUE (✗, erro de JS, exceção) são
 // repetidas no fim. O log da CI é lido de baixo para cima, e uma falha da
 // suíte 26 de 53 ficava enterrada no meio de duas mil linhas verdes.
-const MOTIVO = /✗|AssertionError|Error:|ERROS DE JS|^\s+(JS|console):/;
+const MOTIVO =
+  /✗|AssertionError|Error:|TimeoutError|Timeout \d+ms exceeded|ERROS DE JS|^\s+(JS|console):|^\s+at .*testes[\\/]t-/;
 
 function rodar(arquivo) {
   return new Promise(ok => {

@@ -1074,6 +1074,13 @@ function switchTab(tab, el) {
   ['dashboard', 'repasse', 'config'].forEach(
     t => (document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none')
   );
+  // A aba do Repasse tem duas vistas, e as duas nascem escondidas (quem decide é
+  // a rota). Entrar na aba mostra a vista atual; sem isso, a aba abria vazia.
+  if (tab === 'repasse') {
+    const v = G.currentView === 'listagem' ? 'listagem' : 'andamento';
+    document.getElementById('view-andamento').style.display = v === 'andamento' ? '' : 'none';
+    document.getElementById('view-listagem').style.display = v === 'listagem' ? '' : 'none';
+  }
   const prev = G.activeTab;
   G.activeTab = tab;
   if (tab === 'config') closeCfgView(); // always return to hub when entering config
