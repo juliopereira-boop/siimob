@@ -37,10 +37,22 @@
 /* global toast, cfgModsCartao, cfgModsVista */
 
 import { A1 } from '../../shared/api/config.js';
+import { esc } from '../../shared/utils/texto.js';
 import { expor } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ leadsCadAbrir, leadsCadEditar, leadsCadExcluir, leadsCadGravar, leadsEsc, leadsMontarConfig });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ leadsCadAbrir, leadsMontarConfig });
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  leadsCadCancelar: el => {
+    document.getElementById('leads-cad-form-' + el.dataset.k).innerHTML = '';
+  },
+  leadsCadEditar: el => leadsCadEditar(el.dataset.k, Number(el.dataset.i)),
+  leadsCadExcluir: el => leadsCadExcluir(el.dataset.k, Number(el.dataset.i)),
+  leadsCadGravar: el => leadsCadGravar(el.dataset.k, Number(el.dataset.i))
+});
 export const LEADS_CAD_KEYMAP = { origens: 'crm_sources', corretores: 'crm_brokers' };
 export function leadsCadChave(k) {
   return LEADS_CAD_KEYMAP[k] || 'crm_cad_' + k;
@@ -245,7 +257,7 @@ export function leadsCadDesenhar(k) {
   const cols = def.campos.slice(0, 4);
   alvo.innerHTML = `
     <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">
-      <button class="btn btn-primary btn-sm" onclick="leadsCadEditar('${leadsEsc(k)}',-1)">+ Novo</button>
+      <button class="btn btn-primary btn-sm" data-acao="leadsCadEditar" data-k="${esc(k)}" data-i="-1">+ Novo</button>
       <span style="font-size:.72rem;color:var(--t3)">${lista.length} item(ns)</span>
     </div>
     <div id="leads-cad-form-${leadsEsc(k)}"></div>
@@ -268,8 +280,8 @@ export function leadsCadDesenhar(k) {
             )
             .join('')}
           <td style="white-space:nowrap;text-align:right">
-            <button class="btn btn-ghost btn-sm" onclick="leadsCadEditar('${leadsEsc(k)}',${i})">Editar</button>
-            <button class="btn btn-ghost btn-sm" onclick="leadsCadExcluir('${leadsEsc(k)}',${i})">Excluir</button></td>
+            <button class="btn btn-ghost btn-sm" data-acao="leadsCadEditar" data-k="${esc(k)}" data-i="${esc(i)}">Editar</button>
+            <button class="btn btn-ghost btn-sm" data-acao="leadsCadExcluir" data-k="${esc(k)}" data-i="${esc(i)}">Excluir</button></td>
         </tr>`
           )
           .join('')}</tbody></table></div>`
@@ -302,8 +314,8 @@ export function leadsCadEditar(k, i) {
         .join('')}
     </div>
     <div style="display:flex;gap:.45rem;justify-content:flex-end;margin-top:.8rem">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('leads-cad-form-${leadsEsc(k)}').innerHTML=''">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="leadsCadGravar('${leadsEsc(k)}',${i})">Salvar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="leadsCadCancelar" data-k="${esc(k)}">Cancelar</button>
+      <button class="btn btn-primary btn-sm" data-acao="leadsCadGravar" data-k="${esc(k)}" data-i="${esc(i)}">Salvar</button>
     </div></div>`;
   const p = document.getElementById(`lc-${k}-${def.campos[0].k}`);
   if (p) p.focus();

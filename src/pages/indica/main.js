@@ -10,14 +10,20 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { A1_KEY, A1_URL } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { INDICA } from '../../modules/indica/indica-config.js';
-import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ alternarFaq, entrarPainel, indicarSegmento });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 exporVariavel('$', () => $);
-exporVariavel('comissao', () => comissao);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  alternarFaq: el => alternarFaq(Number(el.dataset.i)),
+  entrarPainel: () => entrarPainel(),
+  indicarSegmento: el => indicarSegmento(el.dataset.titulo)
+});
 export const $ = id => document.getElementById(id);
 const reservado = s =>
   String(s || '')
@@ -186,7 +192,7 @@ $('grade-seg').innerHTML = INDICA.segmentos
     <div class="seg-corpo">
       <h3>${esc(s.titulo)}</h3>
       <p>${esc(s.texto)}</p>
-      <button class="seg-cta" onclick="indicarSegmento('${escJs(s.titulo)}')">
+      <button class="seg-cta" data-acao="indicarSegmento" data-titulo="${esc(s.titulo)}">
         Indicar empresa
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -229,7 +235,7 @@ $('faq').innerHTML = INDICA.duvidas
     (d, i) => `
   <div class="faq-i" data-aberto="0">
     <h3 style="font-size:inherit;font-weight:inherit;margin:0">
-      <button class="faq-b" id="faq-b-${i}" aria-expanded="false" aria-controls="faq-r-${i}" onclick="alternarFaq(${i})">
+      <button class="faq-b" id="faq-b-${i}" aria-expanded="false" aria-controls="faq-r-${i}" data-acao="alternarFaq" data-i="${esc(i)}">
         ${esc(d.p)}
         <svg class="faq-seta" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>

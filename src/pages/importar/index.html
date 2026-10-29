@@ -26,12 +26,12 @@
     <!-- 1. arquivo -->
     <div class="painel">
       <div class="titulo"><span class="n">1</span> Arquivo</div>
-      <div class="zona" id="zona" onclick="document.getElementById('arq').click()">
+      <div class="zona" id="zona" data-acao="clicarAlvo" data-alvo="arq">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6B827D" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
         <h3>Escolha a planilha ou arraste até aqui</h3>
         <div class="sub">Aceita .xlsx e .csv. O arquivo é lido dentro do seu navegador — nada é enviado antes de você conferir.</div>
       </div>
-      <input type="file" id="arq" accept=".xlsx,.csv" class="hidden" onchange="escolheu(this.files[0])">
+      <input type="file" id="arq" accept=".xlsx,.csv" class="hidden" data-acao-change="escolheu">
       <div id="arq-info" class="hidden" style="margin-top:.85rem"></div>
     </div>
 
@@ -43,7 +43,7 @@
       </div>
       <div class="grade" id="mapa"></div>
       <div style="margin-top:1rem;display:flex;gap:.5rem;align-items:center">
-        <button class="btn btn-p btn-lg" onclick="conferir()">Conferir a base</button>
+        <button class="btn btn-p btn-lg" data-acao="conferir">Conferir a base</button>
         <span class="sub" id="mapa-obs"></span>
       </div>
     </div>
@@ -73,7 +73,7 @@
       <div class="titulo"><span class="n">5</span> Importar</div>
       <div id="imp-antes">
         <div class="aviso a-info" id="imp-resumo"></div>
-        <button class="btn btn-p btn-lg" id="btn-importar" onclick="importar()">Importar agora</button>
+        <button class="btn btn-p btn-lg" id="btn-importar" data-acao="importar">Importar agora</button>
         <span class="sub" style="margin-left:.6rem">Pode rodar de novo depois: o que já existe é reaproveitado, não duplicado.</span>
       </div>
       <div id="imp-durante" class="hidden">

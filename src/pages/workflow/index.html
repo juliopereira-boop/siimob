@@ -23,10 +23,10 @@
        compatibilidade com quem chega por ?module= e some quando os botões
        aparecem. -->
   <div id="wf-modulos" class="wf-modulos" style="display:none"></div>
-  <select class="wf-module-sel" id="module-sel" onchange="changeModule(this.value)"></select>
-  <button class="btn btn-primary" onclick="openNewStage()">+ Nova Etapa</button>
-  <button class="btn btn-ghost" onclick="autoLayout()">Auto-organizar</button>
-  <button class="btn btn-ghost" id="wf-lock-btn" onclick="toggleWfLock()" title="Quando bloqueado, o processo só anda para uma etapa ligada por seta">Workflow: —</button>
+  <select class="wf-module-sel" id="module-sel" data-acao-change="changeModule"></select>
+  <button class="btn btn-primary" data-acao="openNewStage">+ Nova Etapa</button>
+  <button class="btn btn-ghost" data-acao="autoLayout">Auto-organizar</button>
+  <button class="btn btn-ghost" id="wf-lock-btn" data-acao="toggleWfLock" title="Quando bloqueado, o processo só anda para uma etapa ligada por seta">Workflow: —</button>
   <a class="btn btn-ghost" id="back-btn" href="">← Voltar</a>
 </div>
 
@@ -61,7 +61,7 @@
 <div class="edit-panel" id="edit-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
     <div style="font-size:.9rem;font-weight:800">Editar Etapa</div>
-    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" onclick="closeEditPanel()">✕</button>
+    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" data-acao="closeEditPanel">✕</button>
   </div>
 
   <label>Nome da etapa</label>
@@ -114,8 +114,8 @@
   </div>
 
   <div style="display:flex;gap:.5rem;margin-top:1.25rem">
-    <button class="btn btn-primary" style="flex:1" onclick="saveStage()">Salvar</button>
-    <button class="btn btn-danger" onclick="deleteStage()">Excluir</button>
+    <button class="btn btn-primary" style="flex:1" data-acao="saveStage">Salvar</button>
+    <button class="btn btn-danger" data-acao="deleteStage">Excluir</button>
   </div>
   <div id="ep-err" style="color:#fca5a5;font-size:.75rem;margin-top:.5rem;display:none"></div>
 </div>
@@ -125,13 +125,13 @@
 <div class="edit-panel" id="tr-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
     <div style="font-size:.9rem;font-weight:800">Editar transição</div>
-    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" onclick="fecharTransicao()">✕</button>
+    <button class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.72rem" data-acao="fecharTransicao">✕</button>
   </div>
 
   <div id="tr-de-para" style="font-size:.78rem;color:#8892a4;margin-bottom:1rem;line-height:1.5"></div>
 
   <label>Ação disparada</label>
-  <select id="tr-acao" onchange="pintarModo()"></select>
+  <select id="tr-acao" data-acao-change="pintarModo"></select>
 
   <label>Quando</label>
   <select id="tr-modo">
@@ -155,8 +155,8 @@
   </div>
 
   <div style="display:flex;gap:.5rem;margin-top:1.25rem">
-    <button class="btn btn-primary" style="flex:1" onclick="salvarTransicao()">Salvar</button>
-    <button class="btn btn-danger" onclick="apagarTransicao()">Remover</button>
+    <button class="btn btn-primary" style="flex:1" data-acao="salvarTransicao">Salvar</button>
+    <button class="btn btn-danger" data-acao="apagarTransicao">Remover</button>
   </div>
   <div id="tr-err" style="color:#fca5a5;font-size:.75rem;margin-top:.5rem;display:none"></div>
 </div>

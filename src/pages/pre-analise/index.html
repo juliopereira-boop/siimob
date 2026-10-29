@@ -36,17 +36,17 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <div class="toolbar" id="filtros">
-    <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." oninput="renderVista()" style="min-width:220px">
-    <select id="f-situacao" onchange="renderVista()"><option value="">Todas as situações</option></select>
-    <select id="f-corretor" onchange="renderVista()"><option value="">Todos os corretores</option></select>
-    <select id="f-empr"     onchange="renderVista()"><option value="">Todos os empreendimentos</option></select>
-    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVista()">
-    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVista()">
+    <input type="search" id="f-busca" placeholder="Cliente, CPF, código..." data-acao-input="renderVista" style="min-width:220px">
+    <select id="f-situacao" data-acao-change="renderVista"><option value="">Todas as situações</option></select>
+    <select id="f-corretor" data-acao-change="renderVista"><option value="">Todos os corretores</option></select>
+    <select id="f-empr"     data-acao-change="renderVista"><option value="">Todos os empreendimentos</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" data-acao-change="renderVista">
+    <input type="date" id="f-fim" aria-label="Criado até" data-acao-change="renderVista">
     <div class="seg" role="group" aria-label="Filtro de prazo">
-      <button id="sla-todos"  class="on" onclick="filtrarSla('')">Todos</button>
-      <button id="sla-ok"     onclick="filtrarSla('ok')">No prazo</button>
-      <button id="sla-at"     onclick="filtrarSla('at')">Atenção</button>
-      <button id="sla-ex"     onclick="filtrarSla('ex')">Estourado</button>
+      <button id="sla-todos"  class="on" data-acao="filtrarSla" data-n="">Todos</button>
+      <button id="sla-ok"     data-acao="filtrarSla" data-n="ok">No prazo</button>
+      <button id="sla-at"     data-acao="filtrarSla" data-n="at">Atenção</button>
+      <button id="sla-ex"     data-acao="filtrarSla" data-n="ex">Estourado</button>
     </div>
     <div style="flex:1"></div>
     <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
@@ -68,7 +68,7 @@
     <div class="modal-hdr">
       <div><div class="modal-title">Nova Pré-análise</div>
            <div class="modal-sub" id="nova-sub">Passo 1 de 3 — o negócio</div></div>
-      <button class="modal-close" onclick="fecharModal('modal-nova')" aria-label="Fechar">×</button>
+      <button class="modal-close" data-acao="fecharModal" data-id="modal-nova" aria-label="Fechar">×</button>
     </div>
     <div class="passos">
       <div class="passo on" id="passo-1"><span class="n">1</span> Negócio</div>
@@ -77,10 +77,10 @@
     </div>
     <div class="modal-body" id="nova-body"></div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" id="nova-voltar" onclick="passoAnterior()" style="visibility:hidden">Voltar</button>
+      <button class="btn btn-ghost" id="nova-voltar" data-acao="passoAnterior" style="visibility:hidden">Voltar</button>
       <div style="display:flex;gap:.45rem">
-        <button class="btn btn-ghost" onclick="fecharModal('modal-nova')">Cancelar</button>
-        <button class="btn btn-primary" id="nova-avancar" onclick="passoSeguinte()">Avançar</button>
+        <button class="btn btn-ghost" data-acao="fecharModal" data-id="modal-nova">Cancelar</button>
+        <button class="btn btn-primary" id="nova-avancar" data-acao="passoSeguinte">Avançar</button>
       </div>
     </div>
   </div>
@@ -96,17 +96,17 @@
       </div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <span id="dos-situacao"></span>
-        <button class="modal-close" onclick="fecharModal('modal-dossie')" aria-label="Fechar">×</button>
+        <button class="modal-close" data-acao="fecharModal" data-id="modal-dossie" aria-label="Fechar">×</button>
       </div>
     </div>
     <div class="modal-tabs" id="dos-tabs">
-      <button class="modal-tab active" data-dt="dados"   onclick="trocarAbaDossie('dados',this)">Dados</button>
-      <button class="modal-tab" data-dt="pessoas"        onclick="trocarAbaDossie('pessoas',this)">Pessoas</button>
-      <button class="modal-tab" data-dt="credito"        onclick="trocarAbaDossie('credito',this)">Crédito</button>
-      <button class="modal-tab" data-dt="documentos"     onclick="trocarAbaDossie('documentos',this)">Documentos</button>
-      <button class="modal-tab" data-dt="checklist"      onclick="trocarAbaDossie('checklist',this)">Checklist</button>
-      <button class="modal-tab" data-dt="historico"      onclick="trocarAbaDossie('historico',this)">Histórico</button>
-      <button class="modal-tab" data-dt="comercial"      onclick="trocarAbaDossie('comercial',this)">Venda</button>
+      <button class="modal-tab active" data-dt="dados"   data-acao="trocarAbaDossie" data-aba="dados">Dados</button>
+      <button class="modal-tab" data-dt="pessoas"        data-acao="trocarAbaDossie" data-aba="pessoas">Pessoas</button>
+      <button class="modal-tab" data-dt="credito"        data-acao="trocarAbaDossie" data-aba="credito">Crédito</button>
+      <button class="modal-tab" data-dt="documentos"     data-acao="trocarAbaDossie" data-aba="documentos">Documentos</button>
+      <button class="modal-tab" data-dt="checklist"      data-acao="trocarAbaDossie" data-aba="checklist">Checklist</button>
+      <button class="modal-tab" data-dt="historico"      data-acao="trocarAbaDossie" data-aba="historico">Histórico</button>
+      <button class="modal-tab" data-dt="comercial"      data-acao="trocarAbaDossie" data-aba="comercial">Venda</button>
     </div>
     <div class="modal-body" id="dos-body"></div>
     <div class="modal-foot">
@@ -128,15 +128,15 @@
     <div class="modal-hdr">
       <div><div class="modal-title">Iniciar venda</div>
            <div class="modal-sub" id="venda-sub"></div></div>
-      <button class="modal-close" onclick="fecharModal('modal-venda')" aria-label="Fechar">×</button>
+      <button class="modal-close" data-acao="fecharModal" data-id="modal-venda" aria-label="Fechar">×</button>
     </div>
     <div class="modal-body" id="venda-body"></div>
     <div class="modal-foot">
       <div class="recusa">A pré-análise <strong>continua na esteira</strong> depois disto — ela é o
         registro de por onde o lead passou.</div>
       <div style="display:flex;gap:.45rem">
-        <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
-        <button class="btn btn-venda" id="venda-confirmar" onclick="confirmarIniciarVenda()">Criar cartão na Venda</button>
+        <button class="btn btn-ghost" data-acao="fecharModal" data-id="modal-venda">Cancelar</button>
+        <button class="btn btn-venda" id="venda-confirmar" data-acao="confirmarIniciarVenda">Criar cartão na Venda</button>
       </div>
     </div>
   </div>

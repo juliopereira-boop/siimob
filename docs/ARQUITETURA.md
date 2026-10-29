@@ -62,11 +62,34 @@ que importa os módulos compartilhados na mesma ordem em que antes eram carregad
 árvore de cada tela e separa o que é comum (`config`, `auth`...) em arquivos cacheados entre telas.
 O lint roda com `no-undef` ligado: nome usado sem `import` é erro.
 
-**O que o HTML alcança.** O HTML ainda chama funções pelo nome (`onclick="abrirCaso(...)"`), e o
-navegador procura esse nome no escopo global. Cada módulo diz, no topo, numa lista explícita
-(`expor({...})`, de `src/shared/utils/expor.js`), o que o HTML e a suíte de testes podem chamar; o
-resto é privado. Antes, todo nome de todo arquivo era global. A lista encolhe à medida que os
-handlers viram eventos (fase 3b).
+**Ações do HTML.** O HTML não chama função pelo nome; o elemento declara a ação e o módulo dono
+diz o que ela faz (`src/shared/ui/acoes.js`):
+
+```html
+<button data-acao="abrirCaso" data-id="${esc(c.id)}">Abrir</button>
+<select data-acao-change="filtrar">...</select>
+<input data-acao-enter="buscar">
+```
+
+```js
+acoes({
+  abrirCaso: el => abrirCaso(el.dataset.id),
+  filtrar: el => filtrar(el.value),
+  buscar: () => buscar()
+});
+```
+
+Um ouvinte por tipo de evento, no `document`, atende a página inteira, inclusive o que é
+desenhado depois por `innerHTML`. Os argumentos vão em `data-*` escapados com `esc()` e chegam à
+função exatamente como saíram do banco (antes, dentro de `onclick="f('...')"`, o texto passava por
+um parser de JavaScript e precisava de um segundo escape). A delegação reproduz o `onclick`: ações
+aninhadas rodam de dentro para fora, `ev.stopPropagation()` cala as de fora, eventos que não sobem
+(`focus`, `load`, `mouseenter`...) só disparam a ação do próprio alvo. O `t-acoes` prova isso no
+navegador e confere, página por página, que toda ação declarada está registrada.
+
+**O que ainda vai para o `window`.** Só o que a suíte de testes chama por dentro da página e o que
+outro módulo sonda com `typeof` (`expor({...})` e `exporVariavel`, de `src/shared/utils/expor.js`).
+Antes da fase 3a, todo nome de todo arquivo era global; depois da 3b, sobraram 160 (eram 534 na 3a).
 
 **Rotas.** `tools/rotas.js` lê as reescritas de `vercel.json`. É usado pelo servidor de
 desenvolvimento, pelo preview, pela suíte de testes e pelo servidor local, para que todos se
@@ -90,8 +113,8 @@ nomes de cliente.
 | 1 | Separação mecânica: CSS e JS fora do HTML, pastas, Vite, lint, testes contra o build. Comportamento idêntico, provado por captura de tela pixel a pixel e pela suíte. | **feita** |
 | 2 | Fim das cópias: Repasse (Dashboard, Andamento e Listagem eram três arquivos 96% iguais) virou uma tela, e o Registro (Quadro e Listagem) outra; a rota decide a vista. Código morto do `configuracoes` removido (85 funções, provado por alcançabilidade). Escape único (`esc`/`escJs`) e `hojeISO` em `src/shared/utils`. | **feita** |
 | 3a | Módulos de verdade: todo arquivo é módulo ES, com `import`/`export`; o global deixou de ser "tudo" e virou a lista explícita de `expor()`; lint com `no-undef`. | **feita** |
-| 3b | Handlers inline viram eventos (`data-acao` com delegação), tela por tela; a lista de `expor()` encolhe junto. | próxima |
-| 4 | Tipos em JSDoc com checagem na CI, arquivo por arquivo (`// @ts-check` no topo). A base já está pronta: `jsconfig.json`, `npm run tipos` e o job da CI; hoje só as ferramentas (`tools/`, `vite.config.mjs`, `testes/fonte.js`) estão marcadas. | base pronta |
+| 3b | Os 901 handlers inline viraram ações declaradas (`data-acao` com delegação); `escJs` saiu (não há mais texto dentro de string JS em atributo); `expor()` encolheu de 534 para 160 nomes. | **feita** |
+| 4 | Tipos em JSDoc com checagem na CI, arquivo por arquivo (`// @ts-check` no topo). A base já está pronta: `jsconfig.json`, `npm run tipos` e o job da CI; hoje estão marcadas as ferramentas (`tools/`, `vite.config.mjs`, `testes/fonte.js`) e `src/shared/ui/acoes.js`. | base pronta |
 
 ### Uma tela, várias vistas
 
@@ -110,7 +133,9 @@ cores e ids escapados (que a cópia da Listagem não tinha).
 
 ### Dívidas conhecidas
 
-- ~1.350 handlers `onclick` inline dependem de funções globais (fase 3).
+- Três botões declaram ações que nunca tiveram função (já não faziam nada antes da fase 3b):
+  "+ Nova Venda" e "Criar venda" na Venda (`abrirVendaAvulsa`, `criarVendaAvulsa`) e "Apagar"
+  transição no Superadmin (`apagarTransicao`). Listados em `testes/t-acoes.js`.
 - `toast`, `openModal`/`closeModal` e as formatações de data e dinheiro ainda têm versões diferentes
   por tela (o visual de cada uma difere); viram componentes em `src/shared/ui` na fase 3.
 - `a1_has_module` (a porta da tela) não honra `expires_at`; o RLS honra.

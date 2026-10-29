@@ -18,9 +18,15 @@
 
 import { A1 } from '../api/config.js';
 import { esc } from '../utils/texto.js';
-import { expor, exporVariavel } from '../utils/expor.js';
+import { acoes } from './acoes.js';
 
-exporVariavel('A1Avisos', () => A1Avisos);
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  avisoAlternar: () => A1Avisos.alternar(),
+  avisoFechar: () => A1Avisos.fechar(),
+  avisoProximo: () => A1Avisos.proximo()
+});
+
 export const A1Avisos = (() => {
   // O tipo do usuário, no vocabulário do mural.
   function publicoDoUsuario(u) {
@@ -203,7 +209,7 @@ export const A1Avisos = (() => {
             <span class="av-selo">Aviso${a.fixado ? ' fixado' : ''}</span>
             <div class="av-titulo" id="av-t">${esc(a.titulo)}</div>
           </div>
-          <button class="av-x" onclick="A1Avisos.fechar()" aria-label="Fechar">&#x2715;</button>
+          <button class="av-x" data-acao="avisoFechar" aria-label="Fechar">&#x2715;</button>
         </div>
         ${arte ? `<div class="av-arte">${arte}</div>` : ''}
         ${
@@ -213,7 +219,7 @@ export const A1Avisos = (() => {
             recolhido
               ? `
             <button class="av-mais" id="av-mais" aria-expanded="false" aria-controls="av-corpo"
-                    onclick="A1Avisos.alternar()">
+                    data-acao="avisoAlternar">
               <span>Ler o aviso completo</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -229,8 +235,8 @@ export const A1Avisos = (() => {
           <span class="av-conta">${fila.length > 1 ? `${atual + 1} de ${fila.length}` : ''}</span>
           ${
             atual + 1 < fila.length
-              ? `<button class="av-btn btn-p av-btn-p" onclick="A1Avisos.proximo()">Próximo</button>`
-              : `<button class="av-btn av-btn-p" onclick="A1Avisos.fechar()">Entendi</button>`
+              ? `<button class="av-btn btn-p av-btn-p" data-acao="avisoProximo">Próximo</button>`
+              : `<button class="av-btn av-btn-p" data-acao="avisoFechar">Entendi</button>`
           }
         </div>
       </div>`;

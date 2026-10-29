@@ -10,19 +10,22 @@ import {
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({
-  approvePartner,
-  closePartnerModal,
-  closeUserModal,
-  createPartner,
-  createUser,
-  openNewPartner,
-  openNewUser,
-  toast,
-  togglePartner,
-  toggleUser
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ toast });
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  approvePartner: el => approvePartner(el.dataset.id),
+  closePartnerModal: () => closePartnerModal(),
+  closeUserModal: () => closeUserModal(),
+  createPartner: () => createPartner(),
+  createUser: () => createUser(),
+  openNewPartner: () => openNewPartner(),
+  openNewUser: () => openNewUser(),
+  togglePartner: el => togglePartner(el.dataset.id, el.dataset.current === 'true'),
+  toggleUser: el => toggleUser(el.dataset.id, el.dataset.current === 'true')
 });
 async function init() {
   let user;
@@ -57,7 +60,7 @@ async function loadUsers() {
       <td>${u.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
       <td style="font-size:.78rem;color:var(--muted)">${u.last_seen ? new Date(u.last_seen).toLocaleString('pt-BR') : 'Nunca'}</td>
       <td>
-        <button class="btn btn-ghost" style="font-size:.75rem" onclick="toggleUser('${u.id}', ${u.is_active})">
+        <button class="btn btn-ghost" style="font-size:.75rem" data-acao="toggleUser" data-id="${esc(u.id)}" data-current="${esc(u.is_active)}">
           ${u.is_active ? 'Desativar' : 'Ativar'}
         </button>
       </td>
@@ -82,8 +85,8 @@ async function loadPartners() {
           <td>${p.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
           <td>${p.approved ? '<span class="badge badge-green">Sim</span>' : '<span class="badge badge-yellow">Não</span>'}</td>
           <td style="display:flex;gap:.3rem">
-            ${!p.approved ? `<button class="btn btn-primary" style="font-size:.75rem" onclick="approvePartner('${p.id}')">Aprovar</button>` : ''}
-            <button class="btn btn-ghost" style="font-size:.75rem" onclick="togglePartner('${p.id}', ${p.is_active})">${p.is_active ? 'Desativar' : 'Ativar'}</button>
+            ${!p.approved ? `<button class="btn btn-primary" style="font-size:.75rem" data-acao="approvePartner" data-id="${esc(p.id)}">Aprovar</button>` : ''}
+            <button class="btn btn-ghost" style="font-size:.75rem" data-acao="togglePartner" data-id="${esc(p.id)}" data-current="${esc(p.is_active)}">${p.is_active ? 'Desativar' : 'Ativar'}</button>
           </td>
         </tr>`
         )

@@ -1,5 +1,5 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import {
   a1RefreshPartnerPerms,
   a1RequireAuth,
@@ -18,55 +18,93 @@ import { a1GeralCarregar, a1GeralPermite } from '../../modules/configuracoes/reg
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
-  abrirAdicionarPessoa,
   abrirAssistente,
   abrirDossie,
   addAssociado,
   adicionarCondicaoVenda,
-  analisarDoc,
-  aoArrastarSobre,
-  aoComecarArrasto,
-  aoSoltar,
   aplicarVista,
-  baixarDoc,
   buscarPessoa,
   carregar,
   checklist,
   conferirVenda,
   confirmarIniciarVenda,
-  copiarDocumento,
-  corretorDoPasso1,
-  enviarDoc,
   fecharModal,
   filtradas,
-  filtrarSla,
-  gerarFichaAprovacao,
-  imobiliariaDoPasso1,
   iniciarVenda,
-  marcarChecklistOperacional,
-  mascaraMoeda,
   moverCartao,
   nivelNaSituacao,
-  passoAnterior,
   passoSeguinte,
   perm,
-  remAssociado,
-  removerCondicaoVenda,
   renderDossie,
   renderVista,
   roteamentoDeAnalistasAtivo,
-  salvarCredito,
   salvarDados,
-  salvarPessoaAdicional,
   sincronizarCondicoesVenda,
-  somarCredito,
   toast,
   trocarAbaDossie
 });
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  abrirAdicionarPessoa: () => abrirAdicionarPessoa(),
+  abrirAssistente: () => abrirAssistente(),
+  abrirDossie: el => abrirDossie(el.dataset.id),
+  addAssociado: () => addAssociado(),
+  adicionarCondicaoVenda: () => adicionarCondicaoVenda(),
+  analisarDoc: el => analisarDoc(el.dataset.id, el.dataset.status),
+  aoArrastarSobre: (el, ev) => aoArrastarSobre(ev, el),
+  aoComecarArrasto: (el, ev) => aoComecarArrasto(ev, el),
+  aoSoltar: (el, ev) => aoSoltar(ev, el),
+  associadoCampo: el => {
+    G.rascunho.associados[Number(el.dataset.i)][el.dataset.campo] = el.value;
+  },
+  baixarDoc: el => baixarDoc(el.dataset.id),
+  buscarPessoa: () => buscarPessoa(),
+  cancelarPessoaAdicional: () => {
+    document.getElementById('pa-adicionar-pessoa').style.display = 'none';
+  },
+  conferirVenda: () => conferirVenda(),
+  confirmarIniciarVenda: () => confirmarIniciarVenda(),
+  copiarDocumento: (el, ev) => copiarDocumento(ev, el.dataset.documento),
+  corretorDoPasso1: () => corretorDoPasso1(),
+  documentoMudou: () => {
+    G.rascunho.cpfDuplicadoBloqueado = false;
+    G.rascunho.pessoaExistente = null;
+  },
+  enviarDoc: () => enviarDoc(),
+  fecharModal: el => fecharModal(el.dataset.id),
+  filtrarSla: el => filtrarSla(el.dataset.n),
+  gerarFichaAprovacao: () => gerarFichaAprovacao(),
+  imobiliariaDoPasso1: () => imobiliariaDoPasso1(),
+  iniciarVenda: () => iniciarVenda(),
+  marcarChecklistOperacional: el => marcarChecklistOperacional(el.dataset.itemId, el.checked),
+  mascaraMoeda: el => mascaraMoeda(el),
+  moedaDaCondicao: el => {
+    mascaraMoeda(el);
+    sincronizarCondicoesVenda();
+  },
+  moedaDoCredito: el => {
+    mascaraMoeda(el);
+    somarCredito();
+  },
+  passoAnterior: () => passoAnterior(),
+  passoSeguinte: () => passoSeguinte(),
+  remAssociado: el => remAssociado(Number(el.dataset.i)),
+  removerCondicaoVenda: el => removerCondicaoVenda(Number(el.dataset.indice)),
+  renderVista: () => renderVista(),
+  saiuDaColuna: el => el.classList.remove('drag-over'),
+  salvarCredito: () => salvarCredito(),
+  salvarDados: () => salvarDados(),
+  salvarPessoaAdicional: () => salvarPessoaAdicional(),
+  sincronizarCondicoesVenda: () => sincronizarCondicoesVenda(),
+  soltouCartao: el => el.classList.remove('dragging'),
+  trocarAbaDossie: el => trocarAbaDossie(el.dataset.aba, el)
+});
 const G = {
   user: null,
   slug: null,
@@ -300,7 +338,7 @@ async function init() {
     ativo: 'PRE_ANALISE',
     vista: a1VistaDaURL(),
     acoes:
-      '<button class="btn-hdr btn-hdr-primary" id="btn-nova" onclick="abrirAssistente()">+ Nova Pré-análise</button>'
+      '<button class="btn-hdr btn-hdr-primary" id="btn-nova" data-acao="abrirAssistente">+ Nova Pré-análise</button>'
   });
   G.temComercial = temModulo && temModulo.COMERCIAL === true;
   if (!G.temComercial) {
@@ -764,8 +802,8 @@ function renderFila(linhas) {
 function linhaFila(p) {
   const t = G.titulares[p.id];
   const s = sla(p);
-  return `<tr onclick="abrirDossie('${escJs(p.id)}')" tabindex="0"
-             onkeydown="if(event.key==='Enter')abrirDossie('${escJs(p.id)}')">
+  return `<tr data-acao="abrirDossie" data-id="${esc(p.id)}" tabindex="0"
+             data-acao-enter="abrirDossie" data-id="${esc(p.id)}">
     <td><div class="cli">${esc(t ? t.nome : 'Sem titular')}</div>
         <div class="sub">${t && t.documento ? esc(mascaraDoc(t.documento)) : '—'}</div></td>
     <td class="cod">${esc(p.codigo || p.id.slice(0, 8))}</td>
@@ -810,8 +848,8 @@ function renderAndamento(linhas) {
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
       <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">Avaliação: <strong>${esc(brl(avaliacao))}</strong></div>
       <div class="k-col-body" data-sit="${esc(s.id)}"
-           ondragover="aoArrastarSobre(event)" ondrop="aoSoltar(event,this)"
-           ondragleave="this.classList.remove('drag-over')">${
+           data-acao-dragover="aoArrastarSobre" data-acao-drop="aoSoltar"
+           data-acao-dragleave="saiuDaColuna">${
              dela.map(cartao).join('') ||
              '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'
            }</div>
@@ -833,15 +871,15 @@ function cartao(p) {
   return `<div class="pa-card" style="border-left-color:${cor}" data-id="${esc(p.id)}"
     ${
       arrasta
-        ? `draggable="true" ondragstart="aoComecarArrasto(event,this)"
-    ondragend="this.classList.remove('dragging')"`
+        ? `draggable="true" data-acao-dragstart="aoComecarArrasto"
+    data-acao-dragend="soltouCartao"`
         : ''
     }
-    onclick="abrirDossie('${escJs(p.id)}')">
+    data-acao="abrirDossie">
     <div class="pa-name">${esc(t ? t.nome : 'Sem titular')}</div>
     ${
       documento
-        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${escJs(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+        ? `<button type="button" class="card-doc" data-acao="copiarDocumento" data-documento="${esc(documento)}" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
         : '<div class="pa-line">CPF não informado</div>'
     }
     <div class="pa-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(p.empreendimento_id))}${p.unidade ? ' · un. ' + esc(p.unidade) : ''}</div>
@@ -891,10 +929,10 @@ function aoComecarArrasto(e, el) {
     e.dataTransfer.setData('text/plain', el.dataset.id);
   } catch {}
 }
-function aoArrastarSobre(e) {
+function aoArrastarSobre(e, col) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
+  col.classList.add('drag-over');
 }
 function aoSoltar(e, col) {
   e.preventDefault();
@@ -1089,7 +1127,7 @@ function passo1() {
       <div class="fg"><label>Unidade de interesse</label>
         <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
       <div class="fg"><label>Valor de avaliação (R$)</label>
-        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
       ${campoImobiliaria(r)}
       ${campoCorretor(r)}
       ${camposDeGenteNoAssistente(r)}
@@ -1120,7 +1158,7 @@ function campoImobiliaria(r) {
       <div class="sub" style="margin-top:.25rem">seu cadastro não tem imobiliária — peça ao gestor para vincular</div></div>`;
   }
   return `<div class="fg"><label>Imobiliária</label>
-    <select id="w-imob" onchange="imobiliariaDoPasso1()"><option value="">—</option>${G.imobiliarias
+    <select id="w-imob" data-acao-change="imobiliariaDoPasso1"><option value="">—</option>${G.imobiliarias
       .map(
         i =>
           `<option value="${esc(i.id)}" ${i.id === r.imobiliaria_id ? 'selected' : ''}>${esc(i.name)}</option>`
@@ -1134,7 +1172,7 @@ function campoImobiliaria(r) {
 function campoCorretor(r) {
   if (!mandaNaCarteira()) return '';
   return `<div class="fg"><label>Corretor</label>
-    <select id="w-corretor" onchange="corretorDoPasso1()">${opcoesCorretor(
+    <select id="w-corretor" data-acao-change="corretorDoPasso1">${opcoesCorretor(
       corretoresDaImobiliaria(r.imobiliaria_id),
       r.corretor_id
     )}</select></div>`;
@@ -1216,8 +1254,8 @@ function passo2() {
       <div class="fg"><label>CPF do titular *</label>
         <div style="display:flex;gap:.4rem">
           <input id="w-doc" value="${esc(t.documento)}" placeholder="000.000.000-00" style="flex:1"
-            oninput="G.rascunho.cpfDuplicadoBloqueado=false;G.rascunho.pessoaExistente=null">
-          <button class="btn btn-ghost btn-sm" type="button" onclick="buscarPessoa()">Buscar</button>
+            data-acao-input="documentoMudou">
+          <button class="btn btn-ghost btn-sm" type="button" data-acao="buscarPessoa">Buscar</button>
         </div>
         <div id="w-doc-msg" style="font-size:.7rem;margin-top:.25rem;color:var(--t3)"></div></div>
       <div class="fg"><label>Nome completo *</label><input id="w-nome" value="${esc(t.nome)}"></div>
@@ -1236,7 +1274,7 @@ function passo3() {
   return `
     <div class="fgrid">
       <div class="fg"><label>Renda declarada do titular (R$)</label>
-        <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+        <input id="w-renda" value="${esc(r.renda_declarada)}" placeholder="3.500,00" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
       <div class="fg"><label>Fonte da renda</label>
         <select id="w-fonte">${[
           '',
@@ -1252,7 +1290,7 @@ function passo3() {
     </div>
     <div class="sec-title">Associados (composição de renda)</div>
     <div id="w-assoc"></div>
-    <button class="btn btn-ghost btn-sm" type="button" onclick="addAssociado()">+ Adicionar associado</button>
+    <button class="btn btn-ghost btn-sm" type="button" data-acao="addAssociado">+ Adicionar associado</button>
     <div class="aviso w" style="margin-top:1rem">A decisão de crédito é registrada depois, por quem tem
     permissão para analisar. Quem cria a pré-análise não aprova o próprio crédito.</div>`;
 }
@@ -1266,10 +1304,10 @@ function renderAssociados() {
         .map(
           (a, i) => `
     <div class="fgrid" style="margin-bottom:.5rem;padding:.6rem;border:1px solid var(--border);border-radius:8px">
-      <div class="fg"><label>CPF</label><input value="${esc(a.documento)}" oninput="G.rascunho.associados[${i}].documento=this.value"></div>
-      <div class="fg"><label>Nome</label><input value="${esc(a.nome)}" oninput="G.rascunho.associados[${i}].nome=this.value"></div>
-      <div class="fg"><label>Renda (R$)</label><input value="${esc(a.renda)}" inputmode="decimal" oninput="G.rascunho.associados[${i}].renda=this.value"></div>
-      <div class="fg"><label>&nbsp;</label><button class="btn btn-danger btn-sm" type="button" onclick="remAssociado(${i})">Remover</button></div>
+      <div class="fg"><label>CPF</label><input value="${esc(a.documento)}" data-acao-input="associadoCampo" data-i="${i}" data-campo="documento"></div>
+      <div class="fg"><label>Nome</label><input value="${esc(a.nome)}" data-acao-input="associadoCampo" data-i="${i}" data-campo="nome"></div>
+      <div class="fg"><label>Renda (R$)</label><input value="${esc(a.renda)}" inputmode="decimal" data-acao-input="associadoCampo" data-i="${i}" data-campo="renda"></div>
+      <div class="fg"><label>&nbsp;</label><button class="btn btn-danger btn-sm" type="button" data-acao="remAssociado" data-i="${esc(i)}">Remover</button></div>
     </div>`
         )
         .join('')
@@ -1762,7 +1800,7 @@ function dosDados() {
           <span class="sla-txt">${esc(s.txt)}</span></div>
         <div class="sub">na situação desde ${esc(dataHoraBR(p.situacao_em))}</div></div>
     </div>
-    ${podeEditar ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarDados()">Salvar dados</button></div>` : ''}`;
+    ${podeEditar ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" data-acao="salvarDados">Salvar dados</button></div>` : ''}`;
 }
 
 // ─── Os três campos de gente ─────────────────────────────────────────────────
@@ -1898,7 +1936,7 @@ function dosPessoas() {
       podeEditarPessoas
         ? `
       <div style="margin-top:.8rem">
-        <button class="btn btn-ghost btn-sm" type="button" onclick="abrirAdicionarPessoa()">+ Adicionar pessoa</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-acao="abrirAdicionarPessoa">+ Adicionar pessoa</button>
       </div>
       <div id="pa-adicionar-pessoa" style="display:none;margin-top:.75rem;padding:.8rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
         <div class="sec-title" style="margin-top:0">Nova pessoa vinculada</div>
@@ -1906,12 +1944,12 @@ function dosPessoas() {
           <div class="fg"><label>CPF</label><input id="pa-pessoa-doc" placeholder="000.000.000-00"></div>
           <div class="fg"><label>Nome completo *</label><input id="pa-pessoa-nome"></div>
           <div class="fg"><label>Telefone</label><input id="pa-pessoa-tel"></div>
-          <div class="fg"><label>Renda declarada (R$)</label><input id="pa-pessoa-renda" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+          <div class="fg"><label>Renda declarada (R$)</label><input id="pa-pessoa-renda" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
           <div class="fg"><label>Fonte da renda</label><input id="pa-pessoa-fonte" placeholder="ex.: CLT"></div>
         </div>
         <div style="display:flex;gap:.5rem;margin-top:.75rem">
-          <button class="btn btn-primary btn-sm" type="button" onclick="salvarPessoaAdicional()">Vincular pessoa</button>
-          <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('pa-adicionar-pessoa').style.display='none'">Cancelar</button>
+          <button class="btn btn-primary btn-sm" type="button" data-acao="salvarPessoaAdicional">Vincular pessoa</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-acao="cancelarPessoaAdicional">Cancelar</button>
         </div>
       </div>`
         : ''
@@ -2019,7 +2057,7 @@ function dosCredito() {
   const prox = (G.atualCred[0] ? G.atualCred[0].versao : 0) + 1;
   return `
     ${hist ? `<div class="sec-title" style="margin-top:0">Decisões anteriores</div>${hist}` : ''}
-    ${G.atualCred.some(c => c.status === 'APROVADO') ? `<div style="margin-bottom:.9rem"><button type="button" class="btn btn-ghost btn-sm" onclick="gerarFichaAprovacao()">Ficha de aprovação (PDF)</button></div>` : ''}
+    ${G.atualCred.some(c => c.status === 'APROVADO') ? `<div style="margin-bottom:.9rem"><button type="button" class="btn btn-ghost btn-sm" data-acao="gerarFichaAprovacao">Ficha de aprovação (PDF)</button></div>` : ''}
     <div class="sec-title">Nova decisão — versão ${prox}</div>
     <div class="aviso i">Decisão não se edita: cada análise cria uma versão nova, e a anterior fica no histórico.
       O total tem de fechar com a soma de financiado + subsídio + FGTS.</div>
@@ -2027,21 +2065,21 @@ function dosCredito() {
       <div class="fg"><label>Resultado</label>
         <select id="c-status"><option value="APROVADO">Aprovado</option><option value="PENDENTE">Pendente</option>
           <option value="REPROVADO">Reprovado</option><option value="EM_ANALISE">Em análise</option></select></div>
-      <div class="fg"><label>Renda familiar considerada (R$)</label><input id="c-renda" value="${esc(valorEmReais(rendaDeclarada))}" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
-      <div class="fg"><label>Valor financiado (R$)</label><input id="c-fin" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
-      <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
-      <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" oninput="mascaraMoeda(this);somarCredito()"></div>
+      <div class="fg"><label>Renda familiar considerada (R$)</label><input id="c-renda" value="${esc(valorEmReais(rendaDeclarada))}" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
+      <div class="fg"><label>Valor financiado (R$)</label><input id="c-fin" inputmode="decimal" data-acao-input="moedaDoCredito"></div>
+      <div class="fg"><label>Subsídio (R$)</label><input id="c-sub" inputmode="decimal" data-acao-input="moedaDoCredito"></div>
+      <div class="fg"><label>FGTS (R$)</label><input id="c-fgts" inputmode="decimal" data-acao-input="moedaDoCredito"></div>
       <div class="fg"><label>Total (soma)</label><input id="c-total" disabled></div>
       <div class="fg"><label>Valor de avaliação (R$)</label>
         <input id="c-aval" value="${avaliacaoInicial == null ? '' : esc(valorEmReais(avaliacaoInicial))}"
-          inputmode="decimal" oninput="mascaraMoeda(this)" ${avaliacaoInicial == null ? '' : 'disabled'}>
+          inputmode="decimal" data-acao-input="mascaraMoeda" ${avaliacaoInicial == null ? '' : 'disabled'}>
         ${avaliacaoInicial == null ? '' : '<div class="sub" style="margin-top:.25rem">informado na abertura da pré-análise</div>'}</div>
-      <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
+      <div class="fg"><label>Prestação (R$)</label><input id="c-prest" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
       <div class="fg"><label>Prazo (meses)</label><input id="c-prazo" type="number" min="1" max="480"></div>
       <div class="fg"><label>Motivo / condicionante</label><input id="c-motivo"></div>
       <div class="fg full"><label>Justificativa</label><textarea id="c-just" rows="2"></textarea></div>
     </div>
-    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarCredito()">Registrar decisão</button></div>`;
+    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" data-acao="salvarCredito">Registrar decisão</button></div>`;
 }
 
 function gerarFichaAprovacao() {
@@ -2168,11 +2206,11 @@ function dosDocumentos() {
         <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · ${esc(dataHoraBR(d.criado_em))}</div></div>
       <div style="display:flex;gap:.4rem;align-items:center">
         <span class="pill ${d.status === 'APROVADO' ? 'ok' : d.status === 'REPROVADO' ? 'no' : 'wt'}">${esc(d.status)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="baixarDoc('${escJs(d.id)}')">Abrir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="baixarDoc" data-id="${esc(d.id)}">Abrir</button>
         ${
           podeAnalisar
-            ? `<button class="btn btn-ghost btn-sm" onclick="analisarDoc('${escJs(d.id)}','APROVADO')">Aprovar</button>
-          <button class="btn btn-danger btn-sm" onclick="analisarDoc('${escJs(d.id)}','REPROVADO')">Reprovar</button>`
+            ? `<button class="btn btn-ghost btn-sm" data-acao="analisarDoc" data-id="${esc(d.id)}" data-status="APROVADO">Aprovar</button>
+          <button class="btn btn-danger btn-sm" data-acao="analisarDoc" data-id="${esc(d.id)}" data-status="REPROVADO">Reprovar</button>`
             : ''
         }
       </div>
@@ -2192,7 +2230,7 @@ function dosDocumentos() {
             .join('')}</select></div>
         <div class="fg"><label>Arquivo</label><input type="file" id="doc-arq"></div>
       </div>
-      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-doc" onclick="enviarDoc()">Enviar</button></div>
+      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-doc" data-acao="enviarDoc">Enviar</button></div>
       <div class="aviso i" style="margin-top:.9rem">Enviar é de todos; <strong>aprovar é de quem analisa</strong>.
         Sem isso, uma transição que exige "documentos aprovados" seria satisfeita por quem enviou os documentos.</div>`
         : ''
@@ -2320,7 +2358,7 @@ function dosChecklist() {
     <div class="linha">
       <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar ? 'pointer' : 'default'}">
         <input type="checkbox" ${i.concluido ? 'checked' : ''} ${podeMarcar && !i.automatico ? '' : 'disabled'}
-          onchange="marcarChecklistOperacional('${escJs(i.id)}',this.checked)">
+          data-acao-change="marcarChecklistOperacional" data-item-id="${esc(i.id)}">
         <div><div class="nm">${esc(i.nome)} ${i.obrigatorio ? '<span class="pill wt" style="margin-left:.35rem">obrigatório</span>' : ''}</div>
           ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
       </label>
@@ -2501,7 +2539,7 @@ function montarBotaoVenda() {
   const barrado = v && v.ok === false;
   acoes.innerHTML =
     `<button class="btn btn-venda btn-sm" id="btn-iniciar-venda" ${barrado ? 'disabled' : ''}
-             onclick="iniciarVenda()">Iniciar venda</button>` +
+             data-acao="iniciarVenda">Iniciar venda</button>` +
     (barrado ? `<span class="recusa">Ainda não dá: ${esc(v.motivo)}.</span>` : '');
 }
 
@@ -2574,12 +2612,12 @@ function iniciarVenda() {
         <input id="v-unidade" value="${esc(G.rascunhoVenda.unidade)}" placeholder="ex.: 101 — Torre A">
         <div class="sub" style="margin-top:.25rem">na pré-análise a unidade era só interesse; aqui ela é a que vai para o contrato</div></div>
       <div class="fg"><label>Valor da venda (R$) *</label>
-        <input id="v-venda" inputmode="decimal" oninput="conferirVenda()"></div>
+        <input id="v-venda" inputmode="decimal" data-acao-input="conferirVenda"></div>
       <div class="fg"><label>Recursos próprios necessários (R$)</label>
         <input id="v-entrada" inputmode="decimal" disabled></div>
       <div class="fg full"><label>Condições de pagamento</label>
         <div id="v-condicoes"></div>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoVenda()">+ Adicionar condição</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" data-acao="adicionarCondicaoVenda">+ Adicionar condição</button>
         <div class="sub" style="margin-top:.35rem">Ato, parcelas mensais, semestrais e anuais formam os recursos próprios da proposta.</div></div>
       <div class="fg full"><label>Observações da negociação</label>
         <textarea id="v-obs" rows="2"></textarea></div>
@@ -2625,13 +2663,13 @@ function renderCondicoesVenda() {
       .map(
         (c, i) => `
     <div class="fgrid condicao-venda" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
-      <div class="fg"><label>Condição</label><select data-campo="tipo" onchange="sincronizarCondicoesVenda()">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" data-acao-change="sincronizarCondicoesVenda">
         ${['ATO', 'MENSAL', 'SEMESTRAL', 'ANUAL'].map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${{ ATO: 'Ato', MENSAL: 'Parcelas mensais', SEMESTRAL: 'Parcelas semestrais', ANUAL: 'Parcelas anuais' }[t]}</option>`).join('')}
       </select></div>
-      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" oninput="sincronizarCondicoesVenda()"></div>
-      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" oninput="mascaraMoeda(this);sincronizarCondicoesVenda()"></div>
-      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial || '')}" onchange="sincronizarCondicoesVenda()"></div>
-      <div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoVenda(${i})">Remover</button></div>
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" data-acao-input="sincronizarCondicoesVenda"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" data-acao-input="moedaDaCondicao"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial || '')}" data-acao-change="sincronizarCondicoesVenda"></div>
+      <div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" data-acao="removerCondicaoVenda" data-indice="${esc(i)}">Remover</button></div>
     </div>`
       )
       .join('') ||

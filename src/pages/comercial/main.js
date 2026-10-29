@@ -1,5 +1,5 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import {
   a1RefreshPartnerPerms,
   a1RequireAuth,
@@ -12,42 +12,58 @@ import { a1GeralCarregar, a1GeralPermite } from '../../modules/configuracoes/reg
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
   abrirDossie,
-  adicionarCondicaoProposta,
   aplicarVista,
-  baixarContrato,
-  baixarDocumentoOrigem,
   carregar,
-  coDragEnd,
-  coDragLeave,
-  coDragOver,
-  coDragStart,
-  coDrop,
-  conferirProposta,
-  copiarDocumento,
-  criarContrato,
   fecharModal,
   filtradas,
-  filtrarSla,
-  marcarAssinado,
-  marcarChecklistOperacional,
-  mascaraMoeda,
   moverCartao,
   nivelNaSituacao,
   perm,
-  removerCondicaoProposta,
   renderDossie,
-  renderVistas,
   roteamentoDeAnalistasAtivo,
   salvarProposta,
-  sincronizarCondicoesProposta,
   toast,
   trocarAbaDossie
 });
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  abrirDossie: el => abrirDossie(el.dataset.id),
+  adicionarCondicaoProposta: () => adicionarCondicaoProposta(),
+  baixarContrato: el => baixarContrato(el.dataset.id),
+  baixarDocumentoOrigem: el => baixarDocumentoOrigem(el.dataset.id),
+  coDragEnd: (el, ev) => coDragEnd(ev, el),
+  coDragLeave: (el, ev) => coDragLeave(ev, el),
+  coDragOver: (el, ev) => coDragOver(ev, el),
+  coDragStart: (el, ev) => coDragStart(ev, el),
+  coDrop: (el, ev) => coDrop(ev, el),
+  copiarDocumento: (el, ev) => copiarDocumento(ev, el.dataset.documento),
+  criarContrato: () => criarContrato(),
+  fecharModal: el => fecharModal(el.dataset.id),
+  filtrarSla: el => filtrarSla(el.dataset.n),
+  marcarAssinado: el => marcarAssinado(el.dataset.id),
+  marcarChecklistOperacional: el => marcarChecklistOperacional(el.dataset.itemId, el.checked),
+  mascaraMoeda: el => mascaraMoeda(el),
+  moedaDaCondicao: el => {
+    mascaraMoeda(el);
+    sincronizarCondicoesProposta();
+  },
+  moedaDaProposta: el => {
+    mascaraMoeda(el);
+    conferirProposta();
+  },
+  removerCondicaoProposta: el => removerCondicaoProposta(Number(el.dataset.indice)),
+  renderVistas: () => renderVistas(),
+  salvarProposta: () => salvarProposta(),
+  sincronizarCondicoesProposta: () => sincronizarCondicoesProposta(),
+  trocarAbaDossie: el => trocarAbaDossie(el.dataset.aba, el)
+});
 const G = {
   user: null,
   slug: null,
@@ -320,7 +336,7 @@ async function init() {
       ativo: 'COMERCIAL',
       vista: G.vista,
       acoes: _podeVendaAvulsa
-        ? '<button class="btn-hdr btn-hdr-primary" id="btn-venda-avulsa" onclick="abrirVendaAvulsa()">+ Nova Venda</button>'
+        ? '<button class="btn-hdr btn-hdr-primary" id="btn-venda-avulsa" data-acao="abrirVendaAvulsa">+ Nova Venda</button>'
         : ''
     })) || {};
   aplicarVista();
@@ -584,8 +600,8 @@ function renderListagem(linhas) {
 
 function linhaFila(c) {
   const s = sla(c);
-  return `<tr onclick="abrirDossie('${escJs(c.id)}')" tabindex="0"
-             onkeydown="if(event.key==='Enter')abrirDossie('${escJs(c.id)}')">
+  return `<tr data-acao="abrirDossie" data-id="${esc(c.id)}" tabindex="0"
+             data-acao-enter="abrirDossie" data-id="${esc(c.id)}">
     <td><div class="cli">${esc(tituloDe(c))}</div></td>
     <td class="cod">${esc(c.codigo || c.id.slice(0, 8))}</td>
     <td>${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ` <span class="sub">· un. ${esc(c.unidade)}</span>` : ''}</td>
@@ -626,7 +642,7 @@ function renderAndamento(linhas) {
         <span>${esc(s.nome)}</span><span class="k-col-count">${dela.length}</span></div>
       <div style="background:#E9EEF5;padding:.28rem .6rem;font-size:.62rem;color:var(--t2)">VGV: <strong>${esc(brl(vgv))}</strong></div>
       <div class="k-col-body" data-situacao-id="${esc(s.id)}"
-           ondragover="coDragOver(event)" ondragleave="coDragLeave(event)" ondrop="coDrop(event,this)"
+           data-acao-dragover="coDragOver" data-acao-dragleave="coDragLeave" data-acao-drop="coDrop"
         >${
           dela.map(cartao).join('') ||
           '<div style="font-size:.7rem;color:var(--t3);text-align:center;padding:.8rem">vazio</div>'
@@ -646,12 +662,12 @@ function cartao(c) {
     ? 'há ' + humano(Math.max(0, (Date.now() - new Date(desde).getTime()) / 3600000))
     : '—';
   return `<div class="co-card${mover ? ' arrastavel' : ''}" data-id="${esc(c.id)}"
-    ${mover ? 'draggable="true" ondragstart="coDragStart(event,this)" ondragend="coDragEnd(event,this)"' : ''}
-    style="border-left-color:${cor}" onclick="abrirDossie('${escJs(c.id)}')">
+    ${mover ? 'draggable="true" data-acao-dragstart="coDragStart" data-acao-dragend="coDragEnd"' : ''}
+    style="border-left-color:${cor}" data-acao="abrirDossie">
     <div class="co-name">${esc(tituloDe(c))}</div>
     ${
       documento
-        ? `<button type="button" class="card-doc" onclick="copiarDocumento(event,'${escJs(documento)}')" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
+        ? `<button type="button" class="card-doc" data-acao="copiarDocumento" data-documento="${esc(documento)}" title="Copiar CPF">${esc(mascaraDoc(documento))} · copiar</button>`
         : '<div class="co-line">CPF não informado</div>'
     }
     <div class="co-line"><strong>Empreendimento:</strong> ${esc(nomeEmpr(c.empreendimento_id))}${c.unidade ? ' · un. ' + esc(c.unidade) : ''}</div>
@@ -711,13 +727,13 @@ function coDragEnd(e, el) {
   el.classList.remove('arrastando');
   G.arrastando = null;
 }
-function coDragOver(e) {
+function coDragOver(e, col) {
   e.preventDefault();
   if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('sobre');
+  col.classList.add('sobre');
 }
-function coDragLeave(e) {
-  e.currentTarget.classList.remove('sobre');
+function coDragLeave(e, col) {
+  col.classList.remove('sobre');
 }
 function coDrop(e, col) {
   e.preventDefault();
@@ -887,12 +903,12 @@ function dosProposta() {
     <div class="fgrid">
       <div class="fg"><label>Valor da venda (R$)</label>
         <input id="p-venda" value="${p.valor_venda != null ? esc((p.valor_venda / 100).toFixed(2).replace('.', ',')) : ''}"
-               inputmode="decimal" ${pode ? '' : 'disabled'} oninput="mascaraMoeda(this);conferirProposta()"></div>
+               inputmode="decimal" ${pode ? '' : 'disabled'} data-acao-input="moedaDaProposta"></div>
       <div class="fg"><label>Recursos próprios necessários (R$)</label>
         <input id="p-entrada" value="" inputmode="decimal" disabled></div>
       <div class="fg"><label>Desconto concedido (R$)</label>
         <input id="p-desc" value="${p.desconto != null ? esc((p.desconto / 100).toFixed(2).replace('.', ',')) : ''}"
-               inputmode="decimal" ${pode ? '' : 'disabled'} oninput="mascaraMoeda(this)"></div>
+               inputmode="decimal" ${pode ? '' : 'disabled'} data-acao-input="mascaraMoeda"></div>
       <div class="fg"><label>Comissão (%)</label>
         <input id="p-com" type="number" step="0.01" min="0" max="100" value="${esc(p.comissao_pct != null ? p.comissao_pct : '')}" ${pode ? '' : 'disabled'}></div>
       <div class="fg full"><label>Observações da negociação</label>
@@ -900,7 +916,7 @@ function dosProposta() {
     </div>
     <div class="sec-title">Condições de pagamento</div>
     <div id="p-condicoes"></div>
-    ${pode ? '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" onclick="adicionarCondicaoProposta()">+ Adicionar condição</button>' : ''}
+    ${pode ? '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:.55rem" data-acao="adicionarCondicaoProposta">+ Adicionar condição</button>' : ''}
     <div id="p-conferencia" style="margin-top:.9rem"></div>
     ${secaoVinculos(co, pode)}
     <div class="sec-title">Crédito aprovado na origem</div>
@@ -910,7 +926,7 @@ function dosProposta() {
       <div class="fg"><label>FGTS</label><input value="${esc(brl(cr.valor_fgts))}" disabled></div>
       <div class="fg"><label>Total aprovado</label><input value="${esc(brl(aprovado))}" disabled></div>
     </div>
-    ${pode ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="salvarProposta()">Salvar proposta</button></div>` : ''}`;
+    ${pode ? `<div style="margin-top:1rem"><button class="btn btn-primary btn-sm" data-acao="salvarProposta">Salvar proposta</button></div>` : ''}`;
 }
 
 // Quem responde por este negócio. Três seletores, três colunas de a1_comerciais.
@@ -968,13 +984,13 @@ function renderCondicoesProposta() {
       .map(
         (c, i) => `
     <div class="fgrid condicao-proposta" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
-      <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode ? '' : 'disabled'} onchange="sincronizarCondicoesProposta()">
+      <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode ? '' : 'disabled'} data-acao-change="sincronizarCondicoesProposta">
         ${['ATO', 'MENSAL', 'SEMESTRAL', 'ANUAL'].map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${{ ATO: 'Ato', MENSAL: 'Parcelas mensais', SEMESTRAL: 'Parcelas semestrais', ANUAL: 'Parcelas anuais' }[t]}</option>`).join('')}
       </select></div>
-      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode ? '' : 'disabled'} oninput="sincronizarCondicoesProposta()"></div>
-      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" ${pode ? '' : 'disabled'} oninput="mascaraMoeda(this);sincronizarCondicoesProposta()"></div>
-      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial || '')}" ${pode ? '' : 'disabled'} onchange="sincronizarCondicoesProposta()"></div>
-      ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" onclick="removerCondicaoProposta(${i})">Remover</button></div>` : ''}
+      <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode ? '' : 'disabled'} data-acao-input="sincronizarCondicoesProposta"></div>
+      <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" ${pode ? '' : 'disabled'} data-acao-input="moedaDaCondicao"></div>
+      <div class="fg"><label>1º vencimento</label><input data-campo="vencimento" type="date" value="${esc(c.vencimento_inicial || '')}" ${pode ? '' : 'disabled'} data-acao-change="sincronizarCondicoesProposta"></div>
+      ${pode ? `<div class="fg" style="justify-content:end"><button type="button" class="btn btn-danger btn-sm" data-acao="removerCondicaoProposta" data-indice="${esc(i)}">Remover</button></div>` : ''}
     </div>`
       )
       .join('') || '<div class="sub">Nenhuma condição registrada.</div>';
@@ -1125,10 +1141,10 @@ function dosContrato() {
           c.assinado_em ? ' · assinado em ' + esc(dataBR(c.assinado_em)) : ''
         }</div></div>
       <div style="display:flex;gap:.4rem">
-        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" onclick="baixarContrato('${escJs(c.id)}')">Abrir</button>` : ''}
+        ${c.storage_key ? `<button class="btn btn-ghost btn-sm" data-acao="baixarContrato" data-id="${esc(c.id)}">Abrir</button>` : ''}
         ${
           podeAssinar && c.status !== 'ASSINADO' && c.status !== 'CANCELADO'
-            ? `<button class="btn btn-primary btn-sm" onclick="marcarAssinado('${escJs(c.id)}')">Marcar assinado</button>`
+            ? `<button class="btn btn-primary btn-sm" data-acao="marcarAssinado" data-id="${esc(c.id)}">Marcar assinado</button>`
             : ''
         }
       </div>
@@ -1152,7 +1168,7 @@ function dosContrato() {
           <input id="ct-prov" placeholder="ex.: Clicksign, D4Sign"></div>
         <div class="fg full"><label>Arquivo (opcional)</label><input type="file" id="ct-arq"></div>
       </div>
-      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-ct" onclick="criarContrato()">Registrar contrato</button></div>`
+      <div style="margin-top:.8rem"><button class="btn btn-primary btn-sm" id="btn-ct" data-acao="criarContrato">Registrar contrato</button></div>`
         : ''
     }
     ${
@@ -1243,7 +1259,7 @@ function dosDocumentos() {
         <div class="mt">${esc(d.nome_arquivo || d.storage_key)} · enviado em ${esc(dataHoraBR(d.criado_em))}</div></div>
       <div style="display:flex;gap:.4rem;align-items:center">
         <span class="pill ${d.status === 'APROVADO' ? 'ok' : d.status === 'REPROVADO' ? 'no' : 'wt'}">${esc(d.status)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="baixarDocumentoOrigem('${escJs(d.id)}')">Abrir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="baixarDocumentoOrigem" data-id="${esc(d.id)}">Abrir</button>
       </div>
     </div>`
     )
@@ -1270,7 +1286,7 @@ function dosChecklist() {
     <div class="linha">
       <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:${podeMarcar ? 'pointer' : 'default'}">
         <input type="checkbox" ${i.concluido ? 'checked' : ''} ${podeMarcar && !i.automatico ? '' : 'disabled'}
-          onchange="marcarChecklistOperacional('${escJs(i.id)}',this.checked)">
+          data-acao-change="marcarChecklistOperacional" data-item-id="${esc(i.id)}">
         <div><div class="nm">${esc(i.nome)} ${i.obrigatorio ? '<span class="pill wt" style="margin-left:.35rem">obrigatório</span>' : ''}</div>
           ${i.automatico ? '<div class="mt">Concluído automaticamente quando a ação ocorrer.</div>' : i.concluido_em ? `<div class="mt">Concluído em ${esc(dataHoraBR(i.concluido_em))}</div>` : ''}</div>
       </label>

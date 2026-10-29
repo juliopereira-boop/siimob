@@ -1,45 +1,60 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
 import { a1AtorHistorico, a1MontarShell } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
-  applyDashFilter,
-  applyFilter,
-  applyListFilter,
   archiveCase,
-  changeStage,
   clearDashFilters,
   closeModal,
   cor,
   createCase,
   dashCases,
   filteredCases,
-  onDragEnd,
-  onDragOver,
-  onDragStart,
-  onDrop,
   openCase,
   openNewModal,
-  openStageModal,
   renderDashboard,
-  renderFunil,
   roteamentoDeAnalistasAtivo,
   saveCase,
-  saveStage,
-  selectItbi,
   switchModalTab,
   switchTab,
   toast,
-  updateStage,
   val
 });
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  applyDashFilter: () => applyDashFilter(),
+  applyFilter: () => applyFilter(),
+  applyListFilter: () => applyListFilter(),
+  archiveCase: () => archiveCase(),
+  changeStage: () => changeStage(),
+  clearDashFilters: () => clearDashFilters(),
+  closeModal: el => closeModal(el.dataset.id),
+  copiarCpf: (el, ev) => {
+    ev.stopPropagation();
+    navigator.clipboard?.writeText(el.dataset.cpf);
+  },
+  createCase: () => createCase(),
+  onDragEnd: (el, ev) => onDragEnd(ev, el),
+  onDragOver: (el, ev) => onDragOver(ev, el),
+  onDragStart: (el, ev) => onDragStart(ev, el.dataset.id, el),
+  onDrop: (el, ev) => onDrop(ev, el.dataset.stageId, el),
+  openCase: el => openCase(el.dataset.id),
+  openStageModal: () => openStageModal(),
+  saveCase: () => saveCase(),
+  saveStage: () => saveStage(),
+  selectItbi: el => selectItbi(el),
+  switchModalTab: el => switchModalTab(el.dataset.tab, el),
+  switchTab: () => switchTab('config', null)
+});
 const G = {
   user: null,
   slug: '',
@@ -579,7 +594,7 @@ function renderKanban() {
           <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
         </svg>
         <div style="font-weight:700;font-size:.92rem;margin-bottom:.4rem;color:var(--t2)">Workflow ainda não configurado</div>
-        <div style="font-size:.8rem;line-height:1.55">Acesse <strong style="color:var(--violet);cursor:pointer" onclick="switchTab('config',null)">Configuracoes → Workflow</strong> para criar as etapas do processo de registro.</div>
+        <div style="font-size:.8rem;line-height:1.55">Acesse <strong style="color:var(--violet);cursor:pointer" data-acao="switchTab">Configuracoes → Workflow</strong> para criar as etapas do processo de registro.</div>
       </div>`;
     return;
   }
@@ -594,7 +609,7 @@ function renderKanban() {
         <span>${esc(stage.name)}</span>
         <span class="k-col-count">${stageCases.length}</span>
       </div>
-      <div class="k-col-body" id="col-${stage.id}" ondragover="onDragOver(event,this)" ondrop="onDrop(event,'${escJs(stage.id)}')">
+      <div class="k-col-body" id="col-${stage.id}" data-acao-dragover="onDragOver" data-acao-drop="onDrop" data-stage-id="${esc(stage.id)}">
         ${
           stageCases.map(c => renderCard(c, color, now)).join('') ||
           '<div style="color:var(--t3);font-size:.75rem;text-align:center;padding:.75rem">Vazio</div>'
@@ -618,9 +633,9 @@ function renderCard(c, color, now) {
 
   return `<div class="k-card" style="border-left-color:${cor(color)}"
     draggable="true"
-    ondragstart="onDragStart(event,'${escJs(c.id)}')"
-    ondragend="onDragEnd(event)"
-    onclick="openCase('${escJs(c.id)}')">
+    data-acao-dragstart="onDragStart" data-id="${esc(c.id)}"
+    data-acao-dragend="onDragEnd"
+    data-acao="openCase">
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
@@ -629,7 +644,7 @@ function renderCard(c, color, now) {
         <span class="badge-days ${dCls}">${days}d</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="event.stopPropagation();navigator.clipboard?.writeText('${escJs(c.client_cpf)}')">${esc(c.client_cpf)}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" data-acao="copiarCpf" data-cpf="${esc(c.client_cpf)}">${esc(c.client_cpf)}</div>` : ''}
     ${c.development ? `<div class="kc-sub"><span class="empr">${esc(c.development)}</span>${c.unit ? ' · ' + esc(c.unit) : ''}</div>` : ''}
     <div class="kc-chips">
       ${itbi === 'pago' ? '<span class="chip chip-itbi-pago">ITBI Pago</span>' : ''}
@@ -641,7 +656,7 @@ function renderCard(c, color, now) {
     <div class="kc-footer">
       <span class="kc-date">${fmtDate(c.created_at)}</span>
       <div class="kc-actions">
-        <button class="kc-action-btn" onclick="event.stopPropagation();openCase('${c.id}')">Abrir</button>
+        <button class="kc-action-btn">Abrir</button>
       </div>
     </div>
   </div>`;
@@ -649,20 +664,20 @@ function renderCard(c, color, now) {
 
 // ─── Drag & Drop ───────────────────────────────────────────────────────────────
 let dragId = null;
-function onDragStart(e, id) {
+function onDragStart(e, id, card) {
   dragId = id;
-  e.currentTarget.classList.add('dragging');
+  card.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
-function onDragEnd(e) {
-  e.currentTarget.classList.remove('dragging');
+function onDragEnd(e, card) {
+  card.classList.remove('dragging');
 }
 function onDragOver(e, col) {
   e.preventDefault();
   col.classList.add('drag-over');
 }
-function onDrop(e, stageId) {
-  e.currentTarget.classList.remove('drag-over');
+function onDrop(e, stageId, col) {
+  col.classList.remove('drag-over');
   if (!dragId) return;
   const c = G.cases.find(x => x.id === dragId);
   if (!c || c.stage_id === stageId) {
@@ -733,7 +748,7 @@ function renderList() {
             itbi === 'pago' ? 'itbi-pill-pago' : itbi === 'vencido' ? 'itbi-pill-venc' : 'itbi-pill-pend';
           const st = G.stages.find(s => s.id === c.stage_id);
           const stClr = st?.color || '#6B827D';
-          return `<tr onclick="openCase('${escJs(c.id)}')" style="cursor:pointer">
+          return `<tr data-acao="openCase" data-id="${esc(c.id)}" style="cursor:pointer">
           <td><span class="tbl-name">${esc(c.client_name)}</span></td>
           <td><span class="tbl-cpf">${esc(c.client_cpf || '—')}</span></td>
           <td>${esc(c.development || '—')}${c.unit ? ' · ' + esc(c.unit) : ''}</td>
@@ -747,7 +762,7 @@ function renderList() {
           <td class="tbl-mono">${esc(p.num_prenotacao || '—')}</td>
           <td class="tbl-mono">${esc(p.num_matricula || '—')}</td>
           <td class="tbl-mono">${days}d</td>
-          <td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openCase('${c.id}')">Abrir</button></td>
+          <td><button class="btn btn-ghost btn-xs">Abrir</button></td>
         </tr>`;
         })
         .join('')

@@ -27,11 +27,11 @@
 
     <div class="dash-filter-bar">
       <span class="dash-filter-label">Filtrar</span>
-      <select id="dg-empr" onchange="applyDashFilter()"><option value="">Todos empreendimentos</option></select>
-      <select id="dg-banco" onchange="applyDashFilter()"><option value="">Todos os bancos</option></select>
-      <select id="dg-cartorio" onchange="applyDashFilter()"><option value="">Todos os cartórios</option></select>
-      <input id="dg-search" type="text" placeholder="Buscar cliente / CPF..." oninput="applyDashFilter()">
-      <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()">Limpar</button>
+      <select id="dg-empr" data-acao-change="applyDashFilter"><option value="">Todos empreendimentos</option></select>
+      <select id="dg-banco" data-acao-change="applyDashFilter"><option value="">Todos os bancos</option></select>
+      <select id="dg-cartorio" data-acao-change="applyDashFilter"><option value="">Todos os cartórios</option></select>
+      <input id="dg-search" type="text" placeholder="Buscar cliente / CPF..." data-acao-input="applyDashFilter">
+      <button class="btn btn-ghost btn-sm" data-acao="clearDashFilters">Limpar</button>
     </div>
 
     <!-- Top KPIs -->
@@ -88,10 +88,10 @@
   <!-- ══════════ KANBAN ══════════ -->
   <div id="tab-kanban" style="display:none">
     <div class="filter-bar">
-      <input id="rg-search" type="text" placeholder="Buscar cliente, CPF, unidade..." oninput="applyFilter()">
-      <select id="rg-filter-empr" onchange="applyFilter()"><option value="">Todos os empreendimentos</option></select>
-      <select id="rg-filter-banco" onchange="applyFilter()"><option value="">Todos os bancos</option></select>
-      <select id="rg-filter-itbi" onchange="applyFilter()">
+      <input id="rg-search" type="text" placeholder="Buscar cliente, CPF, unidade..." data-acao-input="applyFilter">
+      <select id="rg-filter-empr" data-acao-change="applyFilter"><option value="">Todos os empreendimentos</option></select>
+      <select id="rg-filter-banco" data-acao-change="applyFilter"><option value="">Todos os bancos</option></select>
+      <select id="rg-filter-itbi" data-acao-change="applyFilter">
         <option value="">ITBI — Todos</option>
         <option value="pendente">Pendente</option>
         <option value="pago">Pago</option>
@@ -105,9 +105,9 @@
   <!-- ══════════ LISTAGEM ══════════ -->
   <div id="tab-lista" style="display:none">
     <div class="filter-bar" style="margin-bottom:.75rem">
-      <input id="rg-list-search" type="text" placeholder="Buscar cliente, CPF..." oninput="applyListFilter()">
-      <select id="rg-list-stage" onchange="applyListFilter()"><option value="">Todas as etapas</option></select>
-      <select id="rg-list-itbi" onchange="applyListFilter()">
+      <input id="rg-list-search" type="text" placeholder="Buscar cliente, CPF..." data-acao-input="applyListFilter">
+      <select id="rg-list-stage" data-acao-change="applyListFilter"><option value="">Todas as etapas</option></select>
+      <select id="rg-list-itbi" data-acao-change="applyListFilter">
         <option value="">ITBI — Todos</option>
         <option value="pendente">Pendente</option>
         <option value="pago">Pago</option>
@@ -135,7 +135,7 @@
       <div class="panel" style="padding:1.25rem;margin-bottom:1rem">
         <div style="font-size:.85rem;font-weight:800;margin-bottom:.75rem">Etapas do Registro</div>
         <div id="cfg-stages-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:.875rem" onclick="openStageModal()">+ Adicionar Etapa</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.875rem" data-acao="openStageModal">+ Adicionar Etapa</button>
       </div>
       <div class="panel" style="padding:1.25rem">
         <div style="font-size:.85rem;font-weight:800;margin-bottom:.5rem">Workflow de Registro</div>
@@ -156,15 +156,15 @@
         <div class="modal-sub" id="md-sub"></div>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">
-        <select id="md-stage-sel" style="padding:.3rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;font-weight:600" onchange="changeStage()"></select>
-        <button class="modal-close" onclick="closeModal('modal-det-bg')">&#x2715;</button>
+        <select id="md-stage-sel" style="padding:.3rem .6rem;border:1px solid var(--border);border-radius:7px;font-size:.77rem;font-weight:600" data-acao-change="changeStage"></select>
+        <button class="modal-close" data-acao="closeModal" data-id="modal-det-bg">&#x2715;</button>
       </div>
     </div>
     <div class="modal-tabs">
-      <div class="modal-tab active" data-mtab="dados" onclick="switchModalTab('dados',this)">Dados</div>
-      <div class="modal-tab" data-mtab="itbi" onclick="switchModalTab('itbi',this)">ITBI</div>
-      <div class="modal-tab" data-mtab="cartorio" onclick="switchModalTab('cartorio',this)">Cartório</div>
-      <div class="modal-tab" data-mtab="hist" onclick="switchModalTab('hist',this)">Histórico</div>
+      <div class="modal-tab active" data-mtab="dados" data-acao="switchModalTab" data-tab="dados">Dados</div>
+      <div class="modal-tab" data-mtab="itbi" data-acao="switchModalTab" data-tab="itbi">ITBI</div>
+      <div class="modal-tab" data-mtab="cartorio" data-acao="switchModalTab" data-tab="cartorio">Cartório</div>
+      <div class="modal-tab" data-mtab="hist" data-acao="switchModalTab" data-tab="hist">Histórico</div>
     </div>
     <div class="modal-body">
 
@@ -194,9 +194,9 @@
           <div class="form-group full">
             <label>Status do ITBI</label>
             <div class="itbi-radio-group" id="itbi-radio-group">
-              <button type="button" class="itbi-radio-btn" data-val="pendente" onclick="selectItbi(this)">Pendente</button>
-              <button type="button" class="itbi-radio-btn" data-val="pago" onclick="selectItbi(this)">Pago</button>
-              <button type="button" class="itbi-radio-btn" data-val="vencido" onclick="selectItbi(this)">Vencido</button>
+              <button type="button" class="itbi-radio-btn" data-val="pendente" data-acao="selectItbi">Pendente</button>
+              <button type="button" class="itbi-radio-btn" data-val="pago" data-acao="selectItbi">Pago</button>
+              <button type="button" class="itbi-radio-btn" data-val="vencido" data-acao="selectItbi">Vencido</button>
             </div>
           </div>
           <div class="form-group"><label>Data Pagamento</label><input id="md-itbi-pago-em" type="date"></div>
@@ -228,10 +228,10 @@
 
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
-      <button class="btn btn-danger btn-sm" onclick="archiveCase()">Arquivar</button>
+      <button class="btn btn-danger btn-sm" data-acao="archiveCase">Arquivar</button>
       <div style="display:flex;gap:.45rem">
-        <button class="btn btn-ghost" onclick="closeModal('modal-det-bg')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveCase()">Salvar</button>
+        <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-det-bg">Cancelar</button>
+        <button class="btn btn-primary" data-acao="saveCase">Salvar</button>
       </div>
     </div>
   </div>
@@ -242,7 +242,7 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div class="modal-title">Novo Processo de Registro</div>
-      <button class="modal-close" onclick="closeModal('modal-new-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-new-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -260,8 +260,8 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-new-bg')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createCase()">Criar Processo</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-new-bg">Cancelar</button>
+      <button class="btn btn-primary" data-acao="createCase">Criar Processo</button>
     </div>
   </div>
 </div>
@@ -271,7 +271,7 @@
   <div class="modal" style="max-width:480px">
     <div class="modal-hdr">
       <div class="modal-title">Nova Etapa</div>
-      <button class="modal-close" onclick="closeModal('modal-stage-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-stage-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -283,8 +283,8 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-stage-bg')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveStage()">Salvar Etapa</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-stage-bg">Cancelar</button>
+      <button class="btn btn-primary" data-acao="saveStage">Salvar Etapa</button>
     </div>
   </div>
 </div>

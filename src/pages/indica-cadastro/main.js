@@ -1,10 +1,17 @@
 import { A1_KEY, A1_URL } from '../../shared/api/config.js';
 import '../../modules/indica/indica-config.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({ copiar, outra });
 exporVariavel('$', () => $);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  copiar: () => copiar(),
+  outra: () => outra()
+});
 // Passo 2 do cadastro. O envio passa por a1_indica_enviar, que roda com
 // privilégio próprio no banco — a página não escreve em tabela nenhuma.
 const $ = id => document.getElementById(id);

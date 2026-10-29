@@ -1,57 +1,81 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import { a1HasModule, a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
 import { a1AtorHistorico, a1MontarShell, a1ShellVista, a1Svg } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
-  addInteraction,
-  addStage,
   alternarMaisLead,
-  archiveLead,
-  cadDel,
-  cadEdit,
-  cadSave,
-  cadToggle,
-  changeLeadStage,
-  clearTask,
   closeCfgView,
   closeModal,
   createLead,
-  criarPreAnaliseDoLead,
-  dDrop,
-  dOver,
-  dStart,
-  dashPeriodo,
-  deleteStage,
-  exportarLeads,
-  fillPipeStages,
-  moveStage,
-  onPipeChange,
   openCfgView,
   openLead,
   openNewLead,
-  ordenarLista,
-  renderFunil,
-  renderLista,
-  renderStageList,
   saveLead,
-  saveLeadRouter,
-  saveProposta,
   saveTask,
   switchLeadTab,
   switchTab,
   toast,
-  updateStage,
-  val,
-  waLead,
-  waTo
+  val
 });
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  addInteraction: () => addInteraction(),
+  addStage: () => addStage(),
+  alternarMaisLead: () => alternarMaisLead(),
+  archiveLead: () => archiveLead(),
+  cadCancelar: () => {
+    document.getElementById('cad-editor').innerHTML = '';
+  },
+  cadDel: el => cadDel(el.dataset.id),
+  cadEdit: el => cadEdit(el.dataset.id ?? null),
+  cadSave: el => cadSave(el.dataset.id),
+  cadToggle: el => cadToggle(el.dataset.id),
+  changeLeadStage: () => changeLeadStage(),
+  clearTask: () => clearTask(),
+  closeCfgView: () => closeCfgView(),
+  closeModal: el => closeModal(el.dataset.id),
+  createLead: () => createLead(),
+  criarPreAnaliseDoLead: () => criarPreAnaliseDoLead(),
+  dashPeriodo: el => dashPeriodo(Number(el.dataset.d)),
+  dDrop: (el, ev) => dDrop(ev, el),
+  deleteStage: el => deleteStage(el.dataset.id),
+  dOver: (el, ev) => dOver(ev, el),
+  dStart: (el, ev) => dStart(ev, el),
+  exportarLeads: () => exportarLeads(),
+  fillPipeStages: () => fillPipeStages('n-pipe', 'n-stage'),
+  mostrarVista: el => switchTab(el.dataset.vista),
+  moveStage: el => moveStage(el.dataset.pk, Number(el.dataset.idx), Number(el.dataset.dir)),
+  onPipeChange: () => onPipeChange(),
+  openLead: el => openLead(el.dataset.id),
+  openNewLead: () => openNewLead(),
+  ordenarLista: el => ordenarLista(el.dataset.col),
+  renderFunil: () => renderFunil(),
+  renderLista: () => renderLista(),
+  renderStageList: () => renderStageList(),
+  saiuDaColuna: el => el.classList.remove('drag-over'),
+  saveLeadRouter: () => saveLeadRouter(),
+  saveProposta: () => saveProposta(),
+  saveTask: () => saveTask(),
+  soltouCartao: el => el.classList.remove('dragging'),
+  switchLeadTab: el => switchLeadTab(el.dataset.t, el),
+  updateStage: el =>
+    updateStage(el.dataset.id, el.dataset.field, el.type === 'checkbox' ? el.checked : el.value),
+  waLead: () => waLead(),
+  waTo: el => waTo(el.dataset.phone, el.dataset.id),
+  waToSemAbrir: (el, ev) => {
+    ev.stopPropagation();
+    waTo(el.dataset.phone, el.dataset.id);
+  }
+});
 const G = {
   user: null,
   slug: null,
@@ -147,11 +171,11 @@ async function init() {
       // o quadro ja mostra era uma terceira leitura do mesmo dado. As
       // configuracoes de Leads foram para Configuracoes, com o resto do
       // sistema — "tudo que for configuracao vai estar em um unico lugar".
-      { rot: 'Andamento', chave: 'funil', ativo: _v === 'funil', acao: "switchTab('funil')" },
-      { rot: 'Listagem', chave: 'lista', ativo: _v === 'lista', acao: "switchTab('lista')" },
-      { rot: 'Dashboard', chave: 'dash', ativo: _v === 'dash', acao: "switchTab('dash')" }
+      { rot: 'Andamento', chave: 'funil', ativo: _v === 'funil', acao: 'mostrarVista' },
+      { rot: 'Listagem', chave: 'lista', ativo: _v === 'lista', acao: 'mostrarVista' },
+      { rot: 'Dashboard', chave: 'dash', ativo: _v === 'dash', acao: 'mostrarVista' }
     ],
-    acoes: '<button class="sb-btn sb-btn-forte sb-btn-p" onclick="openNewLead()">+ Novo lead</button>'
+    acoes: '<button class="sb-btn sb-btn-forte sb-btn-p" data-acao="openNewLead">+ Novo lead</button>'
   });
   // A licenca da Pre-analise decide se o caminho lead -> pre-analise existe.
   // Sem ela, o botao prometeria uma tela que o RLS recusa.
@@ -400,7 +424,7 @@ function renderFunil() {
       return `<div class="k-col">
       <div class="k-col-header" style="background:${s.color}"><span>${esc(s.name)}</span><span class="k-col-count">${list.length}</span></div>
       <div class="k-col-fin"><span>Valor</span><b>${fmtBRL(val)}</b></div>
-      <div class="k-col-body" data-stage="${s.id}" ondragover="dOver(event)" ondrop="dDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
+      <div class="k-col-body" data-stage="${s.id}" data-acao-dragover="dOver" data-acao-drop="dDrop" data-acao-dragleave="saiuDaColuna">
         ${list.map(leadCard).join('')}
       </div></div>`;
     })
@@ -415,7 +439,7 @@ function leadCard(l) {
   const ts = taskState(l);
   const phone = (l.client_phone || '').replace(/\D/g, '');
   return `<div class="lead-card" draggable="true" data-id="${l.id}" style="border-left-color:${sm ? sm.color : '#6B827D'}"
-    ondragstart="dStart(event,this)" ondragend="this.classList.remove('dragging')" onclick="openLead('${l.id}')">
+    data-acao-dragstart="dStart" data-acao-dragend="soltouCartao" data-acao="openLead">
     <div class="lead-top"><div class="lead-name">${esc(l.client_name || 'Sem nome')}</div><span class="temp" style="background:${tp.c}" title="Score ${sc}/100">${tp.k} ${sc}</span></div>
     ${l.client_phone ? `<div class="lead-line">📞 ${esc(l.client_phone)}</div>` : ''}
     ${l.development ? `<div class="lead-line">🏠 ${esc(l.development)}</div>` : ''}
@@ -427,8 +451,8 @@ function leadCard(l) {
     </div>
     <div class="lead-foot"><span class="date">${fmtDate(l.created_at)}</span>
       <div style="display:flex;gap:.3rem">
-        ${phone ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${phone}','${l.id}')">${a1Svg('whatsapp', 15)}</button>` : ''}
-        <button class="mini-btn" onclick="event.stopPropagation();openLead('${l.id}')">Gerenciar</button>
+        ${phone ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" data-acao="waToSemAbrir" data-phone="${esc(phone)}" data-id="${esc(l.id)}">${a1Svg('whatsapp', 15)}</button>` : ''}
+        <button class="mini-btn">Gerenciar</button>
       </div>
     </div></div>`;
 }
@@ -440,9 +464,9 @@ function dStart(e, el) {
   el.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
-function dOver(e) {
+function dOver(e, col) {
   e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
+  col.classList.add('drag-over');
 }
 function dDrop(e, el) {
   e.preventDefault();
@@ -846,7 +870,7 @@ function renderLeadProp() {
       <div class="fg"><label>Status</label><select id="p-status"><option value="">—</option>${['Enviada', 'Em análise', 'Aceita', 'Recusada', 'Contraproposta'].map(o => `<option ${p.status === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
       <div class="fg full"><label>Observações da proposta</label><textarea id="p-obs" rows="2">${esc(p.obs || '')}</textarea></div>
     </div>
-    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="saveProposta()">Registrar proposta</button></div>
+    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" data-acao="saveProposta">Registrar proposta</button></div>
     ${p.at ? `<div style="font-size:.7rem;color:var(--t3);margin-top:.5rem">Última atualização: ${fmtDT(p.at)}</div>` : ''}`;
 }
 function renderLeadTask() {
@@ -856,7 +880,7 @@ function renderLeadTask() {
       <div class="fg full"><label>Próxima ação / follow-up</label><input id="t-desc" value="${esc(t.desc || '')}" placeholder="Ex: ligar para confirmar visita"></div>
       <div class="fg"><label>Data</label><input id="t-date" type="date" value="${esc(t.date || '')}"></div>
     </div>
-    <div style="margin-top:1rem;display:flex;gap:.5rem"><button class="btn btn-primary btn-sm" onclick="saveTask()">Salvar tarefa</button>${t.date ? `<button class="btn btn-ghost btn-sm" onclick="clearTask()">Concluir/Remover</button>` : ''}</div>`;
+    <div style="margin-top:1rem;display:flex;gap:.5rem"><button class="btn btn-primary btn-sm" data-acao="saveTask">Salvar tarefa</button>${t.date ? `<button class="btn btn-ghost btn-sm" data-acao="clearTask">Concluir/Remover</button>` : ''}</div>`;
 }
 async function renderLeadHist() {
   const body = document.getElementById('ml-body');
@@ -868,7 +892,7 @@ async function renderLeadHist() {
         .map(([k, v]) => `<option value="${k}">${v}</option>`)
         .join('')}</select></div>
       <div class="fg" style="flex:1;min-width:180px"><label>Descrição</label><input id="i-desc" placeholder="Ex: liguei, cliente pediu retorno sexta"></div>
-      <button class="btn btn-primary btn-sm" onclick="addInteraction()">Registrar</button>
+      <button class="btn btn-primary btn-sm" data-acao="addInteraction">Registrar</button>
     </div>
     <div class="sec-title">Histórico</div><div id="i-list"><div class="spinner" style="margin:1rem auto"></div></div>`;
   loadInteractions();
@@ -1175,7 +1199,7 @@ function renderTarefas() {
       <td><b>${esc(l.client_name || '')}</b>${l.client_phone ? `<div style="font-size:.7rem;color:var(--t3)">${esc(l.client_phone)}</div>` : ''}</td>
       <td>${esc(t.desc || '—')}</td>
       <td>${esc(l.broker_name || '—')}</td>
-      <td style="text-align:right;white-space:nowrap">${(l.client_phone || '').replace(/\\D/g, '') ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="waTo('${(l.client_phone || '').replace(/\\D/g, '')}','${l.id}')">${a1Svg('whatsapp', 15)}</button> ` : ''}<button class="mini-btn" onclick="openLead('${l.id}')">Abrir</button></td>
+      <td style="text-align:right;white-space:nowrap">${(l.client_phone || '').replace(/\\D/g, '') ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" data-acao="waTo" data-phone="${esc((l.client_phone || '').replace(/\\D/g, ''))}" data-id="${esc(l.id)}">${a1Svg('whatsapp', 15)}</button> ` : ''}<button class="mini-btn" data-acao="openLead" data-id="${esc(l.id)}">Abrir</button></td>
     </tr>`
     )
     .join('')}</tbody></table></div>`;
@@ -1293,7 +1317,7 @@ function renderLista() {
     <thead><tr>${cab
       .map(
         ([c, r]) =>
-          `<th style="cursor:pointer;white-space:nowrap" onclick="ordenarLista('${c}')">${esc(r)}${seta(c)}</th>`
+          `<th style="cursor:pointer;white-space:nowrap" data-acao="ordenarLista" data-col="${esc(c)}">${esc(r)}${seta(c)}</th>`
       )
       .join('')}
       <th style="width:1%"></th></tr></thead>
@@ -1304,7 +1328,7 @@ function renderLista() {
           tp = leadTemp(sc);
         const ts = taskState(l);
         const fone = (l.client_phone || '').replace(/\D/g, '');
-        return `<tr style="cursor:pointer" onclick="openLead('${escJs(l.id)}')">
+        return `<tr style="cursor:pointer" data-acao="openLead" data-id="${esc(l.id)}">
         <td><b>${esc(l.client_name || 'Sem nome')}</b>
           <div style="font-size:.69rem;color:var(--t3)">${
             [l.client_phone, l.client_email].filter(Boolean).map(esc).join(' · ') || '—'
@@ -1317,10 +1341,10 @@ function renderLista() {
         <td style="white-space:nowrap;color:var(--t3)">${fmtDate(l.created_at)}</td>
         <td style="white-space:nowrap;text-align:right">${
           fone
-            ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" onclick="event.stopPropagation();waTo('${escJs(fone)}','${escJs(l.id)}')">${a1Svg('whatsapp', 15)}</button> `
+            ? `<button class="wa" aria-label="Abrir conversa no WhatsApp" title="WhatsApp" data-acao="waToSemAbrir" data-phone="${esc(fone)}" data-id="${esc(l.id)}">${a1Svg('whatsapp', 15)}</button> `
             : ''
         }
-          <button class="mini-btn" onclick="event.stopPropagation();openLead('${escJs(l.id)}')">Abrir</button></td>
+          <button class="mini-btn">Abrir</button></td>
       </tr>`;
       })
       .join('')}</tbody></table>`;
@@ -1532,7 +1556,7 @@ function renderDash() {
         .map(
           ([d, r]) =>
             `<button class="sb-btn sb-btn-p${DASH.dias === d ? ' sb-btn-forte' : ''}"
-           onclick="dashPeriodo(${d})">${r}</button>`
+           data-acao="dashPeriodo" data-d="${esc(d)}">${r}</button>`
         )
         .join('')}
       <span style="margin-left:auto;font-size:.7rem;color:var(--t3)">${safra.length} lead(s) na safra · ${abertos.length} em aberto agora</span>
@@ -2162,16 +2186,16 @@ function openCfgView(view) {
   const el = document.getElementById('cfg-view');
   el.style.display = '';
   const hdr = t =>
-    `<div class="cfg-view-hdr"><button class="cfg-back-btn" onclick="closeCfgView()">← Configurações</button><div class="cfg-view-title">${t}</div></div>`;
+    `<div class="cfg-view-hdr"><button class="cfg-back-btn" data-acao="closeCfgView">← Configurações</button><div class="cfg-view-title">${t}</div></div>`;
   if (view === 'funil') {
     el.innerHTML =
       hdr('Funis / Pipelines') +
       `
-      <div class="pt-toolbar"><label style="font-size:.72rem;font-weight:700;color:var(--t3)">Pipeline</label><select id="cfg-pipe" onchange="renderStageList()">${pipeKeys()
+      <div class="pt-toolbar"><label style="font-size:.72rem;font-weight:700;color:var(--t3)">Pipeline</label><select id="cfg-pipe" data-acao-change="renderStageList">${pipeKeys()
         .map(k => `<option value="${k}" ${k === G.pipe ? 'selected' : ''}>${esc(pipeLabel(k))}</option>`)
         .join(
           ''
-        )}</select><div style="flex:1"></div><button class="btn btn-primary btn-sm" onclick="addStage()">+ Nova etapa</button></div>
+        )}</select><div style="flex:1"></div><button class="btn btn-primary btn-sm" data-acao="addStage">+ Nova etapa</button></div>
       <div id="cfg-stages"></div>
       <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem">Marque <b>Inicial</b> onde os leads entram e <b>Final</b> nas etapas de fechamento (ganho/perdido).</div>`;
     renderStageList();
@@ -2186,7 +2210,7 @@ function openCfgView(view) {
   el.innerHTML =
     hdr(def.label) +
     `
-    <div class="pt-toolbar"><div style="flex:1;font-size:.78rem;color:var(--t3)">${def.desc}</div><button class="btn btn-primary btn-sm" onclick="cadEdit(null)">+ Novo</button></div>
+    <div class="pt-toolbar"><div style="flex:1;font-size:.78rem;color:var(--t3)">${def.desc}</div><button class="btn btn-primary btn-sm" data-acao="cadEdit">+ Novo</button></div>
     <div id="cad-editor"></div>
     <div class="panel" style="overflow:hidden;margin-top:.6rem"><table class="pt-table"><thead><tr>${def.fields
       .slice(0, 3)
@@ -2223,7 +2247,7 @@ function renderCadList() {
       )
       .join('')}
     <td><span class="pt-badge ${on ? 'pt-on' : 'pt-off'}">${on ? 'Ativo' : 'Inativo'}</span></td>
-    <td style="text-align:right;white-space:nowrap"><button class="mini-btn" onclick="cadEdit('${it.id}')">Editar</button> <button class="mini-btn" onclick="cadToggle('${it.id}')">${on ? 'Desativar' : 'Ativar'}</button> <button class="mini-btn" style="color:var(--red)" onclick="cadDel('${it.id}')">Excluir</button></td></tr>`;
+    <td style="text-align:right;white-space:nowrap"><button class="mini-btn" data-acao="cadEdit" data-id="${esc(it.id)}">Editar</button> <button class="mini-btn" data-acao="cadToggle" data-id="${esc(it.id)}">${on ? 'Desativar' : 'Ativar'}</button> <button class="mini-btn" style="color:var(--red)" data-acao="cadDel" data-id="${esc(it.id)}">Excluir</button></td></tr>`;
     })
     .join('');
 }
@@ -2253,7 +2277,7 @@ async function cadEdit(id) {
       })
       .join(
         ''
-      )}</div><div style="margin-top:.75rem;display:flex;gap:.45rem"><button class="btn btn-primary btn-sm" onclick="cadSave('${id || ''}')">Salvar</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('cad-editor').innerHTML=''">Cancelar</button></div></div>`;
+      )}</div><div style="margin-top:.75rem;display:flex;gap:.45rem"><button class="btn btn-primary btn-sm" data-acao="cadSave" data-id="${esc(id || '')}">Salvar</button><button class="btn btn-ghost btn-sm" data-acao="cadCancelar">Cancelar</button></div></div>`;
 }
 async function cadSave(id) {
   const def = cadDef(G.cadCur);
@@ -2309,13 +2333,13 @@ function renderStageList() {
     .map(
       (s, i) => `
     <div style="display:flex;align-items:center;gap:.55rem;background:var(--card);border:1px solid var(--border);border-left:4px solid ${s.color || '#64748b'};border-radius:10px;padding:.55rem .7rem;margin-bottom:.5rem">
-      <input type="color" value="${s.color || '#64748b'}" onchange="updateStage('${s.id}','color',this.value)" style="width:32px;height:32px;border:none;background:none;cursor:pointer;flex-shrink:0">
-      <input value="${esc(s.name)}" onblur="updateStage('${s.id}','name',this.value)" style="flex:1;min-width:120px;padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;font-weight:600">
-      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_initial ? 'checked' : ''} onchange="updateStage('${s.id}','is_initial',this.checked)">Inicial</label>
-      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_final ? 'checked' : ''} onchange="updateStage('${s.id}','is_final',this.checked)">Final</label>
-      <button class="mini-btn" onclick="moveStage('${pk}',${i},-1)" ${i === 0 ? 'disabled' : ''}>↑</button>
-      <button class="mini-btn" onclick="moveStage('${pk}',${i},1)" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
-      <button class="mini-btn" style="color:var(--red)" onclick="deleteStage('${s.id}')">✕</button>
+      <input type="color" value="${s.color || '#64748b'}" data-acao-change="updateStage" data-id="${esc(s.id)}" data-field="color" style="width:32px;height:32px;border:none;background:none;cursor:pointer;flex-shrink:0">
+      <input value="${esc(s.name)}" data-acao-blur="updateStage" data-id="${esc(s.id)}" data-field="name" style="flex:1;min-width:120px;padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.84rem;font-weight:600">
+      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_initial ? 'checked' : ''} data-acao-change="updateStage" data-id="${esc(s.id)}" data-field="is_initial">Inicial</label>
+      <label style="font-size:.7rem;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:.25rem"><input type="checkbox" ${s.is_final ? 'checked' : ''} data-acao-change="updateStage" data-id="${esc(s.id)}" data-field="is_final">Final</label>
+      <button class="mini-btn" data-acao="moveStage" data-pk="${esc(pk)}" data-idx="${esc(i)}" data-dir="-1" ${i === 0 ? 'disabled' : ''}>↑</button>
+      <button class="mini-btn" data-acao="moveStage" data-pk="${esc(pk)}" data-idx="${esc(i)}" data-dir="1" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
+      <button class="mini-btn" style="color:var(--red)" data-acao="deleteStage" data-id="${esc(s.id)}">✕</button>
     </div>`
     )
     .join('');

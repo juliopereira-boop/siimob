@@ -30,16 +30,16 @@
        pelo menu do cabeçalho espera reencontrar o mesmo recorte, não a base
        inteira de novo. -->
   <div class="toolbar" id="filtros">
-    <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." oninput="renderVistas()" style="min-width:220px">
-    <select id="f-situacao" onchange="renderVistas()"><option value="">Todas as situações</option></select>
-    <select id="f-corretor" onchange="renderVistas()"><option value="">Todos os corretores</option></select>
-    <input type="date" id="f-inicio" aria-label="Criado a partir de" onchange="renderVistas()">
-    <input type="date" id="f-fim" aria-label="Criado até" onchange="renderVistas()">
+    <input type="search" id="f-busca" placeholder="Cliente, unidade, código..." data-acao-input="renderVistas" style="min-width:220px">
+    <select id="f-situacao" data-acao-change="renderVistas"><option value="">Todas as situações</option></select>
+    <select id="f-corretor" data-acao-change="renderVistas"><option value="">Todos os corretores</option></select>
+    <input type="date" id="f-inicio" aria-label="Criado a partir de" data-acao-change="renderVistas">
+    <input type="date" id="f-fim" aria-label="Criado até" data-acao-change="renderVistas">
     <div class="seg" role="group" aria-label="Filtro de prazo">
-      <button id="sla-todos" class="on" onclick="filtrarSla('')">Todos</button>
-      <button id="sla-ok" onclick="filtrarSla('ok')">No prazo</button>
-      <button id="sla-at" onclick="filtrarSla('at')">Atenção</button>
-      <button id="sla-ex" onclick="filtrarSla('ex')">Estourado</button>
+      <button id="sla-todos" class="on" data-acao="filtrarSla" data-n="">Todos</button>
+      <button id="sla-ok" data-acao="filtrarSla" data-n="ok">No prazo</button>
+      <button id="sla-at" data-acao="filtrarSla" data-n="at">Atenção</button>
+      <button id="sla-ex" data-acao="filtrarSla" data-n="ex">Estourado</button>
     </div>
     <div style="flex:1"></div>
     <span id="fila-contagem" style="font-size:.72rem;color:var(--t3)"></span>
@@ -65,7 +65,7 @@
     <div class="modal-hdr">
       <div><div class="modal-title">Nova venda</div>
            <div class="modal-sub">Sem pré-análise por trás — o crédito e as condições entram depois, no dossiê.</div></div>
-      <button class="modal-close" onclick="fecharModal('modal-venda-avulsa')" aria-label="Fechar">×</button>
+      <button class="modal-close" data-acao="fecharModal" data-id="modal-venda-avulsa" aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
       <div class="fg"><label>Empreendimento</label>
@@ -76,8 +76,8 @@
         <input id="va-valor" inputmode="decimal" placeholder="opcional"></div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="fecharModal('modal-venda-avulsa')">Cancelar</button>
-      <button class="btn btn-primary" id="va-salvar" onclick="criarVendaAvulsa()">Criar venda</button>
+      <button class="btn btn-ghost" data-acao="fecharModal" data-id="modal-venda-avulsa">Cancelar</button>
+      <button class="btn btn-primary" id="va-salvar" data-acao="criarVendaAvulsa">Criar venda</button>
     </div>
   </div>
 </div>
@@ -88,17 +88,17 @@
       <div><div class="modal-title" id="dos-titulo"></div><div class="modal-sub" id="dos-sub"></div></div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <span id="dos-situacao"></span>
-        <button class="modal-close" onclick="fecharModal('modal-dossie')" aria-label="Fechar">×</button>
+        <button class="modal-close" data-acao="fecharModal" data-id="modal-dossie" aria-label="Fechar">×</button>
       </div>
     </div>
     <div class="modal-tabs" id="dos-tabs">
-      <button class="modal-tab active" data-dt="proposta" onclick="trocarAbaDossie('proposta',this)">Proposta</button>
-      <button class="modal-tab" data-dt="origem"    onclick="trocarAbaDossie('origem',this)">Origem</button>
-      <button class="modal-tab" data-dt="contrato"  onclick="trocarAbaDossie('contrato',this)">Contrato</button>
-      <button class="modal-tab" data-dt="documentos" onclick="trocarAbaDossie('documentos',this)">Documentos</button>
-      <button class="modal-tab" data-dt="checklist" onclick="trocarAbaDossie('checklist',this)">Checklist</button>
-      <button class="modal-tab" data-dt="historico" onclick="trocarAbaDossie('historico',this)">Histórico</button>
-      <button class="modal-tab" data-dt="repasse"   onclick="trocarAbaDossie('repasse',this)">Repasse</button>
+      <button class="modal-tab active" data-dt="proposta" data-acao="trocarAbaDossie" data-aba="proposta">Proposta</button>
+      <button class="modal-tab" data-dt="origem"    data-acao="trocarAbaDossie" data-aba="origem">Origem</button>
+      <button class="modal-tab" data-dt="contrato"  data-acao="trocarAbaDossie" data-aba="contrato">Contrato</button>
+      <button class="modal-tab" data-dt="documentos" data-acao="trocarAbaDossie" data-aba="documentos">Documentos</button>
+      <button class="modal-tab" data-dt="checklist" data-acao="trocarAbaDossie" data-aba="checklist">Checklist</button>
+      <button class="modal-tab" data-dt="historico" data-acao="trocarAbaDossie" data-aba="historico">Histórico</button>
+      <button class="modal-tab" data-dt="repasse"   data-acao="trocarAbaDossie" data-aba="repasse">Repasse</button>
     </div>
     <div class="modal-body" id="dos-body"></div>
     <div class="modal-foot">

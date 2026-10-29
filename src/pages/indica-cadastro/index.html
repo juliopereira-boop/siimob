@@ -156,11 +156,11 @@
           Guarde o link abaixo: é por ele que você acompanha o andamento e o quanto tem a receber.
         </p>
         <div class="link-box">
-          <input type="text" id="ok-link" readonly onclick="this.select()" aria-label="Link do seu painel">
-          <button class="btn btn-1" id="btn-copiar" onclick="copiar()">Copiar</button>
+          <input type="text" id="ok-link" readonly data-acao="selecionarTexto" aria-label="Link do seu painel">
+          <button class="btn btn-1" id="btn-copiar" data-acao="copiar">Copiar</button>
         </div>
         <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-2" onclick="outra()">Indicar outra empresa</button>
+          <button class="btn btn-2" data-acao="outra">Indicar outra empresa</button>
           <a class="btn btn-2" id="ir-painel" href="#">Ver meu painel</a>
         </div>
       </div>

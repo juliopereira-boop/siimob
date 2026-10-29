@@ -1,5 +1,5 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import {
   a1ClearModuleCache,
   a1HasModule,
@@ -20,127 +20,184 @@ import { a1GeralCarregar, a1GeralNormalizar } from '../../modules/configuracoes/
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
-  addFlag,
-  addRegional,
-  analistaFilter,
-  atualizarAcoesChecklist,
-  ceFilter,
   cfgModsCartao,
   cfgModsVista,
-  cicloAbrir,
   cicloAlternarAnalista,
-  cicloAtivar,
-  cicloEmpresaMudou,
-  cicloFiltrarAnalistas,
-  cicloNova,
-  cicloRemover,
-  cicloSalvar,
-  cicloSelecionarVisiveis,
   closeCfgView,
-  closeEmprForm,
   closeModal,
-  coEtapasTodas,
   copiarId,
-  copiarPrecadLink,
-  copiarPrecadUrl,
-  deleteAnalista,
-  deleteChecklistItem,
-  deleteCoordenador,
-  deleteCorretor,
-  deleteDocType,
-  deleteEmpreendimento,
-  deleteEmpresa,
-  deleteGestor,
-  deleteImob,
-  deletePartner,
-  deleteSimples,
-  editBanco,
-  editCartorio,
-  editDespachante,
   editEmpreendimento,
-  emprEstadoMudou,
-  emprPreview,
-  excDefCancelar,
   excDefEscolher,
-  excDefExecutar,
-  excDefPedirConfirmacao,
-  excDefProcurar,
-  excDefValidar,
-  filtrarBancos,
-  filtrarCartorios,
-  filtrarDespachantes,
   filtrarHub,
-  geralSalvar,
-  gerarPrecadLink,
-  imobFilter,
   loadEmpresas,
   openAnalista,
-  openBancoModal,
-  openCartorioModal,
   openCfgView,
   openCoordenador,
   openCorretor,
-  openDespModal,
-  openEmprModal,
-  openEmpresaModal,
-  openFeedbackModal,
-  openGestor,
-  openImob,
   openPartnerModal,
   openPrecadLink,
   openSimples,
   perfilAbrir,
-  perfilApagar,
   perfilAplicado,
-  perfilSalvar,
-  perfisSemear,
-  ptFilter,
-  ptGo,
-  recusarPrecad,
-  removeFlag,
-  removeRegional,
-  renderAnalistaList,
-  renderCorretores,
-  renderImobList,
-  revogarPrecadLink,
-  saveAnalista,
-  saveBanco,
-  saveCartorio,
-  saveChecklistItem,
-  saveCommission,
   saveCoordenador,
   saveCorretor,
-  saveDespachante,
-  saveDocType,
-  saveEmpreendimento,
-  saveEmpresa,
-  saveFeedback,
-  saveGestor,
-  saveImob,
   savePartner,
-  saveSimples,
-  setEmprTipo,
   setEtapaNivel,
-  switchCorrTab,
   switchDocTypeModule,
   toast,
-  toggleAnalistaChecklist,
-  toggleChecklistAtivo,
-  toggleChecklistObrigatorio,
-  toggleCommissionFields,
-  toggleDocType,
   toggleDocTypeObrigatorio,
-  toggleEmprSemUnidades,
   usarDocTypesPadrao,
-  v,
-  validarPrecad
+  v
 });
 exporVariavel('CFG_VIEWS', () => CFG_VIEWS);
-exporVariavel('CICLO_PA', () => CICLO_PA);
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  abrirValidacaoCorretores: (el, ev) => {
+    ev.preventDefault();
+    openCfgView('precad');
+  },
+  addFlag: () => addFlag(),
+  addRegional: () => addRegional(),
+  analistaFilter: () => analistaFilter(),
+  atualizarAcoesChecklist: () => atualizarAcoesChecklist(),
+  ceFilter: () => ceFilter(),
+  cicloAbrir: el => cicloAbrir(el.dataset.id),
+  cicloAlternarAnalista: el => cicloAlternarAnalista(el.dataset.id, el.checked),
+  cicloAtivar: () => cicloAtivar(),
+  cicloCampo: el => {
+    CICLO_PA.rascunho[el.dataset.campo] = el.value;
+  },
+  cicloEmpresaMudou: el => cicloEmpresaMudou(el.value),
+  cicloFiltrarAnalistas: el => cicloFiltrarAnalistas(el.value),
+  cicloNova: () => cicloNova(),
+  cicloRemover: el => cicloRemover(el.dataset.id),
+  cicloSalvar: () => cicloSalvar(),
+  cicloSelecionarVisiveis: el => cicloSelecionarVisiveis(el.dataset.marcar === 'true'),
+  closeCfgView: () => closeCfgView(),
+  closeEmprForm: () => closeEmprForm(),
+  closeModal: el => closeModal(el.dataset.id),
+  coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
+  copiarId: el => copiarId(el.dataset.id),
+  copiarPrecadLink: () => copiarPrecadLink(),
+  copiarPrecadUrl: el => copiarPrecadUrl(el.dataset.token),
+  deleteAnalista: el => deleteAnalista(el.dataset.id, el.dataset.name),
+  deleteChecklistItem: el => deleteChecklistItem(el.dataset.id),
+  deleteCoordenador: el => deleteCoordenador(el.dataset.id),
+  deleteCorretor: el => deleteCorretor(el.dataset.id),
+  deleteDocType: el => deleteDocType(el.dataset.id),
+  deleteEmpreendimento: el => deleteEmpreendimento(el.dataset.id, el.dataset.name),
+  deleteEmpresa: el => deleteEmpresa(el.dataset.id, el.dataset.name),
+  deleteGestor: el => deleteGestor(el.dataset.id),
+  deleteImob: el => deleteImob(el.dataset.id, el.dataset.name),
+  deletePartner: el => deletePartner(el.dataset.id, el.dataset.name),
+  deleteSimples: el => deleteSimples(el.dataset.tipo, el.dataset.id),
+  editBanco: el => editBanco(el.dataset.id),
+  editCartorio: el => editCartorio(el.dataset.id),
+  editDespachante: el => editDespachante(el.dataset.id),
+  editEmpreendimento: el => editEmpreendimento(el.dataset.id),
+  emprEstadoMudou: () => emprEstadoMudou(),
+  emprPreview: () => emprPreview(),
+  excDefCancelar: () => excDefCancelar(),
+  excDefEscolher: el => excDefEscolher(Number(el.dataset.i)),
+  excDefExecutar: el => excDefExecutar(Number(el.dataset.i)),
+  excDefPedirConfirmacao: () => excDefPedirConfirmacao(),
+  excDefProcurar: () => excDefProcurar(),
+  excDefValidar: () => excDefValidar(),
+  fecharPeloFundo: (el, ev) => {
+    if (ev.target === el) closeModal(el.id);
+  },
+  filtrarBancos: () => filtrarBancos(),
+  filtrarCartorios: () => filtrarCartorios(),
+  filtrarDespachantes: () => filtrarDespachantes(),
+  filtrarHub: el => filtrarHub(el.value),
+  geralSalvar: () => geralSalvar(),
+  gerarPrecadLink: () => gerarPrecadLink(),
+  imobFilter: () => imobFilter(),
+  irParaImportar: () => {
+    location.href = '/' + G.slug + '/importar';
+  },
+  irParaPaginaAnalista: el => {
+    G.analistaPage = Number(el.dataset.pagina);
+    renderAnalistaList();
+  },
+  irParaPaginaImob: el => {
+    G.imobPage = Number(el.dataset.pagina);
+    renderImobList();
+  },
+  marcarOpcao: el => {
+    const caixa = el.closest('label');
+    caixa.style.borderColor = el.checked ? caixa.dataset.cor : 'var(--border)';
+    caixa.style.background = el.checked ? el.dataset.fundo : '#F4F6F4';
+  },
+  openAnalista: el => openAnalista(el.dataset.analista ? JSON.parse(el.dataset.analista) : null),
+  openBancoModal: () => openBancoModal(),
+  openCartorioModal: () => openCartorioModal(),
+  openCfgView: el => openCfgView(el.dataset.view),
+  openCoordenador: el => openCoordenador(el.dataset.id ?? null),
+  openCorretor: el => openCorretor(el.dataset.id ?? null),
+  openDespModal: () => openDespModal(),
+  openEmpresaModal: el => openEmpresaModal(el.dataset.id),
+  openEmprModal: () => openEmprModal(),
+  openFeedbackModal: () => openFeedbackModal(),
+  openGestor: el => openGestor(el.dataset.id ?? null),
+  openImob: el => openImob(el.dataset.imob ? JSON.parse(el.dataset.imob) : null),
+  openPartnerModal: el => openPartnerModal(el.dataset.id),
+  openPrecadLink: () => openPrecadLink(),
+  openSimples: el => openSimples(el.dataset.tipo, el.dataset.id ?? null),
+  perfilAbrir: el => perfilAbrir(el.dataset.id ?? null),
+  perfilApagar: el => perfilApagar(el.dataset.id),
+  perfilAplicado: el => perfilAplicado(el.dataset.idsel, el.dataset.classe),
+  perfilSalvar: () => perfilSalvar(),
+  perfisSemear: () => perfisSemear(),
+  ptFilter: () => ptFilter(),
+  ptGo: el => ptGo(Number(el.dataset.n)),
+  realcarBorda: el => {
+    el.style.borderColor = el.dataset.cor;
+  },
+  recusarPrecad: el => recusarPrecad(el.dataset.id),
+  removeFlag: el => removeFlag(el.dataset.id),
+  removeRegional: el => removeRegional(Number(el.dataset.i)),
+  renderCorretores: () => renderCorretores(),
+  revogarPrecadLink: el => revogarPrecadLink(el.dataset.token),
+  saveAnalista: () => saveAnalista(),
+  saveBanco: () => saveBanco(),
+  saveCartorio: () => saveCartorio(),
+  saveChecklistItem: () => saveChecklistItem(),
+  saveCommission: () => saveCommission(),
+  saveCoordenador: () => saveCoordenador(),
+  saveCorretor: () => saveCorretor(),
+  saveDespachante: () => saveDespachante(),
+  saveDocType: () => saveDocType(),
+  saveEmpreendimento: () => saveEmpreendimento(),
+  saveEmpresa: () => saveEmpresa(),
+  saveFeedback: () => saveFeedback(),
+  saveGestor: () => saveGestor(),
+  saveImob: () => saveImob(),
+  savePartner: () => savePartner(),
+  saveSimples: () => saveSimples(),
+  setEmprTipo: el => setEmprTipo(el.dataset.tipo),
+  setEtapaNivel: el => setEtapaNivel(el.dataset.stageId, el.dataset.alvo),
+  soltarBordaDaOpcao: el => {
+    el.style.borderColor = el.querySelector('input').checked ? el.dataset.cor : 'var(--border)';
+  },
+  switchCorrTab: el => switchCorrTab(el.dataset.tab),
+  switchDocTypeModule: el => switchDocTypeModule(el.dataset.mod, el),
+  toggleAnalistaChecklist: el => toggleAnalistaChecklist(el.checked),
+  toggleChecklistAtivo: el => toggleChecklistAtivo(el.dataset.id),
+  toggleChecklistObrigatorio: el => toggleChecklistObrigatorio(el.dataset.id),
+  toggleCommissionFields: () => toggleCommissionFields(),
+  toggleDocType: el => toggleDocType(el.dataset.id),
+  toggleDocTypeObrigatorio: el => toggleDocTypeObrigatorio(el.dataset.id),
+  toggleEmprSemUnidades: () => toggleEmprSemUnidades(),
+  usarDocTypesPadrao: () => usarDocTypesPadrao(),
+  validarPrecad: el => validarPrecad(el.dataset.id)
+});
 const G = {
   user: null,
   slug: null,
@@ -663,10 +720,10 @@ function renderChecklistItems() {
     .map(
       i => `<tr>
     <td>${esc(i.nome)}</td><td>${esc(nomeModuloChecklist(i.module_key))}<div style="font-size:.66rem;color:var(--t3);margin-top:.15rem">${esc(i.acao_automatica || 'MANUAL').replaceAll('_', ' ')}</div></td>
-    <td><label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem"><input type="checkbox" ${i.obrigatorio ? 'checked' : ''} onchange="toggleChecklistObrigatorio('${i.id}')">${i.obrigatorio ? 'Sim' : 'Não'}</label></td>
+    <td><label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem"><input type="checkbox" ${i.obrigatorio ? 'checked' : ''} data-acao-change="toggleChecklistObrigatorio" data-id="${esc(i.id)}">${i.obrigatorio ? 'Sim' : 'Não'}</label></td>
     <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${i.ativo === false ? '#fee2e2' : '#dcfce7'};color:${i.ativo === false ? '#b91c1c' : '#166534'}">${i.ativo === false ? 'Inativo' : 'Ativo'}</span></td>
-    <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="toggleChecklistAtivo('${i.id}')">${i.ativo === false ? 'Ativar' : 'Desativar'}</button>
-    <button class="btn btn-danger btn-sm" onclick="deleteChecklistItem('${i.id}')">Excluir</button></td>
+    <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-acao="toggleChecklistAtivo" data-id="${esc(i.id)}">${i.ativo === false ? 'Ativar' : 'Desativar'}</button>
+    <button class="btn btn-danger btn-sm" data-acao="deleteChecklistItem" data-id="${esc(i.id)}">Excluir</button></td>
   </tr>`
     )
     .join('');
@@ -859,12 +916,12 @@ function renderDocTypesList() {
       return `<tr>
       <td>${esc(t.name)}</td>
       <td><label style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;cursor:pointer" title="Sem este documento anexado o processo não avança de etapa.">
-        <input type="checkbox" ${obr ? 'checked' : ''} onchange="toggleDocTypeObrigatorio('${t.id}')" style="width:15px;height:15px;accent-color:#0E8C7F;cursor:pointer">
+        <input type="checkbox" ${obr ? 'checked' : ''} data-acao-change="toggleDocTypeObrigatorio" data-id="${esc(t.id)}" style="width:15px;height:15px;accent-color:#0E8C7F;cursor:pointer">
         ${obr ? 'Sim' : 'Não'}</label></td>
       <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${on ? '#dcfce7' : '#fee2e2'};color:${on ? '#166534' : '#b91c1c'}">${on ? 'Ativo' : 'Inativo'}</span></td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="toggleDocType('${t.id}')">${on ? 'Desativar' : 'Ativar'}</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteDocType('${t.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="toggleDocType" data-id="${esc(t.id)}">${on ? 'Desativar' : 'Ativar'}</button>
+        <button class="btn btn-danger btn-sm" data-acao="deleteDocType" data-id="${esc(t.id)}">Excluir</button>
       </td></tr>`;
     })
     .join('');
@@ -1027,9 +1084,9 @@ function renderRegionaisList() {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.4rem">
       <span style="font-size:.82rem;font-weight:600;color:var(--t1)">${esc(r)}</span>
       <div style="display:flex;align-items:center;gap:.5rem">
-        <code onclick="copiarId('${escJs(r)}')" title="Regional é identificada pelo nome. Clique para copiar."
+        <code data-acao="copiarId" data-id="${esc(r)}" title="Regional é identificada pelo nome. Clique para copiar."
           style="cursor:pointer;font-size:.68rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.1rem .35rem;color:var(--t3)">pelo nome</code>
-        <button class="btn-icon" title="Remover" onclick="removeRegional(${i})">🗑️</button>
+        <button class="btn-icon" title="Remover" data-acao="removeRegional" data-i="${esc(i)}">🗑️</button>
       </div>
     </div>`
     )
@@ -1184,7 +1241,7 @@ function renderFlags() {
     ? G.flags
         .map(
           f =>
-            `<div class="tag-item" title="ID: ${esc(f.id)}"><span style="width:8px;height:8px;border-radius:50%;background:${f.color || '#0E8C7F'};display:inline-block"></span>${esc(f.name)} ${idChip(f.id)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`
+            `<div class="tag-item" title="ID: ${esc(f.id)}"><span style="width:8px;height:8px;border-radius:50%;background:${f.color || '#0E8C7F'};display:inline-block"></span>${esc(f.name)} ${idChip(f.id)}<span class="tag-rm" data-acao="removeFlag" data-id="${esc(f.id)}">x</span></div>`
         )
         .join('')
     : '<span style="color:var(--t3);font-size:.77rem">Nenhuma flag cadastrada.</span>';
@@ -1293,8 +1350,8 @@ function renderPartnerTable() {
       <td>${esc(p.region || '—')}</td>
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
-        <button class="pt-act" onclick="openPartnerModal('${p.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deletePartner('${p.id}','${escJs(p.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="openPartnerModal" data-id="${esc(p.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deletePartner" data-id="${esc(p.id)}" data-name="${esc(p.name)}">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -1309,15 +1366,15 @@ function renderPtPagination(total) {
     el.innerHTML = '';
     return;
   }
-  let html = `<button class="pt-pg-btn" ${G.ptPage === 0 ? 'disabled' : ''} onclick="ptGo(${G.ptPage - 1})">Anterior</button>`;
+  let html = `<button class="pt-pg-btn" ${G.ptPage === 0 ? 'disabled' : ''} data-acao="ptGo" data-n="${esc(G.ptPage - 1)}">Anterior</button>`;
   for (let i = 0; i < pages; i++) {
     if (pages > 7 && Math.abs(i - G.ptPage) > 2 && i !== 0 && i !== pages - 1) {
       if (i === 1 || i === pages - 2) html += `<span style="padding:.2rem .3rem;color:var(--t3)">…</span>`;
       continue;
     }
-    html += `<button class="pt-pg-btn ${i === G.ptPage ? 'active' : ''}" onclick="ptGo(${i})">${i + 1}</button>`;
+    html += `<button class="pt-pg-btn ${i === G.ptPage ? 'active' : ''}" data-acao="ptGo" data-n="${esc(i)}">${i + 1}</button>`;
   }
-  html += `<button class="pt-pg-btn" ${G.ptPage === pages - 1 ? 'disabled' : ''} onclick="ptGo(${G.ptPage + 1})">Proximo</button>`;
+  html += `<button class="pt-pg-btn" ${G.ptPage === pages - 1 ? 'disabled' : ''} data-acao="ptGo" data-n="${esc(G.ptPage + 1)}">Proximo</button>`;
   el.innerHTML = html;
 }
 
@@ -1600,7 +1657,7 @@ function nomeImobiliaria(id) {
 // Mostra um trecho e copia o valor inteiro no clique.
 function idChip(id) {
   if (!id) return '<span style="color:var(--t3)">—</span>';
-  return `<code onclick="copiarId('${id}')" title="Clique para copiar: ${id}"
+  return `<code data-acao="copiarId" data-id="${esc(id)}" title="Clique para copiar: ${id}"
     style="cursor:pointer;font-size:.7rem;background:var(--bg);border:1px solid var(--border);
            border-radius:4px;padding:.1rem .35rem;color:var(--t2)">${esc(String(id).slice(0, 8))}…</code>`;
 }
@@ -1637,8 +1694,8 @@ function renderSimples(tipo) {
     <td style="font-weight:600">${esc(r.name)}</td>
     <td>${idChip(r.id)}</td>
     <td style="white-space:nowrap">
-      <button class="btn btn-ghost btn-sm" onclick="openSimples('${tipo}','${r.id}')">Editar</button>
-      <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteSimples('${tipo}','${r.id}')">Excluir</button>
+      <button class="btn btn-ghost btn-sm" data-acao="openSimples" data-tipo="${esc(tipo)}" data-id="${esc(r.id)}">Editar</button>
+      <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="deleteSimples" data-tipo="${esc(tipo)}" data-id="${esc(r.id)}">Excluir</button>
     </td></tr>`
     )
     .join('');
@@ -1769,8 +1826,8 @@ function renderCoordenadores() {
       }</td>
       <td>${idChip(c.id)}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openCoordenador('${c.id}')">Editar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteCoordenador('${c.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="openCoordenador" data-id="${esc(c.id)}">Editar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="deleteCoordenador" data-id="${esc(c.id)}">Excluir</button>
       </td></tr>`;
     })
     .join('');
@@ -1979,7 +2036,7 @@ async function loadCorretores() {
   if (aviso) {
     aviso.style.display = PRECAD_PEND.length ? '' : 'none';
     aviso.innerHTML = PRECAD_PEND.length
-      ? `${PRECAD_PEND.length} cadastro(s) aguardando validação. <a href="#" onclick="openCfgView('precad');return false" style="color:#9a3412;font-weight:700">Abrir Validação de corretores</a>`
+      ? `${PRECAD_PEND.length} cadastro(s) aguardando validação. <a href="#" data-acao="abrirValidacaoCorretores" style="color:#9a3412;font-weight:700">Abrir Validação de corretores</a>`
       : '';
   }
   renderCorretores();
@@ -2032,8 +2089,8 @@ function renderCorretores() {
       <td>${c.is_active !== false ? '<span style="color:#0E8C7F;font-weight:700;font-size:.75rem">Ativo</span>' : '<span style="color:var(--t3);font-size:.75rem">Inativo</span>'}</td>
       <td>${idChip(c.id)}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openCorretor('${c.id}')">Editar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteCorretor('${c.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="openCorretor" data-id="${esc(c.id)}">Editar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="deleteCorretor" data-id="${esc(c.id)}">Excluir</button>
       </td></tr>`;
     })
     .join('');
@@ -2152,7 +2209,7 @@ function pintarEtapasCorretor() {
     const cor = ativo ? '#0E8C7F' : 'var(--border)';
     const bg = ativo ? '#ecfdf5' : '#fff';
     const tx = ativo ? '#047857' : 'var(--t3)';
-    return `<button type="button" onclick="setEtapaNivel('${id}','${lvl}')"
+    return `<button type="button" data-acao="setEtapaNivel" data-stage-id="${esc(id)}" data-alvo="${esc(lvl)}"
       style="font-size:.7rem;font-weight:700;padding:.22rem .6rem;border-radius:6px;cursor:pointer;
              border:1.5px solid ${cor};background:${bg};color:${tx};min-width:56px">${label}</button>`;
   };
@@ -2440,8 +2497,8 @@ function renderPrecadPendentes() {
       <td style="color:var(--t2);font-size:.78rem">${esc(ex.imobiliaria_nome || '—')}</td>
       <td style="color:var(--t3);font-size:.75rem">${esc(dataHoraBR(ex.enviado_em || c.created_at))}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-primary btn-sm" onclick="validarPrecad('${c.id}')">Validar</button>
-        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="recusarPrecad('${c.id}')">Recusar</button>
+        <button class="btn btn-primary btn-sm" data-acao="validarPrecad" data-id="${esc(c.id)}">Validar</button>
+        <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="recusarPrecad" data-id="${esc(c.id)}">Recusar</button>
       </td></tr>`;
   }).join('');
 }
@@ -2535,8 +2592,8 @@ function renderPrecadLinks(ok) {
       <td style="color:var(--t2);font-size:.8rem">${l.usos || 0}</td>
       <td>${sit}</td>
       <td style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="copiarPrecadUrl('${l.token}')">Copiar link</button>
-        ${l.revoked ? '' : `<button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="revogarPrecadLink('${l.token}')">Desativar</button>`}
+        <button class="btn btn-ghost btn-sm" data-acao="copiarPrecadUrl" data-token="${esc(l.token)}">Copiar link</button>
+        ${l.revoked ? '' : `<button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="revogarPrecadLink" data-token="${esc(l.token)}">Desativar</button>`}
       </td></tr>`;
   }).join('');
 }
@@ -2690,7 +2747,7 @@ function renderGestores() {
   }
   tb.innerHTML = GESTORES.map(
     u =>
-      `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.cpf || '—')}</td><td>${esc(u.email || '—')}</td><td>${u.role === 'owner' ? 'Proprietário' : 'Gestor'}</td><td>${u.is_active !== false ? 'Ativo' : 'Inativo'}</td><td>${idChip(u.id)}</td><td><button class="btn btn-ghost btn-sm" onclick="openGestor('${u.id}')">Editar</button> ${u.id === G.user.id ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteGestor('${u.id}')">Excluir</button>`}</td></tr>`
+      `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.cpf || '—')}</td><td>${esc(u.email || '—')}</td><td>${u.role === 'owner' ? 'Proprietário' : 'Gestor'}</td><td>${u.is_active !== false ? 'Ativo' : 'Inativo'}</td><td>${idChip(u.id)}</td><td><button class="btn btn-ghost btn-sm" data-acao="openGestor" data-id="${esc(u.id)}">Editar</button> ${u.id === G.user.id ? '' : `<button class="btn btn-danger btn-sm" data-acao="deleteGestor" data-id="${esc(u.id)}">Excluir</button>`}</td></tr>`
   ).join('');
 }
 let EDIT_GESTOR_ID = null;
@@ -2921,8 +2978,8 @@ function renderEmpresaTable() {
       <td>${esc(e.regional || '—')}</td>
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
-        <button class="pt-act" onclick="openEmpresaModal('${e.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpresa('${e.id}','${escJs(e.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="openEmpresaModal" data-id="${esc(e.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deleteEmpresa" data-id="${esc(e.id)}" data-name="${esc(e.name)}">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -3086,8 +3143,8 @@ function renderEmprList() {
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count || 0} unidades</td>
       <td>${idChip(d.id)}</td>
       <td style="display:flex;gap:.35rem">
-        <button class="pt-act" onclick="editEmpreendimento('${d.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${escJs(d.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="editEmpreendimento" data-id="${esc(d.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deleteEmpreendimento" data-id="${esc(d.id)}" data-name="${esc(d.name)}">Excluir</button>
       </td>
     </tr>`
       )
@@ -3472,8 +3529,8 @@ function renderImobList() {
       <td><span class="status-dot ${i.is_active ? 'active' : 'inactive'}"></span>${i.is_active ? 'Ativa' : 'Inativa'}</td>
       <td>${idChip(i.id)}</td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openImob(${JSON.stringify(i).replace(/"/g, '&quot;')})">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${escJs(i.name)}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="openImob" data-imob="${esc(JSON.stringify(i))}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-acao="deleteImob" data-id="${esc(i.id)}" data-name="${esc(i.name)}">Excluir</button>
       </td>
     </tr>`
     )
@@ -3486,7 +3543,7 @@ function renderImobList() {
       : Array.from(
           { length: pages },
           (_, k) =>
-            `<button class="pg-btn${k === page ? ' active' : ''}" onclick="G.imobPage=${k};renderImobList()">${k + 1}</button>`
+            `<button class="pg-btn${k === page ? ' active' : ''}" data-acao="irParaPaginaImob" data-pagina="${k}">${k + 1}</button>`
         ).join('');
 }
 
@@ -3633,8 +3690,8 @@ function renderAnalistaList() {
     <td>${a.is_active !== false ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
     <td>${idChip(a.id)}</td>
     <td><div style="display:flex;gap:.3rem">
-      <button class="btn btn-ghost btn-sm" onclick="openAnalista(${JSON.stringify(a).replace(/"/g, '&quot;')})">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${escJs(a.name)}')">Excluir</button>
+      <button class="btn btn-ghost btn-sm" data-acao="openAnalista" data-analista="${esc(JSON.stringify(a))}">Editar</button>
+      <button class="btn btn-danger btn-sm" data-acao="deleteAnalista" data-id="${esc(a.id)}" data-name="${esc(a.name)}">Excluir</button>
     </div></td>
   </tr>`;
     })
@@ -3646,13 +3703,13 @@ function renderAnalistaList() {
     pgEl.innerHTML =
       pages <= 1
         ? ''
-        : `<button class="pt-pg-btn" ${G.analistaPage === 0 ? 'disabled' : ''} onclick="G.analistaPage--;renderAnalistaList()">Anterior</button>` +
+        : `<button class="pt-pg-btn" ${G.analistaPage === 0 ? 'disabled' : ''} data-acao="irParaPaginaAnalista" data-pagina="${G.analistaPage - 1}">Anterior</button>` +
           Array.from(
             { length: pages },
             (_, i) =>
-              `<button class="pt-pg-btn${G.analistaPage === i ? ' active' : ''}" onclick="G.analistaPage=${i};renderAnalistaList()">${i + 1}</button>`
+              `<button class="pt-pg-btn${G.analistaPage === i ? ' active' : ''}" data-acao="irParaPaginaAnalista" data-pagina="${i}">${i + 1}</button>`
           ).join('') +
-          `<button class="pt-pg-btn" ${G.analistaPage === pages - 1 ? 'disabled' : ''} onclick="G.analistaPage++;renderAnalistaList()">Próximo</button>`;
+          `<button class="pt-pg-btn" ${G.analistaPage === pages - 1 ? 'disabled' : ''} data-acao="irParaPaginaAnalista" data-pagina="${G.analistaPage + 1}">Próximo</button>`;
 }
 
 // O cartão que esta função pintava saiu da tela: analista não escolhe mais ver
@@ -3906,7 +3963,7 @@ function renderDespachantes() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(d.id)}
-          <button class="btn-icon" onclick="editDespachante('${escJs(d.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editDespachante" data-id="${esc(d.id)}">✏️</button>
         </div>
       </div>`
     )
@@ -3952,7 +4009,7 @@ function renderBancos() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(b.id)}
-          <button class="btn-icon" onclick="editBanco('${escJs(b.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editBanco" data-id="${esc(b.id)}">✏️</button>
         </div>
       </div>`
     )
@@ -4000,7 +4057,7 @@ function renderCartorios() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(c.id)}
-          <button class="btn-icon" onclick="editCartorio('${escJs(c.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editCartorio" data-id="${esc(c.id)}">✏️</button>
         </div>
       </div>`
     )
@@ -4193,7 +4250,7 @@ function cfgModsVista(nome, titulo, corpoHtml) {
   el.style.display = 'none';
   el.innerHTML = `
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">${esc(titulo)}</div>
     </div>${corpoHtml}`;
   host.appendChild(el);
@@ -4263,8 +4320,8 @@ function perfisRender() {
           ${marcadas.length ? esc(marcadas.join(' · ')) : '<em>nada — quem estiver neste perfil não faz nada</em>'}</td>
         <td class="mono" id="perfil-qtd-${esc(p.id)}">—</td>
         <td style="text-align:right;white-space:nowrap">
-          <button class="btn btn-ghost btn-xs" onclick="perfilAbrir('${escJs(p.id)}')">Editar</button>
-          <button class="btn btn-danger btn-xs" onclick="perfilApagar('${escJs(p.id)}')">Excluir</button>
+          <button class="btn btn-ghost btn-xs" data-acao="perfilAbrir" data-id="${esc(p.id)}">Editar</button>
+          <button class="btn btn-danger btn-xs" data-acao="perfilApagar" data-id="${esc(p.id)}">Excluir</button>
         </td></tr>`;
       })
       .join('')}</tbody></table></div>`;
@@ -4750,13 +4807,13 @@ function cicloRender() {
   el.innerHTML = `
     <div class="ciclo-layout">
       <aside class="ciclo-side">
-        <div class="ciclo-side-hdr"><div class="ciclo-side-title">Configurações salvas</div><button class="btn btn-primary btn-sm" onclick="cicloNova()">+ Nova</button></div>
+        <div class="ciclo-side-hdr"><div class="ciclo-side-title">Configurações salvas</div><button class="btn btn-primary btn-sm" data-acao="cicloNova">+ Nova</button></div>
         <div class="ciclo-list">${
           CICLO_PA.configuracoes.length
             ? CICLO_PA.configuracoes
                 .map(
                   x => `
-          <button class="ciclo-config ${x.id === CICLO_PA.selecionadaId ? 'active' : ''}" onclick="cicloAbrir('${escJs(x.id)}')">
+          <button class="ciclo-config ${x.id === CICLO_PA.selecionadaId ? 'active' : ''}" data-acao="cicloAbrir" data-id="${esc(x.id)}">
             <span class="ciclo-config-top"><span class="ciclo-config-name">${esc(x.nome)}</span>${x.ativo ? '<span class="ciclo-status">Ativa</span>' : ''}</span>
             <span class="ciclo-config-meta">${esc(x.empresa || 'Sem empresa')} · ${Number((x.participantes || []).length)} analista(s)</span>
           </button>`
@@ -4769,27 +4826,27 @@ function cicloRender() {
         <div class="ciclo-editor-hdr">
           <div><div class="ciclo-editor-title">${c.id ? 'Editar configuração' : 'Nova configuração'}</div><div class="ciclo-editor-sub">Uma empresa, um usuário correspondente e todos os analistas que participarão da fila.</div></div>
           <div class="ciclo-actions">
-            ${c.id && !c.ativo ? `<button id="ciclo-ativar" class="btn btn-ghost" onclick="cicloAtivar()">Ativar configuração</button>` : ''}
+            ${c.id && !c.ativo ? `<button id="ciclo-ativar" class="btn btn-ghost" data-acao="cicloAtivar">Ativar configuração</button>` : ''}
             ${c.ativo ? '<span class="ciclo-status">Padrão do sistema</span>' : ''}
-            <button id="ciclo-salvar" class="btn btn-primary" onclick="cicloSalvar()">Salvar alterações</button>
+            <button id="ciclo-salvar" class="btn btn-primary" data-acao="cicloSalvar">Salvar alterações</button>
           </div>
         </div>
         <div class="ciclo-body">
           <div class="ciclo-fields">
-            <div class="form-group"><label>Nome da configuração</label><input id="ciclo-nome" maxlength="100" value="${esc(c.nome || '')}" placeholder="Ex.: Equipe principal" oninput="CICLO_PA.rascunho.nome=this.value"></div>
-            <div class="form-group"><label>Critério de distribuição</label><select id="ciclo-modo" onchange="CICLO_PA.rascunho.modo=this.value">
+            <div class="form-group"><label>Nome da configuração</label><input id="ciclo-nome" maxlength="100" value="${esc(c.nome || '')}" placeholder="Ex.: Equipe principal" data-acao-input="cicloCampo" data-campo="nome"></div>
+            <div class="form-group"><label>Critério de distribuição</label><select id="ciclo-modo" data-acao-change="cicloCampo" data-campo="modo">
               <option value="LIVRE" ${c.modo === 'LIVRE' ? 'selected' : ''}>Livre — rodízio igual</option>
               <option value="DESEMPENHO" ${c.modo === 'DESEMPENHO' ? 'selected' : ''}>Desempenho — peso por aprovações</option>
             </select></div>
           </div>
           <div class="ciclo-hierarquia">
-            <div class="form-group"><label>Empresa correspondente</label><select id="ciclo-empresa" onchange="cicloEmpresaMudou(this.value)"><option value="">Selecione uma empresa</option>${CICLO_PA.empresas.map(x => `<option value="${esc(x.id)}" ${x.id === c.empresa_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
-            <div class="form-group"><label>Usuário correspondente</label><select id="ciclo-corr" onchange="CICLO_PA.rascunho.correspondente_id=this.value" ${c.empresa_id ? '' : 'disabled'}><option value="">${c.empresa_id ? 'Selecione o responsável' : 'Escolha primeiro a empresa'}</option>${corr.map(x => `<option value="${esc(x.id)}" ${x.id === c.correspondente_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Empresa correspondente</label><select id="ciclo-empresa" data-acao-change="cicloEmpresaMudou"><option value="">Selecione uma empresa</option>${CICLO_PA.empresas.map(x => `<option value="${esc(x.id)}" ${x.id === c.empresa_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Usuário correspondente</label><select id="ciclo-corr" data-acao-change="cicloCampo" data-campo="correspondente_id" ${c.empresa_id ? '' : 'disabled'}><option value="">${c.empresa_id ? 'Selecione o responsável' : 'Escolha primeiro a empresa'}</option>${corr.map(x => `<option value="${esc(x.id)}" ${x.id === c.correspondente_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
           </div>
           <div class="ciclo-analistas">
             <div class="ciclo-analistas-hdr">
               <div style="display:flex;align-items:center;gap:.45rem"><span class="ciclo-analistas-title">Analistas da fila</span><span class="ciclo-count" id="ciclo-count">${marcados.size} selecionado(s)</span></div>
-              <div class="ciclo-tools"><input class="ciclo-search" type="search" placeholder="Buscar analista…" oninput="cicloFiltrarAnalistas(this.value)"><button class="btn btn-ghost btn-sm" onclick="cicloSelecionarVisiveis(true)">Selecionar visíveis</button><button class="btn btn-ghost btn-sm" onclick="cicloSelecionarVisiveis(false)">Limpar</button></div>
+              <div class="ciclo-tools"><input class="ciclo-search" type="search" placeholder="Buscar analista…" data-acao-input="cicloFiltrarAnalistas"><button class="btn btn-ghost btn-sm" data-acao="cicloSelecionarVisiveis" data-marcar="true">Selecionar visíveis</button><button class="btn btn-ghost btn-sm" data-acao="cicloSelecionarVisiveis" data-marcar="false">Limpar</button></div>
             </div>
             <div class="ciclo-analistas-grid" id="ciclo-analistas-grid">${
               !c.empresa_id
@@ -4798,13 +4855,13 @@ function cicloRender() {
                   ? anas
                       .map(
                         a => `
-              <label class="ciclo-analista ${marcados.has(a.id) ? 'marcado' : ''}" data-nome="${esc((a.name || '').toLowerCase())}"><input type="checkbox" value="${esc(a.id)}" ${marcados.has(a.id) ? 'checked' : ''} onchange="cicloAlternarAnalista('${escJs(a.id)}',this.checked)"><span class="ciclo-analista-info"><span class="ciclo-analista-nome">${esc(a.name)}</span><span class="ciclo-analista-meta">Analista de crédito</span></span></label>`
+              <label class="ciclo-analista ${marcados.has(a.id) ? 'marcado' : ''}" data-nome="${esc((a.name || '').toLowerCase())}"><input type="checkbox" value="${esc(a.id)}" ${marcados.has(a.id) ? 'checked' : ''} data-acao-change="cicloAlternarAnalista" data-id="${esc(a.id)}"><span class="ciclo-analista-info"><span class="ciclo-analista-nome">${esc(a.name)}</span><span class="ciclo-analista-meta">Analista de crédito</span></span></label>`
                       )
                       .join('')
                   : '<div class="ciclo-empty">Nenhum analista ativo nesta empresa.</div>'
             }</div>
           </div>
-          ${ps.length ? `<div class="ciclo-resumo tbl-wrap"><table><thead><tr><th>Ordem</th><th>Analista</th><th>Recebidas</th><th>Aprovadas</th><th></th></tr></thead><tbody>${ps.map((p, i) => `<tr><td>${i + 1}${c.ativo && c.modo === 'LIVRE' && Number(p.ordem) === Number(c.proxima_ordem) ? ' · próximo' : ''}</td><td><b>${esc(p.analista || CICLO_PA.analistas.find(a => a.id === p.analista_id)?.name || '—')}</b></td><td>${Number(p.recebidas || 0)}</td><td>${Number(p.aprovadas || 0)}</td><td><button class="btn btn-danger btn-sm" onclick="cicloRemover('${escJs(p.analista_id)}')">Remover</button></td></tr>`).join('')}</tbody></table></div>` : ''}
+          ${ps.length ? `<div class="ciclo-resumo tbl-wrap"><table><thead><tr><th>Ordem</th><th>Analista</th><th>Recebidas</th><th>Aprovadas</th><th></th></tr></thead><tbody>${ps.map((p, i) => `<tr><td>${i + 1}${c.ativo && c.modo === 'LIVRE' && Number(p.ordem) === Number(c.proxima_ordem) ? ' · próximo' : ''}</td><td><b>${esc(p.analista || CICLO_PA.analistas.find(a => a.id === p.analista_id)?.name || '—')}</b></td><td>${Number(p.recebidas || 0)}</td><td>${Number(p.aprovadas || 0)}</td><td><button class="btn btn-danger btn-sm" data-acao="cicloRemover" data-id="${esc(p.analista_id)}">Remover</button></td></tr>`).join('')}</tbody></table></div>` : ''}
           <div style="font-size:.69rem;color:var(--t3);margin-top:.75rem">No modo desempenho, o peso é recalculado pelas aprovações na etapa com o selo FIM POSITIVO.</div>
         </div>
       </section>
@@ -5088,8 +5145,8 @@ function excDefMontar() {
                autocomplete="off" spellcheck="false"
                style="flex:1;min-width:260px;padding:.5rem .7rem;border:1px solid var(--border);
                       border-radius:8px;font-size:.82rem;font-family:'DM Mono',ui-monospace,monospace"
-               onkeydown="if(event.key==='Enter')excDefProcurar()">
-        <button class="btn btn-primary btn-sm" id="exc-btn-procurar" onclick="excDefProcurar()">Procurar</button>
+               data-acao-enter="excDefProcurar">
+        <button class="btn btn-primary btn-sm" id="exc-btn-procurar" data-acao="excDefProcurar">Procurar</button>
       </div>
       <div id="exc-cobertura" style="font-size:.73rem;color:var(--t3);margin-top:.55rem;line-height:1.5"></div>
     </div>
@@ -5245,7 +5302,7 @@ function excDefFichaHtml(r, i, varios) {
     acao = `<div class="exc-impede"><strong>Este registro não pode ser excluído agora.</strong><br>${esc(r.impedimento)}</div>`;
   } else if (!escolhida) {
     acao = `<div style="margin-top:.8rem"><button class="btn btn-ghost btn-sm"
-              onclick="excDefEscolher(${i})">É este</button></div>`;
+              data-acao="excDefEscolher" data-i="${esc(i)}">É este</button></div>`;
   } else {
     acao = excDefFormularioHtml(r, i);
   }
@@ -5283,28 +5340,28 @@ function excDefFormularioHtml(r, i) {
         Depois deste clique não há como recuperar.
       </div>
       <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="excDefCancelar()">Cancelar</button>
+        <button class="btn btn-ghost btn-sm" data-acao="excDefCancelar">Cancelar</button>
         <button class="btn btn-sm btn-danger-forte" id="exc-btn-apagar"
-                onclick="excDefExecutar(${i})">Sim, excluir para sempre</button>
+                data-acao="excDefExecutar" data-i="${esc(i)}">Sim, excluir para sempre</button>
       </div>`;
   }
   return `<div style="margin-top:.9rem">
       <label style="display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;
                     letter-spacing:.06em;color:var(--t3);margin-bottom:.35rem">
         Por que está excluindo?</label>
-      <textarea id="exc-justificativa" rows="2" oninput="excDefValidar()"
+      <textarea id="exc-justificativa" rows="2" data-acao-input="excDefValidar"
         placeholder="Ex.: duplicidade — a mesma unidade foi lançada duas vezes"
         style="width:100%;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;
                font-size:.8rem;resize:vertical"></textarea>
       <div style="font-size:.7rem;color:var(--t3);margin-top:.25rem">
         Fica gravado na auditoria junto com o seu nome. Mínimo de 10 caracteres.</div>
       <label class="exc-check">
-        <input type="checkbox" id="exc-ciente" onchange="excDefValidar()">
+        <input type="checkbox" id="exc-ciente" data-acao-change="excDefValidar">
         <span>Entendi que esta exclusão <strong>não tem volta</strong> e que conferi os dados acima.</span>
       </label>
       <div style="margin-top:.8rem">
         <button class="btn btn-sm btn-danger-forte" id="exc-btn-excluir" disabled
-                onclick="excDefPedirConfirmacao()">Excluir definitivamente</button>
+                data-acao="excDefPedirConfirmacao">Excluir definitivamente</button>
       </div>
     </div>`;
 }

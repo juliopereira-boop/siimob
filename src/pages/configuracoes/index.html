@@ -26,7 +26,7 @@
 
     <div class="cfg-busca-wrap">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B827D" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="search" id="cfg-busca" placeholder="Buscar configuração..." oninput="filtrarHub(this.value)">
+      <input type="search" id="cfg-busca" placeholder="Buscar configuração..." data-acao-input="filtrarHub">
       <span id="cfg-busca-vazio" style="display:none;font-size:.78rem;color:var(--t3)">Nada com esse nome.</span>
     </div>
 
@@ -37,7 +37,7 @@
       <div class="cfg-section-hdr">Regras gerais</div>
       <div class="cfg-section-sub">Valem para o cliente inteiro, acima das permissões de cada um.</div>
       <div class="cfg-cards">
-        <div class="cfg-hub-card" onclick="openCfgView('geral')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="geral">
           <div class="cfg-hub-icon" style="background:#fef3c7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </div>
@@ -52,31 +52,31 @@
       <!-- id para cfgModsLiberar() pendurar aqui os workflows dos módulos novos:
            o dono quer todos os workflows do cliente no mesmo bloco. -->
       <div class="cfg-cards" id="cfg-cards-workflow">
-        <div class="cfg-hub-card" onclick="openCfgView('wf')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="wf">
           <div class="cfg-hub-icon" style="background:#ede9fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </div>
           <div class="cfg-card-label">Editor de Workflow</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('flags')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="flags">
           <div class="cfg-hub-icon" style="background:#dbeafe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           </div>
           <div class="cfg-card-label">Flags de Etapa</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('doctypes')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="doctypes">
           <div class="cfg-hub-icon" style="background:#ede9fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
           </div>
           <div class="cfg-card-label">Tipos de documento</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('checklist')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="checklist">
           <div class="cfg-hub-icon" style="background:#dbeafe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
           <div class="cfg-card-label">Checklist operacional</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('comissao')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="comissao">
           <div class="cfg-hub-icon" style="background:#d1fae5">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
@@ -89,13 +89,13 @@
       <div class="cfg-section-hdr">Usuários e acesso</div>
       <div class="cfg-section-sub">Quem entra no sistema e o que cada um pode fazer.</div>
       <div class="cfg-cards">
-        <div class="cfg-hub-card" id="cfg-card-perfis" onclick="openCfgView('perfis')">
+        <div class="cfg-hub-card" id="cfg-card-perfis" data-acao="openCfgView" data-view="perfis">
           <div class="cfg-hub-icon" style="background:#dcfce7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Perfis de acesso</div>
         </div>
-        <div class="cfg-hub-card" id="cfg-card-gestores" onclick="openCfgView('gestores')">
+        <div class="cfg-hub-card" id="cfg-card-gestores" data-acao="openCfgView" data-view="gestores">
           <div class="cfg-hub-icon" style="background:#ede9fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.6 6.4 19.5l1.1-6.3L3 8.9 9 8z"/></svg>
           </div>
@@ -106,32 +106,32 @@
              DOM por analistaCartaoConferir() — e só quando as DUAS respostas
              chegam negando, porque "não consegui perguntar" não pode virar
              "não tem". -->
-        <div class="cfg-hub-card" id="cfg-card-analistas" onclick="openCfgView('analistas')">
+        <div class="cfg-hub-card" id="cfg-card-analistas" data-acao="openCfgView" data-view="analistas">
           <div class="cfg-hub-icon" style="background:#dbeafe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Analistas de Crédito</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('corretores')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="corretores">
           <div class="cfg-hub-icon" style="background:#dcfce7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
           </div>
           <div class="cfg-card-label">Corretores</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('precad')" style="position:relative">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="precad" style="position:relative">
           <div class="cfg-hub-icon" style="background:#ffedd5">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Validação de corretores</div>
           <span id="precad-badge" style="display:none;position:absolute;top:.5rem;right:.6rem;background:#ea580c;color:#fff;font-size:.68rem;font-weight:800;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 .3rem"></span>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('coordenadores')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="coordenadores">
           <div class="cfg-hub-icon" style="background:#fae8ff">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a21caf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="cfg-card-label">Coordenadores</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('correspondentes')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="correspondentes">
           <div class="cfg-hub-icon" style="background:#fef3c7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
@@ -144,25 +144,25 @@
       <div class="cfg-section-hdr">Empreendimentos e parceiros</div>
       <div class="cfg-section-sub">De quem é o imóvel e quem trabalha com ele.</div>
       <div class="cfg-cards">
-        <div class="cfg-hub-card" onclick="openCfgView('empreendimentos')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="empreendimentos">
           <div class="cfg-hub-icon" style="background:#e0f2fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9" y1="14.5" x2="15" y2="14.5"/></svg>
           </div>
           <div class="cfg-card-label">Empreendimentos</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('regionais')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="regionais">
           <div class="cfg-hub-icon" style="background:#E0E7FF">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7568" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <div class="cfg-card-label">Regionais</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('imobiliarias')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="imobiliarias">
           <div class="cfg-hub-icon" style="background:#ffe4e6">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
           <div class="cfg-card-label">Imobiliárias</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('despachantes')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="despachantes">
             <div class="cfg-hub-icon" style="background:#E0E7FF">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7568" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><path d="M9 12h6"/></svg>
             </div>
@@ -175,31 +175,31 @@
       <div class="cfg-section-hdr">Cadastros do repasse</div>
       <div class="cfg-section-sub">As listas que aparecem no cadastro do processo e nos filtros.</div>
       <div class="cfg-cards">
-        <div class="cfg-hub-card" onclick="openCfgView('convenios')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="convenios">
           <div class="cfg-hub-icon" style="background:#e0f2fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
           </div>
           <div class="cfg-card-label">Convênios</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('modalidades')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="modalidades">
           <div class="cfg-hub-icon" style="background:#ffe4e6">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
           </div>
           <div class="cfg-card-label">Modalidades de Imóvel</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('agencias')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="agencias">
           <div class="cfg-hub-icon" style="background:#fef3c7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A6008" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
           </div>
           <div class="cfg-card-label">Agências</div>
         </div>
-        <div class="cfg-hub-card" onclick="openCfgView('bancos')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="bancos">
             <div class="cfg-hub-icon" style="background:#dbeafe">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3F6F9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10H8M8 14h5"/></svg>
             </div>
             <div class="cfg-card-label">Bancos</div>
           </div>
-        <div class="cfg-hub-card" onclick="openCfgView('cartorios')">
+        <div class="cfg-hub-card" data-acao="openCfgView" data-view="cartorios">
             <div class="cfg-hub-icon" style="background:#f0fdf4">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E8C7F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="14" width="6" height="7"/><path d="M12 10v4"/></svg>
             </div>
@@ -222,13 +222,13 @@
       <div class="cfg-section-hdr">Ferramentas e suporte</div>
       <div class="cfg-section-sub">Trazer dados de fora e falar com quem cuida do sistema.</div>
       <div class="cfg-cards" id="cfg-cards-ferramentas">
-        <div class="cfg-hub-card" id="cfg-card-importar" onclick="location.href='/'+G.slug+'/importar'">
+        <div class="cfg-hub-card" id="cfg-card-importar" data-acao="irParaImportar">
           <div class="cfg-hub-icon" style="background:#dcfce7">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
           </div>
           <div class="cfg-card-label">Importar base</div>
         </div>
-        <div class="cfg-hub-card" onclick="openFeedbackModal()" style="border-color:#e0e7ff">
+        <div class="cfg-hub-card" data-acao="openFeedbackModal" style="border-color:#e0e7ff">
           <div class="cfg-hub-icon" style="background:#ede9fe">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
           </div>
@@ -240,7 +240,7 @@
 
   <div id="cfg-view-geral" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="btn btn-ghost btn-sm" onclick="closeCfgView()">← Voltar</button>
+      <button class="btn btn-ghost btn-sm" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Configurações Gerais</div>
     </div>
     <div class="card" style="padding:1.25rem;max-width:760px">
@@ -251,7 +251,7 @@
       </div>
       <div id="geral-lista"></div>
       <div style="display:flex;gap:.6rem;align-items:center;margin-top:1.2rem">
-        <button class="btn btn-primary" onclick="geralSalvar()">Salvar</button>
+        <button class="btn btn-primary" data-acao="geralSalvar">Salvar</button>
         <span id="geral-aviso" style="font-size:.78rem;color:var(--t3)"></span>
       </div>
     </div>
@@ -259,7 +259,7 @@
 
   <div id="cfg-view-wf" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Editor de Workflow</div>
     </div>
     <p style="font-size:.8rem;color:var(--t2);margin-bottom:1.25rem;max-width:520px;line-height:1.6">
@@ -271,7 +271,7 @@
   <!-- ─── Sub-view: Flags de Etapa ─── -->
   <div id="cfg-view-flags" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Flags de Etapa</div>
     </div>
     <div class="panel" style="padding:1.1rem;max-width:580px">
@@ -279,7 +279,7 @@
       <div style="display:flex;gap:.45rem;align-items:center">
         <input id="new-flag-input" type="text" placeholder="Nome da flag..." style="flex:1;padding:.38rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--t1);background:var(--card)">
         <input id="new-flag-color" type="color" value="#0E8C7F" style="width:2.25rem;height:2rem;padding:.15rem;border-radius:6px;border:1px solid var(--border);cursor:pointer">
-        <button class="btn btn-primary btn-sm" onclick="addFlag()">Adicionar</button>
+        <button class="btn btn-primary btn-sm" data-acao="addFlag">Adicionar</button>
       </div>
     </div>
   </div>
@@ -287,7 +287,7 @@
   <!-- ─── Sub-view: Regionais ─── -->
   <div id="cfg-view-regionais" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Regionais</div>
     </div>
     <div class="panel" style="padding:1.1rem;max-width:620px">
@@ -296,8 +296,8 @@
         e o quadro (kanban) agrupa os processos por regional — as regionais aparecem no topo, como antes.
       </p>
       <div style="display:flex;gap:.5rem;margin-bottom:1rem">
-        <input type="text" id="reg-new" placeholder="Nome da regional (ex.: Zona Sul)" style="flex:1;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" onkeydown="if(event.key==='Enter')addRegional()">
-        <button class="btn btn-primary btn-sm" onclick="addRegional()">+ Adicionar</button>
+        <input type="text" id="reg-new" placeholder="Nome da regional (ex.: Zona Sul)" style="flex:1;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font-size:.82rem" data-acao-enter="addRegional">
+        <button class="btn btn-primary btn-sm" data-acao="addRegional">+ Adicionar</button>
       </div>
       <div id="regionais-list"><span style="color:var(--t3);font-size:.77rem">Carregando...</span></div>
       <div id="reg-err" style="display:none;color:#B8433A;font-size:.76rem;margin-top:.5rem;font-weight:500"></div>
@@ -309,9 +309,9 @@
   <!-- ─── Sub-view: Empreendimentos ─── -->
   <div id="cfg-view-empreendimentos" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Empreendimentos</div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openEmprModal()">+ Novo empreendimento</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" data-acao="openEmprModal">+ Novo empreendimento</button>
     </div>
 
     <!-- Empreendimento list -->
@@ -323,19 +323,19 @@
     <div id="empr-form-panel" class="panel" style="padding:1.25rem;display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.875rem;border-bottom:1px solid var(--border)">
         <div style="font-size:.88rem;font-weight:800" id="empr-form-title">Novo empreendimento</div>
-        <button class="cfg-back-btn" onclick="closeEmprForm()">Fechar</button>
+        <button class="cfg-back-btn" data-acao="closeEmprForm">Fechar</button>
       </div>
       <div class="form-grid" style="max-width:720px;margin-bottom:.875rem">
         <div class="form-group full"><label>Nome do empreendimento *</label>
-          <input id="empr-f-name" type="text" placeholder="Residencial das Flores" oninput="emprPreview()">
+          <input id="empr-f-name" type="text" placeholder="Residencial das Flores" data-acao-input="emprPreview">
         </div>
         <div class="form-group"><label>Regional</label>
-          <select id="empr-f-regional" onchange="emprPreview()">
+          <select id="empr-f-regional" data-acao-change="emprPreview">
             <option value="">Selecione...</option>
           </select>
         </div>
         <div class="form-group"><label>Estado</label>
-          <select id="empr-f-estado" onchange="emprEstadoMudou()">
+          <select id="empr-f-estado" data-acao-change="emprEstadoMudou">
             <option value="">Selecione...</option>
           </select>
         </div>
@@ -349,7 +349,7 @@
         </div>
         <div class="form-group full" style="margin-top:.1rem">
           <label style="display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--t2);text-transform:none;letter-spacing:0">
-            <input type="checkbox" id="empr-f-sem-unidades" onchange="toggleEmprSemUnidades()" style="width:15px;height:15px;accent-color:var(--emerald);cursor:pointer">
+            <input type="checkbox" id="empr-f-sem-unidades" data-acao-change="toggleEmprSemUnidades" style="width:15px;height:15px;accent-color:var(--emerald);cursor:pointer">
             Sem preenchimento de unidades
           </label>
         </div>
@@ -359,18 +359,18 @@
       <div id="empr-unidades-wrap" class="form-grid" style="max-width:720px;margin-bottom:.875rem">
         <div class="form-group"><label>Tipo</label>
           <div style="display:flex;gap:.35rem;margin-top:.1rem">
-            <button type="button" id="empr-tipo-blocos" class="btn btn-primary btn-sm" onclick="setEmprTipo('blocos')" style="flex:1">Blocos</button>
-            <button type="button" id="empr-tipo-quadras" class="btn btn-ghost btn-sm" onclick="setEmprTipo('quadras')" style="flex:1">Quadras</button>
+            <button type="button" id="empr-tipo-blocos" class="btn btn-primary btn-sm" data-acao="setEmprTipo" data-tipo="blocos" style="flex:1">Blocos</button>
+            <button type="button" id="empr-tipo-quadras" class="btn btn-ghost btn-sm" data-acao="setEmprTipo" data-tipo="quadras" style="flex:1">Quadras</button>
           </div>
         </div>
         <div class="form-group"><label id="empr-qtd-label">Qtd. Blocos</label>
-          <input id="empr-f-qtd" type="number" min="1" max="99" value="1" oninput="emprPreview()">
+          <input id="empr-f-qtd" type="number" min="1" max="99" value="1" data-acao-input="emprPreview">
         </div>
         <div class="form-group"><label>Pavimentos</label>
-          <input id="empr-f-pav" type="number" min="1" max="50" value="1" oninput="emprPreview()">
+          <input id="empr-f-pav" type="number" min="1" max="50" value="1" data-acao-input="emprPreview">
         </div>
         <div class="form-group"><label>Unidades / Pavimento</label>
-          <input id="empr-f-upf" type="number" min="1" max="99" value="4" oninput="emprPreview()">
+          <input id="empr-f-upf" type="number" min="1" max="99" value="4" data-acao-input="emprPreview">
         </div>
 
         <!-- Live preview -->
@@ -382,7 +382,7 @@
       </div>
 
       <div style="display:flex;gap:.5rem;align-items:center">
-        <button class="btn btn-primary" id="empr-save-btn" onclick="saveEmpreendimento()">Cadastrar Unidades</button>
+        <button class="btn btn-primary" id="empr-save-btn" data-acao="saveEmpreendimento">Cadastrar Unidades</button>
         <div id="empr-err" style="font-size:.78rem;color:#B8433A;display:none"></div>
       </div>
     </div>
@@ -391,20 +391,20 @@
   <!-- ─── Sub-view: Imobiliárias ─── -->
   <div id="cfg-view-imobiliarias" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Imobiliárias</div>
     </div>
     <div class="panel">
       <div style="padding:1rem 1rem .25rem">
         <div class="pt-toolbar">
-          <input type="search" id="imob-search" placeholder="Buscar por nome, CNPJ ou e-mail..." oninput="imobFilter()">
-          <select id="imob-status" onchange="imobFilter()">
+          <input type="search" id="imob-search" placeholder="Buscar por nome, CNPJ ou e-mail..." data-acao-input="imobFilter">
+          <select id="imob-status" data-acao-change="imobFilter">
             <option value="">Todos</option>
             <option value="active">Ativas</option>
             <option value="inactive">Inativas</option>
           </select>
           <div style="flex:1"></div>
-          <button class="btn btn-primary btn-sm" onclick="openImob(null)">+ Nova imobiliária</button>
+          <button class="btn btn-primary btn-sm" data-acao="openImob">+ Nova imobiliária</button>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -425,14 +425,14 @@
   <!-- ─── Sub-view: Configuração de Comissão ─── -->
   <div id="cfg-view-comissao" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Configuração de Comissão</div>
     </div>
     <div class="panel" style="padding:1.25rem;max-width:520px">
       <p style="font-size:.8rem;color:var(--t3);margin-bottom:1.1rem">Defina como a comissão será calculada para a previsão financeira do dashboard.</p>
       <div class="form-group" style="margin-bottom:1rem">
         <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Tipo de comissão</label>
-        <select id="cm-type" onchange="toggleCommissionFields()" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
+        <select id="cm-type" data-acao-change="toggleCommissionFields" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
           <option value="PERCENTAGE">Percentual</option>
           <option value="FIXED">Valor Fixo</option>
         </select>
@@ -445,14 +445,14 @@
         <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Percentual da comissão (%)</label>
         <input id="cm-pct" type="text" placeholder="Ex: 2.5 (para 2,5%)" style="width:100%;padding:.5rem .65rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem">
       </div>
-      <button class="btn btn-primary" onclick="saveCommission()">Salvar Configuração</button>
+      <button class="btn btn-primary" data-acao="saveCommission">Salvar Configuração</button>
     </div>
   </div>
 
   <!-- ─── Sub-view: Tipos de documento ─── -->
   <div id="cfg-view-doctypes" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Tipos de documento</div>
     </div>
     <!-- A ordem das abas é a ordem do processo, a mesma de todo o sistema:
@@ -465,22 +465,22 @@
          revela é a licença. Não precisou de tabela nova — o JSON de doc_types
          em a1_config já carrega o campo module. -->
     <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:620px">
-      <button id="dt-mod-PRE_ANALISE" class="dt-mod-btn" style="display:none;flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('PRE_ANALISE',this)">Pré-análise</button>
-      <button id="dt-mod-repasse" class="dt-mod-btn active" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('repasse',this)">Repasse</button>
-      <button id="dt-mod-registro" class="dt-mod-btn" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" onclick="switchDocTypeModule('registro',this)">Registro</button>
+      <button id="dt-mod-PRE_ANALISE" class="dt-mod-btn" style="display:none;flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" data-acao="switchDocTypeModule" data-mod="PRE_ANALISE">Pré-análise</button>
+      <button id="dt-mod-repasse" class="dt-mod-btn active" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" data-acao="switchDocTypeModule" data-mod="repasse">Repasse</button>
+      <button id="dt-mod-registro" class="dt-mod-btn" style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;cursor:pointer" data-acao="switchDocTypeModule" data-mod="registro">Registro</button>
       <button class="dt-mod-btn" disabled style="flex:1;border:none;border-radius:6px;padding:.42rem .6rem;font-size:.75rem;font-weight:600;color:var(--t3);cursor:not-allowed" title="Em desenvolvimento">Reserva (em breve)</button>
     </div>
     <div class="panel">
       <div style="padding:1rem 1rem .25rem">
         <div class="pt-toolbar">
-          <input type="text" id="dt-name" placeholder="Nome do tipo (ex.: Comprovante de residência)" style="flex:1" onkeydown="if(event.key==='Enter')saveDocType()">
-          <button class="btn btn-primary btn-sm" onclick="saveDocType()">+ Adicionar</button>
+          <input type="text" id="dt-name" placeholder="Nome do tipo (ex.: Comprovante de residência)" style="flex:1" data-acao-enter="saveDocType">
+          <button class="btn btn-primary btn-sm" data-acao="saveDocType">+ Adicionar</button>
         </div>
         <!-- A lista que a tela do módulo já mostrava quando nada estava
              cadastrado. Ela sumia no primeiro tipo próprio e o gestor não tinha
              como recuperá-la; agora ela é adotável, e daí em diante é dele. -->
         <div id="dt-padrao-wrap" style="display:none;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.15rem 0 .3rem">
-          <button class="btn btn-ghost btn-sm" onclick="usarDocTypesPadrao()">Usar lista padrão</button>
+          <button class="btn btn-ghost btn-sm" data-acao="usarDocTypesPadrao">Usar lista padrão</button>
           <span id="dt-padrao-hint" style="font-size:.72rem;color:var(--t3)"></span>
         </div>
       </div>
@@ -496,17 +496,17 @@
   <!-- ─── Sub-view: Checklist operacional ─── -->
   <div id="cfg-view-checklist" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configurações</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configurações</button>
       <div class="cfg-view-title">Checklist operacional</div>
     </div>
     <div style="font-size:.78rem;color:var(--t3);margin:-.4rem 0 .9rem">Itens desta lista aparecem no dossiê de cada processo. Quem pode editar a etapa pode marcá-los; cada marca entra no histórico.</div>
     <div class="panel" style="padding:1rem;margin-bottom:1rem">
       <div class="pt-toolbar">
-        <select id="cl-module" style="min-width:140px" onchange="atualizarAcoesChecklist()"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option></select>
+        <select id="cl-module" style="min-width:140px" data-acao-change="atualizarAcoesChecklist"><option value="PRE_ANALISE">Pré-análise</option><option value="COMERCIAL">Venda</option></select>
         <select id="cl-auto" style="min-width:180px"></select>
-        <input type="text" id="cl-name" placeholder="Novo item de checklist" style="flex:1" onkeydown="if(event.key==='Enter')saveChecklistItem()">
+        <input type="text" id="cl-name" placeholder="Novo item de checklist" style="flex:1" data-acao-enter="saveChecklistItem">
         <label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;white-space:nowrap"><input id="cl-obrigatorio" type="checkbox"> Obrigatório</label>
-        <button class="btn btn-primary btn-sm" onclick="saveChecklistItem()">+ Adicionar</button>
+        <button class="btn btn-primary btn-sm" data-acao="saveChecklistItem">+ Adicionar</button>
       </div>
     </div>
     <div class="panel" style="overflow-x:auto"><table class="pt-table">
@@ -518,9 +518,9 @@
   <!-- ─── Sub-view: Analistas de Crédito ─── -->
   <div id="cfg-view-convenios" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Convênios</div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openSimples('convenio',null)">+ Novo convênio</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" data-acao="openSimples" data-tipo="convenio">+ Novo convênio</button>
     </div>
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Aparecem no filtro dos quadros e no cadastro de novo repasse.</div>
     <div class="tbl-wrap"><table>
@@ -531,9 +531,9 @@
 
   <div id="cfg-view-modalidades" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Modalidades de Imóvel</div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openSimples('modalidade',null)">+ Nova modalidade</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" data-acao="openSimples" data-tipo="modalidade">+ Nova modalidade</button>
     </div>
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Como o imóvel se enquadra — novo, usado, na planta, e o que mais a empresa usar. Aparece no filtro dos quadros e no cadastro de novo repasse.</div>
     <div class="tbl-wrap"><table>
@@ -544,9 +544,9 @@
 
   <div id="cfg-view-agencias" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Agências</div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openSimples('agencia',null)">+ Nova agência</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" data-acao="openSimples" data-tipo="agencia">+ Nova agência</button>
     </div>
     <div class="tbl-wrap"><table>
       <thead><tr><th style="width:120px">Número</th><th>Nome</th><th style="width:30%">ID</th><th style="width:120px">Ações</th></tr></thead>
@@ -556,9 +556,9 @@
 
   <div id="cfg-view-coordenadores" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Coordenadores</div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openCoordenador(null)">+ Novo coordenador</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" data-acao="openCoordenador">+ Novo coordenador</button>
     </div>
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Coordenador é o gestor de uma equipe de corretores. Não tem acesso ao sistema — serve para organizar a equipe.</div>
     <div class="tbl-wrap"><table>
@@ -569,12 +569,12 @@
 
   <div id="cfg-view-corretores" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Corretores</div>
       <div style="display:flex;gap:.5rem;align-items:center">
-        <input type="text" id="corretor-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="renderCorretores()">
-        <button class="btn btn-ghost btn-sm" onclick="openPrecadLink()">Gerar link de cadastro</button>
-        <button class="btn btn-primary btn-sm" onclick="openCorretor(null)">+ Novo corretor</button>
+        <input type="text" id="corretor-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" data-acao-input="renderCorretores">
+        <button class="btn btn-ghost btn-sm" data-acao="openPrecadLink">Gerar link de cadastro</button>
+        <button class="btn btn-primary btn-sm" data-acao="openCorretor">+ Novo corretor</button>
       </div>
     </div>
     <div id="corretor-pendentes-aviso" style="display:none;font-size:.75rem;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:.5rem .7rem;margin:-.2rem 0 .7rem"></div>
@@ -588,9 +588,9 @@
 
   <div id="cfg-view-precad" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Validação de corretores</div>
-      <button class="btn btn-primary btn-sm" onclick="openPrecadLink()">Gerar link de cadastro</button>
+      <button class="btn btn-primary btn-sm" data-acao="openPrecadLink">Gerar link de cadastro</button>
     </div>
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">
       Quem se cadastra pelo link cai aqui e <b>ainda não consegue entrar no sistema</b>.
@@ -615,7 +615,7 @@
 
   <div id="cfg-view-perfis" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Perfis de acesso</div>
     </div>
     <div class="cfg-explica">
@@ -631,17 +631,17 @@
       para o cliente.
     </div>
     <div class="pt-toolbar">
-      <button class="btn btn-primary btn-sm" onclick="perfilAbrir(null)">+ Novo perfil</button>
-      <button class="btn btn-ghost btn-sm" id="perfis-modelos" onclick="perfisSemear()">Criar os perfis mais comuns</button>
+      <button class="btn btn-primary btn-sm" data-acao="perfilAbrir">+ Novo perfil</button>
+      <button class="btn btn-ghost btn-sm" id="perfis-modelos" data-acao="perfisSemear">Criar os perfis mais comuns</button>
     </div>
     <div id="perfis-corpo"></div>
   </div>
 
   <div id="cfg-view-gestores" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Usuários Gestores</div>
-      <button class="btn btn-primary btn-sm" onclick="openGestor(null)">+ Novo gestor</button>
+      <button class="btn btn-primary btn-sm" data-acao="openGestor">+ Novo gestor</button>
     </div>
     <div style="font-size:.75rem;color:var(--t3);margin:-.4rem 0 .8rem">Somente um gestor pode cadastrar outro gestor. O gestor tem acesso completo ao painel.</div>
     <div class="tbl-wrap">
@@ -654,14 +654,14 @@
 
   <div id="cfg-view-analistas" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Voltar</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Voltar</button>
       <div class="cfg-view-title">Analistas de Crédito</div>
       <div style="display:flex;gap:.5rem;align-items:center">
-        <input type="text" id="analista-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" oninput="analistaFilter()">
-        <select id="analista-status-filter" onchange="analistaFilter()" style="padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem">
+        <input type="text" id="analista-search" placeholder="Buscar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:160px" data-acao-input="analistaFilter">
+        <select id="analista-status-filter" data-acao-change="analistaFilter" style="padding:.3rem .55rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem">
           <option value="">Todos</option><option value="true">Ativos</option><option value="false">Inativos</option>
         </select>
-        <button class="btn btn-primary btn-sm" onclick="openAnalista(null)">+ Novo analista</button>
+        <button class="btn btn-primary btn-sm" data-acao="openAnalista">+ Novo analista</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -676,14 +676,14 @@
   <!-- ─── Sub-view: Correspondentes / CCA ─── -->
   <div id="cfg-view-correspondentes" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Correspondentes / CCA</div>
     </div>
 
     <!-- Inner tab row -->
     <div style="display:flex;gap:.2rem;background:#f1f5f9;border-radius:8px;padding:.2rem;margin-bottom:1.25rem;max-width:420px">
-      <button id="corr-tab-empresas" class="btn" style="flex:1;background:#fff;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1);cursor:pointer" onclick="switchCorrTab('empresas')">Empresas Correspondentes</button>
-      <button id="corr-tab-usuarios" class="btn" style="flex:1;background:none;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer" onclick="switchCorrTab('usuarios')">Usuários Correspondentes</button>
+      <button id="corr-tab-empresas" class="btn" style="flex:1;background:#fff;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1);cursor:pointer" data-acao="switchCorrTab" data-tab="empresas">Empresas Correspondentes</button>
+      <button id="corr-tab-usuarios" class="btn" style="flex:1;background:none;border:none;border-radius:6px;padding:.38rem .75rem;font-size:.77rem;font-weight:600;color:var(--t3);cursor:pointer" data-acao="switchCorrTab" data-tab="usuarios">Usuários Correspondentes</button>
     </div>
 
     <!-- ── Empresas Correspondentes ── -->
@@ -692,14 +692,14 @@
       <div class="panel">
         <div style="padding:1rem 1rem .25rem">
           <div class="pt-toolbar">
-            <input type="search" id="ce-search" placeholder="Buscar por nome ou CNPJ..." oninput="ceFilter()">
-            <select id="ce-status" onchange="ceFilter()">
+            <input type="search" id="ce-search" placeholder="Buscar por nome ou CNPJ..." data-acao-input="ceFilter">
+            <select id="ce-status" data-acao-change="ceFilter">
               <option value="">Todos</option>
               <option value="active">Ativas</option>
               <option value="inactive">Inativas</option>
             </select>
             <div style="flex:1"></div>
-            <button class="btn btn-primary btn-sm" id="btn-nova-empresa" onclick="openEmpresaModal()">+ Nova empresa</button>
+            <button class="btn btn-primary btn-sm" id="btn-nova-empresa" data-acao="openEmpresaModal">+ Nova empresa</button>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -723,11 +723,11 @@
       <div class="panel">
         <div style="padding:1rem 1rem .25rem">
           <div class="pt-toolbar">
-            <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." oninput="ptFilter()">
-            <select id="pt-empresa" onchange="ptFilter()">
+            <input type="search" id="pt-search" placeholder="Buscar por nome, CPF ou e-mail..." data-acao-input="ptFilter">
+            <select id="pt-empresa" data-acao-change="ptFilter">
               <option value="">Todas as empresas</option>
             </select>
-            <select id="pt-status" onchange="ptFilter()">
+            <select id="pt-status" data-acao-change="ptFilter">
               <option value="">Todos</option>
               <option value="active">Ativos</option>
               <option value="pending">Pendentes</option>
@@ -735,7 +735,7 @@
             </select>
             <div style="flex:1"></div>
             <span id="corr-user-counter" style="font-size:.72rem;color:var(--t3);font-weight:600;white-space:nowrap"></span>
-            <button class="btn btn-primary btn-sm" id="btn-novo-usuario" onclick="openPartnerModal()">+ Novo usuário</button>
+            <button class="btn btn-primary btn-sm" id="btn-novo-usuario" data-acao="openPartnerModal">+ Novo usuário</button>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -757,14 +757,14 @@
   <!-- ─── Sub-view: Despachantes ─── -->
   <div id="cfg-view-despachantes" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Despachantes</div>
     </div>
     <div class="panel" style="padding:1.1rem;max-width:720px">
       <div class="pt-toolbar" style="margin-bottom:.875rem">
-        <input type="search" id="desp-search" placeholder="Buscar despachante..." oninput="filtrarDespachantes()">
+        <input type="search" id="desp-search" placeholder="Buscar despachante..." data-acao-input="filtrarDespachantes">
         <div style="flex:1"></div>
-        <button class="btn btn-primary btn-sm" onclick="openDespModal()">+ Novo despachante</button>
+        <button class="btn btn-primary btn-sm" data-acao="openDespModal">+ Novo despachante</button>
       </div>
       <div id="desp-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
     </div>
@@ -773,14 +773,14 @@
   <!-- ─── Sub-view: Bancos ─── -->
   <div id="cfg-view-bancos" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Bancos</div>
     </div>
     <div class="panel" style="padding:1.1rem;max-width:720px">
       <div class="pt-toolbar" style="margin-bottom:.875rem">
-        <input type="search" id="banco-search" placeholder="Buscar banco..." oninput="filtrarBancos()">
+        <input type="search" id="banco-search" placeholder="Buscar banco..." data-acao-input="filtrarBancos">
         <div style="flex:1"></div>
-        <button class="btn btn-primary btn-sm" onclick="openBancoModal()">+ Novo banco</button>
+        <button class="btn btn-primary btn-sm" data-acao="openBancoModal">+ Novo banco</button>
       </div>
       <div id="bancos-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
     </div>
@@ -789,14 +789,14 @@
   <!-- ─── Sub-view: Cartórios ─── -->
   <div id="cfg-view-cartorios" style="display:none">
     <div class="cfg-view-hdr">
-      <button class="cfg-back-btn" onclick="closeCfgView()">← Configuracoes</button>
+      <button class="cfg-back-btn" data-acao="closeCfgView">← Configuracoes</button>
       <div class="cfg-view-title">Cartórios</div>
     </div>
     <div class="panel" style="padding:1.1rem;max-width:720px">
       <div class="pt-toolbar" style="margin-bottom:.875rem">
-        <input type="search" id="cart-search" placeholder="Buscar cartório..." oninput="filtrarCartorios()">
+        <input type="search" id="cart-search" placeholder="Buscar cartório..." data-acao-input="filtrarCartorios">
         <div style="flex:1"></div>
-        <button class="btn btn-primary btn-sm" onclick="openCartorioModal()">+ Novo cartório</button>
+        <button class="btn btn-primary btn-sm" data-acao="openCartorioModal">+ Novo cartório</button>
       </div>
       <div id="cartorios-list"><div style="color:var(--t3);font-size:.78rem;text-align:center;padding:2rem">Carregando...</div></div>
     </div>
@@ -816,7 +816,7 @@
   <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
       <div class="modal-title" id="imob-modal-title">Nova imobiliária</div>
-      <button class="modal-close" onclick="closeModal('modal-imob-bg')">x</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-imob-bg">x</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -834,8 +834,8 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-imob-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="imob-save-btn" onclick="saveImob()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-imob-bg">Cancelar</button>
+      <button class="btn btn-primary" id="imob-save-btn" data-acao="saveImob">Salvar</button>
     </div>
   </div>
 </div>
@@ -845,7 +845,7 @@
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr">
       <div class="modal-title" id="simples-title">Novo</div>
-      <button class="modal-close" onclick="closeModal('modal-simples-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-simples-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -861,8 +861,8 @@
       </div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-simples-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="simples-save-btn" onclick="saveSimples()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-simples-bg">Cancelar</button>
+      <button class="btn btn-primary" id="simples-save-btn" data-acao="saveSimples">Salvar</button>
     </div>
   </div>
 </div>
@@ -871,7 +871,7 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div class="modal-title" id="modal-perfil-titulo">Novo perfil</div>
-      <button class="modal-close" onclick="closeModal('modal-perfil-bg')" aria-label="Fechar">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-perfil-bg" aria-label="Fechar">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2">
@@ -889,8 +889,8 @@
       <div id="perfil-erro" style="display:none;color:#b91c1c;font-size:.78rem;margin-top:.5rem"></div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-perfil-bg')">Cancelar</button>
-      <button class="btn btn-primary" onclick="perfilSalvar()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-perfil-bg">Cancelar</button>
+      <button class="btn btn-primary" data-acao="perfilSalvar">Salvar</button>
     </div>
   </div>
 </div>
@@ -899,7 +899,7 @@
   <div class="modal" style="max-width:560px">
     <div class="modal-hdr">
       <div class="modal-title" id="coord-title">Novo coordenador</div>
-      <button class="modal-close" onclick="closeModal('modal-coordenador-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-coordenador-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2">
@@ -951,8 +951,8 @@
       </div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-coordenador-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="coord-save-btn" onclick="saveCoordenador()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-coordenador-bg">Cancelar</button>
+      <button class="btn btn-primary" id="coord-save-btn" data-acao="saveCoordenador">Salvar</button>
     </div>
   </div>
 </div>
@@ -961,7 +961,7 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div class="modal-title" id="corretor-modal-title">Novo corretor</div>
-      <button class="modal-close" onclick="closeModal('modal-corretor-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-corretor-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2">
@@ -990,7 +990,7 @@
 
         <div class="form-group full" style="margin-top:.35rem">
           <label>Perfil de acesso</label>
-          <select id="co-perfil" onchange="perfilAplicado('co-perfil','co-perm')"></select>
+          <select id="co-perfil" data-acao-change="perfilAplicado" data-idsel="co-perfil" data-classe="co-perm"></select>
           <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="co-perfil-aviso">
             Com um perfil escolhido, o corretor segue exatamente o que o perfil diz — as
             marcas abaixo deixam de valer e ficam só para consulta. Perfis são
@@ -1015,9 +1015,9 @@
             fica invisível para ele.
           </div>
           <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('ver')">Todas: só ver</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('editar')">Todas: editar</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(null)">Limpar</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="ver">Todas: só ver</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="editar">Todas: editar</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas">Limpar</button>
           </div>
           <div id="co-etapas-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
           <div id="co-etapas-resumo" style="font-size:.72rem;color:var(--t3);margin-top:.45rem"></div>
@@ -1025,8 +1025,8 @@
       </div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-corretor-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="co-save-btn" onclick="saveCorretor()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-corretor-bg">Cancelar</button>
+      <button class="btn btn-primary" id="co-save-btn" data-acao="saveCorretor">Salvar</button>
     </div>
   </div>
 </div>
@@ -1035,7 +1035,7 @@
   <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
       <div class="modal-title">Link de cadastro de corretor</div>
-      <button class="modal-close" onclick="closeModal('modal-precad-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-precad-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div style="font-size:.75rem;color:var(--t3);margin-bottom:.8rem">
@@ -1061,15 +1061,15 @@
       <div id="pl-result" style="display:none;margin-top:.9rem">
         <label style="display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.3rem">Link gerado</label>
         <div style="display:flex;gap:.4rem">
-          <input type="text" id="pl-url" readonly onclick="this.select()" style="flex:1;font-size:.78rem;background:var(--bg)">
-          <button class="btn btn-primary btn-sm" onclick="copiarPrecadLink()">Copiar</button>
+          <input type="text" id="pl-url" readonly data-acao="selecionarTexto" style="flex:1;font-size:.78rem;background:var(--bg)">
+          <button class="btn btn-primary btn-sm" data-acao="copiarPrecadLink">Copiar</button>
         </div>
         <div style="font-size:.72rem;color:var(--t3);margin-top:.4rem" id="pl-hint"></div>
       </div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-precad-bg')">Fechar</button>
-      <button class="btn btn-primary" id="pl-gerar-btn" onclick="gerarPrecadLink()">Gerar link</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-precad-bg">Fechar</button>
+      <button class="btn btn-primary" id="pl-gerar-btn" data-acao="gerarPrecadLink">Gerar link</button>
     </div>
   </div>
 </div>
@@ -1078,7 +1078,7 @@
   <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
       <div class="modal-title" id="gestor-modal-title">Novo gestor</div>
-      <button class="modal-close" onclick="closeModal('modal-gestor-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-gestor-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2">
@@ -1095,8 +1095,8 @@
       <div style="font-size:.73rem;color:var(--t3);margin-top:.6rem">Sem módulos marcados, é Gestor Geral e acessa tudo. Com módulos marcados, administra integralmente somente os módulos escolhidos.</div>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-ghost" onclick="closeModal('modal-gestor-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="ge-save-btn" onclick="saveGestor()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-gestor-bg">Cancelar</button>
+      <button class="btn btn-primary" id="ge-save-btn" data-acao="saveGestor">Salvar</button>
     </div>
   </div>
 </div>
@@ -1105,7 +1105,7 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div class="modal-title" id="analista-modal-title">Novo analista</div>
-      <button class="modal-close" onclick="closeModal('modal-analista-bg')">x</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-analista-bg">x</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -1123,7 +1123,7 @@
 
         <div class="form-group full" style="margin-top:.35rem">
           <label>Perfil de acesso</label>
-          <select id="an-perfil" onchange="perfilAplicado('an-perfil','an-perm')"></select>
+          <select id="an-perfil" data-acao-change="perfilAplicado" data-idsel="an-perfil" data-classe="an-perm"></select>
           <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="an-perfil-aviso">
             Com um perfil escolhido, o analista segue exatamente o que o perfil diz — as
             marcas abaixo deixam de valer e ficam só para consulta. Perfis são
@@ -1158,9 +1158,9 @@
             fica invisível para ele.
           </div>
           <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('ver')">Todas: só ver</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('editar')">Todas: editar</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(null)">Limpar</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="ver">Todas: só ver</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="editar">Todas: editar</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas">Limpar</button>
           </div>
           <div id="an-etapas-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
           <div id="an-etapas-resumo" style="font-size:.72rem;color:var(--t3);margin-top:.45rem"></div>
@@ -1168,8 +1168,8 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-analista-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="analista-save-btn" onclick="saveAnalista()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-analista-bg">Cancelar</button>
+      <button class="btn btn-primary" id="analista-save-btn" data-acao="saveAnalista">Salvar</button>
     </div>
   </div>
 </div>
@@ -1184,7 +1184,7 @@
         </div>
         <div class="modal-title">Sugerir melhoria</div>
       </div>
-      <button class="modal-close" onclick="closeModal('modal-feedback-bg')">x</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-feedback-bg">x</button>
     </div>
     <div id="feedback-form-wrap" class="modal-body">
       <p style="font-size:.8rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">Tem uma ideia para melhorar o sistema? Compartilhe com a gente! Nossa equipe analisa todas as sugestões.</p>
@@ -1205,8 +1205,8 @@
       <div style="font-size:.82rem;color:var(--t2);line-height:1.5">Agradecemos sua sugestão. Sua proposta será analisada por nossos desenvolvedores.</div>
     </div>
     <div id="feedback-footer" style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-feedback-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="fb-save-btn" onclick="saveFeedback()" style="background:#7c3aed;border-color:#7c3aed">Enviar sugestão</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-feedback-bg">Cancelar</button>
+      <button class="btn btn-primary" id="fb-save-btn" data-acao="saveFeedback" style="background:#7c3aed;border-color:#7c3aed">Enviar sugestão</button>
     </div>
   </div>
 </div>
@@ -1216,7 +1216,7 @@
   <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
       <div class="modal-title" id="partner-modal-title">Novo cadastro</div>
-      <button class="modal-close" onclick="closeModal('modal-partner-bg')">x</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-partner-bg">x</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -1244,7 +1244,7 @@
         </div>
         <div class="form-group full" style="margin-top:.35rem">
           <label>Perfil de acesso</label>
-          <select id="pt-perfil" onchange="perfilAplicado('pt-perfil','pt-perm')"></select>
+          <select id="pt-perfil" data-acao-change="perfilAplicado" data-idsel="pt-perfil" data-classe="pt-perm"></select>
           <div style="font-size:.7rem;color:var(--t3);margin-top:.3rem" id="pt-perfil-aviso">
             Com um perfil escolhido, a pessoa segue exatamente o que o perfil diz — as
             marcas abaixo deixam de valer e ficam só para consulta. Perfis são
@@ -1262,30 +1262,30 @@
           <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">O usuário sempre pode visualizar e alterar sua própria senha.</div>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-gerente-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor=document.getElementById('pt-gerente').checked?'#0d9488':'var(--border)'">
+          <label id="pt-gerente-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" data-cor="#0d9488" data-acao-mouseover="realcarBorda" data-acao-mouseout="soltarBordaDaOpcao">
             <div>
               <div style="font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:.15rem">Gerente (acesso total)</div>
               <div style="font-size:.72rem;color:var(--t3)">Vê e gerencia TODOS os processos, como o gestor — ignora restrições de empresa/analista e pode editar tudo</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="gerente" id="pt-gerente" style="width:18px;height:18px;cursor:pointer;accent-color:#0d9488;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-gerente-label').style.borderColor=this.checked?'#0d9488':'var(--border)';document.getElementById('pt-gerente-label').style.background=this.checked?'#ccfbf1':'#F4F6F4'">
+            <input type="checkbox" class="pt-perm" data-key="gerente" id="pt-gerente" style="width:18px;height:18px;cursor:pointer;accent-color:#0d9488;flex-shrink:0;margin-left:1rem" data-acao-change="marcarOpcao" data-fundo="#ccfbf1">
           </label>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#0E8C7F'" onmouseout="this.style.borderColor=document.getElementById('pt-viz-geral').checked?'#0E8C7F':'var(--border)'">
+          <label id="pt-viz-geral-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" data-cor="#0E8C7F" data-acao-mouseover="realcarBorda" data-acao-mouseout="soltarBordaDaOpcao">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Habilitar visualização geral</div>
               <div style="font-size:.72rem;color:var(--t3)">Os processos deste usuário ficam visíveis para os outros usuários da empresa correspondente</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral" style="width:18px;height:18px;cursor:pointer;accent-color:#0E8C7F;flex-shrink:0;margin-left:1rem" onchange="document.getElementById('pt-viz-geral-label').style.borderColor=this.checked?'#0E8C7F':'var(--border)';document.getElementById('pt-viz-geral-label').style.background=this.checked?'#EEF2FF':'#F4F6F4'">
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_repasses" id="pt-viz-geral" style="width:18px;height:18px;cursor:pointer;accent-color:#0E8C7F;flex-shrink:0;margin-left:1rem" data-acao-change="marcarOpcao" data-fundo="#EEF2FF">
           </label>
         </div>
         <div class="form-group full" style="margin-top:.25rem">
-          <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" onmouseover="this.style.borderColor='#3F6F9E'" onmouseout="this.style.borderColor=document.getElementById('pt-ver-analistas').checked?'#3F6F9E':'var(--border)'">
+          <label id="pt-analistas-label" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:#F4F6F4;transition:border-color .15s,background .15s;" data-cor="#3F6F9E" data-acao-mouseover="realcarBorda" data-acao-mouseout="soltarBordaDaOpcao">
             <div>
               <div style="font-size:.83rem;font-weight:600;color:var(--t1);margin-bottom:.15rem">Visão completa</div>
               <div style="font-size:.72rem;color:var(--t3)">Vê os processos de todos os usuários. Editar continua restrito aos processos dele — nos demais, precisa liberar a edição no próprio cartão. Desmarcado, vê apenas os próprios processos.</div>
             </div>
-            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#3F6F9E;flex-shrink:0;margin-left:1rem" onchange="toggleAnalistaChecklist(this.checked)">
+            <input type="checkbox" class="pt-perm" data-key="ver_todos_analistas" id="pt-ver-analistas" style="width:18px;height:18px;cursor:pointer;accent-color:#3F6F9E;flex-shrink:0;margin-left:1rem" data-acao-change="toggleAnalistaChecklist">
           </label>
           <div id="pt-analista-checklist" style="display:none;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;padding:.65rem .75rem;background:#F4F6F4">
             <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:.5rem">Analistas visíveis para este usuário</div>
@@ -1307,9 +1307,9 @@
               fica invisível para ele.
             </div>
             <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('ver')">Todas: só ver</button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas('editar')">Todas: editar</button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="coEtapasTodas(null)">Limpar</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="ver">Todas: só ver</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas" data-nivel="editar">Todas: editar</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-acao="coEtapasTodas">Limpar</button>
             </div>
             <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:.6rem"></div>
             <div id="pt-etapas-resumo" style="font-size:.72rem;color:var(--t3);margin-top:.45rem"></div>
@@ -1318,8 +1318,8 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-partner-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="pt-save-btn" onclick="savePartner()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-partner-bg">Cancelar</button>
+      <button class="btn btn-primary" id="pt-save-btn" data-acao="savePartner">Salvar</button>
     </div>
   </div>
 </div>
@@ -1329,7 +1329,7 @@
   <div class="modal" style="max-width:540px">
     <div class="modal-hdr">
       <div class="modal-title" id="empresa-modal-title">Nova empresa correspondente</div>
-      <button class="modal-close" onclick="closeModal('modal-empresa-bg')">x</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-empresa-bg">x</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -1347,18 +1347,18 @@
       </div>
     </div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-empresa-bg')">Cancelar</button>
-      <button class="btn btn-primary" id="ce-save-btn" onclick="saveEmpresa()">Salvar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-empresa-bg">Cancelar</button>
+      <button class="btn btn-primary" id="ce-save-btn" data-acao="saveEmpresa">Salvar</button>
     </div>
   </div>
 </div>
 
 <!-- ══ MODAL: Novo Despachante ══ -->
-<div class="modal-bg hidden" id="modal-desp-bg" onclick="if(event.target===this)closeModal('modal-desp-bg')">
+<div class="modal-bg hidden" id="modal-desp-bg" data-acao="fecharPeloFundo">
   <div class="modal" style="max-width:460px">
     <div class="modal-hdr">
       <div class="modal-title">Novo Despachante</div>
-      <button class="modal-close" onclick="closeModal('modal-desp-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-desp-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
@@ -1371,19 +1371,19 @@
       </div>
       <div id="desp-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
-        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-desp-bg')">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="saveDespachante()">Salvar</button>
+        <button class="btn btn-ghost btn-sm" data-acao="closeModal" data-id="modal-desp-bg">Cancelar</button>
+        <button class="btn btn-primary btn-sm" data-acao="saveDespachante">Salvar</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ MODAL: Novo Banco ══ -->
-<div class="modal-bg hidden" id="modal-banco-bg" onclick="if(event.target===this)closeModal('modal-banco-bg')">
+<div class="modal-bg hidden" id="modal-banco-bg" data-acao="fecharPeloFundo">
   <div class="modal" style="max-width:400px">
     <div class="modal-hdr">
       <div class="modal-title">Novo Banco</div>
-      <button class="modal-close" onclick="closeModal('modal-banco-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-banco-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
@@ -1392,19 +1392,19 @@
       </div>
       <div id="banco-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
-        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-banco-bg')">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="saveBanco()">Salvar</button>
+        <button class="btn btn-ghost btn-sm" data-acao="closeModal" data-id="modal-banco-bg">Cancelar</button>
+        <button class="btn btn-primary btn-sm" data-acao="saveBanco">Salvar</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ MODAL: Novo Cartório ══ -->
-<div class="modal-bg hidden" id="modal-cartorio-bg" onclick="if(event.target===this)closeModal('modal-cartorio-bg')">
+<div class="modal-bg hidden" id="modal-cartorio-bg" data-acao="fecharPeloFundo">
   <div class="modal" style="max-width:460px">
     <div class="modal-hdr">
       <div class="modal-title">Novo Cartório</div>
-      <button class="modal-close" onclick="closeModal('modal-cartorio-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-cartorio-bg">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
@@ -1417,8 +1417,8 @@
       <div class="form-group" style="margin-top:.5rem"><label>CNS (Código Nacional de Serventias)</label><input id="cart-cns" type="text" placeholder="000000"></div>
       <div id="cart-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.35rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
-        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-cartorio-bg')">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="saveCartorio()">Salvar</button>
+        <button class="btn btn-ghost btn-sm" data-acao="closeModal" data-id="modal-cartorio-bg">Cancelar</button>
+        <button class="btn btn-primary btn-sm" data-acao="saveCartorio">Salvar</button>
       </div>
     </div>
   </div>

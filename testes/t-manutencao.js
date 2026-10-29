@@ -248,7 +248,7 @@ const temAviso = p => p.evaluate(() => !!document.getElementById('a1-manutencao'
     });
     await p.goto(BASE + '/superadmin.html', { waitUntil: 'load' });
     await p.fill('#sa-key-input', 'chave-de-servico');
-    await p.click('button[onclick="saAuth()"]').catch(async () => {
+    await p.click('button[data-acao="saAuth"]').catch(async () => {
       await p.evaluate(() => saAuth());
     });
     await p.waitForTimeout(900);

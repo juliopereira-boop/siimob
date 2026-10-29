@@ -273,7 +273,7 @@ const CORRETOR = perms => ({
       'a coluna aceita soltar',
       await p.evaluate(() => {
         const c = document.querySelector('.k-col-body[data-situacao-id="cs2"]');
-        return !!c && !!c.getAttribute('ondrop') && !!c.getAttribute('ondragover');
+        return !!c && !!c.getAttribute('data-acao-drop') && !!c.getAttribute('data-acao-dragover');
       })
     );
     checa(

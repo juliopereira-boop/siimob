@@ -363,7 +363,7 @@ const toastsDaTela = p =>
     const { b, p, erros, casos, pedidos } = await abrir('listagem.html');
     checa(
       'o botão "Excluir selecionados" não existe mais',
-      await p.evaluate(() => !document.querySelector('[onclick="bulkDelete()"]'))
+      await p.evaluate(() => !document.querySelector('[data-acao="bulkDelete"], [onclick*="bulkDelete"]'))
     );
     await p.evaluate(() => {
       document.querySelectorAll('#cases-tbody .row-chk').forEach(cb => {

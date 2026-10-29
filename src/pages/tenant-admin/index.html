@@ -22,7 +22,7 @@
     </div>
     <div class="sidebar-footer">
       <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem" id="user-display"></div>
-      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" onclick="a1Logout()">Sair</button>
+      <button class="btn btn-ghost" style="width:100%;font-size:.75rem" data-acao="a1Logout">Sair</button>
     </div>
   </nav>
 
@@ -35,7 +35,7 @@
       <!-- Users section -->
       <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
         <span>Usuários</span>
-        <button class="btn btn-primary" onclick="openNewUser()">+ Novo usuário</button>
+        <button class="btn btn-primary" data-acao="openNewUser">+ Novo usuário</button>
       </div>
 
       <div class="table-wrap" style="margin-bottom:2rem">
@@ -52,7 +52,7 @@
       <!-- Partners section -->
       <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
         <span>Parceiros</span>
-        <button class="btn btn-primary" onclick="openNewPartner()">+ Novo parceiro</button>
+        <button class="btn btn-primary" data-acao="openNewPartner">+ Novo parceiro</button>
       </div>
 
       <div class="table-wrap">
@@ -74,7 +74,7 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Novo usuário</div>
-      <button class="btn btn-ghost" onclick="closeUserModal()" style="padding:.4rem .75rem">✕</button>
+      <button class="btn btn-ghost" data-acao="closeUserModal" style="padding:.4rem .75rem">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Nome</label><input id="u-name" type="text"></div>
@@ -93,8 +93,8 @@
       <div id="u-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
-      <button class="btn btn-primary" id="u-btn" onclick="createUser()">Criar</button>
+      <button class="btn btn-ghost" data-acao="closeUserModal">Cancelar</button>
+      <button class="btn btn-primary" id="u-btn" data-acao="createUser">Criar</button>
     </div>
   </div>
 </div>
@@ -104,7 +104,7 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Novo parceiro</div>
-      <button class="btn btn-ghost" onclick="closePartnerModal()" style="padding:.4rem .75rem">✕</button>
+      <button class="btn btn-ghost" data-acao="closePartnerModal" style="padding:.4rem .75rem">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Nome</label><input id="p-name" type="text"></div>
@@ -123,8 +123,8 @@
       <div id="p-err" style="color:#fca5a5;font-size:.8rem;display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closePartnerModal()">Cancelar</button>
-      <button class="btn btn-primary" id="p-btn" onclick="createPartner()">Criar</button>
+      <button class="btn btn-ghost" data-acao="closePartnerModal">Cancelar</button>
+      <button class="btn btn-primary" id="p-btn" data-acao="createPartner">Criar</button>
     </div>
   </div>
 </div>

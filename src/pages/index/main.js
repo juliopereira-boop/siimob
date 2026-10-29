@@ -1,8 +1,13 @@
-import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ goToLogin });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 exporVariavel('token', () => token);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  goToLogin: () => goToLogin()
+});
 const saved = localStorage.getItem('a1_slug');
 const token = localStorage.getItem('a1_token');
 if (saved && token) window.location.href = `/${saved}/repasse`;

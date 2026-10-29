@@ -136,7 +136,7 @@ async function abrirComo(pag, papel, { permissoes, guardadas, bancoMudo, tipo } 
 
 const botaoVisivel = p =>
   p.evaluate(() => {
-    const el = document.querySelector('[onclick="openNewCase()"]');
+    const el = document.querySelector('[data-acao="openNewCase"]');
     return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
   });
 // Toda escrita que tenha chegado a a1_cases. É a prova de que a recusa é de
@@ -243,7 +243,7 @@ const modalAberto = p =>
     const { b, p, erros } = await abrirComo('repasse.html', 'gestor', {});
     await p.waitForTimeout(1800);
     const onde = await p.evaluate(() => {
-      const el = document.querySelector('[onclick="openNewCase()"]');
+      const el = document.querySelector('[data-acao="openNewCase"]');
       if (!el) return 'ausente';
       if (el.closest('.hdr, header, #hdr, .hdr-right')) return 'cabeçalho';
       return el.closest('#tab-repasse') ? 'módulo Repasse' : 'outro lugar';

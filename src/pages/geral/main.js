@@ -16,11 +16,17 @@ import {
 } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
-import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ mudarMes, selecionarDiaAgenda });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  mudarMes: el => mudarMes(Number(el.dataset.d)),
+  selecionarDiaAgenda: (el, ev) => selecionarDiaAgenda(el.dataset.dia, ev)
+});
 /* ═══════════════════════════════════════════════════════════════════════════
    GERAL — a tela inicial do SIIMOB
 
@@ -467,8 +473,8 @@ function desenharBlocos() {
       titulo: 'Agenda do mês',
       sub: 'Compromissos, tarefas, avaliações e entrevistas',
       acao: `<div class="cal-nav">
-      <button class="cal-bt" onclick="mudarMes(-1)" aria-label="Mês anterior">‹</button>
-      <button class="cal-bt" onclick="mudarMes(1)" aria-label="Próximo mês">›</button></div>`,
+      <button class="cal-bt" data-acao="mudarMes" data-d="-1" aria-label="Mês anterior">‹</button>
+      <button class="cal-bt" data-acao="mudarMes" data-d="1" aria-label="Próximo mês">›</button></div>`,
       corpo: `<div id="cal-corpo"></div>`
     })
   );
@@ -629,7 +635,7 @@ function abrirDiaAgendaGeral(ev, dia) {
       <div class="sb-pop-cab">${typeof a1Svg === 'function' ? a1Svg('calend', 16) : ''}
         <div><div class="sb-pop-tit">${dia} de ${MESES[G.mes]}</div>
           <div class="sb-pop-sub">${data}</div></div>
-        <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+        <button class="sb-pop-x" type="button" data-acao="a1PopFechar" aria-label="Fechar">×</button></div>
       <div class="sb-pop-corpo">${corpo}</div>`
     );
   }
@@ -776,7 +782,7 @@ function desenharAgenda() {
       <button
         type="button"
         class="${cls}"
-        onclick="return selecionarDiaAgenda(${d}, event)"
+        data-acao="selecionarDiaAgenda" data-dia="${d}"
         aria-label="Ver eventos do dia ${d}"
       >
 
@@ -833,7 +839,6 @@ function desenharAgenda() {
                   "
                 ></span>
 
-
                 <div class="cal-dia-evento-conteudo">
 
                   <div class="cal-dia-evento-titulo">
@@ -845,7 +850,6 @@ function desenharAgenda() {
                   </div>
 
                 </div>
-
 
                 ${
                   item.hora
@@ -953,7 +957,6 @@ function desenharAgenda() {
 
     </div>
 
-
     <div class="cal">
 
       ${DIAS_S.map(d => `<div class="cal-dw">${d}</div>`).join('')}
@@ -961,7 +964,6 @@ function desenharAgenda() {
       ${celulas.join('')}
 
     </div>
-
 
     ${
       legenda
@@ -999,7 +1001,6 @@ function desenharAgenda() {
 
         `
     }
-
 
     ${detalhe}
 

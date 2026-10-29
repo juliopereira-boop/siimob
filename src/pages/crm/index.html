@@ -25,24 +25,24 @@
        Todo outro modulo do sistema tem as duas vistas; Leads era o unico sem. -->
   <div id="tab-lista" style="display:none">
     <div class="toolbar">
-      <input type="search" id="ll-busca" placeholder="Nome, telefone, e-mail..." oninput="renderLista()">
-      <select id="ll-etapa" onchange="renderLista()"><option value="">Todas as etapas</option></select>
-      <select id="ll-origem" onchange="renderLista()"><option value="">Todas as origens</option></select>
-      <select id="ll-corretor" onchange="renderLista()"><option value="">Todos os corretores</option></select>
-      <select id="ll-temp" onchange="renderLista()">
+      <input type="search" id="ll-busca" placeholder="Nome, telefone, e-mail..." data-acao-input="renderLista">
+      <select id="ll-etapa" data-acao-change="renderLista"><option value="">Todas as etapas</option></select>
+      <select id="ll-origem" data-acao-change="renderLista"><option value="">Todas as origens</option></select>
+      <select id="ll-corretor" data-acao-change="renderLista"><option value="">Todos os corretores</option></select>
+      <select id="ll-temp" data-acao-change="renderLista">
         <option value="">Qualquer temperatura</option><option value="Quente">Quente</option>
         <option value="Morno">Morno</option><option value="Frio">Frio</option></select>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost btn-sm" onclick="exportarLeads()">Exportar CSV</button>
+      <button class="btn btn-ghost btn-sm" data-acao="exportarLeads">Exportar CSV</button>
       <span id="ll-conta" style="font-size:.72rem;color:var(--t3)"></span>
     </div>
     <div class="panel" style="overflow:auto"><div id="ll-corpo"></div></div>
   </div>
   <div id="tab-funil">
     <div class="toolbar">
-      <select id="pipe-sel" class="pipe-sel" onchange="onPipeChange()"></select>
-      <input type="search" id="lead-search" placeholder="Buscar lead, telefone..." oninput="renderFunil()">
-      <select id="lead-src-filter" onchange="renderFunil()"><option value="">Todas as origens</option></select>
+      <select id="pipe-sel" class="pipe-sel" data-acao-change="onPipeChange"></select>
+      <input type="search" id="lead-search" placeholder="Buscar lead, telefone..." data-acao-input="renderFunil">
+      <select id="lead-src-filter" data-acao-change="renderFunil"><option value="">Todas as origens</option></select>
       <div style="flex:1"></div>
       <span id="lead-count" style="font-size:.72rem;color:var(--t3)"></span>
     </div>
@@ -53,7 +53,7 @@
 <!-- New lead -->
 <div class="modal-bg hidden" id="modal-new">
   <div class="modal">
-    <div class="modal-hdr"><div><div class="modal-title">Novo Lead</div><div class="modal-sub">Cadastre e qualifique o lead</div></div><button class="modal-close" onclick="closeModal('modal-new')">×</button></div>
+    <div class="modal-hdr"><div><div class="modal-title">Novo Lead</div><div class="modal-sub">Cadastre e qualifique o lead</div></div><button class="modal-close" data-acao="closeModal" data-id="modal-new">×</button></div>
     <div class="modal-body">
       <!-- CRIAR LEAD SAO TRES CAMPOS.
            Quem cadastra lead esta com o cliente ao telefone, e o formulario
@@ -66,7 +66,7 @@
         <div class="fg"><label>Telefone / WhatsApp</label><input id="n-phone" placeholder="(00) 00000-0000" inputmode="tel"></div>
         <div class="fg"><label>E-mail</label><input id="n-email" type="email" autocomplete="off"></div>
       </div>
-      <button type="button" class="btn btn-ghost" id="n-mais" onclick="alternarMaisLead()"
+      <button type="button" class="btn btn-ghost" id="n-mais" data-acao="alternarMaisLead"
         style="margin-top:.9rem;width:100%;justify-content:center">
         + Adicionar informações complementares</button>
 
@@ -79,7 +79,7 @@
       </div>
       <div class="sec-title">Funil</div>
       <div class="fgrid">
-        <div class="fg"><label>Pipeline</label><select id="n-pipe" onchange="fillPipeStages('n-pipe','n-stage')"></select></div>
+        <div class="fg"><label>Pipeline</label><select id="n-pipe" data-acao-change="fillPipeStages"></select></div>
         <div class="fg"><label>Etapa inicial</label><select id="n-stage"></select></div>
       </div>
       <div class="sec-title">Qualificação</div>
@@ -98,7 +98,7 @@
       </div>
       </div><!-- /n-extra -->
     </div>
-    <div class="modal-foot"><span id="n-dica" style="font-size:.7rem;color:var(--t3)">Nome basta para salvar.</span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createLead()">Criar lead</button></div></div>
+    <div class="modal-foot"><span id="n-dica" style="font-size:.7rem;color:var(--t3)">Nome basta para salvar.</span><div style="display:flex;gap:.45rem"><button class="btn btn-ghost" data-acao="closeModal" data-id="modal-new">Cancelar</button><button class="btn btn-primary" data-acao="createLead">Criar lead</button></div></div>
   </div>
 </div>
 
@@ -114,20 +114,20 @@
              regra de processo que o cliente nao pediu, e que ele teria de
              descobrir errando. O botao so aparece com o modulo licenciado. -->
         <button class="btn btn-primary btn-sm" id="ml-pre" style="display:none"
-          onclick="criarPreAnaliseDoLead()" title="Abrir uma pré-análise já com os dados deste lead">
+          data-acao="criarPreAnaliseDoLead" title="Abrir uma pré-análise já com os dados deste lead">
           Criar pré-análise</button>
-        <select id="ml-stage" onchange="changeLeadStage()" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
-        <button class="modal-close" onclick="closeModal('modal-lead')">×</button></div>
+        <select id="ml-stage" data-acao-change="changeLeadStage" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
+        <button class="modal-close" data-acao="closeModal" data-id="modal-lead">×</button></div>
     </div>
     <div class="modal-tabs">
-      <button class="modal-tab active" data-mt="dados" onclick="switchLeadTab('dados',this)">Dados</button>
-      <button class="modal-tab" data-mt="qual" onclick="switchLeadTab('qual',this)">Qualificação</button>
-      <button class="modal-tab" data-mt="prop" onclick="switchLeadTab('prop',this)">Proposta</button>
-      <button class="modal-tab" data-mt="tarefa" onclick="switchLeadTab('tarefa',this)">Tarefa</button>
-      <button class="modal-tab" data-mt="hist" onclick="switchLeadTab('hist',this)">Histórico</button>
+      <button class="modal-tab active" data-mt="dados" data-acao="switchLeadTab" data-t="dados">Dados</button>
+      <button class="modal-tab" data-mt="qual" data-acao="switchLeadTab" data-t="qual">Qualificação</button>
+      <button class="modal-tab" data-mt="prop" data-acao="switchLeadTab" data-t="prop">Proposta</button>
+      <button class="modal-tab" data-mt="tarefa" data-acao="switchLeadTab" data-t="tarefa">Tarefa</button>
+      <button class="modal-tab" data-mt="hist" data-acao="switchLeadTab" data-t="hist">Histórico</button>
     </div>
     <div class="modal-body" id="ml-body"></div>
-    <div class="modal-foot"><button class="btn btn-danger btn-sm" onclick="archiveLead()">Arquivar</button><div style="display:flex;gap:.45rem"><button class="wa" style="padding:.5rem .8rem" onclick="waLead()">WhatsApp</button><button class="btn btn-ghost" onclick="closeModal('modal-lead')">Fechar</button><button class="btn btn-primary" onclick="saveLeadRouter()">Salvar</button></div></div>
+    <div class="modal-foot"><button class="btn btn-danger btn-sm" data-acao="archiveLead">Arquivar</button><div style="display:flex;gap:.45rem"><button class="wa" style="padding:.5rem .8rem" data-acao="waLead">WhatsApp</button><button class="btn btn-ghost" data-acao="closeModal" data-id="modal-lead">Fechar</button><button class="btn btn-primary" data-acao="saveLeadRouter">Salvar</button></div></div>
   </div>
 </div>
 

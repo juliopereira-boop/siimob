@@ -1,10 +1,12 @@
 // ─── auth.js — depends on config.js ─────────────────────────────────────────
 
 import { A1, A1_KEY } from '../api/config.js';
-import { expor } from '../utils/expor.js';
+import { acoes } from '../ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ a1Logout });
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  a1Logout: () => a1Logout()
+});
 export async function hashPassword(plain) {
   const enc = new TextEncoder().encode(plain + '::a1');
   const buf = await crypto.subtle.digest('SHA-256', enc);
@@ -362,7 +364,7 @@ export async function a1RequireModule(moduleKey) {
         <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
         <h2 style="color:#f1f5f9;margin:0 0 .5rem">Nenhum módulo liberado</h2>
         <p style="margin:0 0 1.5rem">Contate o administrador para liberar um módulo.</p>
-        <button onclick="a1Logout()" style="color:#6366f1;background:none;cursor:pointer;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">Sair</button>
+        <button data-acao="a1Logout" style="color:#6366f1;background:none;cursor:pointer;border:1px solid #6366f1;padding:.5rem 1.25rem;border-radius:.5rem">Sair</button>
       </div>
     </div>`;
   throw new Error('module_locked');

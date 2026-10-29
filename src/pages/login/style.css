@@ -506,3 +506,13 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* "Trocar empresa", no pé do cartão */
+.trocar-empresa {
+  font-size: 0.73rem;
+  color: var(--t3);
+  transition: color 0.15s;
+}
+.trocar-empresa:hover {
+  color: #47615c;
+}

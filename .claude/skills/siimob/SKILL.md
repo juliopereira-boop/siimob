@@ -40,13 +40,18 @@ estiver errado, quem é o cliente que descobre, e como?*
   publica: as páginas saem na raiz com os nomes de sempre (`/repasse.html`), e
   JS/CSS em `/static` com hash. Ver `docs/ARQUITETURA.md`.
 - **Todo arquivo de `src/` é módulo ES.** O que um arquivo usa de outro vem
-  por `import` (o lint, com `no-undef`, reprova nome sem import). O HTML ainda
-  chama funções pelo nome (`onclick`), então cada módulo lista no topo, em
-  `expor({...})`, o que o HTML e os testes alcançam; o resto é privado. Função
-  nova chamada por `onclick` tem de entrar nessa lista, ou o clique dá
-  ReferenceError. Teste que precisa ligar um comportamento muda o ESTADO (por
-  exemplo `G.roteamentoAnalistas = true`), não troca a função pelo window: a
-  tela chama a própria função e não veria a troca.
+  por `import` (o lint, com `no-undef`, reprova nome sem import). Teste que
+  precisa ligar um comportamento muda o ESTADO (por exemplo
+  `G.roteamentoAnalistas = true`), não troca a função pelo window: a tela chama
+  a própria função e não veria a troca.
+- **O HTML não chama função pelo nome: declara a ação.** `<button
+  data-acao="abrirCaso" data-id="${esc(c.id)}">` (clique), `data-acao-change`,
+  `data-acao-input`... (outro evento), `data-acao-enter` (Enter). O módulo dono
+  registra no topo: `acoes({ abrirCaso: el => abrirCaso(el.dataset.id) })`
+  (`src/shared/ui/acoes.js`). Argumento vai em `data-*` com `esc()`; número
+  volta com `Number(el.dataset.x)`. Ação nova sem registro é erro no clique e
+  reprova no `t-acoes`; `onclick=` novo também reprova lá. `expor({...})` ficou
+  só para o que a suíte e as sondas `typeof` alcançam.
 - **Banco: Supabase (Postgres + PostgREST + RLS + Storage).** O navegador fala
   direto com a API REST usando a chave `anon` pública e um cabeçalho
   `x-session-token`. **Toda a autorização real é RLS.** O que a tela esconde é
@@ -75,7 +80,8 @@ navegador → PostgREST (chave anon + x-session-token) → RLS → dados
 | `src/modules/paineis/paineis.js` | Dashboards de Pré-análise e Comercial. |
 | `src/pages/repasse` | Dashboard, quadro (kanban) e listagem do Repasse: **uma tela, três vistas**. A rota decide (`VISTA` no topo do `main.js`): `/repasse` → dashboard, `/andamento` → quadro, `/listagem` → lista. |
 | `src/pages/registro` | Quadro e listagem do Registro, idem (`/registro`, `/registro-listagem`). |
-| `src/shared/utils/texto.js` | `esc()` e `escJs()`: o ÚNICO escape. Nenhuma tela declara o seu (`t-escapes` reprova). Dentro de string JS num `onclick`, é `escJs`, nunca `esc`. |
+| `src/shared/utils/texto.js` | `esc()`: o ÚNICO escape, para conteúdo e atributo (inclusive os `data-*` das ações). Nenhuma tela declara o seu (`t-escapes` reprova). |
+| `src/shared/ui/acoes.js` | Delegação de eventos: `data-acao` no HTML, `acoes({...})` no módulo. Fiel ao onclick antigo (ordem de dentro para fora, `stopPropagation`, eventos sem bolha); provado no `t-acoes`. |
 | `src/shared/utils/datas.js` | `hojeISO()`: "hoje" no fuso de quem usa. `toISOString().slice(0,10)` é UTC e erra depois das 21h. |
 | `src/pages/pre-analise` / `comercial` | Módulos novos (fila com SLA, assistente, dossiê). |
 | `src/pages/configuracoes` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
@@ -218,14 +224,16 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 
 ## Convenções do front
 
-- `esc()` em **tudo** que vem do banco e entra em `innerHTML`. Quando o texto
-  cai dentro de uma string JS num handler (`onclick="f('${...}')"`), é
-  `escJs()`: o navegador decodifica o atributo antes de rodar o JS, e `esc()`
-  sozinho deixa `\` e `'` quebrarem a string. Os dois vêm de
+- `esc()` em **tudo** que vem do banco e entra em `innerHTML`, inclusive nos
+  `data-*` que levam o argumento de uma ação. Vem de
   `src/shared/utils/texto.js`; nenhuma tela declara o seu.
-- Funções chamadas por `onclick` precisam estar no **escopo global**. Definir
-  dentro de `init()` faz o atributo não enxergar — já quebrou o seletor de
-  painel.
+- Nada de `onclick`, `onchange`... no HTML: `data-acao` e registro em
+  `acoes({...})`. As únicas exceções são o `onload="this.media='all'"` das
+  fontes (roda antes de qualquer módulo) e o botão de imprimir de documento
+  aberto noutra janela (lá não há delegação).
+- Botão dentro de um cartão que já abre o mesmo item não precisa de ação
+  própria: o clique sobe até o cartão. Ação dentro do cartão que faz OUTRA
+  coisa chama `ev.stopPropagation()` (ver `waToSemAbrir` no CRM).
 - `A1.buscarTudo()` para qualquer leitura que possa passar de 1.000 linhas. O
   PostgREST corta em 206 e quem só olha o corpo não percebe: o sistema mostra
   mil processos achando que são todos.
@@ -327,9 +335,9 @@ não num documento separado.
 
 ## Dívidas conhecidas (não são bugs novos — são o mapa)
 
-- **Reestruturação em fases** (decisão do dono, 28/10): 1) separação e Vite e
-  2) fim das cópias estão feitas; faltam 3) módulos ES (trocar os onclick por
-  eventos) e 4) tipos em JSDoc com checagem. Durante a reestruturação a `main`
+- **Reestruturação em fases** (decisão do dono, 28/10): 1) separação e Vite,
+  2) fim das cópias e 3) módulos ES com ações por delegação estão feitas; falta
+  4) tipos em JSDoc com checagem (`acoes.js` já tem `// @ts-check`). Durante a reestruturação a `main`
   fica congelada; correção urgente passa pelo Claude, que aplica nos dois lados.
 - **`a1_has_module` (a porta da tela) não honra `expires_at`.** O RLS honra. Uma
   licença vencida ainda desenha a aba, mas não entrega dado.

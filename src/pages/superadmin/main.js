@@ -1,80 +1,120 @@
 import { A1_URL } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
   abrirAviso,
-  accessTenant,
   acessarComo,
-  alternarAutoMonitor,
-  alternarPublicacao,
-  apagarSituacao,
-  autoForo,
-  carregarEsteira,
-  changePlan,
-  clearLogoUpload,
-  closeDespLimitModal,
   closeModal,
-  cobPersistMeta,
-  cobToggle,
-  cobYear,
-  confirmDespLimit,
-  createTenant,
-  createUserForTenant,
-  deleteLead,
-  deleteTenant,
-  deleteUser,
-  editarPapeis,
-  editarRequisito,
-  editarSituacao,
-  editarTransicao,
   estadoMes,
-  excluirAviso,
-  filterTenants,
-  gerarContratoPDF,
-  handleLogoFile,
-  loadFeedback,
-  loadLeads,
-  loadMonitor,
   loadTenantModulesFor,
-  lockModuleFor,
-  mailtoCobranca,
-  manutCarregar,
   manutDesligar,
   manutLigar,
-  marcarPagoIndicacao,
-  mudarStatusIndicacao,
-  mudarValorIndicacao,
-  novaSituacao,
-  novaTransicao,
   openCobranca,
-  openContrato,
   openUsersModal,
-  pintarPreviaAviso,
-  reactivateTenant,
   renderCobranca,
-  renderLeads,
-  resetPw,
   saAuth,
-  saLogout,
   salvarAviso,
-  saveLogoUpload,
-  semearEsteira,
-  semearTransicoes,
-  sendCobranca,
-  setFeedbackStatus,
-  setLeadStatus,
-  setUserLimit,
-  subirArquivoAviso,
-  suspendTenant,
   switchSaTab,
-  tirarArquivoAviso,
-  toast,
-  toggleCustomLimit,
-  toggleUser,
-  unlockModuleFor
+  toast
+});
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  abrirAviso: el => abrirAviso(el.dataset.id ?? null),
+  accessTenant: el => accessTenant(el.dataset.tenantId, el.dataset.slug, el.dataset.tenantName),
+  acessarComo: el =>
+    acessarComo(
+      el.dataset.tenantId,
+      el.dataset.slug,
+      el.dataset.tenantName,
+      el.dataset.userId,
+      el.dataset.papel,
+      el.dataset.nome
+    ),
+  alternarAutoMonitor: () => alternarAutoMonitor(),
+  alternarPublicacao: el => alternarPublicacao(el.dataset.id),
+  apagarSituacao: el => apagarSituacao(el.dataset.id),
+  autoForo: () => autoForo(),
+  carregarEsteira: () => carregarEsteira(),
+  changePlan: el => changePlan(el.dataset.tenantId),
+  clearLogoUpload: () => clearLogoUpload(),
+  closeDespLimitModal: () => closeDespLimitModal(),
+  closeModal: el => closeModal(el.dataset.id),
+  cobPersistMeta: () => cobPersistMeta(),
+  cobToggle: el => cobToggle(Number(el.dataset.mIdx)),
+  cobYear: el => cobYear(Number(el.dataset.delta)),
+  confirmDespLimit: () => confirmDespLimit(),
+  createTenant: () => createTenant(),
+  createUserForTenant: () => createUserForTenant(),
+  deleteLead: el => deleteLead(el.dataset.id, el.dataset.nome),
+  deleteTenant: el => deleteTenant(el.dataset.tenantId, el.dataset.tenantName),
+  deleteUser: el => deleteUser(el.dataset.userId, el.dataset.userName),
+  editarPapeis: el => editarPapeis(el.dataset.id, el.value),
+  editarRequisito: el => editarRequisito(el.dataset.id, el.dataset.chave, el.checked),
+  editarSituacao: el => editarSituacao(el.dataset.id, el.dataset.campo, el.value),
+  editarTransicao: el => editarTransicao(el.dataset.id, el.dataset.campo, el.value),
+  editarTransicaoOuNulo: el => editarTransicao(el.dataset.id, el.dataset.campo, el.value || null),
+  excluirAviso: el => excluirAviso(el.dataset.id),
+  fecharLimitePeloFundo: (el, ev) => {
+    if (ev.target === el) closeDespLimitModal();
+  },
+  filterTenants: () => filterTenants(),
+  gerarContratoPDF: () => gerarContratoPDF(),
+  handleLogoFile: (el, ev) => handleLogoFile(ev),
+  imagemDoAvisoFalhou: el => {
+    el.replaceWith(
+      Object.assign(document.createElement('div'), {
+        textContent: 'Não consegui carregar esta imagem. Confira o endereço.',
+        style: 'font-size:.75rem;color:#B91C1C'
+      })
+    );
+  },
+  loadFeedback: () => loadFeedback(),
+  loadLeads: () => loadLeads(),
+  loadMonitor: () => loadMonitor(),
+  loadTenantModulesFor: () => loadTenantModulesFor(),
+  lockModuleFor: el => lockModuleFor(el.dataset.tenantId, el.dataset.moduleKey),
+  mailtoCobranca: () => mailtoCobranca(),
+  manutCarregar: () => manutCarregar(),
+  manutDesligar: () => manutDesligar(),
+  manutLigar: () => manutLigar(),
+  marcarPagoIndicacao: el => marcarPagoIndicacao(el.dataset.id),
+  mudarStatusIndicacao: el => mudarStatusIndicacao(el.dataset.id, el.value),
+  mudarValorIndicacao: el => mudarValorIndicacao(el.dataset.id, el.value),
+  novaSituacao: () => novaSituacao(),
+  novaTransicao: () => novaTransicao(),
+  openCobranca: el => openCobranca(el.dataset.tenantId, el.dataset.name, el.dataset.email),
+  openContrato: el => openContrato(el.dataset.tenantId),
+  openUsersModal: el => openUsersModal(el.dataset.tenantId, el.dataset.tenantName),
+  pintarPreviaAviso: () => pintarPreviaAviso(),
+  reactivateTenant: el => reactivateTenant(el.dataset.tenantId),
+  renderLeads: () => renderLeads(),
+  resetPw: el => resetPw(el.dataset.userId),
+  saAuth: () => saAuth(),
+  saLogout: () => saLogout(),
+  salvarAviso: el => salvarAviso(el.dataset.publicar === 'true'),
+  saveLogoUpload: () => saveLogoUpload(),
+  semearEsteira: () => semearEsteira(),
+  semearTransicoes: () => semearTransicoes(),
+  sendCobranca: () => sendCobranca(),
+  setFeedbackStatus: el => setFeedbackStatus(el.dataset.id, el.dataset.status),
+  setLeadStatus: el => setLeadStatus(el.dataset.id, el.value),
+  setUserLimit: el => setUserLimit(el.dataset.tenantId, el.value),
+  subirArquivoAviso: el => subirArquivoAviso(el, el.dataset.qual),
+  suspendTenant: el => suspendTenant(el.dataset.tenantId),
+  switchSaTab: el => switchSaTab(el.dataset.name, el),
+  tirarArquivoAviso: el => tirarArquivoAviso(el.dataset.qual),
+  toggleCustomLimit: () => toggleCustomLimit(),
+  toggleUser: el => toggleUser(el.dataset.userId, el.dataset.current === 'true'),
+  unlockModuleFor: el => unlockModuleFor(el.dataset.tenantId, el.dataset.moduleKey),
+  usarBannerPronto: el => {
+    /** @type {HTMLInputElement} */ (document.getElementById('av-imagem')).value = el.dataset.url;
+    pintarPreviaAviso();
+  }
 });
 exporVariavel(
   'ACTIVE_TENANT_ID',
@@ -364,7 +404,7 @@ function renderEsteira() {
           Sem situações cadastradas, o módulo abre mas não funciona: não há para onde mover um processo.
           Comece pelo desenho padrão e ajuste com o cliente — nada aqui é definitivo.
         </div>
-        <button class="btn btn-primary btn-sm" onclick="semearEsteira()">Criar esteira padrão de ${esc(d.nome)}</button>
+        <button class="btn btn-primary btn-sm" data-acao="semearEsteira">Criar esteira padrão de ${esc(d.nome)}</button>
       </div>`;
     return;
   }
@@ -378,7 +418,7 @@ function renderEsteira() {
     <div class="panel" style="overflow:hidden;margin-bottom:1.25rem">
       <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
         <div class="section-title">Situações de ${esc(d.nome)}</div>
-        <button class="btn btn-ghost btn-xs" onclick="novaSituacao()">+ Situação</button>
+        <button class="btn btn-ghost btn-xs" data-acao="novaSituacao">+ Situação</button>
       </div>
       <div class="tbl-wrap" style="border:none;box-shadow:none">
         <table><thead><tr>
@@ -390,19 +430,19 @@ function renderEsteira() {
             (s, i) => `
           <tr>
             <td style="color:var(--t3)">${i + 1}</td>
-            <td><input value="${esc(s.nome)}" onchange="editarSituacao('${escJs(s.id)}','nome',this.value)"
+            <td><input value="${esc(s.nome)}" data-acao-change="editarSituacao" data-id="${esc(s.id)}" data-campo="nome"
                        style="width:100%;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td><select onchange="editarSituacao('${escJs(s.id)}','flag',this.value)"
+            <td><select data-acao-change="editarSituacao" data-id="${esc(s.id)}" data-campo="flag"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="">—</option>
                   ${d.flags.map(f => `<option value="${f}" ${s.flag === f ? 'selected' : ''}>${f}</option>`).join('')}
                 </select></td>
-            <td><input type="color" value="${esc(s.cor || '#64748b')}" onchange="editarSituacao('${escJs(s.id)}','cor',this.value)"
+            <td><input type="color" value="${esc(s.cor || '#64748b')}" data-acao-change="editarSituacao" data-id="${esc(s.id)}" data-campo="cor"
                        style="width:44px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0;cursor:pointer"></td>
             <td><input type="number" min="0" max="8760" value="${s.sla_horas == null ? '' : s.sla_horas}"
-                       placeholder="sem prazo" onchange="editarSituacao('${escJs(s.id)}','sla_horas',this.value)"
+                       placeholder="sem prazo" data-acao-change="editarSituacao" data-id="${esc(s.id)}" data-campo="sla_horas"
                        style="width:92px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.77rem"></td>
-            <td><button class="btn btn-danger btn-xs" onclick="apagarSituacao('${escJs(s.id)}')">Apagar</button></td>
+            <td><button class="btn btn-danger btn-xs" data-acao="apagarSituacao" data-id="${esc(s.id)}">Apagar</button></td>
           </tr>`
           )
           .join('')}
@@ -417,7 +457,7 @@ function renderEsteira() {
     <div class="panel" style="overflow:hidden">
       <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap">
         <div class="section-title">Transições permitidas</div>
-        <button class="btn btn-ghost btn-xs" onclick="novaTransicao()">+ Transição</button>
+        <button class="btn btn-ghost btn-xs" data-acao="novaTransicao">+ Transição</button>
       </div>
       ${
         EST.transicoes.length
@@ -431,20 +471,20 @@ function renderEsteira() {
           .map(
             t => `
           <tr>
-            <td><select onchange="editarTransicao('${escJs(t.id)}','de_id',this.value||null)"
+            <td><select data-acao-change="editarTransicaoOuNulo" data-id="${esc(t.id)}" data-campo="de_id"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="">qualquer situação</option>
                   ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.de_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${escJs(t.id)}','para_id',this.value)"
+            <td><select data-acao-change="editarTransicao" data-id="${esc(t.id)}" data-campo="para_id"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   ${EST.situacoes.map(s => `<option value="${esc(s.id)}" ${t.para_id === s.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${escJs(t.id)}','acao',this.value||null)"
+            <td><select data-acao-change="editarTransicaoOuNulo" data-id="${esc(t.id)}" data-campo="acao"
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   ${d.acoes.map(([v, r]) => `<option value="${v}" ${(t.acao || '') === v ? 'selected' : ''}>${esc(r)}</option>`).join('')}
                 </select></td>
-            <td><select onchange="editarTransicao('${escJs(t.id)}','acao_modo',this.value)"
+            <td><select data-acao-change="editarTransicao" data-id="${esc(t.id)}" data-campo="acao_modo"
                         ${t.acao ? '' : 'disabled'}
                         style="padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem">
                   <option value="CONFIRMAR" ${t.acao_modo === 'CONFIRMAR' ? 'selected' : ''}>o operador confirma</option>
@@ -455,14 +495,14 @@ function renderEsteira() {
                 ([k, r]) => `
                   <label style="display:flex;align-items:center;gap:.3rem;font-size:.71rem;color:var(--t2);cursor:pointer">
                     <input type="checkbox" ${(t.requisitos || {})[k] ? 'checked' : ''}
-                           onchange="editarRequisito('${escJs(t.id)}','${k}',this.checked)"
+                           data-acao-change="editarRequisito" data-id="${esc(t.id)}" data-chave="${esc(k)}"
                            style="accent-color:#0E8C7F;width:13px;height:13px;cursor:pointer">${esc(r)}</label>`
               )
               .join('')}</td>
             <td><input value="${esc((t.papeis || []).join(', '))}" placeholder="todos"
-                       onchange="editarPapeis('${escJs(t.id)}',this.value)"
+                       data-acao-change="editarPapeis" data-id="${esc(t.id)}"
                        style="width:130px;padding:.28rem .45rem;border:1px solid var(--border);border-radius:5px;font-size:.75rem"></td>
-            <td><button class="btn btn-danger btn-xs" onclick="apagarTransicao('${escJs(t.id)}')">Apagar</button></td>
+            <td><button class="btn btn-danger btn-xs" data-acao="apagarTransicao" data-id="${esc(t.id)}">Apagar</button></td>
           </tr>`
           )
           .join('')}
@@ -470,7 +510,7 @@ function renderEsteira() {
       </div>`
           : `<div style="padding:2rem;text-align:center;color:var(--t3);font-size:.8rem">
         Nenhuma transição. Sem elas, nada se move na esteira.
-        <div style="margin-top:.8rem"><button class="btn btn-primary btn-xs" onclick="semearTransicoes()">Ligar as situações em sequência</button></div>
+        <div style="margin-top:.8rem"><button class="btn btn-primary btn-xs" data-acao="semearTransicoes">Ligar as situações em sequência</button></div>
       </div>`
       }
       <div style="padding:.7rem 1rem;font-size:.7rem;color:var(--t3);border-top:1px solid var(--border);line-height:1.5">
@@ -925,7 +965,7 @@ function renderIndicacoes() {
           ${q.chave_pix ? `<div style="color:var(--t3);font-size:.72rem">PIX: ${esc(q.chave_pix)}</div>` : ''}
         </td>
         <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
-          <select onchange="mudarStatusIndicacao('${i.id}', this.value)"
+          <select data-acao-change="mudarStatusIndicacao" data-id="${esc(i.id)}"
             style="font-size:.75rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px;color:${IND_COR[i.status] || '#333'};font-weight:700">
             ${IND_STATUS.map(s => `<option value="${s}"${s === i.status ? ' selected' : ''}>${IND_ROT[s]}</option>`).join('')}
           </select>
@@ -933,7 +973,7 @@ function renderIndicacoes() {
         <td style="padding:.6rem .5rem;border-bottom:1px solid #f1f5f9">
           <input type="number" value="${i.valor_primeira_parcela || ''}" placeholder="0,00" step="0.01"
             title="Valor da primeira parcela paga pela empresa indicada — não o total do contrato"
-            onchange="mudarValorIndicacao('${i.id}', this.value)"
+            data-acao-change="mudarValorIndicacao" data-id="${esc(i.id)}"
             style="width:110px;font-size:.78rem;padding:.25rem .4rem;border:1px solid var(--border);border-radius:6px">
           <div style="color:var(--t3);font-size:.68rem;margin-top:.1rem">${i.percentual || 20}% da 1ª parcela</div>
         </td>
@@ -945,7 +985,7 @@ function renderIndicacoes() {
             com
               ? i.pago
                 ? '<span style="font-size:.72rem;color:#0E8C7F;font-weight:800">pago</span>'
-                : `<button class="btn btn-ghost" style="font-size:.73rem" onclick="marcarPagoIndicacao('${i.id}')">Marcar pago</button>`
+                : `<button class="btn btn-ghost" style="font-size:.73rem" data-acao="marcarPagoIndicacao" data-id="${esc(i.id)}">Marcar pago</button>`
               : ''
           }
         </td></tr>`;
@@ -1058,9 +1098,9 @@ function renderAvisos() {
         </td>
         <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9)">${sit}</td>
         <td style="padding:.55rem .5rem;border-bottom:1px solid var(--border2,#f1f5f9);white-space:nowrap;text-align:right">
-          <button class="btn btn-ghost" style="font-size:.74rem" onclick="abrirAviso('${a.id}')">Editar</button>
-          <button class="btn btn-ghost" style="font-size:.74rem" onclick="alternarPublicacao('${a.id}')">${a.publicado ? 'Despublicar' : 'Publicar'}</button>
-          <button class="btn btn-ghost" style="font-size:.74rem;color:#B8433A" onclick="excluirAviso('${a.id}')">Excluir</button>
+          <button class="btn btn-ghost" style="font-size:.74rem" data-acao="abrirAviso" data-id="${esc(a.id)}">Editar</button>
+          <button class="btn btn-ghost" style="font-size:.74rem" data-acao="alternarPublicacao" data-id="${esc(a.id)}">${a.publicado ? 'Despublicar' : 'Publicar'}</button>
+          <button class="btn btn-ghost" style="font-size:.74rem;color:#B8433A" data-acao="excluirAviso" data-id="${esc(a.id)}">Excluir</button>
         </td></tr>`;
     }).join('')}
   </tbody></table></div>`;
@@ -1119,12 +1159,12 @@ function pintarPreviaAviso() {
   const url = imagemDoAviso();
   i.innerHTML = url
     ? `<img src="${esc(url)}" style="max-width:260px;border-radius:8px;display:block"
-            onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'Não consegui carregar esta imagem. Confira o endereço.',style:'font-size:.75rem;color:#B91C1C'}))">
-       <button class="btn btn-ghost" style="font-size:.72rem;margin-top:.3rem" onclick="tirarArquivoAviso('imagem')">Remover imagem</button>`
+            data-acao-error="imagemDoAvisoFalhou">
+       <button class="btn btn-ghost" style="font-size:.72rem;margin-top:.3rem" data-acao="tirarArquivoAviso" data-qual="imagem">Remover imagem</button>`
     : '';
   const v = document.getElementById('av-vid-prev');
   v.innerHTML = AVISO_ARQ.video
-    ? `Arquivo enviado. <button class="btn btn-ghost" style="font-size:.72rem" onclick="tirarArquivoAviso('video')">Remover</button>`
+    ? `Arquivo enviado. <button class="btn btn-ghost" style="font-size:.72rem" data-acao="tirarArquivoAviso" data-qual="video">Remover</button>`
     : '';
 }
 function tirarArquivoAviso(qual) {
@@ -1349,12 +1389,12 @@ function renderLeads() {
         <td style="padding:.7rem .8rem;color:var(--t2)">${esc(l.company || '—')}</td>
         <td style="padding:.7rem .8rem;color:var(--t2)">${esc(l.segment || '—')}${l.volume ? `<div style="color:var(--t3);font-size:.72rem">${esc(l.volume)}/mês</div>` : ''}</td>
         <td style="padding:.7rem .8rem">
-          <select onchange="setLeadStatus('${l.id}',this.value)" style="font-size:.72rem;padding:.25rem .45rem;border-radius:6px;border:1px solid var(--border);font-weight:700;color:${LEAD_CORES[l.status] || 'var(--t1)'}">
+          <select data-acao-change="setLeadStatus" data-id="${esc(l.id)}" style="font-size:.72rem;padding:.25rem .45rem;border-radius:6px;border:1px solid var(--border);font-weight:700;color:${LEAD_CORES[l.status] || 'var(--t1)'}">
             ${LEAD_STATUS.map(s => `<option value="${s}"${s === l.status ? ' selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}
           </select>
         </td>
         <td style="padding:.7rem .8rem;text-align:right">
-          <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" onclick="deleteLead('${l.id}','${escJs(l.name)}')">Excluir</button>
+          <button class="btn btn-ghost btn-sm" style="color:#B8433A;border-color:#fecaca" data-acao="deleteLead" data-id="${esc(l.id)}" data-nome="${esc(l.name)}">Excluir</button>
         </td>
       </tr>`;
       })
@@ -1716,7 +1756,7 @@ function renderTenantsTable(list) {
       <td><span class="badge badge-gray">${esc(t.plan_key)}</span></td>
       <td>
         <input type="number" value="${t.max_users}" min="1" style="width:4rem;border:1px solid var(--border);border-radius:4px;padding:.2rem .4rem;font-size:.75rem;text-align:center"
-               onchange="setUserLimit('${t.id}',this.value)">
+               data-acao-change="setUserLimit" data-tenant-id="${esc(t.id)}">
       </td>
       <td><span class="badge ${statusCls}">${t.status}</span></td>
       <td style="font-size:.73rem;color:var(--t3)">${t.trial_ends_at ? new Date(t.trial_ends_at).toLocaleDateString('pt-BR') : '—'}</td>
@@ -1729,17 +1769,17 @@ function renderTenantsTable(list) {
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
           <button class="btn btn-xs" style="background:#0E8C7F;color:#fff"
             title="${t.status === 'suspended' ? 'Acessar em modo suporte — cliente suspenso' : 'Acessar cliente'}"
-            onclick="accessTenant('${t.id}','${escJs(t.slug)}','${escJs(t.name)}')">Acessar</button>
-          <button class="btn btn-primary btn-xs" onclick="openUsersModal('${t.id}','${escJs(t.name)}')" title="Usuários">Usuários</button>
-          <button class="btn btn-ghost btn-xs" onclick="changePlan('${t.id}')">Plano</button>
-          <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" onclick="openContrato('${t.id}')">Contrato</button>
-          <button class="btn btn-ghost btn-xs" style="color:#0d9488;border-color:#ccfbf1" onclick="openCobranca('${t.id}','${escJs(t.name)}','${escJs(t.email || '')}')">Cobrança<span id="cob-hint-${t.id}" style="margin-left:.3rem;font-size:.62rem;font-weight:700"></span></button>
+            data-acao="accessTenant" data-tenant-id="${esc(t.id)}" data-slug="${esc(t.slug)}" data-tenant-name="${esc(t.name)}">Acessar</button>
+          <button class="btn btn-primary btn-xs" data-acao="openUsersModal" data-tenant-id="${esc(t.id)}" data-tenant-name="${esc(t.name)}" title="Usuários">Usuários</button>
+          <button class="btn btn-ghost btn-xs" data-acao="changePlan" data-tenant-id="${esc(t.id)}">Plano</button>
+          <button class="btn btn-ghost btn-xs" style="color:#7c3aed;border-color:#e0e7ff" data-acao="openContrato" data-tenant-id="${esc(t.id)}">Contrato</button>
+          <button class="btn btn-ghost btn-xs" style="color:#0d9488;border-color:#ccfbf1" data-acao="openCobranca" data-tenant-id="${esc(t.id)}" data-name="${esc(t.name)}" data-email="${esc(t.email || '')}">Cobrança<span id="cob-hint-${t.id}" style="margin-left:.3rem;font-size:.62rem;font-weight:700"></span></button>
           ${
             t.status !== 'suspended'
-              ? `<button class="btn btn-danger btn-xs" onclick="suspendTenant('${t.id}')">Suspender</button>`
-              : `<button class="btn btn-warn btn-xs" onclick="reactivateTenant('${t.id}')">Reativar</button>`
+              ? `<button class="btn btn-danger btn-xs" data-acao="suspendTenant" data-tenant-id="${esc(t.id)}">Suspender</button>`
+              : `<button class="btn btn-warn btn-xs" data-acao="reactivateTenant" data-tenant-id="${esc(t.id)}">Reativar</button>`
           }
-          <button class="btn btn-danger btn-xs" style="background:#7f1d1d;color:#fff;border-color:#991b1b" onclick="deleteTenant('${t.id}','${escJs(t.name)}')">Excluir</button>
+          <button class="btn btn-danger btn-xs" style="background:#7f1d1d;color:#fff;border-color:#991b1b" data-acao="deleteTenant" data-tenant-id="${esc(t.id)}" data-tenant-name="${esc(t.name)}">Excluir</button>
         </div>
       </td>
     </tr>`;
@@ -1804,8 +1844,8 @@ function loadTenantModulesFor() {
           <div class="mod-actions">
             ${
               isActive
-                ? `<button class="btn btn-danger btn-xs" onclick="lockModuleFor('${tenantId}','${mod.key}')">Revogar</button>`
-                : `<button class="btn btn-primary btn-xs" onclick="unlockModuleFor('${tenantId}','${mod.key}')">Liberar</button>`
+                ? `<button class="btn btn-danger btn-xs" data-acao="lockModuleFor" data-tenant-id="${esc(tenantId)}" data-module-key="${esc(mod.key)}">Revogar</button>`
+                : `<button class="btn btn-primary btn-xs" data-acao="unlockModuleFor" data-tenant-id="${esc(tenantId)}" data-module-key="${esc(mod.key)}">Liberar</button>`
             }
           </div>
         </div>`;
@@ -1860,7 +1900,7 @@ function renderAllModulesTable() {
           </td>
           <td style="font-size:.72rem;color:var(--t3)">${esc(r.unlocked_by || '—')}</td>
           <td>
-            <button class="btn btn-danger btn-xs" onclick="lockModuleFor('${r.tenant_id}','${r.module_key}')">Revogar</button>
+            <button class="btn btn-danger btn-xs" data-acao="lockModuleFor" data-tenant-id="${esc(r.tenant_id)}" data-module-key="${esc(r.module_key)}">Revogar</button>
           </td>
         </tr>`;
       }).join('')
@@ -2116,15 +2156,11 @@ async function loadTenantUsers() {
   ]);
 
   const t = TENANTS.find(x => x.id === ACTIVE_TENANT_ID) || {};
-  // Era um escape próprio que tratava \ e ', mas não a aspa dupla: um nome com "
-  // fechava o atributo onclick="..." e injetava outro atributo. escJs trata as
-  // duas camadas (string JS e atributo HTML).
-  const arg = escJs;
   const botaoAcessar = (id, papel, nome) =>
     t.slug
       ? `<button class="btn btn-xs" style="background:#0d9488;color:#fff"
         title="Abrir o sistema numa aba nova, com a sessão desta pessoa"
-        onclick="acessarComo('${ACTIVE_TENANT_ID}','${arg(t.slug)}','${arg(t.name)}','${id}','${papel}','${arg(nome)}')">Acessar</button>`
+        data-acao="acessarComo" data-tenant-id="${esc(ACTIVE_TENANT_ID)}" data-slug="${esc(t.slug)}" data-tenant-name="${esc(t.name)}" data-user-id="${esc(id)}" data-papel="${esc(papel)}" data-nome="${esc(nome)}">Acessar</button>`
       : '';
 
   const linhasUsuarios = (Array.isArray(users) ? users : [])
@@ -2143,9 +2179,9 @@ async function loadTenantUsers() {
       <td>${u.is_active ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
       <td style="display:flex;gap:.3rem;flex-wrap:wrap">
         ${botaoAcessar(u.id, u.role, u.name)}
-        <button class="btn btn-ghost btn-xs" onclick="toggleUser('${u.id}',${u.is_active})">${u.is_active ? 'Desativar' : 'Ativar'}</button>
-        <button class="btn btn-ghost btn-xs" onclick="resetPw('${u.id}')">Senha</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${arg(u.name)}')">Excluir</button>
+        <button class="btn btn-ghost btn-xs" data-acao="toggleUser" data-user-id="${esc(u.id)}" data-current="${esc(u.is_active)}">${u.is_active ? 'Desativar' : 'Ativar'}</button>
+        <button class="btn btn-ghost btn-xs" data-acao="resetPw" data-user-id="${esc(u.id)}">Senha</button>
+        <button class="btn btn-danger btn-xs" data-acao="deleteUser" data-user-id="${esc(u.id)}" data-user-name="${esc(u.name)}">Excluir</button>
       </td>
     </tr>`
     )
@@ -2560,7 +2596,7 @@ function renderCobranca() {
     // Data embaixo: quando pagou, ou desde quando está marcado em atraso.
     const quando = est === 'pago' ? r.date : r.atraso ? r.desde : '';
     const sub = quando ? new Date(quando).toLocaleDateString('pt-BR') : '';
-    return `<button onclick="cobToggle(${i})" style="text-align:left;border:1px solid ${col}33;background:${bg};color:${col};border-radius:.5rem;padding:.5rem .6rem;cursor:pointer;font-family:inherit">
+    return `<button data-acao="cobToggle" data-m-idx="${esc(i)}" style="text-align:left;border:1px solid ${col}33;background:${bg};color:${col};border-radius:.5rem;padding:.5rem .6rem;cursor:pointer;font-family:inherit">
       <div style="font-size:.8rem;font-weight:700">${m}</div>
       <div style="font-size:.68rem;font-weight:600">${lbl}</div>
       ${sub ? `<div style="font-size:.6rem;opacity:.8">${sub}</div>` : ''}
@@ -2827,9 +2863,9 @@ async function loadFeedback() {
         </div>
       </div>
       <div class="fb-actions">
-        ${f.status !== 'accepted' ? `<button class="fb-btn fb-btn-accept" onclick="setFeedbackStatus('${f.id}','accepted')">✓ Aceitar</button>` : ''}
-        ${f.status !== 'rejected' ? `<button class="fb-btn fb-btn-reject" onclick="setFeedbackStatus('${f.id}','rejected')">✕ Rejeitar</button>` : ''}
-        ${f.status !== 'pending' ? `<button class="fb-btn" style="background:#f1f5f9;color:var(--t2)" onclick="setFeedbackStatus('${f.id}','pending')">↺ Pendente</button>` : ''}
+        ${f.status !== 'accepted' ? `<button class="fb-btn fb-btn-accept" data-acao="setFeedbackStatus" data-id="${esc(f.id)}" data-status="accepted">✓ Aceitar</button>` : ''}
+        ${f.status !== 'rejected' ? `<button class="fb-btn fb-btn-reject" data-acao="setFeedbackStatus" data-id="${esc(f.id)}" data-status="rejected">✕ Rejeitar</button>` : ''}
+        ${f.status !== 'pending' ? `<button class="fb-btn" style="background:#f1f5f9;color:var(--t2)" data-acao="setFeedbackStatus" data-id="${esc(f.id)}" data-status="pending">↺ Pendente</button>` : ''}
       </div>
     </div>`
     )

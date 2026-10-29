@@ -1,9 +1,19 @@
 import { A1, A1_KEY, getSlugFromURL } from '../../shared/api/config.js';
 import { a1Login, a1ManutencaoEstado, a1MsgManutencao, a1PartnerLogin } from '../../shared/auth/auth.js';
+import { esc } from '../../shared/utils/texto.js';
 import { expor } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ backToPanels, doLogin, selectPanel, togglePassword });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ selectPanel });
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  backToPanels: () => backToPanels(),
+  doLogin: (el, ev) => doLogin(ev),
+  selectPanel: el => selectPanel(el.dataset.key),
+  togglePassword: () => togglePassword()
+});
 function applyCustomLogo() {
   const logo = localStorage.getItem('a1_platform_logo');
   if (!logo) return;
@@ -150,7 +160,7 @@ async function loadPanels() {
     visible
       .map(
         p => `
-      <div class="panel-card ${p.key}" onclick="selectPanel('${p.key}')">
+      <div class="panel-card ${p.key}" data-acao="selectPanel" data-key="${esc(p.key)}">
         <div class="panel-card-icon">${p.icon}</div>
         <div class="panel-card-title">${p.label}</div>
         <div class="panel-card-sub">${p.sub}</div>

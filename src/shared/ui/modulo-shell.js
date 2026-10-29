@@ -21,36 +21,45 @@
 import { A1 } from '../api/config.js';
 import { a1HasModule, a1Logout } from '../auth/auth.js';
 import { expor, exporVariavel } from '../utils/expor.js';
+import { acoes } from './acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({
-  a1AgendaAbrir,
-  a1AgendaConcluir,
-  a1AgendaDesenhar,
-  a1AgendaDia,
-  a1AgendaExcluir,
-  a1AgendaGravar,
-  a1AgendaMes,
-  a1AgendaNovo,
-  a1AgendaTipo,
-  a1AgendaTipoReal,
-  a1AvisosAbrir,
-  a1BuscaSubmeter,
-  a1CorDoTipo,
-  a1DesenharCeu,
-  a1Esc,
-  a1MenuPessoa,
-  a1PaletaAbrir,
-  a1PaletaAbrirItem,
-  a1PaletaFechar,
-  a1PaletaFiltrar,
-  a1PaletaTecla,
-  a1PopAbrir,
-  a1PopFechar,
-  a1ShellVista,
-  a1Svg
-});
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ a1AgendaTipoReal, a1CorDoTipo, a1DesenharCeu, a1PopAbrir, a1ShellVista, a1Svg });
 exporVariavel('A1_ORDEM_PAINEIS', () => A1_ORDEM_PAINEIS);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  a1AgendaAbrir: (el, ev) => a1AgendaAbrir(ev, el),
+  a1AgendaConcluir: el => a1AgendaConcluir(el.dataset.id, el.dataset.feito === 'true'),
+  a1AgendaDesenhar: () => a1AgendaDesenhar(),
+  a1AgendaDia: (el, ev) => a1AgendaDia(el.dataset.dia, ev),
+  a1AgendaExcluir: el => a1AgendaExcluir(el.dataset.id),
+  a1AgendaGravar: (el, ev) => a1AgendaGravar(ev),
+  a1AgendaMes: el => a1AgendaMes(Number(el.dataset.passo)),
+  a1AgendaNovo: () => a1AgendaNovo(),
+  a1AgendaTipo: el => a1AgendaTipo(el),
+  a1AvisosAbrir: (el, ev) => a1AvisosAbrir(ev, el),
+  a1BuscarNoSistema: () => {
+    a1PopFechar();
+    a1PaletaAbrir();
+  },
+  a1BuscaSubmeter: (el, ev) => a1BuscaSubmeter(ev),
+  a1MenuPessoa: (el, ev) => a1MenuPessoa(ev, el),
+  a1MeuCadastro: () => {
+    a1PopFechar();
+    window.openProfile();
+  },
+  a1PaletaAbrir: () => a1PaletaAbrir(),
+  a1PaletaAbrirItem: (el, ev) => {
+    if (a1PaletaAbrirItem(Number(el.dataset.i), ev) === false) ev.preventDefault();
+  },
+  a1PaletaFecharPeloFundo: (el, ev) => {
+    if (ev.target === el) a1PaletaFechar();
+  },
+  a1PaletaFiltrar: () => a1PaletaFiltrar(),
+  a1PaletaTecla: (el, ev) => a1PaletaTecla(ev),
+  a1PopFechar: () => a1PopFechar()
+});
 /* ═══════════════════════════════════════════════════════════════════════════
    1. OS MODULOS
    A ordem e a ordem do PROCESSO: o lead vira pre-analise, que vira venda, que
@@ -596,7 +605,9 @@ export async function a1MontarShell(alvo, opcoes) {
     // Duas formas, porque ha dois tipos de vista no sistema: a que TROCA DE
     // PAGINA (href) e a que troca de aba dentro da mesma pagina (acao). Forcar
     // as duas a virarem link faria a segunda recarregar a tela inteira para
-    // mostrar uma div que ja estava carregada.
+    // mostrar uma div que ja estava carregada. `acao` e o NOME de uma acao que a
+    // tela registra (src/shared/ui/acoes.js); o botao leva a chave da vista em
+    // data-vista.
     sub = o.sub
       .map(v => {
         const it = Array.isArray(v) ? { rot: v[0], href: v[1], ativo: v[2], n: v[3] } : v;
@@ -607,7 +618,7 @@ export async function a1MontarShell(alvo, opcoes) {
         const marca = it.ativo ? ' ativo' : '';
         return it.acao
           ? `<button type="button" class="sb-sub-item${marca}" data-vista="${a1Esc(it.chave || it.rot)}"
-             onclick="${a1Esc(it.acao)}">${a1Esc(it.rot)}${conta}</button>`
+             data-acao="${a1Esc(it.acao)}">${a1Esc(it.rot)}${conta}</button>`
           : `<a class="sb-sub-item${marca}" href="${a1Esc(it.href || '#')}">${a1Esc(it.rot)}${conta}</a>`;
       })
       .join('');
@@ -629,10 +640,10 @@ export async function a1MontarShell(alvo, opcoes) {
   alvo.innerHTML = `
     <a class="sb-pular" href="#conteudo">Ir para o conteúdo</a>
     <div class="sb-busca-faixa">
-      <form class="sb-busca" role="search" onsubmit="return a1BuscaSubmeter(event)">
+      <form class="sb-busca" role="search" data-acao-submit="a1BuscaSubmeter">
         ${a1Svg('lupa', 15)}
         <input id="sb-busca-campo" type="search" autocomplete="off" placeholder="Buscar tela, processo ou pessoa"
-               aria-label="Buscar no sistema" onfocus="a1PaletaAbrir()">
+               aria-label="Buscar no sistema" data-acao-focus="a1PaletaAbrir">
         <kbd class="sb-atalho">Ctrl K</kbd>
       </form>
     </div>
@@ -644,9 +655,9 @@ export async function a1MontarShell(alvo, opcoes) {
         <div class="sb-cromo-dir">
           ${suporteEmContaSuspensa ? '<span role="status" title="Acesso administrativo em conta suspensa" style="padding:.3rem .65rem;border:1px solid #F59E0B;border-radius:999px;background:#FEF3C7;color:#92400E;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Suspensa</span>' : ''}
           <button class="sb-icone" type="button" title="Minha agenda" data-pop="agenda"
-            onclick="a1AgendaAbrir(event)">${a1Svg('calend', 17)}</button>
+            data-acao="a1AgendaAbrir">${a1Svg('calend', 17)}</button>
           <button class="sb-icone" type="button" title="Avisos" data-pop="avisos"
-            onclick="a1AvisosAbrir(event)">
+            data-acao="a1AvisosAbrir">
             ${a1Svg('sino', 17)}<span class="sb-icone-selo" id="sb-avisos-n" data-zero="1" hidden>0</span></button>
 
           <div class="sb-pessoa">
@@ -656,7 +667,7 @@ export async function a1MontarShell(alvo, opcoes) {
             </div>
             <button class="sb-avatar" type="button" id="sb-avatar" title="Minha conta"
               aria-haspopup="menu" aria-expanded="false"
-              onclick="a1MenuPessoa(event)">${a1Esc(a1Iniciais(user.name))}</button>
+              data-acao="a1MenuPessoa">${a1Esc(a1Iniciais(user.name))}</button>
           </div>
         </div>
       </div>
@@ -667,11 +678,11 @@ export async function a1MontarShell(alvo, opcoes) {
       ${o.acoes ? `<span style="margin-left:auto;display:flex;align-items:center;gap:.4rem">${o.acoes}</span>` : ''}</nav>`
         : ''
     }
-    <div class="sb-paleta" id="sb-paleta" hidden onclick="if(event.target===this)a1PaletaFechar()">
+    <div class="sb-paleta" id="sb-paleta" hidden data-acao="a1PaletaFecharPeloFundo">
       <div class="sb-paleta-cx" role="dialog" aria-label="Buscar">
         <div class="sb-paleta-campo">${a1Svg('lupa', 17)}
           <input id="sb-paleta-campo" type="text" placeholder="Ir para…" autocomplete="off"
-                 oninput="a1PaletaFiltrar()" onkeydown="a1PaletaTecla(event)"></div>
+                 data-acao-input="a1PaletaFiltrar" data-acao-keydown="a1PaletaTecla"></div>
         <div class="sb-paleta-lista" id="sb-paleta-lista"></div>
       </div>
     </div>`;
@@ -806,7 +817,7 @@ export function a1PaletaFiltrar() {
       out += `<div class="sb-paleta-grupo">${a1Esc(grupo)}</div>`;
     }
     out += `<a class="sb-paleta-item${i === 0 ? ' marcado' : ''}" data-i="${i}" href="${a1Esc(x.h)}"
-      onclick="return a1PaletaAbrirItem(${i},event)">${a1Svg(x.i, 15)}<span>${a1Esc(x.r)}</span></a>`;
+      data-acao="a1PaletaAbrirItem">${a1Svg(x.i, 15)}<span>${a1Esc(x.r)}</span></a>`;
   });
   lista.innerHTML = out;
 }
@@ -1186,12 +1197,11 @@ window.addEventListener('resize', () => a1PopFechar(), { passive: true });
    canto onde todo sistema poe o perfil — quem ia ver o proprio cadastro caia
    na tela de login. Agora abre menu, e sair e o ultimo item.                */
 
-export function a1MenuPessoa(ev) {
+export function a1MenuPessoa(ev, bt) {
   ev.preventDefault();
   ev.stopPropagation();
   const user = A1.user || {};
   const slug = A1.slug || '';
-  const bt = ev.currentTarget;
   // openProfile() e das telas do Repasse. Onde ela nao existe, o cadastro da
   // pessoa mora em Configuracoes — e o parceiro, que nao entra la, edita o
   // proprio perfil pela mesma funcao quando ela existir.
@@ -1212,19 +1222,19 @@ export function a1MenuPessoa(ev) {
     </div>
     ${
       temPerfil
-        ? `<button class="sb-menu-item" type="button" onclick="a1PopFechar();openProfile()">
+        ? `<button class="sb-menu-item" type="button" data-acao="a1MeuCadastro">
            ${a1Svg('pessoa', 15)} Meu cadastro</button>`
         : `<a class="sb-menu-item" href="/${a1Esc(slug)}/repasse?perfil=1">
            ${a1Svg('pessoa', 15)} Meu cadastro</a>`
     }
-    <button class="sb-menu-item" type="button" onclick="a1PopFechar();a1PaletaAbrir()">
+    <button class="sb-menu-item" type="button" data-acao="a1BuscarNoSistema">
       ${a1Svg('lupa', 15)} Buscar no sistema <small style="margin-left:auto;color:var(--sb-tinta3);font-family:var(--sb-mono);font-size:.68rem">Ctrl K</small></button>
     ${
       user.role !== 'partner'
         ? `<a class="sb-menu-item" href="/${a1Esc(slug)}/configuracoes">${a1Svg('config', 15)} Configurações</a>`
         : ''
     }
-    <button class="sb-menu-item saida" type="button" onclick="a1Logout()">
+    <button class="sb-menu-item saida" type="button" data-acao="a1Logout">
       ${a1Svg('sair', 15)} Sair do sistema</button>`
   );
   if (el) bt.setAttribute('aria-expanded', 'true');
@@ -1542,7 +1552,7 @@ export function a1AgendaNovo() {
 
     <form
       class="sb-ag-form"
-      onsubmit="return a1AgendaGravar(event)"
+      data-acao-submit="a1AgendaGravar"
     >
 
       <div
@@ -1555,7 +1565,7 @@ export function a1AgendaNovo() {
           type="button"
           class="on"
           data-tipo="compromisso"
-          onclick="a1AgendaTipo(this)"
+          data-acao="a1AgendaTipo"
         >
           Compromisso
         </button>
@@ -1563,7 +1573,7 @@ export function a1AgendaNovo() {
         <button
           type="button"
           data-tipo="tarefa"
-          onclick="a1AgendaTipo(this)"
+          data-acao="a1AgendaTipo"
         >
           Tarefa
         </button>
@@ -1571,7 +1581,7 @@ export function a1AgendaNovo() {
         <button
           type="button"
           data-tipo="avaliacao"
-          onclick="a1AgendaTipo(this)"
+          data-acao="a1AgendaTipo"
         >
           Avaliação
         </button>
@@ -1579,13 +1589,12 @@ export function a1AgendaNovo() {
         <button
           type="button"
           data-tipo="entrevista"
-          onclick="a1AgendaTipo(this)"
+          data-acao="a1AgendaTipo"
         >
           Entrevista
         </button>
 
       </div>
-
 
       <label class="sb-ag-rot">
         Título
@@ -1598,7 +1607,6 @@ export function a1AgendaNovo() {
         maxlength="120"
         placeholder="Visita ao cliente, ligar para o banco…"
       >
-
 
       <div class="sb-ag-linha">
 
@@ -1618,7 +1626,6 @@ export function a1AgendaNovo() {
 
         </div>
 
-
         <div
           style="flex:1"
           id="ag-hora-wrap"
@@ -1637,7 +1644,6 @@ export function a1AgendaNovo() {
         </div>
 
       </div>
-
 
       <label class="sb-ag-rot">
 
@@ -1659,7 +1665,6 @@ export function a1AgendaNovo() {
         class="sb-ag-campo"
         maxlength="120"
       >
-
 
       <label class="sb-ag-rot">
 
@@ -1683,20 +1688,18 @@ export function a1AgendaNovo() {
         maxlength="400"
       ></textarea>
 
-
       <div
         class="sb-ag-erro"
         id="ag-erro"
         hidden
       ></div>
 
-
       <div class="sb-ag-pe">
 
         <button
           type="button"
           class="sb-btn sb-btn-p"
-          onclick="a1AgendaDesenhar()"
+          data-acao="a1AgendaDesenhar"
         >
           Cancelar
         </button>
@@ -1964,13 +1967,12 @@ export async function a1AgendaExcluir(id) {
    ABRIR POPUP
    ═══════════════════════════════════════════════════════════════ */
 
-export async function a1AgendaAbrir(ev) {
+export async function a1AgendaAbrir(ev, bt) {
   ev.preventDefault();
   ev.stopPropagation();
 
   a1AgendaGarantirAjustesCSS();
 
-  const bt = ev.currentTarget;
   const hoje = new Date();
 
   if (A1_POP.agenda.mes == null) {
@@ -1997,7 +1999,7 @@ export async function a1AgendaAbrir(ev) {
       <button
         class="sb-pop-x"
         type="button"
-        onclick="a1PopFechar()"
+        data-acao="a1PopFechar"
         aria-label="Fechar"
       >×</button>
     </div>
@@ -2012,7 +2014,7 @@ export async function a1AgendaAbrir(ev) {
       <button
         class="sb-btn sb-btn-forte sb-btn-p"
         type="button"
-        onclick="a1AgendaNovo()"
+        data-acao="a1AgendaNovo"
       >
         + Marcar
       </button>
@@ -2217,7 +2219,7 @@ export async function a1AgendaDesenhar() {
   <button
     type="button"
     class="${cls}"
-    onclick="return a1AgendaDia(${d}, event)"
+    data-acao="a1AgendaDia" data-dia="${d}"
     aria-label="Selecionar dia ${d}"
   >
     ${d}${pts}
@@ -2268,15 +2270,11 @@ export async function a1AgendaDesenhar() {
                     class="sb-ag-check${i.feito ? ' on' : ''}"
                     type="button"
                     title="${i.feito ? 'Reabrir' : 'Concluir'}"
-                    onclick="a1AgendaConcluir(
-                      '${a1Esc(i.agendaId)}',
-                      ${i.feito ? 'true' : 'false'}
-                    )"
+                    data-acao="a1AgendaConcluir" data-id="${a1Esc(i.agendaId)}" data-feito="${a1Esc(i.feito ? 'true' : 'false')}"
                     aria-label="${i.feito ? 'Reabrir' : 'Concluir'}"
                   >
                     ${i.feito ? '✓' : ''}
                   </button>
-
 
                   <span class="sb-item-pt"
                     style="
@@ -2284,7 +2282,6 @@ export async function a1AgendaDesenhar() {
                       ${a1CorDoTipo(tipoReal)}
                     "
                   ></span>
-
 
                   <span class="sb-item-tx">
 
@@ -2295,7 +2292,6 @@ export async function a1AgendaDesenhar() {
                       ${a1Esc(i.titulo)}
                     </span>
 
-
                     <span class="sb-item-s">
 
                       ${a1Esc(i.sub)}
@@ -2303,7 +2299,6 @@ export async function a1AgendaDesenhar() {
                     </span>
 
                   </span>
-
 
                   ${
                     i.hora
@@ -2319,12 +2314,11 @@ export async function a1AgendaDesenhar() {
                       : ''
                   }
 
-
                   <button
                     class="sb-ag-x"
                     type="button"
                     title="Excluir"
-                    onclick="a1AgendaExcluir('${a1Esc(i.agendaId)}')"
+                    data-acao="a1AgendaExcluir" data-id="${a1Esc(i.agendaId)}"
                     aria-label="Excluir"
                   >
                     ×
@@ -2355,7 +2349,6 @@ export async function a1AgendaDesenhar() {
                   "
                 ></span>
 
-
                 <span class="sb-item-tx">
 
                   <span class="sb-item-t">
@@ -2363,7 +2356,6 @@ export async function a1AgendaDesenhar() {
                     ${a1Esc(i.titulo)}
 
                   </span>
-
 
                   <span class="sb-item-s">
 
@@ -2374,7 +2366,6 @@ export async function a1AgendaDesenhar() {
                   </span>
 
                 </span>
-
 
                 ${
                   i.hora
@@ -2463,12 +2454,11 @@ export async function a1AgendaDesenhar() {
       <button
         class="sb-cal-bt"
         type="button"
-        onclick="a1AgendaMes(-1)"
+        data-acao="a1AgendaMes" data-passo="-1"
         aria-label="Mês anterior"
       >
         ‹
       </button>
-
 
       <span class="sb-cal-mes">
 
@@ -2478,18 +2468,16 @@ export async function a1AgendaDesenhar() {
 
       </span>
 
-
       <button
         class="sb-cal-bt"
         type="button"
-        onclick="a1AgendaMes(1)"
+        data-acao="a1AgendaMes" data-passo="1"
         aria-label="Próximo mês"
       >
         ›
       </button>
 
     </div>
-
 
     <div class="sb-cal">
 
@@ -2506,13 +2494,11 @@ export async function a1AgendaDesenhar() {
 
     </div>
 
-
     <div class="sb-cal-legenda">
 
       ${legenda}
 
     </div>
-
 
     <div class="sb-cal-dia">
 
@@ -2648,10 +2634,9 @@ export async function a1AvisosCarregar() {
     .slice(0, 30);
 }
 
-export async function a1AvisosAbrir(ev) {
+export async function a1AvisosAbrir(ev, bt) {
   ev.preventDefault();
   ev.stopPropagation();
-  const bt = ev.currentTarget;
   const el = a1PopAbrir(
     'avisos',
     bt,
@@ -2660,7 +2645,7 @@ export async function a1AvisosAbrir(ev) {
     <div class="sb-pop-cab">${a1Svg('sino', 16)}
       <div><div class="sb-pop-tit">Avisos</div>
         <div class="sb-pop-sub">O que pede ação agora</div></div>
-      <button class="sb-pop-x" type="button" onclick="a1PopFechar()" aria-label="Fechar">×</button></div>
+      <button class="sb-pop-x" type="button" data-acao="a1PopFechar" aria-label="Fechar">×</button></div>
     <div class="sb-pop-corpo" id="sb-avisos-corpo">
       <div class="sb-vazio"><p>Carregando…</p></div></div>`
   );

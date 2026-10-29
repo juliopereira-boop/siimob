@@ -46,21 +46,24 @@
 import { a1DocsFaltando, a1DocsObrigatorios } from '../documentos/documentos.js';
 import { A1 } from '../../shared/api/config.js';
 import { a1HasModule } from '../../shared/auth/auth.js';
+import { esc } from '../../shared/utils/texto.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({
-  pnDesenharCO,
-  pnDesenharPA,
-  pnEsc,
-  pnPodeVerRanking,
-  pnRank,
-  pnTrocarData,
-  pnTrocarEmpreendimento,
-  pnTrocarPeriodo
-});
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ pnDesenharCO, pnDesenharPA, pnPodeVerRanking, pnRank, pnTrocarData, pnTrocarPeriodo });
 exporVariavel('PN', () => PN);
 exporVariavel('PN_PERSONALIZADO', () => PN_PERSONALIZADO);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  pnIrPara: el => {
+    location.href = el.dataset.rota;
+  },
+  pnTrocarData: el => pnTrocarData(el.dataset.qual, el.value, el.dataset.painel),
+  pnTrocarEmpreendimento: el => pnTrocarEmpreendimento(el.value, el.dataset.painel),
+  pnTrocarPeriodo: el => pnTrocarPeriodo(el.value, el.dataset.painel)
+});
 // ─── Estado ──────────────────────────────────────────────────────────────────
 // Os dados brutos ficam guardados aqui para a troca de período não render outra
 // rodada de consultas: o recorte é aritmética sobre linhas que já estão na mão.
@@ -84,10 +87,9 @@ export const PN_PERIODOS = [
 export const PN_PERSONALIZADO = -1;
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
-// A aspa SIMPLES entra aqui junto com as outras, e nao e capricho: os valores
-// escapados por esta funcao vao para dentro de onclick="location.href='...'",
-// ou seja, para dentro de uma string JS delimitada por aspa simples. Escapar
-// so a aspa dupla fecharia o atributo e deixaria a simples abrir codigo.
+// A aspa SIMPLES entra aqui junto com as outras: num atributo entre aspas
+// simples, escapar so a dupla deixaria a simples fechar o atributo. (Os
+// argumentos das acoes vao em data-* com esc(), ver src/shared/ui/acoes.js.)
 export function pnEsc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
@@ -285,22 +287,22 @@ export function pnSeletorPeriodo(painel, empreendimentos) {
   const opt = (v, r, sel) =>
     `<option value="${pnEsc(String(v))}"${sel ? ' selected' : ''}>${pnEsc(r)}</option>`;
   const periodo =
-    `<select class="pn-periodo" onchange="pnTrocarPeriodo(this.value,'${pnEsc(painel)}')" aria-label="Período">` +
+    `<select class="pn-periodo" data-acao-change="pnTrocarPeriodo" data-painel="${esc(painel)}" aria-label="Período">` +
     PN_PERIODOS.map(([d, r]) => opt(d, r, d === PN.dias)).join('') +
     opt(PN_PERSONALIZADO, 'Escolher datas', pnPersonalizado()) +
     '</select>';
   const datas = pnPersonalizado()
     ? `<label class="pn-filtro-data">de <input type="date" value="${pnEsc(PN.de)}" max="${pnEsc(PN.ate)}"
-         onchange="pnTrocarData('de',this.value,'${pnEsc(painel)}')" aria-label="Data inicial"></label>
+         data-acao-change="pnTrocarData" data-qual="de" data-painel="${esc(painel)}" aria-label="Data inicial"></label>
        <label class="pn-filtro-data">até <input type="date" value="${pnEsc(PN.ate)}" min="${pnEsc(PN.de)}"
-         onchange="pnTrocarData('ate',this.value,'${pnEsc(painel)}')" aria-label="Data final"></label>`
+         data-acao-change="pnTrocarData" data-qual="ate" data-painel="${esc(painel)}" aria-label="Data final"></label>`
     : '';
   // O seletor de empreendimento só nasce se houver mais de um: com um só, ele é
   // um controle que não muda nada.
   const lista = (empreendimentos || []).filter(e => e && e.id && e.name);
   const empr =
     lista.length > 1
-      ? `<select class="pn-periodo" onchange="pnTrocarEmpreendimento(this.value,'${pnEsc(painel)}')" aria-label="Empreendimento">` +
+      ? `<select class="pn-periodo" data-acao-change="pnTrocarEmpreendimento" data-painel="${esc(painel)}" aria-label="Empreendimento">` +
         opt('', 'Todos os empreendimentos', !PN.empr) +
         lista
           .slice()
@@ -1479,7 +1481,7 @@ export function pnDesenharPA(alvo) {
     <thead><tr><th>Código</th><th>Empreendimento</th><th>Unidade</th><th>Situação</th><th style="text-align:right">Na situação</th><th style="text-align:right">SLA</th></tr></thead>
     <tbody>${fila
       .map(
-        l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila de Pré-análise">
+        l => `<tr data-acao="pnIrPara" data-rota="${esc(rota)}" title="Abrir a fila de Pré-análise">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>
@@ -2337,7 +2339,7 @@ export function pnDesenharCO(alvo) {
     }<th style="text-align:right">Na situação</th></tr></thead>
     <tbody>${fila
       .map(
-        l => `<tr onclick="location.href='${pnEsc(rota)}'" title="Abrir a fila da Venda">
+        l => `<tr data-acao="pnIrPara" data-rota="${esc(rota)}" title="Abrir a fila da Venda">
       <td class="pn-cod">${pnEsc(l.codigo)}</td>
       <td>${pnEsc(l.empr)}</td>
       <td>${pnEsc(l.unidade || '—')}</td>

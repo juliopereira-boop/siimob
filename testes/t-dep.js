@@ -103,12 +103,12 @@ const { abrir, checa, resumo } = require('./comum');
     for (const [view, sel] of casos) {
       await p.evaluate(v => openCfgView(v), view);
       await p.waitForTimeout(400);
-      const n = await p.locator(`${sel} code[onclick^="copiarId"]`).count();
+      const n = await p.locator(`${sel} code[data-acao="copiarId"]`).count();
       checa(`${view} mostra ID`, n >= 1, `chips=${n}`);
     }
     await p.evaluate(() => openCfgView('flags'));
     await p.waitForTimeout(400);
-    checa('flags mostram ID', (await p.locator('#flags-list code[onclick^="copiarId"]').count()) >= 1);
+    checa('flags mostram ID', (await p.locator('#flags-list code[data-acao="copiarId"]').count()) >= 1);
     f += resumo(erros);
     await b.close();
   }

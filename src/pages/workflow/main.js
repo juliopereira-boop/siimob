@@ -1,28 +1,38 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { a1RequireAuth, a1StartHeartbeat, a1VigiarManutencao } from '../../shared/auth/auth.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
   abrirTransicao,
   apagarTransicao,
-  autoLayout,
   changeModule,
-  closeEditPanel,
-  deleteStage,
-  fecharTransicao,
   openEdit,
   openNewStage,
   pintarModo,
   render,
-  salvarTransicao,
-  saveStage,
-  semearEsteira,
-  toast,
-  toggleWfLock
+  toast
+});
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  apagarTransicao: () => apagarTransicao(),
+  autoLayout: () => autoLayout(),
+  changeModule: el => changeModule(el.dataset.mod ?? el.value),
+  closeEditPanel: () => closeEditPanel(),
+  deleteStage: () => deleteStage(),
+  fecharTransicao: () => fecharTransicao(),
+  openEdit: el => openEdit(el.dataset.stageId),
+  openNewStage: () => openNewStage(),
+  pintarModo: () => pintarModo(),
+  salvarTransicao: () => salvarTransicao(),
+  saveStage: () => saveStage(),
+  semearEsteira: () => semearEsteira(),
+  toggleWfLock: () => toggleWfLock()
 });
 exporVariavel(
   'MODULE',
@@ -352,7 +362,7 @@ function montarBotoesDeModulo(liberados) {
   caixa.innerHTML = meus
     .map(
       m =>
-        `<button type="button" class="wf-mod-btn" data-mod="${esc(m.key)}" onclick="changeModule('${escJs(m.key)}')"
+        `<button type="button" class="wf-mod-btn" data-mod="${esc(m.key)}" data-acao="changeModule"
        title="Workflow de ${esc(m.label)}"><span aria-hidden="true">${m.icone}</span> ${esc(m.label)}</button>`
     )
     .join('');
@@ -531,7 +541,7 @@ function render() {
       </div>
       <div class="node-badges">${badges}</div>
       <div class="node-foot">
-        <button class="node-btn" onclick="openEdit('${s.id}')">✏ Editar</button>
+        <button class="node-btn" data-acao="openEdit" data-stage-id="${esc(s.id)}">✏ Editar</button>
       </div>
       <div class="port port-l" data-id="${s.id}" data-side="left"  style="color:${s.color || '#6366f1'}" title="Destino da conexão"></div>
       <div class="port port-r" data-id="${s.id}" data-side="right" style="color:${s.color || '#6366f1'}" title="Clique para iniciar conexão"></div>`;
@@ -1057,8 +1067,8 @@ function pintarVazio() {
       nada aqui é definitivo, e nenhuma automação nasce ligada.
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-      ${ehEsteira() ? '<button class="btn btn-primary" id="wf-semear" onclick="semearEsteira()">Criar esteira padrão</button>' : ''}
-      <button class="btn btn-ghost" onclick="openNewStage()">Criar do zero</button>
+      ${ehEsteira() ? '<button class="btn btn-primary" id="wf-semear" data-acao="semearEsteira">Criar esteira padrão</button>' : ''}
+      <button class="btn btn-ghost" data-acao="openNewStage">Criar do zero</button>
     </div>`;
   document.getElementById('wf-canvas').appendChild(div);
 }

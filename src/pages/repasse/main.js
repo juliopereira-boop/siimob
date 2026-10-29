@@ -1,5 +1,5 @@
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import {
   a1HasModule,
@@ -28,133 +28,189 @@ import { a1GeralCarregar, a1GeralPermite } from '../../modules/configuracoes/reg
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
-  addComment,
-  addFlag,
-  agendaNavMonth,
-  alternarFiltros,
-  analistaFilter,
-  aoTrocarCoordenador,
-  aoTrocarCorretor,
-  aoTrocarImobiliaria,
-  applyDashFilter,
   archiveCase,
   attachDoc,
-  blurValor,
-  bulkArquivar,
-  bulkVincCorr,
-  bulkVincEmpr,
-  ceFilter,
   clearDashFilters,
   clearFilters,
-  clearSelection,
   closeCfgView,
-  closeEmprForm,
-  closeFluxo,
   closeModal,
-  confirmAgendamento,
   copiarId,
-  copyCpf,
   createCase,
   dashCases,
-  deleteAnalista,
-  deleteDocType,
-  deleteEmpreendimento,
-  deleteEmpresa,
-  deleteImob,
-  deletePartner,
-  editBanco,
-  editCartorio,
-  editDespachante,
   editEmpreendimento,
-  emprPreview,
   exportarPlanilha,
   filteredCases,
-  filtrarBancos,
-  filtrarCartorios,
-  filtrarDespachantes,
-  handlePdfFile,
-  imobFilter,
-  importFromPdf,
   isMeuProcesso,
-  liberarEdicao,
   loadEmpresas,
-  maskValor,
   moveCard,
-  onBlocoChange,
-  onColScroll,
-  onDragOver,
-  onDragStart,
-  onDrop,
-  onEmprChange,
   onNovoRepasseEmpresaChange,
-  openAgendamento,
   openAnalista,
-  openBancoModal,
   openCard,
-  openCartorioModal,
   openCfgView,
-  openDespModal,
-  openDoc,
-  openEmprModal,
-  openEmpresaModal,
-  openFeedbackModal,
-  openFluxo,
-  openImob,
   openNewCase,
   openPartnerModal,
   openProfile,
-  pickPdfType,
   podeCriarRepasse,
   podeEditarProcesso,
-  ptFilter,
-  ptGo,
-  recalcValores,
   removeDoc,
-  removeFlag,
-  renderAnalistaList,
   renderDashboard,
-  renderImobList,
-  saveAnalista,
-  saveBanco,
-  saveCartorio,
   saveCase,
-  saveDespachante,
-  saveDocType,
-  saveEmpreendimento,
-  saveEmpresa,
-  saveFeedback,
-  saveImob,
   savePartner,
-  saveProfile,
-  saveValores,
   selectGroup,
-  setEmprTipo,
-  setEnt,
   soVeOSeu,
-  switchCorrTab,
   switchDocTypeModule,
   switchModalTab,
   switchTab,
   switchView,
   temVisaoCompleta,
   toast,
-  toggleAgdDay,
-  toggleAnalistaChecklist,
-  toggleArquivados,
-  toggleDocType,
-  toggleDupView,
-  toggleEmprSemUnidades,
   toggleRowSel,
-  toggleSelectAll,
-  trocarPainel,
-  unarchiveCase,
   v
 });
 exporVariavel('CFG_VIEWS', () => CFG_VIEWS);
 exporVariavel('G', () => G);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  addComment: () => addComment(),
+  addFlag: () => addFlag(),
+  agendaNavMonth: el => agendaNavMonth(Number(el.dataset.delta)),
+  alternarFiltros: el => alternarFiltros(el.dataset.qual),
+  analistaFilter: () => analistaFilter(),
+  aoTrocarCoordenador: el => aoTrocarCoordenador(el.dataset.pre),
+  aoTrocarCorretor: el => aoTrocarCorretor(el.dataset.pre),
+  aoTrocarImobiliaria: el => aoTrocarImobiliaria(el.dataset.pre),
+  applyDashFilter: () => applyDashFilter(),
+  archiveCase: () => archiveCase(),
+  attachDoc: el => attachDoc(el.files[0]),
+  blurValor: el => blurValor(el),
+  bulkArquivar: () => bulkArquivar(),
+  bulkVincCorr: () => bulkVincCorr(),
+  bulkVincEmpr: () => bulkVincEmpr(),
+  ceFilter: () => ceFilter(),
+  clearDashFilters: () => clearDashFilters(),
+  clearFilters: () => clearFilters(),
+  clearSelection: () => clearSelection(),
+  closeCfgView: () => closeCfgView(),
+  closeEmprForm: () => closeEmprForm(),
+  closeModal: el => closeModal(el.dataset.id),
+  confirmAgendamento: () => confirmAgendamento(),
+  copiarId: el => copiarId(el.dataset.id),
+  copyCpf: (el, ev) => copyCpf(ev, el.dataset.cpf),
+  createCase: () => createCase(),
+  deleteAnalista: el => deleteAnalista(el.dataset.id, el.dataset.name),
+  deleteDocType: el => deleteDocType(el.dataset.id),
+  deleteEmpreendimento: el => deleteEmpreendimento(el.dataset.id, el.dataset.name),
+  deleteEmpresa: el => deleteEmpresa(el.dataset.id, el.dataset.name),
+  deleteImob: el => deleteImob(el.dataset.id, el.dataset.name),
+  deletePartner: el => deletePartner(el.dataset.id, el.dataset.name),
+  editBanco: el => editBanco(el.dataset.id),
+  editCartorio: el => editCartorio(el.dataset.id),
+  editDespachante: el => editDespachante(el.dataset.id),
+  editEmpreendimento: el => editEmpreendimento(el.dataset.id),
+  emprPreview: () => emprPreview(),
+  exportarPlanilha: () => exportarPlanilha(),
+  fecharPeloFundo: (el, ev) => {
+    if (ev.target === el) closeModal(el.id);
+  },
+  filtrarBancos: () => filtrarBancos(),
+  filtrarCartorios: () => filtrarCartorios(),
+  filtrarDespachantes: () => filtrarDespachantes(),
+  handlePdfFile: el => handlePdfFile(el.files[0]),
+  imobFilter: () => imobFilter(),
+  importFromPdf: () => importFromPdf(),
+  irParaPaginaAnalista: el => {
+    G.analistaPage = Number(el.dataset.pagina);
+    renderAnalistaList();
+  },
+  irParaPaginaImob: el => {
+    G.imobPage = Number(el.dataset.pagina);
+    renderImobList();
+  },
+  liberarEdicao: el => liberarEdicao(el.dataset.id),
+  marcarOpcao: el => {
+    const caixa = el.closest('label');
+    caixa.style.borderColor = el.checked ? caixa.dataset.cor : 'var(--border)';
+    caixa.style.background = el.checked ? el.dataset.fundo : '#F4F6F4';
+  },
+  maskValor: el => maskValor(el),
+  moverPeloFluxo: el => {
+    moveCard(el.dataset.caseId, el.dataset.stageId);
+    closeFluxo();
+  },
+  onBlocoChange: () => onBlocoChange(),
+  onColScroll: el => onColScroll(el),
+  onDragOver: (el, ev) => onDragOver(ev, el),
+  onDragStart: (el, ev) => onDragStart(ev, el),
+  onDrop: (el, ev) => onDrop(ev, el),
+  onEmprChange: () => onEmprChange(),
+  onNovoRepasseEmpresaChange: () => onNovoRepasseEmpresaChange(),
+  openAgendamento: (el, ev) => openAgendamento(el.dataset.id, ev),
+  openAnalista: el => openAnalista(el.dataset.analista ? JSON.parse(el.dataset.analista) : null),
+  openBancoModal: () => openBancoModal(),
+  openCard: el => openCard(el.dataset.id),
+  openCartorioModal: () => openCartorioModal(),
+  openCfgView: el => openCfgView(el.dataset.name),
+  openDespModal: () => openDespModal(),
+  openDoc: el => openDoc(el.dataset.path),
+  openEmpresaModal: el => openEmpresaModal(el.dataset.id),
+  openEmprModal: () => openEmprModal(),
+  openFeedbackModal: () => openFeedbackModal(),
+  openFluxo: (el, ev) => openFluxo(ev, el.dataset.caseId, el.dataset.stageId),
+  openImob: el => openImob(el.dataset.imob ? JSON.parse(el.dataset.imob) : null),
+  openNewCase: () => openNewCase(),
+  openPartnerModal: el => openPartnerModal(el.dataset.id),
+  pickPdfType: el => pickPdfType(el.dataset.type),
+  ptFilter: () => ptFilter(),
+  ptGo: el => ptGo(Number(el.dataset.n)),
+  realcarBorda: el => {
+    el.style.borderColor = el.dataset.cor;
+  },
+  recalcValores: () => recalcValores(),
+  removeDoc: el => removeDoc(el.dataset.docId),
+  removeFlag: el => removeFlag(el.dataset.id),
+  saiuDaColuna: el => el.classList.remove('drag-over'),
+  saveAnalista: () => saveAnalista(),
+  saveBanco: () => saveBanco(),
+  saveCartorio: () => saveCartorio(),
+  saveCase: () => saveCase(),
+  saveDespachante: () => saveDespachante(),
+  saveDocType: () => saveDocType(),
+  saveEmpreendimento: () => saveEmpreendimento(),
+  saveEmpresa: () => saveEmpresa(),
+  saveFeedback: () => saveFeedback(),
+  saveImob: () => saveImob(),
+  savePartner: () => savePartner(),
+  saveProfile: () => saveProfile(),
+  saveValores: () => saveValores(),
+  selectGroup: el => selectGroup(el.dataset.k),
+  setEmprTipo: el => setEmprTipo(el.dataset.tipo),
+  setEnt: (el, ev) => setEnt(el.dataset.id, el.dataset.status, ev),
+  soltarBorda: el => {
+    el.style.borderColor = 'var(--border)';
+  },
+  soltarBordaDaOpcao: el => {
+    el.style.borderColor = el.querySelector('input').checked ? el.dataset.cor : 'var(--border)';
+  },
+  soltouCartao: el => el.classList.remove('dragging'),
+  switchCorrTab: el => switchCorrTab(el.dataset.tab),
+  switchDocTypeModule: el => switchDocTypeModule(el.dataset.mod, el),
+  switchModalTab: el => switchModalTab(el.dataset.tab, el),
+  toggleAgdDay: el => toggleAgdDay(el),
+  toggleAnalistaChecklist: el => toggleAnalistaChecklist(el.checked),
+  toggleArquivados: () => toggleArquivados(),
+  toggleDocType: el => toggleDocType(el.dataset.id),
+  toggleDupView: () => toggleDupView(),
+  toggleEmprSemUnidades: () => toggleEmprSemUnidades(),
+  toggleRowSel: el => toggleRowSel(el.dataset.id, el),
+  toggleSelectAll: el => toggleSelectAll(el),
+  trocarPainel: el => trocarPainel(el.dataset.qual),
+  unarchiveCase: () => unarchiveCase()
+});
 const G = {
   // Arquivado não é apagado: é um cartão que saiu de vista. O quadro mostra os
   // ativos, e este interruptor mostra os guardados — sem ele, arquivar seria
@@ -292,7 +348,7 @@ async function montarSeletorPainel() {
   botoes.innerHTML = disponiveis
     .map(
       m =>
-        `<button type="button" data-painel="${esc(m)}" onclick="trocarPainel('${escJs(m)}')"
+        `<button type="button" data-painel="${esc(m)}" data-acao="trocarPainel" data-qual="${esc(m)}"
        style="border:none;background:none;padding:.45rem .95rem;font-size:.78rem;font-weight:700;color:var(--t3);cursor:pointer;font-family:inherit">${esc(PAINEL_ROTULO[m] || m)}</button>`
     )
     .join('');
@@ -825,7 +881,7 @@ function podeCriarRepasse() {
 
 function aplicarBotaoNovoRepasse() {
   const pode = podeCriarRepasse();
-  document.querySelectorAll('[onclick="openNewCase()"]').forEach(el => {
+  document.querySelectorAll('[data-acao="openNewCase"]').forEach(el => {
     el.hidden = !pode;
   });
 }
@@ -1977,7 +2033,7 @@ function renderRegionalTabs() {
   document.getElementById('regional-tabs').innerHTML = tabs
     .map(
       t =>
-        `<div class="reg-tab ${G.currentGroup === t.key ? 'active' : ''}" onclick="selectGroup('${escJs(t.key)}')">${esc(t.label)}</div>`
+        `<div class="reg-tab ${G.currentGroup === t.key ? 'active' : ''}" data-acao="selectGroup" data-k="${esc(t.key)}">${esc(t.label)}</div>`
     )
     .join('');
 }
@@ -2073,8 +2129,8 @@ function renderKanban() {
         <span>Repasse <b style="color:var(--green)">${fmtBRLShort(lista.reduce((a, c) => a + caseRepasseValue(c), 0))}</b></span>
       </div>
       <div class="k-col-body" data-stage-id="${s.id}" data-render="${primeiros.length}"
-           onscroll="onColScroll(this)"
-           ondragover="onDragOver(event)" ondrop="onDrop(event,this)" ondragleave="this.classList.remove('drag-over')">
+           data-acao-scroll="onColScroll"
+           data-acao-dragover="onDragOver" data-acao-drop="onDrop" data-acao-dragleave="saiuDaColuna">
         ${primeiros.map(c => renderCard(c, s)).join('')}
         ${lista.length > primeiros.length ? `<div class="k-col-more">role para ver mais ${lista.length - primeiros.length}</div>` : ''}
       </div>
@@ -2108,17 +2164,17 @@ function renderCard(c, stage) {
   const since = c.stage_entered_at || c.created_at;
   return `<div class="k-card" style="border-left-color:${stage.color}"
     draggable="true" data-id="${c.id}"
-    ondragstart="onDragStart(event,this)" ondragend="this.classList.remove('dragging')"
-    onclick="openCard('${c.id}')">
+    data-acao-dragstart="onDragStart" data-acao-dragend="soltouCartao"
+    data-acao="openCard">
     <div class="kc-top">
       <div class="kc-name">${esc(c.client_name)}</div>
       <div class="kc-badges">
-        ${c.observations ? `<span class="kc-obs" onclick="event.stopPropagation()" title="Observação"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="obs-tooltip"><b>OBSERVAÇÃO</b>${esc(c.observations)}</span></span>` : ''}
+        ${c.observations ? `<span class="kc-obs" data-acao="pararPropagacao" title="Observação"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="obs-tooltip"><b>OBSERVAÇÃO</b>${esc(c.observations)}</span></span>` : ''}
         ${c.is_new ? '<span class="badge-novo">NOVO</span>' : ''}
         <span class="badge-days ${dc}" title="Desde ${fmtDT(since)}">${days}d na etapa</span>
       </div>
     </div>
-    ${c.client_cpf ? `<div class="kc-cpf" onclick="copyCpf(event,'${escJs(c.client_cpf)}')">${fmtCpf(c.client_cpf)}</div>` : ''}
+    ${c.client_cpf ? `<div class="kc-cpf" data-acao="copyCpf" data-cpf="${esc(c.client_cpf)}">${fmtCpf(c.client_cpf)}</div>` : ''}
     <div class="kc-prop">
       ${c.development ? `<span class="empr">${esc(c.development)}</span>` : ''}
       ${c.block || c.unit ? ` <span style="color:var(--t3);font-size:.68rem">· ${c.block ? 'Bl ' + esc(c.block) : ''}${c.block && c.unit ? ' ' : ''}${c.unit ? 'Un ' + esc(c.unit) : ''}</span>` : ''}
@@ -2133,13 +2189,13 @@ function renderCard(c, stage) {
       <span class="kc-sit-dot" style="background:${stage.color}"></span>
       <div style="flex:1;min-width:0"><div class="kc-sit-name">${esc(stage.name)}</div><div class="kc-sit-since">desde ${fmtDT(since)}</div></div>
     </div>
-    <div class="kc-entrevista" onclick="event.stopPropagation()">
+    <div class="kc-entrevista" data-acao="pararPropagacao">
       <div style="font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);width:100%;margin-bottom:.15rem">Status da entrevista</div>
       ${['pendente', 'agendado', 'aprovado', 'reprovado']
         .map(
           st => `
         <button class="ent-btn ent-${st}${ent === st ? ' active' : ''}"
-          onclick="${st === 'agendado' ? `openAgendamento('${c.id}',event)` : `setEnt('${c.id}','${st}',event)`}">
+          data-acao="${st === 'agendado' ? 'openAgendamento' : 'setEnt'}" data-id="${esc(c.id)}" data-status="${st}">
           ${st[0].toUpperCase() + st.slice(1)}
         </button>`
         )
@@ -2148,8 +2204,8 @@ function renderCard(c, stage) {
     <div class="kc-footer">
       <span class="kc-date">${fmtDate(c.created_at)}</span>
       <div class="kc-actions">
-        <button class="kc-action-btn" title="Mover etapa" onclick="openFluxo(event,'${c.id}','${stage.id}')">Mover</button>
-        <button class="kc-action-btn" title="Gerenciar" onclick="openCard('${c.id}')">Gerenciar</button>
+        <button class="kc-action-btn" title="Mover etapa" data-acao="openFluxo" data-case-id="${esc(c.id)}" data-stage-id="${esc(stage.id)}">Mover</button>
+        <button class="kc-action-btn" title="Gerenciar" data-acao="openCard" data-id="${esc(c.id)}">Gerenciar</button>
       </div>
     </div>
   </div>`;
@@ -2188,10 +2244,10 @@ function onDragStart(e, el) {
   G.dragCard = el.dataset.id;
   e.dataTransfer.effectAllowed = 'move';
 }
-function onDragOver(e) {
+function onDragOver(e, col) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
+  col.classList.add('drag-over');
 }
 function onDrop(e, col) {
   e.preventDefault();
@@ -2366,7 +2422,7 @@ function openFluxo(e, caseId, stageId) {
     list
       .map(
         s =>
-          `<div class="fluxo-stage-opt" onclick="moveCard('${caseId}','${s.id}');closeFluxo()"><div class="fluxo-dot" style="background:${s.color}"></div>${esc(s.name)}</div>`
+          `<div class="fluxo-stage-opt" data-acao="moverPeloFluxo" data-case-id="${esc(caseId)}" data-stage-id="${esc(s.id)}"><div class="fluxo-dot" style="background:${s.color}"></div>${esc(s.name)}</div>`
       )
       .join('');
   popup.classList.remove('hidden');
@@ -2533,7 +2589,7 @@ async function openCard(id) {
       _lock.innerHTML =
         `${motivo} Você está apenas visualizando. ` +
         `<span style="opacity:.75">Seu acesso: <b>${esc(papelLegivel())}</b>.</span> ` +
-        `<button class="btn btn-ghost btn-sm" style="margin-left:.4rem" onclick="liberarEdicao('${c.id}')">Liberar edição</button>`;
+        `<button class="btn btn-ghost btn-sm" style="margin-left:.4rem" data-acao="liberarEdicao" data-id="${esc(c.id)}">Liberar edição</button>`;
     }
   }
   document.getElementById('mc-title').textContent = c.client_name;
@@ -2824,18 +2880,18 @@ function renderModalDet() {
       <div class="form-group full"><label>Empreendimento</label><input id="e-development" value="${esc(c.development || '')}" list="dl-developments"></div>
       <div class="form-group"><label>Bloco</label><input id="e-block" value="${esc(c.block || '')}"></div>
       <div class="form-group"><label>Unidade</label><input id="e-unit" value="${esc(c.unit || '')}"></div>
-      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="text" inputmode="decimal" oninput="maskValor(this)" onblur="blurValor(this)" value="${c.contract_value != null && c.contract_value !== '' ? Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}"></div>
+      <div class="form-group"><label>Valor (R$)</label><input id="e-value" type="text" inputmode="decimal" data-acao-input="maskValor" data-acao-blur="blurValor" value="${c.contract_value != null && c.contract_value !== '' ? Number(c.contract_value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}"></div>
       <div class="form-group"><label>Venc. Avaliacao</label><input id="e-eval" type="date" value="${c.evaluation_expiry || ''}"></div>
     </div>
     <div class="form-section-title">Parceiro e equipe</div>
     <div class="form-grid">
       ${G.isCorrTenant ? `<div class="form-group"><label>Correspondente</label><input value="${esc(G.fixedCorr || c.partner_name || '')}" disabled></div>` : `<div class="form-group"><label>Correspondente</label><select id="e-partner">${selOptsId(G.empresas, c.empresa_id || c.partner_name)}</select></div>`}
-      <div class="form-group"><label>Imobiliaria</label><select id="e-re" onchange="aoTrocarImobiliaria('e')">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
+      <div class="form-group"><label>Imobiliaria</label><select id="e-re" data-acao-change="aoTrocarImobiliaria" data-pre="e">${selOpts(_imobNames(), c.real_estate_name)}</select></div>
       <div class="form-group"><label>Usuário Correspondente</label><select id="e-usuario">${selOptsId(G.partners, c.correspondente_id || p.usuario_correspondente || '')}</select></div>
       <div class="form-group"><label>Analista</label><select id="e-manager">${selOptsId(G.analistas, c.analista_id || c.manager_name)}</select></div>
-      <div class="form-group"><label>Coordenador</label><select id="e-coordenador" onchange="aoTrocarCoordenador('e')">${selOpts(_coordenadorNames(), _coordenadorDoCorretor(c.broker_name))}</select></div>
+      <div class="form-group"><label>Coordenador</label><select id="e-coordenador" data-acao-change="aoTrocarCoordenador" data-pre="e">${selOpts(_coordenadorNames(), _coordenadorDoCorretor(c.broker_name))}</select></div>
       <div class="form-group"><label>Corretor</label>
-        <select id="e-broker" onchange="aoTrocarCorretor('e')">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name), c.real_estate_name), c.broker_name)}</select>
+        <select id="e-broker" data-acao-change="aoTrocarCorretor" data-pre="e">${selOpts(_corretoresParaFormulario(_coordenadorDoCorretor(c.broker_name), c.real_estate_name), c.broker_name)}</select>
         <div id="e-coord-obs" style="display:none;font-size:.7rem;color:#9A6008;margin-top:.25rem"></div>
       </div>
       <div class="form-group"><label>Convênio</label><select id="e-convenio">${selOpts(_convenioNames(), p.convenio || '')}</select></div>
@@ -2946,7 +3002,7 @@ function renderModalEvts() {
   body.innerHTML = '<div class="spinner" style="margin:1.5rem auto;display:block"></div>';
   const commentBox = `<div style="margin-top:1rem;display:flex;gap:.45rem">
     <input id="new-comment" placeholder="Adicionar comentario..." style="flex:1;padding:.42rem .65rem;border:1px solid var(--border);border-radius:7px;font-size:.78rem">
-    <button class="btn btn-primary btn-sm" onclick="addComment()">Enviar</button></div>`;
+    <button class="btn btn-primary btn-sm" data-acao="addComment">Enviar</button></div>`;
   const icons = { stage_change: 'M', comment: 'C', edit: 'E', document: 'D' };
   const cls = { stage_change: 'stage', comment: 'comment', edit: 'edit', document: 'edit' };
   fetch(`${A1.rest('a1_events')}?case_id=eq.${G.editingCaseId}&order=created_at.desc`, {
@@ -2988,7 +3044,7 @@ function fmtNum(n) {
 function renderModalValores() {
   const vr = G.editingCaseData?.payload?.valores || {};
   const f = (id, label, val, hint) =>
-    `<div class="form-group"><label>${label}</label><input id="${id}" value="${esc(val || '')}" placeholder="0,00" oninput="recalcValores()">${hint ? `<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>` : ''}</div>`;
+    `<div class="form-group"><label>${label}</label><input id="${id}" value="${esc(val || '')}" placeholder="0,00" data-acao-input="recalcValores">${hint ? `<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>` : ''}</div>`;
   const ro = (id, label, hint) =>
     `<div class="form-group"><label>${label}</label><input id="${id}" value="" readonly style="background:var(--bg);font-weight:700;color:var(--t2)">${hint ? `<div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${hint}</div>` : ''}</div>`;
   document.getElementById('mc-body').innerHTML = `
@@ -3006,7 +3062,7 @@ function renderModalValores() {
       <div class="form-group"><label>Data de assinatura</label><input id="vr-data-assinatura" type="date" value="${esc(vr.data_assinatura || '')}"></div>
       <div class="form-group"><label>Previsão de repasse</label><input id="vr-data-previsao" type="date" value="${esc(vr.data_previsao_repasse || '')}"></div>
     </div>
-    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" onclick="saveValores()">Salvar valores</button></div>`;
+    <div style="margin-top:1rem"><button class="btn btn-primary btn-sm" data-acao="saveValores">Salvar valores</button></div>`;
   recalcValores();
 }
 
@@ -3118,8 +3174,8 @@ function renderDocTypesList() {
       <td>${esc(t.name)}</td>
       <td><span style="font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;background:${on ? '#dcfce7' : '#fee2e2'};color:${on ? '#166534' : '#b91c1c'}">${on ? 'Ativo' : 'Inativo'}</span></td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="toggleDocType('${t.id}')">${on ? 'Desativar' : 'Ativar'}</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteDocType('${t.id}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="toggleDocType" data-id="${esc(t.id)}">${on ? 'Desativar' : 'Ativar'}</button>
+        <button class="btn btn-danger btn-sm" data-acao="deleteDocType" data-id="${esc(t.id)}">Excluir</button>
       </td></tr>`;
     })
     .join('');
@@ -3166,12 +3222,12 @@ async function deleteDocType(id) {
 function docRow(d) {
   // d.path = novo (Storage, signed URL sob demanda); d.data = legado (base64 antigo, ainda funciona)
   const openBtn = d.path
-    ? `<button class="btn btn-ghost btn-sm" onclick="openDoc('${d.path}')">Abrir</button>`
+    ? `<button class="btn btn-ghost btn-sm" data-acao="openDoc" data-path="${esc(d.path)}">Abrir</button>`
     : `<a href="${d.data}" download="${esc(d.name || 'documento')}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>`;
   return `<div class="doc-row">
     <div style="flex:1"><div class="doc-name">${esc(d.name || 'Documento')}</div><div class="doc-type-lbl">${esc(d.type || 'Sem tipo')}${d.uploaded_at ? ' · ' + fmtDT(d.uploaded_at) : ''}</div></div>
     ${openBtn}
-    <button class="btn btn-danger btn-sm" onclick="removeDoc('${d.id}')">Remover</button>
+    <button class="btn btn-danger btn-sm" data-acao="removeDoc" data-doc-id="${esc(d.id)}">Remover</button>
   </div>`;
 }
 
@@ -3222,8 +3278,8 @@ async function renderModalDocs() {
     <div class="form-section-title">Anexar documento</div>
     <div style="display:flex;gap:.5rem;align-items:flex-end;margin-bottom:.5rem;flex-wrap:wrap">
       <div class="form-group" style="flex:1;min-width:180px"><label>Tipo de documento</label><select id="doc-type-sel">${opts}</select></div>
-      <button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-attach').click()" ${types.length ? '' : 'disabled'}>Selecionar arquivo</button>
-      <input type="file" id="doc-attach" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="attachDoc(this.files[0])">
+      <button class="btn btn-primary btn-sm" data-acao="clicarAlvo" data-alvo="doc-attach" ${types.length ? '' : 'disabled'}>Selecionar arquivo</button>
+      <input type="file" id="doc-attach" accept=".pdf,.png,.jpg,.jpeg" style="display:none" data-acao-change="attachDoc">
     </div>
     ${types.length ? '' : '<div style="font-size:.72rem;color:#9A6008;margin-bottom:.75rem">Cadastre os tipos em Configurações → Tipos de documento.</div>'}
     <div class="form-section-title" style="margin-top:1rem">Documentos anexados</div>
@@ -4072,7 +4128,7 @@ function renderAgendaCalendar() {
       ';padding:3px 4px;cursor:' +
       (hasItems ? 'pointer' : 'default') +
       '"' +
-      (hasItems ? ' onclick="toggleAgdDay(this)"' : '') +
+      (hasItems ? ' data-acao="toggleAgdDay"' : '') +
       '>' +
       '<div style="font-size:.68rem;font-weight:' +
       (isToday ? '800' : '600') +
@@ -4105,9 +4161,9 @@ function renderAgendaCalendar() {
     let detail = '<div class="agd-day-detail" style="display:none">';
     items.forEach(function (c) {
       detail +=
-        '<div onclick="openCard(\'' +
-        c.id +
-        '\')" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;cursor:pointer;margin-bottom:.25rem">' +
+        '<div data-acao="openCard" data-id="' +
+        esc(c.id) +
+        '" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;cursor:pointer;margin-bottom:.25rem">' +
         '<div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#3b82f6;margin-bottom:.1rem">📅 Entrevista</div>' +
         '<div style="font-size:.72rem;font-weight:700;color:var(--t1)">' +
         esc(c.client_name) +
@@ -4122,9 +4178,9 @@ function renderAgendaCalendar() {
     });
     vencs.forEach(function (c) {
       detail +=
-        '<div onclick="openCard(\'' +
-        c.id +
-        '\')" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #fde047;background:#fefce8;cursor:pointer;margin-bottom:.25rem">' +
+        '<div data-acao="openCard" data-id="' +
+        esc(c.id) +
+        '" style="padding:.35rem .5rem;border-radius:5px;border:1px solid #fde047;background:#fefce8;cursor:pointer;margin-bottom:.25rem">' +
         '<div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#854d0e;margin-bottom:.1rem">⚠️ Venc. Avaliação</div>' +
         '<div style="font-size:.72rem;font-weight:700;color:var(--t1)">' +
         esc(c.client_name) +
@@ -4176,11 +4232,11 @@ function renderAgendaCalendar() {
       const tagTxt = isEnt ? 'Entrevista' : 'Venc. Avaliação';
       const sub = isEnt ? fmtDateHour(c.payload.agendamento_data) : date.toLocaleDateString('pt-BR');
       html +=
-        '<div onclick="openCard(\'' +
-        c.id +
-        '\')" style="display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;margin-bottom:.35rem;transition:border-color .15s" onmouseenter="this.style.borderColor=\'' +
+        '<div data-acao="openCard" data-id="' +
+        esc(c.id) +
+        '" style="display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;margin-bottom:.35rem;transition:border-color .15s" data-acao-mouseenter="realcarBorda" data-cor="' +
         (isEnt ? '#93c5fd' : '#fde047') +
-        '\'" onmouseleave="this.style.borderColor=\'var(--border)\'">' +
+        '" data-acao-mouseleave="soltarBorda">' +
         '<div style="width:36px;height:36px;border-radius:6px;background:' +
         tagBg +
         ';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">' +
@@ -4411,7 +4467,7 @@ function renderList() {
             reprovado: 'pill-reprovado'
           }[entSt] || 'pill-espera';
         return `<tr>
-      <td style="text-align:center"><input type="checkbox" class="row-chk" value="${c.id}" ${G.selCases && G.selCases.has(c.id) ? 'checked' : ''} onclick="toggleRowSel('${c.id}',this)"></td>
+      <td style="text-align:center"><input type="checkbox" class="row-chk" value="${c.id}" ${G.selCases && G.selCases.has(c.id) ? 'checked' : ''} data-acao="toggleRowSel" data-id="${esc(c.id)}"></td>
       <td><span class="tbl-name">${esc(c.client_name)}</span>${c.is_new ? '<span class="badge-novo" style="margin-left:.4rem">NOVO</span>' : ''}</td>
       <td><span class="tbl-cpf">${fmtCpf(c.client_cpf || '')}</span></td>
       <td>${esc(c.development || '—')}${c.unit ? ` <span style="color:var(--t3)">Un ${esc(c.unit)}</span>` : ''}</td>
@@ -4420,7 +4476,7 @@ function renderList() {
       <td>${c.contract_value ? fmtBRL(c.contract_value) : '—'}</td>
       <td><span class="status-pill ${pillCls}">${entSt}</span></td>
       <td><span style="font-size:.7rem;font-family:'DM Mono',monospace;color:${dc}">${days}d</span></td>
-      <td><button class="btn btn-ghost btn-xs" onclick="openCard('${c.id}')">Abrir</button></td>
+      <td><button class="btn btn-ghost btn-xs" data-acao="openCard" data-id="${esc(c.id)}">Abrir</button></td>
     </tr>`;
       })
       .join('') ||
@@ -4445,7 +4501,7 @@ function renderFlags() {
     ? G.flags
         .map(
           f =>
-            `<div class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${f.color || '#0E8C7F'};display:inline-block"></span>${esc(f.name)}<span class="tag-rm" onclick="removeFlag('${f.id}')">x</span></div>`
+            `<div class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${f.color || '#0E8C7F'};display:inline-block"></span>${esc(f.name)}<span class="tag-rm" data-acao="removeFlag" data-id="${esc(f.id)}">x</span></div>`
         )
         .join('')
     : '<span style="color:var(--t3);font-size:.77rem">Nenhuma flag cadastrada.</span>';
@@ -4554,8 +4610,8 @@ function renderPartnerTable() {
       <td>${esc(p.region || '—')}</td>
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
-        <button class="pt-act" onclick="openPartnerModal('${p.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deletePartner('${p.id}','${escJs(p.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="openPartnerModal" data-id="${esc(p.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deletePartner" data-id="${esc(p.id)}" data-name="${esc(p.name)}">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -4570,15 +4626,15 @@ function renderPtPagination(total) {
     el.innerHTML = '';
     return;
   }
-  let html = `<button class="pt-pg-btn" ${G.ptPage === 0 ? 'disabled' : ''} onclick="ptGo(${G.ptPage - 1})">Anterior</button>`;
+  let html = `<button class="pt-pg-btn" ${G.ptPage === 0 ? 'disabled' : ''} data-acao="ptGo" data-n="${esc(G.ptPage - 1)}">Anterior</button>`;
   for (let i = 0; i < pages; i++) {
     if (pages > 7 && Math.abs(i - G.ptPage) > 2 && i !== 0 && i !== pages - 1) {
       if (i === 1 || i === pages - 2) html += `<span style="padding:.2rem .3rem;color:var(--t3)">…</span>`;
       continue;
     }
-    html += `<button class="pt-pg-btn ${i === G.ptPage ? 'active' : ''}" onclick="ptGo(${i})">${i + 1}</button>`;
+    html += `<button class="pt-pg-btn ${i === G.ptPage ? 'active' : ''}" data-acao="ptGo" data-n="${esc(i)}">${i + 1}</button>`;
   }
-  html += `<button class="pt-pg-btn" ${G.ptPage === pages - 1 ? 'disabled' : ''} onclick="ptGo(${G.ptPage + 1})">Proximo</button>`;
+  html += `<button class="pt-pg-btn" ${G.ptPage === pages - 1 ? 'disabled' : ''} data-acao="ptGo" data-n="${esc(G.ptPage + 1)}">Proximo</button>`;
   el.innerHTML = html;
 }
 
@@ -4894,8 +4950,8 @@ function renderEmpresaTable() {
       <td>${esc(e.regional || '—')}</td>
       <td>${st}</td>
       <td><div style="display:flex;gap:.3rem">
-        <button class="pt-act" onclick="openEmpresaModal('${e.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpresa('${e.id}','${escJs(e.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="openEmpresaModal" data-id="${esc(e.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deleteEmpresa" data-id="${esc(e.id)}" data-name="${esc(e.name)}">Excluir</button>
       </div></td>
     </tr>`;
     })
@@ -5019,8 +5075,8 @@ function renderEmprList() {
       <td><span class="pt-type" style="background:#e0f2fe;color:#0284c7">${d.tipo || 'blocos'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:.73rem">${d.unit_count || 0} unidades</td>
       <td style="display:flex;gap:.35rem">
-        <button class="pt-act" onclick="editEmpreendimento('${d.id}')">Editar</button>
-        <button class="pt-act danger" onclick="deleteEmpreendimento('${d.id}','${escJs(d.name)}')">Excluir</button>
+        <button class="pt-act" data-acao="editEmpreendimento" data-id="${esc(d.id)}">Editar</button>
+        <button class="pt-act danger" data-acao="deleteEmpreendimento" data-id="${esc(d.id)}" data-name="${esc(d.name)}">Excluir</button>
       </td>
     </tr>`
       )
@@ -5287,8 +5343,8 @@ function renderImobList() {
       <td>${esc(i.region || '—')}</td>
       <td><span class="status-dot ${i.is_active ? 'active' : 'inactive'}"></span>${i.is_active ? 'Ativa' : 'Inativa'}</td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openImob(${JSON.stringify(i).replace(/"/g, '&quot;')})">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteImob('${i.id}','${escJs(i.name)}')">Excluir</button>
+        <button class="btn btn-ghost btn-sm" data-acao="openImob" data-imob="${esc(JSON.stringify(i))}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-acao="deleteImob" data-id="${esc(i.id)}" data-name="${esc(i.name)}">Excluir</button>
       </td>
     </tr>`
     )
@@ -5301,7 +5357,7 @@ function renderImobList() {
       : Array.from(
           { length: pages },
           (_, k) =>
-            `<button class="pg-btn${k === page ? ' active' : ''}" onclick="G.imobPage=${k};renderImobList()">${k + 1}</button>`
+            `<button class="pg-btn${k === page ? ' active' : ''}" data-acao="irParaPaginaImob" data-pagina="${k}">${k + 1}</button>`
         ).join('');
 }
 
@@ -5433,8 +5489,8 @@ function renderAnalistaList() {
     <td style="color:var(--t2)">${esc(a.phone || '—')}</td>
     <td>${a.is_active !== false ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
     <td><div style="display:flex;gap:.3rem">
-      <button class="btn btn-ghost btn-sm" onclick="openAnalista(${JSON.stringify(a).replace(/"/g, '&quot;')})">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteAnalista('${a.id}','${escJs(a.name)}')">Excluir</button>
+      <button class="btn btn-ghost btn-sm" data-acao="openAnalista" data-analista="${esc(JSON.stringify(a))}">Editar</button>
+      <button class="btn btn-danger btn-sm" data-acao="deleteAnalista" data-id="${esc(a.id)}" data-name="${esc(a.name)}">Excluir</button>
     </div></td>
   </tr>`
     )
@@ -5446,13 +5502,13 @@ function renderAnalistaList() {
     pgEl.innerHTML =
       pages <= 1
         ? ''
-        : `<button class="pt-pg-btn" ${G.analistaPage === 0 ? 'disabled' : ''} onclick="G.analistaPage--;renderAnalistaList()">Anterior</button>` +
+        : `<button class="pt-pg-btn" ${G.analistaPage === 0 ? 'disabled' : ''} data-acao="irParaPaginaAnalista" data-pagina="${G.analistaPage - 1}">Anterior</button>` +
           Array.from(
             { length: pages },
             (_, i) =>
-              `<button class="pt-pg-btn${G.analistaPage === i ? ' active' : ''}" onclick="G.analistaPage=${i};renderAnalistaList()">${i + 1}</button>`
+              `<button class="pt-pg-btn${G.analistaPage === i ? ' active' : ''}" data-acao="irParaPaginaAnalista" data-pagina="${i}">${i + 1}</button>`
           ).join('') +
-          `<button class="pt-pg-btn" ${G.analistaPage === pages - 1 ? 'disabled' : ''} onclick="G.analistaPage++;renderAnalistaList()">Próximo</button>`;
+          `<button class="pt-pg-btn" ${G.analistaPage === pages - 1 ? 'disabled' : ''} data-acao="irParaPaginaAnalista" data-pagina="${G.analistaPage + 1}">Próximo</button>`;
 }
 
 function openAnalista(a) {
@@ -6062,7 +6118,7 @@ function pintarContadorFiltros() {
     const n = _contarFiltros(obj);
     el.innerHTML = n
       ? `<span class="filtros-pino">${n}</span> ${n === 1 ? 'filtro aplicado' : 'filtros aplicados'}
-         <button class="filtros-limpar" onclick="${qual === 'dash' ? 'clearDashFilters()' : 'clearFilters()'}">limpar</button>`
+         <button class="filtros-limpar" data-acao="${qual === 'dash' ? 'clearDashFilters' : 'clearFilters'}">limpar</button>`
       : '';
   }
 }
@@ -6435,7 +6491,7 @@ init();
 // registro com planilha. Mostra um trecho e copia o valor inteiro no clique.
 function idChip(id) {
   if (!id) return '<span style="color:var(--t3)">—</span>';
-  return `<code onclick="copiarId('${id}')" title="Clique para copiar: ${id}"
+  return `<code data-acao="copiarId" data-id="${esc(id)}" title="Clique para copiar: ${id}"
     style="cursor:pointer;font-size:.7rem;background:var(--bg);border:1px solid var(--border);
            border-radius:4px;padding:.1rem .35rem;color:var(--t2)">${esc(String(id).slice(0, 8))}…</code>`;
 }
@@ -6500,7 +6556,7 @@ function renderDespachantes() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(d.id)}
-          <button class="btn-icon" onclick="editDespachante('${escJs(d.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editDespachante" data-id="${esc(d.id)}">✏️</button>
         </div>
       </div>`
     )
@@ -6546,7 +6602,7 @@ function renderBancos() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(b.id)}
-          <button class="btn-icon" onclick="editBanco('${escJs(b.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editBanco" data-id="${esc(b.id)}">✏️</button>
         </div>
       </div>`
     )
@@ -6594,7 +6650,7 @@ function renderCartorios() {
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           ${idChip(c.id)}
-          <button class="btn-icon" onclick="editCartorio('${escJs(c.id)}')">✏️</button>
+          <button class="btn-icon" data-acao="editCartorio" data-id="${esc(c.id)}">✏️</button>
         </div>
       </div>`
     )

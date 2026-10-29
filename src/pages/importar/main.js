@@ -13,15 +13,33 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { A1 } from '../../shared/api/config.js';
-import { esc, escJs } from '../../shared/utils/texto.js';
+import { esc } from '../../shared/utils/texto.js';
 import { a1RefreshPartnerPerms, a1RequireAuth, a1StartHeartbeat } from '../../shared/auth/auth.js';
 import { XLSX } from '../../shared/utils/xlsx-leve.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
+import { acoes } from '../../shared/ui/acoes.js';
 
-// Chamadas pelo HTML (onclick="...") ou pela suíte de testes. Ver src/shared/utils/expor.js.
-expor({ conferir, escolheu, importar, passo, resumoImport });
+// Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
+expor({ conferir, escolheu, importar, passo });
 exporVariavel('G', () => G);
 exporVariavel('val', () => val);
+
+// O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
+acoes({
+  conferir: () => conferir(),
+  escolherCidade: el => {
+    G.cidadeEscolha[el.dataset.cidade] = el.value;
+  },
+  escolherEtapa: el => {
+    G.deEtapa[el.dataset.situacao] = el.value;
+    resumoImport();
+  },
+  escolheu: el => escolheu(el.files[0]),
+  importar: () => importar(),
+  mapearColuna: el => {
+    G.mapa[el.dataset.chave] = el.value;
+  }
+});
 const G = {
   user: null,
   slug: null,
@@ -147,7 +165,7 @@ function montarMapa() {
     c => `
     <div class="campo">
       <label>${esc(c.rotulo)}</label>
-      <select id="map-${c.chave}" onchange="G.mapa['${c.chave}']=this.value">
+      <select id="map-${c.chave}" data-acao-change="mapearColuna" data-chave="${esc(c.chave)}">
         <option value="">— não tem na planilha —</option>
         ${G.colunas.map(col => `<option value="${esc(col)}"${palpite[c.chave] === col ? ' selected' : ''}>${esc(col)} · ${esc(G.cabecalho[col] || '(sem título)')}</option>`).join('')}
       </select>
@@ -264,7 +282,7 @@ async function conferir() {
             v,
             'alerta',
             'mais de uma cidade com esse nome',
-            `<select onchange="G.cidadeEscolha['${escJs(v)}']=this.value">
+            `<select data-acao-change="escolherCidade" data-cidade="${esc(v)}">
              ${usar.map(m => `<option value="${esc(m.nome)}|${esc(m.uf)}">${esc(m.nome)} / ${esc(m.uf)}</option>`).join('')}
            </select>`,
             true
@@ -443,7 +461,7 @@ function montarEtapas() {
       return `<tr>
       <td><b>${esc(sit)}</b>${escolhida ? '' : ' <span class="marca m-alerta">sem etapa igual</span>'}</td>
       <td class="mono">${n}</td>
-      <td><select onchange="G.deEtapa['${escJs(sit)}']=this.value; resumoImport();">
+      <td><select data-acao-change="escolherEtapa" data-situacao="${esc(sit)}">
         ${G.etapas.map(e => `<option value="${esc(e.id)}"${G.deEtapa[sit] === e.id ? ' selected' : ''}>${esc(e.name)}</option>`).join('')}
         <option value="">— Não importar estas linhas —</option>
       </select></td></tr>`;

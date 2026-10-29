@@ -31,7 +31,7 @@
       <input id="sa-url-input" type="text" placeholder="https://xxx.supabase.co">
     </div>
     <div id="sa-auth-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:6px;padding:.5rem .75rem;font-size:.78rem;font-weight:500;margin-bottom:.875rem"></div>
-    <button class="btn btn-primary" style="width:100%;padding:.7rem;font-size:.85rem" onclick="saAuth()">Entrar como Superadmin</button>
+    <button class="btn btn-primary" style="width:100%;padding:.7rem;font-size:.85rem" data-acao="saAuth">Entrar como Superadmin</button>
     <div style="margin-top:.875rem;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:.5rem .75rem;font-size:.72rem;color:#92400e;font-weight:500">
       Nunca compartilhe a Service Role Key. Use apenas neste painel seguro.
     </div>
@@ -46,26 +46,26 @@
       <div style="display:flex;gap:.5rem;align-items:center">
         <span class="sa-warn-badge">Service Role ativo</span>
         <span class="sa-badge" id="sa-tenant-count">— clientes</span>
-        <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.15)" onclick="saLogout()">Sair</button>
+        <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.15)" data-acao="saLogout">Sair</button>
       </div>
     </div>
     <div class="sa-tabs">
-      <div class="sa-tab active" onclick="switchSaTab('clientes',this)">Clientes</div>
-      <div class="sa-tab" onclick="switchSaTab('modulos',this)">Módulos</div>
-      <div class="sa-tab" onclick="switchSaTab('planos',this)">Planos</div>
-      <div class="sa-tab" onclick="switchSaTab('melhorias',this)" id="tab-melhorias">
+      <div class="sa-tab active" data-acao="switchSaTab" data-name="clientes">Clientes</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="modulos">Módulos</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="planos">Planos</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="melhorias" id="tab-melhorias">
         Melhorias
         <span id="feedback-badge" style="display:none;margin-left:.4rem;background:#7c3aed;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
-      <div class="sa-tab" onclick="switchSaTab('interessados',this)" id="tab-interessados">
+      <div class="sa-tab" data-acao="switchSaTab" data-name="interessados" id="tab-interessados">
         Interessados
         <span id="leads-badge" style="display:none;margin-left:.4rem;background:#0E8C7F;color:#fff;font-size:.6rem;font-weight:800;border-radius:99px;padding:.05rem .4rem;vertical-align:middle"></span>
       </div>
-      <div class="sa-tab" onclick="switchSaTab('esteiras',this)">Esteiras</div>
-      <div class="sa-tab" onclick="switchSaTab('monitor',this)">Monitor</div>
-      <div class="sa-tab" onclick="switchSaTab('avisos',this)">Mural de Avisos</div>
-      <div class="sa-tab" onclick="switchSaTab('indica',this)">IndicaSII</div>
-      <div class="sa-tab" onclick="switchSaTab('plataforma',this)">Plataforma</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="esteiras">Esteiras</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="monitor">Monitor</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="avisos">Mural de Avisos</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="indica">IndicaSII</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="plataforma">Plataforma</div>
     </div>
   </div>
 
@@ -100,7 +100,7 @@
             </select>
           </div>
           <div class="form-group"><label>Plano</label>
-            <select id="n-plan" onchange="toggleCustomLimit()">
+            <select id="n-plan" data-acao-change="toggleCustomLimit">
               <option value="starter">Starter (3 usuários)</option>
               <option value="pro">Pro (10 usuários)</option>
               <option value="enterprise">Enterprise (30 usuários)</option>
@@ -122,7 +122,7 @@
           </div>
         </div>
         <div style="margin-top:.875rem;display:flex;gap:.5rem;align-items:center">
-          <button class="btn btn-primary" onclick="createTenant()">Criar cliente + usuário</button>
+          <button class="btn btn-primary" data-acao="createTenant">Criar cliente + usuário</button>
           <div id="n-err" style="display:none;font-size:.78rem;color:#B8433A;font-weight:500"></div>
         </div>
       </div>
@@ -131,7 +131,7 @@
       <div class="panel" style="overflow:hidden">
         <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div class="section-title">Clientes cadastrados</div>
-          <input type="text" id="tenant-search" placeholder="Filtrar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:180px" oninput="filterTenants()">
+          <input type="text" id="tenant-search" placeholder="Filtrar..." style="padding:.3rem .65rem;border:1px solid var(--border);border-radius:6px;font-size:.75rem;width:180px" data-acao-input="filterTenants">
         </div>
         <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
           <table>
@@ -155,7 +155,7 @@
         <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
           <div class="form-group" style="min-width:220px">
             <label>Cliente</label>
-            <select id="mod-tenant" onchange="loadTenantModulesFor()"><option value="">Selecione um cliente...</option></select>
+            <select id="mod-tenant" data-acao-change="loadTenantModulesFor"><option value="">Selecione um cliente...</option></select>
           </div>
           <div class="form-group">
             <label>Validade (vazio = permanente)</label>
@@ -210,7 +210,7 @@
             <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviadas pelos usuários do sistema</div>
           </div>
           <div style="display:flex;gap:.5rem">
-            <select id="fb-filter-status" onchange="loadFeedback()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+            <select id="fb-filter-status" data-acao-change="loadFeedback" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
               <option value="">Todas</option>
               <option value="pending">Pendentes</option>
               <option value="accepted">Aceitas</option>
@@ -239,7 +239,7 @@
             <div style="font-size:.72rem;color:var(--t3);margin-top:.15rem">Enviados pelo formulário da página <a href="/conheca" target="_blank" style="color:#0E8C7F">/conheca</a></div>
           </div>
           <div style="display:flex;gap:.5rem">
-            <select id="lead-filter" onchange="renderLeads()" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
+            <select id="lead-filter" data-acao-change="renderLeads" style="font-size:.75rem;padding:.3rem .6rem;border:1px solid var(--border);border-radius:6px;color:var(--t1)">
               <option value="">Todos</option>
               <option value="novo">Novos</option>
               <option value="contatado">Contatados</option>
@@ -247,7 +247,7 @@
               <option value="ganho">Ganhos</option>
               <option value="perdido">Perdidos</option>
             </select>
-            <button class="btn btn-ghost btn-sm" onclick="loadLeads()">Atualizar</button>
+            <button class="btn btn-ghost btn-sm" data-acao="loadLeads">Atualizar</button>
           </div>
         </div>
         <div id="leads-list" style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div>
@@ -282,15 +282,15 @@
             </div>
           </div>
           <div style="display:flex;gap:.4rem;align-items:center">
-            <select id="mon-janela" onchange="loadMonitor()"
+            <select id="mon-janela" data-acao-change="loadMonitor"
               style="font-size:.78rem;padding:.35rem .5rem;border:1px solid var(--border);border-radius:7px">
               <option value="hora">Últimas 24 horas</option>
               <option value="dia" selected>Últimos 30 dias</option>
               <option value="semana">Últimas 12 semanas</option>
             </select>
-            <button class="btn btn-ghost btn-sm" onclick="loadMonitor()">Atualizar</button>
+            <button class="btn btn-ghost btn-sm" data-acao="loadMonitor">Atualizar</button>
             <label style="font-size:.72rem;color:var(--t3);display:flex;align-items:center;gap:.3rem">
-              <input type="checkbox" id="mon-auto" onchange="alternarAutoMonitor()"> a cada 30s
+              <input type="checkbox" id="mon-auto" data-acao-change="alternarAutoMonitor"> a cada 30s
             </label>
           </div>
         </div>
@@ -335,7 +335,7 @@
             <div class="section-title">Mural de Avisos</div>
             <div style="font-size:.75rem;color:var(--t3);margin-top:.2rem">Publique um aviso e ele aparece num pop-up para quem entrar no sistema. O aviso volta a cada login, até você despublicar ou definir uma data de expiração.</div>
           </div>
-          <button class="btn btn-primary" onclick="abrirAviso(null)">+ Novo aviso</button>
+          <button class="btn btn-primary" data-acao="abrirAviso">+ Novo aviso</button>
         </div>
         <div id="avisos-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
       </div>
@@ -348,16 +348,16 @@
         <div style="display:flex;align-items:flex-end;gap:.875rem;flex-wrap:wrap">
           <div class="form-group" style="min-width:230px">
             <label>Cliente</label>
-            <select id="est-tenant" onchange="carregarEsteira()"><option value="">Selecione um cliente...</option></select>
+            <select id="est-tenant" data-acao-change="carregarEsteira"><option value="">Selecione um cliente...</option></select>
           </div>
           <div class="form-group" style="min-width:180px">
             <label>Módulo</label>
-            <select id="est-modulo" onchange="carregarEsteira()">
+            <select id="est-modulo" data-acao-change="carregarEsteira">
               <option value="PRE_ANALISE">Pré-análise</option>
               <option value="COMERCIAL">Venda</option>
             </select>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="carregarEsteira()">Recarregar</button>
+          <button class="btn btn-ghost btn-sm" data-acao="carregarEsteira">Recarregar</button>
         </div>
         <div style="font-size:.72rem;color:var(--t3);margin-top:.75rem;line-height:1.5">
           A <strong>situação</strong> diz onde o processo está. A <strong>transição</strong> é a seta
@@ -409,9 +409,9 @@
           </div>
 
           <div style="flex:0 0 250px;display:flex;flex-direction:column;gap:.6rem">
-            <button id="manut-btn-ligar" class="btn btn-danger" onclick="manutLigar()" style="width:100%">Desligar o sistema</button>
-            <button id="manut-btn-desligar" class="btn btn-primary" onclick="manutDesligar()" style="width:100%;display:none">Reativar o sistema</button>
-            <button class="btn btn-ghost btn-sm" onclick="manutCarregar()" style="width:100%">Recarregar estado</button>
+            <button id="manut-btn-ligar" class="btn btn-danger" data-acao="manutLigar" style="width:100%">Desligar o sistema</button>
+            <button id="manut-btn-desligar" class="btn btn-primary" data-acao="manutDesligar" style="width:100%;display:none">Reativar o sistema</button>
+            <button class="btn btn-ghost btn-sm" data-acao="manutCarregar" style="width:100%">Recarregar estado</button>
             <div id="manut-detalhe" style="font-size:.68rem;color:var(--t3);line-height:1.5"></div>
           </div>
         </div>
@@ -443,8 +443,8 @@
             <div>
               <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:.35rem">Arquivo de imagem</div>
               <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="handleLogoFile(event)">
-                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logo-file-input').click()">Selecionar arquivo</button>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" data-acao-change="handleLogoFile">
+                <button class="btn btn-ghost btn-sm" data-acao="clicarAlvo" data-alvo="logo-file-input">Selecionar arquivo</button>
                 <span id="logo-file-name" style="font-size:.72rem;color:var(--t3)">PNG, SVG, JPG ou WebP</span>
               </div>
             </div>
@@ -456,8 +456,8 @@
             <div style="font-size:.7rem;color:var(--t3);margin-top:-.5rem">Pixels brancos e quase-brancos ficam transparentes, isolando apenas o símbolo.</div>
 
             <div style="display:flex;gap:.5rem;margin-top:.1rem">
-              <button id="logo-save-btn" class="btn btn-primary btn-sm" onclick="saveLogoUpload()" style="display:none">Salvar logo</button>
-              <button id="logo-clear-btn" class="btn btn-danger btn-sm" onclick="clearLogoUpload()" style="display:none">Remover logo</button>
+              <button id="logo-save-btn" class="btn btn-primary btn-sm" data-acao="saveLogoUpload" style="display:none">Salvar logo</button>
+              <button id="logo-clear-btn" class="btn btn-danger btn-sm" data-acao="clearLogoUpload" style="display:none">Remover logo</button>
             </div>
           </div>
         </div>
@@ -468,14 +468,14 @@
 </div>
 
 <!-- ═══════ MODAL: Limite de Despachantes ═══════ -->
-<div class="modal-bg hidden" id="modal-desp-limit" onclick="if(event.target===this)closeDespLimitModal()">
+<div class="modal-bg hidden" id="modal-desp-limit" data-acao="fecharLimitePeloFundo">
   <div class="modal" style="max-width:400px">
     <div class="modal-hdr">
       <div>
         <div class="modal-title">Limite de Despachantes</div>
         <div style="font-size:.73rem;color:var(--t3);margin-top:.1rem">Módulo Registro — Correspondente Bancário</div>
       </div>
-      <button class="modal-close" onclick="closeDespLimitModal()">&#x2715;</button>
+      <button class="modal-close" data-acao="closeDespLimitModal">&#x2715;</button>
     </div>
     <div class="modal-body">
       <p style="font-size:.83rem;color:var(--t2);margin-bottom:1rem;line-height:1.5">
@@ -484,12 +484,12 @@
       <div class="form-group" style="margin-bottom:.75rem">
         <label>Número máximo de despachantes</label>
         <input id="desp-limit-input" type="number" min="1" max="999" placeholder="Ex: 2"
-          style="width:100%" onkeydown="if(event.key==='Enter')confirmDespLimit()">
+          style="width:100%" data-acao-enter="confirmDespLimit">
       </div>
       <div id="desp-limit-err" style="color:#B8433A;font-size:.75rem;display:none;margin-bottom:.5rem;font-weight:500"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button class="btn btn-ghost btn-sm" onclick="closeDespLimitModal()">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="confirmDespLimit()">Liberar módulo</button>
+        <button class="btn btn-ghost btn-sm" data-acao="closeDespLimitModal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" data-acao="confirmDespLimit">Liberar módulo</button>
       </div>
     </div>
   </div>
@@ -503,7 +503,7 @@
         <div class="modal-title">Usuários — <span id="um-tenant-name"></span></div>
         <div style="font-size:.73rem;color:var(--t3);margin-top:.1rem">Owner/Admin têm acesso total ao tenant</div>
       </div>
-      <button class="modal-close" onclick="closeModal('modal-users')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-users">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div style="background:#f7f8fb;border-radius:8px;padding:.875rem;margin-bottom:1rem">
@@ -523,7 +523,7 @@
           </div>
         </div>
         <div id="um-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.5rem;font-weight:500"></div>
-        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" onclick="createUserForTenant()">Criar usuário</button>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" data-acao="createUserForTenant">Criar usuário</button>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -540,22 +540,22 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div><div class="modal-title">Cobrança — <span id="cob-name"></span></div><div style="font-size:.73rem;color:var(--t3);margin-top:.1rem" id="cob-email"></div></div>
-      <button class="modal-close" onclick="closeModal('modal-cobranca')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-cobranca">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid cols-2" style="margin-bottom:1rem">
         <div class="form-group" style="grid-column:1/-1">
           <label>E-mail do financeiro (para onde a cobrança é enviada)</label>
-          <input id="cob-email-input" type="email" placeholder="financeiro@empresa.com.br" onchange="cobPersistMeta()">
+          <input id="cob-email-input" type="email" placeholder="financeiro@empresa.com.br" data-acao-change="cobPersistMeta">
           <div style="font-size:.68rem;color:var(--t3);margin-top:.2rem">Deixe em branco para usar o e-mail do cadastro do cliente.</div>
         </div>
-        <div class="form-group"><label>Dia de vencimento</label><input id="cob-day" type="number" min="1" max="28" placeholder="Ex.: 10" onchange="cobPersistMeta()"></div>
-        <div class="form-group"><label>Valor mensal (R$)</label><input id="cob-valor" type="text" placeholder="Ex.: 199,00" onchange="cobPersistMeta()"></div>
+        <div class="form-group"><label>Dia de vencimento</label><input id="cob-day" type="number" min="1" max="28" placeholder="Ex.: 10" data-acao-change="cobPersistMeta"></div>
+        <div class="form-group"><label>Valor mensal (R$)</label><input id="cob-valor" type="text" placeholder="Ex.: 199,00" data-acao-change="cobPersistMeta"></div>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
-        <button class="btn btn-ghost btn-xs" onclick="cobYear(-1)">◀</button>
+        <button class="btn btn-ghost btn-xs" data-acao="cobYear" data-delta="-1">◀</button>
         <b id="cob-year" style="font-size:.9rem"></b>
-        <button class="btn btn-ghost btn-xs" onclick="cobYear(1)">▶</button>
+        <button class="btn btn-ghost btn-xs" data-acao="cobYear" data-delta="1">▶</button>
         <div style="flex:1"></div>
         <span id="cob-status" style="font-size:.75rem;font-weight:700"></span>
       </div>
@@ -564,10 +564,10 @@
       <div id="cob-err" style="color:#B8433A;font-size:.75rem;display:none;margin-top:.6rem;font-weight:500"></div>
     </div>
     <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cobranca')">Fechar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-cobranca">Fechar</button>
       <div style="display:flex;gap:.45rem">
-        <button class="btn btn-ghost" onclick="mailtoCobranca()">Abrir no e-mail</button>
-        <button class="btn btn-primary" onclick="sendCobranca()">Enviar cobrança</button>
+        <button class="btn btn-ghost" data-acao="mailtoCobranca">Abrir no e-mail</button>
+        <button class="btn btn-primary" data-acao="sendCobranca">Enviar cobrança</button>
       </div>
     </div>
   </div>
@@ -581,7 +581,7 @@
         <div class="modal-title">Gerar Contrato de Prestação de Serviços (SaaS)</div>
         <div style="font-size:.71rem;color:var(--t3);margin-top:.1rem">Dados da Contratada são salvos automaticamente para o próximo contrato</div>
       </div>
-      <button class="modal-close" onclick="closeModal('modal-contrato-bg')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-contrato-bg">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:1.35rem">
 
@@ -593,7 +593,7 @@
           <div class="form-group"><label>CNPJ *</label><input id="ct-sa-cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"></div>
           <div class="form-group"><label>E-mail</label><input id="ct-sa-email" type="email" placeholder="contato@empresa.com"></div>
           <div class="form-group" style="grid-column:1/-1"><label>Endereço completo (Rua, Nº, Bairro) *</label><input id="ct-sa-endereco" type="text" placeholder="Rua das Flores, 100, Centro"></div>
-          <div class="form-group"><label>Cidade / UF *</label><input id="ct-sa-cidade_uf" type="text" placeholder="São Paulo / SP" oninput="autoForo()"></div>
+          <div class="form-group"><label>Cidade / UF *</label><input id="ct-sa-cidade_uf" type="text" placeholder="São Paulo / SP" data-acao-input="autoForo"></div>
           <div class="form-group"><label>CEP</label><input id="ct-sa-cep" type="text" placeholder="00000-000" maxlength="9"></div>
           <div class="form-group"><label>Nome do Representante Legal *</label><input id="ct-sa-rep_legal" type="text" placeholder="João da Silva"></div>
           <div class="form-group"><label>CPF do Representante</label><input id="ct-sa-cpf_rep" type="text" placeholder="000.000.000-00" maxlength="14"></div>
@@ -627,8 +627,8 @@
 
     </div>
     <div style="padding:.875rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-contrato-bg')">Cancelar</button>
-      <button class="btn btn-primary" onclick="gerarContratoPDF()" style="background:#7c3aed">
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-contrato-bg">Cancelar</button>
+      <button class="btn btn-primary" data-acao="gerarContratoPDF" style="background:#7c3aed">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
         Gerar Contrato PDF
       </button>
@@ -644,7 +644,7 @@
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr">
       <div class="modal-title" id="aviso-titulo-modal">Novo aviso</div>
-      <button class="modal-close" onclick="closeModal('modal-aviso')">&#x2715;</button>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-aviso">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div id="av-erro" class="hidden" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-bottom:.9rem"></div>
@@ -669,20 +669,20 @@
 
       <div class="form-group full"><label>Imagem</label>
         <input id="av-imagem" type="text" placeholder="Link da imagem, ou envie um arquivo abaixo"
-               oninput="pintarPreviaAviso()">
+               data-acao-input="pintarPreviaAviso">
         <div style="font-size:.7rem;color:var(--t3);margin:.3rem 0 .4rem">
           Banner pronto do IndicaSII:
           <code style="cursor:pointer;text-decoration:underline"
-                onclick="document.getElementById('av-imagem').value='https://siimob.com.br/assets/banners/indicasii-mural.jpg';pintarPreviaAviso()"
+                data-acao="usarBannerPronto" data-url="https://siimob.com.br/assets/banners/indicasii-mural.jpg"
           >/assets/banners/indicasii-mural.jpg</code>
         </div>
-        <input id="av-img-arq" type="file" accept="image/*" onchange="subirArquivoAviso(this,'imagem')">
+        <input id="av-img-arq" type="file" accept="image/*" data-acao-change="subirArquivoAviso" data-qual="imagem">
         <div id="av-img-prev" style="margin-top:.5rem"></div>
       </div>
 
       <div class="form-group full"><label>Vídeo</label>
         <input id="av-video" type="text" placeholder="Link do YouTube/Vimeo, ou envie um arquivo abaixo">
-        <input id="av-vid-arq" type="file" accept="video/*" style="margin-top:.4rem" onchange="subirArquivoAviso(this,'video')">
+        <input id="av-vid-arq" type="file" accept="video/*" style="margin-top:.4rem" data-acao-change="subirArquivoAviso" data-qual="video">
         <div id="av-vid-prev" style="margin-top:.4rem;font-size:.75rem;color:var(--t3)"></div>
       </div>
 
@@ -714,9 +714,9 @@
       </div>
     </div>
     <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
-      <button class="btn btn-ghost" onclick="closeModal('modal-aviso')">Cancelar</button>
-      <button class="btn btn-ghost" id="av-btn-rascunho" onclick="salvarAviso(false)">Salvar rascunho</button>
-      <button class="btn btn-primary" id="av-btn-publicar" onclick="salvarAviso(true)">Publicar</button>
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-aviso">Cancelar</button>
+      <button class="btn btn-ghost" id="av-btn-rascunho" data-acao="salvarAviso" data-publicar="false">Salvar rascunho</button>
+      <button class="btn btn-primary" id="av-btn-publicar" data-acao="salvarAviso" data-publicar="true">Publicar</button>
     </div>
   </div>
 </div>
