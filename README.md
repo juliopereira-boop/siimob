@@ -46,7 +46,7 @@ src/
     auth/              sessão, licença de módulo, catálogo de permissões
     ui/                cabeçalho e abas (modulo-shell), avisos, tarja de cobrança
     utils/             utilidades sem regra de negócio
-  modules/             regra de negócio por domínio (painéis, documentos, leads, configurações…)
+  modules/             regra de negócio por domínio (painéis, documentos, leads, disposição, configurações…)
   styles/              estilos globais e tokens
 public/                arquivos servidos como estão (ícones, imagens, banners)
 database/

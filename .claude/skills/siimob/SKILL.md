@@ -84,6 +84,9 @@ navegador → PostgREST (chave anon + x-session-token) → RLS → dados
 | `src/shared/ui/acoes.js` | Delegação de eventos: `data-acao` no HTML, `acoes({...})` no módulo. Fiel ao onclick antigo (ordem de dentro para fora, `stopPropagation`, eventos sem bolha); provado no `t-acoes`. |
 | `src/shared/utils/datas.js` | `hojeISO()`: "hoje" no fuso de quem usa. `toISOString().slice(0,10)` é UTC e erra depois das 21h. |
 | `src/pages/pre-analise` / `comercial` | Módulos novos (fila com SLA, assistente, dossiê). |
+| `src/pages/disposicao` | Disposição de unidades: planta por bloco, ficha com histórico, reserva com fluxo de pagamento, reservas e painel do gestor (VSO, estoque, ticket). Módulo `DISPOSICAO`. |
+| `src/modules/disposicao` | `dados.js` (leituras, escritas, formatação, tradução de erros) e `config-disposicao.js` (Unidades, Mapa de preço, Parâmetros de pagamento e Regras, montados em Configurações só com a licença). |
+| `src/pages/lp` | LP comercial (`/conheca`). Isolada, sem casco; o formulário grava em `a1_leads`. |
 | `src/pages/configuracoes` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
 | `src/pages/workflow` | Editor de esteira em quadro, com um botão por módulo licenciado. |
 | `src/pages/superadmin` | Painel do dono: clientes, planos, licenças de módulo, monitor de acessos, "Acessar como". |
@@ -186,10 +189,28 @@ opcional). Duas portas, e as duas importam:
   perguntar" não pode virar "não tem"** — por isso os testes de `ok !== true`
   são literais.
 
+A licença é do cliente; a permissão é da pessoa. Por isso o catálogo de
+permissões de um módulo entra nos Perfis para qualquer gestor assim que a
+licença responde `true` (`perfisDisponiveis()` em Configurações), mesmo que
+quem esteja olhando não configure o módulo. Módulo novo precisa entrar ali,
+senão ninguém consegue liberar nada dele para um parceiro.
+
 Quando um módulo é licenciado, **as configurações dele aparecem sozinhas** em
 Configurações: é regra do dono, "tudo que for de configuração vai estar em um
 único lugar". O workflow dos módulos **não** ganha cartão próprio — vira mais um
 ícone dentro do Editor de Workflow.
+
+### Disposição de unidades: as regras do estoque
+
+- **Situação da unidade só muda por função** (`a1_unidade_reservar`,
+  `a1_unidade_definir_status`, gatilho da venda), dentro do orquestrador. A
+  guarda recusa PATCH em `status`/`versao` vindo da tela.
+- **Toda escrita que muda situação manda a versão lida** (`p_versao_esperada`).
+  Versão diferente é `versao_desatualizada`: alguém mexeu antes.
+- **Uma reserva ativa por unidade** é índice único, não conferência da tela.
+- **CPF vai só com dígitos.** A máscara é da tela.
+- A edição do empreendimento pelo cadastro rápido **não regera** a lista de
+  unidades quando já há fichas: regerar criaria fichas duplicadas.
 
 ## Permissões e Perfis
 
@@ -250,11 +271,12 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 Duas frentes, e **as duas rodam antes de qualquer entrega**:
 
 ```bash
-npm test                    # build + 53 suítes de navegador (Chromium de verdade), contra o dist/
+npm test                    # build + 56 suítes de navegador (Chromium de verdade), contra o dist/
 npm test -- t-perfis        # só as que casarem com o filtro
 
 # Provas de banco, num Postgres descartável (rodar como usuário postgres):
-PGPORT=5473 testes/sql/roda.sh      # hoje: 99 verificações
+PGPORT=5473 testes/sql/roda.sh      # hoje: 227 de segurança + 72 da Disposição
+PGPORT=5473 testes/sql/prova-concorrencia.sh   # 8 reservas simultâneas da mesma unidade: 1 passa
 ```
 
 A suíte de navegador **finge ser o Supabase** (`testes/fake.js`) e abre a página

@@ -327,7 +327,31 @@ const corpos = (p, re) =>
         pr.body[0].mapa_id === 'mp1',
       JSON.stringify(pr)
     );
+    // As permissões da Disposição têm de chegar aos perfis: sem elas o gestor
+    // não teria como liberar a reserva para um corretor.
+    await p.evaluate(() => window.perfilAbrir(null));
+    await p.waitForTimeout(200);
+    const chaves = await p.$$eval('.pf-perm', l => l.map(c => c.dataset.chave));
+    checa(
+      'o editor de perfil oferece ver, reservar, gerir e configurar a Disposição',
+      ['disp_ver', 'disp_reservar', 'disp_gerir', 'disp_configurar'].every(k => chaves.includes(k)),
+      chaves.filter(k => k.startsWith('disp')).join(',')
+    );
     checa('XSS = 0', (await p.evaluate(() => window.__XSS)) === 0);
+    await b.close();
+    todosErros = todosErros.concat(erros);
+  }
+  {
+    const { b, p, erros } = await abrir('thecred/configuracoes', { modulos: ['COMERCIAL'] });
+    await p.waitForTimeout(600);
+    await p.evaluate(() => window.perfilAbrir(null));
+    await p.waitForTimeout(200);
+    const chaves = await p.$$eval('.pf-perm', l => l.map(c => c.dataset.chave));
+    checa(
+      'sem a licença, nenhuma permissão da Disposição no perfil',
+      !chaves.some(k => k.startsWith('disp')),
+      chaves.join(',')
+    );
     await b.close();
     todosErros = todosErros.concat(erros);
   }

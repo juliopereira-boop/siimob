@@ -455,6 +455,12 @@ async function init() {
   // (a1_disp_pode('disp_configurar')).
   a1HasModule('DISPOSICAO')
     .then(ok => {
+      // A licença é do cliente: as permissões da Disposição entram no catálogo
+      // dos perfis e dos cadastros de gente para qualquer gestor, mesmo quem
+      // não configura a Disposição. Sem isto ninguém conseguiria liberar a
+      // reserva para um corretor.
+      G.temDisp = ok === true;
+      if (G.temDisp && PERFIS && PERFIS.lista.length) perfisRender();
       if (ok === true && hasPerm('disp_configurar')) cfgDispLiberar();
     })
     .catch(() => {});
@@ -4341,7 +4347,8 @@ function perfisDisponiveis() {
     PRE_ANALISE: !!G.temPA,
     COMERCIAL: !!G.temCO,
     repasse: G.temRepasse === true,
-    registro: !!G.temRegistro
+    registro: !!G.temRegistro,
+    DISPOSICAO: !!G.temDisp
   });
 }
 

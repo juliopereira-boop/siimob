@@ -131,6 +131,41 @@ do CV (Andamento), a seleção em lote e a planilha (Listagem), o seletor de pai
 Registro, telefone e vínculos ao criar processo, conferência da resposta ao salvar e arquivar, e
 cores e ids escapados (que a cópia da Listagem não tinha).
 
+## Disposição de unidades (módulo DISPOSICAO)
+
+O estoque da construtora. Desligado para todo cliente; o superadmin só oferece para construtora.
+O SQL é `database/migrations/2026-11-02_disposicao_unidades.sql` e precisa estar aplicado antes de
+ligar a licença para alguém (sem a linha em `a1_modules`, ligar falha pela chave estrangeira).
+
+**Tudo por identificador.** Cada unidade é uma linha de `a1_unidades` com `id`, `status`, `versao`
+e histórico em `a1_unidade_eventos` (criação, edição campo a campo, situação, preço, exclusão). A
+lista de códigos em `a1_developments.units`, que os outros módulos leem, passa a ser mantida pelo
+banco a partir das fichas (`a1_unidades_refaz_lista`).
+
+| Peça | Onde | Regra |
+|------|------|-------|
+| Situação da unidade | `a1_unidade_definir_status`, `a1_unidade_reservar`, gatilho da venda | Só muda pelo orquestrador; a escrita direta é recusada pela guarda. Motivo obrigatório para bloqueio e distrato. |
+| Reserva | `a1_unidade_reservar` | Trava a unidade, confere a versão que a tela leu, valida o fluxo contra os parâmetros, cria a venda quando o cliente tem COMERCIAL. Índice único: uma reserva ATIVA por unidade. |
+| Venda e unidade | gatilho `a1_co_unidade_acompanha` | Venda com selo VENDIDO marca a unidade vendida e a reserva CONVERTIDA; FIM_NEGATIVO devolve a unidade. |
+| Vencimento | `a1_disposicao_atualizar` | Preguiçoso: roda quando a tela abre e a cada 20 s. Vence a reserva cuja venda não andou e libera bloqueio com data passada. |
+| Preço | `a1_mapas_preco`, `a1_mapa_preco_itens` | Um mapa ativo por empreendimento; reajuste cria mapa novo (`a1_mapa_preco_duplicar`). |
+| Pagamento | `a1_parametros_pagamento` | Série, periodicidade, mínimo e máximo de parcelas, parcela mínima, quem paga. |
+
+"Tempo real" é consulta a cada 20 segundos: a autenticação própria do SIIMOB não usa o Realtime do
+Supabase.
+
+Front: `src/pages/disposicao` (planta, ficha, reserva em três passos, lista de reservas, painel) e
+`src/modules/disposicao` (`dados.js`, compartilhado; `config-disposicao.js`, as quatro sub-telas de
+Configurações). Provas: `testes/sql/prova-disposicao.sql`, `testes/sql/prova-concorrencia.sh` e
+`testes/t-disposicao.js`.
+
+## LP comercial (`/conheca`)
+
+`src/pages/lp`: página isolada (sem casco, sem sessão), na identidade do sistema. Fala do SIIMOB
+inteiro: jornada do lead ao registro, os quatro perfis, a Disposição, os módulos e o ecossistema de
+conexões. O que ainda não existe (conexão entre contas) aparece marcado como "em lançamento". O
+formulário grava em `a1_leads` com a chave pública, sem leitura.
+
 ### Dívidas conhecidas
 
 - Três botões declaram ações que nunca tiveram função (já não faziam nada antes da fase 3b):
