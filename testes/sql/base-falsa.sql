@@ -137,6 +137,11 @@ create table if not exists a1_developments (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid references a1_tenants(id),
   name text, regional text, estado char(2), cidade text);
+-- A lista de unidades em texto (e a contagem) existe em produção desde o
+-- cadastro rápido de blocos. A Disposição lê e refaz essa lista; sem as
+-- colunas aqui, a prova dela nem compila.
+alter table a1_developments add column if not exists units jsonb not null default '[]'::jsonb;
+alter table a1_developments add column if not exists unit_count int not null default 0;
 
 create table if not exists a1_stage_history (
   id uuid primary key default gen_random_uuid(),

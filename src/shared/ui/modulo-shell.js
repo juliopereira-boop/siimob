@@ -72,6 +72,8 @@ export const A1_ICONES = {
   lead: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/>',
   pre: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
   venda: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+  disposicao:
+    '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7M17.5 14v7"/>',
   repasse: '<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/>',
   registro: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
   config:
@@ -121,6 +123,18 @@ export const A1_MODULOS = [
       ['Dashboard', 'pre-analise?vista=dashboard']
     ]
   },
+  // A Disposição vem antes da Venda porque é na planta que a venda começa: a
+  // reserva da unidade abre a venda já com o cliente e o fluxo de pagamento.
+  {
+    chave: 'DISPOSICAO',
+    rotulo: 'Disposição',
+    icone: 'disposicao',
+    vistas: [
+      ['Mapa', 'disposicao'],
+      ['Reservas', 'disposicao?vista=reservas'],
+      ['Dashboard', 'disposicao?vista=dashboard']
+    ]
+  },
   {
     chave: 'COMERCIAL',
     rotulo: 'Venda',
@@ -157,6 +171,7 @@ export const A1_DASHBOARD_PERMISSOES = {
   crm: 'ver_dashboard_lead',
   PRE_ANALISE: 'ver_dashboard_pre_analise',
   COMERCIAL: 'ver_dashboard_venda',
+  DISPOSICAO: 'ver_dashboard_disposicao',
   repasse: 'ver_dashboard_repasse',
   registro: 'ver_dashboard_registro'
 };

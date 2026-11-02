@@ -974,6 +974,229 @@ const D = {
 // Os 23 processos de "extras" existem para o KPI de gargalo (muitos recentes
 // numa etapa, poucos e parados em outra). Eles distorcem qualquer teste que
 // conte cartões, então ficam DESLIGADOS por padrão: quem precisa deles pede.
+// ── Disposição de unidades ──────────────────────────────────────────────────
+// O Residencial das Flores com fichas: bloco B1, térreo e mais três andares,
+// finais 01 a 04. As situações estão misturadas de propósito (a planta tem de
+// desenhar as quatro), e há XSS plantado na tipologia e no nome de cliente da
+// reserva — a ficha e a lista de reservas desenham os dois.
+const DISP = (() => {
+  const unidades = [];
+  const situacao = {
+    'B1-001': 'vendido',
+    'B1-002': 'vendido',
+    'B1-102': 'reservado',
+    'B1-203': 'bloqueado',
+    'B1-301': 'vendido'
+  };
+  for (let pav = 0; pav <= 3; pav++)
+    for (let f = 1; f <= 4; f++) {
+      const codigo = `B1-${pav}0${f}`;
+      unidades.push({
+        id: `un-${pav}${f}`,
+        tenant_id: 't1',
+        empreendimento_id: 'd1',
+        codigo,
+        bloco: 'B1',
+        pavimento: pav,
+        numero: `0${f}`,
+        tipologia: f === 4 ? 'Cobertura ' + XSS : f % 2 ? '2 quartos' : '3 quartos',
+        area_privativa: f % 2 ? 52.4 : 68.1,
+        area_comum: 12.5,
+        vagas: f % 2 ? 1 : 2,
+        status: situacao[codigo] || 'disponivel',
+        status_motivo: codigo === 'B1-203' ? 'Reservada para a obra' : null,
+        status_em: codigo === 'B1-103' ? '2026-05-01T10:00:00Z' : '2026-10-20T10:00:00Z',
+        versao: 1,
+        extras: {}
+      });
+    }
+  return {
+    unidades,
+    parametros: [
+      {
+        id: 'pp1',
+        tenant_id: 't1',
+        nome: 'Ato',
+        serie: 'ATO',
+        periodicidade_meses: 0,
+        parcelas_min: 1,
+        parcelas_max: 1,
+        exige_vencimento: true,
+        valor_minimo: null,
+        quem_paga: 'CLIENTE',
+        ordem: 0,
+        ativo: true
+      },
+      {
+        id: 'pp2',
+        tenant_id: 't1',
+        nome: 'Mensais',
+        serie: 'MENSAL',
+        periodicidade_meses: 1,
+        parcelas_min: 1,
+        parcelas_max: 72,
+        exige_vencimento: true,
+        valor_minimo: 200,
+        quem_paga: 'CLIENTE',
+        ordem: 1,
+        ativo: true
+      },
+      {
+        id: 'pp3',
+        tenant_id: 't1',
+        nome: 'Semestrais',
+        serie: 'SEMESTRAL',
+        periodicidade_meses: 6,
+        parcelas_min: 1,
+        parcelas_max: 12,
+        exige_vencimento: true,
+        valor_minimo: null,
+        quem_paga: 'CLIENTE',
+        ordem: 2,
+        ativo: true
+      },
+      {
+        id: 'pp4',
+        tenant_id: 't1',
+        nome: 'Financiamento',
+        serie: 'FINANCIAMENTO',
+        periodicidade_meses: 0,
+        parcelas_min: 1,
+        parcelas_max: 1,
+        exige_vencimento: false,
+        valor_minimo: null,
+        quem_paga: 'BANCO',
+        ordem: 3,
+        ativo: true
+      }
+    ],
+    config: [
+      {
+        tenant_id: 't1',
+        reserva_horas: 48,
+        exige_fluxo_fechado: true,
+        corretor_cancela_propria: true,
+        max_reservas_por_cpf: 0
+      }
+    ],
+    mapas: [
+      {
+        id: 'mp1',
+        tenant_id: 't1',
+        empreendimento_id: 'd1',
+        nome: 'Tabela de lançamento',
+        vigente_desde: '2026-09-01',
+        ativo: true,
+        criado_em: '2026-09-01T10:00:00Z'
+      }
+    ],
+    itens: unidades.map((u, i) => ({
+      id: 'mi' + i,
+      tenant_id: 't1',
+      mapa_id: 'mp1',
+      unidade_id: u.id,
+      valor: 200000 + u.pavimento * 5000 + (u.numero === '04' ? 40000 : 0)
+    })),
+    reservas: [
+      {
+        id: 'rs1',
+        tenant_id: 't1',
+        codigo: 'RS-000001',
+        unidade_id: 'un-12',
+        empreendimento_id: 'd1',
+        status: 'ATIVA',
+        expira_em: new Date(Date.now() + 20 * 36e5).toISOString(),
+        corretor_id: 'p3',
+        cliente: { titular: { nome: 'Maria ' + XSS, cpf: '52998224725' } },
+        fluxo: [],
+        valor_unidade: 205000,
+        valor_fluxo: 205000,
+        criado_por_nome: 'Ana Souza',
+        criado_em: '2026-11-01T10:00:00Z'
+      },
+      {
+        id: 'rs2',
+        tenant_id: 't1',
+        codigo: 'RS-000002',
+        unidade_id: 'un-01',
+        empreendimento_id: 'd1',
+        status: 'CONVERTIDA',
+        corretor_id: 'p3',
+        cliente: { titular: { nome: 'José Lima', cpf: '11144477735' } },
+        valor_unidade: 200000,
+        criado_em: '2026-10-01T10:00:00Z'
+      },
+      {
+        id: 'rs3',
+        tenant_id: 't1',
+        codigo: 'RS-000003',
+        unidade_id: 'un-13',
+        empreendimento_id: 'd1',
+        status: 'EXPIRADA',
+        motivo: 'prazo da reserva vencido',
+        corretor_id: null,
+        cliente: { titular: { nome: 'Rui Santos', cpf: '39053344705' } },
+        valor_unidade: 205000,
+        criado_em: '2026-09-10T10:00:00Z'
+      }
+    ],
+    eventos: [
+      {
+        id: 1,
+        tenant_id: 't1',
+        unidade_id: 'un-01',
+        empreendimento_id: 'd1',
+        codigo: 'B1-001',
+        evento: 'STATUS',
+        de: 'reservado',
+        para: 'vendido',
+        detalhe: { origem: 'venda' },
+        ator_nome: 'Gestor',
+        criado_em: '2026-10-05T10:00:00Z'
+      },
+      {
+        id: 2,
+        tenant_id: 't1',
+        unidade_id: 'un-02',
+        empreendimento_id: 'd1',
+        codigo: 'B1-002',
+        evento: 'STATUS',
+        de: 'disponivel',
+        para: 'vendido',
+        detalhe: { origem: 'gestor' },
+        ator_nome: 'Gestor',
+        criado_em: '2026-09-12T10:00:00Z'
+      },
+      {
+        id: 3,
+        tenant_id: 't1',
+        unidade_id: 'un-31',
+        empreendimento_id: 'd1',
+        codigo: 'B1-301',
+        evento: 'STATUS',
+        de: 'disponivel',
+        para: 'vendido',
+        detalhe: {},
+        ator_nome: 'Gestor',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 4,
+        tenant_id: 't1',
+        unidade_id: 'un-12',
+        empreendimento_id: 'd1',
+        codigo: 'B1-102',
+        evento: 'STATUS',
+        de: 'disponivel',
+        para: 'reservado',
+        detalhe: { reserva_codigo: 'RS-000001', cliente: 'Maria ' + XSS },
+        ator_nome: 'Ana Souza',
+        criado_em: '2026-11-01T10:00:00Z'
+      }
+    ]
+  };
+})();
+
 let COM_EXTRAS = false;
 function usarExtras(v) {
   COM_EXTRAS = v !== false;
@@ -1031,7 +1254,7 @@ function responder(url, metodo, corpo0) {
     // DESLIGADO para todo mundo, e o andaime tem de dizer a mesma coisa que o
     // superadmin diz. Deixa-lo no ramo do "sim por padrao" faria a tela Geral
     // desenhar Leads para os tres clientes reais e o teste aplaudir.
-    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL' || chave === 'crm')
+    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL' || chave === 'crm' || chave === 'DISPOSICAO')
       return MODULOS_NOVOS.includes(chave);
     return true;
   }
@@ -1079,6 +1302,16 @@ function responder(url, metodo, corpo0) {
   // caía no {ok:true} genérico lá embaixo, que não é `true`, e o dono do cliente
   // ficava sem NENHUM dashboard: o andaime é que mentia, não a tela.
   if (p.includes('/rpc/a1_perm')) return true;
+  if (p.includes('/rpc/a1_disposicao_atualizar')) return { ok: true, expiradas: 0 };
+  if (p.includes('/rpc/a1_unidades_materializar')) return { ok: true, criadas: 0 };
+  if (p.includes('/rpc/a1_unidade_reservar'))
+    return {
+      ok: true,
+      reserva_id: 'rs-nova',
+      codigo: 'RS-000099',
+      comercial_id: 'co1',
+      expira_em: new Date(Date.now() + 48 * 36e5).toISOString()
+    };
   // a1_resumo_geral conta DENTRO do banco e devolve so numeros. O falso monta o
   // mesmo formato a partir das mesmas linhas que as outras telas leem — se o
   // formato mudar de um lado so, a tela Geral passa a somar errado e nenhum
@@ -1242,6 +1475,28 @@ function responder(url, metodo, corpo0) {
     if (/papel=eq\.TITULAR/.test(qs)) r = r.filter(x => x.papel === 'TITULAR');
     return r;
   }
+  // Disposição: sem a licença o RLS devolve nada, e o andaime também.
+  const TAB_DISP = {
+    a1_unidades: 'unidades',
+    a1_unidade_eventos: 'eventos',
+    a1_parametros_pagamento: 'parametros',
+    a1_disposicao_config: 'config',
+    a1_mapas_preco: 'mapas',
+    a1_mapa_preco_itens: 'itens',
+    a1_reservas: 'reservas'
+  };
+  if (TAB_DISP[t]) {
+    if (!MODULOS_NOVOS.includes('DISPOSICAO')) return [];
+    let r = DISP[TAB_DISP[t]].slice();
+    const eq = (/** @type {string} */ col) =>
+      (qs.match(new RegExp(`[?&]${col}=eq\\.([a-zA-Z0-9-]+)`)) || [])[1];
+    for (const col of ['id', 'empreendimento_id', 'unidade_id', 'mapa_id', 'evento'])
+      if (eq(col)) r = r.filter(x => String(x[col]) === eq(col));
+    const mapas = (qs.match(/mapa_id=in\.\(([^)]*)\)/) || [])[1];
+    if (mapas) r = r.filter(x => decodeURIComponent(mapas).split(',').includes(x.mapa_id));
+    if (/ativo=is\.true/.test(qs)) r = r.filter(x => x.ativo !== false);
+    return r;
+  }
   if (t === 'a1_stage_edges') return D.stage_edges;
   if (t === 'a1_stage_flags') return D.stage_flags;
   if (t === 'a1_config') {
@@ -1297,6 +1552,7 @@ function responder(url, metodo, corpo0) {
   return [];
 }
 module.exports = {
+  DISP,
   responder,
   usarExtras,
   liberarModulos,

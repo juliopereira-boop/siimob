@@ -957,9 +957,37 @@ function secaoVinculos(co, pode) {
 
 // O aviso mais útil desta tela: a venda passou do que o crédito cobre. Melhor
 // descobrir na negociação do que na assinatura.
+// As séries que a Disposição grava na proposta quando a venda nasce de uma
+// reserva. As quatro primeiras eram as únicas da tela; com só elas, uma venda
+// vinda da reserva com Sinal ou Chaves abria com o select em "Ato" e, ao
+// salvar, a condição virava Ato sem ninguém pedir.
+const TIPOS_CONDICAO = {
+  ATO: 'Ato',
+  MENSAL: 'Parcelas mensais',
+  SEMESTRAL: 'Parcelas semestrais',
+  ANUAL: 'Parcelas anuais',
+  SINAL: 'Sinal',
+  BIMESTRAL: 'Parcelas bimestrais',
+  TRIMESTRAL: 'Parcelas trimestrais',
+  INTERMEDIARIA: 'Intermediárias',
+  CHAVES: 'Chaves',
+  A_VISTA: 'À vista'
+};
+// Tipo fora da lista (um parâmetro próprio da construtora, como Financiamento
+// direto pago pelo cliente) ganha a própria opção com o nome que veio da
+// reserva, em vez de sumir.
+function opcoesCondicao(c) {
+  const tipos = { ...TIPOS_CONDICAO };
+  if (c.tipo && !tipos[c.tipo]) tipos[c.tipo] = c.nome || c.tipo;
+  return Object.entries(tipos)
+    .map(([t, rot]) => `<option value="${esc(t)}" ${c.tipo === t ? 'selected' : ''}>${esc(rot)}</option>`)
+    .join('');
+}
 function condicoesPropostaDaTela() {
   return [...document.querySelectorAll('#p-condicoes .condicao-proposta')].map(l => ({
     tipo: l.querySelector('[data-campo="tipo"]').value,
+    // O nome do parâmetro só vale enquanto o tipo for o que veio com ele.
+    nome: l.querySelector('[data-campo="tipo"]').value === l.dataset.tipo ? l.dataset.nome || null : null,
     quantidade: Math.max(1, parseInt(l.querySelector('[data-campo="quantidade"]').value, 10) || 1),
     valor: paraCentavos(l.querySelector('[data-campo="valor"]').value) || 0,
     vencimento_inicial: l.querySelector('[data-campo="vencimento"]')?.value || null
@@ -983,9 +1011,9 @@ function renderCondicoesProposta() {
     condicoes
       .map(
         (c, i) => `
-    <div class="fgrid condicao-proposta" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
+    <div class="fgrid condicao-proposta" data-tipo="${esc(c.tipo || '')}" data-nome="${esc(c.nome || '')}" style="margin:.45rem 0;padding:.55rem;border:1px solid var(--border);border-radius:8px">
       <div class="fg"><label>Condição</label><select data-campo="tipo" ${pode ? '' : 'disabled'} data-acao-change="sincronizarCondicoesProposta">
-        ${['ATO', 'MENSAL', 'SEMESTRAL', 'ANUAL'].map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${{ ATO: 'Ato', MENSAL: 'Parcelas mensais', SEMESTRAL: 'Parcelas semestrais', ANUAL: 'Parcelas anuais' }[t]}</option>`).join('')}
+        ${opcoesCondicao(c)}
       </select></div>
       <div class="fg"><label>Quantidade</label><input data-campo="quantidade" type="number" min="1" value="${esc(c.quantidade || 1)}" ${pode ? '' : 'disabled'} data-acao-input="sincronizarCondicoesProposta"></div>
       <div class="fg"><label>Valor por parcela (R$)</label><input data-campo="valor" inputmode="decimal" value="${esc(c.valor ? (c.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')}" ${pode ? '' : 'disabled'} data-acao-input="moedaDaCondicao"></div>

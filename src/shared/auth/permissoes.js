@@ -225,6 +225,54 @@ export const A1_PERMISSOES = [
       'Se quem vende pudesse carimbar sozinho, exigir contrato assinado numa ' +
       'transição deixaria de ser exigência.',
     lida_em: 'a1_co_guarda_contrato (gatilho)'
+  },
+  // ── Disposição de unidades ─────────────────────────────────────────────────
+  {
+    chave: 'disp_ver',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Ver a disposição de unidades',
+    ajuda: 'Abre o mapa das unidades, com situação, ficha e preço. Sem isto o módulo não abre para ela.',
+    lida_em: 'disposicao.html, a1_disp_pode (SQL)'
+  },
+  {
+    chave: 'disp_reservar',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Reservar unidade',
+    ajuda:
+      'Reservar uma unidade disponível para um cliente, montando o fluxo de pagamento. ' +
+      'A reserva fica no nome dela, e só ela e o gestor veem os dados do cliente.',
+    lida_em: 'disposicao.html, a1_unidade_reservar (SQL)'
+  },
+  {
+    chave: 'disp_ver_reservas',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Ver as reservas de todos',
+    ajuda:
+      'Sem isto, a pessoa vê só as reservas que ela mesma fez (CPF e renda do cliente são de quem reservou).',
+    lida_em: 'disposicao.html, a1_reservas_ler (RLS)'
+  },
+  {
+    chave: 'disp_gerir',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Bloquear, vender e cancelar reserva',
+    ajuda:
+      'Bloquear e desbloquear unidade, marcar como vendida, registrar distrato, cancelar e ' +
+      'prorrogar reserva de qualquer pessoa.',
+    lida_em: 'disposicao.html, a1_unidade_definir_status (SQL), a1_reservas_ler (RLS)'
+  },
+  {
+    chave: 'disp_configurar',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Cadastrar unidades, preços e parâmetros',
+    ajuda: 'Editar a ficha das unidades, o mapa de preço, os parâmetros de pagamento e as regras da reserva.',
+    lida_em: 'disposicao.html, configuracoes.html, a1_unidades_editar (RLS)'
+  },
+  {
+    chave: 'ver_dashboard_disposicao',
+    modulo: 'DISPOSICAO',
+    rotulo: 'Ver dashboard da Disposição',
+    ajuda: 'VSO, estoque, vendas por mês, reservas e tipologias.',
+    lida_em: 'src/shared/ui/modulo-shell.js, disposicao.html'
   }
 ];
 
@@ -305,7 +353,8 @@ export const A1_ROTULO_MODULO = {
   repasse: 'Repasse',
   registro: 'Registro',
   PRE_ANALISE: 'Pré-análise',
-  COMERCIAL: 'Venda'
+  COMERCIAL: 'Venda',
+  DISPOSICAO: 'Disposição de unidades'
 };
 
 // As permissões efetivas de alguém: o PERFIL manda, quando existe.

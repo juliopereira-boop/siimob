@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disposição de unidades | SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/disposicao/index.css">
+</head>
+<body>
+
+<div id="shell"></div>
+
+<main class="dp" id="conteudo">
+  <!-- Nada aparece antes de a licença e a permissão serem conferidas: a tela
+       nasce com o carregando, e é o init quem decide o que mostrar. -->
+  <div class="dp-carregando" id="dp-carregando">Carregando a disposição…</div>
+
+  <!-- ══ MAPA ════════════════════════════════════════════════════════════ -->
+  <section id="vista-mapa" hidden>
+    <div class="dp-topo">
+      <div class="dp-emp">
+        <label for="dp-emp" class="dp-rot">Empreendimento</label>
+        <select id="dp-emp" data-acao-change="trocarEmpreendimento"></select>
+      </div>
+      <div class="dp-ao-vivo" id="dp-ao-vivo" title="A disposição é conferida no servidor a cada 20 segundos">
+        <i></i><span id="dp-ao-vivo-txt">ao vivo</span>
+      </div>
+    </div>
+
+    <div class="dp-resumo" id="dp-resumo"></div>
+
+    <div class="dp-filtros">
+      <input type="search" id="dp-busca" placeholder="Unidade, tipologia…" data-acao-input="filtrar" aria-label="Buscar unidade">
+      <select id="dp-f-bloco" data-acao-change="filtrar" aria-label="Bloco"><option value="">Todos os blocos</option></select>
+      <select id="dp-f-tipologia" data-acao-change="filtrar" aria-label="Tipologia"><option value="">Todas as tipologias</option></select>
+      <select id="dp-f-vagas" data-acao-change="filtrar" aria-label="Vagas">
+        <option value="">Qualquer nº de vagas</option>
+        <option value="0">Sem vaga</option><option value="1">1 vaga</option><option value="2">2 ou mais</option>
+      </select>
+      <div class="dp-seg" role="group" aria-label="Como ver">
+        <button id="dp-modo-planta" class="on" data-acao="modoVer" data-modo="planta">Planta</button>
+        <button id="dp-modo-lista" data-acao="modoVer" data-modo="lista">Lista</button>
+      </div>
+    </div>
+
+    <div id="dp-mapa" class="dp-mapa" aria-live="polite"></div>
+  </section>
+
+  <!-- ══ RESERVAS ════════════════════════════════════════════════════════ -->
+  <section id="vista-reservas" hidden>
+    <div class="dp-topo">
+      <div>
+        <h1 class="dp-h1">Reservas</h1>
+        <p class="dp-sub" id="dp-reservas-sub"></p>
+      </div>
+      <div class="dp-seg" role="group" aria-label="Situação da reserva" id="dp-rs-filtro">
+        <button class="on" data-acao="filtrarReservas" data-status="ATIVA">Ativas</button>
+        <button data-acao="filtrarReservas" data-status="CONVERTIDA">Viraram venda</button>
+        <button data-acao="filtrarReservas" data-status="CANCELADA,EXPIRADA">Canceladas e vencidas</button>
+        <button data-acao="filtrarReservas" data-status="">Todas</button>
+      </div>
+    </div>
+    <div id="dp-reservas" class="dp-tabela-wrap"></div>
+  </section>
+
+  <!-- ══ DASHBOARD ═══════════════════════════════════════════════════════ -->
+  <section id="vista-dashboard" hidden>
+    <div class="dp-topo">
+      <div>
+        <h1 class="dp-h1">Painel da disposição</h1>
+        <p class="dp-sub">Estoque, vendas e reservas para decidir preço, campanha e lançamento.</p>
+      </div>
+      <div class="dp-emp">
+        <label for="dp-dash-emp" class="dp-rot">Empreendimento</label>
+        <select id="dp-dash-emp" data-acao-change="trocarEmpreendimentoPainel"></select>
+      </div>
+    </div>
+    <div id="dp-painel"></div>
+  </section>
+</main>
+
+<!-- ══ FICHA DA UNIDADE (gaveta) ═════════════════════════════════════════ -->
+<div class="dp-gaveta-fundo" id="dp-gaveta-fundo" hidden data-acao="fecharFichaPeloFundo">
+  <aside class="dp-gaveta" id="dp-gaveta" role="dialog" aria-modal="true" aria-labelledby="dp-ficha-titulo"></aside>
+</div>
+
+<!-- ══ RESERVA (três passos) ═════════════════════════════════════════════ -->
+<div class="dp-modal-fundo" id="dp-reserva" hidden>
+  <div class="dp-modal" role="dialog" aria-modal="true" aria-labelledby="dp-rs-titulo">
+    <header class="dp-modal-cab">
+      <div>
+        <div class="dp-modal-tit" id="dp-rs-titulo">Reservar unidade</div>
+        <div class="dp-modal-sub" id="dp-rs-sub"></div>
+      </div>
+      <button class="dp-x" data-acao="fecharReserva" aria-label="Fechar">×</button>
+    </header>
+    <ol class="dp-passos" id="dp-passos">
+      <li data-passo="1">Cliente</li>
+      <li data-passo="2">Fluxo de pagamento</li>
+      <li data-passo="3">Conferir e reservar</li>
+    </ol>
+    <div class="dp-modal-corpo" id="dp-rs-corpo"></div>
+    <div class="dp-erro" id="dp-rs-erro" role="alert" hidden></div>
+    <footer class="dp-modal-pe" id="dp-rs-pe"></footer>
+  </div>
+</div>
+
+<!-- ══ PERGUNTA (motivo, prazo) ══════════════════════════════════════════ -->
+<div class="dp-modal-fundo" id="dp-pergunta" hidden>
+  <div class="dp-modal dp-modal-p" role="dialog" aria-modal="true" aria-labelledby="dp-pg-titulo">
+    <header class="dp-modal-cab">
+      <div class="dp-modal-tit" id="dp-pg-titulo"></div>
+      <button class="dp-x" data-acao="fecharPergunta" aria-label="Fechar">×</button>
+    </header>
+    <div class="dp-modal-corpo" id="dp-pg-corpo"></div>
+    <div class="dp-erro" id="dp-pg-erro" role="alert" hidden></div>
+    <footer class="dp-modal-pe">
+      <button class="dp-btn dp-btn-g" data-acao="fecharPergunta">Voltar</button>
+      <button class="dp-btn dp-btn-p" id="dp-pg-ok" data-acao="confirmarPergunta">Confirmar</button>
+    </footer>
+  </div>
+</div>
+
+<div class="dp-toast" id="dp-toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="/src/pages/disposicao/main.js"></script>
+</body>
+</html>

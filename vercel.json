@@ -80,6 +80,10 @@
       "destination": "/pre-analise.html"
     },
     {
+      "source": "/:slug/disposicao",
+      "destination": "/disposicao.html"
+    },
+    {
       "source": "/:slug/comercial",
       "destination": "/comercial.html"
     },

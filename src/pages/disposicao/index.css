@@ -1,0 +1,4 @@
+/* Ordem da cascata desta tela: o que vem depois ganha nos empates.
+   O CSS do cabeçalho vem DEPOIS do da tela, como nas outras telas de módulo. */
+@import './style.css';
+@import '../../styles/siimob.css';

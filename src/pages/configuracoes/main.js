@@ -16,6 +16,11 @@ import {
   a1PermissoesPorModulo
 } from '../../shared/auth/permissoes.js';
 import { leadsCadAbrir, leadsMontarConfig } from '../../modules/leads/cadastros-leads.js';
+import {
+  dispAbrirVista,
+  dispAposSalvarEmpreendimento,
+  dispMontarConfig
+} from '../../modules/disposicao/config-disposicao.js';
 import { a1GeralCarregar, a1GeralNormalizar } from '../../modules/configuracoes/regras-gerais.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
@@ -443,6 +448,17 @@ async function init() {
       .catch(() => {});
   });
 
+  // Disposição de unidades: o grupo de cadastros (fichas, mapa de preço,
+  // parâmetros de pagamento, regras) só nasce com a licença confirmada E com
+  // quem pode configurar. Fica fora do laço acima porque não tem aba nesta
+  // tela nem entra no Registro de integrações. Quem barra de verdade é o RLS
+  // (a1_disp_pode('disp_configurar')).
+  a1HasModule('DISPOSICAO')
+    .then(ok => {
+      if (ok === true && hasPerm('disp_configurar')) cfgDispLiberar();
+    })
+    .catch(() => {});
+
   // Load stages (needed for regionais sub-view)
   // A coluna chama-se module_key. Com "module" o PostgREST devolvia um objeto
   // de erro, que era gravado em G.stages — verdadeiro, mas sem .map/.forEach,
@@ -560,6 +576,8 @@ function openCfgView(view) {
   // Cada cadastro de Leads carrega a propria lista ao abrir. Carregar as
   // catorze na entrada da tela seriam catorze consultas para mostrar nenhuma.
   if (view.startsWith('lead-') && typeof leadsCadAbrir === 'function') leadsCadAbrir(view.slice(5));
+  // As quatro da Disposição só existem no DOM com a licença (cfgDispLiberar).
+  if (view.startsWith('disp-')) dispAbrirVista(view);
   if (view === 'geral') geralCarregarTela();
   if (view === 'perfis') perfisCarregar();
   if (view === 'flags') loadFlags();
@@ -3381,8 +3399,31 @@ async function saveEmpreendimento() {
         })
   };
 
+  // Com a Disposição, depois que o empreendimento tem fichas, quem manda nas
+  // unidades são as fichas: a construtora pode ter renomeado, acrescentado ou
+  // completado cada uma. Regerar a lista pelo cadastro rápido criaria fichas
+  // duplicadas com os códigos antigos. Então, na edição, só os dados do
+  // empreendimento vão; as unidades ficam com Configurações > Unidades.
+  let soDados = false;
+  if (G.editingEmprId && CFG_MOD_LIB.DISPOSICAO === true) {
+    const fichas = await fetch(
+      `${A1.rest('a1_unidades')}?empreendimento_id=eq.${encodeURIComponent(G.editingEmprId)}&select=id&limit=1`,
+      { headers: A1.headers() }
+    )
+      .then(r => (r.ok ? r.json() : null))
+      .catch(() => null);
+    // Sem resposta, não arrisca: trata como se tivesse fichas.
+    soDados = !Array.isArray(fichas) || fichas.length > 0;
+    if (soDados)
+      ['units', 'unit_count', 'tipo', 'qtd_blocos', 'pavimentos', 'unidades_pav'].forEach(
+        k => delete payload[k]
+      );
+  }
+
   const btn = document.getElementById('empr-save-btn');
   const isEditing = !!G.editingEmprId;
+  // closeEmprForm() limpa G.editingEmprId; o id vai junto para a Disposição.
+  let idSalvo = G.editingEmprId;
   btn.disabled = true;
   btn.textContent = 'Salvando...';
   try {
@@ -3394,7 +3435,12 @@ async function saveEmpreendimento() {
       G.empreendimentos.sort((a, b) => a.name.localeCompare(b.name));
       renderEmprList();
       closeEmprForm();
-      toast(`"${name}" atualizado${units.length ? ` com ${units.length} unidades` : ''}.`, 'success');
+      toast(
+        soDados
+          ? `"${name}" atualizado. As unidades são editadas nas fichas.`
+          : `"${name}" atualizado${units.length ? ` com ${units.length} unidades` : ''}.`,
+        'success'
+      );
     } else {
       const r = await enviarEmpr(A1.rest('a1_developments'), 'POST', {
         ...payload,
@@ -3403,12 +3449,19 @@ async function saveEmpreendimento() {
       if (!r.ok) throw new Error(r.msg);
       const [created] = Array.isArray(r.dados) ? r.dados : [];
       if (!created) throw new Error('O servidor aceitou mas não devolveu o registro criado.');
+      idSalvo = created.id;
       G.empreendimentos.push(created);
       G.empreendimentos.sort((a, b) => a.name.localeCompare(b.name));
       renderEmprList();
       closeEmprForm();
       toast(`"${name}" cadastrado${units.length ? ` com ${units.length} unidades` : ''}.`, 'success');
     }
+    // Com a Disposição, cada código do cadastro rápido vira uma ficha, e a lista
+    // delas abre em seguida para a construtora completar unidade por unidade.
+    // As fichas que já existem não são tocadas, e a lista do empreendimento
+    // volta a ser a das fichas (o banco refaz), então reduzir pavimentos aqui
+    // não apaga unidade nenhuma.
+    if (CFG_MOD_LIB.DISPOSICAO === true && idSalvo) dispAposSalvarEmpreendimento(idSalvo);
   } catch (e) {
     showEmprErr('Não foi possível salvar: ' + (e.message || 'erro desconhecido'));
   } finally {
@@ -4218,7 +4271,7 @@ async function saveCartorio() {
 
 // `false` = ainda nao confirmado. cfgModsLiberar so age quando o valor e
 // literalmente false: assim uma resposta que nao chegou nao vira "tem".
-const CFG_MOD_LIB = { PRE_ANALISE: false, COMERCIAL: false, crm: false };
+const CFG_MOD_LIB = { PRE_ANALISE: false, COMERCIAL: false, crm: false, DISPOSICAO: false };
 
 const CFG_ICONE_FLUXO = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="STROKE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
 const CFG_ICONE_INTEGRA = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C87E12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`;
@@ -4644,6 +4697,14 @@ function permsColetar(classe, idsel) {
   return Object.fromEntries(
     [...document.querySelectorAll('.' + classe)].map(cb => [cb.dataset.key, cb.checked])
   );
+}
+
+// Os cartões e as sub-telas são do módulo; daqui vão só as peças do hub, por
+// parâmetro, para o módulo não depender de global de Configurações.
+function cfgDispLiberar() {
+  if (CFG_MOD_LIB.DISPOSICAO !== false) return;
+  CFG_MOD_LIB.DISPOSICAO = true;
+  dispMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast, abrirVista: openCfgView });
 }
 
 function cfgModsLiberar(mod) {

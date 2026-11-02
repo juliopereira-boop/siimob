@@ -75,7 +75,46 @@ N_VINC=$(Q -c "select count(distinct repasse_case_id) from a1_comerciais
 echo "cartões de repasse criados: $N_CASE  (esperado: 1)"
 echo "vínculos distintos: $N_VINC  (esperado: 1)"
 
-if [ "$N_CO" = "1" ] && [ "$N_CASE" = "1" ] && [ "$N_VINC" = "1" ]; then
+# ─── Disposição: a mesma unidade, oito corretores, o mesmo segundo ───────────
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+     -c "alter table a1_co_situacoes add column if not exists selo text" \
+     -f database/migrations/2026-11-02_disposicao_unidades.sql 2>/dev/null
+Q <<SQL
+insert into a1_modules (key,name) values ('DISPOSICAO','D') on conflict do nothing;
+insert into a1_tenant_modules (tenant_id, module_key) values ('$T','DISPOSICAO');
+insert into a1_developments (id, tenant_id, name, units)
+  values ('d1000000-0000-0000-0000-000000000001','$T','Residencial','["B1-101"]');
+set role anon;
+select teste_entrar('tk-gestor');
+select a1_unidades_materializar('d1000000-0000-0000-0000-000000000001');
+insert into a1_parametros_pagamento (id, tenant_id, nome, serie)
+  values ('9a000000-0000-0000-0000-000000000001','$T','Ato','ATO');
+insert into a1_mapas_preco (id, tenant_id, empreendimento_id, nome)
+  values ('3a000000-0000-0000-0000-000000000001','$T','d1000000-0000-0000-0000-000000000001','Lançamento');
+insert into a1_mapa_preco_itens (tenant_id, mapa_id, unidade_id, valor)
+  select '$T','3a000000-0000-0000-0000-000000000001', id, 200000 from a1_unidades;
+select a1_mapa_preco_ativar('3a000000-0000-0000-0000-000000000001');
+SQL
+UN=$(Q -c "select id from a1_unidades where codigo = 'B1-101'")
+
+echo "== 8 reservas SIMULTÂNEAS da mesma unidade =="
+for i in $(seq 1 8); do
+  Q -c "set role anon; select teste_entrar('tk-gestor');
+        select a1_unidade_reservar('$UN',
+          '{\"titular\":{\"nome\":\"Cliente $i\",\"cpf\":\"5299822472$((i % 10))\"}}',
+          '[{\"parametro_id\":\"9a000000-0000-0000-0000-000000000001\",\"valor\":200000,\"quantidade\":1,\"primeiro_vencimento\":\"2026-12-01\"}]')" >/dev/null 2>&1 &
+done
+wait
+N_RS=$(Q -c "select count(*) from a1_reservas where unidade_id = '$UN' and status = 'ATIVA'")
+N_RS_TOT=$(Q -c "select count(*) from a1_reservas where unidade_id = '$UN'")
+N_CO_UN=$(Q -c "select count(*) from a1_comerciais where unidade_id = '$UN'")
+ST_UN=$(Q -c "select status || '/' || versao from a1_unidades where id = '$UN'")
+echo "reservas da unidade: $N_RS_TOT, ativas: $N_RS  (esperado: 1 e 1)"
+echo "vendas abertas para a unidade: $N_CO_UN  (esperado: 1)"
+echo "situação da unidade: $ST_UN  (esperado: reservado/2)"
+
+if [ "$N_CO" = "1" ] && [ "$N_CASE" = "1" ] && [ "$N_VINC" = "1" ] \
+   && [ "$N_RS" = "1" ] && [ "$N_RS_TOT" = "1" ] && [ "$N_CO_UN" = "1" ] && [ "$ST_UN" = "reservado/2" ]; then
   echo "PROVA DE CONCORRÊNCIA APROVADA"
 else
   echo "PROVA DE CONCORRÊNCIA REPROVADA"; exit 1

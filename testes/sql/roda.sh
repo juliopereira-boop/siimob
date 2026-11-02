@@ -40,3 +40,10 @@ done
 
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-seguranca.sql
+
+# Disposição de unidades: carrega depois de tudo (é o arquivo mais novo) e roda a
+# prova dela no mesmo banco, aproveitando o cenário que a prova de segurança montou.
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+     -f database/migrations/2026-11-02_disposicao_unidades.sql
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-disposicao.sql

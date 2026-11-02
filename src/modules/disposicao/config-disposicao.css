@@ -1,0 +1,392 @@
+/* Configurações da Disposição: as quatro sub-telas e o modal delas.
+   Importado por src/pages/configuracoes/index.css. As tabelas usam o
+   .pt-table de Configurações; aqui fica só o que é deste módulo. */
+
+.dc {
+  max-width: 1280px;
+}
+.dc-vazio {
+  padding: 2.25rem 1rem;
+  text-align: center;
+  color: var(--sb-tinta3);
+  background: var(--sb-papel);
+  border: 1px dashed var(--sb-linha-forte);
+  border-radius: var(--sb-r);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+/* Barra do topo: empreendimento à esquerda, ações à direita. */
+.dc-barra {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+.dc-acoes {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.dc-emp {
+  min-width: 260px;
+}
+
+/* Campo com rótulo em cima. */
+.dc-f {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+.dc-f > span {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sb-tinta3);
+}
+.dc-f input,
+.dc-f select,
+.dc-f textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--sb-tinta);
+  background: var(--sb-papel);
+  border: 1px solid var(--sb-linha-forte);
+  border-radius: var(--sb-r-p);
+  padding: 0.45rem 0.6rem;
+  outline: none;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.dc-f textarea {
+  resize: vertical;
+}
+.dc-f input:focus,
+.dc-f select:focus,
+.dc-f textarea:focus {
+  border-color: var(--sb-mar);
+  box-shadow: 0 0 0 3px rgba(14, 140, 127, 0.14);
+}
+.dc-f small {
+  font-size: 0.7rem;
+  color: var(--sb-tinta3);
+  line-height: 1.4;
+}
+.dc-largo {
+  grid-column: 1 / -1;
+}
+.dc-c {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--sb-tinta2);
+  margin-top: 0.55rem;
+  cursor: pointer;
+}
+.dc-c input {
+  accent-color: var(--sb-mar);
+  width: 15px;
+  height: 15px;
+}
+
+.dc-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.75rem 0.9rem;
+}
+
+/* Tabelas. */
+.dc-tab-wrap {
+  background: var(--sb-papel);
+  border: 1px solid var(--sb-linha);
+  border-radius: var(--sb-r);
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+  box-shadow: var(--sb-sombra);
+}
+.dc-tab thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.dc-tab .n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dc-tab td:first-child,
+.dc-tab th:first-child {
+  width: 34px;
+  padding-right: 0;
+}
+.dc-tab input[type='checkbox'] {
+  accent-color: var(--sb-mar);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.dc-inativo td {
+  color: var(--sb-tinta3);
+}
+.dc-st {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dc-falta {
+  color: var(--sb-acafrao-texto);
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+.dc-preco {
+  width: 128px;
+  text-align: right;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--sb-linha-forte);
+  border-radius: var(--sb-r-p);
+  padding: 0.3rem 0.5rem;
+  background: var(--sb-papel);
+  outline: none;
+}
+.dc-preco:focus {
+  border-color: var(--sb-mar);
+  box-shadow: 0 0 0 3px rgba(14, 140, 127, 0.14);
+}
+.dc-m2 {
+  color: var(--sb-tinta2);
+}
+
+/* Mapas de preço: uma linha por versão. */
+.dc-mapas {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+.dc-mapa {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--sb-papel);
+  border: 1px solid var(--sb-linha);
+  border-radius: var(--sb-r);
+  padding: 0.4rem 0.55rem 0.4rem 0.4rem;
+}
+.dc-mapa.on {
+  border-color: var(--sb-mar);
+  box-shadow: 0 0 0 3px rgba(14, 140, 127, 0.1);
+}
+.dc-mapa-n {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  background: none;
+  border: 0;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--sb-r-p);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--sb-tinta);
+}
+.dc-mapa-n:hover {
+  background: var(--sb-vellum);
+}
+.dc-mapa-n b {
+  font-size: 0.82rem;
+}
+.dc-mapa-n small {
+  font-size: 0.68rem;
+  color: var(--sb-tinta3);
+}
+.dc-valendo {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--sb-mar-texto);
+  background: var(--sb-mar-lavado);
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+}
+
+/* Ferramentas de preenchimento do mapa. */
+.dc-ferr {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  background: var(--sb-papel);
+  border: 1px solid var(--sb-linha);
+  border-radius: var(--sb-r);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--sb-tinta2);
+}
+.dc-ferr > span:first-child {
+  font-weight: 700;
+  color: var(--sb-tinta);
+}
+.dc-ferr label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.dc-ferr input {
+  font: inherit;
+  border: 1px solid var(--sb-linha-forte);
+  border-radius: var(--sb-r-p);
+  padding: 0.3rem 0.45rem;
+  outline: none;
+}
+.dc-ferr small {
+  color: var(--sb-tinta3);
+  font-size: 0.7rem;
+}
+.dc-ferr-d {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--sb-tinta);
+}
+
+/* Cartão das regras. */
+.dc-cartao {
+  background: var(--sb-papel);
+  border: 1px solid var(--sb-linha);
+  border-radius: var(--sb-r-g);
+  padding: 1.1rem 1.2rem;
+  max-width: 760px;
+  box-shadow: var(--sb-sombra);
+}
+.dc-salvar {
+  margin-top: 1rem;
+}
+.dc-pe-d {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+/* Modal. Acima do casco (170/180) e da paleta de busca (900). */
+.dc-modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 920;
+  background: rgba(4, 32, 29, 0.42);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6vh 16px 16px;
+  overflow: auto;
+  animation: dc-entra 0.14s ease-out;
+}
+.dc-modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--sb-papel);
+  border-radius: var(--sb-r-g);
+  box-shadow: var(--sb-sombra-alta);
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+}
+.dc-modal.largo {
+  max-width: 880px;
+}
+.dc-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.95rem 1.15rem;
+  border-bottom: 1px solid var(--sb-linha);
+  font-family: var(--sb-display);
+  font-size: 1rem;
+  color: var(--sb-tinta);
+}
+.dc-x {
+  background: none;
+  border: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--sb-tinta3);
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+.dc-x:hover {
+  color: var(--sb-tinta);
+}
+.dc-modal-corpo {
+  padding: 1rem 1.15rem;
+  overflow: auto;
+}
+.dc-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.8rem 1.15rem;
+  border-top: 1px solid var(--sb-linha);
+  background: var(--sb-vellum);
+  border-radius: 0 0 var(--sb-r-g) var(--sb-r-g);
+}
+.dc-p {
+  font-size: 0.8rem;
+  color: var(--sb-tinta2);
+  line-height: 1.5;
+  margin: 0 0 0.85rem;
+}
+.dc-erro {
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--sb-r-p);
+  background: var(--sb-tijolo-lavado);
+  color: var(--sb-tijolo-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.dc-previa {
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--sb-r-p);
+  background: var(--sb-mar-lavado);
+  color: var(--sb-tinta2);
+  font-size: 0.78rem;
+  font-family: var(--sb-mono);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+@keyframes dc-entra {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dc-modal-fundo {
+    animation: none;
+  }
+}
+@media (max-width: 640px) {
+  .dc-emp {
+    min-width: 0;
+    width: 100%;
+  }
+  .dc-ferr-d {
+    margin-left: 0;
+  }
+  .dc-modal-fundo {
+    padding-top: 16px;
+  }
+}

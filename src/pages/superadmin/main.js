@@ -166,6 +166,17 @@ const MODULES_DEF = [
     types: ['correspondente_bancario', 'imobiliaria', 'construtora'],
     dependeDe: ['PRE_ANALISE']
   },
+  // Só construtora: é ela quem tem unidade para vender. A imobiliária vai
+  // enxergar a disposição da construtora pela conexão entre clientes, não por
+  // uma licença própria deste módulo. A Venda não é dependência: sem ela a
+  // reserva segura a unidade sozinha; com ela, a reserva já abre a venda.
+  {
+    key: 'DISPOSICAO',
+    name: 'Disposição de unidades',
+    desc: 'Ficha de cada unidade, mapa de preço, parâmetros de pagamento, planta com a situação de cada unidade em tempo real e reserva com fluxo de pagamento.',
+    types: ['construtora'],
+    dependeDe: []
+  },
   {
     key: 'repasse',
     name: 'Repasse Imobiliário',

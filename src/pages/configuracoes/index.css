@@ -4,4 +4,5 @@
    essa cópia ganhava do <style> da tela. Um arquivo só por tela, para o
    build não reordenar. */
 @import './style.css';
+@import '../../modules/disposicao/config-disposicao.css';
 @import '../../styles/siimob.css';
