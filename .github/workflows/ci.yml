@@ -13,7 +13,7 @@ jobs:
   # código inalcançável) e formatação fora do padrão antes da suíte longa.
   lint:
     name: Lint e formatação
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
 
   suite:
     name: Suíte de navegador
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -67,7 +67,7 @@ jobs:
   # JavaScript não protege nada.
   banco:
     name: Autorização no banco
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     services:
