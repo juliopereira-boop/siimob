@@ -1086,6 +1086,13 @@ create policy a1_reservas_ler on a1_reservas for select
          and (a1_e_gestor() or a1_perm('disp_ver_reservas') or a1_perm('disp_gerir')
               or (corretor_id is not null and corretor_id = a1_ator())));
 
+-- Funções de gatilho não são chamadas por ninguém: o gatilho dispara com o dono
+-- da função. Tirar o EXECUTE da chave pública só fecha a porta da RPC.
+revoke execute on function a1_co_unidade_acompanha() from public, anon, authenticated;
+revoke execute on function a1_unidades_rastro() from public, anon, authenticated;
+revoke execute on function a1_unidades_sincroniza_lista() from public, anon, authenticated;
+revoke execute on function a1_mapa_preco_itens_rastro() from public, anon, authenticated;
+
 -- =============================================================================
 -- COMO CONFERIR QUE NINGUÉM FOI AFETADO
 --
