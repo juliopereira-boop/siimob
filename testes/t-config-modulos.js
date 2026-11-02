@@ -153,14 +153,16 @@ const rotulosDosCartoes = p =>
     // número acusar defeito sem dizer qual cartão mudou.
     //
     // A pergunta que importa não é quantos, é QUAIS a licença acrescenta. O
-    // hub licenciado tem de ser o hub sem licença MAIS as duas configurações
-    // próprias da Pré-análise: Ciclo de Distribuição e Registro de integrações.
+    // hub licenciado tem de ser o hub sem licença MAIS as configurações
+    // próprias da Pré-análise: Ciclo de Distribuição, Regras da pré-análise (o
+    // que o cadastro exige) e Registro de integrações.
     const cards = await rotulosDosCartoes(p);
     const novos = cards.filter(c => !CARTOES_SEM_LICENCA.includes(c));
     const sumiram = CARTOES_SEM_LICENCA.filter(c => !cards.includes(c));
     checa(
-      'a licença acrescenta o Ciclo e o Registro de integrações',
-      novos.join(' | ') === 'Ciclo de Distribuição | Registro de integrações' && sumiram.length === 0,
+      'a licença acrescenta o Ciclo, as Regras da pré-análise e o Registro de integrações',
+      novos.join(' | ') === 'Ciclo de Distribuição | Regras da pré-análise | Registro de integrações' &&
+        sumiram.length === 0,
       `novos: ${novos.join(', ') || '—'} | sumiram: ${sumiram.join(', ') || '—'}`
     );
     checa(
