@@ -20,6 +20,7 @@ expor({
 
 // O que cada data-acao do HTML faz. Ver src/shared/ui/acoes.js.
 acoes({
+  ajudaSeloLeads: () => ajudaSeloLeads(),
   apagarTransicao: () => apagarTransicao(),
   autoLayout: () => autoLayout(),
   changeModule: el => changeModule(el.dataset.mod ?? el.value),
@@ -164,6 +165,31 @@ const WF_SELOS = {
     ['FIM_NEGATIVO', 'Fim negativo — encerra']
   ]
 };
+
+// Os selos do funil de Leads. Moram em a1_stages.selo, um por funil, e quem
+// os põe é a1_crm_definir_selo (que tira o mesmo selo da outra etapa do funil
+// na mesma transação). O que cada um faz está em src/pages/crm/main.js.
+const WF_SELOS_LEADS = [
+  ['', 'Sem selo', 'Etapa do meio: o lead passa por ela sem nenhuma ação automática.'],
+  [
+    'AGENDAMENTO',
+    'Agendamento de visita',
+    'Ao mover o lead para esta etapa, abre o agendamento da visita, que vai para a agenda do corretor e da imobiliária.'
+  ],
+  [
+    'PRE_ANALISE',
+    'Iniciar pré-análise',
+    'Só nesta etapa o lead pode virar pré-análise. Sem etapa com este selo no funil, a pré-análise sai de qualquer etapa.'
+  ],
+  ['GANHO', 'Ganho', 'Fim positivo do funil: conta como ganho no painel, qualquer que seja o nome da etapa.'],
+  ['PERDIDO', 'Perdido', 'Fim negativo: ao mover o lead para cá, pede o motivo da perda.']
+];
+const ROTULO_SELO_LEADS = Object.fromEntries(WF_SELOS_LEADS.map(([v, r]) => [v, r]));
+// O seletor só aparece em Leads e com a coluna no banco (o SQL é rodado à mão:
+// sem ela, gravar o selo falharia).
+function temSeloLeads() {
+  return MODULE === 'crm' && (!stages.length || stages.some(s => 'selo' in s));
+}
 
 const WF_ACOES = {
   pa: [
@@ -528,6 +554,9 @@ function render() {
     const inicioVisual = ehEsteira() ? s.selo === 'INICIO' : s.is_initial;
     const fimVisual = ehEsteira() ? ['FIM_POSITIVO', 'FIM_NEGATIVO', 'VENDIDO'].includes(s.selo) : s.is_final;
     const badges = [
+      MODULE === 'crm' && s.selo
+        ? `<span class="stag stag-selo">${esc(ROTULO_SELO_LEADS[s.selo] || s.selo)}</span>`
+        : '',
       inicioVisual ? '<span class="stag stag-init">Início</span>' : '',
       fimVisual ? '<span class="stag stag-final">Fim</span>' : '',
       s.is_pending ? '<span class="stag stag-pending">Pendente</span>' : ''
@@ -757,6 +786,15 @@ function pintarCamposDoModulo() {
   const esteira = ehEsteira();
   document.getElementById('ep-esteira').style.display = esteira ? '' : 'none';
   document.getElementById('ep-propriedades').style.display = esteira ? 'none' : '';
+  const blocoSelo = document.getElementById('ep-selo-crm');
+  if (blocoSelo) {
+    blocoSelo.style.display = temSeloLeads() ? '' : 'none';
+    const selL = /** @type {HTMLSelectElement} */ (document.getElementById('ep-selo-lead'));
+    if (selL && !selL.options.length)
+      selL.innerHTML = WF_SELOS_LEADS.map(([v, r]) => `<option value="${esc(v)}">${esc(r)}</option>`).join(
+        ''
+      );
+  }
   if (esteira) {
     const sel = document.getElementById('ep-flag');
     const selo = document.getElementById('ep-selo');
@@ -779,6 +817,7 @@ function openNewStage() {
   pintarCamposDoModulo();
   document.getElementById('ep-flag').value = '';
   document.getElementById('ep-selo').value = '';
+  pintarSeloLeads('');
   document.getElementById('ep-sla').value = '';
   document.getElementById('ep-name').value = '';
   document.getElementById('ep-group').value = '';
@@ -800,6 +839,7 @@ function openEdit(stageId) {
   pintarCamposDoModulo();
   document.getElementById('ep-flag').value = editingStage.flag || '';
   document.getElementById('ep-selo').value = editingStage.selo || '';
+  pintarSeloLeads(editingStage.selo || '');
   document.getElementById('ep-sla').value = editingStage.sla_horas == null ? '' : editingStage.sla_horas;
   document.getElementById('ep-name').value = editingStage.name;
   document.getElementById('ep-group').value = editingStage.group_key || '';
@@ -817,6 +857,38 @@ function closeEditPanel() {
   selected = null;
   editingStage = null;
   render();
+}
+
+function pintarSeloLeads(/** @type {string} */ valor) {
+  const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('ep-selo-lead'));
+  if (!sel) return;
+  sel.value = valor;
+  ajudaSeloLeads();
+}
+function ajudaSeloLeads() {
+  const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('ep-selo-lead'));
+  const aj = document.getElementById('ep-selo-lead-ajuda');
+  if (!sel || !aj) return;
+  const item = WF_SELOS_LEADS.find(([v]) => v === sel.value);
+  aj.textContent = item ? item[2] : '';
+}
+
+// O selo de Leads vai pela função do banco, nunca no PATCH: pôr o selo aqui
+// tira o mesmo selo da outra etapa do funil, e as duas mudanças têm de ser uma.
+async function definirSeloDeLeads(stageId, selo) {
+  const res = await fetch(A1.rpc('a1_crm_definir_selo'), {
+    method: 'POST',
+    headers: A1.headers(),
+    body: JSON.stringify({ p_stage: stageId, p_selo: selo || null })
+  });
+  if (res.ok) return true;
+  const erro = await res.json().catch(() => ({}));
+  epErro(
+    erro.message && /sem_permissao/.test(erro.message)
+      ? 'A etapa foi salva, mas só o gestor (ou quem tem a permissão de gerente) define o selo.'
+      : 'A etapa foi salva, mas não foi possível gravar o selo.'
+  );
+  return false;
 }
 
 async function definirSeloDaEtapa(stageId, selo) {
@@ -854,6 +926,8 @@ async function saveStage() {
   const d = drv();
   const flag = ehEsteira() ? document.getElementById('ep-flag').value || null : null;
   const selo = ehEsteira() ? document.getElementById('ep-selo').value || null : null;
+  const campoSeloLeads = /** @type {HTMLSelectElement|null} */ (document.getElementById('ep-selo-lead'));
+  const seloLeads = temSeloLeads() && campoSeloLeads ? campoSeloLeads.value : '';
   const slaCampo = document.getElementById('ep-sla');
   const sla = ehEsteira() ? (slaCampo.value === '' ? null : parseInt(slaCampo.value, 10)) : null;
   const payload = d.doFormulario({
@@ -885,6 +959,12 @@ async function saveStage() {
       return;
     }
     if (ehEsteira() && !(await definirSeloDaEtapa(editingStage.id, selo))) return;
+    if (
+      temSeloLeads() &&
+      seloLeads !== (editingStage.selo || '') &&
+      !(await definirSeloDeLeads(editingStage.id, seloLeads))
+    )
+      return;
     Object.assign(editingStage, {
       name,
       color,
@@ -917,6 +997,11 @@ async function saveStage() {
     }
     const [criada] = await res.json();
     if (ehEsteira() && !(await definirSeloDaEtapa(criada.id, selo))) return;
+    if (temSeloLeads() && seloLeads && !(await definirSeloDeLeads(criada.id, seloLeads))) {
+      stages.push(criada);
+      render();
+      return;
+    }
     stages.push(
       ehEsteira()
         ? {

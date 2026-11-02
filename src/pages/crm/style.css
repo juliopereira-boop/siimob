@@ -213,6 +213,19 @@ a {
   font-size: 0.75rem;
   font-weight: 700;
 }
+/* O selo da etapa (Agendamento, Iniciar pré-análise, Ganho, Perdido). */
+.k-col-selo {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
 .k-col-count {
   background: rgba(255, 255, 255, 0.25);
   border-radius: 99px;
@@ -316,6 +329,26 @@ a {
 }
 .chip.task.over {
   background: #fee2e2;
+  color: #b91c1c;
+}
+.chip.visita {
+  background: #e0f2f1;
+  color: #0b5049;
+}
+.ml-notas {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: #f1f5f4;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+.ms-erro {
+  font-size: 0.74rem;
+  font-weight: 600;
   color: #b91c1c;
 }
 .lead-foot {

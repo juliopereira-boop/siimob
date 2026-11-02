@@ -211,6 +211,19 @@ Configurações: é regra do dono, "tudo que for de configuração vai estar em 
 - **CPF vai só com dígitos.** A máscara é da tela.
 - A edição do empreendimento pelo cadastro rápido **não regera** a lista de
   unidades quando já há fichas: regerar criaria fichas duplicadas.
+- **Toda reserva leva a venda para a esteira** (`a1_reserva_criar_venda`).
+  Sem situação inicial na Venda, a reserva é recusada antes de existir; reserva
+  antiga sem venda ganha a venda por `a1_reserva_abrir_venda`.
+- **Reserva pela pré-análise** só com selo `FIM_POSITIVO`
+  (`a1_pa_pronta_para_reserva`); a conta escolhe em Regras da reserva se a
+  reserva também pode começar direto pelo mapa (`origem_reserva`).
+- **Selo de Leads vai pela função** (`a1_crm_definir_selo`), nunca no PATCH da
+  etapa: pôr o selo tira o mesmo selo da outra etapa do funil na mesma
+  transação. Funil sem a etapa `PRE_ANALISE` mantém o comportamento antigo
+  (pré-análise de qualquer etapa).
+- **Visita é da agenda de cada um**: a linha é gravada por
+  `a1_crm_agendar_visita` (definer) porque a agenda só deixa cada pessoa gravar
+  a própria linha. `lead_id`, não `caso_id`: `caso_id` abre o Repasse.
 
 ## Permissões e Perfis
 
@@ -271,11 +284,11 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 Duas frentes, e **as duas rodam antes de qualquer entrega**:
 
 ```bash
-npm test                    # build + 56 suítes de navegador (Chromium de verdade), contra o dist/
+npm test                    # build + 58 suítes de navegador (Chromium de verdade), contra o dist/
 npm test -- t-perfis        # só as que casarem com o filtro
 
 # Provas de banco, num Postgres descartável (rodar como usuário postgres):
-PGPORT=5473 testes/sql/roda.sh      # hoje: 227 de segurança + 72 da Disposição
+PGPORT=5473 testes/sql/roda.sh      # hoje: 227 de segurança + 72 da Disposição + 61 da reserva pela PA
 PGPORT=5473 testes/sql/prova-concorrencia.sh   # 8 reservas simultâneas da mesma unidade: 1 passa
 ```
 

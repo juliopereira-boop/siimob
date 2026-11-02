@@ -47,3 +47,18 @@ psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
      -f database/migrations/2026-11-02_disposicao_unidades.sql
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-disposicao.sql
+
+# Reserva pela pré-análise, regras da pré-análise, selos de Leads e visita.
+# Precisa do que produção já tem e o andaime não carregava: a coluna selo das
+# esteiras, a permissão de Iniciar venda, a agenda e a integridade dos fluxos.
+for f in database/migrations/2026-09-12_valor_avaliacao_inicial.sql \
+         database/migrations/2026-09-12_foundation_access_dossier.sql \
+         database/migrations/2026-09-13_iniciar_venda_permissao.sql \
+         database/migrations/2026-09-17_agenda.sql \
+         database/migrations/2026-09-18_integridade_fluxos_e_auditoria.sql \
+         database/migrations/2026-11-03_reserva_pre_analise_e_selos.sql; do
+  echo "carregando $f"
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-reserva-pa.sql

@@ -5,7 +5,8 @@ const {
   liberarModulos,
   negarModulos,
   usarDocTypes,
-  usarManutencao
+  usarManutencao,
+  usarRegrasPA
 } = require('./fake');
 const BASE = 'http://localhost:' + (process.env.PORTA_TESTE || 8099);
 async function abrir(pag, opc = {}) {
@@ -20,6 +21,8 @@ async function abrir(pag, opc = {}) {
   usarDocTypes(opc.docTypes);
   // Chave geral do superadmin: abrir('repasse.html', {manutencao:{ativa:true}}).
   usarManutencao(opc.manutencao);
+  // Regras da pré-análise: abrir('pre-analise.html', {regrasPA:{exige_conjuge:true}}).
+  usarRegrasPA(opc.regrasPA);
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1400, height: 950 } });
   const erros = [];
@@ -55,7 +58,15 @@ async function abrir(pag, opc = {}) {
   await p.route(/supabase\.co/, r => {
     let d;
     try {
-      d = responder(r.request().url(), r.request().method(), r.request().postData());
+      // Cenário próprio do teste, antes do dublê compartilhado:
+      // abrir('crm', {antes: (url, metodo, corpo) => undefined | resposta}).
+      const proprio = opc.antes
+        ? opc.antes(r.request().url(), r.request().method(), r.request().postData())
+        : undefined;
+      d =
+        proprio !== undefined
+          ? proprio
+          : responder(r.request().url(), r.request().method(), r.request().postData());
     } catch (e) {
       d = [];
     }

@@ -254,8 +254,16 @@
   color: var(--sb-tinta3);
   font-size: 0.7rem;
 }
-.dc-ferr-d {
+/* O resumo e o Salvar andam juntos, à direita: quando as ferramentas quebram
+   de linha, o botão não fica sozinho embaixo. */
+.dc-ferr-fim {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.dc-ferr-d {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--sb-tinta);
@@ -383,10 +391,63 @@
     min-width: 0;
     width: 100%;
   }
-  .dc-ferr-d {
+  .dc-ferr-fim {
     margin-left: 0;
   }
   .dc-modal-fundo {
     padding-top: 16px;
   }
+}
+
+/* Regras da reserva: a escolha de onde a reserva começa. */
+.dc-sub {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sb-tinta3);
+  margin: 0.2rem 0 0.55rem;
+}
+.dc-sub + .dc-grade {
+  margin-bottom: 0.4rem;
+}
+.dc-opcoes {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+.dc-opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--sb-linha);
+  border-radius: var(--sb-r);
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.dc-opcao:hover {
+  border-color: var(--sb-linha-forte);
+}
+.dc-opcao:has(input:checked) {
+  border-color: var(--sb-mar);
+  background: var(--sb-mar-lavado);
+}
+.dc-opcao input {
+  margin-top: 0.2rem;
+  accent-color: var(--sb-mar);
+}
+.dc-opcao b {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--sb-tinta);
+}
+.dc-opcao small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--sb-tinta2);
 }

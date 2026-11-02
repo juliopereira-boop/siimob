@@ -159,6 +159,29 @@ Front: `src/pages/disposicao` (planta, ficha, reserva em três passos, lista de 
 Configurações). Provas: `testes/sql/prova-disposicao.sql`, `testes/sql/prova-concorrencia.sh` e
 `testes/t-disposicao.js`.
 
+### Reserva pela pré-análise, regras da pré-análise e selos de Leads
+
+SQL: `database/migrations/2026-11-03_reserva_pre_analise_e_selos.sql` (depende da 2026-11-02). Até
+ele rodar em produção, nada desta seção vai para a `main`.
+
+| Peça | Onde | Regra |
+|------|------|-------|
+| Origem da reserva | `a1_disposicao_config.origem_reserva` (Configurações › Regras da reserva) | `LIVRE`: reserva direto pelo mapa (com pré-análise opcional). `PRE_ANALISE`: `a1_unidade_reservar` recusa sem pré-análise (`reserva_exige_pre_analise`). |
+| Pré-análise pronta | `a1_pa_pronta_para_reserva` | Selo `FIM_POSITIVO`, sem venda, sem reserva ativa e, com COMERCIAL, o que `a1_pa_pode_criar_comercial` exige. Uma reserva ativa por pré-análise (índice único). |
+| Reserva → venda | `a1_reserva_criar_venda` (interna) | Toda reserva cria a venda na esteira, na situação inicial (`flag INICIAL` ou selo `INICIO`). Sem situação inicial a reserva é recusada antes (`venda_sem_situacao_inicial`). Com pré-análise, a venda nasce por `a1_criar_comercial`, com a unidade, o fluxo como proposta e a foto da reserva. |
+| Reserva antiga sem venda | `a1_reserva_abrir_venda` | Botão "Abrir a venda agora" na ficha e "criar a venda" na lista. Idempotente. |
+| Avaliação | `a1_mapa_preco_itens.valor_avaliacao` | Coluna no mapa de preço; entra no rastro de preço e na duplicação do mapa. |
+| Unidade na pré-análise | `a1_pre_analises.unidade_id`, `a1_pa_unidades_para_cadastro` | Com a Disposição, bloco e unidade saem das fichas e a avaliação vem do mapa. O gatilho `zzz_a1_pa_regras` confere empreendimento e mantém o texto igual ao código da ficha. |
+| Regras da pré-análise | `a1_pa_regras` (Configurações › Regras da pré-análise) | Corretor, imobiliária, analista, empresa, correspondente, unidade, avaliação e cônjuge, cada um obrigatório ou não. O banco exige na criação; na alteração só barra apagar o exigido. Cônjuge é conferido no assistente (vira participante `ASSOCIADO` com `parentesco`). Padrão sem regra gravada: cônjuge obrigatório só para construtora. |
+| Selos de Leads | `a1_stages.selo` + `a1_crm_definir_selo` | `AGENDAMENTO` (popup da visita), `PRE_ANALISE` (só nesta etapa o lead vira pré-análise, quando o funil tem a etapa), `GANHO` e `PERDIDO` (pede o motivo, grava em `payload.perda`). Um por funil (`group_key`). |
+| Visita | `a1_crm_agendar_visita` | Uma linha de `a1_agenda` (tipo `visita`, `lead_id`) para o corretor (com quem agendou como convidado) e uma para a imobiliária; evento no histórico do lead. |
+
+Front: `src/pages/disposicao` (faixa da pré-análise, `?pa=`, seletor de pré-análise no passo do
+cliente, aviso de crédito sem parâmetro), `src/pages/pre-analise` (unidade da ficha, cônjuge ou segundo
+associado, botão "Reservar unidade"), `src/modules/pre-analise/regras-pa.js`, `src/pages/crm`
+(popup da etapa com selo, chip da visita) e `src/pages/workflow` (seletor de selo em Leads). Provas:
+`testes/sql/prova-reserva-pa.sql`, `testes/t-reserva-pa.js` e `testes/t-leads-selos.js`.
+
 ## LP comercial (`/conheca`)
 
 `src/pages/lp`: página isolada (sem casco, sem sessão), na identidade do sistema. Fala do SIIMOB

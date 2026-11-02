@@ -21,6 +21,7 @@ import {
   dispAposSalvarEmpreendimento,
   dispMontarConfig
 } from '../../modules/disposicao/config-disposicao.js';
+import { regrasPaAbrir, regrasPaMontar } from '../../modules/pre-analise/regras-pa.js';
 import { a1GeralCarregar, a1GeralNormalizar } from '../../modules/configuracoes/regras-gerais.js';
 import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
@@ -612,6 +613,7 @@ function openCfgView(view) {
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
   if (view === 'integra') cfgIntegraCarregar();
+  if (view === 'regras-pa') regrasPaAbrir();
   // Área de risco. Só existe no DOM para gestor e com pelo menos um módulo
   // licenciado; chegar aqui já significa as duas coisas.
   if (view === 'excdef') excDefAbrir();
@@ -4747,6 +4749,10 @@ function cfgModsLiberar(mod) {
       </div>
       <div id="ciclo-pa-corpo" style="max-width:1280px"></div>`
     );
+    // Regras da pré-análise: o que o cadastro exige (corretor, analista,
+    // unidade...). Só o gestor grava; a política de a1_pa_regras confere.
+    if (G.user.role === 'owner' || G.user.role === 'admin')
+      regrasPaMontar({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
     // O workflow NÃO ganha cartão próprio. O dono foi claro: "quando eu clico em
     // editor de workflow, deve aparecer os ícones do workflow de cada módulo".
     // Dois cartões separados eram dois editores para a mesma coisa, e um deles

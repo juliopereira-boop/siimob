@@ -267,6 +267,12 @@ body {
   color: #fcd34d;
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
+/* Selo de etapa de Leads (Agendamento, Iniciar pré-análise, Ganho, Perdido). */
+.stag-selo {
+  background: rgba(14, 140, 127, 0.18);
+  color: #5eead4;
+  border: 1px solid rgba(14, 140, 127, 0.35);
+}
 
 /* Edit panel */
 .edit-panel {

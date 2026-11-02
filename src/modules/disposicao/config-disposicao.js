@@ -55,6 +55,7 @@ acoes({
   dcPrecoM2: () => aplicarPrecoM2(),
   dcPrecoPct: () => aplicarPct(),
   dcPrecoMudou: () => resumoPrecos(),
+  dcAvalIgual: () => avaliacaoIgualVenda(),
   dcSalvarPrecos: () => salvarPrecos(),
   dcNovoParametro: () => editarParametro(null),
   dcEditarParametro: el => editarParametro(el.dataset.id),
@@ -583,6 +584,11 @@ async function telaPrecos() {
   const valores = Object.fromEntries(
     DC.itens.filter(i => i.mapa_id === DC.mapaId).map(i => [i.unidade_id, Number(i.valor)])
   );
+  const avaliacoes = Object.fromEntries(
+    DC.itens
+      .filter(i => i.mapa_id === DC.mapaId && i.valor_avaliacao != null)
+      .map(i => [i.unidade_id, Number(i.valor_avaliacao)])
+  );
   $('dc-precos').innerHTML = `
     <div class="dc-barra">${seletorEmp('disp-precos')}
       <div class="dc-acoes"><button class="btn btn-primary btn-sm" data-acao="dcNovoMapa">+ Novo mapa</button></div></div>
@@ -609,16 +615,20 @@ async function telaPrecos() {
         <button class="btn btn-ghost btn-sm" data-acao="dcPrecoM2" title="Valor = preço do m² × área privativa">× área privativa</button>
         <label><input id="dcp-pct" inputmode="decimal" placeholder="%" size="5"> %</label>
         <button class="btn btn-ghost btn-sm" data-acao="dcPrecoPct">Reajustar valores</button>
+        <button class="btn btn-ghost btn-sm" data-acao="dcAvalIgual" title="Avaliação = valor de venda, nas unidades sem avaliação">Avaliação = venda</button>
         <small>Aplica às selecionadas; sem seleção, a todas.</small>
-        <span class="dc-ferr-d" id="dcp-resumo"></span>
-        <button class="btn btn-primary btn-sm" data-acao="dcSalvarPrecos">Salvar preços</button>
+        <span class="dc-ferr-fim">
+          <span class="dc-ferr-d" id="dcp-resumo"></span>
+          <button class="btn btn-primary btn-sm" data-acao="dcSalvarPrecos">Salvar preços</button>
+        </span>
       </div>
       <div class="dc-tab-wrap"><table class="pt-table dc-tab">
         <thead><tr><th><input type="checkbox" aria-label="Selecionar todas" data-acao-change="dcSelecionarTodas"></th>
-          <th>Unidade</th><th>Tipologia</th><th class="n">Área priv.</th><th>Situação</th><th class="n">Valor (R$)</th><th class="n">R$/m²</th></tr></thead>
+          <th>Unidade</th><th>Tipologia</th><th class="n">Área priv.</th><th>Situação</th><th class="n">Valor de venda (R$)</th><th class="n">R$/m²</th><th class="n">Avaliação (R$)</th></tr></thead>
         <tbody>${DC.unidades
           .map(u => {
             const v = valores[u.id];
+            const av = avaliacoes[u.id];
             const st = STATUS[u.status] || STATUS.disponivel;
             return `<tr><td><input type="checkbox" data-acao-change="dcSelecionar" data-id="${esc(u.id)}"${DC.sel.has(u.id) ? ' checked' : ''} aria-label="Selecionar ${esc(u.codigo)}"></td>
               <td><b>${esc(u.codigo)}</b></td><td>${esc(u.tipologia || '—')}</td>
@@ -626,7 +636,9 @@ async function telaPrecos() {
               <td><span class="dc-st" style="background:${st.fundo};color:${st.texto}">${st.rotulo}</span></td>
               <td class="n"><input class="dc-preco" data-id="${esc(u.id)}" data-area="${esc(u.area_privativa ?? '')}" inputmode="decimal"
                 value="${v ? esc(v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : ''}" data-acao-input="dcPrecoMudou" aria-label="Valor de ${esc(u.codigo)}"></td>
-              <td class="n dc-m2">${v && u.area_privativa ? brl(v / Number(u.area_privativa)) : '—'}</td></tr>`;
+              <td class="n dc-m2">${v && u.area_privativa ? brl(v / Number(u.area_privativa)) : '—'}</td>
+              <td class="n"><input class="dc-preco dc-aval" data-id="${esc(u.id)}" inputmode="decimal"
+                value="${av ? esc(fmt2(av)) : ''}" data-acao-input="dcPrecoMudou" aria-label="Avaliação de ${esc(u.codigo)}"></td></tr>`;
           })
           .join('')}</tbody></table></div>`
         : ''
@@ -635,7 +647,31 @@ async function telaPrecos() {
 }
 
 function inputsPreco() {
-  return /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('#dc-precos .dc-preco')]);
+  return /** @type {HTMLInputElement[]} */ ([
+    ...document.querySelectorAll('#dc-precos .dc-preco:not(.dc-aval)')
+  ]);
+}
+const avalDa = (/** @type {HTMLInputElement} */ i) =>
+  /** @type {HTMLInputElement|null} */ (i.closest('tr')?.querySelector('.dc-aval') || null);
+// Atalho para quem avalia pela tabela: a avaliação das unidades sem avaliação
+// vira o valor de venda. As que já têm avaliação ficam como estão.
+function avaliacaoIgualVenda() {
+  let n = 0;
+  alvosPreco().forEach(i => {
+    const a = avalDa(i);
+    const v = paraNumero(i.value);
+    if (a && v && !paraNumero(a.value)) {
+      a.value = fmt2(v);
+      n++;
+    }
+  });
+  DC.toast(
+    n
+      ? `${n} avaliação(ões) preenchida(s). Salve para gravar.`
+      : 'Nenhuma unidade sem avaliação com valor de venda.',
+    'info'
+  );
+  resumoPrecos();
 }
 function alvosPreco() {
   const todos = inputsPreco();
@@ -668,18 +704,23 @@ function aplicarPct() {
 function resumoPrecos() {
   const ins = inputsPreco();
   let total = 0,
-    faltam = 0;
+    faltam = 0,
+    semAval = 0;
   ins.forEach(i => {
     const v = paraNumero(i.value);
     if (v) total += v;
     else faltam++;
+    const campoAval = avalDa(i);
+    if (v && campoAval && !paraNumero(campoAval.value)) semAval++;
     const td = i.closest('tr')?.querySelector('.dc-m2');
     const a = Number(i.dataset.area);
     if (td) td.textContent = v && a ? brl(v / a) : '—';
   });
   const r = $('dcp-resumo');
   if (r)
-    r.innerHTML = `VGV ${brl(total)}${faltam ? ` · <span class="dc-falta">${faltam} sem preço</span>` : ''}`;
+    r.innerHTML = `VGV ${brl(total)}${faltam ? ` · <span class="dc-falta">${faltam} sem preço</span>` : ''}${
+      semAval ? ` · <span class="dc-falta">${semAval} sem avaliação</span>` : ''
+    }`;
 }
 async function salvarPrecos() {
   const ins = inputsPreco();
@@ -690,11 +731,30 @@ async function salvarPrecos() {
   for (const i of ins) {
     const v = paraNumero(i.value);
     const uid = /** @type {string} */ (i.dataset.id);
+    const aIn = avalDa(i);
+    const av = aIn ? paraNumero(aIn.value) : null;
+    if (av != null && av <= 0)
+      return DC.toast('A avaliação precisa ser maior que zero, ou ficar em branco.', 'error');
     if (v && v > 0) {
       const at = atuais.get(uid);
-      if (!at || Number(at.valor) !== v)
-        upserts.push({ tenant_id: tenant, mapa_id: DC.mapaId, unidade_id: uid, valor: v });
-    } else if (atuais.has(uid)) apagar.push(atuais.get(uid).id);
+      const avAntes = at && at.valor_avaliacao != null ? Number(at.valor_avaliacao) : null;
+      if (!at || Number(at.valor) !== v || avAntes !== (av || null))
+        upserts.push({
+          tenant_id: tenant,
+          mapa_id: DC.mapaId,
+          unidade_id: uid,
+          valor: v,
+          valor_avaliacao: av || null
+        });
+    } else {
+      // Avaliação sem valor de venda não tem onde morar: o item do mapa é a
+      // unidade com preço. Avisa em vez de perder o que foi digitado.
+      if (av) {
+        const cod = (DC.unidades.find(u => u.id === uid) || {}).codigo || '';
+        return DC.toast(`${cod}: informe o valor de venda para gravar a avaliação.`, 'error');
+      }
+      if (atuais.has(uid)) apagar.push(atuais.get(uid).id);
+    }
   }
   if (!upserts.length && !apagar.length) return DC.toast('Nada mudou.', 'info');
   if (upserts.length) {
@@ -951,9 +1011,22 @@ async function telaRegras() {
     reserva_horas: 48,
     exige_fluxo_fechado: true,
     corretor_cancela_propria: true,
-    max_reservas_por_cpf: 0
+    max_reservas_por_cpf: 0,
+    origem_reserva: 'LIVRE'
   };
+  const origem = c.origem_reserva === 'PRE_ANALISE' ? 'PRE_ANALISE' : 'LIVRE';
   $('dc-regras').innerHTML = `<div class="dc-cartao">
+    <div class="dc-sub">De onde a reserva começa</div>
+    <div class="dc-opcoes" role="radiogroup" aria-label="De onde a reserva começa">
+      <label class="dc-opcao"><input type="radio" name="dcg-origem" value="LIVRE"${origem === 'LIVRE' ? ' checked' : ''}>
+        <span><b>Direto pelo mapa da Disposição</b>
+        <small>O corretor clica na unidade disponível e reserva. Se quiser, vincula a uma pré-análise aprovada.</small></span></label>
+      <label class="dc-opcao"><input type="radio" name="dcg-origem" value="PRE_ANALISE"${origem === 'PRE_ANALISE' ? ' checked' : ''}>
+        <span><b>Somente a partir de uma pré-análise aprovada</b>
+        <small>A reserva exige a pré-análise do cliente na etapa com o selo Fim positivo e o crédito aprovado. O botão
+        "Reservar unidade" da pré-análise abre o mapa com o cliente já preenchido.</small></span></label>
+    </div>
+    <div class="dc-sub">Prazo e limites</div>
     <div class="dc-grade">
       <label class="dc-f"><span>Prazo da reserva (horas)</span><input id="dcg-horas" type="number" min="0" max="8760" value="${esc(c.reserva_horas)}">
         <small>Passado o prazo sem a venda andar, a unidade volta a ficar disponível. 0 = não vence.</small></label>
@@ -972,6 +1045,10 @@ async function salvarRegras() {
     max_reservas_por_cpf: Math.max(0, parseInt($('dcg-cpf').value, 10) || 0),
     exige_fluxo_fechado: $('dcg-fecha').checked,
     corretor_cancela_propria: $('dcg-cancela').checked,
+    origem_reserva:
+      /** @type {any} */ (document.querySelector('input[name="dcg-origem"]:checked'))?.value === 'PRE_ANALISE'
+        ? 'PRE_ANALISE'
+        : 'LIVRE',
     atualizado_em: new Date().toISOString()
   };
   const r = await fetch(`${A1.rest('a1_disposicao_config')}?on_conflict=tenant_id`, {

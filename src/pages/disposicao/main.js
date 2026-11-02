@@ -10,6 +10,7 @@
 import { A1 } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
+  a1HasModule,
   a1RefreshPartnerPerms,
   a1RequireAuth,
   a1RequireModule,
@@ -35,6 +36,8 @@ import {
   rotuloPavimento,
   carregar,
   precosVigentes,
+  avaliacoesVigentes,
+  preAnalise,
   rpc,
   motivo
 } from '../../modules/disposicao/dados.js';
@@ -88,9 +91,17 @@ acoes({
     renderPassoFluxo();
   },
   rsConfirmar: () => confirmarReserva(),
-  rsAbrirVenda: el => {
+  rsAbrirVenda: (el, ev) => {
+    // Dentro da linha da reserva, que também é clicável: a venda ganha.
+    ev.stopPropagation();
     location.href = `/${encodeURIComponent(G.slug)}/comercial?id=${encodeURIComponent(el.dataset.id)}`;
   },
+  abrirVendaDaReserva: (el, ev) => {
+    ev.stopPropagation();
+    abrirVendaDaReserva(el.dataset.id);
+  },
+  rsEscolherPA: el => escolherPA(el.value),
+  sairDaPA: () => sairDaPA(),
   perguntar: el => perguntar(el.dataset.tipo, el.dataset.id),
   fecharPergunta: () => fecharPergunta(),
   confirmarPergunta: () => confirmarPergunta(),
@@ -107,6 +118,15 @@ const G = {
   unidades: /** @type {any[]} */ ([]),
   mapas: /** @type {any[]} */ ([]),
   preco: /** @type {Record<string, number>} */ ({}),
+  avaliacao: /** @type {Record<string, number>} */ ({}),
+  // A pré-análise que trouxe a pessoa até aqui (?pa=), já com os dados que a
+  // reserva aproveita; e a lista das prontas para reservar, lida sob demanda.
+  pa: /** @type {any} */ (null),
+  paErro: '',
+  paLista: /** @type {any[]|null} */ (null),
+  paCarregando: false,
+  temComercial: /** @type {boolean|null} */ (null),
+  temPreAnalise: /** @type {boolean|null} */ (null),
   parametros: /** @type {any[]} */ ([]),
   config: /** @type {any} */ (null),
   reservas: /** @type {any[]} */ ([]),
@@ -134,6 +154,9 @@ const podeReservar = () => hasPerm('disp_reservar');
 const podeGerir = () => hasPerm('disp_gerir');
 const podeConfigurar = () => hasPerm('disp_configurar');
 const podeVerPainel = () => hasPerm('ver_dashboard_disposicao');
+// Reservar pela pré-análise é o novo "Iniciar venda": a mesma permissão.
+const podeReservarPelaPA = () => hasPerm('pa_iniciar_venda');
+const exigePA = () => !!G.config && G.config.origem_reserva === 'PRE_ANALISE';
 
 function toast(/** @type {string} */ msg, tipo = 'ok') {
   const t = $('dp-toast');
@@ -175,8 +198,15 @@ async function init() {
   if (G.vista === 'dashboard' && !podeVerPainel()) G.vista = 'mapa';
   await a1MontarShell($('shell'), { ativo: 'DISPOSICAO', vista: G.vista });
   a1StartHeartbeat('disposicao');
+  // A licença da Venda decide se a reserva sem venda pode ganhar uma; a da
+  // Pré-análise, se a reserva pode (ou tem de) vir de uma pré-análise.
+  [G.temComercial, G.temPreAnalise] = await Promise.all([
+    a1HasModule('COMERCIAL').catch(() => null),
+    a1HasModule('PRE_ANALISE').catch(() => null)
+  ]);
   try {
     await rpc('a1_disposicao_atualizar', {});
+    if (G.vista === 'mapa') await lerPreAnaliseDaURL();
     await carregarBase();
   } catch (e) {
     erroTela(e);
@@ -193,10 +223,92 @@ async function init() {
   } else {
     $('vista-mapa').hidden = false;
     renderMapa();
+    renderFaixaPA();
     const alvo = new URLSearchParams(location.search).get('unidade');
     if (alvo) abrirFicha(alvo);
+    else abrirReservaDaPA();
   }
   iniciarAoVivo();
+}
+
+// ─── A reserva que vem da pré-análise ────────────────────────────────────────
+// A pré-análise aprovada manda a pessoa para cá com ?pa=. A tela lê o que a
+// reserva aproveita (titular, cônjuge, corretor, unidade de interesse, crédito),
+// abre o empreendimento dela e, se a unidade de interesse está disponível, já
+// abre a reserva nela.
+async function lerPreAnaliseDaURL() {
+  const id = new URLSearchParams(location.search).get('pa');
+  if (!id) return;
+  const d = await preAnalise.dados(id);
+  if (d && d.id) G.pa = { id: d.id, dados: d };
+  else G.paErro = motivo(d && d.erro);
+}
+
+function renderFaixaPA() {
+  const f = $('dp-pa-faixa');
+  if (!f) return;
+  if (!G.pa && !G.paErro) {
+    f.hidden = true;
+    return;
+  }
+  if (!G.pa) {
+    f.className = 'dp-pa-faixa alerta';
+    f.innerHTML = `<div class="dp-pa-ic" aria-hidden="true">!</div>
+      <div class="dp-pa-txt"><b>Não deu para usar a pré-análise</b><span>${esc(G.paErro)}</span></div>
+      <button class="dp-link" data-acao="sairDaPA">fechar</button>`;
+    f.hidden = false;
+    return;
+  }
+  const d = G.pa.dados;
+  const tit = (d.pessoas || []).find((/** @type {any} */ p) => p.papel === 'TITULAR');
+  const un = d.unidade_id ? unidadePorId(d.unidade_id) : null;
+  const dica = d.motivo
+    ? motivo(d.motivo)
+    : un && un.status === 'disponivel'
+      ? `Unidade de interesse: ${un.codigo}. A reserva já está aberta nela; para outra unidade, clique na planta.`
+      : d.unidade
+        ? `A unidade de interesse (${d.unidade}) não está disponível. Escolha outra na planta.`
+        : 'Escolha a unidade na planta: a reserva abre com os dados do cliente e o crédito aprovado.';
+  f.className = 'dp-pa-faixa' + (d.motivo ? ' alerta' : '');
+  f.innerHTML = `<div class="dp-pa-ic" aria-hidden="true">PA</div>
+    <div class="dp-pa-txt"><b>Reserva da pré-análise ${esc(d.codigo || '')}${tit ? ` · ${esc(tit.nome)}` : ''}</b>
+      <span>${esc(dica)}</span></div>
+    <button class="dp-link" data-acao="sairDaPA">não usar esta pré-análise</button>`;
+  f.hidden = false;
+}
+
+function sairDaPA() {
+  G.pa = null;
+  G.paErro = '';
+  const q = new URLSearchParams(location.search);
+  q.delete('pa');
+  history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : ''));
+  renderFaixaPA();
+}
+
+function abrirReservaDaPA() {
+  if (!G.pa || G.pa.dados.motivo || !podeReservar()) return;
+  const u = G.pa.dados.unidade_id ? unidadePorId(G.pa.dados.unidade_id) : null;
+  if (!u || u.status !== 'disponivel' || !G.preco[u.id]) return;
+  abrirFicha(u.id);
+  iniciarReserva(u.id);
+}
+
+// A reserva que ficou sem venda (feita antes de a Venda ter situação inicial,
+// ou antes de o cliente ganhar a Venda) ganha a venda aqui.
+function podeAbrirVenda(/** @type {any} */ rs) {
+  if (!rs || rs.status !== 'ATIVA' || rs.comercial_id || G.temComercial !== true) return false;
+  if (podeGerir()) return true;
+  return podeReservar() && G.user.role === 'partner' && rs.corretor_id === G.user.id;
+}
+async function abrirVendaDaReserva(/** @type {string} */ id) {
+  const r = await rpc('a1_reserva_abrir_venda', { p_reserva: id });
+  if (!r.ok) {
+    toast(motivo(r.erro), 'erro');
+    return;
+  }
+  toast('Venda aberta na esteira de Vendas.');
+  await atualizarTudo();
 }
 
 function semAcesso(/** @type {string} */ rotulo) {
@@ -236,8 +348,17 @@ async function carregarBase() {
     guardado = localStorage.getItem('dp_emp');
   } catch {}
   const daURL = new URLSearchParams(location.search).get('emp');
+  const daPA = G.pa ? G.pa.dados.empreendimento_id : null;
   const existe = (/** @type {any} */ id) => id && emps.some(e => e.id === id);
-  G.empId = existe(daURL) ? daURL : existe(guardado) ? guardado : emps[0] ? emps[0].id : null;
+  G.empId = existe(daPA)
+    ? daPA
+    : existe(daURL)
+      ? daURL
+      : existe(guardado)
+        ? guardado
+        : emps[0]
+          ? emps[0].id
+          : null;
   montarSelectEmp($('dp-emp'), false);
   await carregarUnidades();
 }
@@ -258,6 +379,7 @@ async function carregarUnidades() {
   if (!G.empId) {
     G.unidades = [];
     G.preco = {};
+    G.avaliacao = {};
     return;
   }
   const mapas = G.mapas.filter(m => m.empreendimento_id === G.empId);
@@ -275,6 +397,7 @@ async function carregarUnidades() {
   );
   G.unidades = un;
   G.preco = precosVigentes(mapas, itens);
+  G.avaliacao = avaliacoesVigentes(mapas, itens);
   G.atualizadoEm = Date.now();
 }
 
@@ -397,17 +520,31 @@ function renderMapa() {
 function renderResumo() {
   const conta = Object.fromEntries(ORDEM_STATUS.map(s => [s, 0]));
   let vgvDisp = 0,
-    vgvVend = 0;
+    vgvVend = 0,
+    vgvTotal = 0;
   G.unidades.forEach(u => {
     conta[u.status] = (conta[u.status] || 0) + 1;
     const p = G.preco[u.id] || 0;
+    vgvTotal += p;
     if (u.status === 'disponivel') vgvDisp += p;
     if (u.status === 'vendido') vgvVend += p;
   });
   const total = G.unidades.length || 1;
+  const emp = G.empreendimentos.find(e => e.id === G.empId) || {};
+  const blocos = new Set(G.unidades.map(u => u.bloco || '')).size;
+  const local = [emp.cidade, emp.estado].filter(Boolean).join('/');
+  const pct = vgvTotal ? Math.round((vgvVend / vgvTotal) * 100) : null;
   $('dp-resumo').innerHTML = `
-    <div class="dp-barra" role="img" aria-label="Distribuição das unidades por situação">
-      ${ORDEM_STATUS.map(s => (conta[s] ? `<i style="flex:${conta[s]};background:${STATUS[s].cor}"></i>` : '')).join('')}
+    <div>
+      <div class="dp-resumo-nome">${conta.disponivel} de ${G.unidades.length} unidade${G.unidades.length === 1 ? '' : 's'} disponíve${conta.disponivel === 1 ? 'l' : 'is'}</div>
+      <div class="dp-resumo-sub">${[emp.name, local, blocos > 1 ? `${blocos} blocos` : '']
+        .filter(Boolean)
+        .map(x => esc(x))
+        .join(' · ')}</div>
+    </div>
+    ${pct != null ? `<div class="dp-resumo-num"><b>${pct}%</b><span>do VGV vendido</span></div>` : '<div></div>'}
+    <div class="dp-barra" role="img" aria-label="${esc(ORDEM_STATUS.map(s => `${conta[s]} ${STATUS[s].plural}`).join(', '))}">
+      ${ORDEM_STATUS.map(s => (conta[s] ? `<i class="${s === 'bloqueado' ? 'hach' : ''}" style="flex:${conta[s]};background:${STATUS[s].cor}"></i>` : '')).join('')}
     </div>
     <div class="dp-chips">
       ${ORDEM_STATUS.map(
@@ -469,7 +606,7 @@ function htmlCelula(/** @type {any} */ u) {
         : u.status === 'reservado'
           ? '<svg class="un-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
           : '';
-  return `<button class="un un-${esc(u.status)}${fora ? ' fora' : ''}${G.mudaram.has(u.id) ? ' mudou' : ''}"
+  return `<button class="un un-${esc(u.status)}${fora ? ' fora' : ''}${G.mudaram.has(u.id) ? ' mudou' : ''}${G.fichaId === u.id ? ' sel' : ''}"
       data-acao="abrirUnidade" data-id="${esc(u.id)}" title="${esc(dica)}"
       aria-label="${esc(`Unidade ${u.codigo}, ${st.rotulo}${p ? ', ' + brl(p) : ''}`)}">
       <span class="un-num">${icone}${esc(u.numero || u.codigo)}</span>
@@ -511,6 +648,7 @@ function htmlPlanta() {
           lista.map((/** @type {any} */ u) => [`${u.pavimento}|${u.numero || u.codigo}`, u])
         );
         corpo = `<div class="dp-predio" style="--cols:${finais.length}">
+          <div class="dp-teto" style="width:calc(${finais.length} * 111px - 7px)"></div>
           ${pavs
             .map(
               p => `<div class="dp-andar"><span class="dp-andar-rot">${esc(rotuloPavimento(p))}</span>
@@ -518,7 +656,7 @@ function htmlPlanta() {
               </div>`
             )
             .join('')}
-          <div class="dp-chao"></div>
+          <div class="dp-chao" style="width:calc(${finais.length} * 111px - 7px)"></div>
         </div>`;
       } else {
         corpo = `<div class="dp-lotes">${lista
@@ -530,13 +668,14 @@ function htmlPlanta() {
           .join('')}</div>`;
       }
       const disp = conta.disponivel;
+      const andares = temPav ? new Set(lista.map((/** @type {any} */ u) => u.pavimento)).size : 0;
       return `<article class="dp-bloco">
         <header class="dp-bloco-cab">
           <div><div class="dp-bloco-nome">${b ? esc(b) : 'Unidades'}</div>
-            <div class="dp-bloco-sub">${lista.length} unidade(s) · <b>${disp}</b> disponíve${disp === 1 ? 'l' : 'is'}</div></div>
-          <div class="dp-mini" aria-hidden="true">${ORDEM_STATUS.map(s => (conta[s] ? `<i style="flex:${conta[s]};background:${STATUS[s].cor}"></i>` : '')).join('')}</div>
+            <div class="dp-bloco-sub">${andares ? `${andares} pavimento(s) · ` : ''}${lista.length} unidade(s) · <b>${disp}</b> disponíve${disp === 1 ? 'l' : 'is'}</div></div>
+          <div class="dp-mini" aria-hidden="true">${ORDEM_STATUS.map(s => (conta[s] ? `<i class="${s === 'bloqueado' ? 'hach' : ''}" style="flex:${conta[s]};background:${STATUS[s].cor}"></i>` : '')).join('')}</div>
         </header>
-        ${corpo}
+        <div class="dp-bloco-corpo">${corpo}</div>
       </article>`;
     })
     .join('');
@@ -589,15 +728,21 @@ async function abrirUnidadeDeOutroEmp(/** @type {string} */ id, /** @type {strin
   location.href = `/${encodeURIComponent(G.slug)}/disposicao?unidade=${encodeURIComponent(id)}`;
 }
 
+function marcarNaPlanta(/** @type {string|null} */ id) {
+  document.querySelectorAll('.un.sel').forEach(el => el.classList.remove('sel'));
+  if (id) document.querySelector(`.un[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+}
 function abrirFicha(/** @type {string} */ id) {
   if (!unidadePorId(id)) return;
   G.fichaId = id;
+  marcarNaPlanta(id);
   $('dp-gaveta-fundo').hidden = false;
   document.body.classList.add('sem-rolagem');
   renderFicha(true);
 }
 function fecharFicha() {
   G.fichaId = null;
+  marcarNaPlanta(null);
   $('dp-gaveta-fundo').hidden = true;
   document.body.classList.remove('sem-rolagem');
 }
@@ -621,9 +766,25 @@ async function renderFicha(/** @type {boolean} */ comHistorico) {
     .join(' · ');
   const btn = (/** @type {string} */ tipo, /** @type {string} */ rot, cls = 'dp-btn-g') =>
     `<button class="dp-btn ${cls}" data-acao="perguntar" data-tipo="${tipo}" data-id="${esc(u.id)}">${rot}</button>`;
+  const aval = G.avaliacao[u.id];
+  // Na regra "só pela pré-análise", reservar exige a Pré-análise e a permissão
+  // de Iniciar venda. Sem as duas, o botão dá lugar à explicação.
+  const barraPA =
+    exigePA() && (G.temPreAnalise === false || !podeReservarPelaPA())
+      ? G.temPreAnalise === false
+        ? 'Nesta conta a reserva começa pela pré-análise, e a Pré-análise não está liberada.'
+        : 'Nesta conta a reserva começa por uma pré-análise aprovada, e o seu cadastro não tem a permissão "Iniciar venda".'
+      : '';
   const acoesHtml = [
-    u.status === 'disponivel' && podeReservar()
-      ? `<button class="dp-btn dp-btn-p dp-btn-l" data-acao="iniciarReserva" data-id="${esc(u.id)}"${p ? '' : ' disabled title="A unidade não tem preço no mapa de preço"'}>Reservar esta unidade</button>`
+    u.status === 'disponivel' && podeReservar() && !barraPA
+      ? `<button class="dp-btn dp-btn-p dp-btn-l" data-acao="iniciarReserva" data-id="${esc(u.id)}"${p ? '' : ' disabled title="A unidade não tem preço no mapa de preço"'}>${
+          G.pa && !G.pa.dados.motivo
+            ? 'Reservar para ' + esc(nomeTitularPA() || 'o cliente da pré-análise')
+            : 'Reservar esta unidade'
+        }</button>`
+      : '',
+    u.status === 'disponivel' && podeReservar() && barraPA
+      ? `<div class="dp-aviso">${esc(barraPA)}</div>`
       : '',
     podeGerir() && u.status === 'disponivel' ? btn('bloquear', 'Bloquear') : '',
     podeGerir() && u.status === 'disponivel' ? btn('vender', 'Marcar como vendida') : '',
@@ -648,6 +809,7 @@ async function renderFicha(/** @type {boolean} */ comHistorico) {
     <div class="dp-ficha-preco">
       <div><span>Valor de tabela</span><b>${p ? brl(p) : 'Sem preço no mapa'}</b></div>
       ${precoM2 ? `<div><span>Preço por m²</span><b>${brl(precoM2)}</b></div>` : ''}
+      ${aval ? `<div><span>Avaliação</span><b>${brl(aval)}</b></div>` : ''}
     </div>
     ${u.status_motivo ? `<div class="dp-aviso">${esc(u.status === 'bloqueado' ? 'Bloqueada: ' : '')}${esc(u.status_motivo)}</div>` : ''}
     ${
@@ -658,7 +820,15 @@ async function renderFicha(/** @type {boolean} */ comHistorico) {
             <div class="dp-ficha-rs-l"><span>Corretor</span><b>${esc(nomeCorretor(rs.corretor_id) || rs.criado_por_nome || '—')}</b></div>
             <div class="dp-ficha-rs-l"><span>Prazo</span><b>${rs.expira_em ? esc(prazo(rs.expira_em)) : 'sem vencimento'}</b></div>
             <div class="dp-ficha-rs-l"><span>Fluxo</span><b>${brl(rs.valor_fluxo)}</b></div>
-            ${rs.comercial_id ? `<button class="dp-link" data-acao="rsAbrirVenda" data-id="${esc(rs.comercial_id)}">Abrir a venda →</button>` : ''}
+            ${rs.pre_analise_id ? '<div class="dp-ficha-rs-l"><span>Origem</span><b>pré-análise aprovada</b></div>' : ''}
+            ${
+              rs.comercial_id
+                ? `<button class="dp-link" data-acao="rsAbrirVenda" data-id="${esc(rs.comercial_id)}">Abrir a venda →</button>`
+                : G.temComercial === true
+                  ? `<div class="dp-aviso dp-aviso-a">Esta reserva ainda não tem venda na esteira de Vendas.</div>
+                     ${podeAbrirVenda(rs) ? `<button class="dp-btn dp-btn-p" data-acao="abrirVendaDaReserva" data-id="${esc(rs.id)}">Abrir a venda agora</button>` : ''}`
+                  : ''
+            }
           </div>`
         : u.status === 'reservado'
           ? '<div class="dp-aviso">Reservada por outra pessoa. Os dados do cliente ficam com quem reservou e com o gestor.</div>'
@@ -879,6 +1049,140 @@ const PARENTESCOS = [
 ];
 const comConjuge = (/** @type {string} */ ec) => ec === 'Casado(a)' || ec === 'União estável';
 
+// O que a reserva aproveita da pré-análise: as pessoas (o cônjuge é o
+// associado com parentesco de cônjuge), o corretor e o crédito aprovado, que
+// vira as linhas de financiamento, FGTS e subsídio do fluxo.
+function aplicarPA(/** @type {any} */ d) {
+  const rs = G.rs;
+  rs.pa_id = d.id;
+  rs.pa = d;
+  const pessoas = d.pessoas || [];
+  const ehConjuge = (/** @type {any} */ p) => /c[oô]njuge|companheir/i.test(p.parentesco || '');
+  const tit = pessoas.find((/** @type {any} */ p) => p.papel === 'TITULAR') || {};
+  const conj = pessoas.find((/** @type {any} */ p) => p.papel !== 'TITULAR' && ehConjuge(p)) || null;
+  const pessoa = (/** @type {any} */ p) => ({
+    nome: p.nome || '',
+    cpf: cpfComMascara(p.cpf),
+    nascimento: p.nascimento ? String(p.nascimento).slice(0, 10) : '',
+    telefone: p.telefone || '',
+    email: p.email || '',
+    renda: Number(p.renda) > 0 ? Number(p.renda) : null
+  });
+  let ec = ESTADOS_CIVIS.includes(tit.estado_civil) ? tit.estado_civil : conj ? 'Casado(a)' : 'Solteiro(a)';
+  const outros = pessoas.filter((/** @type {any} */ p) => p.papel !== 'TITULAR' && p !== conj);
+  // Cônjuge informado com o titular marcado como solteiro: vira associado,
+  // para nada se perder sem o corretor ver.
+  if (conj && !comConjuge(ec)) outros.unshift(conj);
+  rs.cliente = {
+    titular: { ...pessoa(tit), estado_civil: ec },
+    conjuge: conj && comConjuge(ec) ? pessoa(conj) : {},
+    associados: outros.map((/** @type {any} */ p) => ({
+      ...pessoa(p),
+      parentesco:
+        PARENTESCOS.find(x => x.toLowerCase() === String(p.parentesco || '').toLowerCase()) ||
+        (ehConjuge(p) ? 'Cônjuge/companheiro(a)' : 'Outro')
+    }))
+  };
+  if (d.corretor_id) rs.corretor_id = d.corretor_id;
+  const cr = d.credito;
+  const porSerie = (/** @type {string} */ s) => G.parametros.find(p => p.serie === s);
+  const linhas = /** @type {any[]} */ ([]);
+  // O crédito sem parâmetro da mesma série no cliente não pode entrar no fluxo
+  // sozinho, e também não pode sumir calado: o passo do fluxo avisa.
+  rs.paSemParametro = /** @type {{rotulo:string, valor:number}[]} */ ([]);
+  if (cr)
+    /** @type {[string, string, any][]} */ ([
+      ['FINANCIAMENTO', 'Financiamento', cr.financiamento],
+      ['FGTS', 'FGTS', cr.fgts],
+      ['SUBSIDIO', 'Subsídio', cr.subsidio]
+    ]).forEach(([serie, rotulo, v]) => {
+      if (!(Number(v) > 0)) return;
+      const p = porSerie(serie);
+      if (p) linhas.push({ parametro_id: p.id, quantidade: 1, valor: Number(v), primeiro_vencimento: '' });
+      else rs.paSemParametro.push({ rotulo, valor: Number(v) });
+    });
+  if (linhas.length) {
+    const ato = porSerie('ATO') || G.parametros.find(p => p.quem_paga === 'CLIENTE');
+    rs.fluxo = [
+      ...(ato ? [{ parametro_id: ato.id, quantidade: 1, valor: null, primeiro_vencimento: '' }] : []),
+      ...linhas
+    ];
+  }
+}
+function cpfComMascara(/** @type {any} */ c) {
+  const d = String(c || '').replace(/\D/g, '');
+  return d.length === 11
+    ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+    : String(c || '');
+}
+function nomeTitularPA() {
+  const tit = G.pa && (G.pa.dados.pessoas || []).find((/** @type {any} */ p) => p.papel === 'TITULAR');
+  return tit ? tit.nome : '';
+}
+
+// Escolher (ou trocar) a pré-análise no passo do cliente.
+async function escolherPA(/** @type {string} */ id) {
+  if (!G.rs) return;
+  lerPassoCliente();
+  if (!id) {
+    G.rs.pa_id = null;
+    G.rs.pa = null;
+    renderPassoCliente(false);
+    return;
+  }
+  const d = await preAnalise.dados(id);
+  if (!d || !d.id) {
+    mostrarErroRs(motivo(d && d.erro));
+    renderPassoCliente(false);
+    return;
+  }
+  if (d.motivo) {
+    mostrarErroRs(motivo(d.motivo));
+    renderPassoCliente(false);
+    return;
+  }
+  if (d.empreendimento_id !== G.rs.un.empreendimento_id) {
+    mostrarErroRs(motivo('pre_analise_de_outro_empreendimento'));
+    renderPassoCliente(false);
+    return;
+  }
+  $('dp-rs-erro').hidden = true;
+  aplicarPA(d);
+  renderPassoCliente(false);
+}
+
+function htmlSecaoPA() {
+  const rs = G.rs;
+  const obrigatoria = exigePA();
+  if (G.temPreAnalise !== true || !podeReservarPelaPA()) return '';
+  const lista = (G.paLista || []).filter(x => x.empreendimento_id === rs.un.empreendimento_id);
+  const atual = rs.pa;
+  const opcoes = [...lista];
+  if (atual && !opcoes.some(x => x.id === atual.id))
+    opcoes.unshift({ id: atual.id, codigo: atual.codigo, titular: nomeTitularPA() });
+  const cr = atual && atual.credito;
+  return `<div class="dp-rs-sec">Pré-análise${obrigatoria ? ' *' : ''}</div>
+    <div class="dp-pa-escolha${atual ? ' on' : ''}">
+      <label class="dp-f"><span>${obrigatoria ? 'Pré-análise aprovada do cliente' : 'Vincular a uma pré-análise aprovada (opcional)'}</span>
+        <select id="rs-pa" data-acao-change="rsEscolherPA">
+          <option value="">${opcoes.length ? 'Escolha…' : G.paCarregando ? 'Carregando…' : 'Nenhuma pré-análise aprovada deste empreendimento'}</option>
+          ${opcoes
+            .map(
+              x =>
+                `<option value="${esc(x.id)}"${atual && x.id === atual.id ? ' selected' : ''}>${esc(x.codigo || 'Pré-análise')}${x.titular ? ' · ' + esc(x.titular) : ''}${x.unidade ? ' · interesse ' + esc(x.unidade) : ''}</option>`
+            )
+            .join('')}
+        </select></label>
+      ${
+        atual
+          ? `<p class="dp-p">Dados do titular, do cônjuge e dos associados vieram da pré-análise${cr ? `; o crédito aprovado (financiamento ${brl(cr.financiamento)}${Number(cr.fgts) ? `, FGTS ${brl(cr.fgts)}` : ''}${Number(cr.subsidio) ? `, subsídio ${brl(cr.subsidio)}` : ''}) já está no fluxo` : ''}. Confira e ajuste o que precisar.</p>`
+          : obrigatoria
+            ? '<p class="dp-p dp-mudo">Nesta conta a reserva começa por uma pré-análise aprovada (selo Fim positivo), sem venda aberta.</p>'
+            : ''
+      }
+    </div>`;
+}
+
 function linhaNova() {
   const usados = new Set((G.rs ? G.rs.fluxo : []).map((/** @type {any} */ l) => l.parametro_id));
   const p = G.parametros.find(x => !usados.has(x.id)) || G.parametros[0];
@@ -892,6 +1196,11 @@ function iniciarReserva(/** @type {string} */ id) {
     toast('Cadastre os parâmetros de pagamento em Configurações antes de reservar.', 'erro');
     return;
   }
+  const daPA = G.pa && !G.pa.dados.motivo ? G.pa.dados : null;
+  if (daPA && daPA.empreendimento_id !== u.empreendimento_id) {
+    toast('A pré-análise é de outro empreendimento. Escolha uma unidade do empreendimento dela.', 'erro');
+    return;
+  }
   G.rs = {
     un: u,
     versao: u.versao,
@@ -902,9 +1211,24 @@ function iniciarReserva(/** @type {string} */ id) {
     corretor_id: '',
     observacao: '',
     cronograma: false,
-    feito: null
+    feito: null,
+    pa_id: null,
+    pa: null
   };
   G.rs.fluxo.push(linhaNova());
+  if (daPA) aplicarPA(daPA);
+  // A lista das pré-análises prontas é lida uma vez, quando alguém pode usá-la.
+  if (G.paLista === null && G.temPreAnalise === true && podeReservarPelaPA()) {
+    G.paLista = [];
+    G.paCarregando = true;
+    preAnalise
+      .aprovadas()
+      .then(l => (G.paLista = l))
+      .finally(() => {
+        G.paCarregando = false;
+        if (G.rs && G.rs.passo === 1 && !G.rs.feito) renderPassoCliente(true);
+      });
+  }
   const emp = G.empreendimentos.find(e => e.id === u.empreendimento_id);
   $('dp-rs-sub').textContent = `${emp ? emp.name + ' · ' : ''}${u.codigo} · ${brl(G.rs.preco)}`;
   $('dp-reserva').hidden = false;
@@ -987,6 +1311,7 @@ function renderPassoCliente(/** @type {boolean} */ lerAntes) {
   const c = G.rs.cliente;
   const ec = c.titular.estado_civil || 'Solteiro(a)';
   $('dp-rs-corpo').innerHTML = `
+    ${htmlSecaoPA()}
     <div class="dp-rs-sec">Titular</div>
     ${blocoPessoa('t', c.titular, true)}
     <div class="dp-fgrid">
@@ -1073,6 +1398,8 @@ export function cpfValido(/** @type {string} */ s) {
 
 function validarCliente() {
   const c = G.rs.cliente;
+  if (exigePA() && !G.rs.pa_id)
+    return 'Escolha a pré-análise aprovada do cliente: nesta conta a reserva começa por ela.';
   if (!c.titular.nome) return 'Informe o nome do titular.';
   if (!cpfValido(c.titular.cpf)) return 'O CPF do titular não confere. Verifique os dígitos.';
   if (comConjuge(c.titular.estado_civil)) {
@@ -1120,6 +1447,16 @@ function renderPassoFluxo() {
       <div class="${fecha ? 'ok' : 'falta'}"><span>${fecha ? 'Fechado' : dif > 0 ? 'Falta' : 'Passou'}</span><b>${fecha ? '✓' : brl(Math.abs(dif))}</b></div>
       <div><span>Recurso próprio</span><b>${brl(proprio)}</b></div>
     </div>
+    ${
+      rs.pa_id && rs.paSemParametro && rs.paSemParametro.length
+        ? `<div class="dp-aviso dp-aviso-a">A pré-análise aprovou ${rs.paSemParametro
+            .map((/** @type {any} */ x) => `${esc(x.rotulo)} de ${brl(x.valor)}`)
+            .join(
+              ' e '
+            )}, mas este cliente não tem parâmetro de pagamento dessa série. Lance o valor por outro
+            parâmetro, ou cadastre-o em Configurações › Parâmetros de pagamento.</div>`
+        : ''
+    }
     <div class="dp-fluxo-barra" aria-hidden="true">${rs.fluxo
       .map((/** @type {any} */ l, /** @type {number} */ i) => {
         const v = (Number(l.valor) || 0) * (Number(l.quantidade) || 0);
@@ -1144,7 +1481,7 @@ function renderPassoFluxo() {
               ${p ? `<small>${esc(PERIODICIDADE(p.periodicidade_meses))}${p.parcelas_max > 1 ? ` · ${p.parcelas_min} a ${p.parcelas_max}` : ''}${p.valor_minimo ? ` · mín. ${brl(p.valor_minimo)}` : ''}</small>` : ''}</td>
             <td class="n"><input id="fx-${i}-qtd" type="number" min="${p ? p.parcelas_min : 1}" max="${p ? p.parcelas_max : 1}"
               value="${esc(l.quantidade)}" ${unica ? 'disabled' : ''} data-acao-change="rsLinhaMudou" aria-label="Parcelas"></td>
-            <td class="n"><input id="fx-${i}-val" inputmode="decimal" value="${l.valor != null ? esc(String(l.valor).replace('.', ',')) : ''}"
+            <td class="n"><input id="fx-${i}-val" inputmode="decimal" value="${l.valor != null && isFinite(Number(l.valor)) ? esc(Number(l.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : ''}"
               placeholder="0,00" data-acao-change="rsLinhaMudou" aria-label="Valor da parcela"></td>
             <td>${p && p.exige_vencimento ? `<input id="fx-${i}-venc" type="date" value="${esc(l.primeiro_vencimento || '')}" data-acao-change="rsLinhaMudou" aria-label="Primeiro vencimento">` : '<span class="dp-mudo">no repasse</span>'}</td>
             <td class="n"><b>${brl(tot)}</b>${!fecha ? `<button class="dp-link" data-acao="rsCompletar" data-i="${i}" title="Ajusta esta linha para o fluxo fechar">ajustar</button>` : ''}</td>
@@ -1315,7 +1652,8 @@ async function confirmarReserva() {
     })),
     p_versao_esperada: rs.versao,
     p_corretor: rs.corretor_id || null,
-    p_observacao: rs.observacao || null
+    p_observacao: rs.observacao || null,
+    p_pre_analise: rs.pa_id || null
   });
   if (!r.ok) {
     btn.disabled = false;
@@ -1326,13 +1664,22 @@ async function confirmarReserva() {
     return;
   }
   rs.feito = r;
+  // A pré-análise foi usada: a faixa sai e o endereço deixa de apontar para ela.
+  if (rs.pa_id && G.pa && G.pa.id === rs.pa_id) sairDaPA();
+  if (G.paLista) G.paLista = G.paLista.filter(x => x.id !== rs.pa_id);
   $('dp-rs-erro').hidden = true;
   document.querySelectorAll('#dp-passos li').forEach(li => (li.className = 'feito'));
   $('dp-rs-corpo').innerHTML = `<div class="dp-sucesso">
       <div class="dp-sucesso-ic">✓</div>
       <h3>Unidade ${esc(rs.un.codigo)} reservada</h3>
-      <p>Reserva <b>${esc(r.codigo || '')}</b>${r.expira_em ? ` · ${esc(prazo(r.expira_em))}` : ''}.
-      ${r.comercial_id ? 'A venda já foi aberta com o cliente e o fluxo como proposta.' : ''}</p>
+      <p>Reserva <b>${esc(r.codigo || '')}</b>${r.expira_em ? ` · ${esc(prazo(r.expira_em))}` : ''}.</p>
+      <p>${
+        r.comercial_id
+          ? 'A venda já está na esteira de Vendas, com o cliente e o fluxo como proposta.'
+          : G.temComercial === false
+            ? 'Esta conta não tem a Venda: a reserva segura a unidade até virar venda por fora.'
+            : ''
+      }</p>
     </div>`;
   $('dp-rs-pe').innerHTML = `<span></span><div class="dp-pe-d">
       ${r.comercial_id ? `<button class="dp-btn dp-btn-g" data-acao="rsAbrirVenda" data-id="${esc(r.comercial_id)}">Abrir a venda</button>` : ''}
@@ -1372,7 +1719,7 @@ function renderReservas() {
     return;
   }
   $('dp-reservas').innerHTML = `<table class="dp-tabela">
-    <thead><tr><th>Reserva</th><th>Unidade</th><th>Cliente</th><th>Corretor</th><th class="n">Valor</th><th>Situação</th><th>Prazo</th></tr></thead>
+    <thead><tr><th>Reserva</th><th>Unidade</th><th>Cliente</th><th>Corretor</th><th class="n">Valor</th><th>Situação</th><th>Prazo</th><th>Venda</th></tr></thead>
     <tbody>${lista
       .map(r => {
         const t = (r.cliente && r.cliente.titular) || {};
@@ -1389,6 +1736,15 @@ function renderReservas() {
           <td><span class="dp-rs-st dp-rs-${esc(r.status)}">${esc(/** @type {any} */ (STATUS_RESERVA)[r.status] || r.status)}</span>
             ${r.motivo ? `<small>${esc(r.motivo)}</small>` : ''}</td>
           <td class="${urgente ? 'dp-urgente' : ''}">${esc(vence || '—')}</td>
+          <td>${
+            r.comercial_id
+              ? `<button class="dp-link" data-acao="rsAbrirVenda" data-id="${esc(r.comercial_id)}">abrir →</button>`
+              : podeAbrirVenda(r)
+                ? `<button class="dp-link dp-link-a" data-acao="abrirVendaDaReserva" data-id="${esc(r.id)}">criar a venda</button>`
+                : r.status === 'ATIVA' && G.temComercial === true
+                  ? '<span class="dp-mudo">sem venda</span>'
+                  : '—'
+          }</td>
         </tr>`;
       })
       .join('')}</tbody></table>`;

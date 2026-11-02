@@ -82,6 +82,25 @@ acoes({
   gerarFichaAprovacao: () => gerarFichaAprovacao(),
   imobiliariaDoPasso1: () => imobiliariaDoPasso1(),
   iniciarVenda: () => iniciarVenda(),
+  reservarUnidadeDaPA: () => reservarUnidadeDaPA(),
+  empreendimentoDoPasso1: () => empreendimentoDoPasso1(),
+  blocoDoPasso1: () => blocoDoPasso1(),
+  unidadeDoPasso1: () => unidadeDoPasso1(),
+  emprDoDossie: () => emprDoDossie(),
+  estadoCivilDoPasso2: () => {
+    guardarPasso();
+    renderPasso();
+  },
+  addSegundoAssociado: () => {
+    guardarPasso();
+    G.rascunho.segundo = { parentesco: 'Pai', documento: '', nome: '', nascimento: '', renda: '' };
+    renderPasso();
+  },
+  remSegundoAssociado: () => {
+    guardarPasso();
+    G.rascunho.segundo = null;
+    renderPasso();
+  },
   marcarChecklistOperacional: el => marcarChecklistOperacional(el.dataset.itemId, el.checked),
   mascaraMoeda: el => mascaraMoeda(el),
   moedaDaCondicao: el => {
@@ -341,6 +360,11 @@ async function init() {
       '<button class="btn-hdr btn-hdr-primary" id="btn-nova" data-acao="abrirAssistente">+ Nova Pré-análise</button>'
   });
   G.temComercial = temModulo && temModulo.COMERCIAL === true;
+  // Perfil construtora: com a Disposição, a unidade sai da ficha (bloco e
+  // unidade em vez de texto), a avaliação sai do mapa de preço e o "Iniciar
+  // venda" vira "Reservar unidade", que abre o mapa com o cliente preenchido.
+  G.temDisposicao = temModulo && temModulo.DISPOSICAO === true;
+  G.regras = await carregarRegrasPA();
   if (!G.temComercial) {
     const abaCo = document.querySelector('#dos-tabs [data-dt="comercial"]');
     if (abaCo) abaCo.remove();
@@ -366,6 +390,29 @@ async function init() {
   // quando chegava pelo Lead.
   abrirDoLeadSeVeio();
 }
+
+// As regras da pré-análise do cliente (Configurações). Sem resposta, nada é
+// exigido pela tela; quem exige de verdade é o banco (zzz_a1_pa_regras).
+async function carregarRegrasPA() {
+  try {
+    const r = await fetch(A1.rpc('a1_pa_regras_vigentes'), {
+      method: 'POST',
+      headers: A1.headers(),
+      body: '{}'
+    });
+    if (!r.ok) return {};
+    const j = await r.json();
+    return j && typeof j === 'object' ? j : {};
+  } catch {
+    return {};
+  }
+}
+const regra = (/** @type {string} */ k) => !!(G.regras && G.regras[k] === true);
+// O passo 2 com cônjuge e segundo associado é do perfil construtora (ou de
+// quem ligou a regra do cônjuge). Os demais clientes seguem com a tela de antes.
+const comConjugeNoCadastro = () => G.temDisposicao || regra('exige_conjuge');
+const ehCasado = (/** @type {string} */ ec) => ec === 'Casado(a)' || ec === 'União estável';
+const PARENTESCOS_PA = ['Pai', 'Mãe', 'Filho(a)', 'Irmão(ã)', 'Avô/Avó', 'Tio(a)', 'Outro'];
 
 async function carregar() {
   const h = { headers: A1.headers() };
@@ -1042,6 +1089,10 @@ function abrirAssistente() {
     imobiliaria_id: mandaNaCarteira() ? '' : minhaImobiliaria(),
     corretor_id: '',
     titular: { documento: '', nome: '', nascimento: '', telefone: '', email: '', estado_civil: '' },
+    unidade_id: '',
+    bloco: '',
+    conjuge: { documento: '', nome: '', nascimento: '', telefone: '', renda: '' },
+    segundo: null,
     pessoaExistente: null,
     renda_declarada: '',
     fonte_renda: '',
@@ -1071,6 +1122,7 @@ function aproveitarLead() {
   t.documento = q.get('cpf') || '';
   G.rascunho.lead_id = q.get('lead');
   G.rascunho.unidade = q.get('unidade') || '';
+  G.rascunho.unidadeDoLead = G.rascunho.unidade;
   G.rascunho.corretor_id = q.get('corretor') || G.rascunho.corretor_id || null;
   G.rascunho.imobiliaria_id = q.get('imobiliaria') || G.rascunho.imobiliaria_id || null;
   // O assistente comeca no passo 2 quando ja ha nome: o passo 1 e o negocio, e
@@ -1110,10 +1162,10 @@ function passo1() {
   const r = G.rascunho;
   return `
     <div class="aviso i">A unidade aqui é <strong>referência de interesse</strong> e não reserva estoque.
-    A reserva acontece na Venda, depois da aprovação.</div>
+    ${G.temDisposicao ? 'A reserva acontece depois da aprovação, pelo botão <strong>Reservar unidade</strong>.' : 'A reserva acontece na Venda, depois da aprovação.'}</div>
     <div class="fgrid">
       <div class="fg full"><label>Empreendimento *</label>
-        <select id="w-empr">${
+        <select id="w-empr" data-acao-change="empreendimentoDoPasso1">${
           G.empreendimentos.length
             ? '<option value="">Selecione…</option>' +
               G.empreendimentos
@@ -1124,14 +1176,156 @@ function passo1() {
                 .join('')
             : '<option value="">Nenhum empreendimento cadastrado</option>'
         }</select></div>
-      <div class="fg"><label>Unidade de interesse</label>
-        <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A"></div>
-      <div class="fg"><label>Valor de avaliação (R$)</label>
-        <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal" data-acao-input="mascaraMoeda"></div>
+      ${camposUnidade(r)}
       ${campoImobiliaria(r)}
       ${campoCorretor(r)}
       ${camposDeGenteNoAssistente(r)}
     </div>`;
+}
+
+// ─── A unidade de interesse ──────────────────────────────────────────────────
+// Sem a Disposição, é o texto de sempre. Com ela, bloco e unidade saem das
+// fichas do empreendimento, e o valor de avaliação vem do mapa de preço que
+// vale (editável: a avaliação do banco pode chegar diferente).
+G.unidadesCad = {};
+/** @type {Record<string, Promise<void>>} */
+const unidadesCadPedido = {};
+// Uma ida ao banco por empreendimento: quem pede de novo enquanto ela corre
+// recebe a mesma promessa (e não um "pronto" falso que redesenharia a tela
+// ainda carregando).
+function carregarUnidadesCad(/** @type {string} */ empId) {
+  if (!empId || !G.temDisposicao) return Promise.resolve();
+  if (!unidadesCadPedido[empId]) unidadesCadPedido[empId] = buscarUnidadesCad(empId);
+  return unidadesCadPedido[empId];
+}
+async function buscarUnidadesCad(/** @type {string} */ empId) {
+  G.unidadesCad[empId] = 'carregando';
+  try {
+    const r = await fetch(A1.rpc('a1_pa_unidades_para_cadastro'), {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_empreendimento: empId })
+    });
+    const j = r.ok ? await r.json() : [];
+    G.unidadesCad[empId] = Array.isArray(j) ? j : [];
+  } catch {
+    G.unidadesCad[empId] = [];
+  }
+}
+// A unidade que veio do lead em texto vira a ficha de mesmo código.
+function casarUnidadeDoLead(/** @type {string} */ empId) {
+  const ra = G.rascunho;
+  if (
+    ra &&
+    ra.empreendimento_id === empId &&
+    !ra.unidade_id &&
+    ra.unidade &&
+    Array.isArray(G.unidadesCad[empId])
+  ) {
+    const u = G.unidadesCad[empId].find(
+      (/** @type {any} */ x) => String(x.codigo).toLowerCase() === String(ra.unidade).trim().toLowerCase()
+    );
+    if (u) {
+      ra.unidade_id = u.id;
+      ra.bloco = u.bloco || '';
+      aplicarAvaliacaoDaUnidade(u);
+    }
+  }
+}
+function unidadeCad(/** @type {string} */ id) {
+  const l = G.rascunho && G.unidadesCad[G.rascunho.empreendimento_id];
+  return Array.isArray(l) ? l.find((/** @type {any} */ u) => u.id === id) || null : null;
+}
+const moedaBR = (/** @type {number} */ n) =>
+  Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function aplicarAvaliacaoDaUnidade(/** @type {any} */ u) {
+  if (u && Number(u.valor_avaliacao) > 0) G.rascunho.valor_avaliacao_inicial = moedaBR(u.valor_avaliacao);
+}
+const ROT_SITUACAO_UN = {
+  disponivel: 'disponível',
+  reservado: 'reservada',
+  vendido: 'vendida',
+  bloqueado: 'bloqueada'
+};
+
+function camposUnidade(/** @type {any} */ r) {
+  const reqU = regra('exige_unidade') ? ' *' : '';
+  const reqA = regra('exige_valor_avaliacao') ? ' *' : '';
+  const lista = G.temDisposicao ? G.unidadesCad[r.empreendimento_id] : null;
+  const selUn = r.unidade_id ? unidadeCad(r.unidade_id) : null;
+  const campoAval = `<div class="fg"><label>Valor de avaliação (R$)${reqA}</label>
+    <input id="w-aval" value="${esc(r.valor_avaliacao_inicial)}" placeholder="ex.: 250.000,00" inputmode="decimal" data-acao-input="mascaraMoeda">
+    ${selUn && Number(selUn.valor_avaliacao) > 0 ? '<div class="sub" style="margin-top:.25rem">do mapa de preço da unidade</div>' : ''}</div>`;
+  const texto = (/** @type {string} */ nota) => `<div class="fg"><label>Unidade de interesse${reqU}</label>
+      <input id="w-unidade" value="${esc(r.unidade)}" placeholder="ex.: 101 — Torre A">
+      ${nota ? `<div class="sub" style="margin-top:.25rem">${nota}</div>` : ''}</div>`;
+  if (!G.temDisposicao) return texto('') + campoAval;
+  if (!r.empreendimento_id)
+    return `<div class="fg"><label>Bloco / quadra${reqU}</label><select disabled><option>escolha o empreendimento</option></select></div>
+      <div class="fg"><label>Unidade${reqU}</label><select disabled><option>—</option></select></div>${campoAval}`;
+  if (!Array.isArray(lista))
+    return `<div class="fg"><label>Bloco / quadra${reqU}</label><select disabled><option>carregando unidades…</option></select></div>
+      <div class="fg"><label>Unidade${reqU}</label><select disabled><option>—</option></select></div>${campoAval}`;
+  if (!lista.length)
+    return texto('este empreendimento ainda não tem fichas de unidade na Disposição') + campoAval;
+  const natural = (/** @type {any} */ a, /** @type {any} */ b) =>
+    String(a ?? '').localeCompare(String(b ?? ''), 'pt-BR', { numeric: true });
+  const blocos = [...new Set(lista.map((/** @type {any} */ u) => u.bloco || ''))].sort(natural);
+  const soUmBloco = blocos.length === 1;
+  const bloco = soUmBloco ? blocos[0] : r.bloco;
+  const doBloco = lista.filter((/** @type {any} */ u) => (u.bloco || '') === bloco);
+  return `${
+    soUmBloco
+      ? ''
+      : `<div class="fg"><label>Bloco / quadra${reqU}</label>
+        <select id="w-bloco" data-acao-change="blocoDoPasso1"><option value="">Escolha…</option>${blocos
+          .map(
+            b =>
+              `<option value="${esc(b)}"${b === bloco ? ' selected' : ''}>${esc(b || 'Sem bloco')}</option>`
+          )
+          .join('')}</select></div>`
+  }
+    <div class="fg"><label>Unidade${reqU}</label>
+      <select id="w-unidade-id" data-acao-change="unidadeDoPasso1" ${!soUmBloco && !bloco ? 'disabled' : ''}>
+        <option value="">${!soUmBloco && !bloco ? 'escolha o bloco' : 'Escolha…'}</option>${doBloco
+          .map((/** @type {any} */ u) => {
+            const livre = u.status === 'disponivel' || u.id === r.unidade_id;
+            const st =
+              u.status !== 'disponivel'
+                ? ' · ' + /** @type {any} */ (ROT_SITUACAO_UN[u.status] || u.status)
+                : '';
+            const preco = Number(u.valor) > 0 ? ' · R$ ' + moedaBR(u.valor) : '';
+            return `<option value="${esc(u.id)}"${u.id === r.unidade_id ? ' selected' : ''}${livre ? '' : ' disabled'}>${esc(u.codigo)}${u.tipologia ? ' · ' + esc(u.tipologia) : ''}${esc(livre ? preco : '')}${esc(st)}</option>`;
+          })
+          .join('')}</select>
+      ${r.unidadeDoLead && !r.unidade_id ? `<div class="sub" style="margin-top:.25rem">O lead indicou “${esc(r.unidadeDoLead)}”: escolha a ficha correspondente.</div>` : ''}</div>
+    ${campoAval}`;
+}
+async function empreendimentoDoPasso1() {
+  guardarPasso();
+  const r = G.rascunho;
+  r.unidade_id = '';
+  r.bloco = '';
+  if (G.temDisposicao) {
+    // O texto que veio do lead fica guardado para casar com a ficha; o que a
+    // pessoa digitou para outro empreendimento, não.
+    r.unidade = r.lead_id ? r.unidadeDoLead || '' : '';
+    renderPasso();
+    await carregarUnidadesCad(r.empreendimento_id);
+    casarUnidadeDoLead(r.empreendimento_id);
+    if (G.passo === 1 && G.rascunho === r) renderPasso();
+  }
+}
+function blocoDoPasso1() {
+  guardarPasso();
+  G.rascunho.unidade_id = '';
+  G.rascunho.unidade = '';
+  renderPasso();
+}
+function unidadeDoPasso1() {
+  guardarPasso();
+  aplicarAvaliacaoDaUnidade(unidadeCad(G.rascunho.unidade_id));
+  renderPasso();
 }
 
 // Imobiliária: o gestor escolhe, o corretor não. O vínculo dele está no
@@ -1261,11 +1455,53 @@ function passo2() {
       <div class="fg"><label>Nome completo *</label><input id="w-nome" value="${esc(t.nome)}"></div>
       <div class="fg"><label>Nascimento</label><input id="w-nasc" type="date" value="${esc(t.nascimento)}"></div>
       <div class="fg"><label>Estado civil</label>
-        <select id="w-ec">${['', 'Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)']
+        <select id="w-ec"${comConjugeNoCadastro() ? ' data-acao-change="estadoCivilDoPasso2"' : ''}>${[
+          '',
+          'Solteiro(a)',
+          'Casado(a)',
+          'União estável',
+          'Divorciado(a)',
+          'Viúvo(a)'
+        ]
           .map(o => `<option ${o === t.estado_civil ? 'selected' : ''}>${esc(o)}</option>`)
           .join('')}</select></div>
       <div class="fg"><label>Telefone</label><input id="w-tel" value="${esc(t.telefone)}"></div>
       <div class="fg"><label>E-mail</label><input id="w-mail" type="email" value="${esc(t.email)}"></div>
+    </div>
+    ${comConjugeNoCadastro() ? blocoSegundaPessoa() : ''}`;
+}
+
+// Casado(a) ou em união estável: o cônjuge abre logo abaixo, obrigatório quando
+// a regra pede (padrão do perfil construtora). Fora disso, o segundo associado
+// é opcional. Os dois entram na pré-análise como ASSOCIADO, com o parentesco.
+function blocoSegundaPessoa() {
+  const r = G.rascunho;
+  const casado = ehCasado(r.titular.estado_civil);
+  if (casado) {
+    const c = r.conjuge;
+    const o = regra('exige_conjuge') ? ' *' : '';
+    return `<div class="sec-title">${r.titular.estado_civil === 'União estável' ? 'Companheiro(a)' : 'Cônjuge'}${regra('exige_conjuge') ? '' : ' (opcional)'}</div>
+      <div class="fgrid">
+        <div class="fg"><label>CPF${o}</label><input id="w-cj-doc" value="${esc(c.documento)}" placeholder="000.000.000-00" inputmode="numeric"></div>
+        <div class="fg"><label>Nome completo${o}</label><input id="w-cj-nome" value="${esc(c.nome)}"></div>
+        <div class="fg"><label>Nascimento</label><input id="w-cj-nasc" type="date" value="${esc(c.nascimento)}"></div>
+        <div class="fg"><label>Telefone</label><input id="w-cj-tel" value="${esc(c.telefone)}"></div>
+        <div class="fg"><label>Renda (R$)</label><input id="w-cj-renda" value="${esc(c.renda)}" inputmode="decimal" data-acao-input="mascaraMoeda" placeholder="0,00"></div>
+      </div>`;
+  }
+  const sg = r.segundo;
+  if (!sg)
+    return `<div class="sec-title">Segundo associado</div>
+      <button class="btn btn-ghost btn-sm" type="button" data-acao="addSegundoAssociado">+ Adicionar segundo associado</button>
+      <div class="sub" style="margin-top:.35rem">Opcional: quem compõe renda com o titular (pai, mãe, irmão…).</div>`;
+  return `<div class="sec-title com-acao">Segundo associado
+      <button class="btn btn-danger btn-sm" type="button" data-acao="remSegundoAssociado">Remover</button></div>
+    <div class="fgrid">
+      <div class="fg"><label>Parentesco</label><select id="w-sg-par">${PARENTESCOS_PA.map(x => `<option${x === sg.parentesco ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+      <div class="fg"><label>CPF *</label><input id="w-sg-doc" value="${esc(sg.documento)}" placeholder="000.000.000-00" inputmode="numeric"></div>
+      <div class="fg"><label>Nome completo *</label><input id="w-sg-nome" value="${esc(sg.nome)}"></div>
+      <div class="fg"><label>Nascimento</label><input id="w-sg-nasc" type="date" value="${esc(sg.nascimento)}"></div>
+      <div class="fg"><label>Renda (R$)</label><input id="w-sg-renda" value="${esc(sg.renda)}" inputmode="decimal" data-acao-input="mascaraMoeda" placeholder="0,00"></div>
     </div>`;
 }
 
@@ -1332,7 +1568,19 @@ function guardarPasso() {
   const r = G.rascunho;
   if (G.passo === 1) {
     if (v('w-empr') !== undefined) r.empreendimento_id = v('w-empr');
-    if (v('w-unidade') !== undefined) r.unidade = v('w-unidade');
+    if (v('w-bloco') !== undefined) r.bloco = v('w-bloco');
+    // Com a lista de fichas na tela, o texto é sempre o código da ficha (ou
+    // nada): um texto que ninguém vê não pode ir para o banco.
+    const su = /** @type {HTMLSelectElement|null} */ (document.getElementById('w-unidade-id'));
+    if (su) {
+      if (!su.disabled) r.unidade_id = su.value;
+      const u = unidadeCad(r.unidade_id);
+      r.unidade = u ? u.codigo : '';
+    }
+    if (v('w-unidade') !== undefined) {
+      r.unidade = v('w-unidade');
+      r.unidade_id = '';
+    }
     if (v('w-aval') !== undefined) r.valor_avaliacao_inicial = v('w-aval');
     if (v('w-imob') !== undefined) r.imobiliaria_id = v('w-imob');
     if (v('w-corretor') !== undefined) r.corretor_id = v('w-corretor');
@@ -1354,6 +1602,22 @@ function guardarPasso() {
     if (v('w-ec') !== undefined) t.estado_civil = v('w-ec');
     if (v('w-tel') !== undefined) t.telefone = v('w-tel');
     if (v('w-mail') !== undefined) t.email = v('w-mail');
+    if (v('w-cj-nome') !== undefined)
+      r.conjuge = {
+        documento: v('w-cj-doc') || '',
+        nome: v('w-cj-nome') || '',
+        nascimento: v('w-cj-nasc') || '',
+        telefone: v('w-cj-tel') || '',
+        renda: v('w-cj-renda') || ''
+      };
+    if (r.segundo && v('w-sg-nome') !== undefined)
+      r.segundo = {
+        parentesco: v('w-sg-par') || 'Outro',
+        documento: v('w-sg-doc') || '',
+        nome: v('w-sg-nome') || '',
+        nascimento: v('w-sg-nasc') || '',
+        renda: v('w-sg-renda') || ''
+      };
   }
   if (G.passo === 3) {
     if (v('w-renda') !== undefined) r.renda_declarada = v('w-renda');
@@ -1421,6 +1685,11 @@ async function passoSeguinte() {
       toast('Escolha o empreendimento.', 'error');
       return;
     }
+    const falta = faltaPelaRegra(r);
+    if (falta) {
+      toast(falta, 'error');
+      return;
+    }
     G.passo = 2;
     renderPasso();
     return;
@@ -1443,11 +1712,61 @@ async function passoSeguinte() {
       toast('Informe o CPF ou CNPJ do titular.', 'error');
       return;
     }
+    const faltaPessoa = comConjugeNoCadastro() ? faltaNaSegundaPessoa(r, doc) : '';
+    if (faltaPessoa) {
+      toast(faltaPessoa, 'error');
+      return;
+    }
     G.passo = 3;
     renderPasso();
     return;
   }
   await criarPreAnalise();
+}
+
+// As regras da pré-análise (Configurações), conferidas antes de ir ao banco,
+// que confere de novo. Analista, empresa e correspondente não são cobrados
+// quando o Ciclo de Distribuição decide: é ele quem preenche.
+function faltaPelaRegra(/** @type {any} */ r) {
+  if (regra('exige_unidade') && !r.unidade_id && !String(r.unidade || '').trim())
+    return 'Escolha a unidade de interesse.';
+  if (regra('exige_valor_avaliacao') && !(paraCentavos(r.valor_avaliacao_inicial) > 0))
+    return 'Informe o valor de avaliação.';
+  if (regra('exige_imobiliaria') && !r.imobiliaria_id && mandaNaCarteira()) return 'Escolha a imobiliária.';
+  if (regra('exige_corretor') && mandaNaCarteira() && !r.corretor_id) return 'Escolha o corretor.';
+  if (!roteamentoDeAnalistasAtivo()) {
+    const aberto = (/** @type {string} */ id) => {
+      const el = document.getElementById(id);
+      return !!el && !el.disabled;
+    };
+    if (regra('exige_empresa') && aberto('w-empresa') && !r.empresa_id)
+      return 'Escolha a empresa correspondente.';
+    if (regra('exige_correspondente') && aberto('w-correspondente') && !r.correspondente_id)
+      return 'Escolha o usuário correspondente.';
+    if (regra('exige_analista') && aberto('w-analista') && !r.analista_id) return 'Escolha o analista.';
+  }
+  return '';
+}
+function faltaNaSegundaPessoa(/** @type {any} */ r, /** @type {string} */ docTitular) {
+  if (ehCasado(r.titular.estado_civil)) {
+    const c = r.conjuge;
+    const dc = soDigitos(c.documento);
+    const algo = c.nome.trim() || dc;
+    if (regra('exige_conjuge') || algo) {
+      if (!c.nome.trim()) return 'Informe o nome do cônjuge.';
+      if (dc.length !== 11 || !cpfValido(dc)) return 'O CPF do cônjuge não confere.';
+      if (dc === docTitular) return 'O CPF do cônjuge é o mesmo do titular.';
+    }
+    return '';
+  }
+  const sg = r.segundo;
+  if (sg) {
+    const ds = soDigitos(sg.documento);
+    if (!sg.nome.trim()) return 'Informe o nome do segundo associado, ou remova-o.';
+    if (ds.length !== 11 || !cpfValido(ds)) return 'O CPF do segundo associado não confere.';
+    if (ds === docTitular) return 'O CPF do segundo associado é o mesmo do titular.';
+  }
+  return '';
 }
 
 async function criarPreAnalise() {
@@ -1493,6 +1812,9 @@ async function criarPreAnalise() {
       imobiliaria_id: r.imobiliaria_id || null,
       valor_avaliacao_inicial: r.valor_avaliacao_inicial ? paraCentavos(r.valor_avaliacao_inicial) : null
     };
+    // A ficha da unidade (perfil construtora). O banco confere que ela é do
+    // empreendimento e grava o código dela no texto.
+    if (G.temDisposicao && r.unidade_id) corpoPa.unidade_id = r.unidade_id;
     if (mandaNaCarteira()) corpoPa.corretor_id = r.corretor_id || null;
     // Os três campos de gente entram só se o assistente os ofereceu — o
     // rascunho só tem a chave quando o campo existia e estava habilitado.
@@ -1523,6 +1845,56 @@ async function criarPreAnalise() {
         fonte_renda: r.fonte_renda || null
       }
     ];
+    // Cônjuge (casado ou união estável) ou segundo associado: ASSOCIADO com o
+    // parentesco. A pessoa é reaproveitada pelo CPF quando a duplicidade está
+    // desligada, como nos associados.
+    const segunda = comConjugeNoCadastro()
+      ? ehCasado(r.titular.estado_civil)
+        ? r.conjuge && r.conjuge.nome.trim()
+          ? { ...r.conjuge, parentesco: 'Cônjuge/companheiro(a)' }
+          : null
+        : r.segundo && r.segundo.nome.trim()
+          ? r.segundo
+          : null
+      : null;
+    if (segunda) {
+      const docS = soDigitos(segunda.documento);
+      let idS = null;
+      if (docS && !a1GeralPermite(G.geral, 'permitir_cpf_duplicado')) {
+        const ex = await fetch(`${A1.rest('a1_pa_pessoas')}?documento=eq.${docS}&select=id`, {
+          headers: A1.headers()
+        })
+          .then(x => x.json())
+          .catch(() => []);
+        idS = Array.isArray(ex) && ex[0] ? ex[0].id : null;
+      }
+      if (!idS) {
+        const criada = await fetch(A1.rest('a1_pa_pessoas'), {
+          method: 'POST',
+          headers: A1.returnHeaders(),
+          body: JSON.stringify({
+            tenant_id: tid,
+            tipo: 'PF',
+            documento: docS || null,
+            nome: segunda.nome.trim(),
+            nascimento: segunda.nascimento || null,
+            telefone: segunda.telefone || null
+          })
+        })
+          .then(x => (x.ok ? x.json() : []))
+          .catch(() => []);
+        idS = (criada[0] || {}).id;
+      }
+      if (idS)
+        participantes.push({
+          tenant_id: tid,
+          pre_analise_id: pa.id,
+          pessoa_id: idS,
+          papel: 'ASSOCIADO',
+          parentesco: segunda.parentesco || null,
+          renda_declarada: paraCentavos(segunda.renda)
+        });
+    }
     for (const a of r.associados) {
       if (!a.nome.trim()) continue;
       const docA = soDigitos(a.documento);
@@ -1554,6 +1926,12 @@ async function criarPreAnalise() {
           renda_declarada: paraCentavos(a.renda)
         });
     }
+    // Inserção em lote pede as mesmas chaves em todas as linhas: com cônjuge
+    // ou segundo associado, todas levam o parentesco (nulo nas outras).
+    if (participantes.some(x => 'parentesco' in x))
+      participantes.forEach(x => {
+        if (!('parentesco' in x)) /** @type {any} */ (x).parentesco = null;
+      });
     const resPart = await fetch(A1.rest('a1_pa_participantes'), {
       method: 'POST',
       headers: A1.headers(),
@@ -1765,14 +2143,13 @@ function dosDados() {
   return `
     <div class="fgrid">
       <div class="fg"><label>Empreendimento</label>
-        <select id="d-empr" ${podeEditar ? '' : 'disabled'}>${G.empreendimentos
+        <select id="d-empr" ${podeEditar ? '' : 'disabled'}${G.temDisposicao ? ' data-acao-change="emprDoDossie"' : ''}>${G.empreendimentos
           .map(
             e =>
               `<option value="${esc(e.id)}" ${e.id === p.empreendimento_id ? 'selected' : ''}>${esc(e.name)}</option>`
           )
           .join('')}</select></div>
-      <div class="fg"><label>Unidade de interesse</label>
-        <input id="d-unidade" value="${esc(p.unidade || '')}" ${podeEditar ? '' : 'disabled'}></div>
+      <div class="fg" id="d-unidade-wrap">${campoUnidadeDoDossie(p, p.empreendimento_id, podeEditar)}</div>
       <div class="fg"><label>Imobiliária</label>
         <select id="d-imob" ${podeEditar && mandaNaCarteira() ? '' : 'disabled'}><option value="">—</option>${G.imobiliarias
           .map(
@@ -1870,14 +2247,67 @@ function campoAnalista(p, podeEditar) {
     ${roteia ? `<div class="sub" style="margin-top:.25rem">Responsável definido automaticamente pelo Ciclo de Distribuição.</div>` : ''}</div>`;
 }
 
+// A unidade no dossiê. Com a Disposição e fichas no empreendimento, é a mesma
+// escolha do cadastro (a ficha); sem isso, o texto de sempre. Trocar o
+// empreendimento redesenha só este campo, sem perder o resto do que foi editado.
+function campoUnidadeDoDossie(
+  /** @type {any} */ p,
+  /** @type {string} */ empId,
+  /** @type {boolean} */ podeEditar
+) {
+  const rot = '<label>Unidade de interesse</label>';
+  const texto = `${rot}<input id="d-unidade" value="${esc(empId === p.empreendimento_id ? p.unidade || '' : '')}" ${podeEditar ? '' : 'disabled'}>`;
+  if (!G.temDisposicao || !('unidade_id' in p)) return texto;
+  const lista = G.unidadesCad[empId];
+  if (lista === undefined || lista === 'carregando') {
+    carregarUnidadesCad(empId).then(() => {
+      const alvo = document.getElementById('d-unidade-wrap');
+      const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('d-empr'));
+      if (alvo && G.atual === p && sel && sel.value === empId)
+        alvo.innerHTML = campoUnidadeDoDossie(p, empId, podeEditar);
+    });
+    return `${rot}<select disabled><option>carregando unidades…</option></select>`;
+  }
+  if (!Array.isArray(lista) || !lista.length) return texto;
+  const atual = empId === p.empreendimento_id ? p.unidade_id : null;
+  return `${rot}<select id="d-unidade-id" ${podeEditar ? '' : 'disabled'}><option value="">— sem unidade —</option>${lista
+    .map((/** @type {any} */ u) => {
+      const livre = u.status === 'disponivel' || u.id === atual;
+      const st =
+        u.status !== 'disponivel' ? ' · ' + /** @type {any} */ (ROT_SITUACAO_UN[u.status] || u.status) : '';
+      return `<option value="${esc(u.id)}"${u.id === atual ? ' selected' : ''}${livre ? '' : ' disabled'}>${esc(u.codigo)}${u.tipologia ? ' · ' + esc(u.tipologia) : ''}${esc(st)}</option>`;
+    })
+    .join('')}</select>`;
+}
+function emprDoDossie() {
+  const p = G.atual;
+  const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('d-empr'));
+  const alvo = document.getElementById('d-unidade-wrap');
+  if (!p || !sel || !alvo) return;
+  alvo.innerHTML = campoUnidadeDoDossie(p, sel.value, !sel.disabled);
+}
+
 async function salvarDados() {
   const p = G.atual;
   const corpo = {
     empreendimento_id: document.getElementById('d-empr').value,
-    unidade: document.getElementById('d-unidade').value || null,
     imobiliaria_id: document.getElementById('d-imob').value || null,
     vence_em: document.getElementById('d-vence').value || null
   };
+  // A unidade: a ficha (o banco grava o código dela no texto) ou o texto. Com
+  // texto livre, o vínculo com a ficha antiga sai: as duas não podem divergir.
+  const selUn = /** @type {HTMLSelectElement|null} */ (document.getElementById('d-unidade-id'));
+  const txtUn = /** @type {HTMLInputElement|null} */ (document.getElementById('d-unidade'));
+  if (selUn && !selUn.disabled) {
+    corpo.unidade_id = selUn.value || null;
+    const u = selUn.value
+      ? (G.unidadesCad[corpo.empreendimento_id] || []).find((/** @type {any} */ x) => x.id === selUn.value)
+      : null;
+    corpo.unidade = u ? u.codigo : null;
+  } else if (txtUn && !txtUn.disabled) {
+    corpo.unidade = txtUn.value || null;
+    if ('unidade_id' in p && p.unidade_id) corpo.unidade_id = null;
+  }
   // Só vai no corpo quando o campo existe — mandar corretor_id sem poder
   // trocá-lo derrubaria o PATCH inteiro em 'redistribuir_carteira_e_do_gestor'.
   const selCorretor = document.getElementById('d-corretor');
@@ -1918,7 +2348,7 @@ function dosPessoas() {
       const pe = G.pessoas[pt.pessoa_id] || {};
       return `<div class="linha">
         <div><div class="nm">${esc(pe.nome || 'Sem nome')}
-          <span class="pill ${pt.papel === 'TITULAR' ? 'nt' : 'wt'}">${esc(pt.papel)}</span></div>
+          <span class="pill ${pt.papel === 'TITULAR' ? 'nt' : 'wt'}">${esc(pt.parentesco || pt.papel)}</span></div>
           <div class="mt">${esc(mascaraDoc(pe.documento || '') || 'sem documento')}
             ${pe.telefone ? ' · ' + esc(pe.telefone) : ''}</div></div>
         <div style="text-align:right">
@@ -2251,7 +2681,7 @@ async function enviarDoc() {
   btn.disabled = true;
   btn.textContent = 'Enviando…';
   try {
-    const limpo = arq.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+    const limpo = arq.name.replace(/[^\w.-]+/g, '_').slice(-80);
     const chave = `${G.user.tenant_id}/pre-analise/${G.atual.id}/${Date.now()}_${limpo}`;
     if (!(await A1.storageUpload('case-documents', chave, arq)))
       throw new Error('Falha no envio do arquivo.');
@@ -2519,7 +2949,8 @@ function montarBotaoVenda() {
   }
   // Sem licença e fora do fim positivo o botão não existe. Não nasce escondido:
   // o que não está no DOM ninguém acha com o inspetor nem com a busca.
-  if (!G.temComercial || !situacaoAbreVenda(p.situacao_id)) {
+  // Com a Disposição (perfil construtora), o caminho é a reserva da unidade.
+  if ((!G.temComercial && !G.temDisposicao) || !situacaoAbreVenda(p.situacao_id)) {
     acoes.innerHTML = '';
     return;
   }
@@ -2538,19 +2969,47 @@ function montarBotaoVenda() {
   // respondeu, o botão continua de pé e quem recusa é a chamada de verdade.
   const barrado = v && v.ok === false;
   acoes.innerHTML =
-    `<button class="btn btn-venda btn-sm" id="btn-iniciar-venda" ${barrado ? 'disabled' : ''}
-             data-acao="iniciarVenda">Iniciar venda</button>` +
+    (G.temDisposicao
+      ? `<button class="btn btn-venda btn-sm" id="btn-reservar-unidade" ${barrado ? 'disabled' : ''}
+             data-acao="reservarUnidadeDaPA" title="Abre o mapa da Disposição com o cliente e o crédito desta pré-análise">Reservar unidade</button>`
+      : `<button class="btn btn-venda btn-sm" id="btn-iniciar-venda" ${barrado ? 'disabled' : ''}
+             data-acao="iniciarVenda">Iniciar venda</button>`) +
     (barrado ? `<span class="recusa">Ainda não dá: ${esc(v.motivo)}.</span>` : '');
 }
+
+// Perfil construtora: a venda nasce da reserva da unidade. O mapa abre no
+// empreendimento da pré-análise, na unidade de interesse, com o cliente e o
+// crédito já no formulário da reserva.
+function reservarUnidadeDaPA() {
+  const p = G.atual;
+  if (!p) return;
+  if (!perm('pa_iniciar_venda')) {
+    toast('Você não tem a permissão "Iniciar venda".', 'error');
+    return;
+  }
+  location.href = `/${encodeURIComponent(G.slug)}/disposicao?pa=${encodeURIComponent(p.id)}`;
+}
+
+// Os códigos de a1_pa_pronta_para_reserva; o resto já vem em frase.
+const MOTIVO_RESERVA_PA = /** @type {Record<string,string>} */ ({
+  pre_analise_nao_encontrada: 'a pré-análise não está visível para você',
+  modulo_pre_analise_desabilitado: 'o módulo Pré-análise está desligado',
+  pre_analise_nao_aprovada: 'a pré-análise não está na etapa de aprovação',
+  pre_analise_ja_tem_venda: 'esta pré-análise já tem venda',
+  pre_analise_ja_tem_reserva: 'esta pré-análise já tem uma reserva ativa'
+});
 
 // O veredito do banco, perguntado uma vez por abertura de dossiê e de novo
 // sempre que algo que ele considera mudar (uma decisão de crédito registrada).
 async function conferirPodeVender() {
   const p = G.atual;
   G.podeVender = null;
-  if (!p || !G.temComercial || G.atualCo || !situacaoAbreVenda(p.situacao_id)) return;
+  if (!p || (!G.temComercial && !G.temDisposicao) || G.atualCo || !situacaoAbreVenda(p.situacao_id)) return;
+  // Com a Disposição a pergunta é se a unidade pode ser reservada por esta
+  // pré-análise: a mesma função que a1_unidade_reservar consulta.
+  const fn = G.temDisposicao ? 'a1_pa_pronta_para_reserva' : 'a1_pa_pode_criar_comercial';
   try {
-    const res = await fetch(A1.rpc('a1_pa_pode_criar_comercial'), {
+    const res = await fetch(A1.rpc(fn), {
       method: 'POST',
       headers: A1.headers(),
       body: JSON.stringify({ p_pre_analise: p.id })
@@ -2559,7 +3018,7 @@ async function conferirPodeVender() {
     const j = await res.json().catch(() => null);
     // A função devolve TEXT: null quando pode, a frase do que falta quando não.
     const motivo = typeof j === 'string' && j.trim() ? j.trim() : null;
-    G.podeVender = motivo ? { ok: false, motivo } : { ok: true };
+    G.podeVender = motivo ? { ok: false, motivo: MOTIVO_RESERVA_PA[motivo] || motivo } : { ok: true };
   } catch {
     /* idem: silêncio vira "não sei", nunca "não pode" */
   }

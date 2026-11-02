@@ -147,26 +147,66 @@ textarea {
 }
 
 .dp-resumo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.65rem 1.4rem;
   background: #fff;
   border: 1px solid var(--sb-linha, #e2e8e5);
-  border-radius: 14px;
-  padding: 0.9rem 1rem 0.85rem;
-  margin-bottom: 0.8rem;
+  border-radius: 18px;
+  padding: 1.05rem 1.2rem 1rem;
+  margin-bottom: 0.9rem;
   box-shadow: var(--sb-sombra);
 }
+.dp-resumo-nome {
+  font-family: var(--sb-display, inherit);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.dp-resumo-sub {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--sb-tinta3, #6b827d);
+}
+.dp-resumo-num {
+  text-align: right;
+}
+.dp-resumo-num b {
+  display: block;
+  font-family: var(--sb-display, inherit);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #264e8c;
+  font-variant-numeric: tabular-nums;
+}
+.dp-resumo-num span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-tinta3, #6b827d);
+}
 .dp-barra {
+  grid-column: 1 / -1;
   display: flex;
   gap: 2px;
-  height: 8px;
+  height: 10px;
   border-radius: 999px;
   overflow: hidden;
   background: var(--sb-linha, #e2e8e5);
-  margin-bottom: 0.75rem;
 }
 .dp-barra i {
   display: block;
 }
+.dp-barra i.hach {
+  background-image: repeating-linear-gradient(135deg, #878f8c 0 3px, #a9b0ad 3px 6px) !important;
+}
 .dp-chips {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
@@ -175,27 +215,30 @@ textarea {
 .dp-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border: 1px solid var(--sb-linha, #e2e8e5);
   background: #fff;
-  border-radius: 10px;
-  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  padding: 0.42rem 0.8rem 0.42rem 0.6rem;
   cursor: pointer;
   font-size: 0.82rem;
   color: var(--sb-tinta2, #47615c);
   transition:
     border-color 0.15s,
-    background 0.15s;
+    background 0.15s,
+    box-shadow 0.15s;
 }
 .dp-chip i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
   background: var(--c);
+  box-shadow: 0 0 0 3px var(--f);
 }
 .dp-chip b {
   color: var(--sb-tinta, #09201d);
   font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 .dp-chip small {
   color: var(--sb-tinta3, #6b827d);
@@ -208,6 +251,7 @@ textarea {
   background: var(--f);
   border-color: var(--c);
   color: var(--t);
+  box-shadow: 0 0 0 3px var(--f);
 }
 .dp-vgv {
   margin-left: auto;
@@ -230,6 +274,51 @@ textarea {
 }
 .dp-vgv b {
   font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A faixa da pré-análise: quem chegou pelo "Reservar unidade" da pré-análise
+   sabe para quem está reservando. */
+.dp-pa-faixa {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #e6f4f1;
+  border: 1px solid rgba(14, 140, 127, 0.35);
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.9rem;
+}
+.dp-pa-faixa.alerta {
+  background: #fdf3e2;
+  border-color: #efd3a3;
+}
+.dp-pa-ic {
+  flex: 0 0 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--sb-mar, #0e8c7f);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: 600 0.74rem/1 var(--sb-mono, monospace);
+}
+.dp-pa-faixa.alerta .dp-pa-ic {
+  background: #c87e12;
+}
+.dp-pa-txt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.dp-pa-txt b {
+  font-size: 0.9rem;
+}
+.dp-pa-txt span {
+  font-size: 0.8rem;
+  color: var(--sb-tinta2, #47615c);
 }
 
 .dp-filtros {
@@ -274,12 +363,14 @@ textarea {
 }
 
 /* ── A planta ──────────────────────────────────────────────────────────── */
-/* Cada bloco tem a largura das colunas dele: um prédio de 4 finais não estica
-   até ocupar a tela, e um de 10 não é espremido para caber numa grade fixa. */
+/* Cada bloco é um prédio: a fachada em petróleo com o nome e a distribuição,
+   os andares de cima para baixo e os finais em colunas. Disponível é clara e
+   convida; vendida é cheia, ocupada; reservada é âmbar com o prazo; bloqueada
+   é hachurada com cadeado. Cor nunca vai sozinha: cada situação tem ícone. */
 .dp-mapa {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.1rem;
   align-items: flex-start;
 }
 .dp-mapa > .dp-vazio,
@@ -289,78 +380,97 @@ textarea {
 .dp-bloco {
   flex: 0 1 auto;
   max-width: 100%;
+  min-width: 0;
   background: #fff;
   border: 1px solid var(--sb-linha, #e2e8e5);
-  border-radius: 16px;
-  padding: 0.95rem 1rem 1rem;
+  border-radius: 18px;
   box-shadow: var(--sb-sombra);
-  min-width: 0;
+  overflow: hidden;
 }
 .dp-bloco-cab {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.85rem;
+  gap: 1.2rem;
+  padding: 0.85rem 1.05rem 0.8rem;
+  background: linear-gradient(135deg, var(--sb-escuro, #07312c), var(--sb-petroleo, #0b5049));
+  color: #fff;
 }
 .dp-bloco-nome {
   font-family: var(--sb-display, inherit);
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   letter-spacing: -0.01em;
 }
 .dp-bloco-sub {
-  font-size: 0.76rem;
-  color: var(--sb-tinta3, #6b827d);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 0.1rem;
 }
 .dp-bloco-sub b {
-  color: var(--sb-mar-texto, #0b7568);
+  color: #8fe3d4;
 }
 .dp-mini {
   display: flex;
   gap: 2px;
-  width: 120px;
-  height: 6px;
+  width: 128px;
+  height: 7px;
   border-radius: 999px;
   overflow: hidden;
-  background: var(--sb-linha, #e2e8e5);
+  background: rgba(255, 255, 255, 0.16);
+}
+.dp-bloco-corpo {
+  padding: 0.95rem 1.05rem 1rem;
+  background: linear-gradient(180deg, #fbfcfb, #f3f6f5);
 }
 .dp-predio {
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding: 2px 2px 4px;
+}
+.dp-teto {
+  height: 6px;
+  margin: 0 0 7px 60px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(90deg, var(--sb-linha-forte, #c9d5d1), var(--sb-linha, #e2e8e5));
 }
 .dp-andar {
   display: grid;
-  grid-template-columns: 52px repeat(var(--cols), 98px);
-  gap: 6px;
-  margin-bottom: 6px;
+  grid-template-columns: 54px repeat(var(--cols), 104px);
+  gap: 7px;
+  margin-bottom: 7px;
 }
 .dp-andar-rot {
   align-self: center;
+  justify-self: end;
   font-family: var(--sb-mono, monospace);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--sb-tinta3, #6b827d);
-  text-align: right;
-  padding-right: 4px;
+  background: #fff;
+  border: 1px solid var(--sb-linha, #e2e8e5);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  white-space: nowrap;
 }
 .dp-chao {
-  height: 4px;
-  margin: 4px 0 0 58px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--sb-linha-forte, #c9d5d1), var(--sb-linha, #e2e8e5));
+  height: 7px;
+  margin: 6px 0 0 60px;
+  border-radius: 2px 2px 6px 6px;
+  background: linear-gradient(90deg, var(--sb-petroleo, #0b5049), var(--sb-mar, #0e8c7f));
+  opacity: 0.35;
 }
 .dp-lotes {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
 }
 .dp-lotes .un {
-  width: 98px;
+  width: 104px;
 }
 .un-vazia {
   border: 1px dashed var(--sb-linha, #e2e8e5);
-  border-radius: 9px;
-  min-height: 62px;
+  border-radius: 11px;
+  min-height: 66px;
+  background: repeating-linear-gradient(135deg, transparent 0 7px, rgba(201, 213, 209, 0.25) 7px 8px);
 }
 
 .un {
@@ -373,54 +483,87 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 2px;
-  min-height: 62px;
-  padding: 0.45rem 0.5rem 0.4rem;
-  border: 1px solid transparent;
-  border-top: 3px solid var(--c);
-  border-radius: 9px;
-  background: var(--f);
+  min-height: 66px;
+  padding: 0.45rem 0.55rem 0.42rem 0.75rem;
+  border: 1px solid var(--sb-linha, #e2e8e5);
+  border-radius: 11px;
+  background: #fff;
   color: var(--t);
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(9, 32, 29, 0.04);
   transition:
-    transform 0.12s,
-    box-shadow 0.12s,
+    transform 0.14s,
+    box-shadow 0.14s,
+    border-color 0.14s,
     opacity 0.2s;
+}
+.un::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--c);
 }
 .un:hover,
 .un:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(9, 32, 29, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(9, 32, 29, 0.14);
   outline: none;
   border-color: var(--c);
+}
+.un.sel {
+  outline: 2px solid var(--sb-noite, #04201d);
+  outline-offset: 2px;
 }
 .un-disponivel {
   --c: #0e8c7f;
   --f: #e6f4f1;
   --t: #0b7568;
+  border-color: rgba(14, 140, 127, 0.32);
+}
+.un-disponivel:hover {
+  background: #f2faf8;
 }
 .un-reservado {
   --c: #c87e12;
   --f: #fdf3e2;
   --t: #9a6008;
+  background: #fdf3e2;
+  border-color: #efd3a3;
 }
 .un-vendido {
-  --c: #2f5fa8;
+  --c: #1f467f;
   --f: #eaf0fa;
-  --t: #264e8c;
+  --t: #fff;
+  background: linear-gradient(160deg, #3567b3, #2a5394);
+  border-color: #264e8c;
+  color: #fff;
+}
+.un-vendido .un-num,
+.un-vendido .un-l2 {
+  color: #fff;
+}
+.un-vendido .un-l2 {
+  opacity: 0.8;
 }
 .un-bloqueado {
   --c: #878f8c;
   --f: #eff1f0;
   --t: #4f5754;
-  background-image: repeating-linear-gradient(135deg, rgba(79, 87, 84, 0.07) 0 6px, transparent 6px 12px);
+  background: #eff1f0 repeating-linear-gradient(135deg, rgba(79, 87, 84, 0.08) 0 6px, transparent 6px 12px);
+  border-color: #d9dedc;
 }
 .un-num {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-family: var(--sb-display, inherit);
   font-weight: 800;
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   color: var(--sb-tinta, #09201d);
   letter-spacing: -0.01em;
 }
@@ -452,7 +595,7 @@ textarea {
   color: var(--sb-tijolo-texto, #9e352d);
 }
 .un.fora {
-  opacity: 0.22;
+  opacity: 0.2;
 }
 .un.fora:hover {
   opacity: 0.6;
@@ -463,11 +606,44 @@ tr.mudou {
 }
 @keyframes dp-mudou {
   0% {
-    box-shadow: 0 0 0 4px rgba(200, 126, 18, 0.55);
+    box-shadow: 0 0 0 5px rgba(200, 126, 18, 0.55);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(200, 126, 18, 0);
   }
+}
+@media (prefers-reduced-motion: reduce) {
+  .un,
+  .un:hover {
+    transition: none;
+    transform: none;
+  }
+  .un.mudou,
+  tr.mudou {
+    animation: none;
+  }
+}
+
+/* O seletor da pré-análise, no passo do cliente da reserva. */
+.dp-pa-escolha {
+  background: #f6f9f8;
+  border: 1px dashed var(--sb-linha-forte, #c9d5d1);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.dp-pa-escolha.on {
+  background: #eef8f6;
+  border: 1px solid rgba(14, 140, 127, 0.4);
+}
+.dp-link-a {
+  color: var(--sb-acafrao-texto, #9a6008);
+}
+.dp-aviso.dp-aviso-a {
+  margin: 0.5rem 0;
+  background: #fff;
+  border: 1px solid #efd3a3;
+  color: #9a6008;
 }
 
 /* ── Tabelas ───────────────────────────────────────────────────────────── */
@@ -673,7 +849,8 @@ tr.mudou {
 }
 .dp-ficha-preco {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
   padding: 0 1.25rem 1rem;
 }
 .dp-ficha-preco span,
@@ -688,7 +865,8 @@ tr.mudou {
   color: var(--sb-tinta3, #6b827d);
 }
 .dp-ficha-preco b {
-  font-size: 1.3rem;
+  font-size: 1.22rem;
+  font-variant-numeric: tabular-nums;
 }
 .dp-aviso {
   margin: 0 1.25rem 0.9rem;
@@ -1402,5 +1580,18 @@ tr.mudou {
   }
   .dp-seg {
     margin-left: 0;
+  }
+  .dp-resumo {
+    grid-template-columns: 1fr;
+  }
+  .dp-resumo-num {
+    text-align: left;
+  }
+  .dp-andar {
+    grid-template-columns: 46px repeat(var(--cols), 92px);
+  }
+  .dp-teto,
+  .dp-chao {
+    margin-left: 52px;
   }
 }

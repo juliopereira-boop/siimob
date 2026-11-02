@@ -232,7 +232,7 @@ export const carregar = {
   itens: (/** @type {string[]} */ mapaIds) =>
     mapaIds.length
       ? lerTudo(
-          `${A1.rest('a1_mapa_preco_itens')}?select=id,mapa_id,unidade_id,valor&mapa_id=in.(${mapaIds.join(',')})&order=id.asc`
+          `${A1.rest('a1_mapa_preco_itens')}?select=id,mapa_id,unidade_id,valor,valor_avaliacao&mapa_id=in.(${mapaIds.join(',')})&order=id.asc`
         )
       : Promise.resolve([]),
   parametros: (soAtivos = true) =>
@@ -261,6 +261,30 @@ export function precosVigentes(/** @type {any[]} */ mapas, /** @type {any[]} */ 
   });
   return preco;
 }
+
+// O valor de avaliação de cada unidade, do mesmo mapa que vale. Unidade sem
+// avaliação no mapa fica de fora (e quem lê mostra "não informada").
+export function avaliacoesVigentes(/** @type {any[]} */ mapas, /** @type {any[]} */ itens) {
+  const ativos = new Set(mapas.filter(m => m.ativo).map(m => m.id));
+  /** @type {Record<string, number>} */
+  const aval = {};
+  itens.forEach(i => {
+    if (ativos.has(i.mapa_id) && i.valor_avaliacao != null) aval[i.unidade_id] = Number(i.valor_avaliacao);
+  });
+  return aval;
+}
+
+// A pré-análise que vira reserva: o que a reserva aproveita dela (titular,
+// cônjuge, associados, corretor, unidade de interesse, crédito aprovado) e a
+// lista das que estão prontas para reservar. O banco confere licença,
+// permissão e visibilidade; a tela só pergunta.
+export const preAnalise = {
+  dados: (/** @type {string} */ id) => rpc('a1_disp_dados_da_pre_analise', { p_pre_analise: id }),
+  aprovadas: async () => {
+    const r = await rpc('a1_disp_pre_analises_aprovadas', {});
+    return Array.isArray(r) ? r : [];
+  }
+};
 
 // ─── Escritas ────────────────────────────────────────────────────────────────
 // RPC devolve { ok, erro, ... } quando a recusa é de regra de negócio, e uma
@@ -338,7 +362,19 @@ const MOTIVOS = {
   empreendimento_de_outro_cliente: 'Esse empreendimento não é deste cliente.',
   item_de_preco_fora_do_mapa: 'Esse preço aponta para uma unidade de outro empreendimento.',
   mapa_sem_nome: 'Dê um nome ao mapa de preço.',
-  reajuste_invalido: 'O reajuste precisa ser um percentual entre -99 e 1000.'
+  reajuste_invalido: 'O reajuste precisa ser um percentual entre -99 e 1000.',
+  reserva_exige_pre_analise:
+    'Nesta conta a reserva começa por uma pré-análise aprovada. Escolha a pré-análise do cliente.',
+  pre_analise_nao_aprovada: 'A pré-análise ainda não chegou à etapa aprovada (selo Fim positivo).',
+  pre_analise_ja_tem_venda: 'Esta pré-análise já virou venda.',
+  pre_analise_ja_tem_reserva: 'Esta pré-análise já segura outra unidade.',
+  pre_analise_de_outro_empreendimento:
+    'A pré-análise é de outro empreendimento. Escolha uma unidade do empreendimento dela.',
+  pre_analise_nao_encontrada: 'Não encontrei a pré-análise, ou o seu cadastro não tem acesso a ela.',
+  modulo_pre_analise_desabilitado: 'A Pré-análise não está liberada para este cliente.',
+  venda_sem_situacao_inicial:
+    'A esteira da Venda não tem situação inicial. Configure no Editor de workflow (Venda): a reserva só acontece junto com a venda.',
+  modulo_comercial_desabilitado: 'A Venda não está liberada para este cliente.'
 };
 export function motivo(/** @type {any} */ codigo) {
   const c = String(codigo || '');
@@ -346,5 +382,10 @@ export function motivo(/** @type {any} */ codigo) {
   if (/duplicate key|unique/i.test(c)) return 'Já existe um registro com esse nome ou código.';
   if (/foreign key|violates/i.test(c))
     return 'Este registro tem histórico ligado a ele e não pode ser excluído.';
+  // Algumas regras do banco já respondem com a frase pronta (as da Venda, por
+  // exemplo: "não há decisão de crédito aprovada e válida"). Frase em
+  // português não leva o "O banco recusou:" na frente: ela é a explicação.
+  if (/[áéíóúãõçê]/i.test(c) && /\s/.test(c) && !/_/.test(c))
+    return c.charAt(0).toUpperCase() + c.slice(1) + (/[.!?]$/.test(c) ? '' : '.');
   return c ? `O banco recusou: ${c}` : 'Não consegui falar com o servidor.';
 }

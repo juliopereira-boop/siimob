@@ -79,6 +79,35 @@ echo "vínculos distintos: $N_VINC  (esperado: 1)"
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
      -c "alter table a1_co_situacoes add column if not exists selo text" \
      -f database/migrations/2026-11-02_disposicao_unidades.sql 2>/dev/null
+# A função de reservar que vale é a de 2026-11-03 (reserva pela pré-análise e
+# venda garantida). Ela precisa do que produção já tem e este andaime não
+# carregava.
+for f in database/migrations/2026-09-06_travas_sessao_e_parceiro.sql \
+         database/migrations/2026-09-08_suporte_nao_ocupa_vaga.sql \
+         database/migrations/2026-09-08_perfis_de_acesso.sql \
+         database/migrations/2026-09-09_documento_obrigatorio.sql \
+         database/migrations/2026-09-09_visibilidade_repasse_1_conferir.sql \
+         database/migrations/2026-09-09_visibilidade_repasse_2_ligar.sql \
+         database/migrations/2026-09-10_corretor_analista_so_o_seu.sql \
+         database/migrations/2026-09-10_modo_manutencao.sql \
+         database/migrations/2026-09-10_criar_repasse_trava.sql \
+         database/migrations/2026-09-10_chaves_dos_modulos.sql \
+         database/migrations/2026-09-11_exclusao_definitiva.sql \
+         database/migrations/2026-09-11_corretor_e_imobiliaria_da_pre_analise.sql \
+         database/migrations/2026-09-11_quem_cadastra_pessoa_rele.sql \
+         database/migrations/2026-09-11_partes_por_id.sql \
+         database/migrations/2026-09-11_registro_arquivar.sql \
+         database/migrations/2026-09-12_visibilidade_da_atribuicao_1_conferir.sql \
+         database/migrations/2026-09-12_visibilidade_da_atribuicao_2_ligar.sql \
+         database/migrations/2026-09-12_valor_avaliacao_inicial.sql \
+         database/migrations/2026-09-12_foundation_access_dossier.sql \
+         database/migrations/2026-09-13_iniciar_venda_permissao.sql \
+         database/migrations/2026-09-17_agenda.sql \
+         database/migrations/2026-09-18_integridade_fluxos_e_auditoria.sql \
+         database/migrations/2026-11-03_reserva_pre_analise_e_selos.sql; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f" >/dev/null 2>&1 \
+    || { echo "não carregou $f"; exit 1; }
+done
 Q <<SQL
 insert into a1_modules (key,name) values ('DISPOSICAO','D') on conflict do nothing;
 insert into a1_tenant_modules (tenant_id, module_key) values ('$T','DISPOSICAO');

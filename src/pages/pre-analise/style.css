@@ -568,12 +568,15 @@ table.fila tbody tr:hover {
 }
 .fgrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): um select com opção longa (tipologia, nome de imobiliária)
+     não alarga a coluna para fora do modal. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.75rem;
 }
 .fg {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .fg.full {
   grid-column: 1/-1;
@@ -616,6 +619,15 @@ table.fila tbody tr:hover {
 }
 .sec-title:first-child {
   margin-top: 0;
+}
+/* Título de seção com um botão à direita (o segundo associado). Flex em vez de
+   float: a grade logo abaixo é um contexto de formatação próprio e encolheria
+   para o lado do float. */
+.sec-title.com-acao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 /* passos do assistente */
@@ -796,7 +808,7 @@ table.fila tbody tr:hover {
 }
 @media (max-width: 720px) {
   .fgrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .main {
     padding: 1rem 0.8rem;

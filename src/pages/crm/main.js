@@ -40,6 +40,8 @@ acoes({
   cadSave: el => cadSave(el.dataset.id),
   cadToggle: el => cadToggle(el.dataset.id),
   changeLeadStage: () => changeLeadStage(),
+  seloCancelar: () => fecharSelo(null),
+  seloConfirmar: () => seloConfirmar(),
   clearTask: () => clearTask(),
   closeCfgView: () => closeCfgView(),
   closeModal: el => closeModal(el.dataset.id),
@@ -87,6 +89,8 @@ const G = {
   pipe: null,
   cad: {},
   cadCur: null,
+  // A próxima visita de cada lead (selo Agendamento), para o chip do cartão.
+  visitas: {},
   corretores: [],
   imobiliarias: [],
   agendaTasks: {}
@@ -99,36 +103,36 @@ const DEFAULT_PIPELINES = {
       { name: 'Lead Recebido', is_initial: true, color: '#6366f1' },
       { name: 'Contato Estabelecido', color: '#0ea5e9' },
       { name: 'Imóveis Selecionados', color: '#06b6d4' },
-      { name: 'Visita Agendada', color: '#f59e0b' },
+      { name: 'Visita Agendada', color: '#f59e0b', selo: 'AGENDAMENTO' },
       { name: 'Visita Realizada', color: '#f97316' },
       { name: 'Proposta', color: '#8b5cf6' },
       { name: 'Negociação', color: '#ec4899' },
-      { name: 'Análise de Crédito / Jurídico', color: '#a855f7' },
-      { name: 'Contrato Assinado — Ganho', is_final: true, color: '#22c55e' },
-      { name: 'Perdido', is_final: true, color: '#ef4444' }
+      { name: 'Análise de Crédito / Jurídico', color: '#a855f7', selo: 'PRE_ANALISE' },
+      { name: 'Contrato Assinado — Ganho', is_final: true, color: '#22c55e', selo: 'GANHO' },
+      { name: 'Perdido', is_final: true, color: '#ef4444', selo: 'PERDIDO' }
     ]
   },
   lancamentos: {
     label: 'Vendas — Lançamentos',
     stages: [
       { name: 'Lead de Campanha', is_initial: true, color: '#6366f1' },
-      { name: 'Agendamento Stand', color: '#0ea5e9' },
+      { name: 'Agendamento Stand', color: '#0ea5e9', selo: 'AGENDAMENTO' },
       { name: 'Apresentação Decorado', color: '#f59e0b' },
-      { name: 'Documentação', color: '#8b5cf6' },
+      { name: 'Documentação', color: '#8b5cf6', selo: 'PRE_ANALISE' },
       { name: 'Escolha de Unidade', color: '#ec4899' },
-      { name: 'CCV Assinado — Ganho', is_final: true, color: '#22c55e' },
-      { name: 'Perdido', is_final: true, color: '#ef4444' }
+      { name: 'CCV Assinado — Ganho', is_final: true, color: '#22c55e', selo: 'GANHO' },
+      { name: 'Perdido', is_final: true, color: '#ef4444', selo: 'PERDIDO' }
     ]
   },
   locacao: {
     label: 'Locação',
     stages: [
       { name: 'Lead de Locação', is_initial: true, color: '#6366f1' },
-      { name: 'Visita', color: '#f59e0b' },
+      { name: 'Visita', color: '#f59e0b', selo: 'AGENDAMENTO' },
       { name: 'Análise de Garantia', color: '#8b5cf6' },
       { name: 'Confecção do Contrato', color: '#a855f7' },
-      { name: 'Assinado — Ativo', is_final: true, color: '#22c55e' },
-      { name: 'Perdido', is_final: true, color: '#ef4444' }
+      { name: 'Assinado — Ativo', is_final: true, color: '#22c55e', selo: 'GANHO' },
+      { name: 'Perdido', is_final: true, color: '#ef4444', selo: 'PERDIDO' }
     ]
   }
 };
@@ -224,7 +228,8 @@ async function loadData() {
     )
       .then(r => r.linhas || [])
       .catch(() => []),
-    loadCad('origens')
+    loadCad('origens'),
+    carregarVisitas()
   ]);
   let stages = stagesRaw;
   if (!Array.isArray(stages) || !stages.length) stages = await seedPipelines();
@@ -253,18 +258,59 @@ async function seedPipelines() {
         color: s.color,
         position: pos++,
         is_initial: !!s.is_initial,
-        is_final: !!s.is_final
+        is_final: !!s.is_final,
+        selo: s.selo || null
       });
     });
   });
-  const created = await fetch(A1.rest('a1_stages'), {
-    method: 'POST',
-    headers: A1.returnHeaders(),
-    body: JSON.stringify(rows)
-  })
-    .then(r => r.json())
-    .catch(() => []);
+  const gravar = linhas =>
+    fetch(A1.rest('a1_stages'), {
+      method: 'POST',
+      headers: A1.returnHeaders(),
+      body: JSON.stringify(linhas)
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .catch(() => null);
+  // Os selos são de 2026-11-03. Num banco que ainda não tem a coluna, o funil
+  // nasce sem eles em vez de não nascer.
+  let created = await gravar(rows);
+  if (!Array.isArray(created)) created = await gravar(rows.map(({ selo: _selo, ...r }) => r));
   return Array.isArray(created) ? created.sort((a, b) => a.position - b.position) : [];
+}
+
+// As visitas que vêm pela frente, por lead. A agenda só mostra a cada um o que é
+// dele (ou para ele): é o mesmo recorte aqui.
+async function carregarVisitas() {
+  const linhas = await A1.buscarTudo(
+    `${A1.rest('a1_agenda')}?tipo=eq.visita&lead_id=not.is.null&concluido_em=is.null&data=gte.${hojeISO()}&select=id,lead_id,data,hora_inicio&order=data.asc,hora_inicio.asc`
+  )
+    .then(r => r.linhas || [])
+    .catch(() => []);
+  G.visitas = {};
+  (Array.isArray(linhas) ? linhas : []).forEach(v => {
+    if (v && v.lead_id && !G.visitas[v.lead_id]) G.visitas[v.lead_id] = v;
+  });
+}
+
+// ─── Selos do funil ──────────────────────────────────────────────────────────
+// AGENDAMENTO  entrar na etapa pede a visita (vai para a agenda)
+// PRE_ANALISE  só nesta etapa o lead vira pré-análise
+// GANHO        fim positivo, qualquer que seja o nome da etapa
+// PERDIDO      fim negativo: pede o motivo da perda
+// Um selo por funil; quem põe é o editor de Workflow (a1_crm_definir_selo).
+const SELO_ROTULO = { AGENDAMENTO: 'Visita', PRE_ANALISE: 'Pré-análise', GANHO: 'Ganho', PERDIDO: 'Perdido' };
+function etapaComSelo(pk, selo) {
+  return pipeStages(pk).find(s => s.selo === selo) || null;
+}
+function ehEtapaGanho(st) {
+  if (!st) return false;
+  return etapaComSelo(pipeOf(st), 'GANHO') ? st.selo === 'GANHO' : !!st.is_final && isGanhoNome(st.name);
+}
+function ehEtapaPerdido(st) {
+  if (!st) return false;
+  return etapaComSelo(pipeOf(st), 'PERDIDO')
+    ? st.selo === 'PERDIDO'
+    : !!st.is_final && /perdid|descart|sem interesse/i.test(st.name || '');
 }
 
 function stageMap() {
@@ -422,7 +468,7 @@ function renderFunil() {
       const list = byStage[s.id] || [];
       const val = list.reduce((a, l) => a + (Number(l.contract_value) || 0), 0);
       return `<div class="k-col">
-      <div class="k-col-header" style="background:${s.color}"><span>${esc(s.name)}</span><span class="k-col-count">${list.length}</span></div>
+      <div class="k-col-header" style="background:${s.color}"><span>${esc(s.name)}${s.selo && SELO_ROTULO[s.selo] ? `<span class="k-col-selo">${esc(SELO_ROTULO[s.selo])}</span>` : ''}</span><span class="k-col-count">${list.length}</span></div>
       <div class="k-col-fin"><span>Valor</span><b>${fmtBRL(val)}</b></div>
       <div class="k-col-body" data-stage="${s.id}" data-acao-dragover="dOver" data-acao-drop="dDrop" data-acao-dragleave="saiuDaColuna">
         ${list.map(leadCard).join('')}
@@ -430,6 +476,16 @@ function renderFunil() {
     })
     .join('');
   document.getElementById('lead-count').textContent = `${leads.length} lead${leads.length !== 1 ? 's' : ''}`;
+}
+
+function quandoVisita(v) {
+  const [, m, d] = String(v.data).slice(0, 10).split('-');
+  return `${d}/${m}` + (v.hora_inicio ? ' ' + String(v.hora_inicio).slice(0, 5) : '');
+}
+function chipVisita(l) {
+  const v = G.visitas[l.id];
+  if (!v || !v.data) return '';
+  return `<span class="chip visita" title="Visita agendada">Visita ${esc(quandoVisita(v))}</span>`;
 }
 
 function leadCard(l) {
@@ -448,6 +504,7 @@ function leadCard(l) {
       ${l.broker_name ? `<span class="chip">${esc(l.broker_name)}</span>` : ''}
       ${l.contract_value ? `<span class="chip val">${fmtBRL(l.contract_value)}</span>` : ''}
       ${ts ? `<span class="chip task ${ts.over ? 'over' : ''}" title="${esc(ts.desc)}">⏰ ${ts.over ? 'atrasada' : fmtDate(ts.date)}</span>` : ''}
+      ${chipVisita(l)}
     </div>
     <div class="lead-foot"><span class="date">${fmtDate(l.created_at)}</span>
       <div style="display:flex;gap:.3rem">
@@ -474,19 +531,39 @@ function dDrop(e, el) {
   if (dragId) moveLead(dragId, el.dataset.stage);
 }
 
+// Devolve true se o lead mudou de etapa. Etapa com selo pergunta antes: a
+// visita (Agendamento) ou o motivo (Perdido). Cancelar deixa o lead onde está.
 async function moveLead(id, stageId) {
   const l = G.leads.find(x => x.id === id);
   const st = G.stages.find(s => s.id === stageId);
-  if (!l || !st || l.stage_id === stageId) return;
+  if (!l || !st || l.stage_id === stageId) return false;
+  if (st.selo === 'AGENDAMENTO' && !(await pedirVisita(l, st))) {
+    renderFunil();
+    return false;
+  }
+  let perda = null;
+  if (st.selo === 'PERDIDO') {
+    perda = await pedirMotivoPerda(l, st);
+    if (!perda) {
+      renderFunil();
+      return false;
+    }
+  }
   const prev = stageMap()[l.stage_id];
   l.stage_id = stageId;
   l.stage_name = st.name;
   l.stage_entered_at = new Date().toISOString();
+  /** @type {Record<string, any>} */
+  const corpo = { stage_id: stageId, stage_name: st.name, stage_entered_at: l.stage_entered_at };
+  if (perda) {
+    l.payload = { ...(l.payload || {}), perda };
+    corpo.payload = l.payload;
+  }
   renderFunil();
   await fetch(`${A1.rest('a1_cases')}?id=eq.${id}`, {
     method: 'PATCH',
     headers: A1.headers(),
-    body: JSON.stringify({ stage_id: stageId, stage_name: st.name, stage_entered_at: l.stage_entered_at })
+    body: JSON.stringify(corpo)
   });
   fetch(A1.rest('a1_stage_history'), {
     method: 'POST',
@@ -504,12 +581,172 @@ async function moveLead(id, stageId) {
     body: JSON.stringify({
       case_id: id,
       type: 'stage_change',
-      description: `Movido de "${prev ? prev.name : '—'}" para "${st.name}"`,
+      description:
+        `Movido de "${prev ? prev.name : '—'}" para "${st.name}"` +
+        (perda ? ` · motivo: ${[perda.motivo, perda.obs].filter(Boolean).join(' · ')}` : ''),
       actor_name: G.user.name
     })
   }).catch(() => {});
   if (PROP_STAGE_RE.test(st.name) && !(l.payload && l.payload.proposta))
     toast('Etapa de proposta: registre a proposta na aba Proposta do lead', 'info');
+  return true;
+}
+
+// ─── O popup da etapa com selo ───────────────────────────────────────────────
+/** @type {{resolver:(v:any)=>void, confirmar:()=>Promise<any>}|null} */
+let SELO_PEDIDO = null;
+function pedirNoSelo({ titulo, sub, corpo, botao, confirmar }) {
+  // Um pedido de cada vez: um segundo arrasto com o popup aberto cancela o primeiro.
+  if (SELO_PEDIDO) fecharSelo(null);
+  return new Promise(resolver => {
+    SELO_PEDIDO = { resolver, confirmar };
+    document.getElementById('ms-title').textContent = titulo;
+    document.getElementById('ms-sub').textContent = sub || '';
+    document.getElementById('ms-body').innerHTML = corpo;
+    document.getElementById('ms-erro').textContent = '';
+    const ok = /** @type {HTMLButtonElement} */ (document.getElementById('ms-ok'));
+    ok.textContent = botao;
+    ok.disabled = false;
+    document.getElementById('modal-selo').classList.remove('hidden');
+    const primeiro = /** @type {HTMLElement|null} */ (
+      document.querySelector('#ms-body input, #ms-body select, #ms-body textarea')
+    );
+    if (primeiro) primeiro.focus();
+  });
+}
+function fecharSelo(valor) {
+  const p = SELO_PEDIDO;
+  SELO_PEDIDO = null;
+  document.getElementById('modal-selo').classList.add('hidden');
+  if (p) p.resolver(valor);
+}
+async function seloConfirmar() {
+  const p = SELO_PEDIDO;
+  if (!p) return;
+  const ok = /** @type {HTMLButtonElement} */ (document.getElementById('ms-ok'));
+  const erro = document.getElementById('ms-erro');
+  erro.textContent = '';
+  ok.disabled = true;
+  try {
+    const r = await p.confirmar();
+    if (SELO_PEDIDO !== p) return;
+    if (!r || r.erro) {
+      erro.textContent = (r && r.erro) || 'Não foi possível concluir.';
+      return;
+    }
+    fecharSelo(r);
+  } finally {
+    ok.disabled = false;
+  }
+}
+const valSelo = id => {
+  const el = /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+  return el ? el.value.trim() : '';
+};
+
+// Visita: data, horário, local e observação. Vai para a agenda do corretor e da
+// imobiliária do lead pela função do banco, que confere se quem agenda enxerga
+// o lead e registra no histórico.
+function pedirVisita(l, st) {
+  const quem = [l.broker_name, l.real_estate_name].filter(Boolean);
+  return pedirNoSelo({
+    titulo: 'Agendar visita',
+    sub: `${l.client_name || 'Lead'} · etapa "${st.name}"`,
+    botao: 'Agendar e mover',
+    corpo: `<div class="fgrid" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)">
+        <div class="fg"><label>Data *</label><input id="mv-data" type="date" value="${esc(hojeISO())}"></div>
+        <div class="fg"><label>Início</label><input id="mv-ini" type="time"></div>
+        <div class="fg"><label>Fim</label><input id="mv-fim" type="time"></div>
+      </div>
+      <div class="fgrid" style="margin-top:.75rem">
+        <div class="fg full"><label>Local</label><input id="mv-local" value="${esc(l.development || '')}" placeholder="Stand, decorado, endereço do imóvel…"></div>
+        <div class="fg full"><label>Observação</label><textarea id="mv-obs" rows="3" placeholder="Quem vai, o que levar, o que o cliente quer ver…"></textarea></div>
+      </div>
+      <div style="font-size:.74rem;color:var(--t3);margin-top:.75rem;line-height:1.5">
+        ${quem.length ? `Vai para a agenda de <b>${quem.map(esc).join('</b> e de <b>')}</b>, na tela Geral.` : 'O lead não tem corretor nem imobiliária: a visita vai para a sua agenda.'}</div>`,
+    confirmar: async () => {
+      const data = valSelo('mv-data');
+      const ini = valSelo('mv-ini');
+      const fim = valSelo('mv-fim');
+      if (!data) return { erro: 'Informe a data da visita.' };
+      if (fim && !ini) return { erro: 'Informe o horário de início.' };
+      if (ini && fim && fim < ini) return { erro: 'O fim está antes do início.' };
+      const res = await fetch(A1.rpc('a1_crm_agendar_visita'), {
+        method: 'POST',
+        headers: A1.headers(),
+        body: JSON.stringify({
+          p_lead: l.id,
+          p_data: data,
+          p_hora_inicio: ini || null,
+          p_hora_fim: fim || null,
+          p_local: valSelo('mv-local') || null,
+          p_observacao: valSelo('mv-obs') || null
+        })
+      }).catch(() => null);
+      const j = res ? await res.json().catch(() => null) : null;
+      if (!res || !res.ok) {
+        const m = (j && j.message) || '';
+        return {
+          erro: /sem_acesso|nao_encontrado/.test(m)
+            ? 'Você não tem acesso a este lead.'
+            : /modulo_desabilitado/.test(m)
+              ? 'O módulo Leads está desligado para este cliente.'
+              : 'Não foi possível agendar a visita. Tente de novo.'
+        };
+      }
+      if (j && j.ok === false)
+        return {
+          erro:
+            {
+              visita_sem_data: 'Informe a data da visita.',
+              visita_hora_invertida: 'O fim está antes do início.'
+            }[j.erro] || 'Não foi possível agendar a visita.'
+        };
+      const atual = G.visitas[l.id];
+      if (data >= hojeISO() && (!atual || data < String(atual.data)))
+        G.visitas[l.id] = { lead_id: l.id, data, hora_inicio: ini || null };
+      toast('Visita agendada e enviada para a agenda', 'success');
+      return { ok: true };
+    }
+  });
+}
+
+// Perdido: o motivo, do catálogo de Motivos de perda (Configurações), e uma
+// observação. Fica no lead (payload.perda) e no histórico.
+async function pedirMotivoPerda(l, st) {
+  const motivos = (await loadCad('motivos_perda').catch(() => [])).filter(
+    m => m && m.name && m.active !== false
+  );
+  return pedirNoSelo({
+    titulo: 'Motivo da perda',
+    sub: `${l.client_name || 'Lead'} · etapa "${st.name}"`,
+    botao: 'Registrar e mover',
+    corpo: `<div class="fgrid">
+        ${
+          motivos.length
+            ? `<div class="fg full"><label>Motivo *</label><select id="mp-motivo"><option value="">Escolha…</option>${motivos
+                .map(m => `<option>${esc(m.name)}</option>`)
+                .join('')}<option value="Outro">Outro</option></select></div>`
+            : ''
+        }
+        <div class="fg full"><label>${motivos.length ? 'Observação' : 'Motivo *'}</label>
+          <textarea id="mp-obs" rows="3" placeholder="O que aconteceu?"></textarea></div>
+      </div>
+      ${motivos.length ? '' : '<div style="font-size:.72rem;color:var(--t3);margin-top:.6rem">O catálogo de motivos fica em Configurações › Leads › Motivos de perda.</div>'}`,
+    confirmar: async () => {
+      const motivo = valSelo('mp-motivo');
+      const obs = valSelo('mp-obs');
+      if (motivos.length && !motivo) return { erro: 'Escolha o motivo da perda.' };
+      if (motivo === 'Outro' && !obs) return { erro: 'Conte em observação qual foi o motivo.' };
+      if (!motivos.length && !obs) return { erro: 'Conte qual foi o motivo da perda.' };
+      return {
+        motivo: motivo || null,
+        obs: obs || null,
+        em: new Date().toISOString(),
+        por: G.user.name || null
+      };
+    }
+  });
 }
 
 // ─── WhatsApp click-to-chat ─────────────────────────────────────────────────────
@@ -793,9 +1030,25 @@ function openLead(id) {
   document.querySelector('#modal-lead .modal-tab[data-mt="dados"]').classList.add('active');
   G.activeMt = 'dados';
   renderLeadDados();
-  const bp = document.getElementById('ml-pre');
-  if (bp) bp.style.display = G.temPreAnalise ? '' : 'none';
+  pintarBotaoPreAnalise(l);
   document.getElementById('modal-lead').classList.remove('hidden');
+}
+
+// Com a etapa "Iniciar pré-análise" no funil, o botão só libera nela; sem ela,
+// libera em qualquer etapa (o comportamento de sempre dos funis sem selo).
+function etapaDaPreAnalise(l) {
+  return etapaComSelo(leadPipe(l), 'PRE_ANALISE');
+}
+function pintarBotaoPreAnalise(l) {
+  const bp = /** @type {HTMLButtonElement|null} */ (document.getElementById('ml-pre'));
+  if (!bp) return;
+  bp.style.display = G.temPreAnalise ? '' : 'none';
+  const alvo = etapaDaPreAnalise(l);
+  const libera = !alvo || l.stage_id === alvo.id;
+  bp.disabled = !libera;
+  bp.title = libera
+    ? 'Abrir uma pré-análise já com os dados deste lead'
+    : `A pré-análise começa na etapa "${alvo.name}". Mova o lead para lá.`;
 }
 // O lead vira pre-analise pelo assistente da PROPRIA Pre-analise, levando o que
 // ja se sabe no endereco. Criar a linha daqui exigiria repetir aqui as regras
@@ -804,6 +1057,11 @@ function openLead(id) {
 function criarPreAnaliseDoLead() {
   const l = G.editingData || G.leads.find(x => x.id === G.editingId);
   if (!l) return;
+  const alvo = etapaDaPreAnalise(l);
+  if (alvo && l.stage_id !== alvo.id) {
+    toast(`A pré-análise começa na etapa "${alvo.name}".`, 'error');
+    return;
+  }
   const q = new URLSearchParams({ lead: l.id, nome: l.client_name || '' });
   const refs = crmRefs(l);
   if (l.client_phone) q.set('tel', l.client_phone);
@@ -829,7 +1087,17 @@ function switchLeadTab(t, el) {
 function renderLeadDados() {
   const l = G.editingData || {};
   const refs = crmRefs(l);
+  // O que os selos registraram: a próxima visita e, no perdido, o motivo.
+  const visita = G.visitas[l.id];
+  const perda = l.payload && l.payload.perda;
+  const notas = [
+    visita ? `Próxima visita: <b>${esc(quandoVisita(visita))}</b>` : '',
+    perda && ehEtapaPerdido(stageMap()[l.stage_id])
+      ? `Perdido: <b>${esc([perda.motivo, perda.obs].filter(Boolean).join(' · ') || 'sem motivo')}</b>`
+      : ''
+  ].filter(Boolean);
   document.getElementById('ml-body').innerHTML = `
+    ${notas.length ? `<div class="ml-notas">${notas.map(n => `<div>${n}</div>`).join('')}</div>` : ''}
     <div class="fgrid">
       <div class="fg full"><label>Nome</label><input id="e-name" value="${esc(l.client_name || '')}"></div>
       <div class="fg"><label>Telefone / WhatsApp</label><input id="e-phone" value="${esc(l.client_phone || '')}"></div>
@@ -1147,13 +1415,18 @@ async function clearTask() {
   }
 }
 async function changeLeadStage() {
-  const stageId = document.getElementById('ml-stage').value;
-  await moveLead(G.editingId, stageId);
-  const l = G.leads.find(x => x.id === G.editingId);
-  if (l) {
-    G.editingData.stage_id = l.stage_id;
-    G.editingData.stage_name = l.stage_name;
-  }
+  const sel = /** @type {HTMLSelectElement} */ (document.getElementById('ml-stage'));
+  const id = G.editingId;
+  await moveLead(id, sel.value);
+  const l = G.leads.find(x => x.id === id);
+  if (!l || G.editingId !== id) return;
+  // Cancelou a visita ou o motivo: o seletor volta para onde o lead está.
+  sel.value = l.stage_id;
+  G.editingData.stage_id = l.stage_id;
+  G.editingData.stage_name = l.stage_name;
+  if (l.payload && l.payload.perda)
+    G.editingData.payload = { ...(G.editingData.payload || {}), perda: l.payload.perda };
+  pintarBotaoPreAnalise(l);
   if (G.activeMt === 'hist') loadInteractions();
 }
 async function archiveLead() {
@@ -1439,15 +1712,13 @@ function renderDash() {
   const corte = DASH.dias ? Date.now() - DASH.dias * 864e5 : 0;
   const safra = DASH.dias ? todos.filter(l => new Date(l.created_at).getTime() >= corte) : todos;
 
-  const fim = l => (sm[l.stage_id] || {}).is_final;
-  const isGanho = l => {
+  // Ganho e perdido pelo selo da etapa; sem selo no funil, pelo nome, como antes.
+  const fim = l => {
     const st = sm[l.stage_id];
-    return st && st.is_final && /ganho|ativo|assinad|convertid/i.test(st.name || '');
+    return !!st && (!!st.is_final || ehEtapaGanho(st) || ehEtapaPerdido(st));
   };
-  const isPerd = l => {
-    const st = sm[l.stage_id];
-    return st && st.is_final && /perdid|descart|sem interesse/i.test(st.name || '');
-  };
+  const isGanho = l => ehEtapaGanho(sm[l.stage_id]);
+  const isPerd = l => ehEtapaPerdido(sm[l.stage_id]);
 
   const abertos = todos.filter(l => !fim(l));
   const ganhos = safra.filter(isGanho);
@@ -1509,7 +1780,7 @@ function renderDash() {
       <div class="sb-kpi-sub">${esc(sub)}</div></div>`;
 
   // ── Funil, do topo ao fim, com a perda de cada degrau ──
-  const sts = pipeStages(G.pipe).filter(x => !(sm[x.id] || {}).is_final || isGanhoNome(x.name));
+  const sts = pipeStages(G.pipe).filter(x => (!x.is_final && !ehEtapaPerdido(x)) || ehEtapaGanho(x));
   const degraus = sts.map(st => ({
     nome: st.name,
     cor: st.color || '#0E8C7F',

@@ -1076,7 +1076,8 @@ const DISP = (() => {
         reserva_horas: 48,
         exige_fluxo_fechado: true,
         corretor_cancela_propria: true,
-        max_reservas_por_cpf: 0
+        max_reservas_por_cpf: 0,
+        origem_reserva: 'LIVRE'
       }
     ],
     mapas: [
@@ -1095,7 +1096,9 @@ const DISP = (() => {
       tenant_id: 't1',
       mapa_id: 'mp1',
       unidade_id: u.id,
-      valor: 200000 + u.pavimento * 5000 + (u.numero === '04' ? 40000 : 0)
+      valor: 200000 + u.pavimento * 5000 + (u.numero === '04' ? 40000 : 0),
+      // Avaliação só nas de final par: a tela precisa saber mostrar as duas.
+      valor_avaliacao: u.numero === '02' || u.numero === '04' ? 215000 + u.pavimento * 5000 : null
     })),
     reservas: [
       {
@@ -1220,6 +1223,14 @@ function negarModulos(lista) {
   MODULOS_NEGADOS = Array.isArray(lista) ? lista : [];
 }
 
+// As regras da pré-análise (Configurações). Sem regra gravada, nada é exigido,
+// que é o padrão do banco para quem não é construtora. Quem testa a regra pede:
+// abrir('pre-analise.html', {regrasPA:{exige_conjuge:true}}).
+let REGRAS_PA = null;
+function usarRegrasPA(r) {
+  REGRAS_PA = r && typeof r === 'object' ? r : null;
+}
+
 // Os tipos de documento do cliente. O padrão é a lista de STRINGS soltas que
 // telas antigas gravaram — é o que a maioria dos clientes tem hoje, e é o
 // formato que a leitura precisa aguentar sem quebrar. Quem for testar a regra
@@ -1304,6 +1315,115 @@ function responder(url, metodo, corpo0) {
   if (p.includes('/rpc/a1_perm')) return true;
   if (p.includes('/rpc/a1_disposicao_atualizar')) return { ok: true, expiradas: 0 };
   if (p.includes('/rpc/a1_unidades_materializar')) return { ok: true, criadas: 0 };
+  if (p.includes('/rpc/a1_pa_regras_vigentes')) {
+    if (!MODULOS_NOVOS.includes('PRE_ANALISE')) return { message: 'sem_acesso' };
+    const base = {
+      exige_corretor: false,
+      exige_imobiliaria: false,
+      exige_analista: false,
+      exige_empresa: false,
+      exige_correspondente: false,
+      exige_unidade: false,
+      exige_valor_avaliacao: false,
+      exige_conjuge: false
+    };
+    return REGRAS_PA ? { ...base, ...REGRAS_PA, salvas: true } : { ...base, salvas: false };
+  }
+  // As fichas do empreendimento para o cadastro da pré-análise, com o preço e a
+  // avaliação do mapa que vale. Sem a Disposição o banco devolve lista vazia.
+  if (p.includes('/rpc/a1_pa_unidades_para_cadastro')) {
+    if (!MODULOS_NOVOS.includes('DISPOSICAO')) return [];
+    let emp = '';
+    try {
+      emp = (JSON.parse(corpo0 || '{}') || {}).p_empreendimento || '';
+    } catch {}
+    return DISP.unidades
+      .filter(u => u.empreendimento_id === emp)
+      .map(u => {
+        const it = DISP.itens.find(i => i.unidade_id === u.id) || {};
+        return {
+          id: u.id,
+          codigo: u.codigo,
+          bloco: u.bloco,
+          numero: u.numero,
+          pavimento: u.pavimento,
+          tipologia: u.tipologia,
+          status: u.status,
+          valor: it.valor ?? null,
+          valor_avaliacao: it.valor_avaliacao ?? null
+        };
+      });
+  }
+  if (p.includes('/rpc/a1_pa_pronta_para_reserva')) return null;
+  // Selos do funil de Leads e a visita. O banco confere permissão e visibilidade;
+  // aqui só responde como ele responde quando dá certo (ou sem a data).
+  if (p.includes('/rpc/a1_crm_definir_selo')) return { ok: true };
+  if (p.includes('/rpc/a1_crm_agendar_visita')) {
+    let c = {};
+    try {
+      c = JSON.parse(corpo0 || '{}') || {};
+    } catch {}
+    if (!c.p_data) return { ok: false, erro: 'visita_sem_data' };
+    return { ok: true, agenda_ids: ['ag-visita-1', 'ag-visita-2'] };
+  }
+  // A pré-análise que vira reserva. pa-ok está pronta; pa-reprovada não.
+  if (p.includes('/rpc/a1_disp_pre_analises_aprovadas'))
+    return MODULOS_NOVOS.includes('DISPOSICAO')
+      ? [
+          {
+            id: 'pa-ok',
+            codigo: 'PA-0042',
+            empreendimento_id: 'd1',
+            unidade_id: 'un-11',
+            unidade: 'B1-101',
+            titular: 'Joana Prado ' + XSS
+          }
+        ]
+      : [];
+  if (p.includes('/rpc/a1_disp_dados_da_pre_analise')) {
+    let id = '';
+    try {
+      id = (JSON.parse(corpo0 || '{}') || {}).p_pre_analise || '';
+    } catch {}
+    if (id !== 'pa-ok' && id !== 'pa-reprovada') return { ok: false, erro: 'nao_encontrado' };
+    return {
+      id,
+      codigo: id === 'pa-ok' ? 'PA-0042' : 'PA-0043',
+      situacao: id === 'pa-ok' ? 'Aprovada' : 'Em análise',
+      empreendimento_id: 'd1',
+      unidade_id: 'un-11',
+      unidade: 'B1-101',
+      corretor_id: 'p3',
+      imobiliaria_id: 'p1',
+      motivo: id === 'pa-ok' ? null : 'pre_analise_nao_aprovada',
+      credito: id === 'pa-ok' ? { financiamento: 150000, fgts: 20000, subsidio: 0 } : null,
+      pessoas: [
+        {
+          papel: 'TITULAR',
+          parentesco: null,
+          nome: 'Joana Prado ' + XSS,
+          cpf: '11144477735',
+          nascimento: '1990-04-02',
+          estado_civil: 'Casado(a)',
+          telefone: '98999990000',
+          email: 'joana@exemplo.com',
+          renda: 4500
+        },
+        {
+          papel: 'ASSOCIADO',
+          parentesco: 'Cônjuge/companheiro(a)',
+          nome: 'Pedro Prado',
+          cpf: '39053344705',
+          nascimento: null,
+          estado_civil: null,
+          telefone: null,
+          email: null,
+          renda: 3000
+        }
+      ]
+    };
+  }
+  if (p.includes('/rpc/a1_reserva_abrir_venda')) return { ok: true, comercial_id: 'co1' };
   if (p.includes('/rpc/a1_unidade_reservar'))
     return {
       ok: true,
@@ -1561,5 +1681,6 @@ module.exports = {
   D,
   negarModulos,
   usarDocTypes,
-  usarManutencao
+  usarManutencao,
+  usarRegrasPA
 };

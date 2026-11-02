@@ -111,6 +111,11 @@ create table if not exists a1_stages (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid, module_key text, name text,
   position int, is_initial boolean default false);
+-- O funil (group_key) e as marcas de fim existem em produção. Os selos do
+-- funil de Leads são um por funil; sem group_key aqui a regra nem compila.
+alter table a1_stages add column if not exists group_key text;
+alter table a1_stages add column if not exists is_final boolean default false;
+alter table a1_stages add column if not exists color text;
 
 create table if not exists a1_cases (
   id uuid primary key default gen_random_uuid(),
@@ -126,6 +131,8 @@ create table if not exists a1_cases (
   manager_name text, partner_name text,
   is_new boolean, new_at timestamptz, payload jsonb default '{}'::jsonb,
   documents jsonb default '[]'::jsonb, created_at timestamptz default now());
+-- Telefone do cliente: a visita agendada a partir do lead leva o número.
+alter table a1_cases add column if not exists client_phone text;
 
 -- As filhas de a1_cases e o cadastro de empreendimentos existem em produção
 -- desde sempre e faltavam aqui. Sem elas, uma função que precise contar o

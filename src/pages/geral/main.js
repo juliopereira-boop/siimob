@@ -471,7 +471,7 @@ function desenharBlocos() {
   blocos.push(
     a1Card({
       titulo: 'Agenda do mês',
-      sub: 'Compromissos, tarefas, avaliações e entrevistas',
+      sub: 'Compromissos, tarefas, visitas, avaliações e entrevistas',
       acao: `<div class="cal-nav">
       <button class="cal-bt" data-acao="mudarMes" data-d="-1" aria-label="Mês anterior">‹</button>
       <button class="cal-bt" data-acao="mudarMes" data-d="1" aria-label="Próximo mês">›</button></div>`,
@@ -575,7 +575,7 @@ function tipoAgendaReal(item) {
   if (t === 'ent') return 'entrevista';
   if (t === 'venc') return 'avaliacao';
   if (t === 'meu') return 'compromisso';
-  return ['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t) ? t : 'compromisso';
+  return ['compromisso', 'tarefa', 'avaliacao', 'entrevista', 'visita'].includes(t) ? t : 'compromisso';
 }
 
 function corAgendaReal(tipo) {
@@ -585,16 +585,21 @@ function corAgendaReal(tipo) {
       compromisso: 'var(--sb-mar)',
       tarefa: 'var(--sb-ametista)',
       avaliacao: 'var(--sb-acafrao)',
-      entrevista: 'var(--sb-ardosia)'
+      entrevista: 'var(--sb-ardosia)',
+      visita: 'var(--sb-petroleo)'
     }[tipo] || 'var(--sb-linha-forte)'
   );
 }
 
 function rotuloAgendaReal(tipo) {
   return (
-    { compromisso: 'Compromisso', tarefa: 'Tarefa', avaliacao: 'Avaliação', entrevista: 'Entrevista' }[
-      tipo
-    ] || 'Compromisso'
+    {
+      compromisso: 'Compromisso',
+      tarefa: 'Tarefa',
+      avaliacao: 'Avaliação',
+      entrevista: 'Entrevista',
+      visita: 'Visita'
+    }[tipo] || 'Compromisso'
   );
 }
 
@@ -659,7 +664,7 @@ function tipoAgendaGeral(item) {
 
   if (t === 'meu') return 'compromisso';
 
-  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t)) {
+  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista', 'visita'].includes(t)) {
     return t;
   }
 
@@ -672,7 +677,8 @@ function rotuloAgendaGeral(tipo) {
       compromisso: 'Compromisso',
       tarefa: 'Tarefa',
       avaliacao: 'Avaliação',
-      entrevista: 'Entrevista'
+      entrevista: 'Entrevista',
+      visita: 'Visita'
     }[tipo] || 'Compromisso'
   );
 }
@@ -683,7 +689,8 @@ function corAgendaGeral(tipo) {
       compromisso: 'var(--sb-mar)',
       tarefa: 'var(--sb-ametista)',
       avaliacao: 'var(--sb-acafrao)',
-      entrevista: 'var(--sb-ardosia)'
+      entrevista: 'var(--sb-ardosia)',
+      visita: 'var(--sb-petroleo)'
     }[tipo] || 'var(--sb-linha-forte)'
   );
 }
@@ -906,7 +913,8 @@ function desenharAgenda() {
     compromisso: 0,
     tarefa: 0,
     avaliacao: 0,
-    entrevista: 0
+    entrevista: 0,
+    visita: 0
   };
 
   (G.agenda || []).forEach(item => {

@@ -1441,7 +1441,10 @@ export const A1_AGENDA_CORES = {
 
   avaliacao: 'var(--sb-acafrao)',
 
-  entrevista: 'var(--sb-ardosia)'
+  entrevista: 'var(--sb-ardosia)',
+
+  // A visita agendada pelo funil de Leads (selo Agendamento).
+  visita: 'var(--sb-petroleo)'
 };
 
 /*
@@ -1472,7 +1475,7 @@ export function a1AgendaTipoReal(tipo) {
     return 'compromisso';
   }
 
-  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista'].includes(t)) {
+  if (['compromisso', 'tarefa', 'avaliacao', 'entrevista', 'visita'].includes(t)) {
     return t;
   }
 
@@ -1490,7 +1493,9 @@ export function a1AgendaRotuloTipo(tipo) {
 
       avaliacao: 'Avaliação',
 
-      entrevista: 'Entrevista'
+      entrevista: 'Entrevista',
+
+      visita: 'Visita'
     }[real] || 'Compromisso'
   );
 }
@@ -2429,6 +2434,8 @@ export async function a1AgendaDesenhar() {
     ['entrevista', 'Entrevista'],
 
     ['compromisso', 'Compromisso'],
+
+    ['visita', 'Visita'],
 
     ['tarefa', 'Tarefa']
   ];

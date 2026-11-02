@@ -108,12 +108,10 @@
     <div class="modal-hdr">
       <div><div class="modal-title" id="ml-title"></div><div class="modal-sub" id="ml-sub"></div></div>
       <div style="display:flex;gap:.5rem;align-items:center">
-        <!-- EM QUALQUER ETAPA. Nao ha selo de automacao no Leads e nao precisa
-             haver: o dono foi explicito — de toda etapa o corretor pode abrir a
-             pre-analise. Amarrar isso a uma etapa "certa" seria inventar uma
-             regra de processo que o cliente nao pediu, e que ele teria de
-             descobrir errando. O botao so aparece com o modulo licenciado. -->
-        <button class="btn btn-primary btn-sm" id="ml-pre" style="display:none"
+        <!-- Com o modulo licenciado. Se o funil tem a etapa com o selo
+             "Iniciar pre-analise", o botao so libera nela (pedido do dono);
+             sem esse selo no funil, vale de qualquer etapa, como sempre foi. -->
+        <button class="btn btn-primary btn-sm" id="ml-pre" style="display:none;white-space:nowrap"
           data-acao="criarPreAnaliseDoLead" title="Abrir uma pré-análise já com os dados deste lead">
           Criar pré-análise</button>
         <select id="ml-stage" data-acao-change="changeLeadStage" style="padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem"></select>
@@ -128,6 +126,20 @@
     </div>
     <div class="modal-body" id="ml-body"></div>
     <div class="modal-foot"><button class="btn btn-danger btn-sm" data-acao="archiveLead">Arquivar</button><div style="display:flex;gap:.45rem"><button class="wa" style="padding:.5rem .8rem" data-acao="waLead">WhatsApp</button><button class="btn btn-ghost" data-acao="closeModal" data-id="modal-lead">Fechar</button><button class="btn btn-primary" data-acao="saveLeadRouter">Salvar</button></div></div>
+  </div>
+</div>
+
+<!-- Etapa com selo: a visita (Agendamento) ou o motivo da perda (Perdido).
+     Vem depois do modal do lead para ficar por cima dele. -->
+<div class="modal-bg hidden" id="modal-selo">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div><div class="modal-title" id="ms-title"></div><div class="modal-sub" id="ms-sub"></div></div>
+      <button class="modal-close" data-acao="seloCancelar" aria-label="Cancelar">×</button></div>
+    <div class="modal-body" id="ms-body"></div>
+    <div class="modal-foot"><span id="ms-erro" class="ms-erro" role="alert"></span><div style="display:flex;gap:.45rem">
+      <button class="btn btn-ghost" data-acao="seloCancelar">Cancelar</button>
+      <button class="btn btn-primary" id="ms-ok" data-acao="seloConfirmar">Confirmar</button></div></div>
   </div>
 </div>
 
