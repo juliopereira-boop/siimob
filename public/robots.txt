@@ -1,0 +1,11 @@
+# O site público é siimob.com. As telas do sistema (/empresa/...) e o painel
+# do dono não interessam a buscador nenhum.
+User-agent: *
+Allow: /
+Disallow: /superadmin
+Disallow: /login
+Disallow: /*/login
+Disallow: /*/geral
+Disallow: /*/repasse
+
+Sitemap: https://siimob.com/sitemap.xml

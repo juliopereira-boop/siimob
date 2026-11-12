@@ -159,7 +159,7 @@ function pintarLista(/** @type {boolean=} */ soGrade) {
               <span class="bl-vazio-ic" aria-hidden="true">${icone('blog')}</span>
               <h2>Os primeiros artigos estão chegando</h2>
               <p>Enquanto isso, conheça como o SIIMOB organiza a operação do lead ao registro.</p>
-              <a class="sx-btn sx-btn-mar" href="/conheca">Conhecer o SIIMOB</a>
+              <a class="sx-btn sx-btn-mar" href="/">Conhecer o SIIMOB</a>
             </div>`
       }
     </section>`;
@@ -291,7 +291,7 @@ async function pintarPost(/** @type {string} */ slug) {
               ${marcaSvg({ id: 'mcl', tamanho: 34, claro: true })}
               <b>O SIIMOB organiza a operação do lead ao registro.</b>
               <p>Leads, disposição, reserva, venda, repasse e registro, num sistema só.</p>
-              <a class="sx-btn sx-btn-mar" href="/conheca">Conhecer o sistema</a>
+              <a class="sx-btn sx-btn-mar" href="/">Conhecer o sistema</a>
             </div>
           </aside>
         </div>

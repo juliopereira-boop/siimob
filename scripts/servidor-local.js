@@ -41,8 +41,9 @@ if (!fs.existsSync(RAIZ)) {
 }
 
 // As regras saem de vercel.json, pelo mesmo leitor da suíte e do Vite.
-const { carregarRotas } = require('../tools/rotas');
+const { carregarRotas, carregarRedirecionamentos, redirecionar } = require('../tools/rotas');
 const REGRAS = carregarRotas(PROJETO);
+const DESVIOS = carregarRedirecionamentos(PROJETO);
 
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
@@ -64,6 +65,13 @@ const TIPOS = {
 
 const servidor = http.createServer((req, res) => {
   const caminho = decodeURIComponent(req.url.split('?')[0]);
+
+  // Endereço antigo (/conheca): 301 para o novo, como a Vercel.
+  const para = redirecionar(caminho, DESVIOS);
+  if (para) {
+    res.writeHead(301, { Location: para }).end();
+    return;
+  }
 
   // A reescrita vem ANTES de procurar arquivo: é isso que a Vercel faz, e é o
   // que faz /thecred/repasse chegar em repasse.html com o slug preservado na

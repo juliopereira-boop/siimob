@@ -8,7 +8,7 @@ const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const { carregarRotas, reescrever } = require('../tools/rotas');
+const { carregarRotas, carregarRedirecionamentos, redirecionar, reescrever } = require('../tools/rotas');
 
 const PROJETO = path.join(__dirname, '..');
 // A suíte roda contra o BUILD (dist/), não contra a fonte: é o dist que a
@@ -38,6 +38,7 @@ const TIPOS = {
 // pela suíte inteira sem ninguém ver. As regras saem de vercel.json, por
 // tools/rotas.js — o mesmo leitor do servidor de desenvolvimento.
 const REGRAS = carregarRotas(PROJETO);
+const DESVIOS = carregarRedirecionamentos(PROJETO);
 
 // SEM_BUILD=1 pula o build (útil quando você acabou de rodar `npm run build`).
 function construir() {
@@ -58,6 +59,11 @@ function servir() {
   return new Promise((ok, erro) => {
     const s = http.createServer((req, res) => {
       const caminho = decodeURIComponent(req.url.split('?')[0]);
+      const para = redirecionar(caminho, DESVIOS);
+      if (para) {
+        res.writeHead(301, { Location: para }).end();
+        return;
+      }
       const rel = reescrever(caminho, REGRAS).replace(/^\/+/, '');
       const alvo = path.resolve(RAIZ, rel || 'index.html');
       if (!alvo.startsWith(RAIZ)) {

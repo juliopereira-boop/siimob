@@ -348,8 +348,8 @@ function abrirLink(/** @type {string|null} */ id) {
   const zap = String((ST.config && ST.config.whatsapp) || '').replace(/\D/g, '');
   $('stl-atalhos').innerHTML = [
     ...(zap ? [[`https://wa.me/${zap}`, 'WhatsApp do site']] : []),
-    ['/conheca', '/conheca'],
-    ['/conheca#interesse', 'Formulário da LP'],
+    ['/', 'Site (siimob.com)'],
+    ['/#interesse', 'Formulário do site'],
     ['/blog', '/blog'],
     ['/contato', '/contato']
   ]
@@ -810,7 +810,7 @@ function modais() {
         <div class="st-tipos">${tipos}</div>
         <div class="form-group st-mt"><label for="stl-titulo">Título *</label><input id="stl-titulo" maxlength="80" placeholder="Ex.: Fale com um consultor"></div>
         <div class="form-group st-mt" id="stl-bloco-sub"><label for="stl-subtitulo">Linha de apoio</label><input id="stl-subtitulo" maxlength="120" placeholder="Opcional, aparece embaixo do título"></div>
-        <div class="form-group st-mt" id="stl-bloco-url"><label for="stl-url">Endereço *</label><input id="stl-url" placeholder="https://… ou /conheca">
+        <div class="form-group st-mt" id="stl-bloco-url"><label for="stl-url">Endereço *</label><input id="stl-url" placeholder="https://… ou /contato">
           <div class="st-atalhos" id="stl-atalhos"></div></div>
         <div class="form-group st-mt" id="stl-bloco-icone"><label for="stl-icone">Ícone</label><select id="stl-icone"><option value="">Sem ícone</option>${icones}</select></div>
         <div class="st-mt" id="stl-bloco-imagem">

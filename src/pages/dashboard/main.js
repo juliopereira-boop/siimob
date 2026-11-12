@@ -10,4 +10,4 @@ const slug = (function () {
 })();
 const painel = new URLSearchParams(location.search).get('painel');
 if (slug) location.replace('/' + slug + '/repasse' + (painel ? '?painel=' + encodeURIComponent(painel) : ''));
-else location.replace('/');
+else location.replace('/login');

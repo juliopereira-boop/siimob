@@ -9,7 +9,7 @@
 export const INDICA = {
   marca: 'SIIMOB',
   programa: 'IndicaSII',
-  siteInstitucional: '/conheca',
+  siteInstitucional: '/',
 
   // ─── A regra do programa ───────────────────────────────────────────────────
   // LEIA ANTES DE MEXER NOS TEXTOS.

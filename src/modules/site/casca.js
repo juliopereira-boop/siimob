@@ -10,8 +10,8 @@ import { lerConfig, linkWhatsapp, urlSegura } from './dados.js';
 import { acoes } from '../../shared/ui/acoes.js';
 
 const MENU = [
-  ['/conheca', 'Conheça o SIIMOB', 'conheca'],
-  ['/conheca#modulos', 'Módulos', 'modulos'],
+  ['/', 'O SIIMOB', 'conheca'],
+  ['/#modulos', 'Módulos', 'modulos'],
   ['/blog', 'Blog', 'blog'],
   ['/contato', 'Contato', 'contato']
 ];
@@ -42,19 +42,19 @@ export function montarCasca(o) {
   ).join('');
   if (nav)
     nav.innerHTML = `<div class="sx-wrap sx-nav-in">
-      <a class="sx-marca" href="/conheca" aria-label="SIIMOB, conheça o sistema">${marcaSvg({ id: 'mnav', tamanho: 30 })}${NOME_MARCA}</a>
+      <a class="sx-marca" href="/" aria-label="SIIMOB, início">${marcaSvg({ id: 'mnav', tamanho: 30 })}${NOME_MARCA}</a>
       <nav class="sx-nav-links" aria-label="Principal">${itens}</nav>
       <div class="sx-nav-cta">
-        <a class="sx-nav-entrar" href="/">Entrar</a>
-        <a class="sx-btn sx-btn-mar" href="/conheca#interesse">Quero conhecer</a>
+        <a class="sx-nav-entrar" href="/login">Entrar</a>
+        <a class="sx-btn sx-btn-mar" href="/#interesse">Quero conhecer</a>
       </div>
       <button class="sx-menu" type="button" data-acao="sxMenu" aria-expanded="false" aria-controls="sx-gaveta" aria-label="Abrir menu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
     </div>
     <div class="sx-gaveta" id="sx-gaveta">${itens}
-      <a href="/">Entrar no sistema</a>
-      <a class="sx-btn sx-btn-mar" href="/conheca#interesse">Quero conhecer</a>
+      <a href="/login">Entrar no sistema</a>
+      <a class="sx-btn sx-btn-mar" href="/#interesse">Quero conhecer</a>
     </div>`;
   if (rod) {
     rod.innerHTML = rodapeHtml({});
@@ -73,7 +73,7 @@ function rodapeHtml(/** @type {import('./dados.js').ConfigSite} */ c) {
   return `<div class="sx-wrap">
     <div class="sx-rodape-grade">
       <div class="sx-rodape-marca sx-escuro">
-        <a class="sx-marca" href="/conheca">${marcaSvg({ id: 'mrod', tamanho: 30, claro: true })}${NOME_MARCA}</a>
+        <a class="sx-marca" href="/">${marcaSvg({ id: 'mrod', tamanho: 30, claro: true })}${NOME_MARCA}</a>
         <p>Sistema de Integração Imobiliária. Construtora, imobiliária, correspondente e despachante no mesmo fluxo, do lead ao registro.</p>
         ${
           redes.length
@@ -89,10 +89,10 @@ function rodapeHtml(/** @type {import('./dados.js').ConfigSite} */ c) {
       <div>
         <h4>Produto</h4>
         <ul>
-          <li><a href="/conheca">Conheça o SIIMOB</a></li>
-          <li><a href="/conheca#jornada">Do lead ao registro</a></li>
-          <li><a href="/conheca#perfis">Perfis</a></li>
-          <li><a href="/conheca#seguranca">Segurança</a></li>
+          <li><a href="/">O SIIMOB</a></li>
+          <li><a href="/#jornada">Do lead ao registro</a></li>
+          <li><a href="/#perfis">Perfis</a></li>
+          <li><a href="/#seguranca">Segurança</a></li>
         </ul>
       </div>
       <div>
@@ -108,7 +108,7 @@ function rodapeHtml(/** @type {import('./dados.js').ConfigSite} */ c) {
           <li><a href="/contato">Fale com a gente</a></li>
           ${zap ? `<li><a href="${esc(zap)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>` : ''}
           ${email ? `<li><a href="mailto:${esc(email)}">${esc(email)}</a></li>` : ''}
-          <li><a href="/">Já é cliente? Entrar</a></li>
+          <li><a href="/login">Já é cliente? Entrar</a></li>
         </ul>
       </div>
     </div>

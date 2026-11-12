@@ -157,7 +157,7 @@ export async function a1Logout() {
     localStorage.removeItem('a1_slug');
     localStorage.removeItem('a1_user');
     const slug = A1.slug || '';
-    window.location.href = slug ? `/${slug}/login` : '/';
+    window.location.href = slug ? `/${slug}/login` : '/login';
   }
 }
 
@@ -169,12 +169,12 @@ export function a1RequireAuth(allowedRoles = null) {
   const slug = A1.slug;
 
   if (!token || !user) {
-    window.location.href = slug ? `/${slug}/login` : '/';
+    window.location.href = slug ? `/${slug}/login` : '/login';
     throw new Error('not_authenticated');
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    window.location.href = slug ? `/${slug}/dashboard` : '/';
+    window.location.href = slug ? `/${slug}/dashboard` : '/login';
     throw new Error('insufficient_role');
   }
 

@@ -1652,7 +1652,7 @@ function renderLeads() {
   const lista = filtro ? LEADS.filter(l => l.status === filtro) : LEADS;
   if (!lista.length) {
     box.innerHTML =
-      '<div style="padding:2.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhum interessado por aqui ainda. Divulgue a página <b>/conheca</b> para começar a receber contatos.</div>';
+      '<div style="padding:2.5rem;text-align:center;color:var(--t3);font-size:.8rem">Nenhum interessado por aqui ainda. Divulgue o site <b>siimob.com</b> para começar a receber contatos.</div>';
     return;
   }
   box.style.padding = '0';
@@ -2216,6 +2216,24 @@ async function saHash(plain) {
 }
 
 // ─── Tenant CRUD ──────────────────────────────────────────────────────────────
+const SLUGS_RESERVADOS = [
+  'login',
+  'entrar',
+  'conheca',
+  'siimob',
+  'blog',
+  'links',
+  'contato',
+  'superadmin',
+  'indica',
+  'indicasii',
+  'cadastro-corretor',
+  'static',
+  'assets',
+  'images',
+  'src'
+];
+
 async function createTenant() {
   const name = document.getElementById('n-name').value.trim();
   const slug = document
@@ -2236,6 +2254,12 @@ async function createTenant() {
   errEl.style.display = 'none';
   if (!name || !slug || !email) {
     nErr('Preencha nome, slug e e-mail.');
+    return;
+  }
+  // Endereços do site e do sistema: uma empresa com esse slug teria rotas
+  // engolidas (siimob.com/blog/geral abriria o blog, não a empresa).
+  if (SLUGS_RESERVADOS.includes(slug)) {
+    nErr(`O slug "${slug}" é um endereço do site. Escolha outro.`);
     return;
   }
   if (!ownerName || !ownerCpf || !ownerPw) {

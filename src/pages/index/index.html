@@ -1,61 +1,541 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SIIMOB — Sistema de integração imobiliária</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#04201D">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"></noscript>
-  <link rel="stylesheet" href="/src/pages/index/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIIMOB | Tecnologia que conecta. Inteligência que transforma.</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#04201D">
+<meta name="description" content="SIIMOB é o CRM imobiliário que conecta construtora, imobiliária, correspondente e despachante: leads, disposição de unidades, reserva, venda, repasse e registro num sistema só.">
+<link rel="canonical" href="https://siimob.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SIIMOB">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://siimob.com/">
+<meta property="og:image" content="https://siimob.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="SIIMOB | Tecnologia que conecta. Inteligência que transforma.">
+<meta property="og:description" content="Leads, disposição de unidades, reserva com fluxo de pagamento, venda, repasse e registro. Um perfil para cada participante da operação.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "SIIMOB", "alternateName": "Sistema de Integração Imobiliária", "url": "https://siimob.com/", "logo": "https://siimob.com/icon-512.png", "slogan": "Tecnologia que conecta. Inteligência que transforma."}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "SIIMOB", "url": "https://siimob.com/", "inLanguage": "pt-BR"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "SIIMOB", "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "url": "https://siimob.com/", "description": "CRM imobiliário que conecta construtora, imobiliária, correspondente e despachante: leads, disposição de unidades, reserva, venda, repasse e registro num sistema só.", "featureList": ["Leads e funil de vendas", "Pré-análise de crédito", "Disposição de unidades em planta", "Reserva com fluxo de pagamento", "Venda com dossiê e contrato", "Repasse e financiamento", "Registro em cartório, ITBI e matrícula", "Workflow configurável", "Perfis por participante", "Dashboards por módulo"]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "O SIIMOB é um CRM ou um sistema de gestão?", "acceptedAnswer": {"@type": "Answer", "text": "Os dois lados da mesma operação. A parte comercial (leads, funil, visitas, proposta e venda) funciona como um CRM imobiliário. A diferença é que o SIIMOB continua depois da venda: pré-análise de crédito, repasse até a assinatura com o banco e registro em cartório, com ITBI, exigências e matrícula."}}, {"@type": "Question", "name": "Para quem o SIIMOB foi feito?", "acceptedAnswer": {"@type": "Answer", "text": "Para quem participa da venda de um imóvel novo ou financiado: construtora e incorporadora, imobiliária e corretores, correspondente bancário e despachante. Cada um entra com o seu perfil e vê só o que é dele."}}, {"@type": "Question", "name": "Preciso contratar todos os módulos?", "acceptedAnswer": {"@type": "Answer", "text": "Não. Você liga só o que usa (Leads, Pré-análise, Disposição de unidades, Venda, Repasse, Registro) e o que não está ligado não aparece para ninguém."}}, {"@type": "Question", "name": "Como os meus dados ficam protegidos?", "acceptedAnswer": {"@type": "Answer", "text": "Cada empresa tem os seus dados isolados pelo próprio banco de dados, em cada consulta. Anexos ficam na área da empresa com link temporário, CPF aparece mascarado nas listas e exclusão definitiva só é feita por gestor, com registro."}}, {"@type": "Question", "name": "Preciso instalar alguma coisa?", "acceptedAnswer": {"@type": "Answer", "text": "Não. O SIIMOB roda no navegador. Cada pessoa entra em siimob.com/login com a empresa, o perfil e o CPF."}}, {"@type": "Question", "name": "Consigo trazer a carteira que hoje está em planilha?", "acceptedAnswer": {"@type": "Answer", "text": "Sim. A importação de base lê a planilha, mostra como cada coluna vai entrar e só grava depois que você confere."}}, {"@type": "Question", "name": "Como faço para conhecer e contratar?", "acceptedAnswer": {"@type": "Answer", "text": "Preencha o formulário no fim desta página ou fale com a gente pelo WhatsApp. A gente entende a sua operação, liga os módulos e mostra o sistema rodando com um caso seu."}}]}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/index/style.css">
 </head>
 <body>
-<div class="wrap">
 
-  <div class="logo" style="display:flex;align-items:center;justify-content:center;gap:.6rem"><svg width="34" height="34" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="siind1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="siind1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="siind1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="siind1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#siind1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#siind1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#siind1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#siind1d)"/></svg>SIIMOB</div>
-  <div class="logo-sub">Sistema de integração imobiliária</div>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
-  <div class="card">
-    <div class="card-top"></div>
-    <div class="card-title">Acesse sua conta</div>
-    <div class="card-desc">Informe o identificador da sua empresa para continuar.</div>
-
-    <label class="field-label">Identificador da empresa</label>
-    <div class="slug-row">
-      <div class="slug-prefix">corbanos.app/</div>
-      <input id="slug-input" type="text" placeholder="construtora-abc"
-             autocomplete="off" spellcheck="false">
+<nav class="nav" aria-label="Principal">
+  <div class="wrap nav-in">
+    <a class="marca" href="#topo" aria-label="SIIMOB, início"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="silp1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silp1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silp1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="silp1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#silp1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#silp1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#silp1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#silp1d)"/></svg><span>SI<i>I</i>MOB</span></a>
+    <div class="nav-links">
+      <a href="#jornada">Jornada</a>
+      <a href="#perfis">Perfis</a>
+      <a href="#construtora">Construtora</a>
+      <a href="#modulos">Módulos</a>
+      <a href="#ecossistema">Ecossistema</a>
+      <a href="#duvidas">Dúvidas</a>
+      <a href="/blog">Blog</a>
+      <a href="/contato">Contato</a>
     </div>
-    <button class="btn-access" data-acao="goToLogin">Acessar minha conta →</button>
-    <p class="hint">O identificador é fornecido pelo administrador do sistema</p>
-  </div>
-
-  <div class="features">
-    <div class="feat">
-      <div class="feat-name">Repasse Imobiliário</div>
-      <div class="feat-desc">Pipeline completo da aprovação bancária ao repasse financeiro</div>
-    </div>
-    <div class="feat">
-      <div class="feat-name">Registro em Cartório</div>
-      <div class="feat-desc">Gestão de ITBI, protocolos, exigências e matrícula atualizada</div>
-    </div>
-    <div class="feat">
-      <div class="feat-name">Módulos por plano</div>
-      <div class="feat-desc">Acesso controlado, liberado individualmente por tenant</div>
-    </div>
-    <div class="feat">
-      <div class="feat-name">Multi-empresa</div>
-      <div class="feat-desc">Dados totalmente isolados com Row-Level Security</div>
+    <div class="nav-cta">
+      <a href="/login" class="nav-entrar" id="nav-entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg><span>Entrar</span></a>
+      <a href="#interesse" class="btn btn-mar">Quero conhecer</a>
     </div>
   </div>
+</nav>
 
-  <div class="footer">SIIMOB OS &mdash; Todos os direitos reservados</div>
-</div>
+<header class="hero" id="topo">
+  <div class="hero-fundo" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <div class="hero-txt">
+      <div class="selo-linha"><span class="ponto-vivo" aria-hidden="true"></span>CRM imobiliário · do lead ao registro</div>
+      <h1>Tecnologia que conecta. <em>Inteligência que transforma.</em></h1>
+      <p class="lede">
+        Construtora, imobiliária, correspondente e despachante trabalhando sobre o mesmo dado.
+        Cada um no seu perfil, vendo só o que é seu, e todos acompanhando o cliente
+        do lead à matrícula.
+      </p>
+      <div class="hero-cta">
+        <a href="#interesse" class="btn btn-mar btn-g">Quero ver na minha operação</a>
+        <a href="#jornada" class="btn btn-linha btn-g">Como funciona</a>
+      </div>
+      <ul class="hero-prova">
+        <li><b>6</b><span>módulos do funil, do lead à matrícula</span></li>
+        <li><b>4</b><span>perfis de cliente, cada um com a sua tela</span></li>
+        <li><b>1</b><span>cadastro do cliente, sem redigitação</span></li>
+      </ul>
+    </div>
+
+    <!-- Assinatura: a planta viva. Uma unidade é reservada, depois vendida, e
+         o resumo acompanha. É a promessa da Disposição contada em movimento. -->
+    <figure class="app rv" aria-label="Ilustração da tela de Disposição de unidades">
+      <div class="app-barra">
+        <span class="app-pontos" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="app-abas" aria-hidden="true">
+          <span>Leads</span><span class="on">Disposição</span><span>Venda</span><span>Repasse</span><span>Registro</span>
+        </span>
+        <span class="app-vivo"><span class="ponto-vivo" aria-hidden="true"></span>ao vivo</span>
+      </div>
+      <div class="app-corpo">
+        <div class="app-cab">
+          <div>
+            <small>Empreendimento</small>
+            <b>Residencial Jardins do Lago</b>
+          </div>
+          <div class="app-vgv">
+            <small>VGV vendido</small>
+            <b id="hp-pct">38%</b>
+          </div>
+        </div>
+        <div class="app-resumo" id="hp-resumo">
+          <span class="st st-d"><i></i><b data-st="disponivel">0</b> disponíveis</span>
+          <span class="st st-r"><i></i><b data-st="reservado">0</b> reservadas</span>
+          <span class="st st-v"><i></i><b data-st="vendido">0</b> vendidas</span>
+          <span class="st st-b"><i></i><b data-st="bloqueado">0</b> bloqueadas</span>
+        </div>
+        <div class="planta" id="hp-planta" aria-hidden="true"></div>
+        <div class="app-toast" id="hp-toast" role="status" aria-live="polite"></div>
+      </div>
+      <figcaption class="leg-ilustra">Ilustração. Nomes e números fictícios.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<main id="conteudo">
+
+<!-- ═══ JORNADA ═══════════════════════════════════════════════════════════ -->
+<section id="jornada" class="claro">
+  <div class="wrap">
+    <div class="sec-cab rv">
+      <div class="sobre">A jornada</div>
+      <h2>O cliente entra como lead e sai com a matrícula. Sem trocar de sistema.</h2>
+      <p class="lede">A reserva já nasce com a venda, a pré-análise aprovada abre a venda, a venda abre o repasse. Cada passagem é uma ação configurada e fica registrada. Ninguém redigita CPF, ninguém pergunta "em que pé está?".</p>
+    </div>
+    <ol class="trilho rv" id="trilho">
+      <li><span class="tr-n">01</span><b>Leads</b><p>Funil, origem, motivo de perda, mensagens prontas. O corretor com a própria carteira.</p></li>
+      <li><span class="tr-n">02</span><b>Pré-análise</b><p>Crédito avaliado antes da venda, distribuído entre correspondente e analista.</p></li>
+      <li><span class="tr-n">03</span><b>Disposição</b><p>A unidade reservada na planta, com fluxo de pagamento montado na hora.</p></li>
+      <li><span class="tr-n">04</span><b>Venda</b><p>Proposta, condições, dossiê, documentos e checklist por situação.</p></li>
+      <li><span class="tr-n">05</span><b>Repasse</b><p>Financiamento, conformidade e assinatura com o banco, dia a dia.</p></li>
+      <li><span class="tr-n">06</span><b>Registro</b><p>Cartório e despachante com prazo, dono e situação até a matrícula.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═══ PERFIS ════════════════════════════════════════════════════════════ -->
+<section id="perfis">
+  <div class="wrap">
+    <div class="sec-cab rv">
+      <div class="sobre">Multidirecional</div>
+      <h2>Um sistema, quatro perfis. Cada um com o trabalho que é dele.</h2>
+      <p class="lede">O SIIMOB não é uma tela igual para todo mundo. A construtora cadastra empreendimentos e unidades; o correspondente não precisa disso. A imobiliária vive de lead; o despachante vive de cartório. O perfil decide o que existe na tela.</p>
+    </div>
+
+    <div class="perfis rv">
+      <div class="perfis-abas" role="tablist" aria-label="Perfis de cliente">
+        <button role="tab" id="pa-construtora" aria-controls="pp-construtora" aria-selected="true" data-perfil="construtora"><b>Construtora</b><small>a matriz da operação</small></button>
+        <button role="tab" id="pa-imobiliaria" aria-controls="pp-imobiliaria" aria-selected="false" tabindex="-1" data-perfil="imobiliaria"><b>Imobiliária</b><small>leads e vendas</small></button>
+        <button role="tab" id="pa-correspondente" aria-controls="pp-correspondente" aria-selected="false" tabindex="-1" data-perfil="correspondente"><b>Correspondente</b><small>crédito e repasse</small></button>
+        <button role="tab" id="pa-despachante" aria-controls="pp-despachante" aria-selected="false" tabindex="-1" data-perfil="despachante"><b>Despachante</b><small>registro</small></button>
+      </div>
+
+      <div class="perfil" role="tabpanel" id="pp-construtora" aria-labelledby="pa-construtora">
+        <div>
+          <h3>Do lead ao despachante. Tudo nasce aqui.</h3>
+          <p>A construtora é a matriz das informações: cadastra empreendimentos e unidades, define preço e condições de pagamento, controla a disposição e acompanha cada cliente até o registro. É o perfil mais completo do SIIMOB.</p>
+          <ul class="checks">
+            <li>Empreendimentos e unidades com ficha completa</li>
+            <li>Disposição de unidades em tempo real</li>
+            <li>Mapa de preço e parâmetros de pagamento</li>
+            <li>Reserva com fluxo de pagamento e venda</li>
+            <li>Repasse e registro do mesmo cliente</li>
+            <li>Painel de gestor: VSO, estoque, ticket, conversão</li>
+          </ul>
+        </div>
+        <div class="perfil-mods" aria-label="Módulos do perfil">
+          <span class="on">Leads</span><span class="on">Pré-análise</span><span class="on">Disposição</span><span class="on">Venda</span><span class="on">Repasse</span><span class="on">Registro</span><span class="on">Dashboards</span>
+        </div>
+      </div>
+
+      <div class="perfil" role="tabpanel" id="pp-imobiliaria" aria-labelledby="pa-imobiliaria" hidden>
+        <div>
+          <h3>Altamente comercial. Lead, visita, proposta, venda.</h3>
+          <p>A imobiliária gerencia o funil e a equipe. Cada corretor é um usuário com a própria página, a própria carteira e os próprios números; o gestor vê tudo e distribui.</p>
+          <ul class="checks">
+            <li>Funis de lead por operação, com origem e motivo de perda</li>
+            <li>Corretores com acesso e carteira próprios</li>
+            <li>Mensagens padrão e atalho de WhatsApp</li>
+            <li>Venda com proposta e condições de pagamento</li>
+            <li>Painel de conversão por etapa do funil</li>
+            <li>Reserva na disposição da construtora conectada <span class="selo-breve">em lançamento</span></li>
+          </ul>
+        </div>
+        <div class="perfil-mods" aria-label="Módulos do perfil">
+          <span class="on">Leads</span><span>Pré-análise</span><span class="breve">Disposição</span><span class="on">Venda</span><span>Repasse</span><span>Registro</span><span class="on">Dashboards</span>
+        </div>
+      </div>
+
+      <div class="perfil" role="tabpanel" id="pp-correspondente" aria-labelledby="pa-correspondente" hidden>
+        <div>
+          <h3>Pós-venda. Crédito, conformidade e assinatura com o banco.</h3>
+          <p>O correspondente não precisa de funil comercial. Ele recebe o cliente vendido e conduz o crédito até o contrato assinado, com cada processo contando os dias que passa parado.</p>
+          <ul class="checks">
+            <li>Pré-análise com ciclo de distribuição entre analistas</li>
+            <li>Repasse por etapas que você desenha</li>
+            <li>Contador de dias parado e alerta de gargalo</li>
+            <li>Previsão de repasse e de comissão</li>
+            <li>Documentos por tipo, dentro do processo</li>
+            <li>Empresas e analistas parceiros com visão própria</li>
+          </ul>
+        </div>
+        <div class="perfil-mods" aria-label="Módulos do perfil">
+          <span>Leads</span><span class="on">Pré-análise</span><span>Disposição</span><span>Venda</span><span class="on">Repasse</span><span>Registro</span><span class="on">Dashboards</span>
+        </div>
+      </div>
+
+      <div class="perfil" role="tabpanel" id="pp-despachante" aria-labelledby="pa-despachante" hidden>
+        <div>
+          <h3>O trecho mais opaco, com dono, prazo e situação.</h3>
+          <p>O despachante trabalha o registro: painel próprio, workflow próprio, cartório por cartório. Sem receber pedido por WhatsApp nem perguntar quem mandou o quê.</p>
+          <ul class="checks">
+            <li>Quadro e lista do registro numa tela</li>
+            <li>Workflow do registro desenhado por você</li>
+            <li>Controle por cartório e por despachante</li>
+            <li>Documentos anexados ao processo</li>
+            <li>Histórico de cada exigência e de cada passo</li>
+          </ul>
+        </div>
+        <div class="perfil-mods" aria-label="Módulos do perfil">
+          <span>Leads</span><span>Pré-análise</span><span>Disposição</span><span>Venda</span><span>Repasse</span><span class="on">Registro</span><span class="on">Dashboards</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONSTRUTORA ═══════════════════════════════════════════════════════ -->
+<section id="construtora" class="claro">
+  <div class="wrap">
+    <div class="sec-cab rv">
+      <div class="sobre">Perfil construtora</div>
+      <h2>Disposição de unidades: o estoque inteiro numa planta que se atualiza sozinha.</h2>
+      <p class="lede">Vendido, disponível, reservado, bloqueado. Cada unidade com identificador próprio, histórico de tudo o que aconteceu com ela e uma regra que o banco garante: uma unidade, uma reserva.</p>
+    </div>
+
+    <div class="bloco rv">
+      <div class="bloco-txt">
+        <span class="etq">01 · Unidades</span>
+        <h3>Cadastro rápido, ficha completa.</h3>
+        <p>Blocos, pavimentos e unidades por andar geram todas as fichas de uma vez. Depois, cada unidade ganha o que um condomínio exige: tipologia, áreas privativa, comum e total, fração ideal, vagas, depósito, posição solar, matrícula e descrição. Uma a uma ou várias de uma vez.</p>
+        <ul class="checks">
+          <li>Identificador único por unidade</li>
+          <li>Histórico campo a campo: quem mudou, o quê e quando</li>
+          <li>Unidade reservada ou vendida não some: bloqueia</li>
+        </ul>
+      </div>
+      <div class="tela tela-ficha" aria-hidden="true">
+        <div class="tf-cab"><span class="tf-selo">Disponível</span><b>B2-1104</b><small>Torre 2 · 11º pavimento</small></div>
+        <div class="tf-preco"><div><small>Valor de tabela</small><b>R$ 412.800,00</b></div><div><small>Preço por m²</small><b>R$ 6.450,00</b></div></div>
+        <div class="tf-grade">
+          <div><small>Tipologia</small><b>3 quartos, 1 suíte</b></div>
+          <div><small>Área privativa</small><b>64,00 m²</b></div>
+          <div><small>Área total</small><b>78,40 m²</b></div>
+          <div><small>Vagas</small><b>2 · cobertas</b></div>
+          <div><small>Posição</small><b>Nascente · frente</b></div>
+          <div><small>Fração ideal</small><b>0,0062</b></div>
+        </div>
+        <div class="tf-hist">
+          <small>Histórico</small>
+          <p><i></i>Preço atualizado no mapa "Tabela novembro"</p>
+          <p><i></i>Área privativa: 63,5 → 64,0</p>
+          <p><i></i>Ficha criada pelo cadastro rápido</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco bloco-inv rv">
+      <div class="bloco-txt">
+        <span class="etq">02 · Preço e pagamento</span>
+        <h3>Mapa de preço e parâmetros de pagamento.</h3>
+        <p>O mapa de preço define o valor de cada unidade, por m² ou unidade a unidade. Reajuste vira um mapa novo, e o anterior fica como história: cada reserva guarda o preço que estava valendo. Os parâmetros dizem como o cliente pode pagar.</p>
+        <ul class="checks">
+          <li>Ato, sinal, mensais, semestrais, anuais, chaves</li>
+          <li>Financiamento, FGTS, subsídio e à vista</li>
+          <li>Periodicidade, mínimo e máximo de parcelas por série</li>
+        </ul>
+      </div>
+      <div class="tela tela-param" aria-hidden="true">
+        <div class="tp-cab"><b>Parâmetros de pagamento</b><small>valem para todas as reservas</small></div>
+        <div class="tp-l"><b>Ato</b><span>parcela única</span><em>1</em></div>
+        <div class="tp-l"><b>Mensais</b><span>todo mês</span><em>até 72</em></div>
+        <div class="tp-l"><b>Semestrais</b><span>a cada 6 meses</span><em>até 12</em></div>
+        <div class="tp-l"><b>Anuais</b><span>a cada 12 meses</span><em>até 6</em></div>
+        <div class="tp-l"><b>Chaves</b><span>na entrega</span><em>1</em></div>
+        <div class="tp-l banco"><b>Financiamento</b><span>banco, no repasse</span><em>1</em></div>
+        <div class="tp-l banco"><b>FGTS</b><span>no repasse</span><em>1</em></div>
+        <div class="tp-l gov"><b>Subsídio</b><span>governo</span><em>1</em></div>
+      </div>
+    </div>
+
+    <div class="bloco rv">
+      <div class="bloco-txt">
+        <span class="etq">03 · Reserva</span>
+        <h3>Clicou, reservou, a venda já existe.</h3>
+        <p>Na planta, o corretor clica numa unidade disponível e reserva em três passos: dados do titular, cônjuge e associados com parentesco; o fluxo de pagamento com valor, quantidade e primeiro vencimento de cada série; e a conferência. O fluxo tem de fechar no valor da unidade.</p>
+        <ul class="checks">
+          <li>Prazo de validade, prorrogação e cancelamento com motivo</li>
+          <li>A venda nasce da reserva, com o fluxo na proposta</li>
+          <li>Venda concluída marca a unidade vendida; distrato devolve</li>
+        </ul>
+      </div>
+      <div class="tela tela-fluxo" aria-hidden="true">
+        <div class="tx-passos"><span class="ok">1 Cliente</span><span class="on">2 Fluxo</span><span>3 Conferir</span></div>
+        <div class="tx-l"><b>Ato</b><span>1 × R$ 12.000,00</span><em>20/11/2026</em></div>
+        <div class="tx-l"><b>Mensais</b><span>36 × R$ 850,00</span><em>20/12/2026</em></div>
+        <div class="tx-l"><b>Semestrais</b><span>6 × R$ 4.500,00</span><em>20/06/2027</em></div>
+        <div class="tx-l gov"><b>FGTS</b><span>1 × R$ 18.000,00</span><em>no repasse</em></div>
+        <div class="tx-l banco"><b>Financiamento</b><span>1 × R$ 325.200,00</span><em>no repasse</em></div>
+        <div class="tx-barra"><i style="--w:16.9%;--c:var(--c-cli)"></i><i style="--w:4.4%;--c:var(--c-gov)"></i><i style="--w:78.7%;--c:var(--c-banco)"></i></div>
+        <div class="tx-leg"><span style="--c:var(--c-cli)">Cliente R$ 69.600</span><span style="--c:var(--c-gov)">FGTS R$ 18.000</span><span style="--c:var(--c-banco)">Banco R$ 325.200</span></div>
+        <div class="tx-total"><span>Fluxo</span><b>R$ 412.800,00</b><span class="tx-fecha">fecha no valor da unidade</span></div>
+      </div>
+    </div>
+
+    <div class="bloco bloco-inv rv">
+      <div class="bloco-txt">
+        <span class="etq">04 · Gestão</span>
+        <h3>Indicadores para decidir, não para enfeitar.</h3>
+        <p>O painel do gestor responde o que a diretoria pergunta: quanto do VGV já foi vendido, a velocidade de vendas, quantos meses de estoque restam e quanto das reservas vira venda.</p>
+        <ul class="checks">
+          <li>VSO do mês e vendas líquidas de distratos</li>
+          <li>Meses de estoque pela média dos últimos três meses</li>
+          <li>Ticket médio, preço médio do m² e estoque parado</li>
+          <li>Ranking de corretores e vendas por tipologia e bloco</li>
+        </ul>
+      </div>
+      <div class="tela tela-kpi" aria-hidden="true">
+        <div class="tk-grade">
+          <div><small>VSO do mês</small><b>6,8%</b><em class="sobe">+1,2 p.p.</em></div>
+          <div><small>Meses de estoque</small><b>11,4</b><em>média de 3 meses</em></div>
+          <div><small>Ticket médio</small><b>R$ 398 mil</b><em>12 vendas</em></div>
+          <div><small>Reservas que viram venda</small><b>72%</b><em>últimos 90 dias</em></div>
+        </div>
+        <div class="tk-graf">
+          <small>Vendas líquidas por mês</small>
+          <svg viewBox="0 0 300 96" role="presentation" id="tk-svg"></svg>
+          <div class="tk-eixo"><span>jun</span><span>jul</span><span>ago</span><span>set</span><span>out</span><span>nov</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MÓDULOS ═══════════════════════════════════════════════════════════ -->
+<section id="modulos">
+  <div class="wrap">
+    <div class="sec-cab rv">
+      <div class="sobre">Módulos</div>
+      <h2>Você liga o que usa. O resto não aparece.</h2>
+      <p class="lede">Cada módulo é uma licença. Sem ela, o módulo não existe na tela de ninguém, e o banco recusa o acesso aos dados dele.</p>
+    </div>
+    <div class="mods rv">
+      <article class="mod"><span class="mod-k">Comercial</span><h3>Leads</h3><p>Funis por operação, origem, motivo de perda, mensagens padrão e tarefas. Cada corretor com a sua carteira.</p></article>
+      <article class="mod"><span class="mod-k">Crédito</span><h3>Pré-análise</h3><p>A análise de crédito antes da venda, com ciclo de distribuição entre empresas correspondentes e analistas.</p></article>
+      <article class="mod mod-novo"><span class="mod-k">Estoque</span><h3>Disposição de unidades</h3><p>Planta em tempo real, ficha por unidade, mapa de preço, parâmetros de pagamento e reserva com fluxo.</p></article>
+      <article class="mod"><span class="mod-k">Comercial</span><h3>Venda</h3><p>Proposta, condições de pagamento, dossiê, contrato, documentos e checklist por situação da venda.</p></article>
+      <article class="mod"><span class="mod-k">Pós-venda</span><h3>Repasse</h3><p>Financiamento etapa por etapa, contador de dias parado, previsão de repasse e de comissão.</p></article>
+      <article class="mod"><span class="mod-k">Pós-venda</span><h3>Registro</h3><p>Cartório e despachante com quadro, lista e workflow próprios até a matrícula.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Workflow</h3><p>Você desenha as etapas, as cores e os caminhos de cada módulo, e as ações que levam o cliente de um módulo ao outro.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Dashboards</h3><p>Um painel por módulo, com permissão por pessoa: quem vê o painel do repasse não vê, por isso, o da venda.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Equipe e perfis</h3><p>Perfis de acesso que você descreve uma vez e aplica a todo mundo: quem vê, quem cria, quem edita, quem baixa.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Busca em tudo</h3><p>Ctrl K de qualquer tela: acha o processo pelo nome ou CPF, a pessoa ou a tela, sem navegar por menu.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Agenda e avisos</h3><p>Compromissos ligados ao processo e avisos de pendência para quem precisa agir, na hora certa.</p></article>
+      <article class="mod"><span class="mod-k">Base</span><h3>Importar base</h3><p>Traz a carteira que hoje vive em planilha para dentro do sistema, conferida antes de gravar.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ECOSSISTEMA ═══════════════════════════════════════════════════════ -->
+<section id="ecossistema" class="escuro">
+  <div class="wrap eco">
+    <div class="eco-txt rv">
+      <div class="sobre">Ecossistema SIIMOB</div>
+      <h2>Sistema de Integração Imobiliária. É isso que o nome quer dizer.</h2>
+      <p class="lede">A construtora é a matriz: ela publica a informação, e cada parceiro recebe a parte que é dele. A imobiliária vê a disposição e reserva; o correspondente recebe o cliente vendido; o despachante recebe o registro. Ninguém digita de novo o que a construtora já cadastrou.</p>
+      <div class="eco-status">
+        <div class="eco-s hoje"><span>Hoje</span><p>Dentro da conta da construtora, imobiliárias, corretores, correspondentes e despachantes já entram como parceiros, cada um com o seu acesso e vendo só o que é seu.</p></div>
+        <div class="eco-s breve"><span>Em lançamento</span><p>Conexão entre contas: a imobiliária com conta própria encontra a construtora no SIIMOB, clica em <b>Conectar</b> e passa a ver a disposição em tempo real, reservar unidades e acompanhar repasse e registro dos próprios clientes.</p></div>
+      </div>
+    </div>
+    <div class="eco-diag rv" aria-hidden="true">
+      <svg viewBox="0 0 440 400" class="eco-svg">
+        <defs>
+          <marker id="eco-seta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3fb8a6"/></marker>
+        </defs>
+        <path class="eco-fio" d="M220 168 C 220 120, 120 110, 92 82" marker-end="url(#eco-seta)"/>
+        <path class="eco-fio" d="M220 168 C 220 120, 320 110, 348 82" marker-end="url(#eco-seta)"/>
+        <path class="eco-fio" d="M220 232 C 220 300, 220 300, 220 318" marker-end="url(#eco-seta)"/>
+      </svg>
+      <div class="eco-no eco-centro"><b>Construtora</b><small>matriz · publica</small></div>
+      <div class="eco-no eco-imob"><b>Imobiliária</b><small>disposição, reserva, venda</small></div>
+      <div class="eco-no eco-corr"><b>Correspondente</b><small>crédito e repasse</small></div>
+      <div class="eco-no eco-desp"><b>Despachante</b><small>registro</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DIFERENÇA ═════════════════════════════════════════════════════════ -->
+<section id="diferenca">
+  <div class="wrap">
+    <div class="sec-cab rv">
+      <div class="sobre">Por que o SIIMOB</div>
+      <h2>Onde o CRM de vendas para, o SIIMOB continua.</h2>
+      <p class="lede">A maioria dos CRMs imobiliários termina quando o cliente diz sim. É depois disso que o processo trava: crédito, banco, documentação, cartório. O SIIMOB acompanha o cliente até a matrícula, com cada participante no mesmo fluxo.</p>
+    </div>
+    <div class="cmp rv">
+      <table>
+        <thead><tr><th scope="col"><span class="vh">Etapa</span></th><th scope="col">CRM de vendas comum</th><th scope="col" class="cmp-nos">SIIMOB</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Leads, funil e visitas</th><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Pré-análise de crédito antes da venda</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Disposição de unidades e reserva com fluxo de pagamento</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Venda com dossiê, contrato e documentação</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Repasse etapa por etapa até a assinatura com o banco</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Registro em cartório, ITBI, exigências e matrícula</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+          <tr><th scope="row">Construtora, imobiliária, correspondente e despachante no mesmo dado</th><td><span class="cmp-nao" aria-label="Não">—</span></td><td><span class="cmp-sim" aria-label="Sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEGURANÇA ═════════════════════════════════════════════════════════ -->
+<section id="seguranca" class="claro">
+  <div class="wrap seg">
+    <div class="rv">
+      <div class="sobre">Segurança</div>
+      <h2>O dado de um cliente nunca alcança a tela de outro.</h2>
+      <p class="lede">O SIIMOB atende várias empresas na mesma plataforma, e a separação não é um filtro de tela: ela é aplicada pelo banco de dados em cada consulta. Se alguém tentar buscar dado de outra empresa, o banco devolve vazio.</p>
+    </div>
+    <ul class="seg-lista rv">
+      <li><b>Isolamento no banco</b><span>Cada consulta passa pela regra do cliente, da licença e da permissão da pessoa.</span></li>
+      <li><b>Tudo por identificador</b><span>Unidade, reserva, venda e processo têm id próprio e histórico de cada mudança.</span></li>
+      <li><b>Sem venda duplicada</b><span>Duas reservas simultâneas da mesma unidade: uma passa, a outra é recusada.</span></li>
+      <li><b>Arquivos protegidos</b><span>Cada anexo fica na área da empresa, com link temporário, nunca público.</span></li>
+      <li><b>LGPD</b><span>CPF mascarado nas listas e exclusão definitiva só por gestor, com registro.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ DÚVIDAS ═══════════════════════════════════════════════════════════ -->
+<section id="duvidas">
+  <div class="wrap faq-wrap">
+    <div class="rv">
+      <div class="sobre">Dúvidas</div>
+      <h2>Perguntas frequentes</h2>
+      <p class="lede">Não achou a sua? <a href="/contato">Fale com a gente</a>, a resposta vem de quem conhece o sistema.</p>
+    </div>
+    <div class="faq rv">
+      <details class="faq-item">
+        <summary><span>O SIIMOB é um CRM ou um sistema de gestão?</span><i aria-hidden="true"></i></summary>
+        <p>Os dois lados da mesma operação. A parte comercial (leads, funil, visitas, proposta e venda) funciona como um CRM imobiliário. A diferença é que o SIIMOB continua depois da venda: pré-análise de crédito, repasse até a assinatura com o banco e registro em cartório, com ITBI, exigências e matrícula.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Para quem o SIIMOB foi feito?</span><i aria-hidden="true"></i></summary>
+        <p>Para quem participa da venda de um imóvel novo ou financiado: construtora e incorporadora, imobiliária e corretores, correspondente bancário e despachante. Cada um entra com o seu perfil e vê só o que é dele.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Preciso contratar todos os módulos?</span><i aria-hidden="true"></i></summary>
+        <p>Não. Você liga só o que usa (Leads, Pré-análise, Disposição de unidades, Venda, Repasse, Registro) e o que não está ligado não aparece para ninguém.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Como os meus dados ficam protegidos?</span><i aria-hidden="true"></i></summary>
+        <p>Cada empresa tem os seus dados isolados pelo próprio banco de dados, em cada consulta. Anexos ficam na área da empresa com link temporário, CPF aparece mascarado nas listas e exclusão definitiva só é feita por gestor, com registro.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Preciso instalar alguma coisa?</span><i aria-hidden="true"></i></summary>
+        <p>Não. O SIIMOB roda no navegador. Cada pessoa entra em siimob.com/login com a empresa, o perfil e o CPF.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Consigo trazer a carteira que hoje está em planilha?</span><i aria-hidden="true"></i></summary>
+        <p>Sim. A importação de base lê a planilha, mostra como cada coluna vai entrar e só grava depois que você confere.</p>
+      </details>
+      <details class="faq-item">
+        <summary><span>Como faço para conhecer e contratar?</span><i aria-hidden="true"></i></summary>
+        <p>Preencha o formulário no fim desta página ou fale com a gente pelo WhatsApp. A gente entende a sua operação, liga os módulos e mostra o sistema rodando com um caso seu.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ INTERESSE ═════════════════════════════════════════════════════════ -->
+<section id="interesse" class="escuro">
+  <div class="wrap form-wrap">
+    <div class="rv">
+      <div class="sobre">Fale com a gente</div>
+      <h2>Quer ver rodando com a sua operação?</h2>
+      <div class="passos">
+        <div><span>01</span><div><h4>Você conta como trabalha hoje</h4><p>Qual é o seu perfil, quais etapas existem, quem participa e onde costuma travar.</p></div></div>
+        <div><span>02</span><div><h4>A gente liga os módulos e monta o fluxo</h4><p>As etapas são configuráveis. O sistema entra no seu processo, não o contrário.</p></div></div>
+        <div><span>03</span><div><h4>Você vê com um caso seu</h4><p>Uma demonstração com um cliente real da sua operação, do lead ao registro.</p></div></div>
+      </div>
+    </div>
+
+    <form id="lead-form" class="rv" novalidate>
+      <div class="fgrid">
+        <div class="f full"><label for="ln">Seu nome <u>*</u></label><input id="ln" name="name" required autocomplete="name" placeholder="Como podemos te chamar"></div>
+        <div class="f"><label for="lc">Empresa</label><input id="lc" name="company" autocomplete="organization" placeholder="Nome da empresa"></div>
+        <div class="f"><label for="lp">WhatsApp / telefone</label><input id="lp" name="phone" autocomplete="tel" placeholder="(00) 00000-0000"></div>
+        <div class="f full"><label for="le">E-mail <u>*</u></label><input id="le" name="email" type="email" required autocomplete="email" placeholder="voce@empresa.com.br"></div>
+        <div class="f"><label for="ls">Você atua como</label>
+          <select id="ls" name="segment">
+            <option value="">Selecione</option>
+            <option>Construtora / incorporadora</option>
+            <option>Imobiliária</option>
+            <option>Correspondente bancário</option>
+            <option>Despachante</option>
+            <option>Corretor autônomo</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="f"><label for="lv">Clientes por mês</label>
+          <select id="lv" name="volume">
+            <option value="">Selecione</option>
+            <option>Até 20</option><option>21 a 50</option><option>51 a 150</option><option>Mais de 150</option>
+          </select>
+        </div>
+        <div class="f full"><label for="lm">O que mais trava hoje?</label><textarea id="lm" name="message" placeholder="Conte rapidamente onde a operação emperra"></textarea></div>
+      </div>
+      <input class="hp" tabindex="-1" autocomplete="off" id="lw" name="website" aria-hidden="true">
+      <button type="submit" class="btn btn-mar btn-g btn-largo" id="lead-btn">Tenho interesse</button>
+      <div class="f-msg" id="lead-msg" role="status" aria-live="polite"></div>
+      <p class="f-nota">Seus dados vão direto para a nossa equipe comercial. Sem cadastro, sem cartão, sem robô ligando.</p>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<footer class="rodape">
+  <div class="wrap rodape-in">
+    <div class="marca marca-p"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0"><defs><linearGradient id="silp2a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silp2b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="silp2c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="silp2d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#silp2a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#silp2b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#silp2c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#silp2d)"/></svg><span>SI<i>I</i>MOB</span></div>
+    <p>Tecnologia que conecta. Inteligência que transforma.</p>
+    <p><a href="/blog">Blog</a> · <a href="/contato">Contato</a> · <a href="/links">Links</a> · Já é cliente? <a href="/login">Entrar</a></p>
+  </div>
+</footer>
+
+<a class="zap" id="zap" href="#" target="_blank" rel="noopener" hidden aria-label="Fale com a gente no WhatsApp">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3.5A12.4 12.4 0 0 0 5.3 22.2L3.6 28.4l6.4-1.7A12.4 12.4 0 1 0 16 3.5zm0 22.6c-1.9 0-3.8-.5-5.4-1.5l-.4-.2-3.8 1 1-3.7-.2-.4A10.2 10.2 0 1 1 16 26.1zm5.6-7.6c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.3 8.3 0 0 1-2.4-1.5 9.2 9.2 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.7l.5-.6.3-.5v-.5l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c.7.3 1.3.5 1.7.6a4.2 4.2 0 0 0 1.9.1 3.2 3.2 0 0 0 2.1-1.5 2.6 2.6 0 0 0 .2-1.5c-.1-.1-.3-.2-.6-.3z"/></svg>
+  <span>Fale com a gente</span>
+</a>
 
 <script type="module" src="/src/pages/index/main.js"></script>
 </body>

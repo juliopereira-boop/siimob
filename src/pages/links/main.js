@@ -17,7 +17,7 @@ const PADRAO = [
     tipo: 'destaque',
     titulo: 'Conheça o SIIMOB',
     subtitulo: 'CRM imobiliário do lead ao registro',
-    url: '/conheca',
+    url: '/',
     icone: 'site',
     nova_aba: false
   },

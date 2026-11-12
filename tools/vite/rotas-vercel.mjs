@@ -6,12 +6,18 @@
 // no preview, do build (dist/<tela>.html), que é exatamente o que vai ao ar.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { carregarRotas, reescrever } = require('../rotas.js');
+const { carregarRotas, carregarRedirecionamentos, redirecionar, reescrever } = require('../rotas.js');
 
 function middleware(paraFonte) {
   const rotas = carregarRotas();
-  return (req, _res, next) => {
+  const desvios = carregarRedirecionamentos();
+  return (req, res, next) => {
     const [caminho, busca] = req.url.split('?');
+    const para = redirecionar(decodeURIComponent(caminho), desvios);
+    if (para) {
+      res.writeHead(301, { Location: para }).end();
+      return;
+    }
     let alvo = reescrever(decodeURIComponent(caminho), rotas);
     const tela = paraFonte && alvo.match(/^\/([\w-]+)\.html$/);
     if (tela) alvo = `/src/pages/${tela[1]}/index.html`;

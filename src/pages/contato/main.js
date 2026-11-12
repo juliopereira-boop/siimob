@@ -82,7 +82,7 @@ function pintarCanais() {
     );
   cards.push(
     canal({
-      href: '/conheca',
+      href: '/',
       ic: 'site',
       cor: 'ct-ic-petroleo',
       titulo: 'Conheça o SIIMOB',
@@ -169,7 +169,7 @@ function mostrarOk() {
   $('ct-ok-acoes').innerHTML =
     (zap
       ? `<a class="sx-btn sx-btn-zap" href="${esc(zap)}" target="_blank" rel="noopener noreferrer">${icone('whatsapp')}Falar no WhatsApp</a>`
-      : '') + '<a class="sx-btn sx-btn-linha" href="/conheca">Conhecer o sistema</a>';
+      : '') + '<a class="sx-btn sx-btn-linha" href="/">Conhecer o sistema</a>';
   ok.hidden = false;
   ok.focus();
 }

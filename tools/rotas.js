@@ -13,20 +13,36 @@ const path = require('path');
 
 const RAIZ = path.join(__dirname, '..');
 
+const padrao = (/** @type {string} */ fonte) =>
+  new RegExp(
+    '^' +
+      fonte
+        .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/:\w+/g, '[^/]+')
+        .replace(/\*/g, '.*') +
+      '/?$'
+  );
+
 function carregarRotas(raiz = RAIZ) {
   const conf = JSON.parse(fs.readFileSync(path.join(raiz, 'vercel.json'), 'utf8'));
   return (conf.rewrites || []).map(r => ({
-    re: new RegExp(
-      '^' +
-        r.source
-          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-          .replace(/:\w+/g, '[^/]+')
-          .replace(/\*/g, '.*') +
-        '/?$'
-    ),
+    re: padrao(r.source),
     fonte: r.source,
     destino: r.destination
   }));
+}
+
+// Endereços antigos que mudaram de lugar (/conheca → /). A Vercel responde 301
+// antes de olhar as reescritas; os servidores locais fazem o mesmo.
+function carregarRedirecionamentos(raiz = RAIZ) {
+  const conf = JSON.parse(fs.readFileSync(path.join(raiz, 'vercel.json'), 'utf8'));
+  return (conf.redirects || []).map(r => ({ re: padrao(r.source), destino: r.destination }));
+}
+
+/** Para onde o caminho é redirecionado, ou null. */
+function redirecionar(caminho, redirecionamentos) {
+  const regra = redirecionamentos.find(r => r.re.test(caminho));
+  return regra ? regra.destino : null;
 }
 
 // Caminho pedido → arquivo publicado (o mesmo que a Vercel entregaria).
@@ -35,4 +51,4 @@ function reescrever(caminho, rotas) {
   return regra ? regra.destino : caminho;
 }
 
-module.exports = { carregarRotas, reescrever, RAIZ };
+module.exports = { carregarRotas, carregarRedirecionamentos, redirecionar, reescrever, RAIZ };

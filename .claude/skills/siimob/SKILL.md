@@ -86,7 +86,8 @@ navegador → PostgREST (chave anon + x-session-token) → RLS → dados
 | `src/pages/pre-analise` / `comercial` | Módulos novos (fila com SLA, assistente, dossiê). |
 | `src/pages/disposicao` | Disposição de unidades: planta por bloco, ficha com histórico, reserva com fluxo de pagamento, reservas e painel do gestor (VSO, estoque, ticket). Módulo `DISPOSICAO`. |
 | `src/modules/disposicao` | `dados.js` (leituras, escritas, formatação, tradução de erros) e `config-disposicao.js` (Unidades, Mapa de preço, Parâmetros de pagamento e Regras, montados em Configurações só com a licença). |
-| `src/pages/lp` | LP comercial (`/conheca`). Isolada, sem casco; o formulário grava em `a1_leads`. |
+| `src/pages/index` | O site, em `siimob.com` (`/conheca` responde 301 para a raiz). Isolado, sem casco; o formulário grava em `a1_leads`. |
+| `src/pages/entrar` | Login universal em `/login` (empresa, perfil, CPF/senha). O `/empresa/login` (`src/pages/login`) continua valendo; os dois usam `src/shared/auth/paineis.js`. |
 | `src/pages/configuracoes` | O hub de configurações. **Tudo que configura o sistema mora aqui.** |
 | `src/pages/workflow` | Editor de esteira em quadro, com um botão por módulo licenciado. |
 | `src/pages/superadmin` | Painel do dono: clientes, planos, licenças de módulo, monitor de acessos, "Acessar como". |

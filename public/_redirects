@@ -15,8 +15,11 @@
 # ══════════════════════════════════════════════════════════════════════════
 
 /                                      /index.html                200
-/conheca                               /lp.html                   200
-/siimob                                /lp.html                   200
+# O site mora na raiz. Endereços antigos vão para ela com 301 (permanente),
+# para links salvos e o Google não caírem em página quebrada.
+/conheca                               /                          301
+/siimob                                /                          301
+/entrar                                /login                     301
 /indica                                /indica.html               200
 /indicasii                             /indica.html               200
 /indica/cadastro                       /indica-cadastro.html      200
@@ -25,6 +28,7 @@
 /contato                               /contato.html              200
 /blog                                  /blog.html                 200
 /blog/:post                            /blog.html                 200
+/login                                 /entrar.html               200
 /:slug/login                           /login.html                200
 /:slug/repasse                         /repasse.html              200
 /:slug/andamento                       /andamento.html            200

@@ -286,7 +286,7 @@ const texto = (p, sel) => p.evaluate(s => (document.querySelector(s) || {}).text
     await p.fill('#stl-url', 'javascript:alert(1)');
     await p.click('#stl-salvar');
     checa('endereço inseguro é recusado na tela', /https:\/\//.test(await texto(p, '#stl-erro')));
-    await p.click('#stl-atalhos [data-url="/conheca#interesse"]');
+    await p.click('#stl-atalhos [data-url="/#interesse"]');
     await p.selectOption('#stl-icone', 'calendario');
     await p.click('#stl-salvar');
     await p.waitForTimeout(400);
@@ -295,7 +295,7 @@ const texto = (p, sel) => p.evaluate(s => (document.querySelector(s) || {}).text
     checa(
       'o item novo vai com tipo, endereço, ícone e entra no fim da lista (maior ordem + 10)',
       nb.tipo === 'link' &&
-        nb.url === '/conheca#interesse' &&
+        nb.url === '/#interesse' &&
         nb.icone === 'calendario' &&
         nb.ordem === 17 &&
         nb.imagem_url === null,
@@ -316,7 +316,7 @@ const texto = (p, sel) => p.evaluate(s => (document.querySelector(s) || {}).text
     await p.click('[data-acao="stNovoLink"]');
     await p.check('input[name="stl-tipo"][value="banner"]');
     await p.fill('#stl-titulo', 'Campanha');
-    await p.fill('#stl-url', '/conheca');
+    await p.fill('#stl-url', '/');
     await p.click('#stl-salvar');
     checa('banner sem imagem é recusado', /imagem/.test(await texto(p, '#stl-erro')));
     await p.click('#modal-st-link [data-acao="stFechar"]');

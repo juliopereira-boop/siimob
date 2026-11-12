@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar | SIIMOB</title>
+<meta name="description" content="Acesse o SIIMOB: informe a sua empresa, escolha o seu perfil e entre com CPF e senha.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://siimob.com/login">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/entrar/style.css">
+</head>
+<body>
+
+<div class="en">
+  <!-- ═══ Marca ═══════════════════════════════════════════════════════════ -->
+  <aside class="en-marca" aria-hidden="false">
+    <div class="en-fundo" aria-hidden="true">
+      <div class="en-grade"></div>
+      <div class="en-luz"></div>
+      <div class="en-s" id="en-s-fundo"></div>
+    </div>
+    <a class="en-logo" href="/" aria-label="SIIMOB, voltar ao site"><span id="en-logo-svg"></span><span class="en-nome">SI<i>I</i>MOB</span></a>
+
+    <div class="en-chamada">
+      <h1>Tecnologia que conecta. <em>Inteligência que transforma.</em></h1>
+      <ul class="en-pontos">
+        <li>
+          <span class="en-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l3-7 3 14 3-7h3"/></svg></span>
+          <span><b>Do lead ao registro</b>Leads, disposição, venda, repasse e cartório no mesmo fluxo.</span>
+        </li>
+        <li>
+          <span class="en-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 19a5 5 0 0 0-2.4-4.3"/></svg></span>
+          <span><b>Um perfil para cada participante</b>Construtora, imobiliária, correspondente e despachante, cada um com a sua tela.</span>
+        </li>
+        <li>
+          <span class="en-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.3-7 10-4-1.7-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span><b>Dados isolados por empresa</b>A separação é feita pelo banco, em cada consulta.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="en-rodape">
+      <a href="/">← Voltar ao site</a>
+      <span>© <span id="en-ano">2026</span> SIIMOB</span>
+    </div>
+  </aside>
+
+  <!-- ═══ Formulário ══════════════════════════════════════════════════════ -->
+  <main class="en-lado">
+    <a class="en-logo en-logo-movel" href="/" aria-label="SIIMOB, voltar ao site"><span id="en-logo-movel"></span><span class="en-nome">SI<i>I</i>MOB</span></a>
+
+    <div class="en-cartao">
+      <ol class="en-passos" id="en-passos" aria-label="Etapas do acesso">
+        <li data-p="empresa"><span>1</span>Empresa</li>
+        <li data-p="perfil"><span>2</span>Perfil</li>
+        <li data-p="senha"><span>3</span>Acesso</li>
+      </ol>
+
+      <div class="en-aviso" id="en-aviso" role="alert" hidden></div>
+
+      <!-- Já conectado -->
+      <section class="en-etapa" id="et-sessao" hidden>
+        <div class="en-titulo">Você já está conectado</div>
+        <p class="en-sub">Continue de onde parou ou entre com outra conta.</p>
+        <button type="button" class="en-sessao" data-acao="enContinuar">
+          <span class="en-avatar" id="en-sessao-avatar">S</span>
+          <span class="en-sessao-txt"><b id="en-sessao-nome">Sua conta</b><small id="en-sessao-empresa">siimob.com/</small></span>
+          <span class="en-seta" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+        </button>
+        <button type="button" class="en-link" data-acao="enOutraConta">Entrar com outra conta</button>
+      </section>
+
+      <!-- 1. Empresa -->
+      <section class="en-etapa" id="et-empresa" hidden>
+        <div class="en-titulo">Qual é a sua empresa?</div>
+        <p class="en-sub">Digite o identificador que você usa no endereço do sistema.</p>
+        <form id="f-empresa" data-acao-submit="enEmpresa" novalidate>
+          <label class="en-rotulo" for="en-empresa">Identificador da empresa</label>
+          <div class="en-campo en-campo-pref">
+            <span class="en-pref">siimob.com/</span>
+            <input id="en-empresa" name="empresa" autocomplete="organization" autocapitalize="none" spellcheck="false"
+              placeholder="sua-empresa" maxlength="60" required data-acao-input="enLimparEmpresa">
+          </div>
+          <div class="en-erro" id="en-erro-empresa" role="alert" hidden></div>
+          <button class="en-btn" type="submit" id="en-btn-empresa">Continuar</button>
+        </form>
+        <div class="en-recentes" id="en-recentes" hidden>
+          <div class="en-recentes-tit">Acessadas neste aparelho</div>
+          <div class="en-recentes-lista" id="en-recentes-lista"></div>
+        </div>
+        <p class="en-ajuda">Não sabe o identificador? Ele é o nome que aparece depois de <b>siimob.com/</b> no link que você recebeu. Se ainda tiver dúvida, fale com o administrador da sua empresa.</p>
+      </section>
+
+      <!-- 2. Perfil -->
+      <section class="en-etapa" id="et-perfil" hidden>
+        <button type="button" class="en-voltar" data-acao="enVoltar" data-p="empresa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Trocar empresa</button>
+        <div class="en-empresa-chip"><span class="en-ponto"></span><span id="en-chip-perfil">siimob.com/</span></div>
+        <div class="en-titulo">Como você acessa?</div>
+        <p class="en-sub">Escolha o seu perfil nesta empresa.</p>
+        <div class="en-perfis" id="en-perfis" role="list"></div>
+      </section>
+
+      <!-- 3. CPF e senha -->
+      <section class="en-etapa" id="et-senha" hidden>
+        <button type="button" class="en-voltar" data-acao="enVoltar" data-p="perfil"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Trocar perfil</button>
+        <div class="en-empresa-chip"><span class="en-ponto"></span><span id="en-chip-senha">siimob.com/</span><span class="en-chip-perfil" id="en-chip-papel"></span></div>
+        <div class="en-titulo">Bem-vindo de volta</div>
+        <p class="en-sub">Entre com o seu CPF e a sua senha.</p>
+        <form id="f-senha" data-acao-submit="enEntrar" novalidate>
+          <label class="en-rotulo" for="en-cpf">CPF</label>
+          <div class="en-campo">
+            <input id="en-cpf" name="username" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" maxlength="14" required data-acao-input="enCpf">
+          </div>
+          <label class="en-rotulo" for="en-senha">Senha</label>
+          <div class="en-campo">
+            <input id="en-senha" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+            <button type="button" class="en-olho" data-acao="enOlho" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="en-erro" id="en-erro-senha" role="alert" hidden></div>
+          <button class="en-btn" type="submit" id="en-btn-entrar">Entrar</button>
+        </form>
+        <p class="en-ajuda">Esqueceu a senha? Peça ao gestor da sua empresa para redefinir.</p>
+      </section>
+    </div>
+
+    <p class="en-pe">Ainda não usa o SIIMOB? <a href="/#interesse">Conheça o sistema</a></p>
+  </main>
+</div>
+
+<script type="module" src="/src/pages/entrar/main.js"></script>
+</body>
+</html>

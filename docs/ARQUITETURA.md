@@ -213,12 +213,24 @@ mais pelo navegador no dia a dia: mora só na Edge Function `sa-proxy`.
 Sem a função publicada, a tela cai sozinha no formulário da chave, como antes. Provas: `testes/sql/prova-sa-autenticador.sql`,
 `testes/t-sa-proxy.js` (a função em Node) e `testes/t-sa-autenticador.js` (a tela).
 
-## LP comercial (`/conheca`)
+## Site (`siimob.com`) e login universal (`/login`)
 
-`src/pages/lp`: página isolada (sem casco, sem sessão), na identidade do sistema. Fala do SIIMOB
-inteiro: jornada do lead ao registro, os quatro perfis, a Disposição, os módulos e o ecossistema de
-conexões. O que ainda não existe (conexão entre contas) aparece marcado como "em lançamento". O
-formulário grava em `a1_leads` com a chave pública, sem leitura.
+`src/pages/index` é o site, servido na raiz: página isolada (sem casco, sem sessão), na identidade do
+sistema. Fala do SIIMOB inteiro: jornada do lead ao registro, os quatro perfis, a Disposição, os
+módulos, o ecossistema, a comparação com o CRM de vendas comum, segurança e perguntas frequentes (com
+dados estruturados para o Google). O formulário grava em `a1_leads` com a chave pública, sem leitura.
+O WhatsApp flutuante só aparece com o número cadastrado em Superadmin › Site. O site nunca redireciona
+para o sistema: quem tem sessão vê "Acessar o sistema" no topo, que leva a `/login`.
+
+`/conheca` e `/siimob` respondem 301 para a raiz (`redirects` em `vercel.json`, `301` em
+`public/_redirects`; os servidores locais aplicam os dois por `tools/rotas.js`).
+
+`src/pages/entrar` é o login universal em `/login`: empresa (conferida em `a1_public_tenant_info`),
+perfil e CPF/senha, pelas mesmas funções do `/empresa/login` (`a1Login`, `a1PartnerLogin`). Perfis e
+destino depois do login vêm de `src/shared/auth/paineis.js`, usado pelas duas telas. O `/empresa/login`
+continua funcionando como sempre. `?empresa=` pula o primeiro passo; `?motivo=` explica sessão
+derrubada; quem já tem sessão vê "continuar". Slugs que são endereços do site (login, blog, links,
+contato...) são recusados ao criar empresa no superadmin. Prova: `testes/t-entrar.js`.
 
 ### Dívidas conhecidas
 
