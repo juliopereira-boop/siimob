@@ -1,5 +1,6 @@
 import { createHandler } from './handler.mjs';
 import { listMetaPages } from './pages.mjs';
+import { listMetaForms } from './forms.mjs';
 
 const base = Deno.env.get('SUPABASE_URL') || '';
 const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -55,9 +56,17 @@ Deno.serve(createHandler({
     return rows?.[0] || null;
   },
   listPages: listMetaPages,
+  listForms: listMetaForms,
   async getSelectedPages(tenantId: string) {
     const q = filters({tenant_id:tenantId}); q.set('select','page_id');
     return await db(`siimob_meta_pages?${q}`);
+  },
+  async getSelectedForms(tenantId: string, pageId: string) {
+    const q = filters({tenant_id:tenantId,page_id:pageId,selected:'true'}); q.set('select','form_id');
+    return await db(`siimob_meta_forms?${q}`);
+  },
+  async replaceForms(tenantId: string, version: string, pageId: string, forms: unknown) {
+    return await db('rpc/siimob_meta_replace_forms', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_version:version,p_page:pageId,p_forms:forms})});
   },
   async replacePages(tenantId: string, version: string, pages: unknown) {
     return await db('rpc/siimob_meta_replace_pages', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_version:version,p_pages:pages})});

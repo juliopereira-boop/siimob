@@ -2,8 +2,14 @@ import { A1 } from '../../shared/api/config.js';
 import {
   metaConectar,
   metaCarregarStatus,
+  metaAbrirConfig,
+  metaFecharConfig,
   metaAbrirPaginas,
-  metaSalvarPaginas
+  metaSalvarPaginas,
+  metaAbrirFormularios,
+  metaCarregarFormularios,
+  metaSalvarFormularios,
+  metaPaginaFormularioMudou
 } from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
@@ -93,8 +99,15 @@ acoes({
   cicloSelecionarVisiveis: el => cicloSelecionarVisiveis(el.dataset.marcar === 'true'),
   closeCfgView: () => closeCfgView(),
   metaConectar: () => metaConectar(),
+  metaCarregarStatus: () => metaCarregarStatus(),
+  metaAbrirConfig: () => metaAbrirConfig(),
+  metaFecharConfig: () => metaFecharConfig(),
   metaAbrirPaginas: () => metaAbrirPaginas(),
   metaSalvarPaginas: () => metaSalvarPaginas(),
+  metaAbrirFormularios: () => metaAbrirFormularios(),
+  metaCarregarFormularios: () => metaCarregarFormularios(),
+  metaSalvarFormularios: () => metaSalvarFormularios(),
+  metaPaginaFormularioMudou: () => metaPaginaFormularioMudou(),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
