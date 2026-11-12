@@ -202,8 +202,7 @@ a {
 /* ── Layout ── */
 .main {
   padding: 1.25rem 1.5rem;
-  max-width: 1600px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 /* ── Buttons ── */

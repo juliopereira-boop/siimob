@@ -51,8 +51,7 @@ a {
      último. Se precisar mexer na barra, mexa no shell. */
 .main {
   padding: 1.25rem 1.5rem;
-  max-width: 1600px;
-  margin: 0 auto;
+  margin: 0;
 }
 .pg-hdr {
   display: flex;

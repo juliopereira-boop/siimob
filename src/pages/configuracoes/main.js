@@ -4747,7 +4747,7 @@ function cfgModsLiberar(mod) {
         Distribui cada nova pré-análise pela hierarquia Empresa Correspondente → Usuário Correspondente → Analista.
         Com o ciclo ativo, esses responsáveis são definidos pelo banco e não podem ser escolhidos no cadastro.
       </div>
-      <div id="ciclo-pa-corpo" style="max-width:1280px"></div>`
+      <div id="ciclo-pa-corpo"></div>`
     );
     // Regras da pré-análise: o que o cadastro exige (corretor, analista,
     // unidade...). Só o gestor grava; a política de a1_pa_regras confere.

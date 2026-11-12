@@ -442,8 +442,8 @@ body.sb {
 /* ═══ 4. Conteudo ════════════════════════════════════════════════════════ */
 
 .sb-pagina {
-  max-width: 1560px;
-  margin: 0 auto;
+  /* Ocupa a tela inteira: sem faixa vazia nas laterais em monitor largo. */
+  margin: 0;
   padding: 1.15rem 1.15rem 3rem;
 }
 

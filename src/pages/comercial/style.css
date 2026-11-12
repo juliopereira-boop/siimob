@@ -51,8 +51,7 @@ a {
      cara de outro produto. Aqui não se redefine nada que o shell já pinta. */
 .main {
   padding: 1.25rem 1.5rem;
-  max-width: 1600px;
-  margin: 0 auto;
+  margin: 0;
 }
 .spinner {
   width: 26px;
