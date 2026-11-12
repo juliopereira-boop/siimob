@@ -1269,3 +1269,7 @@ body.acesso-pendente {
     transform: rotate(360deg);
   }
 }
+#meta-pages-open[hidden],
+#meta-pages-panel[hidden] {
+  display: none;
+}

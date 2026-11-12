@@ -1,5 +1,10 @@
 import { A1 } from '../../shared/api/config.js';
-import { metaConectar, metaCarregarStatus } from '../../modules/integracoes/meta.js';
+import {
+  metaConectar,
+  metaCarregarStatus,
+  metaAbrirPaginas,
+  metaSalvarPaginas
+} from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
   a1ClearModuleCache,
@@ -88,6 +93,8 @@ acoes({
   cicloSelecionarVisiveis: el => cicloSelecionarVisiveis(el.dataset.marcar === 'true'),
   closeCfgView: () => closeCfgView(),
   metaConectar: () => metaConectar(),
+  metaAbrirPaginas: () => metaAbrirPaginas(),
+  metaSalvarPaginas: () => metaSalvarPaginas(),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
