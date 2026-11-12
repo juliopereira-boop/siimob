@@ -988,7 +988,7 @@ const SITE = {
     {
       id: 1,
       links_titulo: 'SIIMOB',
-      links_frase: 'Do primeiro contato ao registro em cartório, num sistema só.',
+      links_frase: 'Tecnologia que conecta. Inteligência que transforma.',
       whatsapp: '5598999990000',
       whatsapp_msg: 'Olá! Vim pelo site do SIIMOB.',
       email: 'contato@siimob.com.br',

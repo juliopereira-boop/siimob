@@ -114,7 +114,7 @@ function rodapeHtml(/** @type {import('./dados.js').ConfigSite} */ c) {
     </div>
     <div class="sx-rodape-base">
       <span>© ${ano} SIIMOB. Todos os direitos reservados.</span>
-      <span>CRM imobiliário do lead ao registro</span>
+      <span>Tecnologia que conecta. Inteligência que transforma.</span>
     </div>
   </div>`;
 }
