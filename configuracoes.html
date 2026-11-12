@@ -313,6 +313,12 @@
 
     <div class="cfg-section-hdr">Integracoes</div>
     <div class="cfg-cards">
+      <button type="button" class="cfg-hub-card" onclick="openCfgView('integracoes')">
+        <span class="cfg-hub-icon" style="background:#e0e7ff">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2945B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg>
+        </span>
+        <span class="cfg-card-label">Integrações</span>
+      </button>
       <div class="cfg-hub-card cfg-disabled">
         <div class="cfg-hub-icon" style="background:#fef2f2">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -333,6 +339,27 @@
     </div>
 
   </div><!-- /#cfg-hub -->
+
+  <!-- Área de integrações: a conexão Meta será habilitada após a configuração segura do servidor. -->
+  <div id="cfg-view-integracoes" style="display:none">
+    <div class="cfg-view-hdr">
+      <button class="cfg-back-btn" onclick="closeCfgView()">← Configurações</button>
+      <div class="cfg-view-title">Integrações</div>
+    </div>
+    <p style="font-size:.8rem;color:var(--t2);margin-bottom:1.25rem;max-width:620px;line-height:1.6">Conecte serviços à sua empresa para ampliar os recursos do SIIMOB.</p>
+    <div class="panel" style="padding:1.25rem;max-width:620px">
+      <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div class="cfg-hub-icon" style="background:#e8f0fe;color:#0866ff;font-size:1.3rem;font-weight:800" aria-hidden="true">M</div>
+        <div style="flex:1;min-width:210px">
+          <div style="font-size:.9rem;font-weight:800">Meta Lead Ads</div>
+          <p style="font-size:.78rem;color:var(--t2);line-height:1.6;margin:.35rem 0 .65rem">Conecte as páginas da sua empresa para receber leads de formulários do Facebook e Instagram.</p>
+          <p id="meta-status" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.7rem 0">Verificando conexão…</p>
+          <button id="meta-connect-btn" type="button" class="btn btn-primary" onclick="connectMeta()" disabled>Conectar com a Meta</button>
+          <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin-top:.7rem">O recebimento e a distribuição de leads serão configurados nas próximas etapas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── Sub-view: Editor de Workflow ─── -->
   <div id="cfg-view-wf" style="display:none">
@@ -1003,6 +1030,10 @@ async function init() {
   applyCustomLogo();
   try { G.user = a1RequireAuth(); } catch { return; }
   G.slug = A1.slug;
+  if (location.hash === '#integracoes') {
+    history.replaceState(null, '', location.pathname + location.search);
+    openCfgView('integracoes');
+  }
 
   const roleLabel = G.user.role === 'partner'
     ? (G.user.type === 'despachante' ? 'Despachante' : 'Correspondente')
@@ -1049,7 +1080,7 @@ async function init() {
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
 
-const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','correspondentes','despachantes','bancos','cartorios'];
+const CFG_VIEWS = ['wf','flags','regionais','empreendimentos','imobiliarias','doctypes','comissao','analistas','correspondentes','despachantes','bancos','cartorios','integracoes'];
 
 function openCfgView(view) {
   document.getElementById('cfg-hub').style.display = 'none';
@@ -1068,6 +1099,39 @@ function openCfgView(view) {
   if (view === 'despachantes') loadDespachantes();
   if (view === 'bancos') loadBancos();
   if (view === 'cartorios') loadCartorios();
+  if (view === 'integracoes') loadMetaStatus();
+}
+
+async function metaAction(action) {
+  const response = await fetch(`${A1_URL}/functions/v1/meta-connect`, {
+    method:'POST', headers:A1.headers(), body:JSON.stringify({action})
+  });
+  const data = await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(response.status === 403 || response.status === 401 ? 'Somente administradores ativos podem gerenciar esta conexão.' : 'Não foi possível acessar a conexão. Tente novamente.');
+  return data;
+}
+
+async function loadMetaStatus() {
+  const label = document.getElementById('meta-status'), button = document.getElementById('meta-connect-btn');
+  button.disabled = true; label.textContent = 'Verificando conexão…';
+  try {
+    const result = await metaAction('status');
+    const expired = [result.token_expires_at, result.data_access_expires_at].some(date => date && new Date(date).getTime() <= Date.now());
+    label.textContent = result.connected ? (expired ? 'Autorização expirada. Reconecte sua conta.' : 'Autorização registrada. As páginas e os leads serão configurados depois.') : 'Nenhuma conta conectada para esta empresa.';
+    button.textContent = result.connected ? 'Reconectar com a Meta' : 'Conectar com a Meta';
+    button.disabled = false;
+  } catch (e) { label.textContent = e.message; }
+}
+
+async function connectMeta() {
+  const button = document.getElementById('meta-connect-btn');
+  button.disabled = true;
+  try {
+    const result = await metaAction('start');
+    const target = new URL(result.url);
+    if (target.origin !== 'https://www.facebook.com' || target.pathname !== '/v27.0/dialog/oauth') throw new Error('Não foi possível iniciar a conexão.');
+    window.location.assign(target.href);
+  } catch (e) { document.getElementById('meta-status').textContent = e.message; button.disabled = false; }
 }
 
 function closeCfgView() {

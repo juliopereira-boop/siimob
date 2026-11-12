@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Conexão Meta — SIIMOB</title>
+<style>body{font:15px system-ui,sans-serif;background:#f8fafc;color:#0f172a;display:grid;place-items:center;min-height:90vh;margin:0}.panel{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:28px;max-width:440px;margin:20px;line-height:1.6}a{color:#2945b0}</style>
+</head>
+<body><main class="panel"><h1 style="font-size:1.2rem">Conexão com a Meta</h1><p id="message" role="status">Finalizando autorização…</p><a id="back" href="/">Voltar ao SIIMOB</a></main>
+<script src="/js/config.js"></script>
+<script>
+(async function(){
+  'use strict';
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code'), state = params.get('state');
+  const denied = params.has('error');
+  history.replaceState(null, '', location.pathname);
+  const message = document.getElementById('message'), back = document.getElementById('back');
+  const slug = A1.slug;
+  if (slug && /^[a-z0-9-]+$/.test(slug)) back.href = `/${slug}/configuracoes#integracoes`;
+  if (denied) { message.textContent = 'A autorização foi cancelada. Você pode tentar novamente nas configurações.'; return; }
+  if (!A1.token || !code || !state) { message.textContent = 'Não foi possível concluir a conexão. Volte às configurações e tente novamente na mesma sessão.'; return; }
+  try {
+    const res = await fetch(`${A1_URL}/functions/v1/meta-connect`, {method:'POST',headers:A1.headers(),body:JSON.stringify({action:'complete',code,state})});
+    const result = await res.json().catch(()=>({}));
+    if (!res.ok || result.ok !== true || !/^[a-z0-9-]+$/.test(result.slug)) throw new Error('failed');
+    back.href = `/${result.slug}/configuracoes#integracoes`;
+    message.textContent = 'Conta autorizada. As páginas e o recebimento de leads serão configurados nas próximas etapas.';
+  } catch { message.textContent = 'Não foi possível concluir a conexão. Volte às configurações e tente novamente na mesma sessão.'; }
+})();
+</script></body></html>
