@@ -182,6 +182,22 @@ associado, botão "Reservar unidade"), `src/modules/pre-analise/regras-pa.js`, `
 (popup da etapa com selo, chip da visita) e `src/pages/workflow` (seletor de selo em Leads). Provas:
 `testes/sql/prova-reserva-pa.sql`, `testes/t-reserva-pa.js` e `testes/t-leads-selos.js`.
 
+## Site público: `/links`, `/contato`, `/blog`
+
+Páginas sem login, na identidade da LP. SQL: `database/migrations/2026-11-12_site_links_blog.sql`.
+
+| Peça | Onde | Regra |
+|------|------|-------|
+| Página da bio do Instagram | `src/pages/links`, `a1_site_links` | Banners, botão de destaque, botões e títulos de seção, na ordem do superadmin. Banner pode ter início e fim. Sem banco, mostra Conheça, Blog e Contato. Cliques contados por `a1_site_link_clique`. |
+| Canais de contato | `a1_site_config` (uma linha) | WhatsApp, e-mail, telefone, horário, endereço e redes. Campo vazio não aparece em nenhuma página. |
+| Contato | `src/pages/contato` | O formulário grava em `a1_leads` com `source = 'contato'`; aparece na aba Interessados do superadmin com a origem marcada. |
+| Blog | `src/pages/blog`, `a1_blog_posts` | `/blog` (categorias, busca, paginação de 9, destaque) e `/blog/:post`. O texto é Markdown renderizado por `src/modules/site/markdown.js`, que escapa tudo antes e só aceita link e imagem com endereço seguro. Data futura agenda o post. |
+| Gestão | Superadmin › Site (`src/modules/site/admin-site.js`) | Escreve com a chave de serviço; as tabelas não têm política de escrita pública. Imagens no bucket público `site` (só imagem, até 5 MB). |
+
+Código compartilhado em `src/modules/site/` (`site.css`, `casca.js` com cabeçalho e rodapé, `dados.js`, `marca.js`,
+`markdown.js`). Rotas novas em `vercel.json` e `public/_redirects`, antes das rotas de cliente. Provas:
+`testes/sql/prova-site.sql` e `testes/t-site.js`.
+
 ## LP comercial (`/conheca`)
 
 `src/pages/lp`: página isolada (sem casco, sem sessão), na identidade do sistema. Fala do SIIMOB

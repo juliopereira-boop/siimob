@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
   <link rel="stylesheet" href="/src/pages/superadmin/style.css">
+  <link rel="stylesheet" href="/src/modules/site/admin-site.css">
 </head>
 <body>
 
@@ -64,6 +65,7 @@
       <div class="sa-tab" data-acao="switchSaTab" data-name="esteiras">Esteiras</div>
       <div class="sa-tab" data-acao="switchSaTab" data-name="monitor">Monitor</div>
       <div class="sa-tab" data-acao="switchSaTab" data-name="avisos">Mural de Avisos</div>
+      <div class="sa-tab" data-acao="switchSaTab" data-name="site" id="tab-site">Site</div>
       <div class="sa-tab" data-acao="switchSaTab" data-name="indica">IndicaSII</div>
       <div class="sa-tab" data-acao="switchSaTab" data-name="plataforma">Plataforma</div>
     </div>
@@ -340,6 +342,9 @@
         <div id="avisos-lista"><div style="padding:1.5rem;text-align:center;color:var(--t3);font-size:.77rem">Carregando...</div></div>
       </div>
     </div>
+
+    <!-- ══ TAB: Site (links da bio, contato, blog) — src/modules/site/admin-site.js ══ -->
+    <div id="satab-site" style="display:none"></div>
 
     <!-- ══ TAB: Plataforma ══ -->
     <!-- ══ TAB: Esteiras (Pré-análise e Venda) ══ -->

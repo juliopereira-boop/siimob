@@ -1,0 +1,508 @@
+/* Superadmin › Site. Usa os componentes do superadmin (panel, btn, form-group,
+   modal); aqui fica só o que é desta aba. */
+
+.st-cab {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.st-sub {
+  font-size: 0.75rem;
+  color: var(--t3);
+  margin-top: 0.2rem;
+}
+.st-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.st-seg button {
+  border: 0;
+  background: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 7px;
+  font: 600 0.78rem/1 inherit;
+  color: var(--t2);
+  cursor: pointer;
+}
+.st-seg button.on {
+  background: var(--emerald-d);
+  color: #fff;
+}
+.st-card {
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1.1rem;
+}
+.st-grade2 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.1rem;
+}
+.st-grade2 .st-card {
+  margin-bottom: 1.1rem;
+}
+.st-dicas ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--t2);
+  line-height: 1.65;
+}
+.st-mt {
+  margin-top: 0.8rem;
+}
+.st-mt2 {
+  margin-top: 1.4rem;
+}
+.st-mt-p {
+  margin-top: 0.4rem;
+}
+.st-pe {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.st-dica {
+  font-size: 0.72rem;
+  color: var(--t3);
+  line-height: 1.5;
+  margin-top: 0.6rem;
+}
+.st-dica-topo {
+  margin: -0.3rem 0 0.9rem;
+}
+.st-hdr-acoes {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.st-vazio {
+  padding: 1.75rem 1rem;
+  text-align: center;
+  color: var(--t3);
+  font-size: 0.8rem;
+  border: 1px dashed var(--border2);
+  border-radius: 8px;
+}
+.st-erro {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+/* ── Tabelas ───────────────────────────────────────────────────────────── */
+.st-tabela {
+  overflow-x: auto;
+}
+.st-tabela table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.st-tabela th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.63rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--t3);
+}
+.st-tabela td {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #f1f5f4;
+  vertical-align: middle;
+}
+.st-num {
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+}
+.st-acoes {
+  white-space: nowrap;
+  text-align: right;
+}
+.st-acoes .btn + .btn,
+.st-acoes .btn + a,
+.st-acoes a + .btn {
+  margin-left: 0.25rem;
+}
+.st-perigo {
+  color: var(--red) !important;
+}
+.st-ordem {
+  width: 60px;
+  white-space: nowrap;
+}
+.st-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--t2);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.st-mini:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.st-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 220px;
+}
+.st-item b {
+  display: block;
+  font-weight: 700;
+}
+.st-item small {
+  display: block;
+  color: var(--t3);
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-ic {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6f4f1;
+  color: var(--green);
+}
+.st-thumb {
+  width: 64px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+.st-thumb-vazia {
+  display: inline-block;
+  background: linear-gradient(140deg, #0b5049, #04201d);
+}
+.st-st {
+  display: inline-block;
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.st-st-on {
+  background: #e6f4f1;
+  color: #0b7568;
+}
+.st-st-off {
+  background: #f1f5f4;
+  color: var(--t3);
+}
+.st-st-agenda {
+  background: #fdf3e2;
+  color: #9a6008;
+}
+.st-quando {
+  white-space: nowrap;
+  display: block;
+  font-size: 0.68rem;
+  color: var(--t3);
+  margin-top: 0.15rem;
+}
+.st-estrela {
+  color: var(--amber);
+}
+
+/* ── Modal do item de link ─────────────────────────────────────────────── */
+.st-tipos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.st-tipo {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.st-tipo:has(input:checked) {
+  border-color: var(--emerald);
+  background: #e6f4f1;
+}
+.st-tipo input {
+  margin-top: 0.15rem;
+  accent-color: var(--emerald);
+}
+.st-tipo b {
+  display: block;
+  font-size: 0.8rem;
+}
+.st-tipo small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--t3);
+  margin-top: 0.1rem;
+}
+.st-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+.st-atalhos button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  color: var(--t2);
+  cursor: pointer;
+}
+.st-atalhos button:hover {
+  border-color: var(--emerald);
+  color: var(--green);
+}
+.st-linha {
+  display: flex;
+  gap: 0.45rem;
+}
+.st-linha input {
+  flex: 1;
+}
+.st-arq,
+.form-group label.st-arq {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  color: var(--t2);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  justify-content: center;
+}
+.st-arq input,
+.st-ferr-img input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.st-prev img {
+  margin-top: 0.6rem;
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.st-checks {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--t2);
+}
+.st-checks label,
+.st-check-linha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--t2);
+}
+.st-checks input,
+.st-check-linha input {
+  accent-color: var(--emerald);
+}
+.st-rodape-modal {
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+/* ── Editor de artigo ──────────────────────────────────────────────────── */
+.st-modal-post {
+  max-width: 1180px !important;
+  height: 92vh;
+}
+.st-post-corpo {
+  padding: 1.1rem 1.25rem;
+}
+.st-post-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.25rem;
+  min-height: 100%;
+}
+.st-post-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.st-titulo-grande {
+  font-size: 1.05rem !important;
+  font-weight: 700;
+}
+.st-contador {
+  float: right;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.st-passou {
+  color: var(--red);
+}
+.st-abas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.st-abas button {
+  border: 0;
+  background: none;
+  padding: 0.5rem 0.8rem;
+  font: 600 0.78rem/1 inherit;
+  color: var(--t3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.st-abas button.on {
+  color: var(--green);
+  border-bottom-color: var(--emerald);
+}
+#stp-escrever {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+#stp-escrever[hidden] {
+  display: none;
+}
+.st-ferr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.45rem 0;
+}
+.st-ferr button,
+.st-ferr-img {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.74rem;
+  color: var(--t2);
+  cursor: pointer;
+  overflow: hidden;
+}
+.st-ferr button:hover,
+.st-ferr-img:hover {
+  border-color: var(--emerald);
+  color: var(--green);
+}
+.st-conteudo {
+  flex: 1;
+  min-height: 340px;
+  width: 100%;
+  resize: vertical;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font:
+    400 0.9rem/1.65 'DM Mono',
+    ui-monospace,
+    monospace;
+  color: var(--t1);
+}
+.st-conteudo:focus {
+  outline: none;
+  border-color: var(--emerald);
+}
+.st-previa {
+  flex: 1;
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-y: auto;
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: #1d3430;
+}
+.st-previa > * + * {
+  margin-top: 1rem;
+}
+.st-previa h2 {
+  font-size: 1.4rem;
+  margin-top: 1.6rem;
+}
+.st-previa h3 {
+  font-size: 1.15rem;
+  margin-top: 1.3rem;
+}
+.st-previa ul,
+.st-previa ol {
+  padding-left: 1.3rem;
+}
+.st-previa blockquote {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid var(--emerald);
+  background: #e6f4f1;
+  border-radius: 0 8px 8px 0;
+}
+.st-previa img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.st-previa a {
+  color: var(--green);
+}
+.st-previa code {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.st-post-lado {
+  border-left: 1px solid var(--border);
+  padding-left: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .st-grade2,
+  .st-post-grade {
+    grid-template-columns: 1fr;
+  }
+  .st-post-lado {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .st-modal-post {
+    height: auto;
+  }
+}

@@ -225,6 +225,19 @@ Configurações: é regra do dono, "tudo que for de configuração vai estar em 
   `a1_crm_agendar_visita` (definer) porque a agenda só deixa cada pessoa gravar
   a própria linha. `lead_id`, não `caso_id`: `caso_id` abre o Repasse.
 
+### Site público (links, contato, blog)
+
+- **Conteúdo da plataforma não tem `tenant_id`** e só o superadmin escreve,
+  com a chave de serviço (o mesmo desenho do Mural de Avisos). A chave pública
+  lê só o que está ativo, dentro do prazo e publicado.
+- **Texto do blog passa por `src/modules/site/markdown.js`**, que escapa tudo
+  antes de reconhecer a marcação. Nunca jogar `conteudo` em `innerHTML` direto.
+- **Endereço de link passa por `urlSegura()`** (`src/modules/site/dados.js`):
+  só http(s), caminho do próprio site, `mailto:` e `tel:`. O banco também
+  recusa (`a1_site_links_url_chk`).
+- Rota nova do site entra em `vercel.json` **e** em `public/_redirects`, antes
+  das rotas `/:slug/...`.
+
 ## Permissões e Perfis
 
 `src/shared/auth/permissoes.js` é o catálogo. Cada entrada declara `chave`, `modulo`,
@@ -284,11 +297,11 @@ as pessoas são vinculadas por `a1_partners.perfil_id`. Quem tem perfil segue
 Duas frentes, e **as duas rodam antes de qualquer entrega**:
 
 ```bash
-npm test                    # build + 58 suítes de navegador (Chromium de verdade), contra o dist/
+npm test                    # build + 59 suítes de navegador (Chromium de verdade), contra o dist/
 npm test -- t-perfis        # só as que casarem com o filtro
 
 # Provas de banco, num Postgres descartável (rodar como usuário postgres):
-PGPORT=5473 testes/sql/roda.sh      # hoje: 227 de segurança + 72 da Disposição + 61 da reserva pela PA
+PGPORT=5473 testes/sql/roda.sh      # hoje: 227 de segurança + 72 da Disposição + 61 da reserva pela PA + 20 do site
 PGPORT=5473 testes/sql/prova-concorrencia.sh   # 8 reservas simultâneas da mesma unidade: 1 passa
 ```
 

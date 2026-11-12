@@ -1,0 +1,546 @@
+/* ─── Site público do SIIMOB: /contato, /blog (e a base de /links) ──────────
+   A mesma identidade da LP (/conheca): petróleo e verde-mar, Bricolage
+   Grotesque nos títulos, Inter no texto, DM Mono nos números. Páginas sem casco
+   nem sessão: não importam o siimob.css do sistema. */
+
+:root {
+  --noite: #04201d;
+  --escuro: #07312c;
+  --petroleo: #0b5049;
+  --mar: #0e8c7f;
+  --mar-escuro: #0c7c71;
+  --mar-txt: #0b7568;
+  --mar-claro: #3fb8a6;
+  --mar-brilho: #33e9d7;
+  --mar-lavado: #e6f4f1;
+  --vellum: #f4f6f4;
+  --papel: #ffffff;
+  --linha: #e2e8e5;
+  --linha-forte: #c9d5d1;
+  --tinta: #09201d;
+  --tinta2: #47615c;
+  --tinta3: #6b827d;
+  --acafrao: #c87e12;
+  --tijolo: #b8433a;
+  --claro: #eef5f3;
+  --claro2: #a9c2bc;
+  --claro3: #7f9c96;
+
+  --display: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  --ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'DM Mono', ui-monospace, 'SF Mono', monospace;
+
+  --r: 12px;
+  --r-g: 20px;
+  --sombra: 0 1px 2px rgba(9, 32, 29, 0.05), 0 8px 24px rgba(9, 32, 29, 0.06);
+  --sombra-media: 0 2px 4px rgba(9, 32, 29, 0.04), 0 18px 40px rgba(9, 32, 29, 0.09);
+  --sombra-alta: 0 24px 64px rgba(2, 18, 16, 0.18), 0 2px 6px rgba(2, 18, 16, 0.08);
+  --nav-h: 68px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-h) + 12px);
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+body {
+  margin: 0;
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--tinta);
+  background: var(--vellum);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+.sx-wrap {
+  width: min(1180px, 100% - 32px);
+  margin-inline: auto;
+}
+.sx-pular {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 100;
+  background: var(--papel);
+  color: var(--tinta);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+}
+.sx-pular:focus {
+  left: 16px;
+}
+:focus-visible {
+  outline: 3px solid var(--mar-claro);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.sx-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Marca ─────────────────────────────────────────────────────────────── */
+.sx-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: var(--tinta);
+}
+.sx-nome {
+  font: 800 1.32rem/1 var(--display);
+  letter-spacing: -0.01em;
+}
+.sx-nome i {
+  font-style: normal;
+  color: var(--mar);
+}
+.sx-escuro .sx-marca {
+  color: #fff;
+}
+.sx-escuro .sx-nome i {
+  color: var(--mar-claro);
+}
+
+/* ── Botões ────────────────────────────────────────────────────────────── */
+.sx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: 600 0.94rem/1 var(--ui);
+  padding: 0.78rem 1.15rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.sx-btn:hover {
+  transform: translateY(-1px);
+}
+.sx-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+.sx-btn-mar {
+  background: var(--mar);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(14, 140, 127, 0.28);
+}
+.sx-btn-mar:hover {
+  background: var(--mar-escuro);
+}
+.sx-btn-linha {
+  background: var(--papel);
+  color: var(--tinta);
+  border-color: var(--linha-forte);
+}
+.sx-btn-linha:hover {
+  border-color: var(--mar);
+  color: var(--mar-txt);
+}
+.sx-btn-zap {
+  background: #128c4b;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(18, 140, 75, 0.25);
+}
+.sx-btn-zap:hover {
+  background: #0f7a41;
+}
+.sx-btn-g {
+  padding: 1rem 1.5rem;
+  font-size: 1.02rem;
+  border-radius: 12px;
+}
+
+/* ── Cabeçalho ─────────────────────────────────────────────────────────── */
+.sx-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--linha);
+}
+.sx-nav-in {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  height: var(--nav-h);
+}
+.sx-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline: auto;
+}
+.sx-nav-links a {
+  position: relative;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  color: var(--tinta2);
+  text-decoration: none;
+  font-size: 0.94rem;
+  font-weight: 500;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.sx-nav-links a:hover {
+  color: var(--tinta);
+  background: var(--vellum);
+}
+.sx-nav-links a[aria-current='page'] {
+  color: var(--mar-txt);
+  font-weight: 600;
+}
+.sx-nav-links a[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  bottom: -0.95rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mar);
+}
+.sx-nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sx-nav-entrar {
+  color: var(--tinta2);
+  text-decoration: none;
+  font-size: 0.94rem;
+  font-weight: 600;
+  padding: 0.5rem 0.7rem;
+}
+.sx-nav-entrar:hover {
+  color: var(--tinta);
+}
+.sx-menu {
+  display: none;
+  margin-left: auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--linha);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+.sx-gaveta {
+  display: none;
+}
+
+/* ── Faixa de chamada ──────────────────────────────────────────────────── */
+.sx-chamada {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3.5rem, 7vw, 5.5rem) 0;
+  background:
+    radial-gradient(60% 120% at 85% 0%, rgba(51, 233, 215, 0.16), transparent 60%),
+    radial-gradient(50% 90% at 0% 100%, rgba(14, 140, 127, 0.28), transparent 60%),
+    linear-gradient(160deg, var(--escuro), var(--noite));
+  color: var(--claro);
+  text-align: center;
+}
+.sx-chamada::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(238, 245, 243, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 245, 243, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(70% 80% at 50% 50%, #000, transparent);
+  -webkit-mask-image: radial-gradient(70% 80% at 50% 50%, #000, transparent);
+  pointer-events: none;
+}
+.sx-chamada .sx-wrap {
+  position: relative;
+}
+.sx-chamada h2 {
+  font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.sx-chamada h2 em {
+  font-style: normal;
+  color: var(--mar-brilho);
+}
+.sx-chamada p {
+  max-width: 60ch;
+  margin: 1rem auto 0;
+  color: var(--claro2);
+  font-size: 1.06rem;
+}
+.sx-chamada .sx-chamada-acoes {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+.sx-chamada .sx-btn-linha {
+  background: transparent;
+  color: var(--claro);
+  border-color: rgba(238, 245, 243, 0.28);
+}
+.sx-chamada .sx-btn-linha:hover {
+  border-color: rgba(238, 245, 243, 0.6);
+  color: #fff;
+}
+
+/* ── Rodapé ────────────────────────────────────────────────────────────── */
+.sx-rodape {
+  background: var(--noite);
+  color: var(--claro2);
+  padding: 3.5rem 0 1.75rem;
+  font-size: 0.92rem;
+}
+.sx-rodape-grade {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, 1fr);
+  gap: 2.5rem;
+}
+.sx-rodape-marca p {
+  margin-top: 0.9rem;
+  max-width: 34ch;
+  line-height: 1.55;
+}
+.sx-rodape-marca b {
+  display: block;
+  margin-top: 1rem;
+  color: var(--claro);
+  font-weight: 600;
+}
+.sx-rodape h4 {
+  font: 600 0.82rem/1.2 var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--claro);
+  margin-bottom: 1rem;
+}
+.sx-rodape ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.sx-rodape a {
+  color: var(--claro2);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.sx-rodape a:hover {
+  color: #fff;
+}
+.sx-redes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+.sx-redes a {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(238, 245, 243, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--claro);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.sx-redes a:hover {
+  background: rgba(238, 245, 243, 0.08);
+  border-color: rgba(238, 245, 243, 0.4);
+}
+.sx-rodape-base {
+  margin-top: 2.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(238, 245, 243, 0.08);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+  color: var(--claro3);
+}
+
+/* ── Campos ────────────────────────────────────────────────────────────── */
+.sx-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.sx-campo label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+.sx-campo label u {
+  text-decoration: none;
+  color: var(--tijolo);
+}
+.sx-campo input,
+.sx-campo select,
+.sx-campo textarea {
+  width: 100%;
+  font: 400 0.98rem/1.4 var(--ui);
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linha-forte);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.sx-campo textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+.sx-campo input::placeholder,
+.sx-campo textarea::placeholder {
+  color: #9aaca8;
+}
+.sx-campo input:focus,
+.sx-campo select:focus,
+.sx-campo textarea:focus {
+  border-color: var(--mar);
+  box-shadow: 0 0 0 4px rgba(14, 140, 127, 0.14);
+}
+.sx-campo [aria-invalid='true'] {
+  border-color: var(--tijolo);
+  box-shadow: 0 0 0 4px rgba(184, 67, 58, 0.12);
+}
+.sx-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* ── Aparece ao rolar ──────────────────────────────────────────────────── */
+.sx-rv {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+.sx-rv.sx-vis {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Celular ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sx-nav-links,
+  .sx-nav-cta {
+    display: none;
+  }
+  .sx-menu {
+    display: inline-flex;
+  }
+  .sx-gaveta {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    background: var(--papel);
+    border-bottom: 1px solid var(--linha);
+    box-shadow: var(--sombra-media);
+    padding: 0.75rem 16px 1.25rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 49;
+  }
+  .sx-gaveta.aberta {
+    display: flex;
+  }
+  .sx-gaveta a {
+    padding: 0.85rem 0.6rem;
+    border-radius: 8px;
+    color: var(--tinta);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .sx-gaveta a[aria-current='page'] {
+    color: var(--mar-txt);
+    background: var(--mar-lavado);
+  }
+  .sx-gaveta .sx-btn {
+    margin-top: 0.6rem;
+  }
+  .sx-rodape-grade {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sx-rodape-marca {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 520px) {
+  .sx-rodape-grade {
+    grid-template-columns: 1fr;
+  }
+}

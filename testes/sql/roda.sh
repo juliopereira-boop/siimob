@@ -62,3 +62,17 @@ for f in database/migrations/2026-09-12_valor_avaliacao_inicial.sql \
 done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-reserva-pa.sql
+
+# Site público (links, contato, blog). O andaime não tem o schema storage do
+# Supabase: um esboço da tabela de buckets basta para o arquivo carregar. O SQL
+# roda duas vezes para provar que pode rodar de novo.
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -c "
+  create schema if not exists storage;
+  create table if not exists storage.buckets (id text primary key, name text, public boolean,
+    file_size_limit bigint, allowed_mime_types text[]);"
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-12_site_links_blog.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-site.sql

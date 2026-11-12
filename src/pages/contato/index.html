@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contato | SIIMOB</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Fale com o SIIMOB: conheça o sistema, tire dúvidas ou fale com o suporte pelo canal mais prático para você.">
+<meta property="og:title" content="Contato | SIIMOB">
+<meta property="og:description" content="Conheça o sistema, tire dúvidas ou fale com o suporte.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap"></noscript>
+<link rel="stylesheet" href="/src/modules/site/site.css">
+<link rel="stylesheet" href="/src/pages/contato/style.css">
+</head>
+<body>
+<a class="sx-pular" href="#conteudo">Pular para o conteúdo</a>
+<header class="sx-nav" id="sx-nav"></header>
+
+<main id="conteudo">
+  <section class="ct-hero">
+    <div class="ct-fundo" aria-hidden="true"></div>
+    <div class="sx-wrap ct-grade">
+      <div class="ct-esq">
+        <span class="ct-sobre">Contato</span>
+        <h1>Fale com o <em>SIIMOB</em></h1>
+        <p class="ct-lede">Quer conhecer o sistema, tirar uma dúvida ou falar com o suporte? Escolha o canal mais prático para você.</p>
+
+        <div class="ct-canais" id="ct-canais">
+          <a class="ct-canal" href="#ct-form-card">
+            <span class="ct-canal-ic ct-ic-mar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg></span>
+            <span class="ct-canal-txt"><b>Mande uma mensagem</b><span>Pelo formulário, a nossa equipe responde por e-mail ou WhatsApp.</span></span>
+          </a>
+        </div>
+        <p class="ct-horario" id="ct-horario" hidden></p>
+      </div>
+
+      <div class="ct-form-card" id="ct-form-card">
+        <form id="ct-form" novalidate>
+          <div class="ct-form-cab">
+            <h2>Envie uma mensagem</h2>
+            <p>Respondemos em horário comercial.</p>
+          </div>
+          <div class="ct-campos">
+            <div class="sx-campo ct-largo"><label for="ct-nome">Nome <u>*</u></label><input id="ct-nome" name="name" autocomplete="name" required placeholder="Como podemos te chamar"></div>
+            <div class="sx-campo"><label for="ct-email">E-mail <u>*</u></label><input id="ct-email" name="email" type="email" autocomplete="email" required placeholder="voce@empresa.com.br"></div>
+            <div class="sx-campo"><label for="ct-tel">Telefone / WhatsApp</label><input id="ct-tel" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(98) 99999-9999" data-acao-input="ctMascaraTelefone"></div>
+            <div class="sx-campo"><label for="ct-empresa">Empresa</label><input id="ct-empresa" name="company" autocomplete="organization" placeholder="Opcional"></div>
+            <div class="sx-campo"><label for="ct-assunto">Assunto</label>
+              <select id="ct-assunto" name="segment">
+                <option>Conhecer o SIIMOB</option>
+                <option>Suporte (já sou cliente)</option>
+                <option>Parcerias</option>
+                <option>Imprensa</option>
+                <option>Outro assunto</option>
+              </select>
+            </div>
+            <div class="sx-campo ct-largo"><label for="ct-msg">Mensagem <u>*</u></label><textarea id="ct-msg" name="message" required placeholder="Conte como podemos ajudar"></textarea></div>
+          </div>
+          <input class="sx-hp" tabindex="-1" autocomplete="off" name="website" aria-hidden="true">
+          <button class="sx-btn sx-btn-mar sx-btn-g ct-enviar" type="submit" id="ct-enviar">Enviar mensagem</button>
+          <p class="ct-msg" id="ct-retorno" role="status" aria-live="polite"></p>
+          <p class="ct-nota">Seus dados vão só para a equipe do SIIMOB e são usados para responder este contato.</p>
+        </form>
+        <div class="ct-ok" id="ct-ok" hidden tabindex="-1">
+          <span class="ct-ok-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <h2>Mensagem recebida</h2>
+          <p>Obrigado pelo contato. A nossa equipe responde em breve pelo e-mail ou telefone que você informou.</p>
+          <div class="ct-ok-acoes" id="ct-ok-acoes"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sx-chamada">
+    <div class="sx-wrap sx-rv">
+      <h2>Conheça o SIIMOB <em>na prática</em></h2>
+      <p>Leads, disposição de unidades, reserva, venda, repasse e registro. Veja como cada participante da operação trabalha sobre o mesmo dado.</p>
+      <div class="sx-chamada-acoes">
+        <a class="sx-btn sx-btn-mar sx-btn-g" href="/conheca">Conhecer o sistema</a>
+        <a class="sx-btn sx-btn-linha sx-btn-g" href="/blog">Ler o blog</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="sx-rodape" id="sx-rodape"></footer>
+<script type="module" src="/src/pages/contato/main.js"></script>
+</body>
+</html>

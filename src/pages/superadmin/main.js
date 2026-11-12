@@ -3,6 +3,7 @@ import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
 import { acoes } from '../../shared/ui/acoes.js';
+import { siteAdminAbrir, siteAdminMontar } from '../../modules/site/admin-site.js';
 
 // Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
@@ -293,6 +294,7 @@ function switchSaTab(name, el) {
     'esteiras',
     'monitor',
     'avisos',
+    'site',
     'indica',
     'plataforma'
   ].forEach(t => {
@@ -308,6 +310,11 @@ function switchSaTab(name, el) {
   }
   if (name === 'monitor') loadMonitor();
   if (name === 'avisos') loadAvisos();
+  if (name === 'site') {
+    // A aba vive em src/modules/site/admin-site.js e usa o acesso desta tela.
+    siteAdminMontar({ url: () => SA_URL, key: () => SA_KEY, toast });
+    siteAdminAbrir();
+  }
   if (name === 'indica') loadIndicacoes();
 }
 
@@ -1388,7 +1395,8 @@ function renderLeads() {
             d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const zap = (l.phone || '').replace(/\D/g, '');
         return `<tr style="border-top:1px solid var(--border);vertical-align:top">
-        <td style="padding:.7rem .8rem;color:var(--t3);white-space:nowrap">${quando}</td>
+        <td style="padding:.7rem .8rem;color:var(--t3);white-space:nowrap">${quando}
+          <div style="margin-top:.3rem"><span style="font-size:.62rem;font-weight:800;padding:.12rem .4rem;border-radius:4px;${l.source === 'contato' ? 'background:#E9F0F7;color:#345C84' : 'background:#E6F4F1;color:#0B7568'}">${l.source === 'contato' ? 'PÁGINA DE CONTATO' : 'LP /CONHECA'}</span></div></td>
         <td style="padding:.7rem .8rem">
           <div style="font-weight:700;color:var(--t1)">${esc(l.name)}</div>
           <div style="color:var(--t3);font-size:.74rem;margin-top:.1rem">

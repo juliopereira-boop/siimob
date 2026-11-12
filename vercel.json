@@ -32,6 +32,22 @@
       "destination": "/precadastro.html"
     },
     {
+      "source": "/links",
+      "destination": "/links.html"
+    },
+    {
+      "source": "/contato",
+      "destination": "/contato.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/blog/:post",
+      "destination": "/blog.html"
+    },
+    {
       "source": "/:slug/login",
       "destination": "/login.html"
     },

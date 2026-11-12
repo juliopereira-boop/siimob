@@ -21,6 +21,10 @@
 /indicasii                             /indica.html               200
 /indica/cadastro                       /indica-cadastro.html      200
 /cadastro-corretor                     /precadastro.html          200
+/links                                 /links.html                200
+/contato                               /contato.html              200
+/blog                                  /blog.html                 200
+/blog/:post                            /blog.html                 200
 /:slug/login                           /login.html                200
 /:slug/repasse                         /repasse.html              200
 /:slug/andamento                       /andamento.html            200

@@ -979,6 +979,148 @@ const D = {
 // finais 01 a 04. As situações estão misturadas de propósito (a planta tem de
 // desenhar as quatro), e há XSS plantado na tipologia e no nome de cliente da
 // reserva — a ficha e a lista de reservas desenham os dois.
+// ─── Site público (/links, /contato, /blog) ─────────────────────────────────
+// O que a RLS entrega para a chave pública: só itens ativos e posts publicados.
+// Os textos carregam XSS de propósito, como o resto do andaime, e o post traz a
+// marcação que o renderizador precisa recusar (javascript:, HTML cru).
+const SITE = {
+  config: [
+    {
+      id: 1,
+      links_titulo: 'SIIMOB',
+      links_frase: 'Do primeiro contato ao registro em cartório, num sistema só.',
+      whatsapp: '5598999990000',
+      whatsapp_msg: 'Olá! Vim pelo site do SIIMOB.',
+      email: 'contato@siimob.com.br',
+      telefone: '(98) 3000-0000',
+      horario: 'Segunda a sexta, das 9h às 18h',
+      endereco: null,
+      instagram: 'https://instagram.com/siimob',
+      linkedin: 'https://linkedin.com/company/siimob',
+      youtube: 'javascript:alert(1)',
+      facebook: null,
+      tiktok: null
+    }
+  ],
+  links: [
+    {
+      id: 'lk1',
+      tipo: 'banner',
+      titulo: 'Disposição de unidades ' + XSS,
+      subtitulo: null,
+      url: '/conheca#construtora',
+      imagem_url: '/assets/banners/indicasii-mural.jpg',
+      icone: null,
+      nova_aba: false,
+      ordem: 1,
+      ativo: true,
+      cliques: 1 * 7
+    },
+    {
+      id: 'lk2',
+      tipo: 'destaque',
+      titulo: 'Fale com um consultor',
+      subtitulo: 'Atendimento no WhatsApp ' + XSS,
+      url: 'https://wa.me/5598999990000',
+      imagem_url: null,
+      icone: 'whatsapp',
+      nova_aba: true,
+      ordem: 2,
+      ativo: true,
+      cliques: 2 * 7
+    },
+    {
+      id: 'lk3',
+      tipo: 'link',
+      titulo: 'Conheça o SIIMOB',
+      subtitulo: null,
+      url: '/conheca',
+      imagem_url: null,
+      icone: 'site',
+      nova_aba: false,
+      ordem: 3,
+      ativo: true,
+      cliques: 3 * 7
+    },
+    {
+      id: 'lk4',
+      tipo: 'link',
+      titulo: 'Blog',
+      subtitulo: null,
+      url: '/blog',
+      imagem_url: null,
+      icone: 'blog',
+      nova_aba: false,
+      ordem: 4,
+      ativo: true,
+      cliques: 4 * 7
+    },
+    {
+      id: 'lk5',
+      tipo: 'secao',
+      titulo: 'Redes ' + XSS,
+      subtitulo: null,
+      url: null,
+      imagem_url: null,
+      icone: null,
+      nova_aba: true,
+      ordem: 5,
+      ativo: true,
+      cliques: 5 * 7
+    },
+    {
+      id: 'lk6',
+      tipo: 'link',
+      titulo: 'Instagram',
+      subtitulo: null,
+      url: 'https://instagram.com/siimob',
+      imagem_url: null,
+      icone: 'instagram',
+      nova_aba: true,
+      ordem: 6,
+      ativo: true,
+      cliques: 6 * 7
+    },
+    {
+      id: 'lk7',
+      tipo: 'link',
+      titulo: 'Golpe',
+      subtitulo: null,
+      url: 'javascript:alert(1)',
+      imagem_url: null,
+      icone: 'link',
+      nova_aba: true,
+      ordem: 7,
+      ativo: true,
+      cliques: 7 * 7
+    }
+  ],
+  posts: Array.from({ length: 11 }, (_, i) => ({
+    id: 'bp' + i,
+    slug: i === 0 ? 'funil-de-vendas-imobiliario' : 'artigo-' + i,
+    titulo:
+      i === 0
+        ? 'Funil de vendas imobiliário: como montar e gerenciar ' + XSS
+        : `Artigo número ${i} sobre a operação imobiliária`,
+    resumo:
+      i === 0
+        ? 'As etapas, os selos e como acompanhar o lead até a matrícula. ' + XSS
+        : 'Um resumo curto do artigo para a lista.',
+    capa_url: i % 3 === 1 ? '/assets/banners/indicasii-mural.jpg' : null,
+    categoria: ['Estratégia', 'Gestão de equipe', 'Dicas'][i % 3],
+    autor: i === 0 ? 'Equipe SIIMOB' : null,
+    tempo_leitura: 4 + (i % 4),
+    destaque: i === 2,
+    publicado: true,
+    publicado_em: new Date(Date.now() - i * 3 * 864e5).toISOString(),
+    conteudo:
+      '## Por que o funil importa\n\nUm funil bem desenhado mostra **onde** o lead trava. ' +
+      'Veja o [guia](https://siimob.com.br/conheca) e o [golpe](javascript:alert(1)).\n\n' +
+      '- Lead recebido\n- Visita agendada\n- Pré-análise\n\n> Cada etapa com um dono.\n\n' +
+      '<img src=x onerror="window.__XSS=(window.__XSS||0)+1">\n\n### Conclusão\n\nTexto final com `código`.'
+  }))
+};
+
 const DISP = (() => {
   const unidades = [];
   const situacao = {
@@ -1523,6 +1665,15 @@ function responder(url, metodo, corpo0) {
     .split(',')
     .map(x => x.trim())
     .filter(Boolean);
+  if (t === 'a1_site_config') return SITE.config;
+  if (t === 'a1_site_links') return SITE.links;
+  if (t === 'a1_blog_posts') {
+    const slug = (qs.match(/slug=eq\.([a-z0-9-]+)/) || [])[1];
+    const r = slug ? SITE.posts.filter(x => x.slug === slug) : SITE.posts;
+    return /select=([^&]*conteudo|\*)/.test(decodeURIComponent(qs))
+      ? r
+      : r.map(({ conteudo: _c, ...x }) => x);
+  }
   if (t === 'a1_tenants') return D.tenants;
   if (t === 'a1_agenda') {
     // O POST devolve a linha criada, como o PostgREST com Prefer=representation
@@ -1673,6 +1824,7 @@ function responder(url, metodo, corpo0) {
 }
 module.exports = {
   DISP,
+  SITE,
   responder,
   usarExtras,
   liberarModulos,
