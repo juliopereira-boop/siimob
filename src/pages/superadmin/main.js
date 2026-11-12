@@ -430,7 +430,10 @@ async function totpStatusPelaChave() {
     });
     if (!r.ok) return null;
     const j = await r.json();
-    TOTP_CONFIGURADO = !!(j && j.configurado);
+    // Só um objeto com "configurado" é resposta da função. Outra coisa (lista,
+    // null) é banco sem o SQL ou dublê de teste: não dá para afirmar nada.
+    if (!j || typeof j !== 'object' || Array.isArray(j) || typeof j.configurado !== 'boolean') return null;
+    TOTP_CONFIGURADO = j.configurado;
     return TOTP_CONFIGURADO
       ? { configurado: true, cadastrado_em: j.cadastrado_em, travado: j.travado === true }
       : false;
