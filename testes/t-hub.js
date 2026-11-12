@@ -14,16 +14,17 @@ const { abrir, checa, resumo } = require('./comum');
     console.log(`\n  [${g.titulo}] ${g.sub}`);
     g.cards.forEach(c => console.log('     · ' + c));
   });
-  // 5 de sempre + "Regras gerais" (as configurações-mãe do cliente) + "Área de
-  // risco", o grupo da Exclusão definitiva. Este último é montado por JS e só
+  // 5 de sempre + "Regras gerais" (as configurações-mãe do cliente) +
+  // "Integrações" (Meta Lead Ads) + "Área de risco", o grupo da Exclusão
+  // definitiva. Este último é montado por JS e só
   // existe para gestor — por isso não está no HTML.
   // Só os VISÍVEIS: o grupo Leads existe no HTML mas nasce escondido, e só
   // aparece quando cfgModsLiberar('crm') confirma a licença. Contar os ocultos
   // faria o teste acusar um grupo que o gestor não vê.
   const visiveis = grupos.filter(g => g.visivel);
   checa(
-    '7 grupos sem a licença de Leads',
-    visiveis.length === 7,
+    '8 grupos sem a licença de Leads',
+    visiveis.length === 8,
     'n=' + visiveis.length + ' · ' + JSON.stringify(grupos.map(g => g.titulo))
   );
   // Regras gerais vem PRIMEIRO, e isso é decisão de leitura: o que está lá vale
@@ -78,6 +79,8 @@ const { abrir, checa, resumo } = require('./comum');
     'Agências',
     'Bancos',
     'Cartórios',
+    // Integrações
+    'Integrações',
     // Ferramentas e suporte
     'Importar base',
     'Sugerir melhoria',
