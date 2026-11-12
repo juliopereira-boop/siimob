@@ -90,11 +90,14 @@ async function preencher(p, painel, cpf) {
 
   console.log('== O REDIRECIONAMENTO, LIDO DO PRÓPRIO CÓDIGO ==');
   {
-    // Sem navegador: a regra está escrita na tela de login e é dela que o sistema
-    // depende. Se alguém trocar '/geral' por outra coisa, é aqui que aparece.
-    const src = require('./fonte').lerPagina('login');
-    const fn = /function redirectAfterLogin\(user\)\s*\{([\s\S]*?)\n\}/.exec(src);
-    checa('redirectAfterLogin existe', !!fn);
+    // Sem navegador: a regra mora em src/shared/auth/paineis.js e as DUAS telas
+    // de login (a de cada empresa e a universal, /login) dependem dela. Se
+    // alguém trocar '/geral' por outra coisa, ou uma tela voltar a ter regra
+    // própria, é aqui que aparece.
+    const { lerFonte, lerPagina } = require('./fonte');
+    const regra = lerFonte('src/shared/auth/paineis.js');
+    const fn = /export function destinoDepoisDoLogin\(user, slug\)\s*\{([\s\S]*?)\n\}/.exec(regra);
+    checa('destinoDepoisDoLogin existe', !!fn);
     const corpo = fn ? fn[1] : '';
     checa('o destino padrão é a tela Geral', /\/\$\{slug\}\/geral/.test(corpo), corpo.slice(0, 200));
     checa(
@@ -102,6 +105,11 @@ async function preencher(p, painel, cpf) {
       /despachante[\s\S]*\/\$\{slug\}\/registro/.test(corpo),
       corpo.slice(0, 300)
     );
+    for (const tela of ['login', 'entrar'])
+      checa(
+        `a tela ${tela} usa essa regra, sem uma própria`,
+        /destinoDepoisDoLogin\(/.test(lerPagina(tela)) && !/\/\$\{slug\}\/geral/.test(lerPagina(tela))
+      );
     // A prova que impede a volta do comportamento antigo.
     checa(
       'NINGUÉM é mandado para o dashboard do Repasse no login',
