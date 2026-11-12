@@ -209,6 +209,25 @@ const TOKEN = 'a'.repeat(64);
   j = await r.json();
   checa('rede caída responde 502 sem vazar a chave', r.status === 502 && !JSON.stringify(j).includes(CHAVE));
 
+  console.log('\nSQL do autenticador');
+  // O Supabase liga o pg_safeupdate nos pedidos da API: DELETE ou UPDATE sem
+  // WHERE dentro de função chamada por RPC dá erro 21000. O Postgres das provas
+  // não tem a extensão, então a regra é conferida no texto da migração.
+  const sql = require('fs').readFileSync(
+    path.join(__dirname, '../database/migrations/2026-11-12_superadmin_autenticador.sql'),
+    'utf8'
+  );
+  const semWhere = sql
+    .split(';')
+    .map(c =>
+      c
+        .replace(/--[^\n]*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    )
+    .filter(c => /^(delete from|update) /i.test(c) && !/ where /i.test(c));
+  checa('nenhum DELETE/UPDATE sem WHERE (pg_safeupdate)', semWhere.length === 0, semWhere.join(' | '));
+
   process.exit(resumo([]) ? 1 : 0);
 })().catch(e => {
   console.error(e);

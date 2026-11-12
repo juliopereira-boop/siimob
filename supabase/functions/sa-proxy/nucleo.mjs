@@ -18,6 +18,8 @@
 // precisar adivinhar o tipo do módulo.
 
 const ORIGENS_PADRAO = [
+  'https://siimob.com',
+  'https://www.siimob.com',
   'https://siimob.com.br',
   'https://www.siimob.com.br',
   'http://localhost:3000',

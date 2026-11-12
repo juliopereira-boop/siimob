@@ -127,7 +127,8 @@ begin
   insert into a1_sa_totp (id, segredo, ultimo_passo, cadastrado_em) values (1, v_seg, v_passo, now())
   on conflict (id) do update set segredo = excluded.segredo, ultimo_passo = excluded.ultimo_passo,
                                  cadastrado_em = excluded.cadastrado_em;
-  delete from a1_sa_sessoes;
+  -- "where true": o Supabase (pg_safeupdate) recusa DELETE sem WHERE vindo da API.
+  delete from a1_sa_sessoes where true;
   return json_build_object('ok', true);
 end $$;
 
@@ -194,7 +195,7 @@ returns int language plpgsql security definer
 set search_path = public, extensions, pg_temp as $$
 declare n int;
 begin
-  delete from a1_sa_sessoes;
+  delete from a1_sa_sessoes where true;  -- ver a1_sa_totp_cadastrar
   get diagnostics n = row_count;
   return n;
 end $$;
