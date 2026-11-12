@@ -83,6 +83,144 @@ a {
   color: var(--t3);
   margin-bottom: 1.75rem;
 }
+/* Login por autenticador */
+.auth-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.auth-ajuda {
+  font-size: 0.8rem;
+  color: var(--t2);
+  margin: 0.35rem 0 1.1rem;
+  line-height: 1.5;
+}
+.auth-codigo {
+  width: 100%;
+  text-align: center;
+  font:
+    600 1.9rem/1 'DM Mono',
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.32em;
+  padding: 0.75rem 0.5rem 0.75rem 0.85rem;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  color: var(--t1);
+  background: var(--card);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.auth-codigo::placeholder {
+  color: var(--t4);
+}
+.auth-codigo:focus {
+  border-color: var(--emerald);
+  box-shadow: 0 0 0 4px rgba(14, 140, 127, 0.14);
+}
+.auth-codigo-p {
+  font-size: 1.4rem;
+}
+.auth-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.75rem;
+  font-size: 0.88rem;
+  margin-top: 0.9rem;
+}
+.auth-err {
+  margin-top: 0.75rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.auth-link {
+  display: block;
+  margin: 1.1rem auto 0;
+  background: none;
+  border: 0;
+  color: var(--t3);
+  font-size: 0.74rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.auth-link:hover {
+  color: var(--t1);
+}
+.auth-nota {
+  background: #e6f4f1;
+  border: 1px solid #b9e2d9;
+  color: #0b5049;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+.totp-passos {
+  margin: 0 0 1rem;
+  padding-left: 1.15rem;
+  font-size: 0.8rem;
+  color: var(--t2);
+  line-height: 1.65;
+}
+.totp-qr {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+.totp-qr svg {
+  width: 100%;
+  height: 100%;
+}
+.totp-seg {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--t3);
+}
+.totp-seg code {
+  display: block;
+  margin-top: 0.3rem;
+  font:
+    600 0.85rem/1.4 'DM Mono',
+    monospace;
+  color: var(--t1);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+  user-select: all;
+}
+.totp-aviso {
+  margin-top: 0.75rem;
+  background: #fdf3e2;
+  border: 1px solid #f6d9a6;
+  color: #9a6008;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.76rem;
+}
+.sa-acesso-status {
+  font-size: 0.8rem;
+  color: var(--t2);
+}
+.sa-acesso-status b {
+  color: var(--t1);
+}
+.sa-acesso-status .sa-acesso-travado {
+  color: #b42318;
+}
+
 .auth-top-bar {
   height: 3px;
   background: linear-gradient(135deg, #3fb8a6, #0e8c7f);
@@ -638,4 +776,11 @@ tbody td {
 .toast-info {
   background: #3f6f9e;
   color: #fff;
+}
+
+/* Classes com display próprio não podem vencer o atributo hidden. */
+#auth-gate [hidden],
+#modal-sa-totp [hidden],
+#sa-btn-destravar[hidden] {
+  display: none !important;
 }

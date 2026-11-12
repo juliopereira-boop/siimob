@@ -76,3 +76,22 @@ for i in 1 2; do
 done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-site.sql
+
+# Login do superadmin por autenticador. Em produção quem chama é a Edge Function
+# com a chave de serviço (papel service_role); o andaime cria o papel.
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -c "
+  do \$\$ begin
+    if not exists (select 1 from pg_roles where rolname = 'service_role') then
+      create role service_role nologin bypassrls;
+    end if;
+  end \$\$;
+  grant usage on schema public to service_role;
+  grant insert, select on prova to service_role;
+  grant usage, select on sequence prova_n_seq to service_role;
+  grant execute on function checa(text, boolean, text) to service_role;"
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-12_superadmin_autenticador.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-sa-autenticador.sql

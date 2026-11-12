@@ -238,6 +238,23 @@ Configurações: é regra do dono, "tudo que for de configuração vai estar em 
 - Rota nova do site entra em `vercel.json` **e** em `public/_redirects`, antes
   das rotas `/:slug/...`.
 
+### Login do superadmin (autenticador + sa-proxy)
+
+- **A chave de serviço não fica no navegador.** O superadmin entra com o código
+  do app autenticador; `src/modules/sa/acesso.js` desvia todo `fetch` ao REST e
+  ao Storage não público para a Edge Function `sa-proxy`, que repassa com a
+  chave. Código novo do superadmin continua montando URL com `SA_URL` e
+  `saHeaders()`: o desvio é transparente. **Nunca** chamar `/auth/v1` ou outra
+  Edge Function a partir do superadmin esperando a chave de serviço: na sessão
+  do autenticador o navegador só tem a chave pública, e a função só repassa
+  `/rest/v1` e `/storage/v1`.
+- Cabeçalho novo que o PostgREST/Storage precise tem de entrar em `REPASSA`
+  (e no `Access-Control-Allow-Headers`) de `supabase/functions/sa-proxy/nucleo.mjs`.
+- As funções `a1_sa_*` são só da `service_role`. Nunca dar `grant` a anon ou
+  authenticated. O segredo e as sessões não têm política nenhuma, de propósito.
+- A chave segue valendo como entrada de emergência (primeiro acesso, celular
+  perdido, função fora do ar).
+
 ## Permissões e Perfis
 
 `src/shared/auth/permissoes.js` é o catálogo. Cada entrada declara `chave`, `modulo`,

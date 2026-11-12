@@ -1,4 +1,16 @@
-import { A1_URL } from '../../shared/api/config.js';
+import { A1_KEY, A1_URL } from '../../shared/api/config.js';
+import {
+  entrarComCodigo,
+  emSessao,
+  gerarSegredo,
+  ligarSessao,
+  qrSvg,
+  sairDaSessao,
+  segredoLegivel,
+  sessaoSalva,
+  statusAutenticador,
+  uriOtp
+} from '../../modules/sa/acesso.js';
 import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
@@ -18,6 +30,7 @@ expor({
   openUsersModal,
   renderCobranca,
   saAuth,
+  saEntrarCodigo,
   salvarAviso,
   switchSaTab,
   toast
@@ -95,8 +108,16 @@ acoes({
   reactivateTenant: el => reactivateTenant(el.dataset.tenantId),
   renderLeads: () => renderLeads(),
   resetPw: el => resetPw(el.dataset.userId),
+  saAbrirCadastroTotp: () => saAbrirCadastroTotp(),
+  saAtivarTotp: () => saAtivarTotp(),
   saAuth: () => saAuth(),
+  saCodigoDigitado: el => saCodigoDigitado(/** @type {HTMLInputElement} */ (el)),
+  saEntrarCodigo: () => saEntrarCodigo(),
   saLogout: () => saLogout(),
+  saMostrarChave: () => saMostrarGate('chave'),
+  saMostrarCodigo: () => saMostrarGate('codigo'),
+  saDestravar: () => saDestravar(),
+  saSairTodas: () => saSairTodas(),
   salvarAviso: el => salvarAviso(el.dataset.publicar === 'true'),
   saveLogoUpload: () => saveLogoUpload(),
   semearEsteira: () => semearEsteira(),
@@ -250,6 +271,31 @@ function saRest(table) {
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
+// Duas entradas. A de todo dia é o código do app autenticador: a função
+// sa-proxy confere, abre uma sessão e passa a repassar os pedidos do painel com
+// a chave de serviço, que fica no servidor (ver src/modules/sa/acesso.js). A
+// outra é a própria Service Role Key: serve para o primeiro acesso (cadastrar o
+// autenticador) e de emergência, se a função cair ou o celular sumir.
+let TOTP_CONFIGURADO = /** @type {boolean|null} */ (null);
+
+/** Mostra o formulário do código ou o da chave. */
+function saMostrarGate(/** @type {'codigo'|'chave'} */ qual) {
+  const codigo = qual === 'codigo';
+  document.getElementById('sa-gate-codigo').hidden = !codigo;
+  document.getElementById('sa-gate-chave').hidden = codigo;
+  document.getElementById('sa-voltar-codigo').hidden = TOTP_CONFIGURADO !== true;
+  document.getElementById('sa-gate-primeiro').hidden = TOTP_CONFIGURADO !== false;
+  setTimeout(() => document.getElementById(codigo ? 'sa-codigo' : 'sa-key-input')?.focus(), 30);
+}
+
+function abrirPainel(/** @type {'sessao'|'chave'} */ modo) {
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('sa-panel').style.display = 'block';
+  const badge = document.getElementById('sa-modo-badge');
+  if (badge) badge.textContent = modo === 'sessao' ? 'Autenticador' : 'Service Role ativo';
+  applyCustomLogo();
+}
+
 async function saAuth() {
   SA_URL = (document.getElementById('sa-url-input').value || A1_URL).replace(/\/$/, '');
   SA_KEY = document.getElementById('sa-key-input').value.trim();
@@ -260,10 +306,10 @@ async function saAuth() {
   try {
     const res = await fetch(saRest('a1_tenants') + '?limit=1', { headers: saHeaders() });
     if (!res.ok) throw new Error('Chave inválida ou URL incorreta.');
-    document.getElementById('auth-gate').style.display = 'none';
-    document.getElementById('sa-panel').style.display = 'block';
-    applyCustomLogo();
+    abrirPainel('chave');
     await loadAll();
+    // Entrou com a chave e o autenticador ainda não existe: é a hora de cadastrar.
+    if (SA_URL === A1_URL && (await totpStatusPelaChave()) === false) saAbrirCadastroTotp();
   } catch (e) {
     saErr(e.message || 'Erro de conexão.');
   }
@@ -275,10 +321,240 @@ function saErr(msg) {
   el.style.display = 'block';
 }
 
-function saLogout() {
+function erroCodigo(/** @type {string} */ msg) {
+  const el = document.getElementById('sa-codigo-err');
+  el.textContent = msg;
+  el.hidden = !msg;
+}
+
+const soDigitos = (/** @type {string} */ v) => String(v || '').replace(/\D/g, '');
+
+/** Formata "123 456" e entra sozinho no sexto dígito. */
+function saCodigoDigitado(/** @type {HTMLInputElement} */ el) {
+  const d = soDigitos(el.value).slice(0, 6);
+  el.value = d.length > 3 ? `${d.slice(0, 3)} ${d.slice(3)}` : d;
+  erroCodigo('');
+  if (d.length === 6) saEntrarCodigo();
+}
+
+let entrando = false;
+async function saEntrarCodigo() {
+  const input = /** @type {HTMLInputElement} */ (document.getElementById('sa-codigo'));
+  const codigo = soDigitos(input.value);
+  if (codigo.length !== 6) {
+    erroCodigo('Digite os 6 dígitos do app.');
+    return;
+  }
+  if (entrando) return;
+  entrando = true;
+  const btn = /** @type {HTMLButtonElement} */ (document.getElementById('sa-btn-codigo'));
+  btn.disabled = true;
+  btn.textContent = 'Conferindo…';
+  try {
+    const r = await entrarComCodigo(codigo);
+    if (r.ok) {
+      await entrarComSessao(r.sessao);
+      return;
+    }
+    input.value = '';
+    input.focus();
+    if (r.erro === 'bloqueado')
+      erroCodigo(
+        'Login travado por tentativas erradas. Entre com a chave e libere em Plataforma › Acesso do superadmin, ou espere.'
+      );
+    else if (r.erro === 'nao_configurado') {
+      TOTP_CONFIGURADO = false;
+      saMostrarGate('chave');
+    } else if (r.erro === 'servidor')
+      erroCodigo('A função de acesso não respondeu. Tente de novo ou entre com a chave.');
+    else
+      erroCodigo(
+        typeof r.restantes === 'number' && r.restantes <= 2
+          ? `Código inválido. Mais ${r.restantes} tentativa${r.restantes === 1 ? '' : 's'} antes de travar.`
+          : 'Código inválido ou vencido. Use o código que está na tela do app agora.'
+      );
+  } finally {
+    entrando = false;
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+/** Com a sessão guardada, o painel fala com o banco pela função. */
+async function entrarComSessao(s = sessaoSalva()) {
+  if (!s) return;
+  ligarSessao(s, sessaoVenceu);
+  SA_URL = A1_URL;
+  SA_KEY = A1_KEY;
+  abrirPainel('sessao');
+  await loadAll();
+}
+
+function sessaoVenceu() {
+  if (!emSessao()) return;
+  sairDaSessao();
+  voltarAoLogin();
+  TOTP_CONFIGURADO = true;
+  saMostrarGate('codigo');
+  erroCodigo('Sua sessão terminou. Entre de novo com o código do app.');
+}
+
+function voltarAoLogin() {
   SA_KEY = SA_URL = '';
   document.getElementById('auth-gate').style.display = 'flex';
   document.getElementById('sa-panel').style.display = 'none';
+  const input = /** @type {HTMLInputElement|null} */ (document.getElementById('sa-codigo'));
+  if (input) input.value = '';
+  document.getElementById('sa-url-input').value = A1_URL;
+}
+
+async function saLogout() {
+  const tinhaSessao = emSessao();
+  voltarAoLogin();
+  if (tinhaSessao) await sairDaSessao();
+  document.getElementById('sa-key-input').value = '';
+  if (TOTP_CONFIGURADO) saMostrarGate('codigo');
+}
+
+// ─── Cadastro do autenticador ─────────────────────────────────────────────────
+/** @type {{hex:string, base32:string}|null} */
+let SEGREDO_NOVO = null;
+
+/** O status pela própria conexão do painel (chave ou sessão), via RPC. */
+async function totpStatusPelaChave() {
+  try {
+    const r = await fetch(saRest('rpc/a1_sa_totp_status'), {
+      method: 'POST',
+      headers: saHeaders(),
+      body: '{}'
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    TOTP_CONFIGURADO = !!(j && j.configurado);
+    return TOTP_CONFIGURADO
+      ? { configurado: true, cadastrado_em: j.cadastrado_em, travado: j.travado === true }
+      : false;
+  } catch {
+    return null;
+  }
+}
+
+function saAbrirCadastroTotp() {
+  SEGREDO_NOVO = gerarSegredo();
+  document.getElementById('totp-qr').innerHTML = qrSvg(uriOtp(SEGREDO_NOVO.base32));
+  document.getElementById('totp-seg').textContent = segredoLegivel(SEGREDO_NOVO.base32);
+  const input = /** @type {HTMLInputElement} */ (document.getElementById('totp-codigo'));
+  input.value = '';
+  document.getElementById('totp-aviso').hidden = TOTP_CONFIGURADO !== true;
+  const err = document.getElementById('totp-err');
+  err.hidden = true;
+  err.textContent = '';
+  openModal('modal-sa-totp');
+  setTimeout(() => input.focus(), 50);
+}
+
+async function saAtivarTotp() {
+  const err = document.getElementById('totp-err');
+  const falha = (/** @type {string} */ m) => {
+    err.textContent = m;
+    err.hidden = false;
+  };
+  const codigo = soDigitos(/** @type {HTMLInputElement} */ (document.getElementById('totp-codigo')).value);
+  if (!SEGREDO_NOVO) return;
+  if (codigo.length !== 6) return falha('Digite os 6 dígitos que o app mostra.');
+  const btn = /** @type {HTMLButtonElement} */ (document.getElementById('totp-ativar'));
+  btn.disabled = true;
+  try {
+    const r = await fetch(saRest('rpc/a1_sa_totp_cadastrar'), {
+      method: 'POST',
+      headers: saHeaders(),
+      body: JSON.stringify({ p_segredo_hex: SEGREDO_NOVO.hex, p_codigo: codigo })
+    });
+    if (r.status === 404)
+      return falha(
+        'O banco ainda não tem as funções do autenticador. Rode o SQL 2026-11-12_superadmin_autenticador.sql.'
+      );
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || !j.ok)
+      return falha('O código não confere. Confira se leu o QR desta tela e use o código atual do app.');
+    SEGREDO_NOVO = null;
+    TOTP_CONFIGURADO = true;
+    closeModal('modal-sa-totp');
+    // Recadastrar derruba todas as sessões, inclusive a desta aba.
+    if (emSessao()) {
+      toast('Autenticador trocado. Entre de novo com o código do app novo.', 'success');
+      sessaoVenceu();
+      return;
+    }
+    toast('Autenticador ativado. Da próxima vez, entre com o código do app.', 'success');
+    acessoPintar();
+  } catch {
+    falha('Erro de conexão. Tente de novo.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saSairTodas() {
+  if (
+    !confirm('Encerrar todas as sessões abertas do superadmin, inclusive esta (se você entrou pelo código)?')
+  )
+    return;
+  try {
+    const r = await fetch(saRest('rpc/a1_sa_sair_todas'), {
+      method: 'POST',
+      headers: saHeaders(),
+      body: '{}'
+    });
+    if (!r.ok) throw new Error();
+    const n = await r.json();
+    toast(`${Number(n) || 0} sessão(ões) encerrada(s).`, 'success');
+    if (emSessao()) sessaoVenceu();
+    else acessoPintar();
+  } catch {
+    toast('Não foi possível encerrar as sessões. O SQL do autenticador já foi rodado?', 'error');
+  }
+}
+
+async function saDestravar() {
+  try {
+    const r = await fetch(saRest('rpc/a1_sa_destravar'), {
+      method: 'POST',
+      headers: saHeaders(),
+      body: '{}'
+    });
+    if (!r.ok) throw new Error();
+    toast('Login liberado.', 'success');
+    acessoPintar();
+  } catch {
+    toast('Não foi possível liberar o login.', 'error');
+  }
+}
+
+/** O cartão "Acesso do superadmin" na aba Plataforma. */
+async function acessoPintar() {
+  const el = document.getElementById('sa-acesso-status');
+  const btn = document.getElementById('sa-btn-totp');
+  if (!el || !btn) return;
+  const st = await totpStatusPelaChave();
+  if (st === null) {
+    el.innerHTML =
+      'Não foi possível ler o status. O SQL <b>2026-11-12_superadmin_autenticador.sql</b> já foi rodado?';
+    btn.textContent = 'Cadastrar autenticador';
+    return;
+  }
+  if (st === false) {
+    el.innerHTML = '<b>Autenticador não cadastrado.</b> O login ainda depende da Service Role Key.';
+    btn.textContent = 'Cadastrar autenticador';
+    return;
+  }
+  const destravar = document.getElementById('sa-btn-destravar');
+  if (destravar) destravar.hidden = !st.travado;
+  const quando = st.cadastrado_em ? new Date(st.cadastrado_em).toLocaleString('pt-BR') : '';
+  el.innerHTML = `<b>Autenticador ativo</b>${quando ? ` desde ${esc(quando)}` : ''}. Você está ${
+    emSessao() ? 'na sessão do autenticador' : 'entrando com a Service Role Key'
+  }.${st.travado ? ' <b class="sa-acesso-travado">O login por código está travado por tentativas erradas.</b>' : ''}`;
+  btn.textContent = 'Trocar autenticador';
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
@@ -307,6 +583,7 @@ function switchSaTab(name, el) {
   if (name === 'plataforma') {
     initLogoUpload();
     manutCarregar();
+    acessoPintar();
   }
   if (name === 'monitor') loadMonitor();
   if (name === 'avisos') loadAvisos();
@@ -3335,6 +3612,19 @@ document.getElementById('sa-url-input').value = typeof A1_URL !== 'undefined' ? 
 document.getElementById('sa-key-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') saAuth();
 });
+// Sessão viva nesta aba entra direto; senão, a função diz se já há autenticador.
+// Sem resposta (função ainda não publicada), fica o formulário da chave.
+(async () => {
+  if (sessaoSalva()) {
+    TOTP_CONFIGURADO = true;
+    await entrarComSessao();
+    return;
+  }
+  const st = await statusAutenticador();
+  TOTP_CONFIGURADO = st ? st.configurado : null;
+  if (document.getElementById('sa-panel').style.display === 'block') return;
+  saMostrarGate(st && st.configurado ? 'codigo' : 'chave');
+})();
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModal('modal-users');

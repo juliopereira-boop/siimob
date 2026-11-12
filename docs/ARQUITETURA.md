@@ -198,6 +198,21 @@ Código compartilhado em `src/modules/site/` (`site.css`, `casca.js` com cabeça
 `markdown.js`). Rotas novas em `vercel.json` e `public/_redirects`, antes das rotas de cliente. Provas:
 `testes/sql/prova-site.sql` e `testes/t-site.js`.
 
+## Login do superadmin (autenticador)
+
+O superadmin entra com o código de 6 dígitos de um app autenticador (TOTP, RFC 6238). A Service Role Key não passa
+mais pelo navegador no dia a dia: mora só na Edge Function `sa-proxy`.
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco | `database/migrations/2026-11-12_superadmin_autenticador.sql` | Segredo (`a1_sa_totp`), sessões como hash sha256 (`a1_sa_sessoes`, 12 h), tentativas (`a1_sa_tentativas`). Confere o código, anti-reuso, trava 5 erros por IP em 15 min e o login inteiro com 10 erros em 15 min ou 30 em 24 h (o IP vem de cabeçalho e pode ser forjado); `a1_sa_destravar` libera. Funções só para `service_role`. |
+| Edge Function | `supabase/functions/sa-proxy/` (`nucleo.mjs` + `index.ts`, `verify_jwt = false`) | `/status`, `/login`, `/sair`; repassa `/rest/v1/*` e `/storage/v1/*` com a chave de serviço para quem tem sessão. Lista fechada de cabeçalhos nos dois sentidos, CORS por lista (`SA_ORIGENS` troca). |
+| Navegador | `src/modules/sa/acesso.js` | Troca o código pela sessão (sessionStorage da aba) e intercepta o `fetch`: pedido ao REST e ao Storage não público vai para a função com `x-sa-sessao`. Endereço público do Storage não é desviado (é o que fica gravado no banco). |
+| Tela | `src/pages/superadmin` | Código por padrão; a chave fica como primeiro acesso e emergência. Entrar com a chave sem autenticador abre o cadastro com QR. Plataforma › Acesso do superadmin: trocar autenticador, liberar login travado, encerrar todas as sessões. |
+
+Sem a função publicada, a tela cai sozinha no formulário da chave, como antes. Provas: `testes/sql/prova-sa-autenticador.sql`,
+`testes/t-sa-proxy.js` (a função em Node) e `testes/t-sa-autenticador.js` (a tela).
+
 ## LP comercial (`/conheca`)
 
 `src/pages/lp`: página isolada (sem casco, sem sessão), na identidade do sistema. Fala do SIIMOB

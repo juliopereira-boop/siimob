@@ -23,18 +23,38 @@
     <div class="auth-top-bar"></div>
     <div class="auth-logo" style="display:flex;align-items:center;gap:.5rem"><svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup1a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient><linearGradient id="sisup1b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#159A8E"/><stop offset="100%" stop-color="#3BF0DE"/></linearGradient><linearGradient id="sisup1c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3BF0DE"/><stop offset="45%" stop-color="#159A8E"/><stop offset="100%" stop-color="#04201D"/></linearGradient><linearGradient id="sisup1d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#04201D"/><stop offset="55%" stop-color="#149287"/><stop offset="100%" stop-color="#33E9D7"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup1a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup1b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup1c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup1d)"/></svg><span>SI<span style="color:#3FB8A6">IMOB</span></span> <span style="color:var(--t3);font-size:.85em">· SA</span></div>
     <div class="auth-sub">Superadmin</div>
-    <div class="form-group" style="margin-bottom:.875rem">
-      <label>Service Role Key</label>
-      <input id="sa-key-input" type="password" placeholder="eyJhbGciOiJ..." autocomplete="off">
+
+    <!-- Login de todo dia: o código do app autenticador. A chave de serviço
+         fica na Edge Function sa-proxy e não passa mais por aqui. -->
+    <div id="sa-gate-codigo" hidden>
+      <div class="auth-titulo">Entre com o autenticador</div>
+      <p class="auth-ajuda">Abra o app autenticador e digite o código de 6 dígitos do SIIMOB.</p>
+      <input id="sa-codigo" class="auth-codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7"
+        placeholder="000 000" aria-label="Código de 6 dígitos" data-acao-input="saCodigoDigitado" data-acao-enter="saEntrarCodigo">
+      <div id="sa-codigo-err" class="auth-err" role="alert" hidden></div>
+      <button class="btn btn-primary auth-btn" id="sa-btn-codigo" data-acao="saEntrarCodigo">Entrar</button>
+      <button type="button" class="auth-link" data-acao="saMostrarChave">Usar a Service Role Key (emergência)</button>
     </div>
-    <div class="form-group" style="margin-bottom:1rem">
-      <label>Supabase URL</label>
-      <input id="sa-url-input" type="text" placeholder="https://xxx.supabase.co">
-    </div>
-    <div id="sa-auth-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:6px;padding:.5rem .75rem;font-size:.78rem;font-weight:500;margin-bottom:.875rem"></div>
-    <button class="btn btn-primary" style="width:100%;padding:.7rem;font-size:.85rem" data-acao="saAuth">Entrar como Superadmin</button>
-    <div style="margin-top:.875rem;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:.5rem .75rem;font-size:.72rem;color:#92400e;font-weight:500">
-      Nunca compartilhe a Service Role Key. Use apenas neste painel seguro.
+
+    <!-- Primeiro acesso e emergência: a chave de serviço. -->
+    <div id="sa-gate-chave">
+      <div id="sa-gate-primeiro" class="auth-nota" hidden>
+        <b>Primeiro acesso.</b> Entre com a chave uma única vez para cadastrar o autenticador. Depois, o login é só o código do app.
+      </div>
+      <div class="form-group" style="margin-bottom:.875rem">
+        <label for="sa-key-input">Service Role Key</label>
+        <input id="sa-key-input" type="password" placeholder="eyJhbGciOiJ..." autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label for="sa-url-input">Supabase URL</label>
+        <input id="sa-url-input" type="text" placeholder="https://xxx.supabase.co">
+      </div>
+      <div id="sa-auth-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:6px;padding:.5rem .75rem;font-size:.78rem;font-weight:500;margin-bottom:.875rem"></div>
+      <button class="btn btn-primary" style="width:100%;padding:.7rem;font-size:.85rem" data-acao="saAuth">Entrar como Superadmin</button>
+      <div style="margin-top:.875rem;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:.5rem .75rem;font-size:.72rem;color:#92400e;font-weight:500">
+        Nunca compartilhe a Service Role Key. Use apenas neste painel seguro.
+      </div>
+      <button type="button" class="auth-link" id="sa-voltar-codigo" hidden data-acao="saMostrarCodigo">Voltar para o código do autenticador</button>
     </div>
   </div>
 </div>
@@ -45,7 +65,7 @@
     <div class="sa-hdr-inner">
       <div class="sa-logo" style="display:flex;align-items:center;gap:.45rem"><svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sisup2a" x1="13.4" y1="41.4" x2="36.4" y2="15.6" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sisup2b" x1="64" y1="12.7" x2="64" y2="35.5" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.58)"/><stop offset="55%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient><linearGradient id="sisup2c" x1="36" y1="64.5" x2="36" y2="87.1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="rgba(255,255,255,.84)"/><stop offset="100%" stop-color="rgba(255,255,255,.58)"/></linearGradient><linearGradient id="sisup2d" x1="86.6" y1="58.6" x2="63.6" y2="84.4" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,.62)"/><stop offset="55%" stop-color="rgba(255,255,255,.86)"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient></defs><path d="M36.4 12.9 A22.66 22.66 0 0 0 36.4 58.2 Z" fill="url(#sisup2a)"/><rect x="41.4" y="12.7" width="45.3" height="22.8" rx="11.4" fill="url(#sisup2b)"/><rect x="13.4" y="64.5" width="45.3" height="22.7" rx="11.3" fill="url(#sisup2c)"/><path d="M63.9 41.8 A22.66 22.66 0 0 1 63.9 87.1 Z" fill="url(#sisup2d)"/></svg>SIIMOB <span>CRM</span></div>
       <div style="display:flex;gap:.5rem;align-items:center">
-        <span class="sa-warn-badge">Service Role ativo</span>
+        <span class="sa-warn-badge" id="sa-modo-badge">Service Role ativo</span>
         <span class="sa-badge" id="sa-tenant-count">— clientes</span>
         <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.15)" data-acao="saLogout">Sair</button>
       </div>
@@ -380,6 +400,22 @@
 
     <div id="satab-plataforma" style="display:none">
 
+      <!-- ══ Acesso do superadmin: o autenticador ══ -->
+      <div class="panel" style="padding:1.25rem;margin-bottom:1.25rem">
+        <div class="section-hdr" style="margin-bottom:.75rem">
+          <div>
+            <div class="section-title">Acesso do superadmin</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-top:.18rem">O login é o código de 6 dígitos do app autenticador. A Service Role Key fica no servidor (Edge Function sa-proxy) e só serve de entrada de emergência.</div>
+          </div>
+        </div>
+        <div id="sa-acesso-status" class="sa-acesso-status">Carregando…</div>
+        <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.85rem">
+          <button class="btn btn-primary" id="sa-btn-totp" data-acao="saAbrirCadastroTotp">Cadastrar autenticador</button>
+          <button class="btn btn-primary" id="sa-btn-destravar" hidden data-acao="saDestravar">Liberar login</button>
+          <button class="btn btn-ghost" data-acao="saSairTodas">Encerrar todas as sessões</button>
+        </div>
+      </div>
+
       <!-- ══ A chave geral ══
            Fica no topo da aba porque é a coisa mais pesada que esta tela faz:
            ligada, ninguém entra no sistema. Só o superadmin continua passando —
@@ -644,6 +680,36 @@
 <div id="sa-toast"></div>
 
 <script type="module" src="/src/pages/superadmin/main.js"></script>
+
+<!-- Cadastro do autenticador: QR code + confirmação do primeiro código. -->
+<div class="modal-bg hidden" id="modal-sa-totp">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title">Cadastrar autenticador</div>
+      <button class="modal-close" data-acao="closeModal" data-id="modal-sa-totp" aria-label="Fechar">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <ol class="totp-passos">
+        <li>Abra o app autenticador no celular (Google Authenticator, Authy, 1Password ou Microsoft Authenticator).</li>
+        <li>Toque em adicionar e leia o QR code abaixo.</li>
+        <li>Digite o código de 6 dígitos que apareceu no app.</li>
+      </ol>
+      <div class="totp-qr" id="totp-qr"></div>
+      <div class="totp-seg">Sem câmera? Digite esta chave no app: <code id="totp-seg"></code></div>
+      <div class="form-group" style="margin-top:1rem">
+        <label for="totp-codigo">Código do app</label>
+        <input id="totp-codigo" class="auth-codigo auth-codigo-p" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000" data-acao-enter="saAtivarTotp">
+      </div>
+      <div id="totp-aviso" class="totp-aviso" hidden>Já existe um autenticador cadastrado. Ativar este substitui o anterior e encerra todas as sessões abertas.</div>
+      <div id="totp-err" class="auth-err" role="alert" hidden></div>
+    </div>
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.45rem;flex-shrink:0">
+      <button class="btn btn-ghost" data-acao="closeModal" data-id="modal-sa-totp">Agora não</button>
+      <button class="btn btn-primary" id="totp-ativar" data-acao="saAtivarTotp">Ativar</button>
+    </div>
+  </div>
+</div>
+
 
 <div class="modal-bg hidden" id="modal-aviso">
   <div class="modal" style="max-width:640px">
