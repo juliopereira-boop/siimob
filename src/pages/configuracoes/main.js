@@ -6,10 +6,8 @@ import {
   metaFecharConfig,
   metaAbrirPaginas,
   metaSalvarPaginas,
-  metaAbrirFormularios,
-  metaCarregarFormularios,
   metaSalvarFormularios,
-  metaPaginaFormularioMudou
+  pintarSeloDoHub
 } from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
@@ -104,10 +102,7 @@ acoes({
   metaFecharConfig: () => metaFecharConfig(),
   metaAbrirPaginas: () => metaAbrirPaginas(),
   metaSalvarPaginas: () => metaSalvarPaginas(),
-  metaAbrirFormularios: () => metaAbrirFormularios(),
-  metaCarregarFormularios: () => metaCarregarFormularios(),
-  metaSalvarFormularios: () => metaSalvarFormularios(),
-  metaPaginaFormularioMudou: () => metaPaginaFormularioMudou(),
+  metaSalvarFormularios: el => metaSalvarFormularios(el),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
@@ -514,6 +509,7 @@ async function init() {
 
   loadFlags();
   a1StartHeartbeat('configuracoes');
+  pintarSeloDoHub();
   if (location.hash === '#integracoes') {
     history.replaceState(null, '', location.pathname + location.search);
     openCfgView('integracoes');

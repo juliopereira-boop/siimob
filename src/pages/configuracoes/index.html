@@ -234,6 +234,7 @@
         <button type="button" class="cfg-hub-card" data-acao="openCfgView" data-view="integracoes">
           <span class="cfg-hub-icon" aria-hidden="true" style="background:#e0e7ff;color:#2945b0;font-weight:800">↗</span>
           <span class="cfg-card-label">Integrações</span>
+          <span class="cfg-int-selo" id="cfg-int-selo" hidden></span>
         </button>
       </div>
     </div>
@@ -260,48 +261,54 @@
 
   <div id="cfg-view-integracoes" style="display:none">
     <div class="cfg-view-hdr"><button class="cfg-back-btn" data-acao="closeCfgView">← Configurações</button><div class="cfg-view-title">Integrações</div></div>
-    <div id="meta-card" class="panel" style="padding:1.25rem;max-width:620px">
-      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-        <img src="/images/integracoes/meta-lead-ads.svg" alt="" width="48" height="48" style="display:block;flex-shrink:0;border-radius:50%">
-        <div style="flex:1"><div style="font-size:.9rem;font-weight:800">Meta Lead Ads</div><div style="font-size:.72rem;color:var(--t2);margin-top:.15rem">Anúncios</div></div>
-        <span id="meta-status" role="status" style="font-size:.75rem;font-weight:700;color:var(--t2)">Verificando conexão…</span>
+
+    <!-- Lista de integrações: o estado aparece na hora (último conhecido) e é
+         conferido em segundo plano. Ver src/modules/integracoes/meta.js. -->
+    <div id="meta-card" class="mi-cartao">
+      <div class="mi-topo">
+        <img src="/images/integracoes/meta-lead-ads.svg" alt="" width="48" height="48" class="mi-logo">
+        <div class="mi-nome"><b>Meta Lead Ads</b><small>Formulários de anúncios do Facebook e do Instagram</small></div>
+        <span id="meta-status" class="mi-selo mi-selo-verificando" role="status"><i aria-hidden="true"></i><span>Verificando</span></span>
       </div>
-      <p style="font-size:.78rem;color:var(--t2);line-height:1.6;margin:.75rem 0">Conecte sua conta para preparar a integração com formulários do Facebook e Instagram.</p>
-      <button id="meta-connect-btn" type="button" class="btn btn-primary" data-acao="metaConectar" hidden>Conectar com a Meta</button>
-      <button id="meta-config-open" type="button" class="btn btn-primary" data-acao="metaAbrirConfig" hidden>Configurar</button>
-      <button id="meta-retry" type="button" class="btn btn-ghost" data-acao="metaCarregarStatus" hidden>Tentar novamente</button>
+      <p id="meta-resumo" class="mi-resumo">Conecte a conta Meta da empresa para escolher as páginas e os formulários de onde os leads vão chegar.</p>
+      <div class="mi-acoes">
+        <button id="meta-config-open" type="button" class="btn btn-primary" data-acao="metaAbrirConfig" hidden>Configurar</button>
+        <button id="meta-connect-btn" type="button" class="btn btn-primary" data-acao="metaConectar" hidden>Conectar com a Meta</button>
+        <button id="meta-retry" type="button" class="btn btn-ghost" data-acao="metaCarregarStatus" hidden>Tentar novamente</button>
+      </div>
+      <p id="meta-aviso" class="mi-aviso" role="status" hidden></p>
     </div>
-    <div id="meta-config" class="panel" hidden style="padding:1.25rem;max-width:760px">
+
+    <!-- Configuração da integração: conta, páginas e formulários. -->
+    <div id="meta-config" class="mi-config" hidden>
       <button type="button" class="cfg-back-btn" data-acao="metaFecharConfig">← Integrações</button>
-      <div style="display:flex;align-items:center;gap:.75rem;margin:1rem 0">
-        <img src="/images/integracoes/meta-lead-ads.svg" alt="" width="48" height="48" style="border-radius:50%">
-        <div><div style="font-size:.95rem;font-weight:800">Meta Lead Ads</div><div style="font-size:.72rem;color:var(--t2)">Configurações da empresa</div></div>
+      <div class="mi-topo mi-topo-config">
+        <img src="/images/integracoes/meta-lead-ads.svg" alt="" width="52" height="52" class="mi-logo">
+        <div class="mi-nome"><b>Meta Lead Ads</b><small id="meta-conta">Conta conectada</small></div>
+        <span class="mi-selo mi-selo-ok"><i aria-hidden="true"></i><span>Conectado</span></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-acao="metaConectar">Reconectar</button>
       </div>
-      <button type="button" class="btn btn-ghost" data-acao="metaConectar">Reconectar com a Meta</button>
-      <p id="meta-config-message" role="status" style="font-size:.75rem;color:var(--t2);margin-top:.4rem"></p>
-      <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
-        <div style="font-size:.83rem;font-weight:700">Páginas da conta Meta</div>
-        <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.35rem 0">Escolha as páginas desta empresa. Uma página pode ser vinculada a uma empresa por vez.</p>
-        <button id="meta-pages-open" type="button" class="btn btn-ghost" data-acao="metaAbrirPaginas">Carregar páginas</button>
-        <div id="meta-pages-panel" hidden>
-          <p id="meta-pages-message" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.5rem 0"></p>
-          <div id="meta-pages-list" style="display:grid;gap:.5rem;margin:.75rem 0"></div>
-          <button id="meta-pages-save" type="button" class="btn btn-primary" data-acao="metaSalvarPaginas" disabled>Salvar páginas</button>
+      <p id="meta-config-message" class="mi-aviso" role="status" hidden></p>
+
+      <section class="mi-bloco">
+        <div class="mi-bloco-cab">
+          <div><h3>Páginas</h3><p>As páginas do Facebook desta empresa. Uma página fica vinculada a uma empresa por vez.</p></div>
+          <button id="meta-pages-open" type="button" class="btn btn-ghost btn-sm" data-acao="metaAbrirPaginas">Atualizar lista</button>
         </div>
-      </div>
-      <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
-        <div style="font-size:.83rem;font-weight:700">Formulários</div>
-        <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.35rem 0">Escolha os formulários das páginas selecionadas. O recebimento de leads ainda não está ativo.</p>
-        <button id="meta-forms-open" type="button" class="btn btn-ghost" data-acao="metaAbrirFormularios">Consultar formulários</button>
-        <div id="meta-forms-panel" hidden>
-          <label for="meta-forms-page" style="display:block;margin:.75rem 0 .3rem;font-size:.75rem;font-weight:700">Página</label>
-          <select id="meta-forms-page" data-acao-change="metaPaginaFormularioMudou" style="max-width:100%;padding:.45rem;border:1px solid var(--border);border-radius:7px"></select>
-          <button id="meta-forms-load" type="button" class="btn btn-ghost" data-acao="metaCarregarFormularios">Mostrar formulários</button>
-          <p id="meta-forms-message" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.5rem 0"></p>
-          <div id="meta-forms-list" style="display:grid;gap:.5rem"></div>
-          <button id="meta-forms-save" type="button" class="btn btn-primary" data-acao="metaSalvarFormularios" disabled style="margin-top:.7rem">Salvar formulários</button>
+        <p id="meta-pages-message" class="mi-msg" role="status"></p>
+        <div id="meta-pages-list" class="mi-lista"></div>
+        <div class="mi-rodape"><button id="meta-pages-save" type="button" class="btn btn-primary" data-acao="metaSalvarPaginas" disabled>Salvar páginas</button></div>
+      </section>
+
+      <section class="mi-bloco">
+        <div class="mi-bloco-cab">
+          <div><h3>Formulários</h3><p>Os formulários de cada página escolhida. Só os marcados vão gerar lead no SIIMOB.</p></div>
         </div>
-      </div>
+        <p id="meta-forms-message" class="mi-msg" role="status"></p>
+        <div id="meta-forms" class="mi-forms"></div>
+      </section>
+
+      <p class="mi-nota">O recebimento automático dos leads é ligado na próxima etapa. Até lá, as escolhas ficam salvas para esta empresa.</p>
     </div>
   </div>
 
