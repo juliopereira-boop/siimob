@@ -1,4 +1,5 @@
 import { createHandler } from './handler.mjs';
+import { listMetaPages } from './pages.mjs';
 
 const base = Deno.env.get('SUPABASE_URL') || '';
 const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -46,6 +47,20 @@ Deno.serve(createHandler({
   },
   async saveConnection(row: unknown) {
     await db('siimob_meta_connections?on_conflict=tenant_id', {method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(row)});
+  },
+  async getConnection(tenantId: string) {
+    const q = filters({tenant_id:tenantId});
+    q.set('select','access_token,connected_at,token_expires_at,data_access_expires_at');
+    const rows = await db(`siimob_meta_connections?${q}`);
+    return rows?.[0] || null;
+  },
+  listPages: listMetaPages,
+  async getSelectedPages(tenantId: string) {
+    const q = filters({tenant_id:tenantId}); q.set('select','page_id');
+    return await db(`siimob_meta_pages?${q}`);
+  },
+  async replacePages(tenantId: string, version: string, pages: unknown) {
+    return await db('rpc/siimob_meta_replace_pages', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_version:version,p_pages:pages})});
   },
   async getStatus(tenantId: string) {
     const q = filters({tenant_id:tenantId}); q.set('select','connected_at,token_expires_at,data_access_expires_at');

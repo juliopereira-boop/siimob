@@ -8,7 +8,7 @@ const digest = async value => Array.from(new Uint8Array(await crypto.subtle.dige
 function json(body, status = 200) { return new Response(JSON.stringify(body), { status, headers: { 'Content-Type':'application/json', 'Cache-Control':'no-store', 'Access-Control-Allow-Origin':origin, 'Vary':'Origin' } }); }
 
 // Dependencies are server-side only, and are injected for isolated tests.
-export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, now = () => Date.now() }) {
+export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, getConnection, listPages, getSelectedPages, replacePages, now = () => Date.now() }) {
   return async req => {
     if (req.headers.get('origin') !== origin) return json({error:'origin'}, 403);
     if (req.method === 'OPTIONS') return new Response(null, { status:204, headers:{ 'Access-Control-Allow-Origin':origin, 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Access-Control-Allow-Headers':'content-type, apikey, authorization, x-session-token', 'Vary':'Origin' } });
@@ -20,6 +20,27 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
       if (!user || !/^[a-z0-9-]+$/.test(user.slug)) return json({error:'unauthorized'}, 403);
       let body; try { body = await req.json(); } catch { return json({error:'invalid_request'}, 400); }
       if (body.action === 'status') return json(await getStatus(user.tenant_id));
+      if (body.action === 'pages' || body.action === 'save_pages') {
+        const connection = await getConnection(user.tenant_id);
+        if (!connection || !connection.access_token) return json({error:'not_connected'}, 409);
+        const expired = [connection.token_expires_at, connection.data_access_expires_at].some(v => v && new Date(v).getTime() <= now());
+        if (expired) return json({error:'reconnect'}, 409);
+        if (body.action === 'save_pages' && (!Array.isArray(body.page_ids) || body.page_ids.length > 500 || body.page_ids.some(id => typeof id !== 'string' || !/^\d{1,32}$/.test(id)) || new Set(body.page_ids).size !== body.page_ids.length)) return json({error:'invalid_request'},400);
+        const pages = await listPages(connection.access_token);
+        if (body.action === 'pages') {
+          const selected = await getSelectedPages(user.tenant_id);
+          const ids = new Set(selected.map(p => p.page_id));
+          const available = new Set(pages.map(p => p.id));
+          return json({pages:pages.map(p => ({id:p.id,name:p.name,selected:ids.has(p.id)})), unavailable:selected.filter(p=>!available.has(p.page_id)).length});
+        }
+        const byId = new Map(pages.map(p => [p.id, p]));
+        if (!body.page_ids.every(id => byId.has(id))) return json({error:'page_not_authorized'},403);
+        const result = await replacePages(user.tenant_id, connection.connected_at, body.page_ids.map(id=>byId.get(id)));
+        if (result === 'page_conflict') return json({error:'page_conflict'},409);
+        if (result === 'connection_changed') return json({error:'connection_changed'},409);
+        if (result !== 'ok') return json({error:'invalid_request'},400);
+        return json({ok:true});
+      }
       if (body.action === 'start') {
         const random = crypto.getRandomValues(new Uint8Array(32));
         const state = Array.from(random, x => x.toString(16).padStart(2,'0')).join('');

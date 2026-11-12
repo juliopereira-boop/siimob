@@ -21,3 +21,18 @@ test('rejects insufficient permissions before storing credentials',async()=>{
  let saved=false;const h=createHandler({context:async()=>({tenant_id:'a',user_id:'b',slug:'a'}),insertState:async()=>{},consumeState:async()=>true,exchange:async()=>({app_id:'29432161913068502',type:'USER',is_valid:true,user_id:'1',access_token:'x',scopes:[]}),saveConnection:async()=>{saved=true}});
  const res=await h(request('complete',{state:'a'.repeat(64),code:'x'}));assert.equal(res.status,400);assert.equal(saved,false);
 });
+
+test('page choices are scoped to the authenticated tenant and omit credentials', async()=>{
+ let saved;
+ const handler=createHandler({context:async()=>({tenant_id:'tenant-a',user_id:'user-a',slug:'empresa-a'}), getConnection:async tenant=>({access_token:'private-token',connected_at:'version-1',tenant}), listPages:async token=>{assert.equal(token,'private-token');return [{id:'11',name:'Página A'},{id:'22',name:'Página B'}]},getSelectedPages:async tenant=>{assert.equal(tenant,'tenant-a');return [{page_id:'11'}]},replacePages:async (tenant,version,pages)=>{saved={tenant,version,pages};return 'ok'}});
+ const list=await handler(request('pages',{tenant_id:'tenant-b'})); const data=await list.json();
+ assert.deepEqual(data.pages,[{id:'11',name:'Página A',selected:true},{id:'22',name:'Página B',selected:false}]);assert.equal(JSON.stringify(data).includes('private-token'),false);
+ const result=await handler(request('save_pages',{tenant_id:'tenant-b',page_ids:['22']}));assert.equal(result.status,200);assert.deepEqual(saved,{tenant:'tenant-a',version:'version-1',pages:[{id:'22',name:'Página B'}]});
+});
+test('unauthorized, duplicate and conflicting page selections are rejected',async()=>{
+ let writes=0;
+ const handler=createHandler({context:async()=>({tenant_id:'tenant-a',user_id:'user-a',slug:'empresa-a'}),getConnection:async()=>({access_token:'token',connected_at:'version'}),listPages:async()=>[{id:'11',name:'Página A'}],replacePages:async()=>{writes++;return 'page_conflict'}});
+ assert.equal((await handler(request('save_pages',{page_ids:['22']}))).status,403);assert.equal(writes,0);
+ assert.equal((await handler(request('save_pages',{page_ids:['11','11']}))).status,400);assert.equal(writes,0);
+ const conflict=await handler(request('save_pages',{page_ids:['11']}));assert.equal(conflict.status,409);assert.equal((await conflict.json()).error,'page_conflict');
+});

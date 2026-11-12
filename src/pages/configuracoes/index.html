@@ -268,7 +268,15 @@
       <p style="font-size:.78rem;color:var(--t2);line-height:1.6;margin:.35rem 0">Conecte sua conta para preparar a integração com formulários do Facebook e Instagram.</p>
       <p id="meta-status" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.7rem 0">Verificando conexão…</p>
       <button id="meta-connect-btn" type="button" class="btn btn-primary" data-acao="metaConectar" disabled>Conectar com a Meta</button>
-      <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin-top:.7rem">As páginas e o recebimento de leads serão configurados nas próximas etapas.</p>
+      <button id="meta-pages-open" type="button" class="btn btn-ghost" data-acao="metaAbrirPaginas" hidden>Escolher páginas</button>
+      <div id="meta-pages-panel" hidden style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+        <div style="font-size:.83rem;font-weight:700">Páginas da conta Meta</div>
+        <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.35rem 0">Escolha as páginas desta empresa. Uma página pode ser vinculada a uma empresa por vez.</p>
+        <p id="meta-pages-message" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.5rem 0"></p>
+        <div id="meta-pages-list" style="display:grid;gap:.5rem;margin:.75rem 0"></div>
+        <button id="meta-pages-save" type="button" class="btn btn-primary" data-acao="metaSalvarPaginas" disabled>Salvar páginas</button>
+      </div>
+      <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin-top:.7rem">O recebimento e a distribuição de leads serão configurados nas próximas etapas.</p>
     </div>
   </div>
 
