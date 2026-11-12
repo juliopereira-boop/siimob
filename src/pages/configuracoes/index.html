@@ -229,6 +229,16 @@
     </div>
 
     <div class="cfg-grupo">
+      <div class="cfg-section-hdr">Integrações</div>
+      <div class="cfg-cards">
+        <button type="button" class="cfg-hub-card" data-acao="openCfgView" data-view="integracoes">
+          <span class="cfg-hub-icon" aria-hidden="true" style="background:#e0e7ff;color:#2945b0;font-weight:800">↗</span>
+          <span class="cfg-card-label">Integrações</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cfg-grupo">
       <div class="cfg-section-hdr">Ferramentas e suporte</div>
       <div class="cfg-section-sub">Trazer dados de fora e falar com quem cuida do sistema.</div>
       <div class="cfg-cards" id="cfg-cards-ferramentas">
@@ -245,6 +255,17 @@
           <div class="cfg-card-label">Sugerir melhoria</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="cfg-view-integracoes" style="display:none">
+    <div class="cfg-view-hdr"><button class="cfg-back-btn" data-acao="closeCfgView">← Configurações</button><div class="cfg-view-title">Integrações</div></div>
+    <div class="panel" style="padding:1.25rem;max-width:620px">
+      <div style="font-size:.9rem;font-weight:800">Meta Lead Ads</div>
+      <p style="font-size:.78rem;color:var(--t2);line-height:1.6;margin:.35rem 0">Conecte sua conta para preparar a integração com formulários do Facebook e Instagram.</p>
+      <p id="meta-status" role="status" style="font-size:.75rem;color:var(--t2);line-height:1.6;margin:.7rem 0">Verificando conexão…</p>
+      <button id="meta-connect-btn" type="button" class="btn btn-primary" data-acao="metaConectar" disabled>Conectar com a Meta</button>
+      <p style="font-size:.75rem;color:var(--t2);line-height:1.6;margin-top:.7rem">As páginas e o recebimento de leads serão configurados nas próximas etapas.</p>
     </div>
   </div>
 

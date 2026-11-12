@@ -146,7 +146,11 @@ const rotulosDosCartoes = p =>
         .filter(g => g.style.display !== 'none')
         .map(g => (g.querySelector('.cfg-section-hdr') || {}).textContent || '')
     );
-    checa('o hub tem 7 grupos sem a licença de Leads', _grupos.length === 7, JSON.stringify(_grupos));
+    checa(
+      'o hub inclui Integrações sem a licença de Leads',
+      _grupos.length === 8 && _grupos.includes('Integrações'),
+      JSON.stringify(_grupos)
+    );
     checa('e o grupo Leads não é um deles', !_grupos.some(t => /Leads/.test(t)), JSON.stringify(_grupos));
     // Antes isto era uma contagem ("22 cartões viram 24"), e ela apodreceu: um
     // cartão novo e legítimo do próprio Repasse (Checklist operacional) fez o
