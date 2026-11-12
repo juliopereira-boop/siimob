@@ -1,4 +1,5 @@
 import { A1 } from '../../shared/api/config.js';
+import { metaConectar, metaCarregarStatus } from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
   a1ClearModuleCache,
@@ -86,6 +87,7 @@ acoes({
   cicloSalvar: () => cicloSalvar(),
   cicloSelecionarVisiveis: el => cicloSelecionarVisiveis(el.dataset.marcar === 'true'),
   closeCfgView: () => closeCfgView(),
+  metaConectar: () => metaConectar(),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
@@ -492,6 +494,10 @@ async function init() {
 
   loadFlags();
   a1StartHeartbeat('configuracoes');
+  if (location.hash === '#integracoes') {
+    history.replaceState(null, '', location.pathname + location.search);
+    openCfgView('integracoes');
+  }
 }
 
 // ── Config hub / sub-view navigation ──────────────────────────────────────────
@@ -518,7 +524,8 @@ const CFG_VIEWS = [
   'correspondentes',
   'despachantes',
   'bancos',
-  'cartorios'
+  'cartorios',
+  'integracoes'
 ];
 
 // Busca do hub: esconde card por card e some com o grupo que ficar vazio, para
@@ -609,6 +616,7 @@ function openCfgView(view) {
   if (view === 'despachantes') loadDespachantes();
   if (view === 'bancos') loadBancos();
   if (view === 'cartorios') loadCartorios();
+  if (view === 'integracoes') metaCarregarStatus();
   if (view === 'ciclo-pa') cicloCarregar();
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
