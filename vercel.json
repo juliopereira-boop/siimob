@@ -53,6 +53,14 @@
       "destination": "/blog.html"
     },
     {
+      "source": "/privacidade",
+      "destination": "/privacidade.html"
+    },
+    {
+      "source": "/termos",
+      "destination": "/termos.html"
+    },
+    {
       "source": "/blog/:post",
       "destination": "/blog.html"
     },

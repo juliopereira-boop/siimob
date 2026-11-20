@@ -113,7 +113,7 @@ function rodapeHtml(/** @type {import('./dados.js').ConfigSite} */ c) {
       </div>
     </div>
     <div class="sx-rodape-base">
-      <span>© ${ano} SIIMOB. Todos os direitos reservados.</span>
+      <span>© ${ano} SIIMOB · CNPJ 57.210.027/0001-26 · <a href="/privacidade">Privacidade</a> · <a href="/termos">Termos de uso</a></span>
       <span>Tecnologia que conecta. Inteligência que transforma.</span>
     </div>
   </div>`;

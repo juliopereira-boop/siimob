@@ -27,6 +27,8 @@
 /links                                 /links.html                200
 /contato                               /contato.html              200
 /blog                                  /blog.html                 200
+/privacidade                           /privacidade.html          200
+/termos                                /termos.html               200
 /blog/:post                            /blog.html                 200
 /login                                 /entrar.html               200
 /:slug/login                           /login.html                200
