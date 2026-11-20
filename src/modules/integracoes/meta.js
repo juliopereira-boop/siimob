@@ -18,6 +18,46 @@
 import { A1, A1_URL } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
 
+// Os funis de Leads da empresa (a1_stages, módulo crm). O lead da integração
+// entra na etapa marcada como INÍCIO do funil escolhido para o formulário.
+const ROTULO_FUNIL = /** @type {Record<string,string>} */ ({
+  vendas: 'Vendas — Imóveis Prontos',
+  lancamentos: 'Vendas — Lançamentos',
+  locacao: 'Locação'
+});
+/** @type {{chave:string, rotulo:string, inicio:string}[]} */
+let funis = [];
+async function carregarFunis() {
+  try {
+    const r = await fetch(
+      `${A1.rest('a1_stages')}?module_key=eq.crm&select=group_key,name,is_initial,position&order=position.asc`,
+      { headers: A1.headers() }
+    );
+    const etapas = r.ok ? await r.json() : [];
+    /** @type {Map<string, any>} */
+    const m = new Map();
+    for (const e of Array.isArray(etapas) ? etapas : []) {
+      const k = e.group_key || 'geral';
+      if (!m.has(k)) m.set(k, { chave: k, rotulo: ROTULO_FUNIL[k] || k, inicio: e.name });
+      if (e.is_initial && !m.get(k).marcado) Object.assign(m.get(k), { inicio: e.name, marcado: true });
+    }
+    funis = [...m.values()].map(f => ({ chave: f.chave, rotulo: f.rotulo, inicio: f.inicio }));
+  } catch {
+    funis = [];
+  }
+}
+function seletorFunil(/** @type {string} */ formId, /** @type {string|null} */ atual) {
+  const primeiro = funis[0];
+  const opcoes = [
+    `<option value="">${esc(primeiro ? `Padrão: ${primeiro.rotulo}` : 'Funil padrão')}</option>`,
+    ...funis.map(
+      f =>
+        `<option value="${esc(f.chave)}"${f.chave === atual ? ' selected' : ''}>${esc(f.rotulo)} · entra em ${esc(f.inicio)}</option>`
+    )
+  ];
+  return `<select class="mi-funil" data-form="${esc(formId)}" aria-label="Funil de destino">${opcoes.join('')}</select>`;
+}
+
 const ESPERA_MS = 12000;
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -36,9 +76,9 @@ const MENSAGENS = /** @type {Record<string,string>} */ ({
 });
 
 /** Chama a Edge Function, com tempo limite. */
-async function metaAction(/** @type {string} */ action, params = {}) {
+async function metaAction(/** @type {string} */ action, params = {}, espera = ESPERA_MS) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ESPERA_MS);
+  const timer = setTimeout(() => ctrl.abort(), espera);
   /** @type {Response} */
   let r;
   /** @type {any} */
@@ -243,7 +283,7 @@ export async function metaAbrirPaginas() {
         ? ''
         : 'Esta conta não tem páginas do Facebook disponíveis. Confira as permissões na Meta e reconecte.';
     salvar.disabled = paginas.length === 0 && !r.unavailable;
-    await carregarFormularios();
+    await Promise.all([carregarFormularios(), ligarRecebimento(), carregarLeadsRecentes()]);
   } catch (e) {
     lista.innerHTML = '';
     $('meta-pages-message').textContent = /** @type {Error} */ (e).message;
@@ -262,10 +302,11 @@ export async function metaSalvarPaginas() {
   salvar.disabled = true;
   $('meta-pages-message').textContent = 'Salvando…';
   try {
-    await metaAction('save_pages', { page_ids: ids });
+    const r = await metaAction('save_pages', { page_ids: ids });
     paginas = paginas.map(p => ({ ...p, selected: ids.includes(p.id) }));
     $('meta-pages-message').textContent = 'Páginas salvas para esta empresa.';
     await carregarFormularios();
+    pintarRecebimento(Array.isArray(r.pages) ? r.pages : []);
   } catch (e) {
     $('meta-pages-message').textContent = /** @type {Error} */ (e).message;
   } finally {
@@ -275,6 +316,7 @@ export async function metaSalvarPaginas() {
 
 /** Um bloco por página escolhida, cada um com os formulários dela. */
 async function carregarFormularios() {
+  if (!funis.length) await carregarFunis();
   const escolhidas = paginas.filter(p => p.selected);
   const area = $('meta-forms');
   if (!escolhidas.length) {
@@ -286,12 +328,13 @@ async function carregarFormularios() {
   area.innerHTML = escolhidas
     .map(
       p => `<div class="mi-pagina" data-pagina="${esc(p.id)}">
-        <div class="mi-pagina-cab"><b>${esc(p.name)}</b><span class="mi-pagina-msg" role="status">Carregando formulários…</span></div>
+        <div class="mi-pagina-cab"><b>${esc(p.name)}</b><span class="mi-receb" data-receb="${esc(p.id)}"></span><span class="mi-pagina-msg" role="status">Carregando formulários…</span></div>
         <div class="mi-lista"><div class="mi-esq"></div></div>
         <div class="mi-rodape"><button type="button" class="btn btn-primary btn-sm" data-acao="metaSalvarFormularios" data-pagina="${esc(p.id)}" disabled>Salvar formulários</button></div>
       </div>`
     )
     .join('');
+  pintarRecebimento([]);
   await Promise.all(escolhidas.map(p => carregarFormulariosDa(p.id)));
 }
 
@@ -318,13 +361,14 @@ async function carregarFormulariosDa(/** @type {string} */ pageId) {
     const r = await metaAction('forms', { page_id: pageId });
     const forms = Array.isArray(r.forms) ? r.forms : [];
     lista.innerHTML = forms
-      .map(f =>
-        linhaEscolha(
-          `meta-form-${pageId}`,
-          f.id,
-          f.selected === true,
-          `<b>${esc(f.name)}</b>${f.status ? `<small class="mi-st mi-st-${esc(String(f.status).toLowerCase())}">${esc(ROTULO_STATUS[f.status] || f.status)}</small>` : ''}`
-        )
+      .map(
+        f =>
+          `<div class="mi-form">${linhaEscolha(
+            `meta-form-${pageId}`,
+            f.id,
+            f.selected === true,
+            `<b>${esc(f.name)}</b>${f.status ? `<small class="mi-st mi-st-${esc(String(f.status).toLowerCase())}">${esc(ROTULO_STATUS[f.status] || f.status)}</small>` : ''}`
+          )}${funis.length > 1 ? seletorFunil(f.id, f.funil || null) : ''}</div>`
       )
       .join('');
     const marcados = forms.filter(f => f.selected).length;
@@ -352,14 +396,119 @@ export async function metaSalvarFormularios(/** @type {HTMLElement} */ botao) {
   /** @type {HTMLButtonElement} */ (botao).disabled = true;
   msg.textContent = 'Salvando…';
   try {
-    await metaAction('save_forms', { page_id: pageId, form_ids: ids });
-    msg.textContent = `Salvo: ${ids.length} formulário(s) desta página.`;
+    /** @type {Record<string,string|null>} */
+    const destino = {};
+    bloco.querySelectorAll('select.mi-funil').forEach(sel => {
+      const el = /** @type {HTMLSelectElement} */ (sel);
+      if (ids.includes(el.dataset.form || '')) destino[el.dataset.form || ''] = el.value || null;
+    });
+    await metaAction('save_forms', { page_id: pageId, form_ids: ids, funis: destino });
+    msg.textContent = `Salvo: ${ids.length} formulário(s) desta página. Os leads deles entram na etapa de início do funil escolhido.`;
   } catch (e) {
     msg.textContent = /** @type {Error} */ (e).message;
   } finally {
     /** @type {HTMLButtonElement} */ (botao).disabled = false;
   }
 }
+
+// ─── Recebimento: a página precisa estar ligada para a Meta avisar ───────────
+/** O último resultado de cada página, para pintar quando o bloco dela nascer. */
+const recebimento = new Map();
+function pintarRecebimento(/** @type {{id:string, recebendo:boolean}[]} */ lista) {
+  for (const p of lista) recebimento.set(p.id, p.recebendo);
+  for (const [id, recebendo] of recebimento) {
+    const p = { id, recebendo };
+    const el = document.querySelector(`.mi-receb[data-receb="${CSS.escape(p.id)}"]`);
+    if (!el) continue;
+    el.className = `mi-receb ${p.recebendo ? 'mi-receb-ok' : 'mi-receb-off'}`;
+    el.textContent = p.recebendo ? 'Recebendo leads' : 'Não ligada ao recebimento';
+    el.setAttribute(
+      'title',
+      p.recebendo
+        ? 'A Meta avisa o SIIMOB a cada lead novo desta página.'
+        : 'A Meta recusou ligar esta página. Reconecte a conta e aceite todas as permissões.'
+    );
+  }
+}
+async function ligarRecebimento() {
+  try {
+    const r = await metaAction('subscribe');
+    pintarRecebimento(Array.isArray(r.pages) ? r.pages : []);
+  } catch {
+    /* sem resposta: o selo fica vazio, a lista de leads mostra o resto */
+  }
+}
+
+// ─── Últimos leads recebidos ─────────────────────────────────────────────────
+const SITUACAO_LEAD = /** @type {Record<string,{rotulo:string, cls:string}>} */ ({
+  criado: { rotulo: 'Entrou no funil', cls: 'ok' },
+  duplicado: { rotulo: 'Já estava no funil', cls: 'ok' },
+  recebido: { rotulo: 'Aguardando', cls: 'espera' },
+  ignorado: { rotulo: 'Não entrou', cls: 'off' },
+  erro: { rotulo: 'Falhou', cls: 'erro' }
+});
+const MOTIVO_LEAD = /** @type {Record<string,string>} */ ({
+  formulario_nao_marcado: 'formulário não está marcado aqui',
+  pagina_sem_empresa: 'página não está escolhida',
+  sem_modulo_leads: 'o módulo de Leads não está ligado',
+  sem_conexao: 'conta Meta desconectada',
+  reconectar: 'a autorização da Meta venceu, reconecte',
+  permissao_meta: 'a Meta negou acesso ao lead, reconecte aceitando as permissões',
+  campo_ou_id_invalido: 'a Meta não encontrou o lead',
+  meta_indisponivel: 'a Meta não respondeu',
+  sem_etapa: 'o funil não tem etapas',
+  falha_interna: 'falha ao gravar, tente de novo'
+});
+const quando = (/** @type {string} */ d) =>
+  d
+    ? new Date(d).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '';
+
+async function carregarLeadsRecentes() {
+  const area = $('meta-leads');
+  area.innerHTML = '<div class="mi-esq"></div>';
+  try {
+    const r = await metaAction('leads');
+    const leads = Array.isArray(r.leads) ? r.leads : [];
+    $('meta-reprocessar').hidden = !leads.some(l => ['erro', 'recebido', 'ignorado'].includes(l.status));
+    area.innerHTML = leads.length
+      ? leads
+          .map(l => {
+            const s = SITUACAO_LEAD[l.status] || { rotulo: l.status, cls: 'off' };
+            const motivo = l.detalhe ? MOTIVO_LEAD[l.detalhe] || l.detalhe : '';
+            return `<div class="mi-lead">
+              <span class="mi-lead-q">${esc(quando(l.quando))}</span>
+              <span class="mi-lead-n"><b>${esc(l.lead || '—')}</b><small>${esc(l.formulario || '')}</small></span>
+              <span class="mi-lead-s mi-lead-${s.cls}" title="${esc(motivo)}">${esc(s.rotulo)}${motivo ? ` · ${esc(motivo)}` : ''}</span>
+            </div>`;
+          })
+          .join('')
+      : '<p class="mi-msg">Nenhum lead chegou ainda. Quando alguém preencher um formulário marcado, ele aparece aqui e no funil de Leads.</p>';
+  } catch (e) {
+    area.innerHTML = `<p class="mi-msg">${esc(/** @type {Error} */ (e).message)}</p>`;
+  }
+}
+
+export async function metaReprocessar() {
+  const b = /** @type {HTMLButtonElement} */ ($('meta-reprocessar'));
+  b.disabled = true;
+  b.textContent = 'Tentando…';
+  try {
+    await metaAction('reprocessar', {}, 45000);
+  } catch (e) {
+    aviso('meta-config-message', /** @type {Error} */ (e).message);
+  } finally {
+    b.disabled = false;
+    b.textContent = 'Tentar de novo os que não entraram';
+    await carregarLeadsRecentes();
+  }
+}
+export const metaAtualizarLeads = () => carregarLeadsRecentes();
 
 // ─── Conectar / reconectar ───────────────────────────────────────────────────
 function botoesConectar(/** @type {boolean} */ desligar) {

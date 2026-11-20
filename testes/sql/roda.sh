@@ -95,3 +95,32 @@ for i in 1 2; do
 done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-sa-autenticador.sql
+
+# Leads das integrações (Meta). Produção já tem as tabelas da Meta
+# (supabase/migrations) e colunas de a1_cases que o andaime não tinha.
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -c "
+  alter table a1_cases add column if not exists client_email text;
+  alter table a1_cases add column if not exists observations text;
+  alter table a1_cases alter column stage_entered_at set default now();
+  alter table a1_cases alter column new_at set default now();
+  alter table a1_cases alter column is_new set default true;
+  alter table a1_tenants alter column status set default 'active';
+  grant select, insert, update on a1_cases, a1_stages, a1_stage_history, a1_events,
+    a1_tenants, a1_tenant_modules, a1_modules, a1_users to service_role;
+  grant insert, select on prova to anon, authenticated;
+  grant usage, select on sequence prova_n_seq to anon, authenticated;"
+for f in supabase/migrations/20261112035051_siimob_meta_webhook_events.sql \
+         supabase/migrations/20261112041223_siimob_meta_oauth.sql \
+         supabase/migrations/20261112043922_siimob_meta_pages.sql \
+         supabase/migrations/20261112162710_siimob_meta_forms.sql; do
+  echo "carregando $f"
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
+done
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-20_leads_das_integracoes.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -c "
+  grant select, insert, update on siimob_meta_connections, siimob_meta_pages to service_role;"
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-integracao-leads.sql

@@ -1,5 +1,5 @@
 import { createHandler } from './handler.mjs';
-import { listMetaPages } from './pages.mjs';
+import { listMetaPages, listMetaPagesWithTokens } from './pages.mjs';
 import { listMetaForms } from './forms.mjs';
 
 const base = Deno.env.get('SUPABASE_URL') || '';
@@ -56,13 +56,14 @@ Deno.serve(createHandler({
     return rows?.[0] || null;
   },
   listPages: listMetaPages,
+  listPagesWithTokens: (token: string) => listMetaPagesWithTokens(token),
   listForms: listMetaForms,
   async getSelectedPages(tenantId: string) {
     const q = filters({tenant_id:tenantId}); q.set('select','page_id');
     return await db(`siimob_meta_pages?${q}`);
   },
   async getSelectedForms(tenantId: string, pageId: string) {
-    const q = filters({tenant_id:tenantId,page_id:pageId,selected:'true'}); q.set('select','form_id');
+    const q = filters({tenant_id:tenantId,page_id:pageId,selected:'true'}); q.set('select','form_id,funil');
     return await db(`siimob_meta_forms?${q}`);
   },
   async replaceForms(tenantId: string, version: string, pageId: string, forms: unknown) {
@@ -70,6 +71,45 @@ Deno.serve(createHandler({
   },
   async replacePages(tenantId: string, version: string, pages: unknown) {
     return await db('rpc/siimob_meta_replace_pages', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_version:version,p_pages:pages})});
+  },
+  // Liga a página ao recebimento de avisos de lead (campo leadgen do webhook
+  // do app). Usa o token da página, que nunca sai do servidor.
+  async subscribePage(pageId: string, pageToken: string) {
+    if (!/^\d{1,32}$/.test(pageId)) return false;
+    const url = new URL(`https://graph.facebook.com/v27.0/${pageId}/subscribed_apps`);
+    url.searchParams.set('subscribed_fields', 'leadgen');
+    const r = await fetch(url, { method:'POST', headers:{ Authorization:`Bearer ${pageToken}`, Accept:'application/json' }, redirect:'error', signal: AbortSignal.timeout(8000) });
+    const body = await r.json().catch(() => ({}));
+    return r.ok && body?.success === true;
+  },
+  // Os últimos avisos de lead da empresa, com o resultado e o nome do lead.
+  async recentLeads(tenantId: string) {
+    const q = filters({tenant_id:tenantId});
+    q.set('select','leadgen_id,form_id,status,detalhe,received_at,processado_em,case_id');
+    q.set('order','received_at.desc'); q.set('limit','20');
+    const rows = (await db(`siimob_meta_webhook_events?${q}`)) || [];
+    const ids = rows.map((r: {case_id?: string}) => r.case_id).filter((x: unknown) => typeof x === 'string' && /^[0-9a-f-]{36}$/.test(x as string));
+    const nomes = new Map<string, string>();
+    if (ids.length) {
+      const c = new URLSearchParams(); c.set('id', `in.(${ids.join(',')})`); c.set('tenant_id', `eq.${tenantId}`); c.set('select','id,client_name,stage_name');
+      for (const x of (await db(`a1_cases?${c}`)) || []) nomes.set(x.id, `${x.client_name}${x.stage_name ? ' · ' + x.stage_name : ''}`);
+    }
+    const fq = filters({tenant_id:tenantId}); fq.set('select','form_id,form_name');
+    const forms = new Map(((await db(`siimob_meta_forms?${fq}`)) || []).map((f: {form_id: string; form_name: string}) => [f.form_id, f.form_name]));
+    return rows.map((r: Record<string, string>) => ({
+      quando: r.received_at, status: r.status, detalhe: r.detalhe || null,
+      formulario: forms.get(r.form_id) || `Formulário ${r.form_id}`,
+      lead: r.case_id ? nomes.get(r.case_id) || null : null, case_id: r.case_id || null
+    }));
+  },
+  // Pede ao webhook para tentar de novo os avisos pendentes desta empresa.
+  async retryPending(tenantId: string) {
+    const r = await fetch(`${base}/functions/v1/meta-leads-webhook/processar`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'x-siimob-interno': key, apikey:key, Authorization:`Bearer ${key}` },
+      body: JSON.stringify({tenant_id: tenantId}), signal: AbortSignal.timeout(25000)
+    });
+    if (!r.ok) throw new Error('retry failed');
+    return await r.json();
   },
   async getStatus(tenantId: string) {
     const q = filters({tenant_id:tenantId}); q.set('select','connected_at,token_expires_at,data_access_expires_at');

@@ -303,13 +303,22 @@
 
       <section class="mi-bloco">
         <div class="mi-bloco-cab">
-          <div><h3>Formulários</h3><p>Os formulários de cada página escolhida. Só os marcados vão gerar lead no SIIMOB.</p></div>
+          <div><h3>Formulários</h3><p>Os formulários de cada página escolhida. Só os marcados geram lead no SIIMOB, no funil que você escolher para cada um.</p></div>
         </div>
         <p id="meta-forms-message" class="mi-msg" role="status"></p>
         <div id="meta-forms" class="mi-forms"></div>
       </section>
 
-      <p class="mi-nota">O recebimento automático dos leads é ligado na próxima etapa. Até lá, as escolhas ficam salvas para esta empresa.</p>
+      <section class="mi-bloco">
+        <div class="mi-bloco-cab">
+          <div><h3>Últimos leads recebidos</h3><p>Cada lead de um formulário marcado entra no módulo de Leads, na etapa de início do funil escolhido, sem corretor: o gestor distribui.</p></div>
+          <div class="mi-acoes">
+            <button type="button" class="btn btn-ghost btn-sm" data-acao="metaAtualizarLeads">Atualizar</button>
+            <button id="meta-reprocessar" type="button" class="btn btn-ghost btn-sm" data-acao="metaReprocessar" hidden>Tentar de novo os que não entraram</button>
+          </div>
+        </div>
+        <div id="meta-leads" class="mi-leads"></div>
+      </section>
     </div>
   </div>
 

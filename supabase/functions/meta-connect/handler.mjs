@@ -8,7 +8,21 @@ const digest = async value => Array.from(new Uint8Array(await crypto.subtle.dige
 function json(body, status = 200) { return new Response(JSON.stringify(body), { status, headers: { 'Content-Type':'application/json', 'Cache-Control':'no-store', 'Access-Control-Allow-Origin':origin, 'Vary':'Origin' } }); }
 
 // Dependencies are server-side only, and are injected for isolated tests.
-export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, getConnection, listPages, listForms, getSelectedPages, getSelectedForms, replacePages, replaceForms, now = () => Date.now() }) {
+const FUNIL = /^[a-z0-9_-]{1,40}$/;
+const pageOut = p => ({id:p.id,name:p.name});
+
+export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, getConnection, listPages, listForms, getSelectedPages, getSelectedForms, replacePages, replaceForms, listPagesWithTokens, subscribePage = async () => true, recentLeads = async () => [], retryPending = async () => ({}), now = () => Date.now() }) {
+  // Liga cada página ao recebimento de leads (leadgen). Falha de uma não
+  // derruba a outra; a tela mostra quais ficaram de fora.
+  async function subscribe(pages) {
+    const out = [];
+    for (const p of pages) {
+      let ok = false;
+      try { ok = !!p.access_token && (await subscribePage(p.id, p.access_token)) === true; } catch { ok = false; }
+      out.push({id:p.id, recebendo:ok});
+    }
+    return out;
+  }
   return async req => {
     if (req.headers.get('origin') !== origin) return json({error:'origin'}, 403);
     if (req.method === 'OPTIONS') return new Response(null, { status:204, headers:{ 'Access-Control-Allow-Origin':origin, 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Access-Control-Allow-Headers':'content-type, apikey, authorization, x-session-token', 'Vary':'Origin' } });
@@ -20,7 +34,9 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
       if (!user || !/^[a-z0-9-]+$/.test(user.slug)) return json({error:'unauthorized'}, 403);
       let body; try { body = await req.json(); } catch { return json({error:'invalid_request'}, 400); }
       if (body.action === 'status') return json(await getStatus(user.tenant_id));
-      if (body.action === 'pages' || body.action === 'save_pages' || body.action === 'forms' || body.action === 'save_forms') {
+      if (body.action === 'leads') return json({leads: await recentLeads(user.tenant_id)});
+      if (body.action === 'reprocessar') return json({resumo: await retryPending(user.tenant_id)});
+      if (body.action === 'pages' || body.action === 'save_pages' || body.action === 'forms' || body.action === 'save_forms' || body.action === 'subscribe') {
         const connection = await getConnection(user.tenant_id);
         if (!connection || !connection.access_token) return json({error:'not_connected'}, 409);
         const expired = [connection.token_expires_at, connection.data_access_expires_at].some(v => v && new Date(v).getTime() <= now());
@@ -29,6 +45,8 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
         if (body.action === 'forms' || body.action === 'save_forms') {
           if (typeof body.page_id !== 'string' || !/^\d{1,32}$/.test(body.page_id)) return json({error:'invalid_request'},400);
           if (body.action === 'save_forms' && (!Array.isArray(body.form_ids) || body.form_ids.length > 500 || body.form_ids.some(id => typeof id !== 'string' || !/^\d{1,32}$/.test(id)) || new Set(body.form_ids).size !== body.form_ids.length)) return json({error:'invalid_request'},400);
+          const funis = body.funis && typeof body.funis === 'object' && !Array.isArray(body.funis) ? body.funis : {};
+          if (body.action === 'save_forms' && Object.entries(funis).some(([k,v]) => !/^\d{1,32}$/.test(k) || (v !== null && v !== '' && (typeof v !== 'string' || !FUNIL.test(v))))) return json({error:'invalid_request'},400);
           const selected = await getSelectedPages(user.tenant_id);
           if (!selected.some(p => p.page_id === body.page_id)) return json({error:'page_not_selected'},403);
           const available = await listPages(connection.access_token);
@@ -36,18 +54,22 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
           const forms = await listForms(connection.access_token, body.page_id);
           if (body.action === 'forms') {
             const chosen = await getSelectedForms(user.tenant_id, body.page_id);
-            const ids = new Set(chosen.map(f => f.form_id));
+            const byForm = new Map(chosen.map(f => [f.form_id, f]));
             const availableIds = new Set(forms.map(f => f.id));
-            return json({forms:forms.map(f => ({...f,selected:ids.has(f.id)})), unavailable:chosen.filter(f=>!availableIds.has(f.form_id)).length});
+            return json({forms:forms.map(f => ({...f,selected:byForm.has(f.id),funil:byForm.get(f.id)?.funil || null})), unavailable:chosen.filter(f=>!availableIds.has(f.form_id)).length});
           }
           const byId = new Map(forms.map(f => [f.id,f]));
           if (!body.form_ids.every(id => byId.has(id))) return json({error:'form_not_authorized'},403);
-          const result = await replaceForms(user.tenant_id,connection.connected_at,body.page_id,body.form_ids.map(id=>byId.get(id)));
+          const result = await replaceForms(user.tenant_id,connection.connected_at,body.page_id,body.form_ids.map(id=>({...byId.get(id), funil: funis[id] || null})));
           if (result === 'connection_changed' || result === 'page_not_selected') return json({error:result},409);
           if (result !== 'ok') return json({error:'invalid_request'},400);
           return json({ok:true});
         }
-        const pages = await listPages(connection.access_token);
+        const pages = await ((body.action === 'save_pages' || body.action === 'subscribe') && listPagesWithTokens ? listPagesWithTokens : listPages)(connection.access_token);
+        if (body.action === 'subscribe') {
+          const selected = new Set((await getSelectedPages(user.tenant_id)).map(p => p.page_id));
+          return json({pages: await subscribe(pages.filter(p => selected.has(p.id)))});
+        }
         if (body.action === 'pages') {
           const selected = await getSelectedPages(user.tenant_id);
           const ids = new Set(selected.map(p => p.page_id));
@@ -56,11 +78,11 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
         }
         const byId = new Map(pages.map(p => [p.id, p]));
         if (!body.page_ids.every(id => byId.has(id))) return json({error:'page_not_authorized'},403);
-        const result = await replacePages(user.tenant_id, connection.connected_at, body.page_ids.map(id=>byId.get(id)));
+        const result = await replacePages(user.tenant_id, connection.connected_at, body.page_ids.map(id=>pageOut(byId.get(id))));
         if (result === 'page_conflict') return json({error:'page_conflict'},409);
         if (result === 'connection_changed') return json({error:'connection_changed'},409);
         if (result !== 'ok') return json({error:'invalid_request'},400);
-        return json({ok:true});
+        return json({ok:true, pages: await subscribe(body.page_ids.map(id=>byId.get(id)))});
       }
       if (body.action === 'start') {
         const random = crypto.getRandomValues(new Uint8Array(32));

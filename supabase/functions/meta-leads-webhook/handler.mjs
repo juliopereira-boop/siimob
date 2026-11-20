@@ -1,5 +1,12 @@
-// Only the Meta webhook handshake and durable receipt are implemented here.
-// The events are deliberately not associated with a tenant or turned into leads.
+// Meta webhook: handshake, signed receipt and, once stored, the processing that
+// turns each notice into a lead (processa.mjs). The response to Meta never
+// waits for that processing: it runs in the background (defer), and a stored
+// notice that failed can be retried later through the internal route.
+//
+//   GET  /                     handshake (hub.challenge)
+//   POST /                     signed notices from Meta
+//   POST /processar            internal: retries a tenant's pending notices.
+//                              Accepted only with the service credential.
 const encoder = new TextEncoder();
 const idPattern = /^\d{1,32}$/;
 const maxBody = 1024 * 1024;
@@ -15,7 +22,7 @@ async function verifySignature(secret, bytes, header) {
   return crypto.subtle.verify('HMAC', key, signature, bytes);
 }
 
-export function createHandler({ verifyToken, appSecret, saveEvents }) {
+export function createHandler({ verifyToken, appSecret, saveEvents, processEvents, retryPending, internalKey, defer = p => p }) {
   return async function handle(req) {
     if (req.method === 'GET') {
       if (!verifyToken) return reply('Not configured', 503);
@@ -25,6 +32,16 @@ export function createHandler({ verifyToken, appSecret, saveEvents }) {
       return reply(challenge, 200);
     }
     if (req.method !== 'POST') return reply('Method not allowed', 405);
+    if (new URL(req.url).pathname.endsWith('/processar')) {
+      if (!internalKey || !retryPending || req.headers.get('x-siimob-interno') !== internalKey) return reply('Forbidden', 403);
+      let pedido;
+      try { pedido = await req.json(); } catch { return reply('Invalid payload', 400); }
+      if (typeof pedido?.tenant_id !== 'string' || !/^[0-9a-f-]{36}$/.test(pedido.tenant_id)) return reply('Invalid payload', 400);
+      try {
+        const resumo = await retryPending(pedido.tenant_id);
+        return new Response(JSON.stringify(resumo), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+      } catch { return reply('Temporary error', 503); }
+    }
     if (!appSecret) return reply('Not configured', 503);
     const declared = Number(req.headers.get('content-length') || 0);
     if (declared > maxBody) return reply('Payload too large', 413);
@@ -52,6 +69,8 @@ export function createHandler({ verifyToken, appSecret, saveEvents }) {
     if (events.size) {
       try { await saveEvents([...events.values()]); }
       catch { return reply('Temporary error', 503); }
+      // Stored first, processed after: a failure here never loses the notice.
+      if (processEvents) defer(Promise.resolve().then(() => processEvents([...events.values()])).catch(() => {}));
     }
     return reply('EVENT_RECEIVED', 200);
   };

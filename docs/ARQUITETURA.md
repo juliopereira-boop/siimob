@@ -213,6 +213,21 @@ mais pelo navegador no dia a dia: mora só na Edge Function `sa-proxy`.
 Sem a função publicada, a tela cai sozinha no formulário da chave, como antes. Provas: `testes/sql/prova-sa-autenticador.sql`,
 `testes/t-sa-proxy.js` (a função em Node) e `testes/t-sa-autenticador.js` (a tela).
 
+## Leads das integrações (Meta Lead Ads)
+
+Lead de formulário de anúncio entra sozinho no módulo de Leads, na etapa marcada como **início** (`a1_stages.is_initial`)
+do funil escolhido para o formulário (sem escolha: o primeiro funil da empresa), **sem corretor**: lead sem dono só o gestor
+vê, e é ele quem distribui.
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco | `database/migrations/2026-11-20_leads_das_integracoes.sql` | `a1_integracao_criar_lead` (genérica, só `service_role`): confere o módulo de Leads, escolhe funil e etapa de início, cria o lead, histórico e evento, e não duplica (`a1_integracao_leads`, chave empresa + origem + id externo). Situação de cada aviso em `siimob_meta_webhook_events` e funil por formulário em `siimob_meta_forms.funil`. |
+| Webhook | `supabase/functions/meta-leads-webhook` (`handler.mjs`, `processa.mjs`) | Guarda o aviso assinado, responde à Meta e processa depois (`EdgeRuntime.waitUntil`): empresa dona da página, formulário marcado, token da página, lead na Graph (com recuo para os campos do formulário se a Meta negar os de anúncio), cria o lead e grava o resultado no aviso. `POST /processar` (só com a chave de serviço) tenta de novo os pendentes de uma empresa. |
+| Conexão | `supabase/functions/meta-connect` | Ao salvar páginas, liga cada uma ao recebimento (`/{page}/subscribed_apps`, campo `leadgen`); `subscribe` religa as escolhidas; `leads` lista os últimos avisos com o resultado; `reprocessar` chama o webhook; `save_forms` grava o funil de cada formulário. Token de página nunca vai ao navegador. |
+| Tela | Configurações › Integrações (`src/modules/integracoes/meta.js`) | Funil de destino por formulário, selo "Recebendo leads" por página e "Últimos leads recebidos" com o motivo de quem não entrou. |
+
+Provas: `testes/sql/prova-integracao-leads.sql`, `testes/meta/meta-processa.test.mjs`, `testes/t-integracoes.js`.
+
 ## Site (`siimob.com`) e login universal (`/login`)
 
 `src/pages/index` é o site, servido na raiz: página isolada (sem casco, sem sessão), na identidade do

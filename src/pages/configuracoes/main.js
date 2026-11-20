@@ -7,6 +7,8 @@ import {
   metaAbrirPaginas,
   metaSalvarPaginas,
   metaSalvarFormularios,
+  metaReprocessar,
+  metaAtualizarLeads,
   pintarSeloDoHub
 } from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
@@ -103,6 +105,8 @@ acoes({
   metaAbrirPaginas: () => metaAbrirPaginas(),
   metaSalvarPaginas: () => metaSalvarPaginas(),
   metaSalvarFormularios: el => metaSalvarFormularios(el),
+  metaReprocessar: () => metaReprocessar(),
+  metaAtualizarLeads: () => metaAtualizarLeads(),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),

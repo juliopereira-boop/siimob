@@ -1580,3 +1580,106 @@ body.acesso-pendente {
   font-size: 0.74rem;
   color: var(--t3);
 }
+
+/* Funil por formulário, recebimento da página e últimos leads */
+.mi-form {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+}
+.mi-funil {
+  width: 100%;
+  font-size: 0.74rem;
+  color: var(--t2);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.38rem 0.5rem;
+}
+.mi-funil:focus {
+  outline: 2px solid var(--emerald);
+  outline-offset: 1px;
+}
+.mi-receb {
+  font-size: 0.66rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+}
+.mi-receb:empty {
+  display: none;
+}
+.mi-receb-ok {
+  color: #0b7568;
+  background: #e6f4f1;
+}
+.mi-receb-off {
+  color: #9a6008;
+  background: #fdf3e2;
+}
+.mi-leads {
+  display: grid;
+  gap: 0.35rem;
+}
+.mi-lead {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.78rem;
+}
+.mi-lead-q {
+  color: var(--t3);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+}
+.mi-lead-n b {
+  display: block;
+  color: var(--t1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mi-lead-n small {
+  color: var(--t3);
+  font-size: 0.7rem;
+}
+.mi-lead-s {
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mi-lead-ok {
+  color: #0b7568;
+  background: #e6f4f1;
+}
+.mi-lead-espera,
+.mi-lead-off {
+  color: var(--t2);
+  background: #eef2f0;
+}
+.mi-lead-erro {
+  color: #8f2a22;
+  background: #fdecea;
+}
+@media (max-width: 640px) {
+  .mi-lead {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+.mi-pagina-cab {
+  justify-content: flex-start;
+}
+.mi-pagina-cab .mi-pagina-msg {
+  margin-left: auto;
+}

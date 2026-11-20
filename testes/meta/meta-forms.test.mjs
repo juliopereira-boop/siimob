@@ -7,7 +7,7 @@ test('only the selected page of the authenticated tenant can list forms',async()
  let calls=0;
  const handler=createHandler({context:async()=>({tenant_id:'tenant-a',user_id:'user-a',slug:'a'}),getConnection:async()=>({access_token:'private'}),getSelectedPages:async tenant=>{assert.equal(tenant,'tenant-a');return [{page_id:'11'}]},listPages:async()=>[{id:'11',name:'A'}],listForms:async()=>{calls++;return [{id:'22',name:'Form'}]},getSelectedForms:async()=>[]});
  assert.equal((await handler(request('12'))).status,403);assert.equal(calls,0);
- const res=await handler(request('11'));assert.equal(res.status,200);assert.deepEqual(await res.json(),{forms:[{id:'22',name:'Form',selected:false}],unavailable:0});
+ const res=await handler(request('11'));assert.equal(res.status,200);assert.deepEqual(await res.json(),{forms:[{id:'22',name:'Form',selected:false,funil:null}],unavailable:0});
 });
 test('uses a page token server-side and returns only form data',async()=>{
  const requests=[];
@@ -25,5 +25,5 @@ test('form selection is revalidated and scoped to the authenticated tenant and p
  const send = form_ids=>new Request('https://example.test/',{method:'POST',headers:{origin:'https://siimob.com','x-session-token':'session','content-type':'application/json'},body:JSON.stringify({action:'save_forms',tenant_id:'other',page_id:'11',form_ids})});
  assert.equal((await handler(send(['33']))).status,403);assert.equal(saved,undefined);
  assert.equal((await handler(send(['22','22']))).status,400);assert.equal(saved,undefined);
- assert.equal((await handler(send(['22']))).status,200);assert.deepEqual(saved,{tenant:'tenant-a',version:'v1',page:'11',forms:[{id:'22',name:'Form'}]});
+ assert.equal((await handler(send(['22']))).status,200);assert.deepEqual(saved,{tenant:'tenant-a',version:'v1',page:'11',forms:[{id:'22',name:'Form',funil:null}]});
 });
