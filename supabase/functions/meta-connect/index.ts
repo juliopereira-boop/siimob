@@ -10,7 +10,7 @@ const headers = () => ({ apikey:key, Authorization:`Bearer ${key}`, 'Content-Typ
 async function db(path: string, init: RequestInit = {}) {
   if (!base || !key) throw new Error('not configured');
   const response = await fetch(`${base}/rest/v1/${path}`, { ...init, headers: { ...headers(), ...init.headers } });
-  if (!response.ok) throw new Error('database error');
+  if (!response.ok) throw new Error(`database error ${response.status}`);
   const body = await response.text();
   return body ? JSON.parse(body) : null;
 }
@@ -59,7 +59,7 @@ Deno.serve(createHandler({
   listPagesWithTokens: (token: string) => listMetaPagesWithTokens(token),
   listForms: listMetaForms,
   async getSelectedPages(tenantId: string) {
-    const q = filters({tenant_id:tenantId}); q.set('select','page_id');
+    const q = filters({tenant_id:tenantId}); q.set('select','page_id,todos_formularios');
     return await db(`siimob_meta_pages?${q}`);
   },
   async getSelectedForms(tenantId: string, pageId: string) {
@@ -82,6 +82,25 @@ Deno.serve(createHandler({
     const body = await r.json().catch(() => ({}));
     return r.ok && body?.success === true;
   },
+  // Desliga a página do recebimento de leads deste app (ao desconectar).
+  async unsubscribePage(pageId: string, pageToken: string) {
+    if (!/^\d{1,32}$/.test(pageId)) return false;
+    const url = new URL(`https://graph.facebook.com/v27.0/${pageId}/subscribed_apps`);
+    const r = await fetch(url, { method:'DELETE', headers:{ Authorization:`Bearer ${pageToken}`, Accept:'application/json' }, redirect:'error', signal: AbortSignal.timeout(8000) });
+    const body = await r.json().catch(() => ({}));
+    return r.ok && body?.success === true;
+  },
+  async setActive(tenantId: string, ativo: boolean) {
+    return await db('rpc/siimob_meta_definir_ativo', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_ativo:ativo})});
+  },
+  async pageOptions(tenantId: string, pageId: string, todos: boolean) {
+    return await db('rpc/siimob_meta_pagina_opcoes', {method:'POST', body:JSON.stringify({p_tenant:tenantId,p_page:pageId,p_todos:todos})});
+  },
+  async disconnect(tenantId: string) {
+    return await db('rpc/siimob_meta_desconectar', {method:'POST', body:JSON.stringify({p_tenant:tenantId})});
+  },
+  // Só a ação e códigos numéricos chegam aqui (ver handler.mjs e forms.mjs).
+  log: (m: string) => console.error(m),
   // Os últimos avisos de lead da empresa, com o resultado e o nome do lead.
   async recentLeads(tenantId: string) {
     const q = filters({tenant_id:tenantId});
@@ -112,7 +131,7 @@ Deno.serve(createHandler({
     return await r.json();
   },
   async getStatus(tenantId: string) {
-    const q = filters({tenant_id:tenantId}); q.set('select','connected_at,token_expires_at,data_access_expires_at');
+    const q = filters({tenant_id:tenantId}); q.set('select','connected_at,token_expires_at,data_access_expires_at,ativo');
     const rows = await db(`siimob_meta_connections?${q}`);
     return rows?.[0] ? {connected:true, ...rows[0]} : {connected:false};
   }

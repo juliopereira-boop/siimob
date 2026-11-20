@@ -11,7 +11,7 @@ function json(body, status = 200) { return new Response(JSON.stringify(body), { 
 const FUNIL = /^[a-z0-9_-]{1,40}$/;
 const pageOut = p => ({id:p.id,name:p.name});
 
-export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, getConnection, listPages, listForms, getSelectedPages, getSelectedForms, replacePages, replaceForms, listPagesWithTokens, subscribePage = async () => true, recentLeads = async () => [], retryPending = async () => ({}), now = () => Date.now() }) {
+export function createHandler({ context, insertState, consumeState, exchange, saveConnection, getStatus, getConnection, listPages, listForms, getSelectedPages, getSelectedForms, replacePages, replaceForms, listPagesWithTokens, subscribePage = async () => true, unsubscribePage = async () => true, recentLeads = async () => [], retryPending = async () => ({}), setActive = async () => 'ok', pageOptions = async () => 'ok', disconnect = async () => 'ok', log = () => {}, now = () => Date.now() }) {
   // Liga cada página ao recebimento de leads (leadgen). Falha de uma não
   // derruba a outra; a tela mostra quais ficaram de fora.
   async function subscribe(pages) {
@@ -29,10 +29,46 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
     if (req.method !== 'POST') return json({error:'method'}, 405);
     const session = req.headers.get('x-session-token') || '';
     if (!session || session.length > 512) return json({error:'unauthorized'}, 401);
+    let acao = '';
     try {
       const user = await context(session);
       if (!user || !/^[a-z0-9-]+$/.test(user.slug)) return json({error:'unauthorized'}, 403);
       let body; try { body = await req.json(); } catch { return json({error:'invalid_request'}, 400); }
+      acao = typeof body?.action === 'string' ? body.action.slice(0, 20) : '';
+      // Pausa ou retoma o recebimento sem mexer na conexão.
+      if (body.action === 'set_active') {
+        if (typeof body.ativo !== 'boolean') return json({error:'invalid_request'},400);
+        const r = await setActive(user.tenant_id, body.ativo);
+        if (r === 'not_connected') return json({error:'not_connected'},409);
+        if (r !== 'ok') return json({error:'invalid_request'},400);
+        return json({ok:true, ativo:body.ativo});
+      }
+      // Desliga as páginas do recebimento na Meta (o que der) e apaga o token.
+      if (body.action === 'disconnect') {
+        const connection = await getConnection(user.tenant_id);
+        if (!connection) return json({error:'not_connected'},409);
+        let desligadas = [];
+        if (connection.access_token && listPagesWithTokens) {
+          try {
+            const escolhidas = new Set((await getSelectedPages(user.tenant_id)).map(p => p.page_id));
+            for (const p of (await listPagesWithTokens(connection.access_token)).filter(p => escolhidas.has(p.id))) {
+              let ok = false;
+              try { ok = !!p.access_token && (await unsubscribePage(p.id, p.access_token)) === true; } catch { ok = false; }
+              desligadas.push({id:p.id, desligada:ok});
+            }
+          } catch (e) { log(`meta-connect disconnect: ${e?.message || e}`); desligadas = []; }
+        }
+        const r = await disconnect(user.tenant_id);
+        if (r !== 'ok' && r !== 'not_connected') return json({error:'temporarily_unavailable'},503);
+        return json({ok:true, pages:desligadas});
+      }
+      if (body.action === 'page_options') {
+        if (typeof body.page_id !== 'string' || !/^\d{1,32}$/.test(body.page_id) || typeof body.todos_formularios !== 'boolean') return json({error:'invalid_request'},400);
+        const r = await pageOptions(user.tenant_id, body.page_id, body.todos_formularios);
+        if (r === 'page_not_selected') return json({error:'page_not_selected'},409);
+        if (r !== 'ok') return json({error:'invalid_request'},400);
+        return json({ok:true});
+      }
       if (body.action === 'status') return json(await getStatus(user.tenant_id));
       if (body.action === 'leads') return json({leads: await recentLeads(user.tenant_id)});
       if (body.action === 'reprocessar') return json({resumo: await retryPending(user.tenant_id)});
@@ -72,9 +108,9 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
         }
         if (body.action === 'pages') {
           const selected = await getSelectedPages(user.tenant_id);
-          const ids = new Set(selected.map(p => p.page_id));
+          const byPage = new Map(selected.map(p => [p.page_id, p]));
           const available = new Set(pages.map(p => p.id));
-          return json({pages:pages.map(p => ({id:p.id,name:p.name,selected:ids.has(p.id)})), unavailable:selected.filter(p=>!available.has(p.page_id)).length});
+          return json({pages:pages.map(p => ({id:p.id,name:p.name,selected:byPage.has(p.id),todos_formularios:byPage.get(p.id)?.todos_formularios === true})), unavailable:selected.filter(p=>!available.has(p.page_id)).length});
         }
         const byId = new Map(pages.map(p => [p.id, p]));
         if (!body.page_ids.every(id => byId.has(id))) return json({error:'page_not_authorized'},403);
@@ -104,7 +140,8 @@ export function createHandler({ context, insertState, consumeState, exchange, sa
       }
       return json({error:'invalid_request'},400);
     } catch (error) {
-      if (error?.code === 'forms_permission') return json({error:'forms_permission'},403);
+      if (error?.code === 'forms_permission') { log(`meta-connect ${acao}: forms_permission`); return json({error:'forms_permission'},403); }
+      log(`meta-connect ${acao}: ${error?.message || error}`);
       return json({error:'temporarily_unavailable'},503);
     }
   };

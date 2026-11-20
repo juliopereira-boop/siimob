@@ -124,3 +124,11 @@ psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 -c "
   grant select, insert, update on siimob_meta_connections, siimob_meta_pages to service_role;"
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-integracao-leads.sql
+
+# Controles da integração Meta: inativar, desconectar, todos os formulários.
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-20_meta_controles.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-meta-controles.sql

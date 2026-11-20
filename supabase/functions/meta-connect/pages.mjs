@@ -13,7 +13,11 @@ export async function listMetaPages(token, request = fetch, withTokens = false) 
     url.searchParams.set('limit', '100');
     if (cursor) url.searchParams.set('after', cursor);
     const res = await request(url, {headers:{Authorization:`Bearer ${token}`, Accept:'application/json'}, redirect:'error'});
-    if (!res.ok) throw new Error('Meta pages unavailable');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const c = [res.status, body?.error?.code, body?.error?.error_subcode].filter(x => Number.isInteger(x)).join('/');
+      throw new Error(`Meta pages unavailable (${c})`);
+    }
     const data = await res.json();
     if (!Array.isArray(data.data)) throw new Error('Invalid Meta response');
     for (const page of data.data) {

@@ -226,7 +226,9 @@ vê, e é ele quem distribui.
 | Conexão | `supabase/functions/meta-connect` | Ao salvar páginas, liga cada uma ao recebimento (`/{page}/subscribed_apps`, campo `leadgen`); `subscribe` religa as escolhidas; `leads` lista os últimos avisos com o resultado; `reprocessar` chama o webhook; `save_forms` grava o funil de cada formulário. Token de página nunca vai ao navegador. |
 | Tela | Configurações › Integrações (`src/modules/integracoes/meta.js`) | Funil de destino por formulário, selo "Recebendo leads" por página e "Últimos leads recebidos" com o motivo de quem não entrou. |
 
-Provas: `testes/sql/prova-integracao-leads.sql`, `testes/meta/meta-processa.test.mjs`, `testes/t-integracoes.js`.
+| Controles | `database/migrations/2026-11-20_meta_controles.sql` + `meta-connect` | `set_active` pausa o recebimento (`siimob_meta_connections.ativo`; o aviso fica como `ignorado`/`integracao_inativa` e entra ao reativar, que já reprocessa). `disconnect` desliga as páginas na Meta (`DELETE subscribed_apps`) e chama `siimob_meta_desconectar` (apaga token e páginas; formulários marcados e avisos ficam). `page_options` liga "todos os formulários" da página (`siimob_meta_pages.todos_formularios`, preservado por `replace_pages`): formulário não marcado, inclusive criado depois, entra no primeiro funil. Erros inesperados vão para o log da função só com a ação e códigos numéricos da Meta. |
+
+Provas: `testes/sql/prova-integracao-leads.sql`, `testes/sql/prova-meta-controles.sql`, `testes/meta/meta-processa.test.mjs`, `testes/meta/meta-controles.test.mjs`, `testes/t-integracoes.js`.
 
 ## Site (`siimob.com`) e login universal (`/login`)
 

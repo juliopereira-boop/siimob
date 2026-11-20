@@ -23,7 +23,7 @@ const q = (v: Record<string, string>) => {
 
 const db = {
   async pagina(pageId: string) {
-    const p = q({ page_id: pageId }); p.set('select', 'tenant_id');
+    const p = q({ page_id: pageId }); p.set('select', 'tenant_id,todos_formularios');
     return (await rest(`siimob_meta_pages?${p}`))?.[0] || null;
   },
   async formulario(tenantId: string, pageId: string, formId: string) {
@@ -31,7 +31,7 @@ const db = {
     return (await rest(`siimob_meta_forms?${p}`))?.[0] || null;
   },
   async conexao(tenantId: string) {
-    const p = q({ tenant_id: tenantId }); p.set('select', 'access_token,token_expires_at,data_access_expires_at');
+    const p = q({ tenant_id: tenantId }); p.set('select', 'access_token,token_expires_at,data_access_expires_at,ativo');
     return (await rest(`siimob_meta_connections?${p}`))?.[0] || null;
   },
   async criarLead(args: Record<string, unknown>) {

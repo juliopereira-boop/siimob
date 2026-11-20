@@ -326,3 +326,45 @@ test('leads recentes e reprocessar são da empresa da sessão', async () => {
   });
   assert.deepEqual(tenants, ['tenant-a', 'tenant-a']);
 });
+
+test('integração pausada guarda o aviso sem chamar a Meta nem criar lead', async () => {
+  const nunca = {
+    tokenDaPagina: async () => assert.fail('não devia chamar a Meta'),
+    lead: async () => assert.fail()
+  };
+  const db = dbFalso({
+    conexao: async () => ({
+      access_token: 'user-token',
+      token_expires_at: '2099-01-01T00:00:00Z',
+      ativo: false
+    })
+  });
+  assert.deepEqual(await criarProcessador({ db, graph: nunca })(EV), {
+    tenant_id: 't1',
+    status: 'ignorado',
+    detalhe: 'integracao_inativa'
+  });
+  assert.equal(db.chamadas.length, 0);
+});
+
+test('"todos os formulários" aceita formulário novo, no primeiro funil', async () => {
+  const novo = dbFalso({
+    pagina: async () => ({ tenant_id: 't1', todos_formularios: true }),
+    formulario: async () => null
+  });
+  const r = await criarProcessador({ db: novo, graph: graphFalso() })(EV);
+  assert.equal(r.status, 'criado');
+  assert.equal(novo.chamadas[0].p_funil, null);
+  assert.match(novo.chamadas[0].p_detalhes.observacoes, /Formulário: Formulário 901/);
+  // desmarcado com funil antigo: entra, mas no primeiro funil (a escolha era do marcado)
+  const desmarcado = dbFalso({
+    pagina: async () => ({ tenant_id: 't1', todos_formularios: true }),
+    formulario: async () => ({ selected: false, funil: 'locacao', form_name: 'Antigo' })
+  });
+  await criarProcessador({ db: desmarcado, graph: graphFalso() })(EV);
+  assert.equal(desmarcado.chamadas[0].p_funil, null);
+  // marcado continua no funil escolhido
+  const marcado = dbFalso({ pagina: async () => ({ tenant_id: 't1', todos_formularios: true }) });
+  await criarProcessador({ db: marcado, graph: graphFalso() })(EV);
+  assert.equal(marcado.chamadas[0].p_funil, 'lancamentos');
+});

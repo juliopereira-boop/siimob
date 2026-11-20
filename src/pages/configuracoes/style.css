@@ -1300,7 +1300,8 @@ body.acesso-pendente {
   color: var(--t3);
   background: #eef2f0;
 }
-.cfg-int-expirou {
+.cfg-int-expirou,
+.cfg-int-inativa {
   color: #9a6008;
   background: #fdf3e2;
 }
@@ -1381,6 +1382,17 @@ body.acesso-pendente {
   background: #fdf3e2;
   border: 1px solid #f6d9a6;
 }
+.mi-selo-inativa {
+  color: #9a6008;
+  background: #fdf3e2;
+  border: 1px solid #f6d9a6;
+}
+.mi-selo-inativa i {
+  background: none;
+  border: 2px solid currentColor;
+  width: 7px;
+  height: 7px;
+}
 .mi-selo-verificando {
   color: var(--t3);
   background: #f1f4f2;
@@ -1412,6 +1424,63 @@ body.acesso-pendente {
   border: 1px solid #f5c2bd;
   border-radius: 8px;
   padding: 0.55rem 0.75rem;
+}
+.mi-aviso-ok {
+  color: #0b5f55;
+  background: #e6f4f1;
+  border-color: #bfe3da;
+}
+.mi-bloco-cab > .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mi-acoes-conta {
+  margin-left: auto;
+}
+.mi-perigo {
+  color: #a3352b;
+}
+.mi-perigo:hover {
+  color: #8f2a22;
+  background: #fdecea;
+}
+.mi-faixa {
+  margin: 0.85rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #7a4d06;
+  background: #fdf3e2;
+  border: 1px solid #f6d9a6;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+.mi-todos {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--border2);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.mi-todos input {
+  margin-top: 0.15rem;
+  accent-color: var(--emerald);
+  flex-shrink: 0;
+}
+.mi-todos b {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--t1);
+}
+.mi-todos small {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
+  color: var(--t3);
+  line-height: 1.45;
 }
 .mi-bloco {
   padding: 1.15rem 0;

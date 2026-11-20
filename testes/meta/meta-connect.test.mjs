@@ -26,7 +26,7 @@ test('page choices are scoped to the authenticated tenant and omit credentials',
  let saved;
  const handler=createHandler({context:async()=>({tenant_id:'tenant-a',user_id:'user-a',slug:'empresa-a'}), getConnection:async tenant=>({access_token:'private-token',connected_at:'version-1',tenant}), listPages:async token=>{assert.equal(token,'private-token');return [{id:'11',name:'Página A'},{id:'22',name:'Página B'}]},getSelectedPages:async tenant=>{assert.equal(tenant,'tenant-a');return [{page_id:'11'}]},replacePages:async (tenant,version,pages)=>{saved={tenant,version,pages};return 'ok'}});
  const list=await handler(request('pages',{tenant_id:'tenant-b'})); const data=await list.json();
- assert.deepEqual(data.pages,[{id:'11',name:'Página A',selected:true},{id:'22',name:'Página B',selected:false}]);assert.equal(JSON.stringify(data).includes('private-token'),false);
+ assert.deepEqual(data.pages,[{id:'11',name:'Página A',selected:true,todos_formularios:false},{id:'22',name:'Página B',selected:false,todos_formularios:false}]);assert.equal(JSON.stringify(data).includes('private-token'),false);
  const result=await handler(request('save_pages',{tenant_id:'tenant-b',page_ids:['22']}));assert.equal(result.status,200);assert.deepEqual(saved,{tenant:'tenant-a',version:'version-1',pages:[{id:'22',name:'Página B'}]});
 });
 test('unauthorized, duplicate and conflicting page selections are rejected',async()=>{

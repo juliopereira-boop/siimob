@@ -286,9 +286,14 @@
       <div class="mi-topo mi-topo-config">
         <img src="/images/integracoes/meta-lead-ads.svg" alt="" width="52" height="52" class="mi-logo">
         <div class="mi-nome"><b>Meta Lead Ads</b><small id="meta-conta">Conta conectada</small></div>
-        <span class="mi-selo mi-selo-ok"><i aria-hidden="true"></i><span>Conectado</span></span>
-        <button type="button" class="btn btn-ghost btn-sm" data-acao="metaConectar">Reconectar</button>
+        <span id="meta-config-selo" class="mi-selo mi-selo-ok"><i aria-hidden="true"></i><span>Conectado</span></span>
+        <div class="mi-acoes mi-acoes-conta">
+          <button id="meta-ativo-btn" type="button" class="btn btn-ghost btn-sm" data-acao="metaAlternarAtivo">Inativar</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-acao="metaConectar">Reconectar</button>
+          <button id="meta-desconectar-btn" type="button" class="btn btn-ghost btn-sm mi-perigo" data-acao="metaDesconectar">Desconectar</button>
+        </div>
       </div>
+      <p id="meta-inativa" class="mi-faixa" role="status" hidden>Integração inativa: os leads que chegarem da Meta ficam guardados e entram no funil quando você ativar de novo (até 7 dias).</p>
       <p id="meta-config-message" class="mi-aviso" role="status" hidden></p>
 
       <section class="mi-bloco">
@@ -303,7 +308,8 @@
 
       <section class="mi-bloco">
         <div class="mi-bloco-cab">
-          <div><h3>Formulários</h3><p>Os formulários de cada página escolhida. Só os marcados geram lead no SIIMOB, no funil que você escolher para cada um.</p></div>
+          <div><h3>Formulários</h3><p>Os formulários de cada página escolhida. Só os marcados geram lead no SIIMOB, no funil que você escolher para cada um. Criou um formulário novo na Meta? Busque de novo para ele aparecer aqui.</p></div>
+          <button id="meta-forms-refresh" type="button" class="btn btn-ghost btn-sm" data-acao="metaAtualizarFormularios">Buscar novos formulários</button>
         </div>
         <p id="meta-forms-message" class="mi-msg" role="status"></p>
         <div id="meta-forms" class="mi-forms"></div>

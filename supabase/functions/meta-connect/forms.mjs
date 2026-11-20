@@ -1,12 +1,16 @@
 function denied() {
   return Object.assign(new Error('Meta denied form access'), {code:'forms_permission'});
 }
+// Para o log do servidor: só números (HTTP, código e subcódigo da Meta), nunca
+// o texto do erro, que pode trazer dados da conta.
+export const codigos = (status, body) =>
+  [status, body?.error?.code, body?.error?.error_subcode].filter(x => Number.isInteger(x)).join('/');
 async function metaGet(url, token, request) {
   const response = await request(url, {headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(8000)});
   if (!response.ok) {
     const body = await response.json().catch(()=>({}));
     if (body?.error?.code === 10 || body?.error?.code === 200 || body?.error?.code === 190) throw denied();
-    throw new Error('Meta unavailable');
+    throw new Error(`Meta unavailable (${codigos(response.status, body)})`);
   }
   return response.json();
 }

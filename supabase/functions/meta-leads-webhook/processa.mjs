@@ -135,10 +135,17 @@ export function criarProcessador({ db, graph, now = () => Date.now() }) {
     const pagina = await db.pagina(ev.page_id);
     if (!pagina) return { status: 'ignorado', detalhe: 'pagina_sem_empresa' };
     const tenant = pagina.tenant_id;
-    const form = await db.formulario(tenant, ev.page_id, ev.form_id);
-    if (!form || form.selected !== true) return { tenant_id: tenant, status: 'ignorado', detalhe: 'formulario_nao_marcado' };
+    // Formulário marcado entra no funil escolhido. Com "todos os formulários"
+    // ligado na página, qualquer outro (inclusive um criado depois) também
+    // entra, no primeiro funil.
+    const linha = await db.formulario(tenant, ev.page_id, ev.form_id);
+    const marcado = !!linha && linha.selected === true;
+    if (!marcado && pagina.todos_formularios !== true) return { tenant_id: tenant, status: 'ignorado', detalhe: 'formulario_nao_marcado' };
+    const form = { form_name: linha?.form_name || null, funil: marcado ? linha.funil || null : null };
     const conexao = await db.conexao(tenant);
     if (!conexao || !conexao.access_token) return { tenant_id: tenant, status: 'erro', detalhe: 'sem_conexao' };
+    // Pausada pela empresa: o aviso fica guardado e pode entrar ao reativar.
+    if (conexao.ativo === false) return { tenant_id: tenant, status: 'ignorado', detalhe: 'integracao_inativa' };
     const venceu = [conexao.token_expires_at, conexao.data_access_expires_at].some(d => d && new Date(d).getTime() <= now());
     if (venceu) return { tenant_id: tenant, status: 'erro', detalhe: 'reconectar' };
 

@@ -37,10 +37,24 @@ function meta(estado) {
             connected: true,
             connected_at: '2026-11-12T04:34:21Z',
             token_expires_at: '2099-01-01T00:00:00Z',
-            data_access_expires_at: '2099-01-01T00:00:00Z'
+            data_access_expires_at: '2099-01-01T00:00:00Z',
+            ativo: estado.ativo !== false
           }
         : { connected: false };
-    if (d.action === 'pages') return { pages: PAGINAS, unavailable: 0 };
+    if (d.action === 'set_active') {
+      estado.ativo = d.ativo;
+      return { ok: true, ativo: d.ativo };
+    }
+    if (d.action === 'disconnect') {
+      estado.conectado = false;
+      return { ok: true, pages: [{ id: '111', desligada: true }] };
+    }
+    if (d.action === 'page_options') return { ok: true };
+    if (d.action === 'pages')
+      return {
+        pages: PAGINAS.map(x => ({ ...x, todos_formularios: x.id === '111' && estado.todos === true })),
+        unavailable: 0
+      };
     if (d.action === 'forms') return { forms: d.page_id === '111' ? FORMS : [], unavailable: 0 };
     if (d.action === 'save_pages')
       return { ok: true, pages: (d.page_ids || []).map(id => ({ id, recebendo: id === '111' })) };
@@ -132,7 +146,7 @@ const texto = (p, sel) => p.evaluate(s => (document.querySelector(s) || {}).text
     );
     checa(
       'os formulários da página escolhida já aparecem',
-      (await p.$$('.mi-pagina[data-pagina="111"] input')).length === 2 &&
+      (await p.$$('.mi-pagina[data-pagina="111"] .mi-lista input')).length === 2 &&
         !(await p.$('.mi-pagina[data-pagina="222"]'))
     );
     checa(
@@ -267,6 +281,100 @@ const texto = (p, sel) => p.evaluate(s => (document.querySelector(s) || {}).text
       'com o botão de conectar e sem Configurar',
       (await visivel(p, '#meta-connect-btn')) && !(await visivel(p, '#meta-config-open'))
     );
+    todos.push(...erros);
+    await b.close();
+  }
+
+  // ── 6. Buscar formulários, todos os formulários, inativar e desconectar ───
+  console.log('\nControles da integração');
+  {
+    const estado = { conectado: true, chamadas: [], todos: true };
+    const { b, p, erros } = await abrir('thecred/configuracoes#integracoes', { antes: comFunis(estado) });
+    await p.waitForTimeout(500);
+    await p.click('#meta-config-open');
+    await p.waitForTimeout(700);
+    const forms = () => estado.chamadas.filter(c => c.action === 'forms').length;
+    const antes = forms();
+    await p.click('#meta-forms-refresh');
+    await p.waitForTimeout(500);
+    checa('"Buscar novos formulários" consulta a Meta de novo', forms() > antes, `${antes} -> ${forms()}`);
+    checa(
+      'a opção "todos os formulários" vem marcada como está salva',
+      await p.isChecked('.mi-pagina[data-pagina="111"] .mi-todos input')
+    );
+    await p.click('.mi-pagina[data-pagina="111"] [data-acao="metaSalvarFormularios"]');
+    await p.waitForTimeout(400);
+    const sfTodos = estado.chamadas.filter(c => c.action === 'save_forms').pop() || {};
+    checa(
+      'com a opção ligada, salvar manda só os formulários (a caixa da opção não entra)',
+      (sfTodos.form_ids || []).join(',') === '901',
+      JSON.stringify(sfTodos.form_ids)
+    );
+    await p.click('.mi-pagina[data-pagina="111"] .mi-todos input');
+    await p.waitForTimeout(400);
+    const po = estado.chamadas.filter(c => c.action === 'page_options').pop() || {};
+    checa(
+      'desmarcar grava a opção só daquela página',
+      po.page_id === '111' && po.todos_formularios === false,
+      JSON.stringify(po)
+    );
+
+    checa('o botão diz "Inativar"', (await texto(p, '#meta-ativo-btn')) === 'Inativar');
+    await p.click('#meta-ativo-btn');
+    await p.waitForTimeout(400);
+    checa(
+      'inativar manda ativo=false',
+      estado.chamadas.some(c => c.action === 'set_active' && c.ativo === false)
+    );
+    checa(
+      'e a tela mostra "Inativa" com a faixa de aviso',
+      /Inativa/.test(await texto(p, '#meta-config-selo')) && (await visivel(p, '#meta-inativa'))
+    );
+    checa('o botão vira "Ativar"', (await texto(p, '#meta-ativo-btn')) === 'Ativar');
+    const reproAntes = estado.chamadas.filter(c => c.action === 'reprocessar').length;
+    await p.click('#meta-ativo-btn');
+    await p.waitForTimeout(600);
+    checa(
+      'ativar manda ativo=true e já traz os leads guardados',
+      estado.chamadas.some(c => c.action === 'set_active' && c.ativo === true) &&
+        estado.chamadas.filter(c => c.action === 'reprocessar').length > reproAntes
+    );
+    checa('a faixa some', !(await visivel(p, '#meta-inativa')));
+
+    // inativa de novo e sai: o cartão da lista mostra o estado
+    await p.click('#meta-ativo-btn');
+    await p.waitForTimeout(400);
+    await p.click('[data-acao="metaFecharConfig"]');
+    checa('o cartão mostra "Inativa"', /Inativa/.test(await texto(p, '#meta-status')));
+    checa('e mantém o Configurar', await visivel(p, '#meta-config-open'));
+    await p.click('#meta-config-open');
+    await p.waitForTimeout(600);
+
+    // comum.js troca o confirm por "sempre sim"; aqui o primeiro é "não".
+    await p.evaluate(() => {
+      window.confirm = m => {
+        window.__perguntas = (window.__perguntas || []).concat(m);
+        return window.__perguntas.length > 1;
+      };
+    });
+    await p.click('#meta-desconectar-btn');
+    await p.waitForTimeout(300);
+    const perguntou = await p.evaluate(() => (window.__perguntas || [])[0] || '');
+    checa(
+      'desconectar pede confirmação e, cancelado, não faz nada',
+      /Desconectar a conta Meta/.test(perguntou) && !estado.chamadas.some(c => c.action === 'disconnect')
+    );
+    await p.click('#meta-desconectar-btn');
+    await p.waitForTimeout(500);
+    checa(
+      'confirmado, chama disconnect',
+      estado.chamadas.some(c => c.action === 'disconnect')
+    );
+    checa(
+      'volta para o cartão como "Não conectado", com o botão de conectar',
+      /Não conectado/.test(await texto(p, '#meta-status')) && (await visivel(p, '#meta-connect-btn'))
+    );
+    checa('e avisa que desconectou', /desconectada/.test(await texto(p, '#meta-aviso')));
     todos.push(...erros);
     await b.close();
   }

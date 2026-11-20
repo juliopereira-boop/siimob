@@ -127,7 +127,8 @@ function guardarStatus(/** @type {any} */ s) {
         connected: s.connected === true,
         connected_at: s.connected_at || null,
         token_expires_at: s.token_expires_at || null,
-        data_access_expires_at: s.data_access_expires_at || null
+        data_access_expires_at: s.data_access_expires_at || null,
+        ativo: s.ativo !== false
       })
     );
   } catch {
@@ -138,14 +139,18 @@ function guardarStatus(/** @type {any} */ s) {
 const venceu = (/** @type {any} */ s) =>
   [s.token_expires_at, s.data_access_expires_at].some(d => d && new Date(d).getTime() <= Date.now());
 
-/** 'ok' | 'off' | 'expirou' */
-const situacao = (/** @type {any} */ s) => (!s || !s.connected ? 'off' : venceu(s) ? 'expirou' : 'ok');
+/** 'ok' | 'off' | 'expirou' | 'inativa' */
+const situacao = (/** @type {any} */ s) =>
+  !s || !s.connected ? 'off' : venceu(s) ? 'expirou' : s.ativo === false ? 'inativa' : 'ok';
 
 const dataCurta = (/** @type {string|null|undefined} */ d) =>
   d ? new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
 // ─── Cartão ──────────────────────────────────────────────────────────────────
-function pintarSelo(/** @type {HTMLElement} */ el, /** @type {'ok'|'off'|'expirou'|'verificando'} */ s) {
+function pintarSelo(
+  /** @type {HTMLElement} */ el,
+  /** @type {'ok'|'off'|'expirou'|'inativa'|'verificando'} */ s
+) {
   el.className = `mi-selo mi-selo-${s}`;
   const t = el.querySelector('span');
   if (t)
@@ -153,6 +158,7 @@ function pintarSelo(/** @type {HTMLElement} */ el, /** @type {'ok'|'off'|'expiro
       ok: 'Conectado',
       off: 'Não conectado',
       expirou: 'Reconexão necessária',
+      inativa: 'Inativa',
       verificando: 'Verificando'
     }[s];
 }
@@ -160,21 +166,26 @@ function pintarSelo(/** @type {HTMLElement} */ el, /** @type {'ok'|'off'|'expiro
 function pintarCartao(/** @type {any} */ s) {
   const sit = situacao(s);
   pintarSelo($('meta-status'), sit);
-  $('meta-config-open').hidden = sit !== 'ok';
-  $('meta-connect-btn').hidden = sit === 'ok';
+  const conectada = sit === 'ok' || sit === 'inativa';
+  $('meta-config-open').hidden = !conectada;
+  $('meta-connect-btn').hidden = conectada;
   $('meta-connect-btn').textContent = sit === 'expirou' ? 'Reconectar com a Meta' : 'Conectar com a Meta';
   /** @type {HTMLButtonElement} */ ($('meta-connect-btn')).disabled = false;
   $('meta-resumo').textContent =
     sit === 'ok'
       ? `Conta conectada${s.connected_at ? ` em ${dataCurta(s.connected_at)}` : ''}. Em Configurar, escolha as páginas e os formulários desta empresa.`
-      : sit === 'expirou'
-        ? 'A autorização da Meta venceu. Reconecte a conta para continuar recebendo dados.'
-        : 'Conecte a conta Meta da empresa para escolher as páginas e os formulários de onde os leads vão chegar.';
+      : sit === 'inativa'
+        ? 'Integração inativa: os leads da Meta ficam guardados e só entram no funil quando você ativar de novo, em Configurar.'
+        : sit === 'expirou'
+          ? 'A autorização da Meta venceu. Reconecte a conta para continuar recebendo dados.'
+          : 'Conecte a conta Meta da empresa para escolher as páginas e os formulários de onde os leads vão chegar.';
   pintarSeloDoHub(sit);
 }
 
 /** O selinho no cartão "Integrações" do início das Configurações. */
-export function pintarSeloDoHub(/** @type {'ok'|'off'|'expirou'|null} */ sit = situacao(statusGuardado())) {
+export function pintarSeloDoHub(
+  /** @type {'ok'|'off'|'expirou'|'inativa'|null} */ sit = situacao(statusGuardado())
+) {
   const el = document.getElementById('cfg-int-selo');
   if (!el) return;
   const g = sit && statusGuardado() ? sit : null;
@@ -182,13 +193,20 @@ export function pintarSeloDoHub(/** @type {'ok'|'off'|'expirou'|null} */ sit = s
   if (!g) return;
   el.className = `cfg-int-selo cfg-int-${g}`;
   el.textContent =
-    g === 'ok' ? 'Meta conectada' : g === 'expirou' ? 'Meta: reconectar' : 'Meta: não conectada';
+    g === 'ok'
+      ? 'Meta conectada'
+      : g === 'expirou'
+        ? 'Meta: reconectar'
+        : g === 'inativa'
+          ? 'Meta: inativa'
+          : 'Meta: não conectada';
 }
 
-function aviso(/** @type {string} */ id, /** @type {string} */ msg) {
+function aviso(/** @type {string} */ id, /** @type {string} */ msg, ok = false) {
   const el = $(id);
   el.textContent = msg;
   el.hidden = !msg;
+  el.classList.toggle('mi-aviso-ok', ok);
 }
 
 let conferindo = /** @type {Promise<void>|null} */ (null);
@@ -227,7 +245,7 @@ export function metaCarregarStatus() {
 }
 
 // ─── Configuração ────────────────────────────────────────────────────────────
-/** @type {{id:string, name:string, selected:boolean}[]} */
+/** @type {{id:string, name:string, selected:boolean, todos_formularios?:boolean}[]} */
 let paginas = [];
 
 export function metaAbrirConfig() {
@@ -237,7 +255,79 @@ export function metaAbrirConfig() {
   aviso('meta-config-message', '');
   $('meta-conta').textContent =
     s && s.connected_at ? `Conectada em ${dataCurta(s.connected_at)}` : 'Conta conectada';
+  pintarConta(s);
   metaAbrirPaginas();
+}
+
+/** Selo, botão Inativar/Ativar e a faixa de aviso do topo da configuração. */
+function pintarConta(/** @type {any} */ s) {
+  const inativa = !!s && s.ativo === false;
+  pintarSelo($('meta-config-selo'), inativa ? 'inativa' : 'ok');
+  $('meta-ativo-btn').textContent = inativa ? 'Ativar' : 'Inativar';
+  $('meta-ativo-btn').title = inativa
+    ? 'Volta a receber os leads e traz os que chegaram enquanto estava inativa.'
+    : 'Pausa o recebimento sem desconectar a conta.';
+  $('meta-inativa').hidden = !inativa;
+}
+
+/** Pausa ou retoma o recebimento. Ao ativar, traz os leads guardados. */
+export async function metaAlternarAtivo() {
+  const s = statusGuardado() || { connected: true };
+  const ativar = s.ativo === false;
+  const b = /** @type {HTMLButtonElement} */ ($('meta-ativo-btn'));
+  b.disabled = true;
+  aviso('meta-config-message', '');
+  try {
+    await metaAction('set_active', { ativo: ativar });
+    const novo = { ...s, connected: true, ativo: ativar };
+    guardarStatus(novo);
+    pintarConta(novo);
+    pintarCartao(novo);
+    if (ativar) {
+      aviso(
+        'meta-config-message',
+        'Integração ativa. Trazendo os leads que chegaram enquanto estava inativa…',
+        true
+      );
+      await metaReprocessar();
+      aviso('meta-config-message', 'Integração ativa de novo.', true);
+    } else {
+      aviso(
+        'meta-config-message',
+        'Integração inativa. Os leads ficam guardados até você ativar de novo.',
+        true
+      );
+    }
+  } catch (e) {
+    aviso('meta-config-message', /** @type {Error} */ (e).message);
+  } finally {
+    b.disabled = false;
+  }
+}
+
+/** Apaga a conexão: os leads param de chegar. As escolhas de formulário ficam. */
+export async function metaDesconectar() {
+  if (
+    !confirm(
+      'Desconectar a conta Meta desta empresa?\n\nOs leads dos formulários param de chegar ao SIIMOB. Os leads que já entraram continuam no funil, e os formulários marcados ficam guardados para quando você reconectar.'
+    )
+  )
+    return;
+  const b = /** @type {HTMLButtonElement} */ ($('meta-desconectar-btn'));
+  b.disabled = true;
+  aviso('meta-config-message', '');
+  try {
+    await metaAction('disconnect', {}, 30000);
+    const off = { connected: false };
+    guardarStatus(off);
+    metaFecharConfig();
+    pintarCartao(off);
+    aviso('meta-aviso', 'Conta Meta desconectada. Para voltar a receber leads, conecte de novo.', true);
+  } catch (e) {
+    aviso('meta-config-message', /** @type {Error} */ (e).message);
+  } finally {
+    b.disabled = false;
+  }
 }
 
 export function metaFecharConfig() {
@@ -329,6 +419,7 @@ async function carregarFormularios() {
     .map(
       p => `<div class="mi-pagina" data-pagina="${esc(p.id)}">
         <div class="mi-pagina-cab"><b>${esc(p.name)}</b><span class="mi-receb" data-receb="${esc(p.id)}"></span><span class="mi-pagina-msg" role="status">Carregando formulários…</span></div>
+        <label class="mi-todos"><input type="checkbox" data-acao-change="metaTodosFormularios" data-pagina="${esc(p.id)}"${p.todos_formularios ? ' checked' : ''}><span><b>Receber de todos os formulários desta página, inclusive os novos</b><small>Os não marcados abaixo também geram lead, no primeiro funil. Útil para não perder lead de um formulário criado depois.</small></span></label>
         <div class="mi-lista"><div class="mi-esq"></div></div>
         <div class="mi-rodape"><button type="button" class="btn btn-primary btn-sm" data-acao="metaSalvarFormularios" data-pagina="${esc(p.id)}" disabled>Salvar formulários</button></div>
       </div>`
@@ -390,7 +481,7 @@ export async function metaSalvarFormularios(/** @type {HTMLElement} */ botao) {
   if (!bloco) return;
   const msg = /** @type {HTMLElement} */ (bloco.querySelector('.mi-pagina-msg'));
   const ids = Array.from(
-    bloco.querySelectorAll('input[type="checkbox"]:checked'),
+    bloco.querySelectorAll('.mi-lista input[type="checkbox"]:checked'),
     i => /** @type {HTMLInputElement} */ (i).value
   );
   /** @type {HTMLButtonElement} */ (botao).disabled = true;
@@ -408,6 +499,40 @@ export async function metaSalvarFormularios(/** @type {HTMLElement} */ botao) {
     msg.textContent = /** @type {Error} */ (e).message;
   } finally {
     /** @type {HTMLButtonElement} */ (botao).disabled = false;
+  }
+}
+
+/** Busca de novo os formulários de todas as páginas escolhidas. */
+export async function metaAtualizarFormularios() {
+  const b = /** @type {HTMLButtonElement} */ ($('meta-forms-refresh'));
+  b.disabled = true;
+  try {
+    await carregarFormularios();
+  } finally {
+    b.disabled = false;
+  }
+}
+
+/** Liga ou desliga "todos os formulários" de uma página. */
+export async function metaTodosFormularios(/** @type {HTMLElement} */ el) {
+  const caixa = /** @type {HTMLInputElement} */ (el);
+  const pageId = caixa.dataset.pagina || '';
+  const bloco = blocoDa(pageId);
+  const msg = /** @type {HTMLElement|null} */ (bloco && bloco.querySelector('.mi-pagina-msg'));
+  const valor = caixa.checked;
+  caixa.disabled = true;
+  try {
+    await metaAction('page_options', { page_id: pageId, todos_formularios: valor });
+    paginas = paginas.map(p => (p.id === pageId ? { ...p, todos_formularios: valor } : p));
+    if (msg)
+      msg.textContent = valor
+        ? 'Todos os formulários desta página geram lead, inclusive os novos.'
+        : 'Só os formulários marcados geram lead.';
+  } catch (e) {
+    caixa.checked = !valor;
+    if (msg) msg.textContent = /** @type {Error} */ (e).message;
+  } finally {
+    caixa.disabled = false;
   }
 }
 
@@ -457,7 +582,8 @@ const MOTIVO_LEAD = /** @type {Record<string,string>} */ ({
   campo_ou_id_invalido: 'a Meta não encontrou o lead',
   meta_indisponivel: 'a Meta não respondeu',
   sem_etapa: 'o funil não tem etapas',
-  falha_interna: 'falha ao gravar, tente de novo'
+  falha_interna: 'falha ao gravar, tente de novo',
+  integracao_inativa: 'chegou com a integração inativa'
 });
 const quando = (/** @type {string} */ d) =>
   d
@@ -488,7 +614,7 @@ async function carregarLeadsRecentes() {
             </div>`;
           })
           .join('')
-      : '<p class="mi-msg">Nenhum lead chegou ainda. Quando alguém preencher um formulário marcado, ele aparece aqui e no funil de Leads.</p>';
+      : '<p class="mi-msg">Nenhum aviso de lead chegou da Meta ainda. Quando alguém preencher um formulário desta empresa, ele aparece aqui em segundos, mesmo que o formulário não esteja marcado (com o motivo). Se você testou e nada apareceu depois de alguns minutos, fale com o suporte do SIIMOB.</p>';
   } catch (e) {
     area.innerHTML = `<p class="mi-msg">${esc(/** @type {Error} */ (e).message)}</p>`;
   }

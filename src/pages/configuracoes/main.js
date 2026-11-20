@@ -9,6 +9,10 @@ import {
   metaSalvarFormularios,
   metaReprocessar,
   metaAtualizarLeads,
+  metaAtualizarFormularios,
+  metaAlternarAtivo,
+  metaDesconectar,
+  metaTodosFormularios,
   pintarSeloDoHub
 } from '../../modules/integracoes/meta.js';
 import { esc } from '../../shared/utils/texto.js';
@@ -107,6 +111,10 @@ acoes({
   metaSalvarFormularios: el => metaSalvarFormularios(el),
   metaReprocessar: () => metaReprocessar(),
   metaAtualizarLeads: () => metaAtualizarLeads(),
+  metaAtualizarFormularios: () => metaAtualizarFormularios(),
+  metaAlternarAtivo: () => metaAlternarAtivo(),
+  metaDesconectar: () => metaDesconectar(),
+  metaTodosFormularios: el => metaTodosFormularios(el),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
