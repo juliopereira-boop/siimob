@@ -368,3 +368,120 @@ test('"todos os formulários" aceita formulário novo, no primeiro funil', async
   await criarProcessador({ db: marcado, graph: graphFalso() })(EV);
   assert.equal(marcado.chamadas[0].p_funil, 'lancamentos');
 });
+
+// ── Busca direta (sem depender do aviso da Meta) ───────────────────────────
+import { criarSincronizador } from '../../supabase/functions/meta-leads-webhook/processa.mjs';
+const AGORA = Date.parse('2026-11-21T01:00:00Z');
+const dbSync = (extra = {}) => ({
+  conexao: async () => ({ access_token: 'user-token', token_expires_at: '2099-01-01T00:00:00Z' }),
+  paginasDaEmpresa: async () => [{ page_id: '111', todos_formularios: false }],
+  formulariosMarcados: async () => [
+    { page_id: '111', form_id: '901' },
+    { page_id: '999', form_id: '777' }
+  ],
+  ...extra
+});
+const graphSync = (leads = {}) => ({
+  tokenDaPagina: async (u, p) => (assert.equal(u, 'user-token'), `page-token-${p}`),
+  leadsDoFormulario: async (form, tok) => (assert.equal(tok, 'page-token-111'), leads[form] || []),
+  formulariosDaPagina: async () => [{ id: '901' }, { id: '902' }]
+});
+
+test('busca direta traz os leads recentes dos formulários marcados da página da empresa', async () => {
+  const s = criarSincronizador({
+    db: dbSync(),
+    graph: graphSync({
+      901: [
+        { id: '5001', created_time: '2026-11-21T00:40:00+0000' },
+        { id: '5000', created_time: '2026-11-01T00:00:00+0000' },
+        { id: 'x', created_time: '2026-11-21T00:40:00+0000' }
+      ]
+    }),
+    now: () => AGORA
+  });
+  const r = await s('t1');
+  assert.deepEqual(r.avisos, [{ page_id: '111', leadgen_id: '5001', form_id: '901' }]);
+  assert.deepEqual(r.falhas, []);
+});
+
+test('com "todos os formulários", busca também nos não marcados', async () => {
+  const vistos = [];
+  const g = graphSync();
+  g.leadsDoFormulario = async f => (vistos.push(f), []);
+  const s = criarSincronizador({
+    db: dbSync({ paginasDaEmpresa: async () => [{ page_id: '111', todos_formularios: true }] }),
+    graph: g,
+    now: () => AGORA
+  });
+  await s('t1');
+  assert.deepEqual(vistos.sort(), ['901', '902']);
+});
+
+test('busca direta não faz nada sem conexão, inativa ou vencida, e uma falha não derruba as outras', async () => {
+  const nunca = { tokenDaPagina: async () => assert.fail('não devia chamar a Meta') };
+  assert.equal(
+    (await criarSincronizador({ db: dbSync({ conexao: async () => null }), graph: nunca })('t')).detalhe,
+    'sem_conexao'
+  );
+  assert.equal(
+    (
+      await criarSincronizador({
+        db: dbSync({ conexao: async () => ({ access_token: 'x', ativo: false }) }),
+        graph: nunca
+      })('t')
+    ).detalhe,
+    'integracao_inativa'
+  );
+  assert.equal(
+    (
+      await criarSincronizador({
+        db: dbSync({
+          conexao: async () => ({ access_token: 'x', token_expires_at: '2000-01-01T00:00:00Z' })
+        }),
+        graph: nunca
+      })('t')
+    ).detalhe,
+    'reconectar'
+  );
+  const g = graphSync({ 902: [{ id: '6001', created_time: '2026-11-21T00:50:00+0000' }] });
+  g.leadsDoFormulario = async f => {
+    if (f === '901') throw new ErroMeta('permissao_meta');
+    return [{ id: '6001', created_time: '2026-11-21T00:50:00+0000' }];
+  };
+  const r = await criarSincronizador({
+    db: dbSync({
+      formulariosMarcados: async () => [
+        { page_id: '111', form_id: '901' },
+        { page_id: '111', form_id: '902' }
+      ]
+    }),
+    graph: g,
+    now: () => AGORA
+  })('t1');
+  assert.deepEqual(r.avisos, [{ page_id: '111', leadgen_id: '6001', form_id: '902' }]);
+  assert.deepEqual(r.falhas, ['form=901:permissao_meta']);
+});
+
+test('rota interna /sincronizar só com a credencial de serviço', async () => {
+  const chamadas = [];
+  const h = webhook({
+    appSecret: 's',
+    internalKey: 'k',
+    syncTenant: async t => (chamadas.push(t), { encontrados: 1 }),
+    syncAll: async () => ({ todos: true })
+  });
+  const req = (body, chave) =>
+    new Request('https://x.test/functions/v1/meta-leads-webhook/sincronizar', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: chave ? { 'x-siimob-interno': chave } : {}
+    });
+  assert.equal((await h(req({ tenant_id: '00000000-0000-0000-0000-000000000001' }))).status, 403);
+  assert.equal((await h(req({ tenant_id: '00000000-0000-0000-0000-000000000001' }, 'errada'))).status, 403);
+  const ok = await h(req({ tenant_id: '00000000-0000-0000-0000-000000000001' }, 'k'));
+  assert.equal(ok.status, 200);
+  assert.deepEqual(await ok.json(), { encontrados: 1 });
+  assert.deepEqual(await (await h(req({ todos: true }, 'k'))).json(), { todos: true });
+  assert.equal((await h(req({ tenant_id: 'nada' }, 'k'))).status, 400);
+  assert.deepEqual(chamadas, ['00000000-0000-0000-0000-000000000001']);
+});

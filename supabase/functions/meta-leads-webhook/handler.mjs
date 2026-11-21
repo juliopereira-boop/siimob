@@ -6,7 +6,11 @@
 //   GET  /                     handshake (hub.challenge)
 //   POST /                     signed notices from Meta
 //   POST /processar            internal: retries a tenant's pending notices.
-//                              Accepted only with the service credential.
+//   POST /sincronizar          internal: asks the Graph for the recent leads of
+//                              the tenant's forms ({tenant_id}) or of every
+//                              connected tenant ({todos:true}), without waiting
+//                              for Meta's notice. Both internal routes are
+//                              accepted only with the service credential.
 const encoder = new TextEncoder();
 const idPattern = /^\d{1,32}$/;
 const maxBody = 1024 * 1024;
@@ -25,7 +29,7 @@ async function verifySignature(secret, bytes, header) {
 // Só dígitos e no máximo 32: o que vai para o log nunca é texto livre.
 const idLog = v => (/^\d{1,32}$/.test(String(v ?? '')) ? String(v) : typeof v);
 
-export function createHandler({ verifyToken, appSecret, saveEvents, processEvents, retryPending, internalKey, defer = p => p, log = () => {} }) {
+export function createHandler({ verifyToken, appSecret, saveEvents, processEvents, retryPending, syncTenant, syncAll, internalKey, defer = p => p, log = () => {} }) {
   return async function handle(req) {
     if (req.method === 'GET') {
       if (!verifyToken) return reply('Not configured', 503);
@@ -35,6 +39,17 @@ export function createHandler({ verifyToken, appSecret, saveEvents, processEvent
       return reply(challenge, 200);
     }
     if (req.method !== 'POST') return reply('Method not allowed', 405);
+    if (new URL(req.url).pathname.endsWith('/sincronizar')) {
+      if (!internalKey || !syncTenant || req.headers.get('x-siimob-interno') !== internalKey) return reply('Forbidden', 403);
+      let pedido;
+      try { pedido = await req.json(); } catch { return reply('Invalid payload', 400); }
+      const umaEmpresa = typeof pedido?.tenant_id === 'string' && /^[0-9a-f-]{36}$/.test(pedido.tenant_id);
+      if (!umaEmpresa && !(pedido?.todos === true && syncAll)) return reply('Invalid payload', 400);
+      try {
+        const r = umaEmpresa ? await syncTenant(pedido.tenant_id) : await syncAll();
+        return new Response(JSON.stringify(r), { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+      } catch { return reply('Temporary error', 503); }
+    }
     if (new URL(req.url).pathname.endsWith('/processar')) {
       if (!internalKey || !retryPending || req.headers.get('x-siimob-interno') !== internalKey) return reply('Forbidden', 403);
       let pedido;

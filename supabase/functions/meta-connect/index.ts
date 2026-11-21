@@ -26,6 +26,17 @@ async function graph(path: string, params: Record<string,string>) {
   if (!response.ok) throw new Error('Meta error');
   return response.json();
 }
+// Pede à meta-leads-webhook a busca direta dos leads desta empresa. Falha ou
+// demora não impedem a tela de abrir: só registra no log.
+async function buscarNaMeta(tenantId: string, espera: number) {
+  try {
+    const r = await fetch(`${base}/functions/v1/meta-leads-webhook/sincronizar`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'x-siimob-interno': key, apikey:key, Authorization:`Bearer ${key}` },
+      body: JSON.stringify({tenant_id: tenantId}), signal: AbortSignal.timeout(espera)
+    });
+    if (!r.ok) console.error(`meta-connect buscar: ${r.status}`);
+  } catch { console.error('meta-connect buscar: sem resposta'); }
+}
 Deno.serve(createHandler({
   async context(token: string) {
     const result = await db('rpc/siimob_meta_session_context', { method:'POST', body:JSON.stringify({p_token:token}) });
@@ -119,7 +130,10 @@ Deno.serve(createHandler({
   // Só a ação e códigos numéricos chegam aqui (ver handler.mjs e forms.mjs).
   log: (m: string) => console.error(m),
   // Os últimos avisos de lead da empresa, com o resultado e o nome do lead.
+  // Antes de listar, busca direto na Meta os leads recentes dos formulários
+  // marcados: o lead entra mesmo que o aviso da Meta (webhook) não chegue.
   async recentLeads(tenantId: string) {
+    await buscarNaMeta(tenantId, 9000);
     const q = filters({tenant_id:tenantId});
     q.set('select','leadgen_id,form_id,status,detalhe,received_at,processado_em,case_id');
     q.set('order','received_at.desc'); q.set('limit','20');
@@ -138,8 +152,9 @@ Deno.serve(createHandler({
       lead: r.case_id ? nomes.get(r.case_id) || null : null, case_id: r.case_id || null
     }));
   },
-  // Pede ao webhook para tentar de novo os avisos pendentes desta empresa.
+  // Busca na Meta e tenta de novo os avisos pendentes desta empresa.
   async retryPending(tenantId: string) {
+    await buscarNaMeta(tenantId, 15000);
     const r = await fetch(`${base}/functions/v1/meta-leads-webhook/processar`, {
       method:'POST', headers:{ 'Content-Type':'application/json', 'x-siimob-interno': key, apikey:key, Authorization:`Bearer ${key}` },
       body: JSON.stringify({tenant_id: tenantId}), signal: AbortSignal.timeout(25000)

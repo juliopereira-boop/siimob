@@ -61,6 +61,16 @@ export function criarGraph(fetcher = fetch) {
       if (typeof p.access_token !== 'string' || !p.access_token) throw new ErroMeta('permissao_meta');
       return p.access_token;
     },
+    /** Os leads mais recentes de um formulário (só id e data). */
+    async leadsDoFormulario(formId, tokenPagina) {
+      const d = await get(`${formId}/leads`, { fields: 'id,created_time', limit: '25' }, tokenPagina);
+      return Array.isArray(d.data) ? d.data : [];
+    },
+    /** Os formulários de uma página (para "todos os formulários"). */
+    async formulariosDaPagina(pageId, tokenPagina) {
+      const d = await get(`${pageId}/leadgen_forms`, { fields: 'id', limit: '100' }, tokenPagina);
+      return Array.isArray(d.data) ? d.data : [];
+    },
     async lead(leadgenId, tokenPagina) {
       // Os campos de anúncio e campanha podem exigir permissão de anúncios. Sem
       // ela, a Meta recusa o pedido inteiro: tenta de novo só com o formulário.
@@ -188,5 +198,61 @@ export function criarProcessador({ db, graph, now = () => Date.now() }) {
     if (r && r.ok) return { tenant_id: tenant, status: r.duplicado ? 'duplicado' : 'criado', case_id: r.case_id || null };
     const erro = (r && r.erro) || 'falha_ao_criar';
     return { tenant_id: tenant, status: erro === 'sem_modulo_leads' ? 'ignorado' : 'erro', detalhe: erro };
+  };
+}
+
+/**
+ * Busca direta: em vez de esperar o aviso da Meta (webhook), pergunta à Graph
+ * os leads recentes de cada formulário que a empresa marcou (ou de todos, com
+ * "todos os formulários"). Devolve avisos no mesmo formato do webhook, para
+ * entrarem pela mesma fila: o banco ignora os que já existem e o processador
+ * não cria lead duplicado. Só leads dos últimos `dias` dias.
+ *
+ *   db.conexao(tenant), db.paginasDaEmpresa(tenant) -> [{page_id, todos_formularios}]
+ *   db.formulariosMarcados(tenant) -> [{page_id, form_id}]
+ */
+export function criarSincronizador({ db, graph, now = () => Date.now(), dias = 7 }) {
+  const ID = /^\d{1,32}$/;
+  return async function sincronizar(tenant) {
+    const conexao = await db.conexao(tenant);
+    if (!conexao || !conexao.access_token) return { avisos: [], detalhe: 'sem_conexao' };
+    if (conexao.ativo === false) return { avisos: [], detalhe: 'integracao_inativa' };
+    const venceu = [conexao.token_expires_at, conexao.data_access_expires_at].some(d => d && new Date(d).getTime() <= now());
+    if (venceu) return { avisos: [], detalhe: 'reconectar' };
+    const paginas = (await db.paginasDaEmpresa(tenant)) || [];
+    const marcados = (await db.formulariosMarcados(tenant)) || [];
+    const desde = now() - dias * 86400000;
+    const avisos = [];
+    const falhas = [];
+    for (const pg of paginas) {
+      if (!ID.test(String(pg.page_id))) continue;
+      let token;
+      try {
+        token = await graph.tokenDaPagina(conexao.access_token, pg.page_id);
+      } catch (e) {
+        falhas.push(`page=${pg.page_id}:${e instanceof ErroMeta ? e.motivo : 'meta_indisponivel'}`);
+        continue;
+      }
+      let forms = marcados.filter(f => f.page_id === pg.page_id).map(f => String(f.form_id));
+      if (pg.todos_formularios === true) {
+        try {
+          forms = [...new Set([...forms, ...(await graph.formulariosDaPagina(pg.page_id, token)).map(f => String(f.id))])];
+        } catch (e) {
+          falhas.push(`forms page=${pg.page_id}:${e instanceof ErroMeta ? e.motivo : 'meta_indisponivel'}`);
+        }
+      }
+      for (const form of forms.filter(f => ID.test(f))) {
+        try {
+          for (const l of await graph.leadsDoFormulario(form, token)) {
+            const quando = new Date(l.created_time || 0).getTime();
+            if (!ID.test(String(l.id)) || !(quando >= desde)) continue;
+            avisos.push({ page_id: String(pg.page_id), leadgen_id: String(l.id), form_id: form });
+          }
+        } catch (e) {
+          falhas.push(`form=${form}:${e instanceof ErroMeta ? e.motivo : 'meta_indisponivel'}`);
+        }
+      }
+    }
+    return { avisos, falhas };
   };
 }

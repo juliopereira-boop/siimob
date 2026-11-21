@@ -2,7 +2,7 @@
 // handler.mjs (recebimento) e processa.mjs (aviso → lead), testadas em Node.
 // Aqui só se ligam o banco (chave de serviço) e a Graph API.
 import { createHandler } from './handler.mjs';
-import { criarGraph, criarProcessador } from './processa.mjs';
+import { criarGraph, criarProcessador, criarSincronizador } from './processa.mjs';
 
 const base = Deno.env.get('SUPABASE_URL') || '';
 const chave = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -35,12 +35,22 @@ const db = {
     const p = q({ tenant_id: tenantId }); p.set('select', '*'); // idem para "ativo"; nada daqui sai do servidor
     return (await rest(`siimob_meta_connections?${p}`))?.[0] || null;
   },
+  async paginasDaEmpresa(tenantId: string) {
+    const p = q({ tenant_id: tenantId }); p.set('select', '*');
+    return (await rest(`siimob_meta_pages?${p}`)) || [];
+  },
+  async formulariosMarcados(tenantId: string) {
+    const p = q({ tenant_id: tenantId, selected: 'true' }); p.set('select', 'page_id,form_id');
+    return (await rest(`siimob_meta_forms?${p}`)) || [];
+  },
   async criarLead(args: Record<string, unknown>) {
     return await rest('rpc/a1_integracao_criar_lead', { method: 'POST', body: JSON.stringify(args) });
   }
 };
 
-const processar = criarProcessador({ db, graph: criarGraph() });
+const graph = criarGraph();
+const processar = criarProcessador({ db, graph });
+const sincronizar = criarSincronizador({ db, graph });
 
 async function marcar(ev: { page_id: string; leadgen_id: string }, r: Record<string, unknown>, tentativas: number) {
   const p = q({ page_id: ev.page_id, leadgen_id: ev.leadgen_id });
@@ -78,32 +88,54 @@ async function processarLista(eventos: Array<{ page_id: string; leadgen_id: stri
   return resumo;
 }
 
+async function guardarAvisos(events: Array<{ page_id: string; leadgen_id: string; form_id: string }>) {
+  const url = new URL('/rest/v1/siimob_meta_webhook_events', base);
+  url.searchParams.set('on_conflict', 'page_id,leadgen_id');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: cab({ Prefer: 'resolution=ignore-duplicates,return=minimal' }),
+    body: JSON.stringify(events)
+  });
+  if (!res.ok) throw new Error('Event storage failed');
+}
+
+async function processarAvisos(events: Array<{ page_id: string; leadgen_id: string; form_id: string }>) {
+  // Só os que ainda não viraram lead (a Meta pode reenviar o mesmo aviso, e a
+  // busca direta traz de novo os já conhecidos).
+  const pendentes = [];
+  for (const ev of events) {
+    const p = q({ page_id: ev.page_id, leadgen_id: ev.leadgen_id }); p.set('select', 'page_id,leadgen_id,form_id,status,tentativas');
+    const row = (await rest(`siimob_meta_webhook_events?${p}`))?.[0];
+    if (row && ['recebido', 'erro'].includes(row.status) && (row.tentativas || 0) < 5) pendentes.push(row);
+  }
+  return processarLista(pendentes);
+}
+
+async function sincronizarEmpresa(tenantId: string) {
+  const { avisos, falhas = [], detalhe } = await sincronizar(tenantId);
+  if (avisos.length) await guardarAvisos(avisos);
+  const resumo = avisos.length ? await processarAvisos(avisos) : {};
+  console.warn(`meta sincronizar tenant=${tenantId}: ${avisos.length} lead(s) na Meta, processados=${JSON.stringify(resumo)}${detalhe ? ' (' + detalhe + ')' : ''}${falhas.length ? ' falhas=' + falhas.join(',') : ''}`);
+  return { encontrados: avisos.length, resumo, falhas: falhas.length, detalhe: detalhe || null };
+}
+
 const handler = createHandler({
+  syncTenant: sincronizarEmpresa,
+  async syncAll() {
+    const empresas = (await rest('siimob_meta_connections?select=tenant_id')) || [];
+    const total: Record<string, unknown> = {};
+    for (const e of empresas) {
+      try { total[e.tenant_id] = await sincronizarEmpresa(e.tenant_id); } catch { total[e.tenant_id] = { erro: true }; }
+    }
+    return total;
+  },
   verifyToken: Deno.env.get('SIIMOB_META_VERIFY_TOKEN') || '',
   appSecret: Deno.env.get('SIIMOB_META_APP_SECRET') || '',
   internalKey: chave,
   // Só ids numéricos e motivos fixos (ver handler.mjs).
   log: (m: string) => console.warn(m),
-  async saveEvents(events: Array<{ page_id: string; leadgen_id: string; form_id: string }>) {
-    const url = new URL('/rest/v1/siimob_meta_webhook_events', base);
-    url.searchParams.set('on_conflict', 'page_id,leadgen_id');
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: cab({ Prefer: 'resolution=ignore-duplicates,return=minimal' }),
-      body: JSON.stringify(events)
-    });
-    if (!res.ok) throw new Error('Event storage failed');
-  },
-  async processEvents(events: Array<{ page_id: string; leadgen_id: string; form_id: string }>) {
-    // Só os que ainda não viraram lead (a Meta pode reenviar o mesmo aviso).
-    const pendentes = [];
-    for (const ev of events) {
-      const p = q({ page_id: ev.page_id, leadgen_id: ev.leadgen_id }); p.set('select', 'page_id,leadgen_id,form_id,status,tentativas');
-      const row = (await rest(`siimob_meta_webhook_events?${p}`))?.[0];
-      if (row && ['recebido', 'erro'].includes(row.status)) pendentes.push(row);
-    }
-    return processarLista(pendentes);
-  },
+  saveEvents: guardarAvisos,
+  processEvents: processarAvisos,
   async retryPending(tenantId: string) {
     // Avisos da empresa que falharam, e os sem empresa ainda (página escolhida
     // depois do aviso), dos últimos 7 dias, até 5 tentativas cada.
