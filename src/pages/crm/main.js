@@ -67,7 +67,11 @@ acoes({
   saveLeadRouter: () => saveLeadRouter(),
   saveProposta: () => saveProposta(),
   saveTask: () => saveTask(),
-  soltouCartao: el => el.classList.remove('dragging'),
+  soltouCartao: el => {
+    el.classList.remove('dragging');
+    dragId = null;
+    if (redesenhoPendente) setTimeout(redesenharAoVivo, 0);
+  },
   switchLeadTab: el => switchLeadTab(el.dataset.t, el),
   updateStage: el =>
     updateStage(el.dataset.id, el.dataset.field, el.type === 'checkbox' ? el.checked : el.value),
@@ -204,7 +208,85 @@ async function init() {
   a1StartHeartbeat('crm');
   await loadData();
   if (_v !== 'funil') switchTab(_v);
+  ligarAoVivo();
 }
+
+// ─── Ao vivo: lead novo aparece sem recarregar a página ──────────────────────
+//
+// A cada 20 s (e ao voltar para a aba) pergunta só pelos leads criados depois
+// do último conhecido. O RLS decide o que cada um vê, como na carga normal.
+// Quem chega entra no topo, o funil é redesenhado, o cartão pisca e um aviso
+// diz quem chegou. Arrastando um cartão, o redesenho espera o fim do arraste.
+// A margem de 5 minutos cobre relógio e gravação fora de ordem; o id evita
+// repetir quem já está na tela.
+const AO_VIVO_MS = 20000;
+let ultimoLead = '1970-01-01T00:00:00Z';
+let redesenhoPendente = false;
+const novosAoVivo = new Set();
+
+function marcarUltimoLead() {
+  for (const l of G.leads) if (l && l.created_at && l.created_at > ultimoLead) ultimoLead = l.created_at;
+}
+
+async function buscarLeadsNovos() {
+  if (document.hidden) return;
+  const desde = new Date(new Date(ultimoLead).getTime() - 5 * 60000).toISOString();
+  let chegaram;
+  try {
+    const r = await fetch(
+      `${A1.rest('a1_cases')}?module_key=eq.crm&created_at=gte.${encodeURIComponent(desde)}&order=created_at.desc&limit=50&select=${COLUNAS_LEAD}`,
+      { headers: A1.headers() }
+    );
+    if (!r.ok) return;
+    chegaram = await r.json();
+  } catch {
+    return;
+  }
+  const conhecidos = new Set(G.leads.map(l => l.id));
+  const novos = (Array.isArray(chegaram) ? chegaram : []).filter(l => l && l.id && !conhecidos.has(l.id));
+  if (!novos.length) return;
+  G.leads = [...novos, ...G.leads];
+  marcarUltimoLead();
+  for (const l of novos) {
+    novosAoVivo.add(l.id);
+    setTimeout(() => novosAoVivo.delete(l.id), 8000);
+  }
+  redesenharAoVivo();
+  const um = novos[0];
+  toast(
+    novos.length === 1
+      ? `Novo lead: ${um.client_name || 'Sem nome'}${um.partner_name ? ` · ${um.partner_name}` : ''}`
+      : `${novos.length} leads novos chegaram`,
+    'success'
+  );
+}
+
+function redesenharAoVivo() {
+  if (dragId) {
+    redesenhoPendente = true;
+    return;
+  }
+  redesenhoPendente = false;
+  renderFunil();
+  const visivel = id => {
+    const n = document.getElementById(id);
+    return !!n && n.style.display !== 'none';
+  };
+  if (visivel('tab-lista')) renderLista();
+  if (visivel('tab-dash')) renderDash();
+}
+
+function ligarAoVivo() {
+  setInterval(buscarLeadsNovos, AO_VIVO_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) buscarLeadsNovos();
+  });
+}
+
+// As colunas que a tela usa (ver o comentário em loadData). A busca ao vivo
+// pede exatamente as mesmas.
+const COLUNAS_LEAD =
+  'id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,unit,contract_value,partner_name,broker_name,real_estate_name,payload,observations,archived,created_at,updated_at';
 
 async function loadData() {
   // stages, leads e cadastros (origens/corretores) são independentes — busca tudo em paralelo
@@ -218,9 +300,7 @@ async function loadData() {
     // anexos vira megabytes de JSON que a tela nem usa. E sem buscarTudo o
     // corte em 1.000 acontece EM SILENCIO: a tela mostra mil e diz que sao
     // todos, que e o pior jeito de errar um numero.
-    A1.buscarTudo(
-      `${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc&select=id,tenant_id,module_key,stage_id,stage_name,stage_entered_at,client_name,client_cpf,client_email,client_phone,development,unit,contract_value,partner_name,broker_name,real_estate_name,payload,observations,archived,created_at,updated_at`
-    )
+    A1.buscarTudo(`${A1.rest('a1_cases')}?module_key=eq.crm&order=created_at.desc&select=${COLUNAS_LEAD}`)
       .then(r => r.linhas || [])
       .catch(() => []),
     A1.buscarTudo(
@@ -235,6 +315,7 @@ async function loadData() {
   if (!Array.isArray(stages) || !stages.length) stages = await seedPipelines();
   G.stages = stages || [];
   G.leads = Array.isArray(leads) ? leads : [];
+  marcarUltimoLead();
   G.agendaTasks = Object.fromEntries(
     (Array.isArray(agenda) ? agenda : []).filter(x => x.caso_id).map(x => [x.caso_id, x])
   );
@@ -494,7 +575,7 @@ function leadCard(l) {
   const tp = leadTemp(sc);
   const ts = taskState(l);
   const phone = (l.client_phone || '').replace(/\D/g, '');
-  return `<div class="lead-card" draggable="true" data-id="${l.id}" style="border-left-color:${sm ? sm.color : '#6B827D'}"
+  return `<div class="lead-card${novosAoVivo.has(l.id) ? ' lead-novo' : ''}" draggable="true" data-id="${l.id}" style="border-left-color:${sm ? sm.color : '#6B827D'}"
     data-acao-dragstart="dStart" data-acao-dragend="soltouCartao" data-acao="openLead">
     <div class="lead-top"><div class="lead-name">${esc(l.client_name || 'Sem nome')}</div><span class="temp" style="background:${tp.c}" title="Score ${sc}/100">${tp.k} ${sc}</span></div>
     ${l.client_phone ? `<div class="lead-line">📞 ${esc(l.client_phone)}</div>` : ''}

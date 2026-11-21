@@ -769,3 +769,23 @@ a {
 .toast-info {
   background: #334155;
 }
+
+/* Lead que acabou de chegar ao vivo: pisca por alguns segundos. */
+.lead-card.lead-novo {
+  animation: lead-novo 1.2s ease-in-out 4;
+}
+@keyframes lead-novo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(14, 140, 127, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(14, 140, 127, 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lead-card.lead-novo {
+    animation: none;
+    outline: 2px solid rgba(14, 140, 127, 0.5);
+  }
+}
