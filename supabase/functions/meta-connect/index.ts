@@ -1,6 +1,6 @@
 import { createHandler } from './handler.mjs';
 import { listMetaPages, listMetaPagesWithTokens } from './pages.mjs';
-import { listMetaForms } from './forms.mjs';
+import { listMetaForms, codigos } from './forms.mjs';
 
 const base = Deno.env.get('SUPABASE_URL') || '';
 const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -59,8 +59,10 @@ Deno.serve(createHandler({
   listPagesWithTokens: (token: string) => listMetaPagesWithTokens(token),
   listForms: listMetaForms,
   async getSelectedPages(tenantId: string) {
-    const q = filters({tenant_id:tenantId}); q.set('select','page_id,todos_formularios');
-    return await db(`siimob_meta_pages?${q}`);
+    // '*' para funcionar antes e depois da coluna todos_formularios existir.
+    const q = filters({tenant_id:tenantId}); q.set('select','*');
+    const rows = (await db(`siimob_meta_pages?${q}`)) || [];
+    return rows.map((r: {page_id: string; todos_formularios?: boolean}) => ({page_id:r.page_id, todos_formularios:r.todos_formularios === true}));
   },
   async getSelectedForms(tenantId: string, pageId: string) {
     const q = filters({tenant_id:tenantId,page_id:pageId,selected:'true'}); q.set('select','form_id,funil');
@@ -80,7 +82,22 @@ Deno.serve(createHandler({
     url.searchParams.set('subscribed_fields', 'leadgen');
     const r = await fetch(url, { method:'POST', headers:{ Authorization:`Bearer ${pageToken}`, Accept:'application/json' }, redirect:'error', signal: AbortSignal.timeout(8000) });
     const body = await r.json().catch(() => ({}));
-    return r.ok && body?.success === true;
+    const ok = r.ok && body?.success === true;
+    // Diagnóstico no log: o que a Meta respondeu e se o app ficou mesmo na
+    // lista da página, com o campo leadgen. Só números e nomes de campo.
+    let lista = '?';
+    try {
+      const v = await fetch(`https://graph.facebook.com/v27.0/${pageId}/subscribed_apps`, { headers:{ Authorization:`Bearer ${pageToken}`, Accept:'application/json' }, redirect:'error', signal: AbortSignal.timeout(8000) });
+      const d = await v.json().catch(() => ({}));
+      if (!v.ok) lista = `erro ${codigos(v.status, d)}`;
+      else {
+        const nosso = (Array.isArray(d.data) ? d.data : []).find((a: {id?: string}) => String(a.id) === appId);
+        const campos = Array.isArray(nosso?.subscribed_fields) ? nosso.subscribed_fields.filter((c: unknown) => typeof c === 'string' && /^[a-z_]{1,40}$/.test(c as string)).join(',') : '';
+        lista = nosso ? `app na lista, campos=${campos || 'nenhum'}` : `app fora da lista (${Array.isArray(d.data) ? d.data.length : 0} app(s) na página)`;
+      }
+    } catch { lista = 'sem resposta'; }
+    console.warn(`meta-connect subscribe page=${pageId}: ${ok ? 'ok' : 'recusado ' + codigos(r.status, body)}; ${lista}`);
+    return ok;
   },
   // Desliga a página do recebimento de leads deste app (ao desconectar).
   async unsubscribePage(pageId: string, pageToken: string) {
@@ -131,8 +148,10 @@ Deno.serve(createHandler({
     return await r.json();
   },
   async getStatus(tenantId: string) {
-    const q = filters({tenant_id:tenantId}); q.set('select','connected_at,token_expires_at,data_access_expires_at,ativo');
-    const rows = await db(`siimob_meta_connections?${q}`);
-    return rows?.[0] ? {connected:true, ...rows[0]} : {connected:false};
+    // '*' para funcionar antes e depois da coluna ativo existir; só os campos
+    // abaixo voltam ao navegador (o token nunca).
+    const q = filters({tenant_id:tenantId}); q.set('select','*');
+    const r = (await db(`siimob_meta_connections?${q}`))?.[0];
+    return r ? {connected:true, connected_at:r.connected_at, token_expires_at:r.token_expires_at, data_access_expires_at:r.data_access_expires_at, ativo:r.ativo !== false} : {connected:false};
   }
 }));
