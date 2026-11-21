@@ -485,3 +485,38 @@ test('rota interna /sincronizar só com a credencial de serviço', async () => {
   assert.equal((await h(req({ tenant_id: 'nada' }, 'k'))).status, 400);
   assert.deepEqual(chamadas, ['00000000-0000-0000-0000-000000000001']);
 });
+
+test('busca agendada: token do banco só serve para todas as empresas, nunca para uma escolhida', async () => {
+  const conferidos = [];
+  const BOM = 'a'.repeat(64);
+  const h = webhook({
+    internalKey: 'k',
+    syncTenant: async () => ({ uma: true }),
+    syncAll: async () => ({ todas: true }),
+    cronOk: async t => (conferidos.push(t), t === BOM)
+  });
+  const req = (body, headers) =>
+    new Request('https://x.test/functions/v1/meta-leads-webhook/sincronizar', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers
+    });
+  const ok = await h(req({ todos: true }, { 'x-siimob-cron': BOM }));
+  assert.equal(ok.status, 200);
+  assert.deepEqual(await ok.json(), { todas: true });
+  assert.equal(
+    (await h(req({ tenant_id: '00000000-0000-0000-0000-000000000001' }, { 'x-siimob-cron': BOM }))).status,
+    400
+  );
+  assert.equal((await h(req({ todos: true }, { 'x-siimob-cron': 'b'.repeat(64) }))).status, 403);
+  assert.equal((await h(req({ todos: true }, { 'x-siimob-cron': 'curto' }))).status, 403);
+  assert.deepEqual(conferidos, [BOM, BOM, 'b'.repeat(64)], 'token mal formado nem vai ao banco');
+  const caiu = webhook({
+    syncTenant: async () => ({}),
+    syncAll: async () => ({}),
+    cronOk: async () => {
+      throw new Error('db');
+    }
+  });
+  assert.equal((await caiu(req({ todos: true }, { 'x-siimob-cron': BOM }))).status, 403);
+});

@@ -121,6 +121,11 @@ async function sincronizarEmpresa(tenantId: string) {
 
 const handler = createHandler({
   syncTenant: sincronizarEmpresa,
+  // A busca agendada (pg_cron) manda um token guardado no Vault do banco;
+  // quem confere é o próprio banco, e só a chave de serviço pode perguntar.
+  async cronOk(token: string) {
+    return (await rest('rpc/siimob_meta_cron_valido', { method: 'POST', body: JSON.stringify({ p_token: token }) })) === true;
+  },
   async syncAll() {
     const empresas = (await rest('siimob_meta_connections?select=tenant_id')) || [];
     const total: Record<string, unknown> = {};

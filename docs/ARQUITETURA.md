@@ -228,6 +228,8 @@ vê, e é ele quem distribui.
 
 | Controles | `database/migrations/2026-11-20_meta_controles.sql` + `meta-connect` | `set_active` pausa o recebimento (`siimob_meta_connections.ativo`; o aviso fica como `ignorado`/`integracao_inativa` e entra ao reativar, que já reprocessa). `disconnect` desliga as páginas na Meta (`DELETE subscribed_apps`) e chama `siimob_meta_desconectar` (apaga token e páginas; formulários marcados e avisos ficam). `page_options` liga "todos os formulários" da página (`siimob_meta_pages.todos_formularios`, preservado por `replace_pages`): formulário não marcado, inclusive criado depois, entra no primeiro funil. Erros inesperados vão para o log da função só com a ação e códigos numéricos da Meta. |
 
+| Busca direta | `meta-leads-webhook` `/sincronizar` + `database/migrations/2026-11-21_meta_busca_automatica.sql` | O aviso da Meta não chega para leads reais (página assinada, app Live, campo `leadgen` assinado: só o "Teste" do painel chega). A busca lê na Graph os leads dos últimos 7 dias de cada formulário marcado e os põe na mesma fila do webhook (sem duplicar). Roda ao abrir Integrações (`meta-connect` → `leads`) e a cada 2 minutos pelo `pg_cron` (`siimob-meta-busca-leads`, via `pg_net`). O agendamento manda um token do Vault (`siimob_meta_cron`), conferido no banco por `siimob_meta_cron_valido`; com ele só se dispara a busca de todas as empresas. Desligar: `select cron.unschedule('siimob-meta-busca-leads');`. |
+
 Provas: `testes/sql/prova-integracao-leads.sql`, `testes/sql/prova-meta-controles.sql`, `testes/meta/meta-processa.test.mjs`, `testes/meta/meta-controles.test.mjs`, `testes/t-integracoes.js`.
 
 ## Site (`siimob.com`) e login universal (`/login`)
