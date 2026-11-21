@@ -171,6 +171,7 @@ async function init() {
   const _v =
     { listagem: 'lista', dashboard: 'dash' }[new URLSearchParams(location.search).get('vista')] ||
     (new URLSearchParams(location.search).get('tab') === 'dash' ? 'dash' : 'funil');
+  const temCentral = (await a1HasModule('ATENDIMENTO').catch(() => null)) === true;
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo: 'crm',
     sub: [
@@ -179,6 +180,11 @@ async function init() {
       // o quadro ja mostra era uma terceira leitura do mesmo dado. As
       // configuracoes de Leads foram para Configuracoes, com o resto do
       // sistema — "tudo que for configuracao vai estar em um unico lugar".
+      // A Central de atendimento é outro módulo (ATENDIMENTO): sem a licença o
+      // link não pode nem existir no DOM.
+      ...(temCentral
+        ? [{ rot: 'Central de atendimento', href: `/${encodeURIComponent(A1.slug || '')}/atendimento` }]
+        : []),
       { rot: 'Andamento', chave: 'funil', ativo: _v === 'funil', acao: 'mostrarVista' },
       { rot: 'Listagem', chave: 'lista', ativo: _v === 'lista', acao: 'mostrarVista' },
       { rot: 'Dashboard', chave: 'dash', ativo: _v === 'dash', acao: 'mostrarVista' }

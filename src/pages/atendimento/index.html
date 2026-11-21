@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central de atendimento — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/atendimento/index.css">
+</head>
+<body>
+<div id="sb-casco"></div>
+
+<!-- Central de atendimento (módulo ATENDIMENTO). Três colunas, como o
+     WhatsApp Web: as conversas, a conversa aberta e os dados do lead.
+     Ver src/pages/atendimento/main.js. -->
+<main class="at" id="conteudo">
+  <section class="at-lista" aria-label="Conversas">
+    <div class="at-lista-cab">
+      <h1>Conversas</h1>
+      <span class="at-ao-vivo" id="at-ao-vivo" title="A lista se atualiza sozinha"><i></i>ao vivo</span>
+    </div>
+    <div class="at-busca">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="at-busca" placeholder="Buscar conversas, contatos ou telefone" data-acao-input="atFiltrar" aria-label="Buscar conversas">
+    </div>
+    <div class="at-modos" role="group" aria-label="Quem atende">
+      <button type="button" class="at-modo" disabled title="IA SDR: módulo à parte, em breve">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="7" width="16" height="11" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01"/></svg>
+        IA <small>em breve</small></button>
+      <button type="button" class="at-modo ativo" aria-pressed="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        Humano</button>
+    </div>
+    <div class="at-abas" id="at-abas" role="tablist"></div>
+    <div class="at-itens" id="at-itens"></div>
+  </section>
+
+  <section class="at-chat" id="at-chat" aria-label="Conversa">
+    <div class="at-vazio" id="at-vazio">
+      <div class="at-vazio-ic" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+      </div>
+      <h2>Central de atendimento</h2>
+      <p>Os leads dos anúncios chegam aqui. Converse, qualifique e mande para a roleta: o corretor da vez recebe o lead no funil, na etapa Em atendimento.</p>
+    </div>
+    <div class="at-conversa" id="at-conversa" hidden>
+      <header class="at-chat-cab" id="at-chat-cab"></header>
+      <div class="at-msgs" id="at-msgs" aria-live="polite"></div>
+      <footer class="at-compor" id="at-compor">
+        <div class="at-compor-tipo" role="tablist" aria-label="Tipo de mensagem">
+          <button type="button" class="ativo" data-acao="atTipo" data-tipo="mensagem" role="tab">Mensagem</button>
+          <button type="button" data-acao="atTipo" data-tipo="nota" role="tab">Nota interna</button>
+        </div>
+        <p class="at-compor-aviso" id="at-compor-aviso"></p>
+        <div class="at-compor-linha">
+          <textarea id="at-texto" rows="1" placeholder="Digite uma mensagem" data-acao-input="atAutoAltura" aria-label="Mensagem"></textarea>
+          <button type="button" class="at-enviar" id="at-enviar" data-acao="atEnviar" aria-label="Enviar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </section>
+
+  <aside class="at-lead" id="at-lead" aria-label="Dados do lead" hidden></aside>
+</main>
+
+<div class="at-toasts" id="at-toasts" aria-live="polite"></div>
+<script type="module" src="/src/pages/atendimento/main.js"></script>
+</body>
+</html>

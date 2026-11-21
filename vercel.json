@@ -109,6 +109,10 @@
       "destination": "/crm.html"
     },
     {
+      "source": "/:slug/atendimento",
+      "destination": "/atendimento.html"
+    },
+    {
       "source": "/:slug/pre-analise",
       "destination": "/pre-analise.html"
     },

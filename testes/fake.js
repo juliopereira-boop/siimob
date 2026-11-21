@@ -1407,7 +1407,13 @@ function responder(url, metodo, corpo0) {
     // DESLIGADO para todo mundo, e o andaime tem de dizer a mesma coisa que o
     // superadmin diz. Deixa-lo no ramo do "sim por padrao" faria a tela Geral
     // desenhar Leads para os tres clientes reais e o teste aplaudir.
-    if (chave === 'PRE_ANALISE' || chave === 'COMERCIAL' || chave === 'crm' || chave === 'DISPOSICAO')
+    if (
+      chave === 'PRE_ANALISE' ||
+      chave === 'COMERCIAL' ||
+      chave === 'crm' ||
+      chave === 'DISPOSICAO' ||
+      chave === 'ATENDIMENTO'
+    )
       return MODULOS_NOVOS.includes(chave);
     return true;
   }

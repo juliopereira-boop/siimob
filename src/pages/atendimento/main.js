@@ -1,0 +1,620 @@
+// ─── Central de atendimento (módulo ATENDIMENTO) ─────────────────────────────
+//
+// O PEDIDO DO DONO
+//   "os leads que vêm das integrações caem no início do pipeline e entram na
+//    central de atendimento (...) o agente entra em contato e qualifica, depois
+//    envia o lead para a fila de distribuição e distribui para algum corretor
+//    (...) omnichannel, igual o chatwoot, com características visuais do
+//    WhatsApp + SIIMOB"
+//
+// COMO FUNCIONA
+//   - A conversa nasce no banco quando um lead chega por integração (gatilho em
+//     a1_cases, só com a licença). A tela só LÊ as tabelas; mandar mensagem,
+//     distribuir e desqualificar são funções do banco (a1_atend_*), que
+//     conferem quem pode o quê.
+//   - Na fila (sem corretor) só o gestor vê e conversa: "se não for atribuído a
+//     nenhum corretor, somente o gestor conversa". Depois da roleta, o corretor
+//     da vez passa a ver e conversar com o lead dele.
+//   - O WhatsApp ainda não está integrado: "Mensagem" abre o WhatsApp Web com o
+//     texto e registra aqui o que foi mandado. Quando a integração vier, o
+//     mesmo botão passa a mandar de verdade. "Nota interna" o lead nunca vê.
+//   - A lista e a conversa aberta se atualizam sozinhas (a cada 8 s e ao voltar
+//     para a aba), como o funil de Leads.
+import { A1 } from '../../shared/api/config.js';
+import { esc } from '../../shared/utils/texto.js';
+import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
+import { a1MontarShell } from '../../shared/ui/modulo-shell.js';
+import '../../shared/ui/avisos.js';
+import { acoes } from '../../shared/ui/acoes.js';
+
+const AO_VIVO_MS = 8000;
+const G = {
+  user: /** @type {any} */ (null),
+  gestor: false,
+  conversas: /** @type {any[]} */ ([]),
+  leads: /** @type {Record<string, any>} */ ({}),
+  msgs: /** @type {any[]} */ ([]),
+  aberta: /** @type {string|null} */ (null),
+  aba: 'fila',
+  tipo: 'mensagem',
+  busca: '',
+  proximo: /** @type {string|null} */ (null),
+  motivos: /** @type {string[]} */ ([]),
+  desqualificando: false,
+  enviando: false
+};
+const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+
+acoes({
+  atAba: el => {
+    G.aba = el.dataset.aba || 'fila';
+    desenharLista();
+  },
+  atFiltrar: el => {
+    G.busca = /** @type {HTMLInputElement} */ (el).value.trim().toLowerCase();
+    desenharLista();
+  },
+  atAbrir: el => abrirConversa(el.dataset.id || ''),
+  atVoltar: () => {
+    G.aberta = null;
+    document.body.classList.remove('at-com-conversa');
+    desenharLista();
+  },
+  atTipo: el => escolherTipo(el.dataset.tipo || 'mensagem'),
+  atAutoAltura: el => {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  },
+  atEnviar: () => enviar(),
+  // Em tela estreita o painel do lead vira gaveta por cima da conversa.
+  atPainel: () => document.body.classList.toggle('at-painel-aberto'),
+  atDistribuir: () => finalizar('qualificado'),
+  atDesqualificar: () => {
+    G.desqualificando = !G.desqualificando;
+    desenharLead();
+  },
+  atConfirmarDesq: () => finalizar('desqualificado')
+});
+
+// Enter manda, Shift+Enter quebra a linha (como no WhatsApp).
+document.addEventListener('keydown', ev => {
+  const t = /** @type {HTMLElement} */ (ev.target);
+  if (t && t.id === 'at-texto' && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) {
+    ev.preventDefault();
+    enviar();
+  }
+});
+
+// ─── Leitura ─────────────────────────────────────────────────────────────────
+const COLUNAS_CONVERSA =
+  'id,case_id,canal,status,pendente,corretor_nome,resultado,finalizado_por,finalizado_em,ultima_em,ultima_previa,versao,criado_em';
+const COLUNAS_LEAD =
+  'id,client_name,client_phone,client_email,partner_name,stage_name,broker_name,real_estate_name,observations,payload,created_at';
+
+async function lerConversas() {
+  const r = await A1.buscarTudo(
+    `${A1.rest('a1_atendimentos')}?select=${COLUNAS_CONVERSA}&order=ultima_em.desc`
+  );
+  const lista = (r && r.linhas) || [];
+  const faltam = [...new Set(lista.map(c => c.case_id))].filter(Boolean);
+  // Lê os leads de 100 em 100: um in.(...) gigante estoura o limite de URL.
+  for (let i = 0; i < faltam.length; i += 100) {
+    const ids = faltam.slice(i, i + 100).join(',');
+    const leads = await fetch(`${A1.rest('a1_cases')}?id=in.(${ids})&select=${COLUNAS_LEAD}`, {
+      headers: A1.headers()
+    })
+      .then(x => (x.ok ? x.json() : []))
+      .catch(() => []);
+    for (const l of Array.isArray(leads) ? leads : []) G.leads[l.id] = l;
+  }
+  G.conversas = lista;
+}
+
+async function lerMensagens(id) {
+  const r = await fetch(
+    `${A1.rest('a1_atendimento_mensagens')}?atendimento_id=eq.${encodeURIComponent(id)}&select=id,autor_tipo,autor_nome,tipo,corpo,criado_em&order=criado_em.asc`,
+    { headers: A1.headers() }
+  )
+    .then(x => (x.ok ? x.json() : []))
+    .catch(() => []);
+  return Array.isArray(r) ? r : [];
+}
+
+async function lerProximo() {
+  if (!G.gestor) return;
+  G.proximo = await fetch(A1.rpc('a1_roleta_proximo_nome'), {
+    method: 'POST',
+    headers: A1.headers(),
+    body: '{}'
+  })
+    .then(x => (x.ok ? x.json() : null))
+    .catch(() => null);
+}
+
+async function lerMotivos() {
+  const rows = await fetch(`${A1.rest('a1_config')}?key=eq.crm_cad_motivos_perda&select=value`, {
+    headers: A1.headers()
+  })
+    .then(x => (x.ok ? x.json() : []))
+    .catch(() => []);
+  try {
+    const lista = JSON.parse((rows && rows[0] && rows[0].value) || '[]');
+    G.motivos = (Array.isArray(lista) ? lista : [])
+      .filter(m => m && m.name && m.active !== false)
+      .map(m => m.name);
+  } catch {
+    G.motivos = [];
+  }
+}
+
+// ─── Formatação ──────────────────────────────────────────────────────────────
+const CANAL = /** @type {Record<string,{rot:string, cls:string}>} */ ({
+  meta: { rot: 'Meta Lead Ads', cls: 'meta' },
+  whatsapp: { rot: 'WhatsApp', cls: 'whatsapp' },
+  instagram: { rot: 'Instagram', cls: 'instagram' },
+  manual: { rot: 'Manual', cls: 'manual' }
+});
+const ICONE_CANAL = {
+  meta: '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M6.9 6C4 6 2 9.4 2 12.7 2 15.2 3.3 17 5.4 17c1.8 0 3-1.2 4.8-4.2l1.1-1.9 1 1.7c1.8 3 3 4.4 5.2 4.4 2.3 0 4.5-1.9 4.5-5.4C22 9 20.1 6 17.2 6c-1.9 0-3.4 1.3-5 3.7C10.5 7.2 9 6 6.9 6zm-.2 2.2c1.2 0 2.2 1 3.8 3.4l-1 1.7C8 15.6 7.2 16 6.2 16 5 16 4.2 14.9 4.2 12.8c0-2.5 1.1-4.6 2.5-4.6zm10.4 0c1.5 0 2.7 2 2.7 4.7 0 1.9-.8 2.9-2 2.9-1.1 0-2-.8-3.6-3.5l-.8-1.4c1.4-2 2.4-2.7 3.7-2.7z"/></svg>',
+  whatsapp:
+    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.6 2.1 1.1 1 2 1.3 2.3 1.4.3.2.5.1.6 0l.9-1c.2-.3.4-.2.7-.1l2 .9c.3.2.5.2.6.4.1.1.1.7-.2 1.4z"/></svg>',
+  instagram:
+    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3zm0 7.7a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm6-7.9a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1zM21.9 8c-.1-1.6-.4-3-1.6-4.2S17.6 2.2 16 2.1C14.4 2 9.6 2 8 2.1 6.4 2.2 5 2.5 3.8 3.7S2.2 6.4 2.1 8C2 9.6 2 14.4 2.1 16c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.6.1 6.4.1 8 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.6.1-6.4.2-8z"/></svg>',
+  manual:
+    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>'
+};
+const CORES = ['#0e8c7f', '#3f6f9e', '#b5651d', '#7c4dff', '#c2185b', '#2e7d32', '#00838f', '#6d4c41'];
+function corDo(/** @type {string} */ s) {
+  let h = 0;
+  for (const ch of String(s || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CORES[h % CORES.length];
+}
+function iniciais(/** @type {string} */ nome) {
+  const p = String(nome || '?')
+    .replace(/[^\p{L}\s]/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+}
+function quandoCurto(/** @type {string} */ iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const s = (Date.now() - d.getTime()) / 1000;
+  if (s < 60) return 'Agora';
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  const hoje = new Date();
+  if (d.toDateString() === hoje.toDateString())
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const ontem = new Date(hoje.getTime() - 86400000);
+  if (d.toDateString() === ontem.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+const hora = (/** @type {string} */ iso) =>
+  iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+const dia = (/** @type {string} */ iso) => {
+  const d = new Date(iso);
+  const hoje = new Date();
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje';
+  if (d.toDateString() === new Date(hoje.getTime() - 86400000).toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+};
+const soDigitos = (/** @type {string} */ t) => String(t || '').replace(/\D/g, '');
+
+function avatar(/** @type {any} */ c, /** @type {any} */ l, tam = 46) {
+  const nome = (l && l.client_name) || 'Lead';
+  const canal = CANAL[c.canal] || CANAL.manual;
+  return `<span class="at-av" style="--av:${corDo(nome)};width:${tam}px;height:${tam}px">${esc(iniciais(nome))}
+    <i class="at-av-canal at-canal-${canal.cls}" title="${esc(canal.rot)}">${ICONE_CANAL[c.canal] || ICONE_CANAL.manual}</i></span>`;
+}
+
+// ─── Lista ───────────────────────────────────────────────────────────────────
+const ABAS = [
+  { k: 'fila', rot: 'Na fila', so: c => c.status === 'aberta', gestor: true },
+  { k: 'distribuidas', rot: 'Com corretor', so: c => c.status === 'distribuida' },
+  { k: 'encerradas', rot: 'Encerradas', so: c => c.status === 'encerrada' },
+  { k: 'todas', rot: 'Todas', so: () => true }
+];
+
+function desenharLista() {
+  const abas = ABAS.filter(a => G.gestor || !a.gestor);
+  if (!abas.some(a => a.k === G.aba)) G.aba = abas[0].k;
+  $('at-abas').innerHTML = abas
+    .map(a => {
+      const n = G.conversas.filter(a.so).length;
+      return `<button type="button" role="tab" class="at-aba${a.k === G.aba ? ' ativo' : ''}" aria-selected="${a.k === G.aba}"
+        data-acao="atAba" data-aba="${a.k}">${esc(a.rot)}<span>${n}</span></button>`;
+    })
+    .join('');
+  const aba = abas.find(a => a.k === G.aba) || abas[0];
+  const lista = G.conversas.filter(aba.so).filter(c => {
+    if (!G.busca) return true;
+    const l = G.leads[c.case_id] || {};
+    return [l.client_name, l.client_phone, l.client_email, c.ultima_previa, c.corretor_nome]
+      .filter(Boolean)
+      .some(x => String(x).toLowerCase().includes(G.busca));
+  });
+  $('at-itens').innerHTML = lista.length
+    ? lista
+        .map(c => {
+          const l = G.leads[c.case_id] || {};
+          const status =
+            c.status === 'distribuida'
+              ? `<span class="at-item-st st-corretor">${esc(c.corretor_nome || 'Corretor')}</span>`
+              : c.status === 'encerrada'
+                ? '<span class="at-item-st st-encerrada">Encerrada</span>'
+                : '';
+          return `<button type="button" class="at-item${c.id === G.aberta ? ' ativo' : ''}" data-acao="atAbrir" data-id="${esc(c.id)}">
+            ${avatar(c, l)}
+            <span class="at-item-txt">
+              <span class="at-item-l1"><b>${esc(l.client_name || 'Lead')}</b><time>${esc(quandoCurto(c.ultima_em))}</time></span>
+              <span class="at-item-l2"><span class="at-item-prev">${esc(c.ultima_previa || '')}</span>${c.pendente ? '<span class="at-novo">Novo</span>' : ''}</span>
+              ${status}
+            </span>
+          </button>`;
+        })
+        .join('')
+    : `<p class="at-lista-vazia">${G.busca ? 'Nenhuma conversa com esse termo.' : aba.k === 'fila' ? 'Fila vazia. Os leads dos anúncios chegam aqui sozinhos.' : 'Nenhuma conversa aqui.'}</p>`;
+}
+
+// ─── Conversa ────────────────────────────────────────────────────────────────
+function conversaAberta() {
+  return G.conversas.find(c => c.id === G.aberta) || null;
+}
+
+async function abrirConversa(id) {
+  G.aberta = id;
+  G.desqualificando = false;
+  document.body.classList.remove('at-painel-aberto');
+  document.body.classList.add('at-com-conversa');
+  desenharLista();
+  const c = conversaAberta();
+  if (!c) return;
+  $('at-vazio').hidden = true;
+  $('at-conversa').hidden = false;
+  $('at-lead').hidden = false;
+  desenharCabecalho();
+  desenharLead();
+  $('at-msgs').innerHTML = '<div class="at-carregando">Carregando conversa…</div>';
+  G.msgs = await lerMensagens(id);
+  if (G.aberta !== id) return;
+  desenharMensagens(true);
+  escolherTipo(G.tipo);
+}
+
+function desenharCabecalho() {
+  const c = conversaAberta();
+  if (!c) return;
+  const l = G.leads[c.case_id] || {};
+  const tel = soDigitos(l.client_phone);
+  const canal = CANAL[c.canal] || CANAL.manual;
+  $('at-chat-cab').innerHTML = `
+    <button type="button" class="at-voltar" data-acao="atVoltar" aria-label="Voltar para a lista">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    ${avatar(c, l, 40)}
+    <div class="at-chat-quem"><b>${esc(l.client_name || 'Lead')}</b>
+      <small>${esc([l.client_phone, canal.rot].filter(Boolean).join(' · '))}</small></div>
+    <div class="at-chat-acoes">
+      <button type="button" class="at-btn-ic at-so-estreito" data-acao="atPainel" title="Dados do lead e qualificação" aria-label="Dados do lead e qualificação">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
+      ${tel ? `<a class="at-btn-ic" href="https://wa.me/${esc(tel.length <= 11 ? '55' + tel : tel)}" target="_blank" rel="noopener noreferrer" title="Abrir no WhatsApp">${ICONE_CANAL.whatsapp.replace(/width="11" height="11"/, 'width="18" height="18"')}</a>` : ''}
+      <a class="at-btn-ic" href="/${esc(A1.slug || '')}/crm" title="Abrir o funil de Leads">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg></a>
+    </div>`;
+}
+
+function bolha(/** @type {any} */ m) {
+  if (m.tipo === 'evento' || m.autor_tipo === 'sistema')
+    return `<div class="at-evento"><span>${esc(m.corpo)}</span><time>${esc(hora(m.criado_em))}</time></div>`;
+  if (m.tipo === 'nota')
+    return `<div class="at-msg at-nota"><div class="at-msg-rot">Nota interna · ${esc(m.autor_nome || '')}</div>${esc(m.corpo)}<time>${esc(hora(m.criado_em))}</time></div>`;
+  const minha = m.autor_tipo === 'atendente' || m.autor_tipo === 'ia';
+  return `<div class="at-msg ${minha ? 'at-sai' : 'at-entra'}">${minha ? `<div class="at-msg-rot">${esc(m.autor_nome || '')}${m.autor_tipo === 'ia' ? ' · IA' : ''}</div>` : ''}${esc(m.corpo)}<time>${esc(hora(m.criado_em))}${minha ? ' <span class="at-vistos" aria-hidden="true">✓✓</span>' : ''}</time></div>`;
+}
+
+function desenharMensagens(rolar = false) {
+  const area = $('at-msgs');
+  const noFim = area.scrollHeight - area.scrollTop - area.clientHeight < 60;
+  let ultimoDia = '';
+  area.innerHTML = G.msgs
+    .map(m => {
+      const d = dia(m.criado_em);
+      const sep = d !== ultimoDia ? `<div class="at-dia"><span>${esc(d)}</span></div>` : '';
+      ultimoDia = d;
+      return sep + bolha(m);
+    })
+    .join('');
+  if (rolar || noFim) area.scrollTop = area.scrollHeight;
+}
+
+function podeEscrever(/** @type {any} */ c) {
+  if (!c || c.status === 'encerrada') return false;
+  return G.gestor || c.status === 'distribuida';
+}
+
+function escolherTipo(/** @type {string} */ t) {
+  G.tipo = t === 'nota' ? 'nota' : 'mensagem';
+  document.querySelectorAll('.at-compor-tipo button').forEach(b => {
+    b.classList.toggle('ativo', /** @type {HTMLElement} */ (b).dataset.tipo === G.tipo);
+    b.setAttribute('aria-selected', String(/** @type {HTMLElement} */ (b).dataset.tipo === G.tipo));
+  });
+  const c = conversaAberta();
+  const l = c ? G.leads[c.case_id] || {} : {};
+  const caixa = /** @type {HTMLTextAreaElement} */ ($('at-texto'));
+  const pode = podeEscrever(c);
+  $('at-compor').classList.toggle('nota', G.tipo === 'nota');
+  caixa.disabled = !pode;
+  /** @type {HTMLButtonElement} */ ($('at-enviar')).disabled = !pode;
+  caixa.placeholder = !pode
+    ? c && c.status === 'encerrada'
+      ? 'Conversa encerrada'
+      : 'Só o gestor conversa com leads da fila'
+    : G.tipo === 'nota'
+      ? 'Nota interna: só a equipe vê'
+      : 'Digite uma mensagem';
+  $('at-compor-aviso').textContent =
+    !pode || G.tipo === 'nota'
+      ? ''
+      : soDigitos(l.client_phone)
+        ? 'WhatsApp ainda não integrado: ao enviar, a conversa abre no WhatsApp com o texto e a mensagem fica registrada aqui.'
+        : 'Este lead não tem telefone. Registre o contato como nota interna.';
+}
+
+async function enviar() {
+  const c = conversaAberta();
+  const caixa = /** @type {HTMLTextAreaElement} */ ($('at-texto'));
+  const texto = caixa.value.trim();
+  if (!c || !texto || G.enviando || !podeEscrever(c)) return;
+  const l = G.leads[c.case_id] || {};
+  const tel = soDigitos(l.client_phone);
+  if (G.tipo === 'mensagem' && !tel) {
+    aviso('Este lead não tem telefone. Use a nota interna para registrar o contato.', 'erro');
+    return;
+  }
+  G.enviando = true;
+  // Abre o WhatsApp na hora do clique: depois de um await, o navegador trata a
+  // janela nova como pop-up não pedido e bloqueia.
+  if (G.tipo === 'mensagem')
+    window.open(
+      `https://wa.me/${tel.length <= 11 ? '55' + tel : tel}?text=${encodeURIComponent(texto)}`,
+      '_blank',
+      'noopener'
+    );
+  try {
+    const r = await fetch(A1.rpc('a1_atend_enviar'), {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ p_atendimento: c.id, p_tipo: G.tipo, p_corpo: texto })
+    });
+    if (!r.ok) throw new Error(await motivo(r));
+    caixa.value = '';
+    caixa.style.height = 'auto';
+    G.msgs = await lerMensagens(c.id);
+    desenharMensagens(true);
+    await atualizar();
+  } catch (e) {
+    aviso(/** @type {Error} */ (e).message, 'erro');
+  } finally {
+    G.enviando = false;
+  }
+}
+
+// ─── Dados do lead e ações ───────────────────────────────────────────────────
+function respostasDo(/** @type {any} */ l) {
+  const dados = (l.payload && l.payload.integracao && l.payload.integracao.dados) || {};
+  return Array.isArray(dados.respostas) ? dados.respostas.filter(r => r && r.pergunta) : [];
+}
+
+function desenharLead() {
+  const c = conversaAberta();
+  const alvo = $('at-lead');
+  if (!c) {
+    alvo.hidden = true;
+    return;
+  }
+  const l = G.leads[c.case_id] || {};
+  const dados = (l.payload && l.payload.integracao && l.payload.integracao.dados) || {};
+  const resp = respostasDo(l);
+  const linha = (rot, val) =>
+    val ? `<div class="at-dado"><span>${esc(rot)}</span><b>${esc(val)}</b></div>` : '';
+  const acoes =
+    G.gestor && c.status === 'aberta'
+      ? `<section class="at-bloco at-acoes">
+          <h3>Qualificação</h3>
+          <button type="button" class="at-btn at-btn-forte" data-acao="atDistribuir" ${G.proximo ? '' : 'disabled'}>
+            Qualificado: distribuir pela roleta</button>
+          <p class="at-proximo">${G.proximo ? `Próximo da vez: <b>${esc(G.proximo)}</b>` : 'A roleta está vazia. Escolha os corretores em Configurações › Leads › Roleta de distribuição.'}</p>
+          <button type="button" class="at-btn at-btn-linha" data-acao="atDesqualificar" aria-expanded="${G.desqualificando}">Desqualificar</button>
+          ${
+            G.desqualificando
+              ? `<div class="at-desq">
+                  ${
+                    G.motivos.length
+                      ? `<label for="at-motivo">Motivo</label><select id="at-motivo"><option value="">Escolha…</option>${G.motivos.map(m => `<option>${esc(m)}</option>`).join('')}</select>`
+                      : ''
+                  }
+                  <label for="at-obs">${G.motivos.length ? 'Observação' : 'Motivo'}</label>
+                  <textarea id="at-obs" rows="2" placeholder="Ex.: renda abaixo do mínimo"></textarea>
+                  <button type="button" class="at-btn at-btn-perigo" data-acao="atConfirmarDesq">Confirmar: mover para Perdido</button>
+                </div>`
+              : ''
+          }
+        </section>`
+      : c.status !== 'aberta'
+        ? `<section class="at-bloco"><h3>Resultado</h3>
+            <p class="at-resultado ${c.resultado === 'qualificado' ? 'ok' : 'nao'}">${c.resultado === 'qualificado' ? `Qualificado e distribuído para <b>${esc(c.corretor_nome || '')}</b>` : 'Desqualificado: o lead foi para Perdido'}</p>
+            ${c.finalizado_por ? `<small class="at-quem">por ${esc(c.finalizado_por)} · ${esc(quandoCurto(c.finalizado_em))}</small>` : ''}
+          </section>`
+        : '';
+  alvo.innerHTML = `
+    <section class="at-bloco at-perfil">
+      ${avatar(c, l, 64)}
+      <h2>${esc(l.client_name || 'Lead')}</h2>
+      <p>${esc(l.partner_name || (CANAL[c.canal] || CANAL.manual).rot)}</p>
+    </section>
+    ${acoes}
+    <section class="at-bloco">
+      <h3>Contato</h3>
+      ${linha('Telefone', l.client_phone)}${linha('E-mail', l.client_email)}
+      ${linha('Etapa no funil', l.stage_name)}${linha('Corretor', l.broker_name)}${linha('Imobiliária', l.real_estate_name)}
+    </section>
+    ${
+      dados.campanha || dados.formulario_nome || dados.anuncio
+        ? `<section class="at-bloco"><h3>Origem</h3>
+            ${linha('Formulário', dados.formulario_nome)}${linha('Campanha', dados.campanha)}${linha('Conjunto', dados.conjunto)}${linha('Anúncio', dados.anuncio)}
+          </section>`
+        : ''
+    }
+    ${
+      resp.length
+        ? `<section class="at-bloco"><h3>Respostas do formulário</h3>${resp.map(r => linha(r.pergunta, r.resposta)).join('')}</section>`
+        : ''
+    }`;
+}
+
+async function finalizar(/** @type {'qualificado'|'desqualificado'} */ resultado) {
+  const c = conversaAberta();
+  if (!c || !G.gestor) return;
+  let motivoSel = '';
+  let obs = '';
+  if (resultado === 'desqualificado') {
+    motivoSel = /** @type {HTMLSelectElement|null} */ (document.getElementById('at-motivo'))?.value || '';
+    obs = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('at-obs'))?.value.trim() || '';
+    if (G.motivos.length && !motivoSel) return aviso('Escolha o motivo da desqualificação.', 'erro');
+    if (!motivoSel && !obs) return aviso('Conte por que o lead foi desqualificado.', 'erro');
+  }
+  document
+    .querySelectorAll('#at-lead .at-btn')
+    .forEach(b => /** @type {HTMLButtonElement} */ (b.disabled = true));
+  try {
+    const r = await fetch(A1.rpc('a1_atend_finalizar'), {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({
+        p_atendimento: c.id,
+        p_resultado: resultado,
+        p_versao: c.versao,
+        p_motivo: motivoSel || null,
+        p_obs: obs || null
+      })
+    });
+    if (!r.ok) throw new Error(await motivo(r));
+    const d = await r.json().catch(() => ({}));
+    aviso(
+      resultado === 'qualificado'
+        ? `Lead distribuído para ${d.corretor || 'o corretor da vez'}, na etapa ${d.etapa || 'Em atendimento'}.`
+        : 'Lead desqualificado e movido para Perdido.',
+      'ok'
+    );
+    G.desqualificando = false;
+    await atualizar();
+    G.msgs = await lerMensagens(c.id);
+    desenharMensagens(true);
+  } catch (e) {
+    aviso(/** @type {Error} */ (e).message, 'erro');
+    desenharLead();
+  }
+}
+
+// ─── Erros do banco em português ─────────────────────────────────────────────
+const ERROS = /** @type {Record<string,string>} */ ({
+  sem_permissao: 'Você não pode fazer isso nesta conversa. Leads da fila só o gestor atende.',
+  modulo_desabilitado: 'A Central de atendimento não está liberada para esta empresa.',
+  roleta_vazia:
+    'A roleta está vazia: escolha os corretores em Configurações › Leads › Roleta de distribuição.',
+  versao_desatualizada:
+    'Outra pessoa mexeu nesta conversa agora. A tela foi atualizada; confira e tente de novo.',
+  ja_finalizada: 'Esta conversa já foi finalizada por outra pessoa.',
+  sem_etapa_perdido: 'O funil deste lead não tem etapa com o selo Perdido. Marque uma no Editor de Workflow.',
+  motivo_obrigatorio: 'Conte por que o lead foi desqualificado.',
+  conversa_encerrada: 'Esta conversa está encerrada.',
+  mensagem_invalida: 'A mensagem está vazia ou passou de 4.000 caracteres.',
+  conversa_nao_encontrada: 'Conversa não encontrada.'
+});
+async function motivo(/** @type {Response} */ r) {
+  const t = await r.text().catch(() => '');
+  const chave = Object.keys(ERROS).find(k => t.includes(k));
+  if (chave === 'versao_desatualizada') atualizar();
+  return chave ? ERROS[chave] : 'Não foi possível concluir agora. Confira a conexão e tente de novo.';
+}
+
+function aviso(/** @type {string} */ msg, tipo = 'ok') {
+  const d = document.createElement('div');
+  d.className = `at-toast at-toast-${tipo}`;
+  d.textContent = msg;
+  $('at-toasts').appendChild(d);
+  setTimeout(() => d.remove(), 4200);
+}
+
+// ─── Ao vivo ─────────────────────────────────────────────────────────────────
+async function atualizar() {
+  const antes = new Set(G.conversas.filter(c => c.status === 'aberta').map(c => c.id));
+  await Promise.all([lerConversas(), lerProximo()]);
+  desenharLista();
+  const novos = G.conversas.filter(c => c.status === 'aberta' && !antes.has(c.id));
+  if (antes.size && novos.length && G.gestor) {
+    const l = G.leads[novos[0].case_id] || {};
+    aviso(
+      novos.length === 1
+        ? `Novo lead na fila: ${l.client_name || 'Lead'}`
+        : `${novos.length} leads novos na fila`,
+      'ok'
+    );
+  }
+  if (G.aberta) {
+    desenharCabecalho();
+    if (!G.desqualificando) desenharLead();
+    escolherTipo(G.tipo);
+  }
+}
+
+async function tique() {
+  if (document.hidden) return;
+  await atualizar().catch(() => {});
+  if (G.aberta) {
+    const id = G.aberta;
+    const msgs = await lerMensagens(id);
+    if (G.aberta === id && msgs.length !== G.msgs.length) {
+      G.msgs = msgs;
+      desenharMensagens();
+    }
+  }
+}
+
+// ─── Início ──────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    G.user = a1RequireAuth();
+  } catch {
+    return;
+  }
+  try {
+    await a1RequireModule('crm');
+    await a1RequireModule('ATENDIMENTO');
+  } catch {
+    return;
+  }
+  G.gestor = !!G.user && G.user.role !== 'partner';
+  G.aba = G.gestor ? 'fila' : 'distribuidas';
+  const slug = encodeURIComponent(A1.slug || '');
+  await a1MontarShell(document.getElementById('sb-casco'), {
+    ativo: 'crm',
+    sub: [
+      { rot: 'Central de atendimento', href: `/${slug}/atendimento`, ativo: true },
+      { rot: 'Andamento', href: `/${slug}/crm` },
+      { rot: 'Listagem', href: `/${slug}/crm?vista=listagem` },
+      { rot: 'Dashboard', href: `/${slug}/crm?vista=dashboard` }
+    ]
+  });
+  a1StartHeartbeat('atendimento');
+  await Promise.all([lerConversas(), lerProximo(), G.gestor ? lerMotivos() : null]);
+  desenharLista();
+  const pedido = new URLSearchParams(location.search).get('conversa');
+  if (pedido && G.conversas.some(c => c.id === pedido)) abrirConversa(pedido);
+  setInterval(tique, AO_VIVO_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) tique();
+  });
+}
+
+init();
