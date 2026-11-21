@@ -1,4 +1,6 @@
 import { A1_KEY, A1_URL } from '../../shared/api/config.js';
+// LGPD: dado pessoal fosco até o mouse chegar (esta tela não usa o casco).
+import '../../shared/ui/lgpd.js';
 import {
   entrarComCodigo,
   emSessao,

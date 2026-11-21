@@ -1,4 +1,6 @@
 import { A1 } from '../../shared/api/config.js';
+// LGPD: dado pessoal fosco até o mouse chegar (esta tela não usa o casco).
+import '../../shared/ui/lgpd.js';
 import { esc } from '../../shared/utils/texto.js';
 import {
   a1CreateUser,

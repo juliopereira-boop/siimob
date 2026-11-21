@@ -19,6 +19,8 @@
 // continuam valendo para as telas que ja os chamam.
 
 import { A1 } from '../api/config.js';
+// LGPD: dado pessoal fosco até o mouse chegar, em toda tela que usa o casco.
+import './lgpd.js';
 import { a1HasModule, a1Logout } from '../auth/auth.js';
 import { expor, exporVariavel } from '../utils/expor.js';
 import { acoes } from './acoes.js';
