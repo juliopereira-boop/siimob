@@ -32,6 +32,7 @@ import {
   a1PermissoesPorModulo
 } from '../../shared/auth/permissoes.js';
 import { leadsCadAbrir, leadsMontarConfig } from '../../modules/leads/cadastros-leads.js';
+import { roletaAbrir, roletaMontarConfig } from '../../modules/leads/roleta-config.js';
 import {
   dispAbrirVista,
   dispAposSalvarEmpreendimento,
@@ -495,6 +496,16 @@ async function init() {
     })
     .catch(() => {});
 
+  // Central de atendimento: a roleta de distribuição é do gestor e só existe
+  // com a licença (sem ela, nem o cartão nem a sub-tela entram no DOM). Quem
+  // barra de verdade é a1_roleta_salvar e a política de a1_lead_roleta.
+  if (G.user.role !== 'partner')
+    a1HasModule('ATENDIMENTO')
+      .then(ok => {
+        if (ok === true) roletaMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
+      })
+      .catch(() => {});
+
   // Load stages (needed for regionais sub-view)
   // A coluna chama-se module_key. Com "module" o PostgREST devolvia um objeto
   // de erro, que era gravado em G.stages — verdadeiro, mas sem .map/.forEach,
@@ -620,6 +631,7 @@ function openCfgView(view) {
   if (view.startsWith('lead-') && typeof leadsCadAbrir === 'function') leadsCadAbrir(view.slice(5));
   // As quatro da Disposição só existem no DOM com a licença (cfgDispLiberar).
   if (view.startsWith('disp-')) dispAbrirVista(view);
+  if (view === 'roleta') roletaAbrir();
   if (view === 'geral') geralCarregarTela();
   if (view === 'perfis') perfisCarregar();
   if (view === 'flags') loadFlags();

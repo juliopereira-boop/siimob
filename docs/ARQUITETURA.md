@@ -232,6 +232,20 @@ vê, e é ele quem distribui.
 
 Provas: `testes/sql/prova-integracao-leads.sql`, `testes/sql/prova-meta-controles.sql`, `testes/meta/meta-processa.test.mjs`, `testes/meta/meta-controles.test.mjs`, `testes/t-integracoes.js`.
 
+## Central de atendimento (módulo `ATENDIMENTO`)
+
+Dentro de Leads, antes de Andamento (`/:slug/atendimento`, `src/pages/atendimento`). Módulo próprio: nasce
+desligado e o superadmin liga por cliente (depende de `crm`). A IA SDR será outro módulo, contratado à parte.
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco | `database/migrations/2026-11-21_central_atendimento.sql` | `a1_atendimentos` (uma conversa por lead) e `a1_atendimento_mensagens` (mensagem, nota, evento). O navegador só lê. Na fila (`aberta`, sem corretor) só o gestor vê; distribuída, quem vê o lead (o RLS de `a1_cases` decide, pelo `broker_name`). Lead com `payload.integracao` num cliente com a licença abre a conversa pelo gatilho `a1_atend_de_integracao`. |
+| Escrita | `a1_atend_enviar`, `a1_atend_finalizar` | Enviar: gestor, ou o corretor dono quando distribuída. Finalizar (só gestor, com versão esperada e lock por cliente): qualificado → corretor da roleta vira `broker_name` (+ `crm_refs.corretor_id`) e o lead vai para a etapa com selo `EM_ATENDIMENTO` do mesmo funil, criada logo depois do início se faltar; desqualificado → etapa `PERDIDO` com `payload.perda`. |
+| Roleta | `a1_lead_roleta`, `a1_roleta_salvar`, `a1_roleta_proximo` | Rodízio na ordem salva, pulando corretor desligado ou não aprovado. Configuração em Configurações › Leads › Roleta de distribuição (`src/modules/leads/roleta-config.js`). |
+| Tela | `src/pages/atendimento` | Três colunas no visual do WhatsApp: conversas (fila, com corretor, encerradas), conversa (balões, nota interna, eventos) e dados do lead (formulário, campanha, respostas, qualificação). Sem integração do WhatsApp ainda: "Mensagem" abre o WhatsApp Web com o texto e registra. Atualiza a cada 8 s. |
+
+Provas: `testes/sql/prova-central-atendimento.sql`, `testes/t-atendimento.js`.
+
 ## Site (`siimob.com`) e login universal (`/login`)
 
 `src/pages/index` é o site, servido na raiz: página isolada (sem casco, sem sessão), na identidade do

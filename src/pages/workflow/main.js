@@ -181,6 +181,11 @@ const WF_SELOS_LEADS = [
     'Iniciar pré-análise',
     'Só nesta etapa o lead pode virar pré-análise. Sem etapa com este selo no funil, a pré-análise sai de qualquer etapa.'
   ],
+  [
+    'EM_ATENDIMENTO',
+    'Em atendimento',
+    'Para onde a Central de atendimento manda o lead qualificado, já com o corretor da roleta. Sem etapa com este selo no funil, a Central cria uma logo depois da etapa de início.'
+  ],
   ['GANHO', 'Ganho', 'Fim positivo do funil: conta como ganho no painel, qualquer que seja o nome da etapa.'],
   ['PERDIDO', 'Perdido', 'Fim negativo: ao mover o lead para cá, pede o motivo da perda.']
 ];

@@ -379,6 +379,64 @@ function rotas(est) {
     todos.push(...erros);
   }
 
+  console.log('\n== Configurações › Roleta de distribuição ==');
+  {
+    const { b, p, erros } = await abrir('thecred/configuracoes', { modulos: ['crm'] });
+    checa('sem a licença, o cartão da roleta nem existe', !(await p.$('#cfg-card-roleta')));
+    await b.close();
+    todos.push(...erros);
+  }
+  {
+    const salvo = [];
+    const corretores = [
+      { id: 'p1', name: 'Ana Corretora', is_active: true, approved: true },
+      { id: 'p2', name: 'Bruno ' + XSS, is_active: true, approved: true },
+      { id: 'p3', name: 'Gil Desligado', is_active: false, approved: true }
+    ];
+    const { b, p, erros } = await abrir('thecred/configuracoes', {
+      modulos: ['crm', 'ATENDIMENTO'],
+      antes: (url, metodo, corpo) => {
+        if (url.includes('/rest/v1/a1_partners') && url.includes('select=id,name,is_active,approved'))
+          return corretores;
+        if (url.includes('/rest/v1/a1_lead_roleta')) return [{ participantes: ['p2'] }];
+        if (url.includes('/rpc/a1_roleta_proximo_nome')) return 'Bruno ' + XSS;
+        if (url.includes('/rpc/a1_roleta_salvar')) {
+          salvo.push(JSON.parse(corpo || '{}'));
+          return { ok: true };
+        }
+        return undefined;
+      }
+    });
+    await p.waitForTimeout(500);
+    checa('com a licença, o cartão aparece em Leads', !!(await p.$('#cfg-cards-leads #cfg-card-roleta')));
+    await p.click('#cfg-card-roleta');
+    await p.waitForTimeout(500);
+    const naRoleta = await p.$$eval('#roleta-corpo ol .roleta-item label', l =>
+      l.map(x => x.textContent.trim())
+    );
+    checa(
+      'mostra quem está na roleta, em ordem',
+      naRoleta.length === 1 && /^Bruno/.test(naRoleta[0]),
+      naRoleta.join('|')
+    );
+    checa('marca o próximo da vez', /próximo da vez/.test(await p.textContent('#roleta-corpo ol')));
+    checa('o desligado aparece avisado', /desligado/.test(await p.textContent('#roleta-corpo')));
+    await p.check('#roleta-corpo input[data-id="p1"]');
+    await p.waitForTimeout(150);
+    await p.click('#roleta-corpo [data-acao="roletaSubir"][data-id="p1"]');
+    await p.waitForTimeout(150);
+    await p.click('[data-acao="roletaSalvar"]');
+    await p.waitForTimeout(400);
+    checa(
+      'salvar manda os participantes na ordem escolhida',
+      JSON.stringify(salvo[0]) === JSON.stringify({ p_participantes: ['p1', 'p2'] }),
+      JSON.stringify(salvo)
+    );
+    checa('nenhuma carga de XSS executou', (await p.evaluate(() => window.__XSS || 0)) === 0);
+    await b.close();
+    todos.push(...erros);
+  }
+
   process.exit(resumo(todos) ? 1 : 0);
 })().catch(e => {
   console.error(e);

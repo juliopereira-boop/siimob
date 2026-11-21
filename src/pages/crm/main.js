@@ -385,7 +385,13 @@ async function carregarVisitas() {
 // GANHO        fim positivo, qualquer que seja o nome da etapa
 // PERDIDO      fim negativo: pede o motivo da perda
 // Um selo por funil; quem põe é o editor de Workflow (a1_crm_definir_selo).
-const SELO_ROTULO = { AGENDAMENTO: 'Visita', PRE_ANALISE: 'Pré-análise', GANHO: 'Ganho', PERDIDO: 'Perdido' };
+const SELO_ROTULO = {
+  AGENDAMENTO: 'Visita',
+  PRE_ANALISE: 'Pré-análise',
+  EM_ATENDIMENTO: 'Em atendimento',
+  GANHO: 'Ganho',
+  PERDIDO: 'Perdido'
+};
 function etapaComSelo(pk, selo) {
   return pipeStages(pk).find(s => s.selo === selo) || null;
 }

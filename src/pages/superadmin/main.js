@@ -174,6 +174,16 @@ const MODULES_DEF = [
     types: ['correspondente_bancario', 'imobiliaria', 'construtora', 'despachante'],
     dependeDe: []
   },
+  // Dentro de Leads: os leads das integrações entram numa caixa de conversa,
+  // o gestor qualifica e a roleta distribui para os corretores. A IA SDR será
+  // outro módulo, contratado à parte.
+  {
+    key: 'ATENDIMENTO',
+    name: 'Central de atendimento',
+    desc: 'Caixa de entrada omnichannel dos leads das integrações: conversa, nota interna, qualificação e distribuição por roleta para os corretores, com o lead indo para a etapa Em atendimento.',
+    types: ['correspondente_bancario', 'imobiliaria', 'construtora', 'despachante'],
+    dependeDe: ['crm']
+  },
   {
     key: 'PRE_ANALISE',
     name: 'Pré-análise',
