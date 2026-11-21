@@ -23,7 +23,8 @@ const q = (v: Record<string, string>) => {
 
 const db = {
   async pagina(pageId: string) {
-    const p = q({ page_id: pageId }); p.set('select', 'tenant_id,todos_formularios');
+    // '*': funciona antes e depois da coluna todos_formularios existir.
+    const p = q({ page_id: pageId }); p.set('select', '*');
     return (await rest(`siimob_meta_pages?${p}`))?.[0] || null;
   },
   async formulario(tenantId: string, pageId: string, formId: string) {
@@ -31,7 +32,7 @@ const db = {
     return (await rest(`siimob_meta_forms?${p}`))?.[0] || null;
   },
   async conexao(tenantId: string) {
-    const p = q({ tenant_id: tenantId }); p.set('select', 'access_token,token_expires_at,data_access_expires_at,ativo');
+    const p = q({ tenant_id: tenantId }); p.set('select', '*'); // idem para "ativo"; nada daqui sai do servidor
     return (await rest(`siimob_meta_connections?${p}`))?.[0] || null;
   },
   async criarLead(args: Record<string, unknown>) {
@@ -67,6 +68,7 @@ async function processarLista(eventos: Array<{ page_id: string; leadgen_id: stri
       r = { status: 'erro', detalhe: 'falha_interna' };
     }
     resumo[String(r.status)] = (resumo[String(r.status)] || 0) + 1;
+    console.warn(`meta webhook: lead=${ev.leadgen_id} page=${ev.page_id} form=${ev.form_id} -> ${String(r.status)}${r.detalhe ? ' (' + String(r.detalhe) + ')' : ''}`);
     try {
       await marcar(ev, r, (ev.tentativas || 0) + 1);
     } catch {
@@ -80,6 +82,8 @@ const handler = createHandler({
   verifyToken: Deno.env.get('SIIMOB_META_VERIFY_TOKEN') || '',
   appSecret: Deno.env.get('SIIMOB_META_APP_SECRET') || '',
   internalKey: chave,
+  // Só ids numéricos e motivos fixos (ver handler.mjs).
+  log: (m: string) => console.warn(m),
   async saveEvents(events: Array<{ page_id: string; leadgen_id: string; form_id: string }>) {
     const url = new URL('/rest/v1/siimob_meta_webhook_events', base);
     url.searchParams.set('on_conflict', 'page_id,leadgen_id');

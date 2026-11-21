@@ -22,7 +22,10 @@ async function verifySignature(secret, bytes, header) {
   return crypto.subtle.verify('HMAC', key, signature, bytes);
 }
 
-export function createHandler({ verifyToken, appSecret, saveEvents, processEvents, retryPending, internalKey, defer = p => p }) {
+// Só dígitos e no máximo 32: o que vai para o log nunca é texto livre.
+const idLog = v => (/^\d{1,32}$/.test(String(v ?? '')) ? String(v) : typeof v);
+
+export function createHandler({ verifyToken, appSecret, saveEvents, processEvents, retryPending, internalKey, defer = p => p, log = () => {} }) {
   return async function handle(req) {
     if (req.method === 'GET') {
       if (!verifyToken) return reply('Not configured', 503);
@@ -48,27 +51,39 @@ export function createHandler({ verifyToken, appSecret, saveEvents, processEvent
     const bytes = new Uint8Array(await req.arrayBuffer());
     if (bytes.length > maxBody) return reply('Payload too large', 413);
     if (!await verifySignature(appSecret, bytes, req.headers.get('x-hub-signature-256'))) return reply('Forbidden', 403);
+    // Daqui em diante o aviso é comprovadamente da Meta: a resposta é sempre
+    // 200, mesmo para o que não serve. Recusar faz a Meta reenviar por horas e
+    // pode desativar a assinatura do webhook. O que não serve vai para o log.
     let body;
     try { body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
-    catch { return reply('Invalid payload', 400); }
-    if (body?.object !== 'page' || !Array.isArray(body.entry)) return reply('Invalid payload', 400);
+    catch { log('meta webhook: corpo ilegível'); return reply('EVENT_RECEIVED', 200); }
+    if (body?.object !== 'page' || !Array.isArray(body.entry)) {
+      log(`meta webhook: objeto ${typeof body?.object === 'string' ? body.object.slice(0, 20) : typeof body?.object} ignorado`);
+      return reply('EVENT_RECEIVED', 200);
+    }
     const events = new Map();
     for (const entry of body.entry) {
-      if (!Array.isArray(entry?.changes)) return reply('Invalid payload', 400);
+      if (!Array.isArray(entry?.changes)) { log('meta webhook: entrada sem changes'); continue; }
       for (const change of entry.changes) {
         if (change?.field !== 'leadgen') continue;
-        const v = change.value;
-        const page = String(v?.page_id ?? '');
-        const lead = String(v?.leadgen_id ?? '');
-        const form = String(v?.form_id ?? '');
-        if (![page, lead, form].every(x => idPattern.test(x)) || String(entry.id ?? '') !== page) return reply('Invalid payload', 400);
+        const v = change.value || {};
+        // A página vem no próprio aviso; o id da entrada é só conferência.
+        const page = String(v.page_id ?? entry.id ?? '');
+        const lead = String(v.leadgen_id ?? '');
+        const form = String(v.form_id ?? '');
+        if (![page, lead, form].every(x => idPattern.test(x))) {
+          log(`meta webhook: aviso incompleto ignorado page=${idLog(v.page_id ?? entry.id)} lead=${idLog(v.leadgen_id)} form=${idLog(v.form_id)}`);
+          continue;
+        }
+        if (String(entry.id ?? '') !== page) log(`meta webhook: entrada ${idLog(entry.id)} diferente da página ${page}, usando a página`);
         // Retain identifiers only; lead details and tokens are not part of webhook storage.
         events.set(`${page}:${lead}`, { page_id: page, leadgen_id: lead, form_id: form });
       }
     }
     if (events.size) {
       try { await saveEvents([...events.values()]); }
-      catch { return reply('Temporary error', 503); }
+      catch { log('meta webhook: falha ao guardar, a Meta vai reenviar'); return reply('Temporary error', 503); }
+      log(`meta webhook: ${events.size} aviso(s) guardado(s): ${[...events.values()].map(e => `page=${e.page_id} lead=${e.leadgen_id} form=${e.form_id}`).join('; ')}`);
       // Stored first, processed after: a failure here never loses the notice.
       if (processEvents) defer(Promise.resolve().then(() => processEvents([...events.values()])).catch(() => {}));
     }
