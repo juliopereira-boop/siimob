@@ -133,6 +133,10 @@ select a1_wa_estado('11111111-1111-1111-1111-111111111111', 'conectado');
 select checa('reconectar não zera o aquecimento do número',
   (select primeira_conexao_em < now() - interval '9 days' and numero = '5598900001111' and estado = 'conectado'
      from a1_whatsapp_conexoes where tenant_id = '11111111-1111-1111-1111-111111111111') and cx('prim') is not null);
+select a1_wa_estado('11111111-1111-1111-1111-111111111111', 'conectado', '5598900002222', 'Outro chip');
+select checa('outro número no lugar começa o aquecimento de novo',
+  (select primeira_conexao_em > now() - interval '1 minute' and numero = '5598900002222'
+     from a1_whatsapp_conexoes where tenant_id = '11111111-1111-1111-1111-111111111111'));
 select checa('estado inventado é recusado', a1_wa_estado('11111111-1111-1111-1111-111111111111', 'qualquer') = 'estado_invalido');
 select a1_wa_registrar_envio('11111111-1111-1111-1111-111111111111', null, '', null, null, 'campanha');
 select a1_wa_registrar_envio('11111111-1111-1111-1111-111111111111', null, '', null, null, 'resposta');

@@ -264,7 +264,11 @@ begin
          numero = case when v_num ~ '^[0-9]{8,15}$' then v_num else numero end,
          perfil_nome = coalesce(left(nullif(btrim(coalesce(p_nome, '')), ''), 120), perfil_nome),
          conectado_em = case when p_estado = 'conectado' and estado <> 'conectado' then now() else conectado_em end,
-         primeira_conexao_em = case when p_estado = 'conectado' then coalesce(primeira_conexao_em, now()) else primeira_conexao_em end,
+         -- outro número no lugar: o aquecimento começa de novo
+         primeira_conexao_em = case
+           when p_estado = 'conectado' and v_num is not null and numero is not null and numero <> v_num then now()
+           when p_estado = 'conectado' then coalesce(primeira_conexao_em, now())
+           else primeira_conexao_em end,
          atualizado_em = now()
    where tenant_id = p_tenant;
   return case when found then 'ok' else 'nao_encontrado' end;
