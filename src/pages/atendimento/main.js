@@ -20,7 +20,7 @@
 //     mesmo botão passa a mandar de verdade. "Nota interna" o lead nunca vê.
 //   - A lista e a conversa aberta se atualizam sozinhas (a cada 8 s e ao voltar
 //     para a aba), como o funil de Leads.
-import { A1 } from '../../shared/api/config.js';
+import { A1, A1_URL } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
 import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/auth/auth.js';
 import { a1MontarShell } from '../../shared/ui/modulo-shell.js';
@@ -42,7 +42,9 @@ const G = {
   proximo: /** @type {string|null} */ (null),
   motivos: /** @type {string[]} */ ([]),
   desqualificando: false,
-  enviando: false
+  enviando: false,
+  // WhatsApp da empresa (Evolution). Desligado: a mensagem abre no wa.me.
+  wa: /** @type {{ligado:boolean, pausado_ate?:string|null, pausa_motivo?:string|null}} */ ({ ligado: false })
 };
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -351,9 +353,13 @@ function escolherTipo(/** @type {string} */ t) {
   $('at-compor-aviso').textContent =
     !pode || G.tipo === 'nota'
       ? ''
-      : soDigitos(l.client_phone)
-        ? 'WhatsApp ainda não integrado: ao enviar, a conversa abre no WhatsApp com o texto e a mensagem fica registrada aqui.'
-        : 'Este lead não tem telefone. Registre o contato como nota interna.';
+      : !soDigitos(l.client_phone)
+        ? 'Este lead não tem telefone. Registre o contato como nota interna.'
+        : G.wa.ligado && G.wa.pausado_ate
+          ? `Envios pelo WhatsApp pausados até ${hora(G.wa.pausado_ate)} para proteger o número. ${G.wa.pausa_motivo || ''}`.trim()
+          : G.wa.ligado
+            ? 'A mensagem sai pelo WhatsApp da empresa.'
+            : 'WhatsApp ainda não integrado: ao enviar, a conversa abre no WhatsApp com o texto e a mensagem fica registrada aqui.';
 }
 
 async function enviar() {
@@ -368,6 +374,21 @@ async function enviar() {
     return;
   }
   G.enviando = true;
+  if (G.tipo === 'mensagem' && G.wa.ligado) {
+    try {
+      await enviarPeloWhatsapp(c.id, texto);
+      caixa.value = '';
+      caixa.style.height = 'auto';
+      G.msgs = await lerMensagens(c.id);
+      desenharMensagens(true);
+      await atualizar();
+    } catch (e) {
+      aviso(/** @type {Error} */ (e).message, 'erro');
+    } finally {
+      G.enviando = false;
+    }
+    return;
+  }
   // Abre o WhatsApp na hora do clique: depois de um await, o navegador trata a
   // janela nova como pop-up não pedido e bloqueia.
   if (G.tipo === 'mensagem')
@@ -392,6 +413,58 @@ async function enviar() {
     aviso(/** @type {Error} */ (e).message, 'erro');
   } finally {
     G.enviando = false;
+  }
+}
+
+// Envio de verdade pelo WhatsApp da empresa: a função confere a posse da
+// conversa, os limites anti-bloqueio e grava a mensagem com o id do WhatsApp.
+const ERROS_WA = /** @type {Record<string,string>} */ ({
+  whatsapp_desconectado:
+    'O WhatsApp da empresa está desconectado. Peça ao gestor para conectar em Configurações › Integrações.',
+  sem_permissao: 'Você não pode responder nesta conversa.',
+  conversa_encerrada: 'Conversa encerrada.',
+  sem_telefone: 'Este lead não tem telefone.',
+  falha_envio: 'O WhatsApp não aceitou a mensagem agora. Tente de novo em instantes.'
+});
+async function enviarPeloWhatsapp(/** @type {string} */ id, /** @type {string} */ texto) {
+  /** @type {Response} */
+  let r;
+  try {
+    r = await fetch(`${A1_URL}/functions/v1/atendimento-conectores`, {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ action: 'wa_enviar', atendimento_id: id, texto }),
+      signal: AbortSignal.timeout(30000)
+    });
+  } catch {
+    throw new Error('Não foi possível falar com o WhatsApp agora. Confira a internet e tente de novo.');
+  }
+  const b = await r.json().catch(() => ({}));
+  if (r.status === 429) {
+    G.wa = { ...G.wa, pausado_ate: b.volta_em || null, pausa_motivo: b.motivo || null };
+    escolherTipo(G.tipo);
+    throw new Error(
+      `${b.motivo || 'Limite de envio atingido.'}${b.volta_em ? ` Volta às ${hora(b.volta_em)}.` : ''}`
+    );
+  }
+  if (!r.ok) throw new Error(ERROS_WA[b.error] || 'Não foi possível enviar agora. Tente de novo.');
+  if (b.alerta) aviso('Atenção: o número está perto do limite seguro de envios. Vá com calma.', 'erro');
+}
+
+async function lerWhatsapp() {
+  try {
+    const r = await fetch(A1.rpc('a1_wa_ligado'), { method: 'POST', headers: A1.headers(), body: '{}' });
+    const b = r.ok ? await r.json() : null;
+    G.wa =
+      b && typeof b === 'object'
+        ? {
+            ligado: b.ligado === true,
+            pausado_ate: b.pausado_ate || null,
+            pausa_motivo: b.pausa_motivo || null
+          }
+        : { ligado: false };
+  } catch {
+    G.wa = { ligado: false };
   }
 }
 
@@ -564,9 +637,16 @@ async function atualizar() {
   }
 }
 
+let tiques = 0;
 async function tique() {
   if (document.hidden) return;
   await atualizar().catch(() => {});
+  // o estado do WhatsApp (ligado, pausa) muda pouco: confere a cada ~40 s
+  if (++tiques % 5 === 0) {
+    const antes = JSON.stringify(G.wa);
+    await lerWhatsapp();
+    if (JSON.stringify(G.wa) !== antes && G.aberta) escolherTipo(G.tipo);
+  }
   if (G.aberta) {
     const id = G.aberta;
     const msgs = await lerMensagens(id);
@@ -603,7 +683,7 @@ async function init() {
     ]
   });
   a1StartHeartbeat('atendimento');
-  await Promise.all([lerConversas(), lerProximo(), G.gestor ? lerMotivos() : null]);
+  await Promise.all([lerConversas(), lerProximo(), G.gestor ? lerMotivos() : null, lerWhatsapp()]);
   desenharLista();
   const pedido = new URLSearchParams(location.search).get('conversa');
   if (pedido && G.conversas.some(c => c.id === pedido)) abrirConversa(pedido);

@@ -246,6 +246,20 @@ desligado e o superadmin liga por cliente (depende de `crm`). A ELIA, agente de 
 
 Provas: `testes/sql/prova-central-atendimento.sql`, `testes/t-atendimento.js`.
 
+### Conectores da Central: OpenAI e WhatsApp (Evolution)
+
+Mesmo pacote (`ATENDIMENTO`). Passo a passo do servidor, segredos e limites: `docs/WHATSAPP-EVOLUTION.md`.
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco | `database/migrations/2026-11-22_atendimento_conectores.sql` | `a1_ia_conexoes` (chave da OpenAI por cliente, opcional), `a1_whatsapp_conexoes` (instância, estado, aquecimento, pausa; token do aviso só em hash), `a1_whatsapp_envios` (contagem para os limites). Tudo só para a chave de serviço. `a1_wa_receber` põe a mensagem recebida na Central (lead pelo telefone, DDD + 8 últimos dígitos; sem lead, cria pela integração `whatsapp`; não duplica pelo id do WhatsApp). `a1_atend_wa_alvo` roda com a sessão e repete as regras de posse de `a1_atend_enviar`. |
+| Funções | `supabase/functions/atendimento-conectores`, `whatsapp-webhook` | Conectores: estado, chave da OpenAI testada antes de salvar (a tela só vê os 4 últimos), QR do WhatsApp, envio pela Central com `limites.mjs`. Webhook: avisos da Evolution (mensagem, conexão, QR); grupo/status/canal ignorados; log sem texto nem telefone. |
+| Tela | `src/modules/integracoes/conectores.js`, `src/pages/atendimento/main.js` | Cartões OpenAI e WhatsApp em Integrações, só com a licença e só para o gestor. Na Central, com o WhatsApp conectado, "Mensagem" sai pela função; no limite, avisa o motivo e quando volta. Sem WhatsApp, segue o wa.me. |
+
+Provas: `testes/sql/prova-atendimento-conectores.sql`, `testes/conectores/*.test.mjs`, `testes/t-conectores.js`.
+
+Origem do lead: `src/shared/ui/canal-origem.js` dá o ícone (Instagram, Facebook, WhatsApp, Meta, site, indicação, manual) a partir de `payload.integracao` (na Meta, `dados.plataforma` separa `ig` de `fb`) ou do nome da origem. Usado no funil, na lista e na Central (`testes/t-canal-origem.js`).
+
 ## Site (`siimob.com`) e login universal (`/login`)
 
 `src/pages/index` é o site, servido na raiz: página isolada (sem casco, sem sessão), na identidade do

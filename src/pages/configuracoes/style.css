@@ -1827,3 +1827,144 @@ body.acesso-pendente {
   font-size: 0.78rem;
   color: var(--t2);
 }
+
+/* ── Conectores da Central (OpenAI e WhatsApp) ─────────────────────────── */
+.mi-conectores {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  max-width: 640px;
+}
+#meta-config:not([hidden]) ~ .mi-conectores {
+  display: none;
+}
+.mi-pacote {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.mi-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+.mi-campo {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--t2);
+  min-width: 0;
+}
+.mi-campo input,
+.mi-campo select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: var(--card);
+  color: var(--t1);
+}
+.mi-qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--border2);
+  border-radius: 12px;
+  background: #fff;
+}
+.mi-qr img {
+  width: 240px;
+  height: 240px;
+  image-rendering: pixelated;
+}
+.mi-qr p {
+  font-size: 0.76rem;
+  color: var(--t2);
+  text-align: center;
+  margin: 0;
+}
+.mi-wa-dados {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0.85rem 0;
+}
+.mi-wa-dados div,
+.mi-uso div {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.74rem;
+  color: var(--t3);
+}
+.mi-wa-dados b,
+.mi-uso b {
+  font-size: 0.86rem;
+  color: var(--t1);
+}
+.mi-wa-dados small {
+  font-size: 0.7rem;
+}
+.mi-uso {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+.mi-barra {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #e8eeec;
+  overflow: hidden;
+}
+.mi-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--emerald);
+}
+.mi-barra-alerta i {
+  background: #d08a12;
+}
+.mi-opcao {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  font-size: 0.8rem;
+  color: var(--t1);
+  margin-bottom: 1rem;
+}
+.mi-opcao small {
+  display: block;
+  color: var(--t3);
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+}
+.mi-limites {
+  margin-top: 1rem;
+  font-size: 0.76rem;
+  color: var(--t2);
+  line-height: 1.55;
+}
+.mi-limites summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--t1);
+}
+.mi-limites ul {
+  margin: 0.4rem 0;
+  padding-left: 1.1rem;
+}
+@media (max-width: 560px) {
+  .mi-form,
+  .mi-wa-dados {
+    grid-template-columns: 1fr;
+  }
+}

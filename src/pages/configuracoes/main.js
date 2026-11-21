@@ -34,6 +34,17 @@ import {
 import { leadsCadAbrir, leadsMontarConfig } from '../../modules/leads/cadastros-leads.js';
 import { roletaAbrir, roletaMontarConfig } from '../../modules/leads/roleta-config.js';
 import {
+  conectoresMontar,
+  conectoresCarregar,
+  iaSalvar,
+  iaTestar,
+  iaUsarPlataforma,
+  waConectar,
+  waConferir,
+  waDesconectar,
+  waCriarLeads
+} from '../../modules/integracoes/conectores.js';
+import {
   dispAbrirVista,
   dispAposSalvarEmpreendimento,
   dispMontarConfig
@@ -116,6 +127,13 @@ acoes({
   metaAlternarAtivo: () => metaAlternarAtivo(),
   metaDesconectar: () => metaDesconectar(),
   metaTodosFormularios: el => metaTodosFormularios(el),
+  iaSalvar: () => iaSalvar(),
+  iaTestar: () => iaTestar(),
+  iaUsarPlataforma: () => iaUsarPlataforma(),
+  waConectar: () => waConectar(),
+  waConferir: () => waConferir(),
+  waDesconectar: () => waDesconectar(),
+  waCriarLeads: el => waCriarLeads(el),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),
@@ -502,7 +520,11 @@ async function init() {
   if (G.user.role !== 'partner')
     a1HasModule('ATENDIMENTO')
       .then(ok => {
-        if (ok === true) roletaMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
+        if (ok !== true) return;
+        roletaMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
+        // OpenAI e WhatsApp fazem parte do pacote da Central.
+        conectoresMontar();
+        if (document.getElementById('cfg-view-integracoes')?.style.display !== 'none') conectoresCarregar();
       })
       .catch(() => {});
 
@@ -656,7 +678,10 @@ function openCfgView(view) {
   if (view === 'despachantes') loadDespachantes();
   if (view === 'bancos') loadBancos();
   if (view === 'cartorios') loadCartorios();
-  if (view === 'integracoes') metaCarregarStatus();
+  if (view === 'integracoes') {
+    metaCarregarStatus();
+    conectoresCarregar();
+  }
   if (view === 'ciclo-pa') cicloCarregar();
   // Telas dos módulos novos. Só existem no DOM (e em CFG_VIEWS) quando a
   // licença foi confirmada, então chegar aqui já significa que o cliente tem.
