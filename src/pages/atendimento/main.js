@@ -309,7 +309,7 @@ function bolha(/** @type {any} */ m) {
   if (m.tipo === 'nota')
     return `<div class="at-msg at-nota"><div class="at-msg-rot">Nota interna · ${esc(m.autor_nome || '')}</div>${esc(m.corpo)}<time>${esc(hora(m.criado_em))}</time></div>`;
   const minha = m.autor_tipo === 'atendente' || m.autor_tipo === 'ia';
-  return `<div class="at-msg ${minha ? 'at-sai' : 'at-entra'}">${minha ? `<div class="at-msg-rot">${esc(m.autor_nome || '')}${m.autor_tipo === 'ia' ? ' · IA' : ''}</div>` : ''}${esc(m.corpo)}<time>${esc(hora(m.criado_em))}${minha ? ' <span class="at-vistos" aria-hidden="true">✓✓</span>' : ''}</time></div>`;
+  return `<div class="at-msg ${minha ? 'at-sai' : 'at-entra'}">${minha ? `<div class="at-msg-rot">${m.autor_tipo === 'ia' ? 'ELIA · agente de IA' : esc(m.autor_nome || '')}</div>` : ''}${esc(m.corpo)}<time>${esc(hora(m.criado_em))}${minha ? ' <span class="at-vistos" aria-hidden="true">✓✓</span>' : ''}</time></div>`;
 }
 
 function desenharMensagens(rolar = false) {

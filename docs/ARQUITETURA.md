@@ -235,7 +235,7 @@ Provas: `testes/sql/prova-integracao-leads.sql`, `testes/sql/prova-meta-controle
 ## Central de atendimento (módulo `ATENDIMENTO`)
 
 Dentro de Leads, antes de Andamento (`/:slug/atendimento`, `src/pages/atendimento`). Módulo próprio: nasce
-desligado e o superadmin liga por cliente (depende de `crm`). A IA SDR será outro módulo, contratado à parte.
+desligado e o superadmin liga por cliente (depende de `crm`). A ELIA, agente de IA oficial do SIIMOB (papel de SDR), será outro módulo, contratado à parte.
 
 | Peça | Onde | O que faz |
 |---|---|---|
