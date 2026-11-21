@@ -406,7 +406,7 @@ button {
 .at-chat-quem b {
   font-size: 0.95rem;
 }
-.at-so-estreito {
+.at-btn-ic.at-so-estreito {
   display: none;
   border: 0;
   background: transparent;
@@ -771,7 +771,7 @@ button {
   .at-lead {
     display: none;
   }
-  .at-so-estreito {
+  .at-btn-ic.at-so-estreito {
     display: grid;
   }
   body.at-painel-aberto .at-lead:not([hidden]) {
