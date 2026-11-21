@@ -26,6 +26,7 @@ import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/a
 import { a1MontarShell } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import { acoes } from '../../shared/ui/acoes.js';
+import { canalDoLead, seloCanal } from '../../shared/ui/canal-origem.js';
 
 const AO_VIVO_MS = 8000;
 const G = {
@@ -148,20 +149,9 @@ async function lerMotivos() {
 }
 
 // ─── Formatação ──────────────────────────────────────────────────────────────
-const CANAL = /** @type {Record<string,{rot:string, cls:string}>} */ ({
-  meta: { rot: 'Meta Lead Ads', cls: 'meta' },
-  whatsapp: { rot: 'WhatsApp', cls: 'whatsapp' },
-  instagram: { rot: 'Instagram', cls: 'instagram' },
-  manual: { rot: 'Manual', cls: 'manual' }
-});
 const ICONE_CANAL = {
-  meta: '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M6.9 6C4 6 2 9.4 2 12.7 2 15.2 3.3 17 5.4 17c1.8 0 3-1.2 4.8-4.2l1.1-1.9 1 1.7c1.8 3 3 4.4 5.2 4.4 2.3 0 4.5-1.9 4.5-5.4C22 9 20.1 6 17.2 6c-1.9 0-3.4 1.3-5 3.7C10.5 7.2 9 6 6.9 6zm-.2 2.2c1.2 0 2.2 1 3.8 3.4l-1 1.7C8 15.6 7.2 16 6.2 16 5 16 4.2 14.9 4.2 12.8c0-2.5 1.1-4.6 2.5-4.6zm10.4 0c1.5 0 2.7 2 2.7 4.7 0 1.9-.8 2.9-2 2.9-1.1 0-2-.8-3.6-3.5l-.8-1.4c1.4-2 2.4-2.7 3.7-2.7z"/></svg>',
   whatsapp:
-    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.6 2.1 1.1 1 2 1.3 2.3 1.4.3.2.5.1.6 0l.9-1c.2-.3.4-.2.7-.1l2 .9c.3.2.5.2.6.4.1.1.1.7-.2 1.4z"/></svg>',
-  instagram:
-    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3zm0 7.7a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm6-7.9a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1zM21.9 8c-.1-1.6-.4-3-1.6-4.2S17.6 2.2 16 2.1C14.4 2 9.6 2 8 2.1 6.4 2.2 5 2.5 3.8 3.7S2.2 6.4 2.1 8C2 9.6 2 14.4 2.1 16c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.6.1 6.4.1 8 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.6.1-6.4.2-8z"/></svg>',
-  manual:
-    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>'
+    '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 13.9c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.6 2.1 1.1 1 2 1.3 2.3 1.4.3.2.5.1.6 0l.9-1c.2-.3.4-.2.7-.1l2 .9c.3.2.5.2.6.4.1.1.1.7-.2 1.4z"/></svg>'
 };
 const CORES = ['#0e8c7f', '#3f6f9e', '#b5651d', '#7c4dff', '#c2185b', '#2e7d32', '#00838f', '#6d4c41'];
 function corDo(/** @type {string} */ s) {
@@ -201,11 +191,17 @@ const dia = (/** @type {string} */ iso) => {
 };
 const soDigitos = (/** @type {string} */ t) => String(t || '').replace(/\D/g, '');
 
+// O canal vem do lead (a Meta diz se foi Instagram ou Facebook); sem o lead
+// carregado, vale o canal da conversa.
+function canalDe(/** @type {any} */ c, /** @type {any} */ l) {
+  if ((l && l.payload && l.payload.integracao) || !c.canal || c.canal === 'manual') return canalDoLead(l);
+  return canalDoLead({ payload: { integracao: { origem: c.canal } } });
+}
+
 function avatar(/** @type {any} */ c, /** @type {any} */ l, tam = 46) {
   const nome = (l && l.client_name) || 'Lead';
-  const canal = CANAL[c.canal] || CANAL.manual;
   return `<span class="at-av" style="--av:${corDo(nome)};width:${tam}px;height:${tam}px">${esc(iniciais(nome))}
-    <i class="at-av-canal at-canal-${canal.cls}" title="${esc(canal.rot)}">${ICONE_CANAL[c.canal] || ICONE_CANAL.manual}</i></span>`;
+    <i class="at-av-canal">${seloCanal(canalDe(c, l), 18)}</i></span>`;
 }
 
 // ─── Lista ───────────────────────────────────────────────────────────────────
@@ -287,7 +283,7 @@ function desenharCabecalho() {
   if (!c) return;
   const l = G.leads[c.case_id] || {};
   const tel = soDigitos(l.client_phone);
-  const canal = CANAL[c.canal] || CANAL.manual;
+  const canal = canalDe(c, l);
   $('at-chat-cab').innerHTML = `
     <button type="button" class="at-voltar" data-acao="atVoltar" aria-label="Voltar para a lista">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
@@ -450,7 +446,7 @@ function desenharLead() {
     <section class="at-bloco at-perfil">
       ${avatar(c, l, 64)}
       <h2>${esc(l.client_name || 'Lead')}</h2>
-      <p>${esc(l.partner_name || (CANAL[c.canal] || CANAL.manual).rot)}</p>
+      <p>${esc(l.partner_name || canalDe(c, l).rot)}</p>
     </section>
     ${acoes}
     <section class="at-bloco">

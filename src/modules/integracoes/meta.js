@@ -110,7 +110,7 @@ async function metaAction(/** @type {string} */ action, params = {}, espera = ES
 // ─── Estado guardado no aparelho ─────────────────────────────────────────────
 const chaveStatus = () => `a1_meta_status:${A1.slug || ''}`;
 
-/** @returns {{connected:boolean, connected_at?:string, token_expires_at?:string|null, data_access_expires_at?:string|null}|null} */
+/** @returns {{connected:boolean, connected_at?:string, token_expires_at?:string|null, data_access_expires_at?:string|null, ativo?:boolean}|null} */
 function statusGuardado() {
   try {
     const s = JSON.parse(localStorage.getItem(chaveStatus()) || 'null');

@@ -7,6 +7,7 @@ import '../../shared/ui/avisos.js';
 import '../../shared/ui/cobranca-aviso.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
 import { acoes } from '../../shared/ui/acoes.js';
+import { seloCanalDoLead } from '../../shared/ui/canal-origem.js';
 
 // Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
@@ -589,7 +590,7 @@ function leadCard(l) {
   const phone = (l.client_phone || '').replace(/\D/g, '');
   return `<div class="lead-card${novosAoVivo.has(l.id) ? ' lead-novo' : ''}" draggable="true" data-id="${l.id}" style="border-left-color:${sm ? sm.color : '#6B827D'}"
     data-acao-dragstart="dStart" data-acao-dragend="soltouCartao" data-acao="openLead">
-    <div class="lead-top"><div class="lead-name">${esc(l.client_name || 'Sem nome')}</div><span class="temp" style="background:${tp.c}" title="Score ${sc}/100">${tp.k} ${sc}</span></div>
+    <div class="lead-top"><div class="lead-name">${seloCanalDoLead(l, 18)}<span>${esc(l.client_name || 'Sem nome')}</span></div><span class="temp" style="background:${tp.c}" title="Score ${sc}/100">${tp.k} ${sc}</span></div>
     ${l.client_phone ? `<div class="lead-line">📞 ${esc(l.client_phone)}</div>` : ''}
     ${l.development ? `<div class="lead-line">🏠 ${esc(l.development)}</div>` : ''}
     <div class="lead-chips">
@@ -1695,7 +1696,7 @@ function renderLista() {
         const ts = taskState(l);
         const fone = (l.client_phone || '').replace(/\D/g, '');
         return `<tr style="cursor:pointer" data-acao="openLead" data-id="${esc(l.id)}">
-        <td><b>${esc(l.client_name || 'Sem nome')}</b>
+        <td><b style="display:inline-flex;align-items:center;gap:.35rem">${seloCanalDoLead(l, 16)}${esc(l.client_name || 'Sem nome')}</b>
           <div style="font-size:.69rem;color:var(--t3)">${
             [l.client_phone, l.client_email].filter(Boolean).map(esc).join(' · ') || '—'
           }</div></td>
