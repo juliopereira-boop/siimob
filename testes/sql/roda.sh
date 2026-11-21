@@ -132,3 +132,12 @@ for i in 1 2; do
 done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-meta-controles.sql
+
+# Central de atendimento (módulo ATENDIMENTO). Usa o cenário da prova de
+# segurança (gestor, Ana, Bruno, Gil desligado) e as colunas de Leads acima.
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-21_central_atendimento.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-central-atendimento.sql
