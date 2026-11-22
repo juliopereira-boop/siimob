@@ -371,6 +371,36 @@
   stroke: #a45c23;
   stroke-dasharray: 4 3;
 }
+.elia-canvas path.elia-link-preview {
+  stroke: #176de0;
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+.elia-port {
+  position: absolute;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #086e5d;
+  box-shadow: 0 0 0 2px #086e5d;
+  cursor: crosshair;
+  touch-action: none;
+}
+.elia-port:focus-visible {
+  outline: 3px solid #176de0;
+  outline-offset: 3px;
+}
+.elia-workspace:fullscreen {
+  overflow: auto;
+  background: #fff;
+  padding: 24px;
+}
+.elia-workspace:fullscreen .elia-scroll {
+  height: min(70vh, 760px);
+}
 .elia-node {
   position: absolute;
   width: 176px;
