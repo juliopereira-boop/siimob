@@ -308,3 +308,26 @@ test('cliente da Evolution: chave no cabeçalho, QR validado, id da mensagem', a
   await assert.rejects(() => e.qr('../admin'), /instancia_invalida/);
   assert.equal(criarEvolution({ url: 'http://inseguro', chave: 'x', fetch: f }).configurado, false);
 });
+
+test('arquivo usa a mesma permissão do texto e registra o envio sem guardar base64', async () => {
+  const calls = [];
+  const { h, st } = montar({
+    st: { wa: { estado: 'conectado', instancia: 'siimob-thecred' } },
+    evolution: {
+      enviarMidia: async (...args) => {
+        calls.push(args);
+        return { id: 'midia-1' };
+      }
+    }
+  });
+  const anexo = { nome: 'ficha.pdf', mime: 'application/pdf', dados: 'JVBERg==' };
+  const payload = { atendimento_id: AT, texto: '', anexo };
+  assert.equal((await h(req('wa_anexo', payload, 'tk-ana'))).status, 403);
+  assert.equal(
+    (await h(req('wa_anexo', { ...payload, anexo: { ...anexo, dados: 'https://example.com/file' } }))).status,
+    400
+  );
+  assert.equal((await h(req('wa_anexo', payload))).status, 200);
+  assert.deepEqual(calls, [['siimob-thecred', '5598981234567', anexo.dados, anexo.mime, anexo.nome, '']]);
+  assert.deepEqual(st.envios[0], ['tenant-a', AT, '📎 ficha.pdf', 'Gestor', 'midia-1', 'resposta']);
+});

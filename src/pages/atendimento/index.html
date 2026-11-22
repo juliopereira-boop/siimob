@@ -53,6 +53,7 @@
       <header class="at-chat-cab" id="at-chat-cab"></header>
       <div class="at-msgs" id="at-msgs" aria-live="polite"></div>
       <footer class="at-compor" id="at-compor">
+        <input id="at-arquivo" type="file" hidden accept="image/jpeg,image/png,image/webp,.pdf,.docx,.xlsx">
         <div class="at-compor-tipo" role="tablist" aria-label="Tipo de mensagem">
           <button type="button" class="ativo" data-acao="atTipo" data-tipo="mensagem" role="tab">Mensagem</button>
           <button type="button" data-acao="atTipo" data-tipo="nota" role="tab">Nota interna</button>
@@ -69,6 +70,18 @@
   </section>
 
   <aside class="at-lead" id="at-lead" aria-label="Dados do lead" hidden></aside>
+  <dialog id="at-vincular" class="at-vincular" aria-labelledby="at-vincular-titulo">
+    <form method="dialog">
+      <h2 id="at-vincular-titulo">Vincular a corretor</h2>
+      <label for="at-escolher-corretor">Distribuição</label>
+      <select id="at-escolher-corretor" required></select>
+      <p id="at-vincular-erro" role="status"></p>
+      <div class="at-vincular-acoes">
+        <button type="submit" class="at-btn at-btn-linha" value="cancelar" formnovalidate>Cancelar</button>
+        <button type="submit" class="at-btn at-btn-forte" value="vincular">Confirmar vínculo</button>
+      </div>
+    </form>
+  </dialog>
 </main>
 
 <div class="at-toasts" id="at-toasts" aria-live="polite"></div>
