@@ -357,9 +357,19 @@ async function work(job: any) {
   let waiting = false;
   let externalEffect = false;
   try {
+    const qualificationLead = row.flow.some((node: any) => node.type === 'qualification')
+      ? await first('a1_cases?' + scope + '&id=eq.' + eq(lead.id) + '&select=client_name,client_phone,client_email,client_cpf,payload')
+      : null;
+    const qualification = qualificationLead ? {
+      ...qualificationLead.payload?.qualificacao,
+      nome: qualificationLead.client_name,
+      telefone: qualificationLead.client_phone,
+      email: qualificationLead.client_email,
+      cpf: qualificationLead.client_cpf
+    } : {};
     await runFlow(
       row.flow,
-      { name: lead.client_name, message: msg.corpo, ...job.payload },
+      { name: lead.client_name, message: msg.corpo, ...job.payload, qualification },
       {
         ai: (prompt: string) =>
           generate(tenant, row.config, JSON.stringify({ tarefa: prompt, conversa: recent.toReversed() })),

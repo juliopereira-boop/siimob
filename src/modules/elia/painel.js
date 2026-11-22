@@ -8,10 +8,25 @@ const nodes = {
   ai: 'Responder com OpenAI',
   message: 'Enviar WhatsApp',
   condition: 'Se o texto contém',
+  qualification: 'Verificar qualificação',
   wait: 'Aguardar',
   handoff: 'Encaminhar para humano',
   agenda: 'Criar agendamento',
   end: 'Encerrar fluxo'
+};
+const qualificationFields = {
+  nome: 'Nome',
+  telefone: 'Telefone',
+  email: 'E-mail',
+  cpf: 'CPF',
+  empreendimento: 'Empreendimento',
+  renda: 'Renda familiar',
+  cidade: 'Cidade de interesse',
+  tipo_imovel: 'Tipo de imóvel',
+  quartos: 'Quartos',
+  orcamento: 'Orçamento',
+  prazo: 'Prazo',
+  observacoes: 'Observações'
 };
 const collections = {
   treinamentos: 'Treinamentos',
@@ -171,7 +186,8 @@ export async function eliaMontar(panel) {
       .filter(k => k !== 'trigger')
       .map(k => option(k, nodes[k]))
       .join('')}</select>
-      <button class="btn btn-ghost" data-el="add-node">Adicionar nó</button></div>
+      <button class="btn btn-ghost" data-el="add-node">Adicionar etapa</button></div>
+      <p>Selecione uma etapa para escolher os próximos passos. Nas condições, escolha um caminho para cada resultado.</p>
       <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="1400" height="760">${links}</svg>
       ${state.flow
         .map(
@@ -183,8 +199,20 @@ export async function eliaMontar(panel) {
       ${
         chosen
           ? `<div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
-        ${!['handoff', 'end'].includes(chosen.type) ? `<label>${chosen.type === 'condition' ? 'Se sim' : 'Próximo nó'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
-        ${chosen.type === 'condition' ? `<label>Se não<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+        ${!['handoff', 'end'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
+        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+        ${
+          chosen.type === 'qualification'
+            ? `<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
+                qualificationFields
+              )
+                .map(
+                  ([key, label]) =>
+                    `<label><input type="checkbox" data-qualification-field="${key}"${checked(chosen.fields?.includes(key))}> ${label}</label>`
+                )
+                .join('')}</div></fieldset>`
+            : ''
+        }
         ${chosen.type === 'wait' ? `<label>Minutos<input type="number" min="1" max="43200" data-node-field="minutes" value="${Number(chosen.minutes) || 60}"></label>` : ''}
         ${
           ['ai', 'message', 'condition', 'handoff', 'agenda'].includes(chosen.type)
@@ -311,6 +339,13 @@ export async function eliaMontar(panel) {
 
   page.addEventListener('input', event => {
     const field = event.target;
+    if (field.dataset.qualificationField) {
+      const node = state.flow.find(item => item.id === selectedNode);
+      const fields = new Set(node.fields || []);
+      if (field.checked) fields.add(field.dataset.qualificationField);
+      else fields.delete(field.dataset.qualificationField);
+      node.fields = [...fields];
+    }
     const p = field.dataset.profile;
     const n = field.dataset.nodeField;
     if (p === 'enabled') state.enabled = field.checked;

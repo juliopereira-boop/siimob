@@ -1,4 +1,28 @@
-export const nodeTypes = ['trigger', 'ai', 'message', 'condition', 'wait', 'handoff', 'agenda', 'end'];
+export const nodeTypes = [
+  'trigger',
+  'ai',
+  'message',
+  'condition',
+  'qualification',
+  'wait',
+  'handoff',
+  'agenda',
+  'end'
+];
+export const qualificationFields = [
+  'nome',
+  'telefone',
+  'email',
+  'cpf',
+  'empreendimento',
+  'renda',
+  'cidade',
+  'tipo_imovel',
+  'quartos',
+  'orcamento',
+  'prazo',
+  'observacoes'
+];
 
 export function validateFlow(nodes) {
   if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 30) throw Error('Fluxo inválido.');
@@ -16,6 +40,14 @@ export function validateFlow(nodes) {
     if (node.type === 'wait' && (!Number.isInteger(node.minutes) || node.minutes < 1 || node.minutes > 43200))
       throw Error('Informe um tempo de espera entre 1 e 43200 minutos.');
     if (node.type === 'condition' && !node.text.trim()) throw Error('Informe uma condição.');
+    if (
+      node.type === 'qualification' &&
+      (!Array.isArray(node.fields) ||
+        !node.fields.length ||
+        node.fields.some(field => !qualificationFields.includes(field)) ||
+        new Set(node.fields).size !== node.fields.length)
+    )
+      throw Error('Selecione os dados obrigatórios da qualificação.');
     byId.set(node.id, node);
   }
   const starts = nodes.filter(node => node.type === 'trigger');
@@ -28,7 +60,7 @@ export function validateFlow(nodes) {
     const node = byId.get(id);
     visiting.add(id);
     if (node.type !== 'end' && node.type !== 'handoff') visit(node.next);
-    if (node.type === 'condition') visit(node.other);
+    if (node.type === 'condition' || node.type === 'qualification') visit(node.other);
     visiting.delete(id);
     visited.add(id);
   }
@@ -55,7 +87,12 @@ export async function runFlow(nodes, context, actions) {
     if (node.type === 'agenda') output = await actions.agenda(render(node.text));
     if (node.type === 'handoff') return await actions.handoff(render(node.text));
     if (node.type === 'wait') return await actions.wait(node.next, node.minutes, output);
-    if (node.type === 'condition') {
+    if (node.type === 'qualification') {
+      const data = context.qualification || {};
+      id = node.fields.every(field => typeof data[field] === 'string' && data[field].trim())
+        ? node.next
+        : node.other;
+    } else if (node.type === 'condition') {
       id = context.message.toLocaleLowerCase('pt-BR').includes(node.text.toLocaleLowerCase('pt-BR'))
         ? node.next
         : node.other;

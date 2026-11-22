@@ -35,3 +35,40 @@ test('decide pelo texto, aguarda e retoma sem repetir a OpenAI', async () => {
   assert.deepEqual(sent, ['Ana: Manhã ou tarde?']);
   assert.equal(await runFlow(nodes, { ...context, message: 'Olá' }, {}), '');
 });
+
+test('avança somente quando todos os dados exigidos estiverem preenchidos', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'qualificar' },
+    {
+      id: 'qualificar',
+      type: 'qualification',
+      text: '',
+      fields: ['renda', 'empreendimento'],
+      next: 'pronto',
+      other: 'pendente'
+    },
+    { id: 'pronto', type: 'message', text: 'pronto', next: 'fim' },
+    { id: 'pendente', type: 'message', text: 'pendente', next: 'fim' },
+    { id: 'fim', type: 'end', text: '' }
+  ];
+  const saida = [];
+  await runFlow(
+    flow,
+    { message: '', qualification: { renda: '2500', empreendimento: 'Jardins' } },
+    { send: value => saida.push(value) }
+  );
+  await runFlow(
+    flow,
+    { message: '', qualification: { renda: '2500', empreendimento: ' ' } },
+    { send: value => saida.push(value) }
+  );
+  assert.deepEqual(saida, ['pronto', 'pendente']);
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.type === 'qualification' ? { ...n, fields: [] } : n))),
+    /dados obrigatórios/
+  );
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.type === 'qualification' ? { ...n, fields: ['inexistente'] } : n))),
+    /dados obrigatórios/
+  );
+});
