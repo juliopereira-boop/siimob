@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10312b">
+    <title>Configuração da ELIA — SIIMOB</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  </head>
+  <body class="elia-body">
+    <main class="elia-panel">
+      <header class="elia-top">
+        <a class="elia-back" href="/" aria-label="Voltar para Integrações">← <span>Integrações</span></a>
+        <span class="elia-mark">SIIMOB</span>
+      </header>
+      <section class="elia-hero" aria-labelledby="elia-heading">
+        <div class="elia-avatar" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M24 5c1 12 6 17 18 19-12 1-17 6-18 19-2-13-7-18-19-19C17 22 22 17 24 5Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="37" cy="11" r="2" fill="currentColor"/></svg>
+        </div>
+        <div>
+          <h1 id="elia-heading">Configuração da ELIA</h1>
+          <p>Agente da Central de Atendimento</p>
+        </div>
+        <span class="elia-agent-state" data-el-enabled hidden></span>
+      </section>
+      <div class="elia-layout">
+        <aside><nav aria-label="Configuração da ELIA"></nav></aside>
+        <section class="elia-workspace" aria-labelledby="elia-section-heading">
+          <header class="elia-workspace-heading">
+            <h2 id="elia-section-heading" data-el-title>Perfil da agente</h2>
+            <p data-el-description></p>
+          </header>
+          <p data-el-status role="status" aria-live="polite">Carregando ELIA…</p>
+          <div data-el-page></div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/pages/elia/main.js"></script>
+  </body>
+</html>

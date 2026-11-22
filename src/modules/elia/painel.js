@@ -58,32 +58,33 @@ const initial = [
   { id: 'fim', type: 'end', text: '', x: 725, y: 25 }
 ];
 
-export function eliaMontar() {
-  const view = document.getElementById('cfg-view-integracoes');
-  if (!view || view.querySelector('.elia-panel')) return;
-  const panel = document.createElement('section');
-  panel.className = 'elia-panel';
-  panel.innerHTML = `<header><div><h2>ELIA</h2><p>Agente da Central de Atendimento</p></div>
-    <button type="button" class="btn btn-primary" data-el="open">Configurar ELIA</button></header>
-    <div data-el-content hidden><nav aria-label="Configuração da ELIA"></nav>
-    <p data-el-status role="status" aria-live="polite"></p><div data-el-page></div></div>`;
-  view.append(panel);
-  if (new URLSearchParams(location.search).has('elia_google')) {
-    queueMicrotask(() => panel.querySelector('[data-el=open]').click());
-  }
-  const content = panel.querySelector('[data-el-content]');
+const icons = {
+  perfil: '<circle cx="12" cy="8" r="3"/><path d="M5 20v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/>',
+  base: '<path d="M4 5h6l2 2 2-2h6v14h-6l-2 2-2-2H4zM12 7v14"/>',
+  fluxo:
+    '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M6.5 10v5a2.5 2.5 0 0 0 2.5 2.5h5"/>',
+  campanhas: '<path d="m4 11 15-6v14L4 13zM7 14l2 6h3"/>',
+  agenda: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18"/>'
+};
+
+const tabs = {
+  perfil: ['Perfil da agente', 'Defina como a ELIA se apresenta, conversa e encaminha atendimentos.'],
+  base: ['Conhecimento', 'Cadastre orientações, produtos, empreendimentos e imagens.'],
+  fluxo: ['Editor de fluxos', 'Organize os passos da conversa e simule o atendimento.'],
+  campanhas: ['Campanhas', 'Crie envios e acompanhe os destinatários na fila.'],
+  agenda: ['Google Agenda', 'Conecte sua agenda e gerencie compromissos.']
+};
+
+export async function eliaMontar(panel) {
   const page = panel.querySelector('[data-el-page]');
   const status = panel.querySelector('[data-el-status]');
   const nav = panel.querySelector('nav');
-  const tabs = {
-    perfil: 'Perfil',
-    base: 'Conhecimento',
-    fluxo: 'Fluxo',
-    campanhas: 'Campanhas',
-    agenda: 'Google Agenda'
-  };
+  const title = panel.querySelector('[data-el-title]');
+  const description = panel.querySelector('[data-el-description]');
+  const enabledIndicator = panel.querySelector('[data-el-enabled]');
+  const google = new URLSearchParams(location.search).get('elia_google');
   let state;
-  let tab = 'perfil';
+  let tab = google ? 'agenda' : 'perfil';
   let selectedNode = '';
   let contacts = [];
   const recipients = new Set();
@@ -265,10 +266,12 @@ export function eliaMontar() {
   }
 
   function render() {
+    title.textContent = tabs[tab][0];
+    description.textContent = tabs[tab][1];
     nav.innerHTML = Object.entries(tabs)
       .map(
-        ([key, title]) =>
-          `<button type="button" data-el="tab" data-key="${key}" aria-pressed="${key === tab}">${title}</button>`
+        ([key, [label]]) =>
+          `<button type="button" data-el="tab" data-key="${key}" aria-current="${key === tab ? 'true' : 'false'}"><svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg><span>${label}</span></button>`
       )
       .join('');
     const views = {
@@ -278,12 +281,15 @@ export function eliaMontar() {
       campanhas: renderCampaigns,
       agenda: renderAgenda
     };
+    const canvas = tab === 'fluxo' ? page.querySelector('.elia-scroll') : null;
+    const viewport = canvas && { left: canvas.scrollLeft, top: canvas.scrollTop };
     page.innerHTML =
       views[tab]() +
       (tab === 'campanhas'
         ? ''
         : '<footer><button class="btn btn-primary" data-el="save">Salvar configuração</button></footer>');
     if (tab === 'campanhas') showContacts();
+    if (viewport) page.querySelector('.elia-scroll').scrollTo(viewport);
   }
 
   async function upload(input) {
@@ -366,34 +372,26 @@ export function eliaMontar() {
     render();
   });
 
+  function showAgentStatus() {
+    enabledIndicator.textContent = state.enabled ? 'Agente ativo' : 'Agente desativado';
+    enabledIndicator.dataset.active = String(state.enabled);
+    enabledIndicator.hidden = false;
+  }
+
   panel.addEventListener('click', async event => {
     const button = event.target.closest('[data-el]');
     if (!button || button.disabled) return;
     const { el, key, id, granted } = button.dataset;
     button.disabled = true;
     try {
-      if (el === 'open') {
-        content.hidden = !content.hidden;
-        if (!content.hidden) {
-          tell('Carregando ELIA…');
-          await reload();
-          render();
-          const google = new URLSearchParams(location.search).get('elia_google');
-          tell(
-            google === 'conectado'
-              ? 'Google Agenda conectado.'
-              : google === 'erro'
-                ? 'A conexão com o Google não foi concluída.'
-                : '',
-            google === 'erro'
-          );
-        }
-      } else if (el === 'tab') {
+      if (el === 'tab') {
         tab = key;
         render();
+        nav.querySelector('[aria-current="true"]').focus();
         tell('');
       } else if (el === 'save') {
         await save();
+        showAgentStatus();
         tell('Configuração salva.');
       } else if (el === 'add-record') {
         (state.profile[key] ||= []).push({ titulo: '', descricao: '', fotos: [] });
@@ -549,4 +547,16 @@ export function eliaMontar() {
       button.disabled = false;
     }
   });
+
+  await reload();
+  showAgentStatus();
+  render();
+  tell(
+    google === 'conectado'
+      ? 'Google Agenda conectado.'
+      : google === 'erro'
+        ? 'A conexão com o Google não foi concluída.'
+        : '',
+    google === 'erro'
+  );
 }

@@ -44,7 +44,6 @@ import {
   waDesconectar,
   waCriarLeads
 } from '../../modules/integracoes/conectores.js';
-import { eliaMontar } from '../../modules/elia/painel.js';
 import {
   dispAbrirVista,
   dispAposSalvarEmpreendimento,
@@ -525,7 +524,15 @@ async function init() {
         roletaMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
         // OpenAI e WhatsApp fazem parte do pacote da Central.
         conectoresMontar();
-        if (G.user.role === 'owner' || G.user.role === 'admin') eliaMontar();
+        if (G.user.role === 'owner' || G.user.role === 'admin') {
+          const eliaLink = /** @type {HTMLAnchorElement} */ (document.getElementById('cfg-elia-link'));
+          eliaLink.href = `/${encodeURIComponent(G.slug)}/configuracoes/elia`;
+          eliaLink.hidden = false;
+          const agenda = new URLSearchParams(location.search).get('elia_google');
+          if (agenda === 'conectado' || agenda === 'erro') {
+            location.replace(eliaLink.href + '?elia_google=' + agenda);
+          }
+        }
         if (document.getElementById('cfg-view-integracoes')?.style.display !== 'none') conectoresCarregar();
       })
       .catch(() => {});
