@@ -47,6 +47,7 @@
 /:slug/dashboard                       /geral.html                200
 /:slug/admin                           /tenant-admin.html         200
 /:slug/workflow                        /workflow.html             200
+/:slug/configuracoes/elia              /elia.html                 200
 /:slug/configuracoes                   /configuracoes.html        200
 /:slug/importar                        /importar.html             200
 /superadmin                            /superadmin.html           200

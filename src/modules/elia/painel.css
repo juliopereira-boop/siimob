@@ -1,12 +1,237 @@
-.elia-panel {
-  --elia-accent: #007d71;
-  margin-block: 24px;
-  padding: clamp(14px, 3vw, 28px);
-  border: 1px solid var(--border, #dbe4e2);
-  border-radius: 18px;
-  background: var(--card, #fff);
+.elia-body {
+  margin: 0;
+  background: #f1f5f2;
+  color: #16342d;
+  font:
+    15px/1.5 Inter,
+    system-ui,
+    sans-serif;
 }
-.elia-panel header,
+
+.elia-panel {
+  --elia-accent: #14634f;
+  --elia-ink: #173a30;
+  --elia-muted: #506960;
+  --elia-line: #d8e4de;
+  --elia-surface: #fff;
+  box-sizing: border-box;
+  width: min(100%, 1740px);
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: 0 clamp(16px, 3vw, 52px) clamp(24px, 4vw, 56px);
+}
+
+.elia-panel *,
+.elia-panel *::before,
+.elia-panel *::after {
+  box-sizing: border-box;
+}
+
+.elia-panel :focus-visible {
+  outline: 2px solid #16856b;
+  outline-offset: 3px;
+}
+
+.elia-top {
+  min-height: 66px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.elia-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--elia-accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.elia-back:hover span {
+  text-decoration: underline;
+}
+.elia-mark {
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+}
+
+.elia-hero {
+  min-height: 126px;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+  color: #f0fcf5;
+  background: radial-gradient(ellipse at top right, #23624e 0%, transparent 58%), #10312b;
+  border-radius: 22px;
+  padding: clamp(19px, 2.6vw, 37px);
+  margin-bottom: clamp(18px, 2.5vw, 32px);
+}
+
+.elia-avatar {
+  flex: 0 0 auto;
+  width: clamp(44px, 6vw, 64px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  background: #c8f1d8;
+  color: #1b6b52;
+}
+
+.elia-avatar svg {
+  width: 70%;
+}
+.elia-hero h1 {
+  margin: 0;
+  font-size: clamp(1.38rem, 3vw, 2.5rem);
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+.elia-hero p {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  color: #c4ded2;
+}
+
+.elia-agent-state:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-inline-start: auto;
+  border: 1px solid #5b8276;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.elia-agent-state::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #bdcfc8;
+}
+.elia-agent-state[data-active='true']::before {
+  background: #82e7aa;
+}
+
+.elia-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 225px) minmax(0, 1fr);
+  gap: clamp(14px, 2vw, 28px);
+  min-height: calc(100dvh - 280px);
+}
+
+.elia-layout aside {
+  min-width: 0;
+}
+.elia-panel nav {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 5px;
+  padding: 9px;
+  background: var(--elia-surface);
+  border: 1px solid var(--elia-line);
+  border-radius: 16px;
+}
+.elia-panel nav:empty {
+  display: none;
+}
+
+.elia-panel nav button {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 10px;
+  font: inherit;
+  font-weight: 650;
+  color: var(--elia-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.elia-panel nav button:hover {
+  background: #f3f7f5;
+}
+.elia-panel nav button[aria-current='true'] {
+  color: var(--elia-accent);
+  background: #e6f3eb;
+  border-color: #d3e9dc;
+}
+.elia-panel nav svg {
+  flex: 0 0 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.elia-workspace {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 36px);
+  background: var(--elia-surface);
+  border: 1px solid var(--elia-line);
+  border-radius: 20px;
+  box-shadow: 0 12px 36px #173a3009;
+}
+.elia-workspace-heading {
+  margin-bottom: 24px;
+}
+.elia-workspace-heading h2 {
+  margin: 0;
+  font-size: clamp(1.22rem, 2.1vw, 1.8rem);
+  letter-spacing: -0.025em;
+}
+.elia-workspace-heading p {
+  margin: 4px 0 0;
+  color: var(--elia-muted);
+}
+.elia-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.elia-wide {
+  grid-column: 1 / -1;
+}
+.elia-panel label {
+  display: grid;
+  gap: 6px;
+  font-weight: 650;
+  font-size: 0.875rem;
+  min-width: 0;
+}
+.elia-panel :is(input:not([type='checkbox']), select, textarea) {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #c6d7ce;
+  border-radius: 9px;
+  background: #f9fbfa;
+  color: var(--elia-ink);
+  font: inherit;
+  font-weight: 450;
+}
+.elia-panel textarea {
+  resize: vertical;
+}
+.elia-panel :is(input, textarea)::placeholder {
+  color: #657c72;
+}
+.elia-panel input[type='checkbox'] {
+  accent-color: var(--elia-accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
 .elia-toolbar,
 .elia-options,
 .elia-contact,
@@ -15,102 +240,119 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-block: 12px;
+  margin-block: 14px;
 }
-.elia-panel header,
-.elia-contact {
-  justify-content: space-between;
+.elia-toolbar :is(input, select) {
+  flex: 1 1 210px;
+  width: auto;
 }
-.elia-panel header h2,
-.elia-panel header p {
-  margin: 0;
-}
-.elia-panel nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-block: 14px;
-  border-bottom: 1px solid #bfcac8;
-}
-.elia-panel nav button {
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-.elia-panel nav button[aria-pressed='true'] {
-  background: var(--elia-accent);
-  color: white;
-}
-.elia-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+.elia-options {
   gap: 12px;
-}
-.elia-wide {
-  grid-column: 1 / -1;
-}
-.elia-panel label {
-  display: grid;
-  gap: 5px;
+  margin-top: 20px;
 }
 .elia-panel .elia-options label,
 .elia-contact label {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
-.elia-panel :is(input:not([type='checkbox']), select, textarea) {
-  color: inherit;
-  background: transparent;
-  border: 1px solid #94a5a3;
+.elia-options label {
+  padding: 9px 11px;
   border-radius: 8px;
-  padding: 8px;
-  min-width: 0;
+  background: #f2f7f4;
 }
-.elia-panel textarea {
-  resize: vertical;
+.elia-panel .btn {
+  border: 1px solid var(--elia-line);
+  border-radius: 9px;
+  padding: 9px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--elia-accent);
+  background: #f3f8f5;
+  cursor: pointer;
+}
+.elia-panel .btn:hover {
+  background: #e7f2eb;
+}
+.elia-panel .btn-primary {
+  color: #fff;
+  background: var(--elia-accent);
+  border-color: var(--elia-accent);
+}
+.elia-panel .btn-primary:hover {
+  background: #104e3f;
+}
+.elia-panel .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.elia-panel footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 17px;
+  border-top: 1px solid var(--elia-line);
+}
+.elia-panel [data-el-status] {
+  background: #edf7f0;
+  padding: 10px 13px;
+  border-radius: 8px;
+  margin: 0 0 18px;
+  color: var(--elia-accent);
 }
 .elia-panel [data-el-status]:empty {
   display: none;
 }
-.elia-panel .elia-error {
-  color: #c43632;
+.elia-panel [data-el-status].elia-error {
+  color: #963b32;
+  background: #fff1ee;
 }
-.elia-panel footer {
-  margin-top: 16px;
-}
-.elia-records {
-  padding: 12px;
-  margin-block: 8px;
-  border: 1px solid #bfcac8;
-  border-radius: 10px;
+.elia-records,
+.elia-campaign {
+  padding: 13px 15px;
+  border: 1px solid var(--elia-line);
+  border-radius: 11px;
+  margin-block: 10px;
 }
 .elia-records summary {
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
+}
+.elia-records[open] summary {
+  margin-bottom: 12px;
 }
 .elia-records article {
   display: grid;
-  gap: 8px;
-  margin-block: 12px;
+  gap: 9px;
+  margin-block: 8px 15px;
+}
+.elia-records article .btn {
+  justify-self: start;
 }
 .elia-file {
   width: fit-content;
 }
+.elia-contact {
+  justify-content: space-between;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--elia-line);
+}
+.elia-campaign > div {
+  flex-basis: 100%;
+}
+
 .elia-scroll {
   overflow: auto;
-  max-height: 390px;
-  border: 1px solid #bfcac8;
-  border-radius: 12px;
+  height: clamp(285px, 52vh, 530px);
+  border: 1px solid #ccdcd3;
+  border-radius: 13px;
+  margin-bottom: 16px;
 }
 .elia-canvas {
   width: 1400px;
   height: 760px;
   position: relative;
-  background-image: radial-gradient(#91a6a4 1px, transparent 1px);
-  background-size: 16px 16px;
+  background: #f5f9f6 radial-gradient(#acbfb4 1px, transparent 1px) 0 0 / 17px 17px;
 }
 .elia-canvas svg {
   position: absolute;
@@ -119,7 +361,7 @@
 }
 .elia-canvas path {
   fill: none;
-  stroke: var(--elia-accent);
+  stroke: #338872;
   stroke-width: 2;
 }
 .elia-canvas path.elia-no {
@@ -130,26 +372,52 @@
   position: absolute;
   width: 176px;
   min-height: 63px;
-  touch-action: none;
-  cursor: grab;
-  padding: 8px;
+  padding: 9px 11px;
   display: grid;
   text-align: left;
-  border: 1px solid #869c98;
+  touch-action: none;
+  cursor: grab;
+  color: var(--elia-ink);
+  background: #fff;
+  border: 1px solid #9bb8ab;
   border-radius: 10px;
-  background: #f4fbfa;
-  color: #15332f;
+  box-shadow: 0 4px 10px #173a3012;
+}
+.elia-node small {
+  color: var(--elia-accent);
 }
 .elia-node.active {
   outline: 2px solid var(--elia-accent);
-}
-.elia-node small {
-  color: #375e59;
 }
 .elia-panel pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.elia-campaign > div {
-  flex-basis: 100%;
+
+@media (max-width: 760px) {
+  .elia-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .elia-panel nav {
+    display: flex;
+    overflow-x: auto;
+  }
+  .elia-panel nav button {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .elia-hero {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 500px) {
+  .elia-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .elia-agent-state:not([hidden]) {
+    margin-inline-start: 0;
+  }
 }

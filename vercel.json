@@ -149,6 +149,10 @@
       "destination": "/workflow.html"
     },
     {
+      "source": "/:slug/configuracoes/elia",
+      "destination": "/elia.html"
+    },
+    {
       "source": "/:slug/configuracoes",
       "destination": "/configuracoes.html"
     },
