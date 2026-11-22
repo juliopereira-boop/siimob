@@ -1,4 +1,6 @@
 import '../../shared/api/config.js';
+// LGPD: dado pessoal fosco até o mouse chegar (esta tela não usa o casco).
+import '../../shared/ui/lgpd.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
 
 exporVariavel('painel', () => painel);

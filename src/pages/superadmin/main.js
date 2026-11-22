@@ -1,4 +1,6 @@
 import { A1_KEY, A1_URL } from '../../shared/api/config.js';
+// LGPD: dado pessoal fosco até o mouse chegar (esta tela não usa o casco).
+import '../../shared/ui/lgpd.js';
 import {
   entrarComCodigo,
   emSessao,
@@ -175,7 +177,7 @@ const MODULES_DEF = [
     dependeDe: []
   },
   // Dentro de Leads: os leads das integrações entram numa caixa de conversa,
-  // o gestor qualifica e a roleta distribui para os corretores. A IA SDR será
+  // o gestor qualifica e a roleta distribui para os corretores. A ELIA (agente de IA, SDR) será
   // outro módulo, contratado à parte.
   {
     key: 'ATENDIMENTO',

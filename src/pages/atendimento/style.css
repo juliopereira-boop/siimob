@@ -303,27 +303,11 @@ button {
 }
 .at-av-canal {
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 18px;
-  height: 18px;
+  right: -3px;
+  bottom: -3px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
   border: 2px solid #fff;
-  color: #fff;
-}
-.at-canal-meta {
-  background: #0866ff;
-}
-.at-canal-whatsapp {
-  background: #25d366;
-}
-.at-canal-instagram {
-  background: linear-gradient(45deg, #f9a825, #e1306c 55%, #833ab4);
-}
-.at-canal-manual {
-  background: var(--t3);
+  line-height: 0;
 }
 
 /* ── Conversa ──────────────────────────────────────────────────────────── */
@@ -406,7 +390,7 @@ button {
 .at-chat-quem b {
   font-size: 0.95rem;
 }
-.at-so-estreito {
+.at-btn-ic.at-so-estreito {
   display: none;
   border: 0;
   background: transparent;
@@ -771,7 +755,7 @@ button {
   .at-lead {
     display: none;
   }
-  .at-so-estreito {
+  .at-btn-ic.at-so-estreito {
     display: grid;
   }
   body.at-painel-aberto .at-lead:not([hidden]) {

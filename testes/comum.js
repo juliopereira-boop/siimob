@@ -70,11 +70,13 @@ async function abrir(pag, opc = {}) {
     } catch (e) {
       d = [];
     }
+    // Resposta com outro status: {__status: 429, corpo: {...}}.
+    const outro = d && typeof d === 'object' && !Array.isArray(d) && d.__status;
     r.fulfill({
-      status: 200,
+      status: outro ? d.__status : 200,
       contentType: 'application/json',
       headers: { 'content-range': '0-1/2' },
-      body: JSON.stringify(d)
+      body: JSON.stringify(outro ? d.corpo : d)
     });
   });
   await p.goto(BASE + '/' + pag, { waitUntil: 'load' });

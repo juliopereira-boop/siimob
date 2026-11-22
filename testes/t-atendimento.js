@@ -210,7 +210,7 @@ function rotas(est) {
     checa('o gestor abre na fila, só com o lead sem corretor', itens.join(',') === 'at1', itens.join(','));
     checa(
       'o item mostra o canal Meta, a prévia e o "Novo"',
-      !!(await p.$('.at-item[data-id="at1"] .at-canal-meta')) &&
+      !!(await p.$('.at-item[data-id="at1"] .canal-meta')) &&
         /Campanha Nov/.test(await p.textContent('.at-item[data-id="at1"]')) &&
         !!(await p.$('.at-item[data-id="at1"] .at-novo'))
     );
