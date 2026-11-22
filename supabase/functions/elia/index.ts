@@ -28,7 +28,8 @@ async function service(path: string, init: RequestInit = {}) {
     signal: AbortSignal.timeout(12000)
   });
   if (!result.ok) throw Error('O banco recusou a operação.');
-  return result.status === 204 ? null : await result.json();
+  const body = await result.text();
+  return body ? JSON.parse(body) : null;
 }
 const read = (path: string) => service('/rest/v1/' + path);
 const write = (path: string, method: string, data: unknown, prefer = 'return=minimal') =>
