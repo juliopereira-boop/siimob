@@ -44,6 +44,7 @@ import {
   waDesconectar,
   waCriarLeads
 } from '../../modules/integracoes/conectores.js';
+import { eliaMontar } from '../../modules/elia/painel.js';
 import {
   dispAbrirVista,
   dispAposSalvarEmpreendimento,
@@ -524,6 +525,7 @@ async function init() {
         roletaMontarConfig({ cartao: cfgModsCartao, vista: cfgModsVista, toast });
         // OpenAI e WhatsApp fazem parte do pacote da Central.
         conectoresMontar();
+        if (G.user.role === 'owner' || G.user.role === 'admin') eliaMontar();
         if (document.getElementById('cfg-view-integracoes')?.style.display !== 'none') conectoresCarregar();
       })
       .catch(() => {});

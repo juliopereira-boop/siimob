@@ -134,6 +134,14 @@ export function criarEvolution({ url, chave, fetch: f = fetch, espera = 15000 })
         if (!(e instanceof ErroEvolution) || e.motivo !== 'instancia_nao_encontrada') throw e;
       }
     },
+    async enviarMidia(instancia, numero, media, mimetype, fileName, caption) {
+      if (!/^\d{10,15}$/.test(String(numero))) throw new ErroEvolution('numero_invalido');
+      const result = await chamar('POST', `/message/sendMedia/${nome(instancia)}`, {
+        number: String(numero), media, mimetype, fileName, caption,
+        mediatype: mimetype.startsWith('image/') ? 'image' : 'document'
+      });
+      return { id: typeof result?.key?.id === 'string' ? result.key.id.slice(0, 120) : null };
+    },
     /** Envia texto; devolve o id da mensagem no WhatsApp. */
     async enviarTexto(instancia, numero, texto, atraso = 1200) {
       if (!/^\d{10,15}$/.test(String(numero))) throw new ErroEvolution('numero_invalido');

@@ -1,0 +1,155 @@
+.elia-panel {
+  --elia-accent: #007d71;
+  margin-block: 24px;
+  padding: clamp(14px, 3vw, 28px);
+  border: 1px solid var(--border, #dbe4e2);
+  border-radius: 18px;
+  background: var(--card, #fff);
+}
+.elia-panel header,
+.elia-toolbar,
+.elia-options,
+.elia-contact,
+.elia-campaign {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 12px;
+}
+.elia-panel header,
+.elia-contact {
+  justify-content: space-between;
+}
+.elia-panel header h2,
+.elia-panel header p {
+  margin: 0;
+}
+.elia-panel nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-block: 14px;
+  border-bottom: 1px solid #bfcac8;
+}
+.elia-panel nav button {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.elia-panel nav button[aria-pressed='true'] {
+  background: var(--elia-accent);
+  color: white;
+}
+.elia-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.elia-wide {
+  grid-column: 1 / -1;
+}
+.elia-panel label {
+  display: grid;
+  gap: 5px;
+}
+.elia-panel .elia-options label,
+.elia-contact label {
+  display: flex;
+  align-items: center;
+}
+.elia-panel :is(input:not([type='checkbox']), select, textarea) {
+  color: inherit;
+  background: transparent;
+  border: 1px solid #94a5a3;
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 0;
+}
+.elia-panel textarea {
+  resize: vertical;
+}
+.elia-panel [data-el-status]:empty {
+  display: none;
+}
+.elia-panel .elia-error {
+  color: #c43632;
+}
+.elia-panel footer {
+  margin-top: 16px;
+}
+.elia-records {
+  padding: 12px;
+  margin-block: 8px;
+  border: 1px solid #bfcac8;
+  border-radius: 10px;
+}
+.elia-records summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.elia-records article {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+}
+.elia-file {
+  width: fit-content;
+}
+.elia-scroll {
+  overflow: auto;
+  max-height: 390px;
+  border: 1px solid #bfcac8;
+  border-radius: 12px;
+}
+.elia-canvas {
+  width: 1400px;
+  height: 760px;
+  position: relative;
+  background-image: radial-gradient(#91a6a4 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.elia-canvas svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.elia-canvas path {
+  fill: none;
+  stroke: var(--elia-accent);
+  stroke-width: 2;
+}
+.elia-canvas path.elia-no {
+  stroke: #a45c23;
+  stroke-dasharray: 4 3;
+}
+.elia-node {
+  position: absolute;
+  width: 176px;
+  min-height: 63px;
+  touch-action: none;
+  cursor: grab;
+  padding: 8px;
+  display: grid;
+  text-align: left;
+  border: 1px solid #869c98;
+  border-radius: 10px;
+  background: #f4fbfa;
+  color: #15332f;
+}
+.elia-node.active {
+  outline: 2px solid var(--elia-accent);
+}
+.elia-node small {
+  color: #375e59;
+}
+.elia-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.elia-campaign > div {
+  flex-basis: 100%;
+}
