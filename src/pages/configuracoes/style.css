@@ -1358,6 +1358,9 @@ body.acesso-pendente {
   padding: 0.32rem 0.7rem;
   white-space: nowrap;
 }
+.mi-selo[hidden] {
+  display: none;
+}
 .mi-selo i {
   width: 8px;
   height: 8px;

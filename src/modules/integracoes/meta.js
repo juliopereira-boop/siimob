@@ -5,7 +5,7 @@
 //   1. O cartão da integração com o estado: Conectado, Não conectado ou
 //      Reconexão necessária. O último estado conhecido aparece NA HORA (fica
 //      guardado no aparelho, por empresa) e é conferido em segundo plano; só a
-//      primeira visita mostra "Verificando", e com tempo limite: se a função
+//      primeira visita aguarda o estado verdadeiro, e com tempo limite: se a função
 //      não responder em 12 s, aparece "Tentar novamente" em vez de girar para
 //      sempre.
 //   2. "Configurar" abre a configuração já carregada: as páginas da conta
@@ -151,6 +151,7 @@ function pintarSelo(
   /** @type {HTMLElement} */ el,
   /** @type {'ok'|'off'|'expirou'|'inativa'|'verificando'} */ s
 ) {
+  el.hidden = false;
   el.className = `mi-selo mi-selo-${s}`;
   const t = el.querySelector('span');
   if (t)
@@ -220,7 +221,7 @@ export function metaCarregarStatus() {
   const guardado = statusGuardado();
   if (guardado) pintarCartao(guardado);
   else {
-    pintarSelo($('meta-status'), 'verificando');
+    $('meta-status').hidden = true;
     $('meta-config-open').hidden = true;
     $('meta-connect-btn').hidden = true;
   }

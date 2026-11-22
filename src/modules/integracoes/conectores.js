@@ -24,6 +24,27 @@ let modelos = [];
 /** @type {ReturnType<typeof setInterval>|null} */
 let vigia = null;
 
+// Apenas os selos, sem chaves ou dados de conexão, separados por empresa.
+const chaveSelos = () => `a1_conectores_selos:${A1.slug || ''}`;
+function selosGuardados() {
+  try {
+    return JSON.parse(localStorage.getItem(chaveSelos()) || 'null');
+  } catch {
+    return null;
+  }
+}
+function guardarSelos() {
+  try {
+    const selos = ['ia-selo', 'wa-selo'].map(id => {
+      const el = $(id);
+      return { classe: el.className, texto: el.querySelector('span')?.textContent || '' };
+    });
+    localStorage.setItem(chaveSelos(), JSON.stringify(selos));
+  } catch {
+    // A tela continua funcionando quando o armazenamento não está disponível.
+  }
+}
+
 const ERROS = /** @type {Record<string,string>} */ ({
   chave_invalida: 'Chave em formato inválido. A chave da OpenAI começa com "sk-".',
   chave_recusada: 'A OpenAI recusou esta chave. Confira se ela está ativa e tem crédito.',
@@ -98,7 +119,7 @@ export function conectoresMontar() {
       <div class="mi-topo">
         <span class="mi-logo">${SVG_IA}</span>
         <div class="mi-nome"><b>OpenAI</b><small>A inteligência da ELIA: conversa, qualifica e responde os leads</small></div>
-        <span id="ia-selo" class="mi-selo mi-selo-verificando" role="status"><i aria-hidden="true"></i><span>Verificando</span></span>
+        <span id="ia-selo" class="mi-selo mi-selo-off" role="status" hidden><i aria-hidden="true"></i><span></span></span>
       </div>
       <p id="ia-resumo" class="mi-resumo">Informe a chave da OpenAI da empresa. Ela fica guardada só no servidor: aqui aparecem apenas os 4 últimos caracteres.</p>
       <div class="mi-form">
@@ -119,7 +140,7 @@ export function conectoresMontar() {
       <div class="mi-topo">
         <span class="mi-logo">${SVG_WA}</span>
         <div class="mi-nome"><b>WhatsApp</b><small>Número da empresa conectado por QR Code (Evolution)</small></div>
-        <span id="wa-selo" class="mi-selo mi-selo-verificando" role="status"><i aria-hidden="true"></i><span>Verificando</span></span>
+        <span id="wa-selo" class="mi-selo mi-selo-off" role="status" hidden><i aria-hidden="true"></i><span></span></span>
       </div>
       <p id="wa-resumo" class="mi-resumo"></p>
       <div id="wa-qr" class="mi-qr" hidden></div>
@@ -143,6 +164,16 @@ export function conectoresMontar() {
       </details>
     </div>`;
   vista.appendChild(box);
+  const guardados = selosGuardados();
+  if (Array.isArray(guardados))
+    ['ia-selo', 'wa-selo'].forEach((id, i) => {
+      const dado = guardados[i];
+      if (!dado || typeof dado.classe !== 'string' || typeof dado.texto !== 'string') return;
+      const el = $(id);
+      el.className = dado.classe;
+      el.querySelector('span').textContent = dado.texto;
+      el.hidden = false;
+    });
 }
 
 // ─── Estado ──────────────────────────────────────────────────────────────────
@@ -152,6 +183,7 @@ export async function conectoresCarregar(conferir = false) {
     estado = await chamar('status', { conferir });
     pintarIa();
     pintarWa();
+    guardarSelos();
   } catch (e) {
     aviso('ia-aviso', /** @type {Error} */ (e).message);
     selo('ia-selo', 'off', 'Indisponível');
@@ -163,8 +195,10 @@ function selo(/** @type {string} */ id, /** @type {string} */ tipo, /** @type {s
   const el = document.getElementById(id);
   if (!el) return;
   el.className = `mi-selo mi-selo-${tipo}`;
+  el.hidden = false;
   const t = el.querySelector('span');
   if (t) t.textContent = texto;
+  if (texto !== 'Indisponível' && estado?.ia && estado?.whatsapp) guardarSelos();
 }
 
 function pintarIa() {
