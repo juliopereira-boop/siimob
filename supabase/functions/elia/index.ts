@@ -1,6 +1,7 @@
 import { avaliar, intervaloCampanha } from '../atendimento-conectores/limites.mjs';
 import { criarEvolution } from '../atendimento-conectores/evolution.mjs';
 import { runFlow, validateFlow } from './flow.mjs';
+import { validarQualificacao } from './qualificacao.mjs';
 import { authorization, calendar, digest, exchange, googleConfigured } from './google.ts';
 
 const env = (name: string) => Deno.env.get(name) || '';
@@ -332,6 +333,27 @@ async function work(job: any) {
     return done(job.id, 'skipped', 'Conversa atualizada.');
   if (job.payload.flow && job.payload.flow !== JSON.stringify(row.flow))
     return done(job.id, 'skipped', 'Fluxo atualizado.');
+  // Não deduza renda a partir de orçamento ou parcela. Só aceitamos respostas
+  // acompanhadas de trecho literal escrito pelo lead, e o banco confere a
+  // versão e se a ELIA ainda está atendendo antes de salvar.
+  try {
+    const prompt = [
+      'Extraia exclusivamente dados explicitamente informados pelo lead, sem suposições.',
+      'Responda somente JSON: cada chave pode conter {"valor":"texto","evidencia":"trecho literal escrito pelo lead"}.',
+      'Chaves permitidas: nome, email, cpf, empreendimento, renda, cidade, tipo_imovel, quartos, orcamento, prazo, observacoes.',
+      'Para nome, email e CPF, o valor deve ser idêntico ao trecho literal informado; não invente nem complete dados.',
+      'Renda familiar só se o lead informar renda. Orçamento, valor do imóvel ou parcela não são renda.',
+      'Use como evidência somente um trecho literal da última mensagem do lead; omita dados que não estejam nela.',
+      'Não inclua campos ausentes. Não use falas da assistente como evidência.',
+      JSON.stringify({conversa:recent.toReversed()})
+    ].join('\n');
+    const extracao = validarQualificacao(await generate(tenant, row.config, prompt), [{autor_tipo:'lead',corpo:msg.corpo}]);
+    if (Object.keys(extracao).length) await rpc('a1_elia_qualificacao', {
+      p_tenant: tenant, p_atendimento: job.atendimento_id, p_versao: conv.versao, p_mensagem: job.message_id, p_dados: extracao
+    });
+  } catch {
+    console.warn('Não foi possível atualizar a qualificação pela ELIA.');
+  }
   let waiting = false;
   let externalEffect = false;
   try {
