@@ -98,6 +98,75 @@ p {
   width: min(1200px, 100% - 32px);
   margin-inline: auto;
 }
+
+.site-elia {
+  padding: clamp(64px, 8vw, 112px) 0;
+  color: #f4f8ff;
+  background: radial-gradient(ellipse at 82% 15%, #202464 0, transparent 42%), #081527;
+}
+.site-elia-in {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  gap: clamp(36px, 8vw, 108px);
+}
+.site-elia-marca {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+  color: #a6c5ff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.site-elia-marca img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.site-elia-marca span {
+  color: #b885ff;
+  padding: 0 0.35em;
+}
+.site-elia-intro p {
+  color: #c4d4df;
+  margin: 24px 0 30px;
+  max-width: 600px;
+}
+.site-elia-passos {
+  display: grid;
+  gap: 12px;
+}
+.site-elia-passos > div {
+  display: flex;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid rgba(167, 191, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.site-elia-passos span {
+  color: #82aaff;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.site-elia-passos p {
+  color: #bdcddd;
+  font-size: 0.9rem;
+}
+.site-elia-passos strong {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 3px;
+}
+@media (max-width: 720px) {
+  .site-elia-in {
+    grid-template-columns: 1fr;
+  }
+}
 .pular {
   position: absolute;
   left: -999px;
