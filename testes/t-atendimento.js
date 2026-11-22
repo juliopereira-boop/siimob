@@ -127,6 +127,25 @@ function rotas(est) {
     }
     if (url.includes('/rest/v1/a1_cases') && url.includes('id=in.')) return est.leads;
     if (url.includes('/rpc/a1_roleta_proximo_nome')) return est.proximo;
+    if (url.includes('/rpc/a1_atend_corretores')) return [{ id: 'p1', name: 'Ana Corretora' }];
+    if (url.includes('/rpc/a1_atend_elia')) {
+      const b = JSON.parse(corpo || '{}');
+      const c = est.conversas.find(x => x.id === b.p_atendimento);
+      if (c) {
+        c.elia_ativa = b.p_ativa;
+        c.versao++;
+      }
+      return null;
+    }
+    if (url.includes('/rpc/a1_atend_qualificacao_manual')) {
+      const b = JSON.parse(corpo || '{}');
+      est.rpc.push({ f: 'qualificacao', ...b });
+      const c = est.conversas.find(x => x.id === b.p_atendimento);
+      const lead = est.leads.find(x => x.id === c.case_id);
+      lead.payload.qualificacao = b.p_dados;
+      c.versao++;
+      return null;
+    }
     if (url.includes('crm_cad_motivos_perda'))
       return [{ value: JSON.stringify([{ name: 'Sem renda' }, { name: 'Inativo', active: false }]) }];
     if (url.includes('/rpc/a1_atend_enviar')) {
@@ -215,8 +234,8 @@ function rotas(est) {
         !!(await p.$('.at-item[data-id="at1"] .at-novo'))
     );
     checa(
-      'a modalidade IA aparece como "em breve", desligada',
-      await p.$eval('.at-modo[disabled]', e => /em breve/.test(e.textContent))
+      'a modalidade ELIA pode ser selecionada como filtro',
+      await p.$eval('#at-elia', e => !e.disabled && e.dataset.modo === 'elia')
     );
 
     await p.click('.at-item[data-id="at1"]');
@@ -300,13 +319,16 @@ function rotas(est) {
 
     await p.click('[data-acao="atDistribuir"]');
     await p.waitForTimeout(400);
+    await p.selectOption('#at-escolher-corretor', 'roleta');
+    await p.click('#at-vincular [value="vincular"]');
+    await p.waitForTimeout(400);
     const dist = est.rpc.filter(r => r.f === 'finalizar')[1] || {};
     checa(
       'distribuir chama a roleta com a versão lida',
       dist.p_resultado === 'qualificado' && dist.p_atendimento === 'at1' && dist.p_versao === 3,
       JSON.stringify(dist)
     );
-    checa('e avisa para quem foi', /distribuído para Ana Corretora/.test(await p.textContent('#at-toasts')));
+    checa('e avisa para quem foi', /vinculado a Ana Corretora/.test(await p.textContent('#at-toasts')));
 
     console.log('\n-- Ao vivo --');
     est.conversas = [
@@ -369,7 +391,10 @@ function rotas(est) {
     );
     await p.click('.at-item[data-id="at2"]');
     await p.waitForTimeout(400);
-    checa('na conversa dele, não há botão de distribuir', !(await p.$('[data-acao="atDistribuir"]')));
+    checa(
+      'na conversa dele, não há botão de distribuir visível',
+      (await p.locator('[data-acao="atDistribuir"]:visible').count()) === 0
+    );
     checa('e ele pode escrever', !(await p.$eval('#at-texto', e => e.disabled)));
     checa(
       'o resultado mostra para quem foi',
@@ -437,6 +462,42 @@ function rotas(est) {
     todos.push(...erros);
   }
 
+  console.log('\n== ELIA, humano e qualificação ==');
+  {
+    const est = cenario();
+    est.conversas[0].elia_ativa = true;
+    est.leads[0].payload.qualificacao = { renda: '2500', empreendimento: 'Jardins' };
+    const { b, p, erros } = await abrir('thecred/atendimento', {
+      modulos: ['crm', 'ATENDIMENTO'],
+      antes: rotas(est)
+    });
+    await p.waitForTimeout(400);
+    checa('conversa da ELIA não aparece na fila humana', !(await p.$('.at-item[data-id="at1"]')));
+    await p.click('#at-elia');
+    checa('a aba ELIA lista a conversa ativa', !!(await p.$('.at-item[data-id="at1"]')));
+    await p.click('.at-item[data-id="at1"]');
+    checa(
+      'qualificação da ELIA aparece protegida contra edição humana',
+      (await p.locator('[data-qual="renda"]').inputValue()) === '2500' &&
+        (await p.locator('[data-qual="renda"]').isDisabled())
+    );
+    await p.click('#at-chat-elia');
+    await p.waitForTimeout(300);
+    checa(
+      'ao retomar, muda para a aba Humano',
+      (await p.getAttribute('#at-humano', 'aria-pressed')) === 'true'
+    );
+    await p.locator('[data-qual="renda"]').fill('3000');
+    await p.click('[data-acao="atQualSalvar"]');
+    await p.waitForTimeout(300);
+    checa(
+      'salvamento manual usa a conversa e os dados escolhidos',
+      est.rpc.some(x => x.f === 'qualificacao' && x.p_atendimento === 'at1' && x.p_dados.renda === '3000')
+    );
+    checa('sem erro de JS na qualificação', erros.length === 0, erros[0] || '');
+    await b.close();
+    todos.push(...erros);
+  }
   process.exit(resumo(todos) ? 1 : 0);
 })().catch(e => {
   console.error(e);

@@ -1,0 +1,12 @@
+create function public.a1_tenant() returns uuid language sql stable as $$ select nullif(current_setting('test.tenant',true),'')::uuid $$;
+create function public.a1_tem_modulo(text) returns boolean language sql stable as $$ select true $$;
+create function public.a1_e_gestor() returns boolean language sql stable as $$ select coalesce(nullif(current_setting('test.gestor',true),'')::boolean,false) $$;
+create function public.a1_ator() returns uuid language sql stable as $$ select nullif(current_setting('test.ator',true),'')::uuid $$;
+create table public.a1_atendimentos (id uuid primary key,tenant_id uuid,case_id uuid,elia_ativa boolean,status text,corretor_id uuid,versao int);
+create table public.a1_cases (id uuid primary key,tenant_id uuid,payload jsonb,client_name text,client_phone text,client_email text,client_cpf text,development text);
+create table public.a1_atendimento_mensagens (id uuid primary key,tenant_id uuid,atendimento_id uuid,autor_tipo text,tipo text,criado_em timestamptz);
+grant usage on schema public to anon,authenticated,service_role;
+grant select,insert,update on public.a1_atendimentos,public.a1_cases,public.a1_atendimento_mensagens to service_role;
+insert into public.a1_cases (id,tenant_id,payload) values ('11111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','{"integracao":{"preservar":true},"qualificacao":{"cidade":"Natal"}}');
+insert into public.a1_atendimentos values ('22222222-2222-2222-2222-222222222222','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111',true,'aberta',null,1);
+insert into public.a1_atendimento_mensagens values ('33333333-3333-3333-3333-333333333333','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','22222222-2222-2222-2222-222222222222','lead','mensagem',now());

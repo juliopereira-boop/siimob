@@ -37,11 +37,14 @@ const G = {
   msgs: /** @type {any[]} */ ([]),
   aberta: /** @type {string|null} */ (null),
   aba: 'fila',
+  modo: 'humano',
   tipo: 'mensagem',
   busca: '',
   proximo: /** @type {string|null} */ (null),
   motivos: /** @type {string[]} */ ([]),
   desqualificando: false,
+  qualDirty: false,
+  qualVersao: /** @type {number|null} */ (null),
   enviando: false,
   // WhatsApp da empresa (Evolution). Desligado: a mensagem abre no wa.me.
   wa: /** @type {{ligado:boolean, pausado_ate?:string|null, pausa_motivo?:string|null}} */ ({ ligado: false })
@@ -49,6 +52,21 @@ const G = {
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
 acoes({
+  atModo: el => {
+    if (G.qualDirty)
+      return aviso('Salve ou cancele os dados de qualificação antes de trocar de lista.', 'erro');
+    G.modo = el.dataset.modo === 'elia' ? 'elia' : 'humano';
+    G.aba = G.modo === 'elia' ? 'todas' : G.gestor ? 'fila' : 'distribuidas';
+    const atual = conversaAberta();
+    if (atual && Boolean(atual.elia_ativa) !== (G.modo === 'elia')) {
+      G.aberta = null;
+      $('at-conversa').hidden = true;
+      $('at-lead').hidden = true;
+      $('at-vazio').hidden = false;
+      document.body.classList.remove('at-com-conversa', 'at-painel-aberto');
+    }
+    desenharLista();
+  },
   atAba: el => {
     G.aba = el.dataset.aba || 'fila';
     desenharLista();
@@ -59,6 +77,7 @@ acoes({
   },
   atAbrir: el => abrirConversa(el.dataset.id || ''),
   atVoltar: () => {
+    if (G.qualDirty) return aviso('Salve ou cancele os dados de qualificação antes de sair.', 'erro');
     G.aberta = null;
     document.body.classList.remove('at-com-conversa');
     desenharLista();
@@ -74,7 +93,16 @@ acoes({
   atDistribuir: () => abrirVinculo(),
   atArquivo: () => $('at-arquivo').click(),
   atElia: el => trocarElia(el),
+  atQualEdicao: () => {
+    G.qualDirty = true;
+  },
+  atQualSalvar: () => salvarQualificacao(),
+  atQualCancelar: () => {
+    G.qualDirty = false;
+    desenharLead();
+  },
   atDesqualificar: () => {
+    if (G.qualDirty) return aviso('Salve ou cancele os dados de qualificação antes de continuar.', 'erro');
     G.desqualificando = !G.desqualificando;
     desenharLead();
   },
@@ -94,7 +122,7 @@ document.addEventListener('keydown', ev => {
 const COLUNAS_CONVERSA =
   'id,case_id,canal,status,pendente,corretor_nome,resultado,finalizado_por,finalizado_em,ultima_em,ultima_previa,versao,criado_em,elia_ativa';
 const COLUNAS_LEAD =
-  'id,client_name,client_phone,client_email,partner_name,stage_name,broker_name,real_estate_name,observations,payload,created_at';
+  'id,client_name,client_phone,client_email,client_cpf,development,partner_name,stage_name,broker_name,real_estate_name,observations,payload,created_at';
 
 async function lerConversas() {
   const r = await A1.buscarTudo(
@@ -217,17 +245,23 @@ const ABAS = [
 ];
 
 function desenharLista() {
+  for (const modo of ['elia', 'humano']) {
+    const botao = $('at-' + modo);
+    botao.classList.toggle('ativo', G.modo === modo);
+    botao.setAttribute('aria-pressed', String(G.modo === modo));
+  }
+  const conversas = G.conversas.filter(c => Boolean(c.elia_ativa) === (G.modo === 'elia'));
   const abas = ABAS.filter(a => G.gestor || !a.gestor);
   if (!abas.some(a => a.k === G.aba)) G.aba = abas[0].k;
   $('at-abas').innerHTML = abas
     .map(a => {
-      const n = G.conversas.filter(a.so).length;
+      const n = conversas.filter(a.so).length;
       return `<button type="button" role="tab" class="at-aba${a.k === G.aba ? ' ativo' : ''}" aria-selected="${a.k === G.aba}"
         data-acao="atAba" data-aba="${a.k}">${esc(a.rot)}<span>${n}</span></button>`;
     })
     .join('');
   const aba = abas.find(a => a.k === G.aba) || abas[0];
-  const lista = G.conversas.filter(aba.so).filter(c => {
+  const lista = conversas.filter(aba.so).filter(c => {
     if (!G.busca) return true;
     const l = G.leads[c.case_id] || {};
     return [l.client_name, l.client_phone, l.client_email, c.ultima_previa, c.corretor_nome]
@@ -263,8 +297,11 @@ function conversaAberta() {
 }
 
 async function abrirConversa(id) {
+  if (G.qualDirty && G.aberta !== id)
+    return aviso('Salve ou cancele os dados de qualificação antes de trocar de conversa.', 'erro');
   G.aberta = id;
   G.desqualificando = false;
+  G.qualDirty = false;
   document.body.classList.remove('at-painel-aberto');
   document.body.classList.add('at-com-conversa');
   desenharLista();
@@ -497,8 +534,37 @@ function desenharLead() {
     return;
   }
   const l = G.leads[c.case_id] || {};
+  G.qualVersao = c.versao;
   const dados = (l.payload && l.payload.integracao && l.payload.integracao.dados) || {};
   const resp = respostasDo(l);
+  const qual = l.payload?.qualificacao || {};
+  const valores = {
+    ...qual,
+    nome: l.client_name || '',
+    telefone: l.client_phone || '',
+    email: l.client_email || '',
+    cpf: l.client_cpf || '',
+    empreendimento: qual.empreendimento || l.development || ''
+  };
+  const campos = [
+    ['nome', 'Nome'],
+    ['telefone', 'Telefone'],
+    ['email', 'E-mail'],
+    ['cpf', 'CPF'],
+    ['empreendimento', 'Empreendimento'],
+    ['renda', 'Renda familiar'],
+    ['cidade', 'Cidade de interesse'],
+    ['tipo_imovel', 'Tipo de imóvel'],
+    ['quartos', 'Quartos'],
+    ['orcamento', 'Orçamento'],
+    ['prazo', 'Prazo de compra'],
+    ['observacoes', 'Observações']
+  ];
+  const qualificacao = `<section class="at-bloco"><h3>Dados de qualificação</h3>
+    <p class="at-qual-ajuda">${c.elia_ativa ? 'A ELIA preenche os dados informados durante a conversa.' : 'Preencha os dados informados pelo lead.'}</p>
+    <div class="at-qual-campos">${campos.map(([key, label]) => `<label>${esc(label)}<input data-qual="${key}" data-original="${esc(valores[key] || '')}" data-acao-input="atQualEdicao" maxlength="${key === 'observacoes' ? 500 : 255}" value="${esc(valores[key] || '')}" ${c.elia_ativa ? 'disabled' : ''}></label>`).join('')}</div>
+    ${c.elia_ativa ? '' : '<div class="at-qual-botoes"><button type="button" class="at-btn at-btn-forte" data-acao="atQualSalvar">Salvar dados</button><button type="button" class="at-btn at-btn-linha" data-acao="atQualCancelar">Cancelar</button></div>'}
+    </section>`;
   const linha = (rot, val) =>
     val ? `<div class="at-dado"><span>${esc(rot)}</span><b>${esc(val)}</b></div>` : '';
   const acoes =
@@ -536,6 +602,7 @@ function desenharLead() {
       <p>${esc(l.partner_name || canalDe(c, l).rot)}</p>
     </section>
     ${acoes}
+    ${qualificacao}
     <section class="at-bloco">
       <h3>Contato</h3>
       ${linha('Telefone', l.client_phone)}${linha('E-mail', l.client_email)}
@@ -555,9 +622,36 @@ function desenharLead() {
     }`;
 }
 
+async function salvarQualificacao() {
+  const c = conversaAberta();
+  if (!c || c.elia_ativa) return;
+  const dados = {};
+  document.querySelectorAll('#at-lead [data-qual]').forEach(el => {
+    if (el.value.trim() !== (el.dataset.original || '').trim()) dados[el.dataset.qual] = el.value.trim();
+  });
+  if (!Object.keys(dados).length) {
+    G.qualDirty = false;
+    desenharLead();
+    return;
+  }
+  try {
+    await acaoConversa('a1_atend_qualificacao_manual', {
+      p_atendimento: c.id,
+      p_versao: G.qualVersao,
+      p_dados: dados
+    });
+    G.qualDirty = false;
+    await atualizar();
+    aviso('Dados de qualificação salvos.', 'ok');
+  } catch (error) {
+    aviso(error.message || 'Não foi possível salvar os dados.', 'erro');
+  }
+}
+
 let alvoVinculo = null;
 
 async function abrirVinculo() {
+  if (G.qualDirty) return aviso('Salve ou cancele os dados de qualificação antes de vincular.', 'erro');
   const conversa = conversaAberta();
   const dialog = /** @type {HTMLDialogElement} */ ($('at-vincular'));
   if (!conversa || dialog.open) return;
@@ -630,6 +724,8 @@ $('at-vincular').addEventListener('submit', async event => {
 async function trocarElia(elemento) {
   const conversa = conversaAberta();
   if (!conversa || elemento.disabled) return;
+  if (G.qualDirty)
+    return aviso('Salve ou cancele os dados de qualificação antes de transferir o atendimento.', 'erro');
   const ativa = !conversa.elia_ativa;
   if (
     ativa &&
@@ -644,6 +740,7 @@ async function trocarElia(elemento) {
       p_versao: conversa.versao,
       p_ativa: ativa
     });
+    G.modo = ativa ? 'elia' : 'humano';
     await atualizar();
     aviso(ativa ? 'Conversa encaminhada à ELIA.' : 'Conversa retomada pela equipe.', 'ok');
   } catch (error) {
@@ -748,6 +845,11 @@ const ERROS = /** @type {Record<string,string>} */ ({
   elia_nao_configurada: 'Ative a ELIA para o WhatsApp e salve um fluxo em Configurações › ELIA.',
   elia_canal_invalido: 'Não foi possível mudar o atendimento desta conversa.',
   elia_whatsapp_desconectado: 'Conecte o WhatsApp da empresa antes de ativar a ELIA.',
+  elia_ativa: 'Retome a conversa com a equipe antes de editar a qualificação.',
+  nome_invalido: 'Informe um nome válido para o lead.',
+  email_invalido: 'Confira o e-mail informado.',
+  cpf_invalido: 'Informe um CPF com 11 dígitos.',
+  telefone_invalido: 'Informe um telefone com DDD.',
   sem_etapa_perdido: 'O funil deste lead não tem etapa com o selo Perdido. Marque uma no Editor de Workflow.',
   motivo_obrigatorio: 'Conte por que o lead foi desqualificado.',
   conversa_encerrada: 'Esta conversa está encerrada.',
@@ -771,8 +873,14 @@ function aviso(/** @type {string} */ msg, tipo = 'ok') {
 
 // ─── Ao vivo ─────────────────────────────────────────────────────────────────
 async function atualizar() {
+  const anterior = conversaAberta();
+  const eliaAnterior = anterior && Boolean(anterior.elia_ativa);
   const antes = new Set(G.conversas.filter(c => c.status === 'aberta').map(c => c.id));
   await Promise.all([lerConversas(), lerProximo()]);
+  const atual = conversaAberta();
+  if (atual && anterior && Boolean(atual.elia_ativa) !== eliaAnterior) {
+    G.modo = atual.elia_ativa ? 'elia' : 'humano';
+  }
   desenharLista();
   const novos = G.conversas.filter(c => c.status === 'aberta' && !antes.has(c.id));
   if (antes.size && novos.length && G.gestor) {
@@ -786,7 +894,8 @@ async function atualizar() {
   }
   if (G.aberta) {
     desenharCabecalho();
-    if (!G.desqualificando) desenharLead();
+    const editando = document.activeElement?.closest('.at-qual-campos');
+    if (!G.desqualificando && !G.qualDirty && !editando) desenharLead();
     escolherTipo(G.tipo);
   }
 }
@@ -827,11 +936,6 @@ async function init() {
   G.gestor = !!G.user && G.user.role !== 'partner';
   G.aba = G.gestor ? 'fila' : 'distribuidas';
   const slug = encodeURIComponent(A1.slug || '');
-  if (G.user.role === 'owner' || G.user.role === 'admin') {
-    const elia = /** @type {HTMLAnchorElement} */ ($('at-elia'));
-    elia.href = `/${slug}/configuracoes/elia`;
-    elia.hidden = false;
-  }
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo: 'crm',
     sub: [
@@ -845,7 +949,10 @@ async function init() {
   await Promise.all([lerConversas(), lerProximo(), G.gestor ? lerMotivos() : null, lerWhatsapp()]);
   desenharLista();
   const pedido = new URLSearchParams(location.search).get('conversa');
-  if (pedido && G.conversas.some(c => c.id === pedido)) abrirConversa(pedido);
+  if (pedido && G.conversas.some(c => c.id === pedido)) {
+    G.modo = G.conversas.find(c => c.id === pedido).elia_ativa ? 'elia' : 'humano';
+    abrirConversa(pedido);
+  }
   setInterval(tique, AO_VIVO_MS);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) tique();

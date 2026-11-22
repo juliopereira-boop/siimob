@@ -865,3 +865,39 @@ a.at-modo:hover {
   justify-content: flex-end;
   gap: 8px;
 }
+
+.at-qual-ajuda {
+  color: var(--t2);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 0 0 0.7rem;
+}
+.at-qual-campos {
+  display: grid;
+  gap: 0.65rem;
+}
+.at-qual-campos label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--t2);
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+.at-qual-campos input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--t1);
+  background: var(--card, #fff);
+}
+.at-qual-campos input:disabled {
+  opacity: 1;
+  background: #f5f8f7;
+}
+.at-qual-botoes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

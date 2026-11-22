@@ -8,9 +8,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 PORTA="${PGPORT:-5473}"
 BANCO="prova_$(date +%s)"
+BANCO_QUAL="${BANCO}_qual"
 
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $BANCO"
-trap 'psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO" >/dev/null' EXIT
+trap 'psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO_QUAL" >/dev/null; psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO" >/dev/null' EXIT
 
 for f in testes/sql/base-falsa.sql \
          database/migrations/2026-09-04_identidade.sql \
@@ -149,3 +150,11 @@ for i in 1 2; do
 done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-atendimento-conectores.sql
+
+# Qualificação: banco descartável próprio, com sessões e dados fictícios.
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $BANCO_QUAL"
+for f in testes/sql/qualificacao-fixture.sql \
+         supabase/migrations/20261122143346_central_qualificacao_elia.sql \
+         testes/sql/prova-qualificacao.sql; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO_QUAL" -q -v ON_ERROR_STOP=1 -f "$f"
+done
