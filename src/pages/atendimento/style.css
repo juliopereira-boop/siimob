@@ -795,3 +795,50 @@ a.at-modo:hover {
     animation: none;
   }
 }
+
+.at-chat-acoes {
+  flex-wrap: wrap;
+}
+
+.at-chat-acoes [aria-pressed='true'] {
+  background: var(--mar-lavado);
+  border-color: #bfe3da;
+}
+
+.at-vincular {
+  width: min(420px, calc(100% - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--t1);
+}
+
+.at-vincular::backdrop {
+  background: #09231e80;
+}
+
+.at-vincular form {
+  display: grid;
+  gap: 12px;
+}
+
+.at-vincular h2 {
+  margin: 0 0 6px;
+}
+
+.at-vincular select {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.at-vincular p:empty {
+  display: none;
+}
+
+.at-vincular-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

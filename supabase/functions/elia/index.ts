@@ -81,6 +81,7 @@ async function generate(tenant: string, config: any, input: string) {
   ];
   const instructions = [
     'Você é ' + (config.nome || 'ELIA') + ', ' + (config.funcao || 'assistente imobiliária') + '.',
+    'Ao qualificar um lead, identifique seu interesse, faixa de orçamento e prazo. Pergunte apenas o que estiver faltando.',
     'Use tom ' +
       (config.tom || 'normal') +
       ' e responda em português. Não invente dados nem confirme agendamentos sem execução.',
@@ -304,9 +305,13 @@ async function work(job: any) {
   if (!row?.enabled || !row.config.canais?.includes('whatsapp'))
     return done(job.id, 'skipped', 'ELIA desativada no canal.');
   const conv = await first(
-    'a1_atendimentos?' + scope + '&id=eq.' + eq(job.atendimento_id) + '&select=status,corretor_id'
+    'a1_atendimentos?' +
+      scope +
+      '&id=eq.' +
+      eq(job.atendimento_id) +
+      '&select=status,corretor_id,elia_ativa,versao'
   );
-  if (!conv || conv.status !== 'aberta' || conv.corretor_id)
+  if (!conv?.elia_ativa || conv.status !== 'aberta' || conv.corretor_id)
     return done(job.id, 'skipped', 'Atendimento humano.');
   const msg = await first(
     'a1_atendimento_mensagens?' + scope + '&id=eq.' + eq(job.message_id) + '&select=corpo,criado_em'
@@ -337,6 +342,11 @@ async function work(job: any) {
         ai: (prompt: string) =>
           generate(tenant, row.config, JSON.stringify({ tarefa: prompt, conversa: recent.toReversed() })),
         send: async (message: string) => {
+          const current = await first(
+            'a1_atendimentos?' + scope + '&id=eq.' + eq(job.atendimento_id) + '&select=elia_ativa,versao'
+          );
+          if (!current?.elia_ativa || current.versao !== conv.versao)
+            throw Error('A conversa saiu do atendimento ELIA.');
           const type = +new Date(msg.criado_em) > Date.now() - 86400000 ? 'resposta' : 'iniciado';
           if (
             type === 'iniciado' &&

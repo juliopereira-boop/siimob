@@ -71,7 +71,9 @@ acoes({
   atEnviar: () => enviar(),
   // Em tela estreita o painel do lead vira gaveta por cima da conversa.
   atPainel: () => document.body.classList.toggle('at-painel-aberto'),
-  atDistribuir: () => finalizar('qualificado'),
+  atDistribuir: () => abrirVinculo(),
+  atArquivo: () => $('at-arquivo').click(),
+  atElia: el => trocarElia(el),
   atDesqualificar: () => {
     G.desqualificando = !G.desqualificando;
     desenharLead();
@@ -90,7 +92,7 @@ document.addEventListener('keydown', ev => {
 
 // ─── Leitura ─────────────────────────────────────────────────────────────────
 const COLUNAS_CONVERSA =
-  'id,case_id,canal,status,pendente,corretor_nome,resultado,finalizado_por,finalizado_em,ultima_em,ultima_previa,versao,criado_em';
+  'id,case_id,canal,status,pendente,corretor_nome,resultado,finalizado_por,finalizado_em,ultima_em,ultima_previa,versao,criado_em,elia_ativa';
 const COLUNAS_LEAD =
   'id,client_name,client_phone,client_email,partner_name,stage_name,broker_name,real_estate_name,observations,payload,created_at';
 
@@ -293,6 +295,9 @@ function desenharCabecalho() {
     <div class="at-chat-quem"><b>${esc(l.client_name || 'Lead')}</b>
       <small>${esc([l.client_phone, canal.rot].filter(Boolean).join(' · '))}</small></div>
     <div class="at-chat-acoes">
+      ${G.wa.ligado && tel && podeEscrever(c) ? '<button type="button" class="at-btn at-btn-linha" data-acao="atArquivo">Enviar arquivo</button>' : ''}
+      ${G.gestor && c.status !== 'encerrada' ? '<button type="button" class="at-btn at-btn-linha" data-acao="atDistribuir">Vincular a corretor</button>' : ''}
+      ${G.gestor && (c.elia_ativa || (G.wa.ligado && tel)) ? `<button type="button" class="at-btn at-btn-linha" data-acao="atElia" aria-pressed="${!!c.elia_ativa}">${c.elia_ativa ? 'ELIA ativa · Retomar' : 'Atendimento ELIA'}</button>` : ''}
       <button type="button" class="at-btn-ic at-so-estreito" data-acao="atPainel" title="Dados do lead e qualificação" aria-label="Dados do lead e qualificação">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
       ${tel ? `<a class="at-btn-ic" href="https://wa.me/${esc(tel.length <= 11 ? '55' + tel : tel)}" target="_blank" rel="noopener noreferrer" title="Abrir no WhatsApp">${ICONE_CANAL.whatsapp.replace(/width="11" height="11"/, 'width="18" height="18"')}</a>` : ''}
@@ -424,16 +429,21 @@ const ERROS_WA = /** @type {Record<string,string>} */ ({
   sem_permissao: 'Você não pode responder nesta conversa.',
   conversa_encerrada: 'Conversa encerrada.',
   sem_telefone: 'Este lead não tem telefone.',
+  anexo_invalido: 'Envie PDF, JPG, PNG, WebP, DOCX ou XLSX de até 5 MB, com legenda de até 900 caracteres.',
   falha_envio: 'O WhatsApp não aceitou a mensagem agora. Tente de novo em instantes.'
 });
-async function enviarPeloWhatsapp(/** @type {string} */ id, /** @type {string} */ texto) {
+async function enviarPeloWhatsapp(
+  /** @type {string} */ id,
+  /** @type {string} */ texto,
+  /** @type {{nome:string,mime:string,dados:string}|null} */ anexo = null
+) {
   /** @type {Response} */
   let r;
   try {
     r = await fetch(`${A1_URL}/functions/v1/atendimento-conectores`, {
       method: 'POST',
       headers: A1.headers(),
-      body: JSON.stringify({ action: 'wa_enviar', atendimento_id: id, texto }),
+      body: JSON.stringify({ action: anexo ? 'wa_anexo' : 'wa_enviar', atendimento_id: id, texto, anexo }),
       signal: AbortSignal.timeout(30000)
     });
   } catch {
@@ -490,8 +500,7 @@ function desenharLead() {
     G.gestor && c.status === 'aberta'
       ? `<section class="at-bloco at-acoes">
           <h3>Qualificação</h3>
-          <button type="button" class="at-btn at-btn-forte" data-acao="atDistribuir" ${G.proximo ? '' : 'disabled'}>
-            Qualificado: distribuir pela roleta</button>
+          <button type="button" class="at-btn at-btn-forte" data-acao="atDistribuir">Qualificado: vincular a corretor</button>
           <p class="at-proximo">${G.proximo ? `Próximo da vez: <b>${esc(G.proximo)}</b>` : 'A roleta está vazia. Escolha os corretores em Configurações › Leads › Roleta de distribuição.'}</p>
           <button type="button" class="at-btn at-btn-linha" data-acao="atDesqualificar" aria-expanded="${G.desqualificando}">Desqualificar</button>
           ${
@@ -540,6 +549,142 @@ function desenharLead() {
         : ''
     }`;
 }
+
+let alvoVinculo = null;
+
+async function abrirVinculo() {
+  const conversa = conversaAberta();
+  const dialog = /** @type {HTMLDialogElement} */ ($('at-vincular'));
+  if (!conversa || dialog.open) return;
+  alvoVinculo = conversa;
+  const select = /** @type {HTMLSelectElement} */ ($('at-escolher-corretor'));
+  const erro = $('at-vincular-erro');
+  const confirmar = /** @type {HTMLButtonElement} */ (dialog.querySelector('[value="vincular"]'));
+  confirmar.disabled = true;
+  select.innerHTML = '';
+  erro.textContent = 'Carregando corretores…';
+  dialog.showModal();
+  try {
+    const corretores = await acaoConversa('a1_atend_corretores', {});
+    if (alvoVinculo !== conversa || !dialog.open) return;
+    select.append(new Option('Escolha como vincular', ''));
+    const roleta = new Option(
+      G.proximo ? `Fila de distribuição · ${G.proximo}` : 'Fila de distribuição · sem corretores',
+      'roleta'
+    );
+    roleta.disabled = !G.proximo;
+    select.append(roleta);
+    for (const corretor of corretores) select.append(new Option(corretor.name, corretor.id));
+    erro.textContent = '';
+    confirmar.disabled = false;
+  } catch (error) {
+    erro.textContent = error.message;
+  }
+}
+
+async function acaoConversa(nome, dados) {
+  const resposta = await fetch(A1.rpc(nome), {
+    method: 'POST',
+    headers: A1.headers(),
+    body: JSON.stringify(dados)
+  });
+  if (!resposta.ok) throw Error(await motivo(resposta));
+  const corpo = await resposta.text();
+  return corpo ? JSON.parse(corpo) : null;
+}
+
+$('at-vincular').addEventListener('submit', async event => {
+  const submit = /** @type {SubmitEvent} */ (event);
+  if (submit.submitter?.getAttribute('value') !== 'vincular') return;
+  event.preventDefault();
+  const button = /** @type {HTMLButtonElement} */ (submit.submitter);
+  const dialog = /** @type {HTMLDialogElement} */ ($('at-vincular'));
+  const conversa = alvoVinculo;
+  const escolha = /** @type {HTMLSelectElement} */ ($('at-escolher-corretor')).value;
+  if (!conversa || !escolha || button.disabled) return;
+  button.disabled = true;
+  try {
+    const dados = await acaoConversa('a1_atend_finalizar_com_corretor', {
+      p_atendimento: conversa.id,
+      p_versao: conversa.versao,
+      p_resultado: 'qualificado',
+      p_motivo: null,
+      p_obs: null,
+      p_corretor: escolha === 'roleta' ? null : escolha
+    });
+    dialog.close();
+    await atualizar();
+    aviso(`Lead vinculado a ${dados.corretor}.`, 'ok');
+  } catch (error) {
+    $('at-vincular-erro').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+async function trocarElia(elemento) {
+  const conversa = conversaAberta();
+  if (!conversa || elemento.disabled) return;
+  const ativa = !conversa.elia_ativa;
+  if (
+    ativa &&
+    conversa.status === 'distribuida' &&
+    !window.confirm('Retirar o corretor e devolver esta conversa à ELIA para qualificação?')
+  )
+    return;
+  elemento.disabled = true;
+  try {
+    await acaoConversa('a1_atend_elia', {
+      p_atendimento: conversa.id,
+      p_versao: conversa.versao,
+      p_ativa: ativa
+    });
+    await atualizar();
+    aviso(ativa ? 'Conversa encaminhada à ELIA.' : 'Conversa retomada pela equipe.', 'ok');
+  } catch (error) {
+    aviso(error.message, 'erro');
+  } finally {
+    elemento.disabled = false;
+  }
+}
+
+$('at-arquivo').addEventListener('change', async event => {
+  const input = /** @type {HTMLInputElement} */ (event.currentTarget);
+  const file = input.files?.[0];
+  input.value = '';
+  const conversa = conversaAberta();
+  if (!file || !conversa || !podeEscrever(conversa) || G.enviando) return;
+  if (!file.size || file.size > 5242880) return aviso('Escolha um arquivo de até 5 MB.', 'erro');
+  const mime =
+    file.type ||
+    {
+      pdf: 'application/pdf',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }[file.name.split('.').pop()?.toLowerCase()];
+  if (!mime) return aviso('Formato de arquivo não identificado.', 'erro');
+  if (!window.confirm(`Enviar ${file.name} ao lead desta conversa pelo WhatsApp?`)) return;
+  G.enviando = true;
+  try {
+    const dados = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = () => reject(Error('Não foi possível ler o arquivo.'));
+      reader.readAsDataURL(file);
+    });
+    await enviarPeloWhatsapp(conversa.id, '', { nome: file.name, mime, dados });
+    await atualizar();
+    if (G.aberta === conversa.id) {
+      G.msgs = await lerMensagens(conversa.id);
+      if (G.aberta === conversa.id) desenharMensagens(true);
+    }
+    aviso('Arquivo enviado pelo WhatsApp.', 'ok');
+  } catch (error) {
+    aviso(error.message, 'erro');
+  } finally {
+    G.enviando = false;
+  }
+});
 
 async function finalizar(/** @type {'qualificado'|'desqualificado'} */ resultado) {
   const c = conversaAberta();
@@ -594,6 +739,10 @@ const ERROS = /** @type {Record<string,string>} */ ({
   versao_desatualizada:
     'Outra pessoa mexeu nesta conversa agora. A tela foi atualizada; confira e tente de novo.',
   ja_finalizada: 'Esta conversa já foi finalizada por outra pessoa.',
+  corretor_indisponivel: 'O corretor selecionado não está disponível.',
+  elia_nao_configurada: 'Ative a ELIA para o WhatsApp e salve um fluxo em Configurações › ELIA.',
+  elia_canal_invalido: 'Não foi possível mudar o atendimento desta conversa.',
+  elia_whatsapp_desconectado: 'Conecte o WhatsApp da empresa antes de ativar a ELIA.',
   sem_etapa_perdido: 'O funil deste lead não tem etapa com o selo Perdido. Marque uma no Editor de Workflow.',
   motivo_obrigatorio: 'Conte por que o lead foi desqualificado.',
   conversa_encerrada: 'Esta conversa está encerrada.',
@@ -645,7 +794,10 @@ async function tique() {
   if (++tiques % 5 === 0) {
     const antes = JSON.stringify(G.wa);
     await lerWhatsapp();
-    if (JSON.stringify(G.wa) !== antes && G.aberta) escolherTipo(G.tipo);
+    if (JSON.stringify(G.wa) !== antes && G.aberta) {
+      desenharCabecalho();
+      escolherTipo(G.tipo);
+    }
   }
   if (G.aberta) {
     const id = G.aberta;

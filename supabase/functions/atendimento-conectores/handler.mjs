@@ -18,6 +18,35 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // Modelos preferidos, em ordem: o primeiro que a conta tiver vira o padrão.
 const PREFERIDOS = ['gpt-4.1-mini', 'gpt-4o-mini', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o'];
 
+const MIME_ANEXO = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+]);
+
+function validarAnexo(file) {
+  if (
+    !file ||
+    !MIME_ANEXO.has(file.mime) ||
+    typeof file.nome !== 'string' ||
+    typeof file.dados !== 'string' ||
+    file.dados.length > 6990508 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(file.dados) ||
+    file.dados.length % 4 !== 0
+  )
+    return null;
+  const bytes =
+    (file.dados.length / 4) * 3 - (file.dados.endsWith('==') ? 2 : file.dados.endsWith('=') ? 1 : 0);
+  const nome = file.nome
+    .replace(/[\x00-\x1f\x7f/\\]/g, ' ')
+    .trim()
+    .slice(0, 120);
+  return bytes <= 5242880 && nome ? { ...file, nome } : null;
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -165,9 +194,15 @@ export function createHandler(d) {
       const tenant = user.tenant_id;
 
       // ── Envio pela Central: gestor ou corretor dono da conversa ──
-      if (acao === 'wa_enviar') {
+      if (acao === 'wa_enviar' || acao === 'wa_anexo') {
+        const anexo = acao === 'wa_anexo' ? validarAnexo(body.anexo) : null;
+        if (acao === 'wa_anexo' && !anexo) return json({ error: 'anexo_invalido' }, 400);
         const texto = typeof body.texto === 'string' ? body.texto.trim() : '';
-        if (!UUID.test(String(body.atendimento_id || '')) || !texto || texto.length > 4000)
+        if (
+          !UUID.test(String(body.atendimento_id || '')) ||
+          (!anexo && !texto) ||
+          texto.length > (anexo ? 900 : 4000)
+        )
           return json({ error: 'invalid_request' }, 400);
         let alvo;
         try {
@@ -194,18 +229,34 @@ export function createHandler(d) {
         }
         let enviado;
         try {
-          enviado = await d.evolution.enviarTexto(
-            w.instancia,
-            alvo.telefone,
-            texto,
-            tipo === 'resposta' ? 1200 : 2500
-          );
+          enviado = anexo
+            ? await d.evolution.enviarMidia(
+                w.instancia,
+                alvo.telefone,
+                anexo.dados,
+                anexo.mime,
+                anexo.nome,
+                texto
+              )
+            : await d.evolution.enviarTexto(
+                w.instancia,
+                alvo.telefone,
+                texto,
+                tipo === 'resposta' ? 1200 : 2500
+              );
         } catch (e) {
           await d.registrarFalha(tenant, tipo, alvo.atendimento_id);
           log(`conectores: envio falhou (${e instanceof ErroEvolution ? e.motivo : 'erro'})`);
           return json({ error: 'falha_envio' }, 502);
         }
-        const r = await d.registrarEnvio(tenant, alvo.atendimento_id, texto, alvo.autor, enviado.id, tipo);
+        const r = await d.registrarEnvio(
+          tenant,
+          alvo.atendimento_id,
+          anexo ? [`📎 ${anexo.nome}`, texto].filter(Boolean).join('\n') : texto,
+          alvo.autor,
+          enviado.id,
+          tipo
+        );
         return json({ ok: true, id: r && r.id ? r.id : null, alerta: lim.alerta, tipo });
       }
 
