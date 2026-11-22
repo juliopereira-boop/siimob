@@ -533,7 +533,7 @@ async function init() {
             location.replace(eliaLink.href + '?elia_google=' + agenda);
           }
         }
-        if (document.getElementById('cfg-view-integracoes')?.style.display !== 'none') conectoresCarregar();
+        conectoresCarregar();
       })
       .catch(() => {});
 
