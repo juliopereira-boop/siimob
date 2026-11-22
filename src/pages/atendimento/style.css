@@ -491,6 +491,22 @@ a.at-modo:hover {
   color: var(--mar-txt);
   margin-bottom: 0.1rem;
 }
+.at-elia-logo {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: cover;
+  border-radius: 50%;
+}
+#at-chat-elia::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  vertical-align: middle;
+  background: url('/assets/elia/logo.png') center / cover;
+  border-radius: 50%;
+}
 .at-entra {
   align-self: flex-start;
   background: var(--wa-entra);

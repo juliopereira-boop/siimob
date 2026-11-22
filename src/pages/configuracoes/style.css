@@ -1988,6 +1988,17 @@ body.acesso-pendente {
 .cfg-elia-link:hover {
   border-color: #328b73;
 }
+.cfg-elia-identidade {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cfg-elia-identidade img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 12px;
+}
 .cfg-elia-link small {
   display: block;
   margin-top: 4px;
