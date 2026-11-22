@@ -149,19 +149,21 @@ button {
   font-weight: 600;
   color: var(--t2);
 }
-.at-modo small {
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--t3);
+a.at-modo {
+  text-decoration: none;
+}
+a.at-modo[hidden] {
+  display: none;
+}
+a.at-modo:hover {
+  background: var(--mar-lavado);
+  border-color: #bfe3da;
+  color: var(--mar-txt);
 }
 .at-modo.ativo {
   background: var(--mar-lavado);
   border-color: #bfe3da;
   color: var(--mar-txt);
-}
-.at-modo:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
 }
 .at-abas {
   display: flex;

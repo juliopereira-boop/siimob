@@ -673,6 +673,11 @@ async function init() {
   G.gestor = !!G.user && G.user.role !== 'partner';
   G.aba = G.gestor ? 'fila' : 'distribuidas';
   const slug = encodeURIComponent(A1.slug || '');
+  if (G.user.role === 'owner' || G.user.role === 'admin') {
+    const elia = /** @type {HTMLAnchorElement} */ ($('at-elia'));
+    elia.href = `/${slug}/configuracoes/elia`;
+    elia.hidden = false;
+  }
   await a1MontarShell(document.getElementById('sb-casco'), {
     ativo: 'crm',
     sub: [
