@@ -112,6 +112,14 @@ export async function eliaMontar(panel) {
     status.textContent = message;
     status.classList.toggle('elia-error', error);
   };
+  document.addEventListener('fullscreenchange', () => {
+    const button = page.querySelector('[data-el="fullscreen"]');
+    if (button)
+      button.textContent =
+        document.fullscreenElement === panel.querySelector('.elia-workspace')
+          ? 'Sair da tela cheia'
+          : 'Tela cheia';
+  });
   const reload = async () => {
     state = await api('load');
     if (!state.flow.length) state.flow = structuredClone(initial);
@@ -166,9 +174,33 @@ export async function eliaMontar(panel) {
 
   function renderFlow() {
     const chosen = state.flow.find(item => item.id === selectedNode);
+    const outputs = node => {
+      if (['end', 'handoff', 'roulette'].includes(node.type)) return [];
+      const list = [
+        {
+          key: 'next',
+          label:
+            node.type === 'routes'
+              ? 'Nenhuma opção'
+              : node.type === 'qualification'
+                ? 'Completo'
+                : node.type === 'condition'
+                  ? 'Sim'
+                  : 'Próxima etapa'
+        }
+      ];
+      if (['condition', 'qualification'].includes(node.type))
+        list.push({ key: 'other', label: node.type === 'qualification' ? 'Faltam dados' : 'Não' });
+      if (node.type === 'routes')
+        (node.routes || []).forEach((route, index) =>
+          list.push({ key: 'route', index, label: route.text || `Opção ${index + 1}` })
+        );
+      return list;
+    };
     const links = state.flow
       .flatMap(node =>
-        [node.next, node.other, ...(node.routes || []).map(route => route.next)].map((id, i) => {
+        outputs(node).map((port, i) => {
+          const id = port.key === 'route' ? node.routes[port.index]?.next : node[port.key];
           const target = state.flow.find(item => item.id === id);
           if (!target) return '';
           const a = (node.x || 0) + 176,
@@ -189,8 +221,8 @@ export async function eliaMontar(panel) {
       .filter(k => k !== 'trigger')
       .map(k => option(k, nodes[k]))
       .join('')}</select>
-      <button class="btn btn-ghost" data-el="add-node">Adicionar etapa</button></div>
-      <p>Selecione uma etapa para escolher os próximos passos. Nas condições, escolha um caminho para cada resultado.</p>
+      <button class="btn btn-ghost" data-el="add-node">Adicionar etapa</button><button type="button" class="btn btn-ghost" data-el="fullscreen">${document.fullscreenElement === panel.querySelector('.elia-workspace') ? 'Sair da tela cheia' : 'Tela cheia'}</button></div>
+      <p>Selecione uma etapa e arraste seus pontos de saída até a etapa de destino. Use condições ou vários caminhos para criar ramificações.</p>
       <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="1400" height="760">${links}</svg>
       ${state.flow
         .map(
@@ -198,7 +230,17 @@ export async function eliaMontar(panel) {
           style="left:${Number(n.x) || 0}px;top:${Number(n.y) || 0}px"><small>${q(nodes[n.type])}</small>
           <strong>${q(n.title || nodes[n.type])}</strong></button>`
         )
-        .join('')}</div></div>
+        .join('')}
+      ${
+        chosen
+          ? outputs(chosen)
+              .map(
+                (port, i) =>
+                  `<button type="button" class="elia-port" data-port="${q(port.key)}" ${port.index === undefined ? '' : `data-index="${port.index}"`} style="left:${(Number(chosen.x) || 0) + 168}px;top:${(Number(chosen.y) || 0) + 20 + i * 14}px" aria-label="Conectar ${q(port.label)}" title="Arraste: ${q(port.label)}"></button>`
+              )
+              .join('')
+          : ''
+      }</div></div>
       ${
         chosen
           ? `<div class="elia-toolbar"><strong>Conexões:</strong>
@@ -405,7 +447,29 @@ export async function eliaMontar(panel) {
     }
   });
   let drag;
+  let portDrag;
   page.addEventListener('pointerdown', event => {
+    const port = event.target.closest('[data-port]');
+    if (port && event.button === 0) {
+      const canvas = port.closest('.elia-canvas');
+      const bounds = canvas.getBoundingClientRect();
+      const preview = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      preview.setAttribute('class', 'elia-link-preview');
+      canvas.querySelector('svg').appendChild(preview);
+      portDrag = {
+        port,
+        preview,
+        canvas,
+        source: selectedNode,
+        key: port.dataset.port,
+        index: Number(port.dataset.index),
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top
+      };
+      port.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      return;
+    }
     const button = event.target.closest('[data-node]');
     if (!button || event.button !== 0 || linking) return;
     const node = state.flow.find(item => item.id === button.dataset.node);
@@ -413,6 +477,16 @@ export async function eliaMontar(panel) {
     button.setPointerCapture(event.pointerId);
   });
   page.addEventListener('pointermove', event => {
+    if (portDrag) {
+      const bounds = portDrag.canvas.getBoundingClientRect();
+      const x = event.clientX - bounds.left,
+        y = event.clientY - bounds.top;
+      portDrag.preview.setAttribute(
+        'd',
+        `M${portDrag.x},${portDrag.y} C${portDrag.x + 45},${portDrag.y} ${x - 45},${y} ${x},${y}`
+      );
+      return;
+    }
     if (!drag) return;
     drag.node.x = Math.max(0, Math.min(1220, event.clientX - drag.x));
     drag.node.y = Math.max(0, Math.min(690, event.clientY - drag.y));
@@ -421,8 +495,37 @@ export async function eliaMontar(panel) {
   });
   page.addEventListener('pointercancel', () => {
     drag = null;
+    portDrag?.preview.remove();
+    portDrag = null;
   });
-  page.addEventListener('pointerup', () => {
+  page.addEventListener('pointerup', event => {
+    if (portDrag) {
+      const targetButton = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-node]');
+      const target = state.flow.find(item => item.id === targetButton?.dataset.node);
+      const source = state.flow.find(item => item.id === portDrag.source);
+      const reachable = (id, seen = new Set()) => {
+        if (id === source.id) return true;
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        const node = state.flow.find(item => item.id === id);
+        return node
+          ? [node.next, node.other, ...(node.routes || []).map(route => route.next)].some(next =>
+              reachable(next, seen)
+            )
+          : false;
+      };
+      if (!target || target.type === 'trigger') tell('Arraste o ponto até outra etapa.', true);
+      else if (reachable(target.id)) tell('Essa conexão criaria um ciclo. Escolha outra etapa.', true);
+      else {
+        if (portDrag.key === 'route') source.routes[portDrag.index].next = target.id;
+        else source[portDrag.key] = target.id;
+        tell('Conexão criada. Salve a configuração para ativá-la.');
+      }
+      portDrag.preview.remove();
+      portDrag = null;
+      render();
+      return;
+    }
     if (!drag) return;
     selectedNode = drag.node.id;
     drag = null;
@@ -470,6 +573,11 @@ export async function eliaMontar(panel) {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         status.replaceChildren(link);
+      } else if (el === 'fullscreen') {
+        const workspace = panel.querySelector('.elia-workspace');
+        if (document.fullscreenElement === workspace) await document.exitFullscreen();
+        else await workspace.requestFullscreen();
+        render();
       } else if (el === 'add-route') {
         const node = state.flow.find(item => item.id === selectedNode);
         if ((node.routes || []).length >= 20) throw Error('Esta etapa pode ter até 20 caminhos.');
