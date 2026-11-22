@@ -7,6 +7,12 @@ update public.a1_partners set permissions='{"crm_etapas":{"33333333-3333-3333-33
 set role anon;
 do $$ declare n int; begin
  if (select count(*) from public.a1_cases) <> 2 then raise exception 'ver e editar devem ser visíveis'; end if;
+ begin perform public.a1_atend_wa_alvo('55555555-5555-5555-5555-555555555555'); raise exception 'etapa somente leitura permitiu envio WhatsApp'; exception when raise_exception then if sqlerrm <> 'sem_permissao' then raise; end if; end;
+ begin perform public.a1_atend_enviar('55555555-5555-5555-5555-555555555555','nota','Teste'); raise exception 'etapa somente leitura permitiu nota'; exception when raise_exception then if sqlerrm <> 'sem_permissao' then raise; end if; end;
+ begin perform public.a1_atend_qualificacao_manual('55555555-5555-5555-5555-555555555555',1,'{"cidade":"Natal"}'); raise exception 'etapa somente leitura permitiu editar qualificação'; exception when raise_exception then if sqlerrm <> 'sem_permissao' then raise; end if; end;
+ perform public.a1_atend_wa_alvo('66666666-6666-6666-6666-666666666666');
+ perform public.a1_atend_enviar('66666666-6666-6666-6666-666666666666','nota','Teste');
+ perform public.a1_atend_qualificacao_manual('66666666-6666-6666-6666-666666666666',1,'{"cidade":"Natal"}');
  update public.a1_cases set client_name='Alterado' where id='11111111-1111-1111-1111-111111111111'; get diagnostics n=row_count; if n<>0 then raise exception 'somente leitura pôde editar'; end if;
  update public.a1_cases set client_name='Alterado' where id='22222222-2222-2222-2222-222222222222'; get diagnostics n=row_count; if n<>1 then raise exception 'edição autorizada falhou'; end if;
  begin update public.a1_cases set stage_id='33333333-3333-3333-3333-333333333333' where id='22222222-2222-2222-2222-222222222222'; raise exception 'movimento para etapa somente leitura permitido'; exception when insufficient_privilege then null; end;
