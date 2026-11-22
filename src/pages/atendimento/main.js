@@ -295,9 +295,6 @@ function desenharCabecalho() {
     <div class="at-chat-quem"><b>${esc(l.client_name || 'Lead')}</b>
       <small>${esc([l.client_phone, canal.rot].filter(Boolean).join(' · '))}</small></div>
     <div class="at-chat-acoes">
-      ${G.wa.ligado && tel && podeEscrever(c) ? '<button type="button" class="at-btn at-btn-linha" data-acao="atArquivo">Enviar arquivo</button>' : ''}
-      ${G.gestor && c.status !== 'encerrada' ? '<button type="button" class="at-btn at-btn-linha" data-acao="atDistribuir">Vincular a corretor</button>' : ''}
-      ${G.gestor && (c.elia_ativa || (G.wa.ligado && tel)) ? `<button type="button" class="at-btn at-btn-linha" data-acao="atElia" aria-pressed="${!!c.elia_ativa}">${c.elia_ativa ? 'ELIA ativa · Retomar' : 'Atendimento ELIA'}</button>` : ''}
       <button type="button" class="at-btn-ic at-so-estreito" data-acao="atPainel" title="Dados do lead e qualificação" aria-label="Dados do lead e qualificação">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
       ${tel ? `<a class="at-btn-ic" href="https://wa.me/${esc(tel.length <= 11 ? '55' + tel : tel)}" target="_blank" rel="noopener noreferrer" title="Abrir no WhatsApp">${ICONE_CANAL.whatsapp.replace(/width="11" height="11"/, 'width="18" height="18"')}</a>` : ''}
@@ -345,6 +342,14 @@ function escolherTipo(/** @type {string} */ t) {
   const l = c ? G.leads[c.case_id] || {} : {};
   const caixa = /** @type {HTMLTextAreaElement} */ ($('at-texto'));
   const pode = podeEscrever(c);
+  const whatsapp = G.wa.ligado && Boolean(soDigitos(l.client_phone));
+  $('at-compor-clipe').hidden = !(G.tipo === 'mensagem' && pode && whatsapp);
+  $('at-chat-vincular').hidden = !(c && G.gestor && c.status !== 'encerrada');
+  const elia = $('at-chat-elia');
+  elia.hidden = !(c && G.gestor && (c.elia_ativa || whatsapp));
+  elia.setAttribute('aria-pressed', String(Boolean(c?.elia_ativa)));
+  const tituloElia = c?.elia_ativa ? 'ELIA ativa · Retomar' : 'Atendimento ELIA';
+  if (elia.textContent !== tituloElia) elia.textContent = tituloElia;
   $('at-compor').classList.toggle('nota', G.tipo === 'nota');
   caixa.disabled = !pode;
   /** @type {HTMLButtonElement} */ ($('at-enviar')).disabled = !pode;
@@ -794,10 +799,7 @@ async function tique() {
   if (++tiques % 5 === 0) {
     const antes = JSON.stringify(G.wa);
     await lerWhatsapp();
-    if (JSON.stringify(G.wa) !== antes && G.aberta) {
-      desenharCabecalho();
-      escolherTipo(G.tipo);
-    }
+    if (JSON.stringify(G.wa) !== antes && G.aberta) escolherTipo(G.tipo);
   }
   if (G.aberta) {
     const id = G.aberta;

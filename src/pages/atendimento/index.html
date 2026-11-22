@@ -54,13 +54,20 @@
       <div class="at-msgs" id="at-msgs" aria-live="polite"></div>
       <footer class="at-compor" id="at-compor">
         <input id="at-arquivo" type="file" hidden accept="image/jpeg,image/png,image/webp,.pdf,.docx,.xlsx">
-        <div class="at-compor-tipo" role="tablist" aria-label="Tipo de mensagem">
-          <button type="button" class="ativo" data-acao="atTipo" data-tipo="mensagem" role="tab">Mensagem</button>
-          <button type="button" data-acao="atTipo" data-tipo="nota" role="tab">Nota interna</button>
+        <div class="at-compor-barra">
+          <div class="at-compor-tipo" role="tablist" aria-label="Tipo de mensagem">
+            <button type="button" class="ativo" data-acao="atTipo" data-tipo="mensagem" role="tab">Mensagem</button>
+            <button type="button" data-acao="atTipo" data-tipo="nota" role="tab">Nota interna</button>
+          </div>
+          <button type="button" class="at-compor-acao" id="at-chat-vincular" data-acao="atDistribuir" hidden>Vincular a corretor</button>
+          <button type="button" class="at-compor-acao" id="at-chat-elia" data-acao="atElia" aria-pressed="false" hidden>Atendimento ELIA</button>
         </div>
         <p class="at-compor-aviso" id="at-compor-aviso"></p>
         <div class="at-compor-linha">
           <textarea id="at-texto" rows="1" placeholder="Digite uma mensagem" data-acao-input="atAutoAltura" aria-label="Mensagem"></textarea>
+          <button type="button" class="at-compor-clipe" id="at-compor-clipe" data-acao="atArquivo" aria-label="Anexar arquivo" title="Anexar arquivo" hidden>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 11.5-8.9 8.9a5.3 5.3 0 0 1-7.5-7.5l9.4-9.4a3.5 3.5 0 0 1 5 5l-9.4 9.4a1.8 1.8 0 0 1-2.5-2.5l8.9-8.9"/></svg>
+          </button>
           <button type="button" class="at-enviar" id="at-enviar" data-acao="atEnviar" aria-label="Enviar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>
           </button>
