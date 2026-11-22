@@ -1,6 +1,6 @@
 import { avaliar, intervaloCampanha } from '../atendimento-conectores/limites.mjs';
 import { criarEvolution } from '../atendimento-conectores/evolution.mjs';
-import { runFlow, validateFlow } from './flow.mjs';
+import { runFlow, validateFlow, qualificationFields } from './flow.mjs';
 import { validarQualificacao } from './qualificacao.mjs';
 import { authorization, calendar, digest, exchange, googleConfigured } from './google.ts';
 
@@ -598,7 +598,7 @@ Deno.serve(async request => {
         const trace: string[] = [];
         const output = await runFlow(
           body.flow,
-          { message: input, name: 'Lead de teste' },
+          { message: input, name: 'Lead de teste', qualification: Object.fromEntries(qualificationFields.map((field: string) => [field, clean(body.qualification?.[field], 500)])) },
           {
             ai: async (task: string) =>
               generate(tenant, profile(body.profile || {}, tenant), JSON.stringify({ task, input })),
@@ -609,7 +609,13 @@ Deno.serve(async request => {
             },
             wait: (_next: string, minutes: number) => trace.push('Aguardar ' + minutes + ' min'),
             handoff: (value: string) => trace.push('Atendimento humano: ' + value),
-            roulette: () => trace.push('Distribuição pela roleta simulada; nenhum lead foi atribuído.')
+            roulette: (id: string) => {
+              const node = body.flow.find((item: any) => item.id === id);
+              const missing = node.fields.filter((field: string) => !clean(body.qualification?.[field], 500));
+              trace.push(missing.length
+                ? 'Distribuição não realizada: dados obrigatórios faltando: ' + missing.join(', ')
+                : 'Distribuição pela roleta simulada; nenhum lead foi atribuído.');
+            }
           }
         );
         return json({ trace, output: typeof output === 'string' ? output : '' });

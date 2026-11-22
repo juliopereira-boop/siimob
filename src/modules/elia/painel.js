@@ -229,6 +229,13 @@ export async function eliaMontar(panel) {
         ${chosen.type !== 'trigger' ? '<button class="btn btn-ghost" data-el="remove-node">Excluir nó</button>' : ''}`
           : ''
       }
+      <details><summary>Dados de qualificação para a simulação</summary><p>Preencha valores fictícios para testar os caminhos do fluxo. Eles não são salvos em leads.</p><div class="elia-fields">${Object.entries(
+        qualificationFields
+      )
+        .map(
+          ([key, label]) => `<label>${q(label)}<input data-simulation-field="${key}" maxlength="500"></label>`
+        )
+        .join('')}</div></details>
       <div class="elia-toolbar"><input data-simulation placeholder="Mensagem do lead para simular" aria-label="Mensagem de teste"><button class="btn btn-ghost" data-el="simulate">Simular</button></div>
       <pre data-trace hidden></pre>
       ${state.jobs.length ? '<details><summary>Execuções recentes</summary><ul>' + state.jobs.map(i => `<li>${q(labels[i.status])} · ${q(i.detail || new Date(i.run_at).toLocaleString('pt-BR'))}</li>`).join('') + '</ul></details>' : ''}`;
@@ -497,7 +504,13 @@ export async function eliaMontar(panel) {
         const result = await api('simulate', {
           profile: state.profile,
           flow: state.flow,
-          message: page.querySelector('[data-simulation]').value
+          message: page.querySelector('[data-simulation]').value,
+          qualification: Object.fromEntries(
+            [...page.querySelectorAll('[data-simulation-field]')].map(field => [
+              field.dataset.simulationField,
+              field.value
+            ])
+          )
         });
         const trace = page.querySelector('[data-trace]');
         trace.hidden = false;
