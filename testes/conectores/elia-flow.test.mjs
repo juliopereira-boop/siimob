@@ -72,3 +72,22 @@ test('avança somente quando todos os dados exigidos estiverem preenchidos', asy
     /dados obrigatórios/
   );
 });
+
+test('roleta é uma etapa terminal e exige seleção dos campos', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'roleta' },
+    { id: 'roleta', type: 'roulette', text: '', fields: ['renda'] }
+  ];
+  let chamado;
+  await runFlow(
+    flow,
+    { message: '' },
+    {
+      roulette: id => {
+        chamado = id;
+      }
+    }
+  );
+  assert.equal(chamado, 'roleta');
+  assert.throws(() => validateFlow([flow[0], { ...flow[1], fields: [] }]), /dados obrigatórios/);
+});

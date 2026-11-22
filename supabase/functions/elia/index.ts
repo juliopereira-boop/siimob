@@ -414,6 +414,14 @@ async function work(job: any) {
             p_stage: row.config.pipeline,
             p_partner: row.config.responsavel
           }),
+        roulette: async (nodeId: string) => {
+          const result = await rpc('a1_elia_roleta', {
+            p_tenant: tenant, p_atendimento: job.atendimento_id, p_versao: conv.versao,
+            p_mensagem: job.message_id, p_no: nodeId
+          });
+          if (result !== 'distribuido') throw Error('Distribuição não concluída: ' + result);
+          return '';
+        },
         agenda: async (value: string) => {
           if (!row.config.agendamento) throw Error('Agendamento pela ELIA desativado.');
           const data = JSON.parse(value);
@@ -600,7 +608,8 @@ Deno.serve(async request => {
               return 'Agendamento simulado';
             },
             wait: (_next: string, minutes: number) => trace.push('Aguardar ' + minutes + ' min'),
-            handoff: (value: string) => trace.push('Atendimento humano: ' + value)
+            handoff: (value: string) => trace.push('Atendimento humano: ' + value),
+            roulette: () => trace.push('Distribuição pela roleta simulada; nenhum lead foi atribuído.')
           }
         );
         return json({ trace, output: typeof output === 'string' ? output : '' });

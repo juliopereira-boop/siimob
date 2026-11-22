@@ -9,6 +9,7 @@ const nodes = {
   message: 'Enviar WhatsApp',
   condition: 'Se o texto contém',
   qualification: 'Verificar qualificação',
+  roulette: 'Distribuir pela roleta',
   wait: 'Aguardar',
   handoff: 'Encaminhar para humano',
   agenda: 'Criar agendamento',
@@ -101,6 +102,7 @@ export async function eliaMontar(panel) {
   let state;
   let tab = google ? 'agenda' : 'perfil';
   let selectedNode = '';
+  let linking = null;
   let contacts = [];
   const recipients = new Set();
   let campaignFile = null;
@@ -198,11 +200,15 @@ export async function eliaMontar(panel) {
         .join('')}</div></div>
       ${
         chosen
-          ? `<div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
-        ${!['handoff', 'end'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
+          ? `<div class="elia-toolbar"><strong>Conexões:</strong>
+          ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="next">Ligar próxima etapa</button>' : ''}
+          ${['condition', 'qualification'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="other">Ligar caminho alternativo</button>' : ''}
+          ${linking ? '<span role="status">Selecione a etapa de destino no quadro.</span><button type="button" class="btn btn-ghost" data-el="cancel-link">Cancelar</button>' : ''}</div>
+          <div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
+        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
         ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
         ${
-          chosen.type === 'qualification'
+          ['qualification', 'roulette'].includes(chosen.type)
             ? `<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
                 qualificationFields
               )
@@ -385,7 +391,7 @@ export async function eliaMontar(panel) {
   let drag;
   page.addEventListener('pointerdown', event => {
     const button = event.target.closest('[data-node]');
-    if (!button || event.button !== 0) return;
+    if (!button || event.button !== 0 || linking) return;
     const node = state.flow.find(item => item.id === button.dataset.node);
     drag = { button, node, x: event.clientX - node.x, y: event.clientY - node.y, start: event.clientX };
     button.setPointerCapture(event.pointerId);
@@ -448,6 +454,21 @@ export async function eliaMontar(panel) {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         status.replaceChildren(link);
+      } else if (el === 'link-node') {
+        linking = { source: selectedNode, key };
+        render();
+      } else if (el === 'cancel-link') {
+        linking = null;
+        render();
+      } else if (el === 'node' && linking) {
+        if (button.dataset.node === linking.source) throw Error('Escolha outra etapa como destino.');
+        const source = state.flow.find(item => item.id === linking.source);
+        const target = state.flow.find(item => item.id === button.dataset.node);
+        if (target?.type === 'trigger') throw Error('O gatilho não pode receber conexões.');
+        source[linking.key] = target.id;
+        selectedNode = source.id;
+        linking = null;
+        render();
       } else if (el === 'node') {
         selectedNode = button.dataset.node;
         render();

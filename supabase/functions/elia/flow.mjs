@@ -4,6 +4,7 @@ export const nodeTypes = [
   'message',
   'condition',
   'qualification',
+  'roulette',
   'wait',
   'handoff',
   'agenda',
@@ -41,7 +42,7 @@ export function validateFlow(nodes) {
       throw Error('Informe um tempo de espera entre 1 e 43200 minutos.');
     if (node.type === 'condition' && !node.text.trim()) throw Error('Informe uma condição.');
     if (
-      node.type === 'qualification' &&
+      ['qualification', 'roulette'].includes(node.type) &&
       (!Array.isArray(node.fields) ||
         !node.fields.length ||
         node.fields.some(field => !qualificationFields.includes(field)) ||
@@ -59,7 +60,7 @@ export function validateFlow(nodes) {
     if (visited.has(id)) return;
     const node = byId.get(id);
     visiting.add(id);
-    if (node.type !== 'end' && node.type !== 'handoff') visit(node.next);
+    if (!['end', 'handoff', 'roulette'].includes(node.type)) visit(node.next);
     if (node.type === 'condition' || node.type === 'qualification') visit(node.other);
     visiting.delete(id);
     visited.add(id);
@@ -86,6 +87,7 @@ export async function runFlow(nodes, context, actions) {
     if (node.type === 'message') await actions.send(render(node.text));
     if (node.type === 'agenda') output = await actions.agenda(render(node.text));
     if (node.type === 'handoff') return await actions.handoff(render(node.text));
+    if (node.type === 'roulette') return await actions.roulette(node.id);
     if (node.type === 'wait') return await actions.wait(node.next, node.minutes, output);
     if (node.type === 'qualification') {
       const data = context.qualification || {};
