@@ -2426,6 +2426,33 @@ async function openCorretor(id) {
   }
   await etapasGarantir();
   pintarEtapasCorretor();
+  const crmArea = document.getElementById('co-crm-etapas-area');
+  crmArea.hidden = !G.temCRM;
+  if (G.temCRM) {
+    const resposta = await fetch(
+      `${A1.rest('a1_stages')}?module_key=eq.crm&select=id,name,group_key,position&order=position.asc`,
+      { headers: A1.headers() }
+    );
+    if (!resposta.ok) {
+      toast('Não foi possível carregar as etapas de Leads.', 'error');
+      return;
+    }
+    const etapas = await resposta.json();
+    if (!Array.isArray(etapas)) {
+      toast('Não foi possível carregar as etapas de Leads.', 'error');
+      return;
+    }
+    const mapa =
+      p.crm_etapas && typeof p.crm_etapas === 'object' && !Array.isArray(p.crm_etapas) ? p.crm_etapas : {};
+    document.getElementById('co-crm-limitar').checked = Object.hasOwn(p, 'crm_etapas');
+    document.getElementById('co-crm-etapas-list').innerHTML =
+      etapas
+        .map(
+          etapa =>
+            `<label style="display:flex;justify-content:space-between;gap:1rem;align-items:center;padding:.3rem"><span>${esc(etapa.name)} <small>${esc(etapa.group_key || 'geral')}</small></span><select data-crm-etapa="${esc(etapa.id)}"><option value="">Sem acesso</option><option value="ver"${mapa[etapa.id] === 'ver' ? ' selected' : ''}>Ver</option><option value="editar"${mapa[etapa.id] === 'editar' ? ' selected' : ''}>Editar</option></select></label>`
+        )
+        .join('') || '<p>Nenhuma etapa de Leads cadastrada.</p>';
+  }
   openModal('modal-corretor-bg');
 }
 
@@ -2450,7 +2477,18 @@ async function saveCorretor() {
     return;
   }
 
-  const perms = permsColetar('co-perm', 'co-perfil');
+  const atual = EDIT_CORRETOR_ID ? CORRETORES.find(x => x.id === EDIT_CORRETOR_ID) || {} : {};
+  const perms = { ...(atual.permissions || {}), ...permsColetar('co-perm', 'co-perfil') };
+  if (G.temCRM) {
+    if (document.getElementById('co-crm-limitar').checked) {
+      const mapa = { ...(atual.permissions?.crm_etapas || {}) };
+      document.querySelectorAll('[data-crm-etapa]').forEach(select => {
+        if (select.value) mapa[select.dataset.crmEtapa] = select.value;
+        else delete mapa[select.dataset.crmEtapa];
+      });
+      perms.crm_etapas = mapa;
+    } else delete perms.crm_etapas;
+  }
   perms.etapas = { ...CO_ETAPAS };
   // Lista simples mantida junto para não quebrar leitura antiga do campo.
   perms.etapas_permitidas = Object.keys(CO_ETAPAS);
@@ -2462,7 +2500,6 @@ async function saveCorretor() {
   )
     return;
 
-  const atual = EDIT_CORRETOR_ID ? CORRETORES.find(x => x.id === EDIT_CORRETOR_ID) || {} : {};
   const payload = {
     tenant_id: G.user.tenant_id,
     type: 'corretor',

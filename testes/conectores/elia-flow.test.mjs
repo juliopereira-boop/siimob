@@ -91,3 +91,32 @@ test('roleta é uma etapa terminal e exige seleção dos campos', async () => {
   assert.equal(chamado, 'roleta');
   assert.throws(() => validateFlow([flow[0], { ...flow[1], fields: [] }]), /dados obrigatórios/);
 });
+
+test('múltiplos caminhos seguem a primeira opção correspondente ou o padrão', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'routes' },
+    {
+      id: 'routes',
+      type: 'routes',
+      text: '',
+      next: 'default',
+      routes: [
+        { text: 'alugar', next: 'rent' },
+        { text: 'comprar', next: 'buy' }
+      ]
+    },
+    { id: 'rent', type: 'message', text: 'aluguel', next: 'end' },
+    { id: 'buy', type: 'message', text: 'compra', next: 'end' },
+    { id: 'default', type: 'message', text: 'outro', next: 'end' },
+    { id: 'end', type: 'end', text: '' }
+  ];
+  const sent = [];
+  for (const message of ['quero alugar', 'quero comprar', 'oi'])
+    await runFlow(flow, { message }, { send: value => sent.push(value) });
+  assert.deepEqual(sent, ['aluguel', 'compra', 'outro']);
+  assert.throws(
+    () =>
+      validateFlow(flow.map(n => (n.id === 'routes' ? { ...n, routes: [{ text: '', next: 'buy' }] } : n))),
+    /caminhos/
+  );
+});

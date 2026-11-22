@@ -3,6 +3,7 @@ export const nodeTypes = [
   'ai',
   'message',
   'condition',
+  'routes',
   'qualification',
   'roulette',
   'wait',
@@ -42,6 +43,21 @@ export function validateFlow(nodes) {
       throw Error('Informe um tempo de espera entre 1 e 43200 minutos.');
     if (node.type === 'condition' && !node.text.trim()) throw Error('Informe uma condição.');
     if (
+      node.type === 'routes' &&
+      (!Array.isArray(node.routes) ||
+        !node.routes.length ||
+        node.routes.length > 20 ||
+        node.routes.some(
+          route =>
+            !route ||
+            typeof route.text !== 'string' ||
+            !route.text.trim() ||
+            route.text.length > 200 ||
+            typeof route.next !== 'string'
+        ))
+    )
+      throw Error('Configure os caminhos da etapa.');
+    if (
       ['qualification', 'roulette'].includes(node.type) &&
       (!Array.isArray(node.fields) ||
         !node.fields.length ||
@@ -62,6 +78,7 @@ export function validateFlow(nodes) {
     visiting.add(id);
     if (!['end', 'handoff', 'roulette'].includes(node.type)) visit(node.next);
     if (node.type === 'condition' || node.type === 'qualification') visit(node.other);
+    if (node.type === 'routes') node.routes.forEach(route => visit(route.next));
     visiting.delete(id);
     visited.add(id);
   }
@@ -89,7 +106,11 @@ export async function runFlow(nodes, context, actions) {
     if (node.type === 'handoff') return await actions.handoff(render(node.text));
     if (node.type === 'roulette') return await actions.roulette(node.id);
     if (node.type === 'wait') return await actions.wait(node.next, node.minutes, output);
-    if (node.type === 'qualification') {
+    if (node.type === 'routes') {
+      const message = context.message.toLocaleLowerCase('pt-BR');
+      id =
+        node.routes.find(route => message.includes(route.text.toLocaleLowerCase('pt-BR')))?.next || node.next;
+    } else if (node.type === 'qualification') {
       const data = context.qualification || {};
       id = node.fields.every(field => typeof data[field] === 'string' && data[field].trim())
         ? node.next

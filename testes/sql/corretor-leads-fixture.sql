@@ -1,0 +1,11 @@
+create function public.a1_tenant() returns uuid language sql stable as $$ select nullif(current_setting('test.tenant',true),'')::uuid $$;
+create function public.a1_ator() returns uuid language sql stable as $$ select nullif(current_setting('test.ator',true),'')::uuid $$;
+create function public.a1_e_gestor() returns boolean language sql stable as $$ select coalesce(nullif(current_setting('test.gestor',true),'')::boolean,false) $$;
+create table public.a1_partners(id uuid,tenant_id uuid,type text,is_active boolean,approved boolean,permissions jsonb);
+create table public.a1_cases(id uuid,tenant_id uuid,module_key text,stage_id uuid,client_name text);
+alter table public.a1_cases enable row level security;
+grant usage on schema public to anon,authenticated;
+grant select,insert,update,delete on public.a1_cases to anon,authenticated;
+create policy baseline on public.a1_cases for all to anon,authenticated using (tenant_id=public.a1_tenant()) with check (tenant_id=public.a1_tenant());
+insert into public.a1_partners values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','corretor',true,true,'{}');
+insert into public.a1_cases values ('11111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','crm','33333333-3333-3333-3333-333333333333','Teste'),('22222222-2222-2222-2222-222222222222','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','crm','44444444-4444-4444-4444-444444444444','Teste');
