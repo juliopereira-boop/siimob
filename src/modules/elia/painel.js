@@ -8,10 +8,27 @@ const nodes = {
   ai: 'Responder com OpenAI',
   message: 'Enviar WhatsApp',
   condition: 'Se o texto contém',
+  routes: 'Escolher entre vários caminhos',
+  qualification: 'Verificar qualificação',
+  roulette: 'Distribuir pela roleta',
   wait: 'Aguardar',
   handoff: 'Encaminhar para humano',
   agenda: 'Criar agendamento',
   end: 'Encerrar fluxo'
+};
+const qualificationFields = {
+  nome: 'Nome',
+  telefone: 'Telefone',
+  email: 'E-mail',
+  cpf: 'CPF',
+  empreendimento: 'Empreendimento',
+  renda: 'Renda familiar',
+  cidade: 'Cidade de interesse',
+  tipo_imovel: 'Tipo de imóvel',
+  quartos: 'Quartos',
+  orcamento: 'Orçamento',
+  prazo: 'Prazo',
+  observacoes: 'Observações'
 };
 const collections = {
   treinamentos: 'Treinamentos',
@@ -86,6 +103,7 @@ export async function eliaMontar(panel) {
   let state;
   let tab = google ? 'agenda' : 'perfil';
   let selectedNode = '';
+  let linking = null;
   let contacts = [];
   const recipients = new Set();
   let campaignFile = null;
@@ -150,7 +168,7 @@ export async function eliaMontar(panel) {
     const chosen = state.flow.find(item => item.id === selectedNode);
     const links = state.flow
       .flatMap(node =>
-        [node.next, node.other].map((id, i) => {
+        [node.next, node.other, ...(node.routes || []).map(route => route.next)].map((id, i) => {
           const target = state.flow.find(item => item.id === id);
           if (!target) return '';
           const a = (node.x || 0) + 176,
@@ -171,7 +189,8 @@ export async function eliaMontar(panel) {
       .filter(k => k !== 'trigger')
       .map(k => option(k, nodes[k]))
       .join('')}</select>
-      <button class="btn btn-ghost" data-el="add-node">Adicionar nó</button></div>
+      <button class="btn btn-ghost" data-el="add-node">Adicionar etapa</button></div>
+      <p>Selecione uma etapa para escolher os próximos passos. Nas condições, escolha um caminho para cada resultado.</p>
       <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="1400" height="760">${links}</svg>
       ${state.flow
         .map(
@@ -182,9 +201,26 @@ export async function eliaMontar(panel) {
         .join('')}</div></div>
       ${
         chosen
-          ? `<div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
-        ${!['handoff', 'end'].includes(chosen.type) ? `<label>${chosen.type === 'condition' ? 'Se sim' : 'Próximo nó'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
-        ${chosen.type === 'condition' ? `<label>Se não<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+          ? `<div class="elia-toolbar"><strong>Conexões:</strong>
+          ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="next">Ligar próxima etapa</button>' : ''}
+          ${['condition', 'qualification'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="other">Ligar caminho alternativo</button>' : ''}
+          ${linking ? '<span role="status">Selecione a etapa de destino no quadro.</span><button type="button" class="btn btn-ghost" data-el="cancel-link">Cancelar</button>' : ''}</div>
+          <div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
+        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
+        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+        ${chosen.type === 'routes' ? `<div class="elia-wide"><p>Para cada opção, informe um trecho da mensagem e escolha a etapa de destino. A primeira opção encontrada será usada; se nenhuma combinar, segue a próxima etapa.</p>${(chosen.routes || []).map((route, i) => `<div class="elia-toolbar"><label>Se a mensagem contém<input data-route-text="${i}" maxlength="200" value="${q(route.text)}"></label><label>Seguir para<select data-route-next="${i}">${targets(route.next)}</select></label><button type="button" class="btn btn-ghost" data-el="link-route" data-key="${i}">Ligar no quadro</button><button type="button" class="btn btn-ghost" data-el="remove-route" data-key="${i}">Remover opção</button></div>`).join('')}<button type="button" class="btn btn-ghost" data-el="add-route">Adicionar caminho</button></div>` : ''}
+        ${
+          ['qualification', 'roulette'].includes(chosen.type)
+            ? `<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
+                qualificationFields
+              )
+                .map(
+                  ([key, label]) =>
+                    `<label><input type="checkbox" data-qualification-field="${key}"${checked(chosen.fields?.includes(key))}> ${label}</label>`
+                )
+                .join('')}</div></fieldset>`
+            : ''
+        }
         ${chosen.type === 'wait' ? `<label>Minutos<input type="number" min="1" max="43200" data-node-field="minutes" value="${Number(chosen.minutes) || 60}"></label>` : ''}
         ${
           ['ai', 'message', 'condition', 'handoff', 'agenda'].includes(chosen.type)
@@ -195,6 +231,13 @@ export async function eliaMontar(panel) {
         ${chosen.type !== 'trigger' ? '<button class="btn btn-ghost" data-el="remove-node">Excluir nó</button>' : ''}`
           : ''
       }
+      <details><summary>Dados de qualificação para a simulação</summary><p>Preencha valores fictícios para testar os caminhos do fluxo. Eles não são salvos em leads.</p><div class="elia-fields">${Object.entries(
+        qualificationFields
+      )
+        .map(
+          ([key, label]) => `<label>${q(label)}<input data-simulation-field="${key}" maxlength="500"></label>`
+        )
+        .join('')}</div></details>
       <div class="elia-toolbar"><input data-simulation placeholder="Mensagem do lead para simular" aria-label="Mensagem de teste"><button class="btn btn-ghost" data-el="simulate">Simular</button></div>
       <pre data-trace hidden></pre>
       ${state.jobs.length ? '<details><summary>Execuções recentes</summary><ul>' + state.jobs.map(i => `<li>${q(labels[i.status])} · ${q(i.detail || new Date(i.run_at).toLocaleString('pt-BR'))}</li>`).join('') + '</ul></details>' : ''}`;
@@ -311,6 +354,19 @@ export async function eliaMontar(panel) {
 
   page.addEventListener('input', event => {
     const field = event.target;
+    if (field.dataset.routeText !== undefined)
+      state.flow.find(item => item.id === selectedNode).routes[Number(field.dataset.routeText)].text =
+        field.value;
+    if (field.dataset.routeNext !== undefined)
+      state.flow.find(item => item.id === selectedNode).routes[Number(field.dataset.routeNext)].next =
+        field.value;
+    if (field.dataset.qualificationField) {
+      const node = state.flow.find(item => item.id === selectedNode);
+      const fields = new Set(node.fields || []);
+      if (field.checked) fields.add(field.dataset.qualificationField);
+      else fields.delete(field.dataset.qualificationField);
+      node.fields = [...fields];
+    }
     const p = field.dataset.profile;
     const n = field.dataset.nodeField;
     if (p === 'enabled') state.enabled = field.checked;
@@ -329,7 +385,8 @@ export async function eliaMontar(panel) {
   });
   page.addEventListener('change', async event => {
     const field = event.target;
-    if (['next', 'other'].includes(field.dataset.nodeField)) render();
+    if (['next', 'other'].includes(field.dataset.nodeField) || field.dataset.routeNext !== undefined)
+      render();
     if (!field.dataset.upload) return;
     try {
       const record = recordFor(field);
@@ -350,7 +407,7 @@ export async function eliaMontar(panel) {
   let drag;
   page.addEventListener('pointerdown', event => {
     const button = event.target.closest('[data-node]');
-    if (!button || event.button !== 0) return;
+    if (!button || event.button !== 0 || linking) return;
     const node = state.flow.find(item => item.id === button.dataset.node);
     drag = { button, node, x: event.clientX - node.x, y: event.clientY - node.y, start: event.clientX };
     button.setPointerCapture(event.pointerId);
@@ -413,6 +470,33 @@ export async function eliaMontar(panel) {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         status.replaceChildren(link);
+      } else if (el === 'add-route') {
+        const node = state.flow.find(item => item.id === selectedNode);
+        if ((node.routes || []).length >= 20) throw Error('Esta etapa pode ter até 20 caminhos.');
+        (node.routes ||= []).push({ text: '', next: '' });
+        render();
+      } else if (el === 'remove-route') {
+        state.flow.find(item => item.id === selectedNode).routes.splice(Number(key), 1);
+        render();
+      } else if (el === 'link-route') {
+        linking = { source: selectedNode, key: 'route', index: Number(key) };
+        render();
+      } else if (el === 'link-node') {
+        linking = { source: selectedNode, key };
+        render();
+      } else if (el === 'cancel-link') {
+        linking = null;
+        render();
+      } else if (el === 'node' && linking) {
+        if (button.dataset.node === linking.source) throw Error('Escolha outra etapa como destino.');
+        const source = state.flow.find(item => item.id === linking.source);
+        const target = state.flow.find(item => item.id === button.dataset.node);
+        if (target?.type === 'trigger') throw Error('O gatilho não pode receber conexões.');
+        if (linking.key === 'route') source.routes[linking.index].next = target.id;
+        else source[linking.key] = target.id;
+        selectedNode = source.id;
+        linking = null;
+        render();
       } else if (el === 'node') {
         selectedNode = button.dataset.node;
         render();
@@ -434,6 +518,7 @@ export async function eliaMontar(panel) {
         for (const node of state.flow) {
           if (node.next === selectedNode) delete node.next;
           if (node.other === selectedNode) delete node.other;
+          for (const route of node.routes || []) if (route.next === selectedNode) route.next = '';
         }
         selectedNode = '';
         render();
@@ -441,7 +526,13 @@ export async function eliaMontar(panel) {
         const result = await api('simulate', {
           profile: state.profile,
           flow: state.flow,
-          message: page.querySelector('[data-simulation]').value
+          message: page.querySelector('[data-simulation]').value,
+          qualification: Object.fromEntries(
+            [...page.querySelectorAll('[data-simulation-field]')].map(field => [
+              field.dataset.simulationField,
+              field.value
+            ])
+          )
         });
         const trace = page.querySelector('[data-trace]');
         trace.hidden = false;

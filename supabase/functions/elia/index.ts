@@ -1,6 +1,6 @@
 import { avaliar, intervaloCampanha } from '../atendimento-conectores/limites.mjs';
 import { criarEvolution } from '../atendimento-conectores/evolution.mjs';
-import { runFlow, validateFlow } from './flow.mjs';
+import { runFlow, validateFlow, qualificationFields } from './flow.mjs';
 import { validarQualificacao } from './qualificacao.mjs';
 import { authorization, calendar, digest, exchange, googleConfigured } from './google.ts';
 
@@ -357,9 +357,19 @@ async function work(job: any) {
   let waiting = false;
   let externalEffect = false;
   try {
+    const qualificationLead = row.flow.some((node: any) => node.type === 'qualification')
+      ? await first('a1_cases?' + scope + '&id=eq.' + eq(lead.id) + '&select=client_name,client_phone,client_email,client_cpf,payload')
+      : null;
+    const qualification = qualificationLead ? {
+      ...qualificationLead.payload?.qualificacao,
+      nome: qualificationLead.client_name,
+      telefone: qualificationLead.client_phone,
+      email: qualificationLead.client_email,
+      cpf: qualificationLead.client_cpf
+    } : {};
     await runFlow(
       row.flow,
-      { name: lead.client_name, message: msg.corpo, ...job.payload },
+      { name: lead.client_name, message: msg.corpo, ...job.payload, qualification },
       {
         ai: (prompt: string) =>
           generate(tenant, row.config, JSON.stringify({ tarefa: prompt, conversa: recent.toReversed() })),
@@ -404,6 +414,14 @@ async function work(job: any) {
             p_stage: row.config.pipeline,
             p_partner: row.config.responsavel
           }),
+        roulette: async (nodeId: string) => {
+          const result = await rpc('a1_elia_roleta', {
+            p_tenant: tenant, p_atendimento: job.atendimento_id, p_versao: conv.versao,
+            p_mensagem: job.message_id, p_no: nodeId
+          });
+          if (result !== 'distribuido') throw Error('Distribuição não concluída: ' + result);
+          return '';
+        },
         agenda: async (value: string) => {
           if (!row.config.agendamento) throw Error('Agendamento pela ELIA desativado.');
           const data = JSON.parse(value);
@@ -580,7 +598,7 @@ Deno.serve(async request => {
         const trace: string[] = [];
         const output = await runFlow(
           body.flow,
-          { message: input, name: 'Lead de teste' },
+          { message: input, name: 'Lead de teste', qualification: Object.fromEntries(qualificationFields.map((field: string) => [field, clean(body.qualification?.[field], 500)])) },
           {
             ai: async (task: string) =>
               generate(tenant, profile(body.profile || {}, tenant), JSON.stringify({ task, input })),
@@ -590,7 +608,14 @@ Deno.serve(async request => {
               return 'Agendamento simulado';
             },
             wait: (_next: string, minutes: number) => trace.push('Aguardar ' + minutes + ' min'),
-            handoff: (value: string) => trace.push('Atendimento humano: ' + value)
+            handoff: (value: string) => trace.push('Atendimento humano: ' + value),
+            roulette: (id: string) => {
+              const node = body.flow.find((item: any) => item.id === id);
+              const missing = node.fields.filter((field: string) => !clean(body.qualification?.[field], 500));
+              trace.push(missing.length
+                ? 'Distribuição não realizada: dados obrigatórios faltando: ' + missing.join(', ')
+                : 'Distribuição pela roleta simulada; nenhum lead foi atribuído.');
+            }
           }
         );
         return json({ trace, output: typeof output === 'string' ? output : '' });

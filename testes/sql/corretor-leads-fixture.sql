@@ -1,0 +1,16 @@
+create function public.a1_tenant() returns uuid language sql stable as $$ select nullif(current_setting('test.tenant',true),'')::uuid $$;
+create function public.a1_ator() returns uuid language sql stable as $$ select nullif(current_setting('test.ator',true),'')::uuid $$;
+create function public.a1_e_gestor() returns boolean language sql stable as $$ select coalesce(nullif(current_setting('test.gestor',true),'')::boolean,false) $$;
+create function public.a1_tem_modulo(text) returns boolean language sql stable as $$ select true $$;
+create function public.a1_atend_nome_ator() returns text language sql stable as $$ select 'Corretor teste'::text $$;
+create table public.a1_partners(id uuid,tenant_id uuid,type text,is_active boolean,approved boolean,permissions jsonb,name text);
+create table public.a1_cases(id uuid,tenant_id uuid,module_key text,stage_id uuid,client_name text,broker_name text,client_phone text,client_email text,client_cpf text,development text,payload jsonb);
+create table public.a1_atendimentos(id uuid,tenant_id uuid,case_id uuid,status text,corretor_id uuid,versao integer,elia_ativa boolean,ultima_em timestamptz,pendente boolean,ultima_previa text);
+create table public.a1_atendimento_mensagens(id uuid default gen_random_uuid(),tenant_id uuid,atendimento_id uuid,autor_tipo text,autor_nome text,tipo text,corpo text,externo text,criado_em timestamptz default now());
+alter table public.a1_cases enable row level security;
+grant usage on schema public to anon,authenticated;
+grant select,insert,update,delete on public.a1_cases to anon,authenticated;
+create policy baseline on public.a1_cases for all to anon,authenticated using (tenant_id=public.a1_tenant()) with check (tenant_id=public.a1_tenant());
+insert into public.a1_partners values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','corretor',true,true,'{}','Corretor teste');
+insert into public.a1_cases(id,tenant_id,module_key,stage_id,client_name,broker_name,client_phone,payload) values ('11111111-1111-1111-1111-111111111111','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','crm','33333333-3333-3333-3333-333333333333','Teste','Corretor teste','11999999999','{}'),('22222222-2222-2222-2222-222222222222','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','crm','44444444-4444-4444-4444-444444444444','Teste','Corretor teste','11999999999','{}');
+insert into public.a1_atendimentos(id,tenant_id,case_id,status,corretor_id,versao,elia_ativa) values ('55555555-5555-5555-5555-555555555555','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','distribuida','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',1,false),('66666666-6666-6666-6666-666666666666','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','22222222-2222-2222-2222-222222222222','distribuida','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',1,false);

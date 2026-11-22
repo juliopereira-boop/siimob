@@ -35,3 +35,88 @@ test('decide pelo texto, aguarda e retoma sem repetir a OpenAI', async () => {
   assert.deepEqual(sent, ['Ana: Manhã ou tarde?']);
   assert.equal(await runFlow(nodes, { ...context, message: 'Olá' }, {}), '');
 });
+
+test('avança somente quando todos os dados exigidos estiverem preenchidos', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'qualificar' },
+    {
+      id: 'qualificar',
+      type: 'qualification',
+      text: '',
+      fields: ['renda', 'empreendimento'],
+      next: 'pronto',
+      other: 'pendente'
+    },
+    { id: 'pronto', type: 'message', text: 'pronto', next: 'fim' },
+    { id: 'pendente', type: 'message', text: 'pendente', next: 'fim' },
+    { id: 'fim', type: 'end', text: '' }
+  ];
+  const saida = [];
+  await runFlow(
+    flow,
+    { message: '', qualification: { renda: '2500', empreendimento: 'Jardins' } },
+    { send: value => saida.push(value) }
+  );
+  await runFlow(
+    flow,
+    { message: '', qualification: { renda: '2500', empreendimento: ' ' } },
+    { send: value => saida.push(value) }
+  );
+  assert.deepEqual(saida, ['pronto', 'pendente']);
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.type === 'qualification' ? { ...n, fields: [] } : n))),
+    /dados obrigatórios/
+  );
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.type === 'qualification' ? { ...n, fields: ['inexistente'] } : n))),
+    /dados obrigatórios/
+  );
+});
+
+test('roleta é uma etapa terminal e exige seleção dos campos', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'roleta' },
+    { id: 'roleta', type: 'roulette', text: '', fields: ['renda'] }
+  ];
+  let chamado;
+  await runFlow(
+    flow,
+    { message: '' },
+    {
+      roulette: id => {
+        chamado = id;
+      }
+    }
+  );
+  assert.equal(chamado, 'roleta');
+  assert.throws(() => validateFlow([flow[0], { ...flow[1], fields: [] }]), /dados obrigatórios/);
+});
+
+test('múltiplos caminhos seguem a primeira opção correspondente ou o padrão', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'routes' },
+    {
+      id: 'routes',
+      type: 'routes',
+      text: '',
+      next: 'default',
+      routes: [
+        { text: 'alugar', next: 'rent' },
+        { text: 'comprar', next: 'buy' }
+      ]
+    },
+    { id: 'rent', type: 'message', text: 'aluguel', next: 'end' },
+    { id: 'buy', type: 'message', text: 'compra', next: 'end' },
+    { id: 'default', type: 'message', text: 'outro', next: 'end' },
+    { id: 'end', type: 'end', text: '' }
+  ];
+  const sent = [];
+  for (const message of ['quero alugar', 'quero comprar', 'oi'])
+    await runFlow(flow, { message }, { send: value => sent.push(value) });
+  assert.deepEqual(sent, ['aluguel', 'compra', 'outro']);
+  assert.throws(
+    () =>
+      validateFlow(flow.map(n => (n.id === 'routes' ? { ...n, routes: [{ text: '', next: 'buy' }] } : n))),
+    /caminhos/
+  );
+});
