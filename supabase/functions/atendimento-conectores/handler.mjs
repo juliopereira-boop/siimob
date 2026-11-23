@@ -40,8 +40,11 @@ function validarAnexo(file) {
     return null;
   const bytes =
     (file.dados.length / 4) * 3 - (file.dados.endsWith('==') ? 2 : file.dados.endsWith('=') ? 1 : 0);
-  const nome = file.nome
-    .replace(/[\x00-\x1f\x7f/\\]/g, ' ')
+  // tira caracteres de controle e barras do nome do arquivo
+  const nome = Array.from(file.nome, c =>
+    c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 || c === '/' || c === '\\' ? ' ' : c
+  )
+    .join('')
     .trim()
     .slice(0, 120);
   return bytes <= 5242880 && nome ? { ...file, nome } : null;
