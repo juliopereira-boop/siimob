@@ -158,3 +158,19 @@ for f in testes/sql/qualificacao-fixture.sql \
          testes/sql/prova-qualificacao.sql; do
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO_QUAL" -q -v ON_ERROR_STOP=1 -f "$f"
 done
+
+# ELIA: distribuição pela roleta, a partir do nó de roleta e do nó de
+# qualificação. Banco próprio: a fixture cria tabelas mínimas com os mesmos
+# nomes das de produção.
+ELIA_BANCO="${BANCO}_elia"
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $ELIA_BANCO"
+trap 'psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $BANCO" >/dev/null; psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $ELIA_BANCO" >/dev/null' EXIT
+for f in testes/sql/elia-roleta-fixture.sql \
+         supabase/migrations/20261122171900_elia_roleta_qualificacao.sql \
+         database/migrations/2026-11-23_elia_fila_da_qualificacao.sql \
+         database/migrations/2026-11-23_elia_fila_da_qualificacao.sql \
+         testes/sql/prova-elia-roleta.sql \
+         testes/sql/prova-elia-fila-qualificacao.sql; do
+  echo "carregando $f"
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$ELIA_BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
+done

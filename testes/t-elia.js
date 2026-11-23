@@ -174,6 +174,66 @@ function servidor(est) {
   await p.click('[data-acao="eliaRemoverNo"]');
   checa('excluir etapa', (await p.$$('.elia-node')).length === 4);
 
+  console.log('\n-- Verificar qualificação --');
+  await p.selectOption('[data-node-type]', 'qualification');
+  await p.click('[data-acao="eliaAddNo"]');
+  checa(
+    'a etapa nova já vem com as saídas: completo -> fila; faltando -> continua com a ELIA',
+    (await p.inputValue('[data-node-field="next"]')) === '@fila' &&
+      (await p.inputValue('[data-node-field="other"]')) === '@continuar'
+  );
+  const textoNo = await p.textContent('.elia-node.active');
+  checa(
+    'o quadro mostra as duas saídas na etapa',
+    /fila de distribuição/.test(textoNo) && /continua com a ELIA/.test(textoNo),
+    textoNo
+  );
+  checa(
+    'as opções aparecem por extenso nos campos',
+    /Enviar para a fila de distribuição/.test(await p.textContent('[data-node-field="next"]')) &&
+      /Continuar com a ELIA até qualificar/.test(await p.textContent('[data-node-field="other"]'))
+  );
+  await p.check('[data-qualification-field="renda"]');
+  await p.click('[data-acao="eliaSalvar"]');
+  await p.waitForTimeout(300);
+  const fq = est.chamadas
+    .filter(c => c.action === 'save')
+    .pop()
+    .flow.find(n => n.type === 'qualification');
+  checa(
+    'salvar leva as saídas e os dados exigidos',
+    !!fq && fq.next === '@fila' && fq.other === '@continuar' && fq.fields.join() === 'renda'
+  );
+
+  console.log('\n-- Quadro do fluxo ocupa a área toda --');
+  await p.setViewportSize({ width: 2600, height: 1300 });
+  await p.waitForTimeout(300);
+  const med = await p.evaluate(() => {
+    const a = document.querySelector('.elia-scroll');
+    const c = document.querySelector('.elia-canvas');
+    return {
+      area: a.clientWidth,
+      quadro: c.clientWidth,
+      svg: Number(c.querySelector('svg').getAttribute('width'))
+    };
+  });
+  checa(
+    'em tela grande, o quadro acompanha a largura (sem faixa branca)',
+    med.quadro >= med.area && med.svg === med.quadro,
+    JSON.stringify(med)
+  );
+  const no = await p.$('.elia-node.active');
+  const nb = await no.boundingBox();
+  await p.mouse.move(nb.x + 30, nb.y + 20);
+  await p.mouse.down();
+  await p.mouse.move(nb.x + 30 + 700, nb.y + 20 + 50, { steps: 8 });
+  await p.mouse.up();
+  await p.waitForTimeout(200);
+  const x = await p.evaluate(() => parseFloat(document.querySelector('.elia-node.active').style.left));
+  checa('dá para arrastar a etapa além do antigo limite de 1220 px', x > 1220, String(x));
+  await p.setViewportSize({ width: 1400, height: 950 });
+  await p.waitForTimeout(200);
+
   console.log('\n-- Campanhas --');
   await p.click('nav [data-key="campanhas"]');
   await p.evaluate(() => {

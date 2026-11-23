@@ -26,6 +26,17 @@ export const qualificationFields = [
   'observacoes'
 ];
 
+// Saídas próprias da etapa "Verificar qualificação":
+//   FILA      (quando completo): distribui pela roleta, a fila de distribuição;
+//   CONTINUAR (quando faltar dado): a execução termina aqui e a ELIA segue na
+//             próxima mensagem do lead, até qualificar. Por isso não precisa (e
+//             não pode) voltar para uma etapa anterior: isso seria um ciclo.
+export const FILA = '@fila';
+export const CONTINUAR = '@continuar';
+const especial = (node, key) =>
+  node.type === 'qualification' &&
+  ((key === 'next' && node[key] === FILA) || (key === 'other' && node[key] === CONTINUAR));
+
 export function validateFlow(nodes) {
   if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 30) throw Error('Fluxo inválido.');
   const byId = new Map();
@@ -76,8 +87,9 @@ export function validateFlow(nodes) {
     if (visited.has(id)) return;
     const node = byId.get(id);
     visiting.add(id);
-    if (!['end', 'handoff', 'roulette'].includes(node.type)) visit(node.next);
-    if (node.type === 'condition' || node.type === 'qualification') visit(node.other);
+    if (!['end', 'handoff', 'roulette'].includes(node.type) && !especial(node, 'next')) visit(node.next);
+    if ((node.type === 'condition' || node.type === 'qualification') && !especial(node, 'other'))
+      visit(node.other);
     if (node.type === 'routes') node.routes.forEach(route => visit(route.next));
     visiting.delete(id);
     visited.add(id);
@@ -112,9 +124,15 @@ export async function runFlow(nodes, context, actions) {
         node.routes.find(route => message.includes(route.text.toLocaleLowerCase('pt-BR')))?.next || node.next;
     } else if (node.type === 'qualification') {
       const data = context.qualification || {};
-      id = node.fields.every(field => typeof data[field] === 'string' && data[field].trim())
+      const destino = node.fields.every(field => typeof data[field] === 'string' && data[field].trim())
         ? node.next
         : node.other;
+      if (destino === FILA && especial(node, 'next')) return await actions.roulette(node.id);
+      if (destino === CONTINUAR && especial(node, 'other')) {
+        if (actions.continuar) await actions.continuar();
+        return output;
+      }
+      id = destino;
     } else if (node.type === 'condition') {
       id = context.message.toLocaleLowerCase('pt-BR').includes(node.text.toLocaleLowerCase('pt-BR'))
         ? node.next

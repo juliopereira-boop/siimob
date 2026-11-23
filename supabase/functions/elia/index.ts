@@ -609,6 +609,7 @@ Deno.serve(async request => {
             },
             wait: (_next: string, minutes: number) => trace.push('Aguardar ' + minutes + ' min'),
             handoff: (value: string) => trace.push('Atendimento humano: ' + value),
+            continuar: () => trace.push('Faltam dados: continua com a ELIA na próxima mensagem do lead.'),
             roulette: (id: string) => {
               const node = body.flow.find((item: any) => item.id === id);
               const missing = node.fields.filter((field: string) => !clean(body.qualification?.[field], 500));

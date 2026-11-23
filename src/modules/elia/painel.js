@@ -38,6 +38,13 @@ const collections = {
   empreendimentos: 'Empreendimentos',
   imagens: 'Biblioteca de imagens'
 };
+// Saídas próprias da etapa "Verificar qualificação" (ver supabase/functions/elia/flow.mjs).
+const FILA = '@fila';
+const CONTINUAR = '@continuar';
+const SAIDA_ESPECIAL = {
+  [FILA]: 'Enviar para a fila de distribuição (roleta)',
+  [CONTINUAR]: 'Continuar com a ELIA até qualificar'
+};
 const labels = {
   queued: 'Na fila',
   sent: 'Concluído',
@@ -157,6 +164,33 @@ export async function eliaMontar(panel) {
         document.fullscreenElement === panel.querySelector('.elia-workspace')
           ? 'Sair da tela cheia'
           : 'Tela cheia';
+    if (tab === 'fluxo') requestAnimationFrame(() => ajustarQuadro());
+  });
+  // O quadro do fluxo ocupa pelo menos a área visível (na tela cheia, a tela
+  // toda) e sempre tem folga além do nó mais distante, para arrastar adiante.
+  const QUADRO = { w: 1400, h: 760 };
+  function medirQuadro() {
+    const area = page.querySelector('.elia-scroll');
+    const maxX = Math.max(0, ...state.flow.map(n => Number(n.x) || 0));
+    const maxY = Math.max(0, ...state.flow.map(n => Number(n.y) || 0));
+    QUADRO.w = Math.max(1400, area ? area.clientWidth : 0, maxX + 180 + 420);
+    QUADRO.h = Math.max(760, area ? area.clientHeight : 0, maxY + 70 + 300);
+  }
+  function ajustarQuadro() {
+    const area = page.querySelector('.elia-scroll');
+    if (!area) return;
+    const antes = `${QUADRO.w}x${QUADRO.h}`;
+    medirQuadro();
+    const canvas = area.querySelector('.elia-canvas');
+    const svg = canvas.querySelector('svg');
+    canvas.style.width = QUADRO.w + 'px';
+    canvas.style.height = QUADRO.h + 'px';
+    svg.setAttribute('width', String(QUADRO.w));
+    svg.setAttribute('height', String(QUADRO.h));
+    return antes !== `${QUADRO.w}x${QUADRO.h}`;
+  }
+  window.addEventListener('resize', () => {
+    if (tab === 'fluxo') ajustarQuadro();
   });
   const reload = async () => {
     state = await api('load');
@@ -249,8 +283,9 @@ export async function eliaMontar(panel) {
         })
       )
       .join('');
-    const targets = value =>
+    const targets = (value, especial) =>
       '<option value="">Selecione um nó</option>' +
+      (especial ? option(especial, SAIDA_ESPECIAL[especial], value) : '') +
       state.flow
         .filter(n => n.id !== selectedNode && n.type !== 'trigger')
         .map(n => option(n.id, n.title || nodes[n.type], value))
@@ -261,12 +296,23 @@ export async function eliaMontar(panel) {
       .join('')}</select>
       <button class="btn btn-ghost" data-acao="eliaAddNo">Adicionar etapa</button><button type="button" class="btn btn-ghost" data-acao="eliaTelaCheia">${document.fullscreenElement === panel.querySelector('.elia-workspace') ? 'Sair da tela cheia' : 'Tela cheia'}</button></div>
       <p>Selecione uma etapa e arraste seus pontos de saída até a etapa de destino. Use condições ou vários caminhos para criar ramificações.</p>
-      <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="1400" height="760">${links}</svg>
+      <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="${QUADRO.w}" height="${QUADRO.h}">${links}</svg>
       ${state.flow
         .map(
           n => `<button class="elia-node${n.id === selectedNode ? ' active' : ''}" data-node="${q(n.id)}" data-acao="eliaNo"
           style="left:${Number(n.x) || 0}px;top:${Number(n.y) || 0}px"><small>${q(nodes[n.type])}</small>
-          <strong>${q(n.title || nodes[n.type])}</strong></button>`
+          <strong>${q(n.title || nodes[n.type])}</strong>${
+            n.type === 'qualification'
+              ? [
+                  n.next === FILA
+                    ? '<span class="elia-saida elia-saida-fila">✓ Completo: fila de distribuição</span>'
+                    : '',
+                  n.other === CONTINUAR
+                    ? '<span class="elia-saida">↻ Faltam dados: continua com a ELIA</span>'
+                    : ''
+                ].join('')
+              : ''
+          }</button>`
         )
         .join('')}
       ${
@@ -286,12 +332,12 @@ export async function eliaMontar(panel) {
           ${['condition', 'qualification'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-acao="eliaLigarNo" data-key="other">Ligar caminho alternativo</button>' : ''}
           ${linking ? '<span role="status">Selecione a etapa de destino no quadro.</span><button type="button" class="btn btn-ghost" data-acao="eliaCancelarLigacao">Cancelar</button>' : ''}</div>
           <div class="elia-fields"><label>Nome do nó<input data-acao-input="eliaCampo" data-node-field="title" value="${q(chosen.title || '')}"></label>
-        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
-        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="next">${targets(chosen.next, chosen.type === 'qualification' ? FILA : '')}</select></label>` : ''}
+        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="other">${targets(chosen.other, chosen.type === 'qualification' ? CONTINUAR : '')}</select></label>` : ''}
         ${chosen.type === 'routes' ? `<div class="elia-wide"><p>Para cada opção, informe um trecho da mensagem e escolha a etapa de destino. A primeira opção encontrada será usada; se nenhuma combinar, segue a próxima etapa.</p>${(chosen.routes || []).map((route, i) => `<div class="elia-toolbar"><label>Se a mensagem contém<input data-acao-input="eliaCampo" data-route-text="${i}" maxlength="200" value="${q(route.text)}"></label><label>Seguir para<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-route-next="${i}">${targets(route.next)}</select></label><button type="button" class="btn btn-ghost" data-acao="eliaLigarCaminho" data-key="${i}">Ligar no quadro</button><button type="button" class="btn btn-ghost" data-acao="eliaRemoverCaminho" data-key="${i}">Remover opção</button></div>`).join('')}<button type="button" class="btn btn-ghost" data-acao="eliaAddCaminho">Adicionar caminho</button></div>` : ''}
         ${
           ['qualification', 'roulette'].includes(chosen.type)
-            ? `<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
+            ? `${chosen.type === 'qualification' ? '<p class="elia-wide elia-ajuda">Com todos os dados marcados preenchidos, a ELIA envia o lead para a fila de distribuição (roleta). Enquanto faltar algum, ela continua a conversa e confere de novo a cada mensagem do lead. Para isso não é preciso ligar de volta a uma etapa anterior.</p>' : ''}<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
                 qualificationFields
               )
                 .map(
@@ -412,6 +458,7 @@ export async function eliaMontar(panel) {
         ? ''
         : '<footer><button class="btn btn-primary" data-acao="eliaSalvar">Salvar configuração</button></footer>');
     if (tab === 'campanhas') showContacts();
+    if (tab === 'fluxo') ajustarQuadro();
     if (viewport) page.querySelector('.elia-scroll').scrollTo(viewport);
   }
 
@@ -529,8 +576,8 @@ export async function eliaMontar(panel) {
       return;
     }
     if (!drag) return;
-    drag.node.x = Math.max(0, Math.min(1220, event.clientX - drag.x));
-    drag.node.y = Math.max(0, Math.min(690, event.clientY - drag.y));
+    drag.node.x = Math.max(0, Math.min(QUADRO.w - 180, event.clientX - drag.x));
+    drag.node.y = Math.max(0, Math.min(QUADRO.h - 70, event.clientY - drag.y));
     drag.button.style.left = drag.node.x + 'px';
     drag.button.style.top = drag.node.y + 'px';
   });
@@ -724,7 +771,10 @@ export async function eliaMontar(panel) {
         x: 20 + (i % 5) * 235,
         y: 25 + Math.floor(i / 5) * 100,
         minutes: 60,
-        text: ''
+        text: '',
+        ...(page.querySelector('[data-node-type]').value === 'qualification'
+          ? { next: FILA, other: CONTINUAR }
+          : {})
       });
       render();
     }),

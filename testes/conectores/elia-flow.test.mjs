@@ -120,3 +120,55 @@ test('múltiplos caminhos seguem a primeira opção correspondente ou o padrão'
     /caminhos/
   );
 });
+
+test('qualificação: completo vai para a fila de distribuição; faltando dado, continua com a ELIA sem ciclo', async () => {
+  const flow = [
+    { id: 'start', type: 'trigger', text: '', next: 'ia' },
+    { id: 'ia', type: 'ai', text: 'responda', next: 'enviar' },
+    { id: 'enviar', type: 'message', text: '{{resposta}}', next: 'qualificar' },
+    {
+      id: 'qualificar',
+      type: 'qualification',
+      text: '',
+      fields: ['renda', 'cidade'],
+      next: '@fila',
+      other: '@continuar'
+    }
+  ];
+  assert.doesNotThrow(() => validateFlow(flow));
+  // voltar para a IA continua sendo ciclo (é o que a opção "continuar" evita)
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.id === 'qualificar' ? { ...n, other: 'ia' } : n))),
+    /ciclo/
+  );
+  // as saídas especiais só valem no lugar certo
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.id === 'qualificar' ? { ...n, next: '@continuar' } : n))),
+    /Conexão inválida/
+  );
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.id === 'qualificar' ? { ...n, other: '@fila' } : n))),
+    /Conexão inválida/
+  );
+  assert.throws(
+    () => validateFlow(flow.map(n => (n.id === 'enviar' ? { ...n, next: '@fila' } : n))),
+    /Conexão inválida/
+  );
+
+  const chamadas = [];
+  const acoes = {
+    ai: () => 'Qual sua renda?',
+    send: t => chamadas.push(['send', t]),
+    roulette: id => chamadas.push(['roleta', id]),
+    continuar: () => chamadas.push(['continuar'])
+  };
+  const falta = await runFlow(flow, { message: 'oi', qualification: { renda: '3000' } }, acoes);
+  assert.equal(falta, 'Qual sua renda?');
+  assert.deepEqual(chamadas, [['send', 'Qual sua renda?'], ['continuar']]);
+  chamadas.length = 0;
+  await runFlow(flow, { message: 'São Luís', qualification: { renda: '3000', cidade: 'São Luís' } }, acoes);
+  assert.deepEqual(chamadas, [
+    ['send', 'Qual sua renda?'],
+    ['roleta', 'qualificar']
+  ]);
+});
