@@ -1,5 +1,7 @@
 import { A1, A1_URL } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
+import { acoes } from '../../shared/ui/acoes.js';
+import '../../shared/ui/lgpd.js';
 import './painel.css';
 
 const q = esc;
@@ -45,6 +47,42 @@ const labels = {
   paused: 'Pausada',
   cancelled: 'Cancelada'
 };
+
+// As ações ficam registradas aqui, no nível do módulo (padrão do sistema; ver
+// src/shared/ui/acoes.js e testes/t-acoes.js). Cada uma chama o painel que
+// eliaMontar montou; antes de montar, não faz nada.
+let painel = null;
+const doPainel = nome => (el, ev) => painel && painel[nome](el, ev);
+acoes({
+  eliaCampo: doPainel('eliaCampo'),
+  eliaMudou: doPainel('eliaMudou'),
+  eliaAba: doPainel('eliaAba'),
+  eliaSalvar: doPainel('eliaSalvar'),
+  eliaAddItem: doPainel('eliaAddItem'),
+  eliaRemoverItem: doPainel('eliaRemoverItem'),
+  eliaRemoverAnexo: doPainel('eliaRemoverAnexo'),
+  eliaAbrirAnexo: doPainel('eliaAbrirAnexo'),
+  eliaTelaCheia: doPainel('eliaTelaCheia'),
+  eliaAddCaminho: doPainel('eliaAddCaminho'),
+  eliaRemoverCaminho: doPainel('eliaRemoverCaminho'),
+  eliaLigarCaminho: doPainel('eliaLigarCaminho'),
+  eliaLigarNo: doPainel('eliaLigarNo'),
+  eliaCancelarLigacao: doPainel('eliaCancelarLigacao'),
+  eliaNo: doPainel('eliaNo'),
+  eliaAddNo: doPainel('eliaAddNo'),
+  eliaRemoverNo: doPainel('eliaRemoverNo'),
+  eliaSimular: doPainel('eliaSimular'),
+  eliaBuscarContatos: doPainel('eliaBuscarContatos'),
+  eliaConsentimento: doPainel('eliaConsentimento'),
+  eliaEnfileirar: doPainel('eliaEnfileirar'),
+  eliaStatusCampanha: doPainel('eliaStatusCampanha'),
+  eliaVerDestinatarios: doPainel('eliaVerDestinatarios'),
+  eliaGoogleConectar: doPainel('eliaGoogleConectar'),
+  eliaGoogleDesconectar: doPainel('eliaGoogleDesconectar'),
+  eliaGoogleAgendar: doPainel('eliaGoogleAgendar'),
+  eliaGoogleConsultar: doPainel('eliaGoogleConsultar'),
+  eliaGoogleCancelar: doPainel('eliaGoogleCancelar')
+});
 
 async function api(action, data = {}) {
   const response = await fetch(A1_URL + '/functions/v1/elia', {
@@ -113,7 +151,7 @@ export async function eliaMontar(panel) {
     status.classList.toggle('elia-error', error);
   };
   document.addEventListener('fullscreenchange', () => {
-    const button = page.querySelector('[data-el="fullscreen"]');
+    const button = page.querySelector('[data-acao="eliaTelaCheia"]');
     if (button)
       button.textContent =
         document.fullscreenElement === panel.querySelector('.elia-workspace')
@@ -129,17 +167,17 @@ export async function eliaMontar(panel) {
   function renderProfile() {
     const p = state.profile;
     return `<div class="elia-fields">
-      <label>Nome<input data-profile="nome" value="${q(p.nome || 'ELIA')}" maxlength="100"></label>
-      <label>Função<input data-profile="funcao" value="${q(p.funcao || '')}" maxlength="100"></label>
-      <label>Tom<select data-profile="tom">${['formal', 'normal', 'descontraída'].map(key => option(key, key, p.tom || 'normal')).join('')}</select></label>
-      <label>Etapa ao encaminhar<select data-profile="pipeline"><option value="">Manter etapa</option>${state.stages.map(i => option(i.id, i.name, p.pipeline)).join('')}</select></label>
-      <label>Responsável<select data-profile="responsavel"><option value="">Fila da Central</option>${state.partners.map(i => option(i.id, i.name, p.responsavel)).join('')}</select></label>
-      <label class="elia-wide">Comportamento<textarea data-profile="comportamento" maxlength="20000" rows="5">${q(p.comportamento || '')}</textarea></label>
+      <label>Nome<input data-acao-input="eliaCampo" data-profile="nome" value="${q(p.nome || 'ELIA')}" maxlength="100"></label>
+      <label>Função<input data-acao-input="eliaCampo" data-profile="funcao" value="${q(p.funcao || '')}" maxlength="100"></label>
+      <label>Tom<select data-acao-input="eliaCampo" data-profile="tom">${['formal', 'normal', 'descontraída'].map(key => option(key, key, p.tom || 'normal')).join('')}</select></label>
+      <label>Etapa ao encaminhar<select data-acao-input="eliaCampo" data-profile="pipeline"><option value="">Manter etapa</option>${state.stages.map(i => option(i.id, i.name, p.pipeline)).join('')}</select></label>
+      <label>Responsável<select data-acao-input="eliaCampo" data-profile="responsavel"><option value="">Fila da Central</option>${state.partners.map(i => option(i.id, i.name, p.responsavel)).join('')}</select></label>
+      <label class="elia-wide">Comportamento<textarea data-acao-input="eliaCampo" data-profile="comportamento" maxlength="20000" rows="5">${q(p.comportamento || '')}</textarea></label>
       </div><div class="elia-options">
-      <label><input data-profile="canais" type="checkbox"${checked(p.canais?.includes('whatsapp'))}> WhatsApp</label>
-      <label><input data-profile="agendamento" type="checkbox"${checked(p.agendamento)}> Agendamento pela ELIA</label>
-      <label><input data-profile="followup" type="checkbox"${checked(p.followup)}> Follow-up</label>
-      <label><input data-profile="enabled" type="checkbox"${checked(state.enabled)}> Ativar agente</label>
+      <label><input data-acao-input="eliaCampo" data-profile="canais" type="checkbox"${checked(p.canais?.includes('whatsapp'))}> WhatsApp</label>
+      <label><input data-acao-input="eliaCampo" data-profile="agendamento" type="checkbox"${checked(p.agendamento)}> Agendamento pela ELIA</label>
+      <label><input data-acao-input="eliaCampo" data-profile="followup" type="checkbox"${checked(p.followup)}> Follow-up</label>
+      <label><input data-acao-input="eliaCampo" data-profile="enabled" type="checkbox"${checked(state.enabled)}> Ativar agente</label>
       </div>`;
   }
 
@@ -147,27 +185,27 @@ export async function eliaMontar(panel) {
     return Object.entries(collections)
       .map(
         ([key, title]) => `<details class="elia-records">
-      <summary>${title} · ${(state.profile[key] || []).length}</summary>
+      <summary>${q(title)} · ${(state.profile[key] || []).length}</summary>
       ${(state.profile[key] || [])
         .map(
           (record, index) => `<article data-record="${key}" data-index="${index}">
-        <label>Título<input data-field="titulo" maxlength="120" value="${q(record.titulo)}"></label>
-        <label>${key === 'empreendimentos' ? 'Ficha técnica' : 'Descrição'}<textarea data-field="descricao" maxlength="4000">${q(record.descricao)}</textarea></label>
+        <label>Título<input data-acao-input="eliaCampo" data-field="titulo" maxlength="120" value="${q(record.titulo)}"></label>
+        <label>${key === 'empreendimentos' ? 'Ficha técnica' : 'Descrição'}<textarea data-acao-input="eliaCampo" data-field="descricao" maxlength="4000">${q(record.descricao)}</textarea></label>
         ${(record.fotos || [])
           .map(
             (
               file,
               i
-            ) => `<span class="elia-file"><button data-el="asset" data-file="${i}">${q(file.name)}</button>
-          <button data-el="remove-file" data-file="${i}" aria-label="Remover anexo">×</button></span>`
+            ) => `<span class="elia-file"><button data-acao="eliaAbrirAnexo" data-file="${i}">${q(file.name)}</button>
+          <button data-acao="eliaRemoverAnexo" data-file="${i}" aria-label="Remover anexo">×</button></span>`
           )
           .join('')}
-        <label>${key === 'treinamentos' ? 'Material' : 'Fotos e arquivos'}<input type="file" data-upload="record" accept="image/png,image/jpeg,image/webp,application/pdf"></label>
-        <button class="btn btn-ghost" data-el="remove-record">Remover item</button>
+        <label>${key === 'treinamentos' ? 'Material' : 'Fotos e arquivos'}<input type="file" data-acao-change="eliaMudou" data-upload="record" accept="image/png,image/jpeg,image/webp,application/pdf"></label>
+        <button class="btn btn-ghost" data-acao="eliaRemoverItem">Remover item</button>
       </article>`
         )
         .join('')}
-      <button class="btn btn-ghost" data-el="add-record" data-key="${key}">Adicionar item</button></details>`
+      <button class="btn btn-ghost" data-acao="eliaAddItem" data-key="${key}">Adicionar item</button></details>`
       )
       .join('');
   }
@@ -221,12 +259,12 @@ export async function eliaMontar(panel) {
       .filter(k => k !== 'trigger')
       .map(k => option(k, nodes[k]))
       .join('')}</select>
-      <button class="btn btn-ghost" data-el="add-node">Adicionar etapa</button><button type="button" class="btn btn-ghost" data-el="fullscreen">${document.fullscreenElement === panel.querySelector('.elia-workspace') ? 'Sair da tela cheia' : 'Tela cheia'}</button></div>
+      <button class="btn btn-ghost" data-acao="eliaAddNo">Adicionar etapa</button><button type="button" class="btn btn-ghost" data-acao="eliaTelaCheia">${document.fullscreenElement === panel.querySelector('.elia-workspace') ? 'Sair da tela cheia' : 'Tela cheia'}</button></div>
       <p>Selecione uma etapa e arraste seus pontos de saída até a etapa de destino. Use condições ou vários caminhos para criar ramificações.</p>
       <div class="elia-scroll"><div class="elia-canvas"><svg aria-hidden="true" width="1400" height="760">${links}</svg>
       ${state.flow
         .map(
-          n => `<button class="elia-node${n.id === selectedNode ? ' active' : ''}" data-node="${q(n.id)}" data-el="node"
+          n => `<button class="elia-node${n.id === selectedNode ? ' active' : ''}" data-node="${q(n.id)}" data-acao="eliaNo"
           style="left:${Number(n.x) || 0}px;top:${Number(n.y) || 0}px"><small>${q(nodes[n.type])}</small>
           <strong>${q(n.title || nodes[n.type])}</strong></button>`
         )
@@ -244,13 +282,13 @@ export async function eliaMontar(panel) {
       ${
         chosen
           ? `<div class="elia-toolbar"><strong>Conexões:</strong>
-          ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="next">Ligar próxima etapa</button>' : ''}
-          ${['condition', 'qualification'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-el="link-node" data-key="other">Ligar caminho alternativo</button>' : ''}
-          ${linking ? '<span role="status">Selecione a etapa de destino no quadro.</span><button type="button" class="btn btn-ghost" data-el="cancel-link">Cancelar</button>' : ''}</div>
-          <div class="elia-fields"><label>Nome do nó<input data-node-field="title" value="${q(chosen.title || '')}"></label>
-        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
-        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
-        ${chosen.type === 'routes' ? `<div class="elia-wide"><p>Para cada opção, informe um trecho da mensagem e escolha a etapa de destino. A primeira opção encontrada será usada; se nenhuma combinar, segue a próxima etapa.</p>${(chosen.routes || []).map((route, i) => `<div class="elia-toolbar"><label>Se a mensagem contém<input data-route-text="${i}" maxlength="200" value="${q(route.text)}"></label><label>Seguir para<select data-route-next="${i}">${targets(route.next)}</select></label><button type="button" class="btn btn-ghost" data-el="link-route" data-key="${i}">Ligar no quadro</button><button type="button" class="btn btn-ghost" data-el="remove-route" data-key="${i}">Remover opção</button></div>`).join('')}<button type="button" class="btn btn-ghost" data-el="add-route">Adicionar caminho</button></div>` : ''}
+          ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-acao="eliaLigarNo" data-key="next">Ligar próxima etapa</button>' : ''}
+          ${['condition', 'qualification'].includes(chosen.type) ? '<button type="button" class="btn btn-ghost" data-acao="eliaLigarNo" data-key="other">Ligar caminho alternativo</button>' : ''}
+          ${linking ? '<span role="status">Selecione a etapa de destino no quadro.</span><button type="button" class="btn btn-ghost" data-acao="eliaCancelarLigacao">Cancelar</button>' : ''}</div>
+          <div class="elia-fields"><label>Nome do nó<input data-acao-input="eliaCampo" data-node-field="title" value="${q(chosen.title || '')}"></label>
+        ${!['handoff', 'end', 'roulette'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando todos estiverem preenchidos' : chosen.type === 'condition' ? 'Se sim' : 'Próxima etapa'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="next">${targets(chosen.next)}</select></label>` : ''}
+        ${['condition', 'qualification'].includes(chosen.type) ? `<label>${chosen.type === 'qualification' ? 'Quando faltar algum dado' : 'Se não'}<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-node-field="other">${targets(chosen.other)}</select></label>` : ''}
+        ${chosen.type === 'routes' ? `<div class="elia-wide"><p>Para cada opção, informe um trecho da mensagem e escolha a etapa de destino. A primeira opção encontrada será usada; se nenhuma combinar, segue a próxima etapa.</p>${(chosen.routes || []).map((route, i) => `<div class="elia-toolbar"><label>Se a mensagem contém<input data-acao-input="eliaCampo" data-route-text="${i}" maxlength="200" value="${q(route.text)}"></label><label>Seguir para<select data-acao-input="eliaCampo" data-acao-change="eliaMudou" data-route-next="${i}">${targets(route.next)}</select></label><button type="button" class="btn btn-ghost" data-acao="eliaLigarCaminho" data-key="${i}">Ligar no quadro</button><button type="button" class="btn btn-ghost" data-acao="eliaRemoverCaminho" data-key="${i}">Remover opção</button></div>`).join('')}<button type="button" class="btn btn-ghost" data-acao="eliaAddCaminho">Adicionar caminho</button></div>` : ''}
         ${
           ['qualification', 'roulette'].includes(chosen.type)
             ? `<fieldset class="elia-wide"><legend>Dados obrigatórios para avançar</legend><div class="elia-options">${Object.entries(
@@ -258,19 +296,19 @@ export async function eliaMontar(panel) {
               )
                 .map(
                   ([key, label]) =>
-                    `<label><input type="checkbox" data-qualification-field="${key}"${checked(chosen.fields?.includes(key))}> ${label}</label>`
+                    `<label><input type="checkbox" data-acao-input="eliaCampo" data-qualification-field="${q(key)}"${checked(chosen.fields?.includes(key))}> ${q(label)}</label>`
                 )
                 .join('')}</div></fieldset>`
             : ''
         }
-        ${chosen.type === 'wait' ? `<label>Minutos<input type="number" min="1" max="43200" data-node-field="minutes" value="${Number(chosen.minutes) || 60}"></label>` : ''}
+        ${chosen.type === 'wait' ? `<label>Minutos<input type="number" min="1" max="43200" data-acao-input="eliaCampo" data-node-field="minutes" value="${Number(chosen.minutes) || 60}"></label>` : ''}
         ${
           ['ai', 'message', 'condition', 'handoff', 'agenda'].includes(chosen.type)
             ? `<label class="elia-wide">${chosen.type === 'agenda' ? 'Evento (JSON com title, start e end em ISO)' : 'Texto ou instrução'}
-          <textarea data-node-field="text" rows="3">${q(chosen.text)}</textarea></label>`
+          <textarea data-acao-input="eliaCampo" data-node-field="text" rows="3">${q(chosen.text)}</textarea></label>`
             : ''
         }</div>
-        ${chosen.type !== 'trigger' ? '<button class="btn btn-ghost" data-el="remove-node">Excluir nó</button>' : ''}`
+        ${chosen.type !== 'trigger' ? '<button class="btn btn-ghost" data-acao="eliaRemoverNo">Excluir nó</button>' : ''}`
           : ''
       }
       <details><summary>Dados de qualificação para a simulação</summary><p>Preencha valores fictícios para testar os caminhos do fluxo. Eles não são salvos em leads.</p><div class="elia-fields">${Object.entries(
@@ -280,28 +318,28 @@ export async function eliaMontar(panel) {
           ([key, label]) => `<label>${q(label)}<input data-simulation-field="${key}" maxlength="500"></label>`
         )
         .join('')}</div></details>
-      <div class="elia-toolbar"><input data-simulation placeholder="Mensagem do lead para simular" aria-label="Mensagem de teste"><button class="btn btn-ghost" data-el="simulate">Simular</button></div>
+      <div class="elia-toolbar"><input data-simulation placeholder="Mensagem do lead para simular" aria-label="Mensagem de teste"><button class="btn btn-ghost" data-acao="eliaSimular">Simular</button></div>
       <pre data-trace hidden></pre>
       ${state.jobs.length ? '<details><summary>Execuções recentes</summary><ul>' + state.jobs.map(i => `<li>${q(labels[i.status])} · ${q(i.detail || new Date(i.run_at).toLocaleString('pt-BR'))}</li>`).join('') + '</ul></details>' : ''}`;
   }
 
   function renderCampaigns() {
-    return `<div class="elia-fields"><label>Título<input data-draft="title" maxlength="120" value="${q(campaignDraft.title)}"></label>
-      <label>Anexo opcional<input type="file" data-upload="campaign" accept="image/png,image/jpeg,image/webp,application/pdf">
+    return `<div class="elia-fields"><label>Título<input data-acao-input="eliaCampo" data-draft="title" maxlength="120" value="${q(campaignDraft.title)}"></label>
+      <label>Anexo opcional<input type="file" data-acao-change="eliaMudou" data-upload="campaign" accept="image/png,image/jpeg,image/webp,application/pdf">
       ${q(campaignFile?.name || '')}</label>
-      <label class="elia-wide">Mensagem<textarea data-draft="message" maxlength="4000" placeholder="Olá, {{nome}}!">${q(campaignDraft.message)}</textarea></label></div>
-      <div class="elia-toolbar"><input data-search placeholder="Buscar leads por nome" aria-label="Buscar leads"><button class="btn btn-ghost" data-el="contacts">Buscar</button>
+      <label class="elia-wide">Mensagem<textarea data-acao-input="eliaCampo" data-draft="message" maxlength="4000" placeholder="Olá, {{nome}}!">${q(campaignDraft.message)}</textarea></label></div>
+      <div class="elia-toolbar"><input data-search placeholder="Buscar leads por nome" aria-label="Buscar leads"><button class="btn btn-ghost" data-acao="eliaBuscarContatos">Buscar</button>
       <span data-recipient-count></span></div><div data-contacts></div>
-      <button class="btn btn-primary" data-el="campaign">Enfileirar campanha</button>
+      <button class="btn btn-primary" data-acao="eliaEnfileirar">Enfileirar campanha</button>
       <h3>Campanhas</h3>${state.campaigns
         .map(
           item => `<article class="elia-campaign" data-campaign="${q(item.id)}">
       <strong>${q(item.title)}</strong> <span>${q(labels[item.status])}</span>
-      <button class="btn btn-ghost" data-el="campaign-jobs">Ver destinatários</button>
+      <button class="btn btn-ghost" data-acao="eliaVerDestinatarios">Ver destinatários</button>
       ${
         item.status !== 'cancelled'
-          ? `<button class="btn btn-ghost" data-el="campaign-status" data-status="${item.status === 'paused' ? 'queued' : 'paused'}">${item.status === 'paused' ? 'Retomar' : 'Pausar'}</button>
-      <button class="btn btn-ghost" data-el="campaign-status" data-status="cancelled">Cancelar fila</button>`
+          ? `<button class="btn btn-ghost" data-acao="eliaStatusCampanha" data-status="${item.status === 'paused' ? 'queued' : 'paused'}">${item.status === 'paused' ? 'Retomar' : 'Pausar'}</button>
+      <button class="btn btn-ghost" data-acao="eliaStatusCampanha" data-status="cancelled">Cancelar fila</button>`
           : ''
       }<div data-results></div></article>`
         )
@@ -312,12 +350,12 @@ export async function eliaMontar(panel) {
     return `<div class="elia-toolbar"><strong>${state.google ? 'Conta Google conectada' : 'Conta Google desconectada'}</strong>
       ${
         state.google
-          ? '<button class="btn btn-ghost" data-el="googleDisconnect">Desconectar</button>'
-          : `<button class="btn btn-primary" data-el="googleConnect"${state.googleReady ? '' : ' disabled'}>Conectar Google Agenda</button>`
+          ? '<button class="btn btn-ghost" data-acao="eliaGoogleDesconectar">Desconectar</button>'
+          : `<button class="btn btn-primary" data-acao="eliaGoogleConectar"${state.googleReady ? '' : ' disabled'}>Conectar Google Agenda</button>`
       }</div>
       ${!state.googleReady ? '<p>A integração Google precisa ser habilitada pela plataforma.</p>' : ''}
-      <div class="elia-fields"><label>ID da agenda<input data-profile="calendario" value="${q(state.profile.calendario || 'primary')}"></label>
-      <label>Lembrete WhatsApp para agendamentos da ELIA<select data-profile="lembrete">${[
+      <div class="elia-fields"><label>ID da agenda<input data-acao-input="eliaCampo" data-profile="calendario" value="${q(state.profile.calendario || 'primary')}"></label>
+      <label>Lembrete WhatsApp para agendamentos da ELIA<select data-acao-input="eliaCampo" data-profile="lembrete">${[
         [0, 'Desativado'],
         [15, '15 minutos antes'],
         [30, '30 minutos antes'],
@@ -331,8 +369,8 @@ export async function eliaMontar(panel) {
           ? `<div class="elia-fields"><label>Título do compromisso<input data-event="title"></label>
       <label>Mês de consulta<input type="month" data-month></label>
       <label>Início<input type="datetime-local" data-event="start"></label><label>Fim<input type="datetime-local" data-event="end"></label>
-      </div><div class="elia-toolbar"><button class="btn btn-primary" data-el="googleBook">Agendar com Meet</button>
-      <button class="btn btn-ghost" data-el="googleEvents">Consultar agenda</button></div><div data-events></div>`
+      </div><div class="elia-toolbar"><button class="btn btn-primary" data-acao="eliaGoogleAgendar">Agendar com Meet</button>
+      <button class="btn btn-ghost" data-acao="eliaGoogleConsultar">Consultar agenda</button></div><div data-events></div>`
           : ''
       }`;
   }
@@ -343,9 +381,9 @@ export async function eliaMontar(panel) {
     page.querySelector('[data-recipient-count]').textContent = recipients.size + ' selecionados';
     list.innerHTML = contacts
       .map(
-        item => `<div class="elia-contact"><label><input data-recipient="${q(item.id)}" type="checkbox"
+        item => `<div class="elia-contact"><label><input data-acao-input="eliaCampo" data-recipient="${q(item.id)}" type="checkbox"
       ${checked(recipients.has(item.id))}${item.consent ? '' : ' disabled'}> ${q(item.client_name || 'Sem nome')} · ${q(item.client_phone)}</label>
-      <button class="btn btn-ghost" data-el="consent" data-id="${q(item.id)}" data-granted="${item.consent}">${item.consent ? 'Revogar consentimento' : 'Registrar consentimento'}</button></div>`
+      <button class="btn btn-ghost" data-acao="eliaConsentimento" data-id="${q(item.id)}" data-granted="${item.consent}">${item.consent ? 'Revogar consentimento' : 'Registrar consentimento'}</button></div>`
       )
       .join('');
   }
@@ -356,7 +394,7 @@ export async function eliaMontar(panel) {
     nav.innerHTML = Object.entries(tabs)
       .map(
         ([key, [label]]) =>
-          `<button type="button" data-el="tab" data-key="${key}" aria-current="${key === tab ? 'true' : 'false'}"><svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg><span>${label}</span></button>`
+          `<button type="button" data-acao="eliaAba" data-key="${q(key)}" aria-current="${key === tab ? 'true' : 'false'}"><svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg><span>${q(label)}</span></button>`
       )
       .join('');
     const views = {
@@ -372,7 +410,7 @@ export async function eliaMontar(panel) {
       views[tab]() +
       (tab === 'campanhas'
         ? ''
-        : '<footer><button class="btn btn-primary" data-el="save">Salvar configuração</button></footer>');
+        : '<footer><button class="btn btn-primary" data-acao="eliaSalvar">Salvar configuração</button></footer>');
     if (tab === 'campanhas') showContacts();
     if (viewport) page.querySelector('.elia-scroll').scrollTo(viewport);
   }
@@ -394,8 +432,9 @@ export async function eliaMontar(panel) {
     return row ? state.profile[row.dataset.record][Number(row.dataset.index)] : null;
   };
 
-  page.addEventListener('input', event => {
-    const field = event.target;
+  // Campos: cada um declara data-acao-input="eliaCampo"; os que mudam o
+  // desenho (destino de uma conexão) ou mandam arquivo, data-acao-change.
+  function campo(field) {
     if (field.dataset.routeText !== undefined)
       state.flow.find(item => item.id === selectedNode).routes[Number(field.dataset.routeText)].text =
         field.value;
@@ -424,9 +463,8 @@ export async function eliaMontar(panel) {
       else recipients.delete(field.dataset.recipient);
       showContacts();
     }
-  });
-  page.addEventListener('change', async event => {
-    const field = event.target;
+  }
+  async function mudou(field) {
     if (['next', 'other'].includes(field.dataset.nodeField) || field.dataset.routeNext !== undefined)
       render();
     if (!field.dataset.upload) return;
@@ -445,7 +483,10 @@ export async function eliaMontar(panel) {
     } catch (error) {
       tell(error.message, true);
     }
-  });
+  }
+  // O arraste dos nós e das conexões fica com ouvintes do próprio quadro:
+  // acoes() não atende eventos de ponteiro (pointerdown/move/up), que são de
+  // widget e disparam dezenas de vezes por segundo.
   let drag;
   let portDrag;
   page.addEventListener('pointerdown', event => {
@@ -538,214 +579,249 @@ export async function eliaMontar(panel) {
     enabledIndicator.hidden = false;
   }
 
-  panel.addEventListener('click', async event => {
-    const button = event.target.closest('[data-el]');
-    if (!button || button.disabled) return;
-    const { el, key, id, granted } = button.dataset;
+  // Botões: cada um declara data-acao="elia..." (ver src/shared/ui/acoes.js).
+  // O botão fica desligado enquanto a ação roda; erro aparece no status.
+  const rodar = fn => async el => {
+    const button = /** @type {HTMLButtonElement} */ (el);
+    if (button.disabled) return;
     button.disabled = true;
     try {
-      if (el === 'tab') {
-        tab = key;
-        render();
-        nav.querySelector('[aria-current="true"]').focus();
-        tell('');
-      } else if (el === 'save') {
-        await save();
-        showAgentStatus();
-        tell('Configuração salva.');
-      } else if (el === 'add-record') {
-        (state.profile[key] ||= []).push({ titulo: '', descricao: '', fotos: [] });
-        render();
-        page.querySelectorAll('.elia-records')[Object.keys(collections).indexOf(key)].open = true;
-      } else if (el === 'remove-record' || el === 'remove-file') {
-        const row = button.closest('[data-record]');
-        const record = recordFor(button);
-        if (el === 'remove-record') state.profile[row.dataset.record].splice(Number(row.dataset.index), 1);
-        else record.fotos.splice(Number(button.dataset.file), 1);
-        render();
-        page.querySelectorAll('.elia-records')[Object.keys(collections).indexOf(row.dataset.record)].open =
-          true;
-      } else if (el === 'asset') {
-        const { url } = await api('asset', { file: recordFor(button).fotos[Number(button.dataset.file)] });
-        const link = document.createElement('a');
-        link.href = url;
-        link.textContent = 'Abrir anexo';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        status.replaceChildren(link);
-      } else if (el === 'fullscreen') {
-        const workspace = panel.querySelector('.elia-workspace');
-        if (document.fullscreenElement === workspace) await document.exitFullscreen();
-        else await workspace.requestFullscreen();
-        render();
-      } else if (el === 'add-route') {
-        const node = state.flow.find(item => item.id === selectedNode);
-        if ((node.routes || []).length >= 20) throw Error('Esta etapa pode ter até 20 caminhos.');
-        (node.routes ||= []).push({ text: '', next: '' });
-        render();
-      } else if (el === 'remove-route') {
-        state.flow.find(item => item.id === selectedNode).routes.splice(Number(key), 1);
-        render();
-      } else if (el === 'link-route') {
-        linking = { source: selectedNode, key: 'route', index: Number(key) };
-        render();
-      } else if (el === 'link-node') {
-        linking = { source: selectedNode, key };
-        render();
-      } else if (el === 'cancel-link') {
-        linking = null;
-        render();
-      } else if (el === 'node' && linking) {
-        if (button.dataset.node === linking.source) throw Error('Escolha outra etapa como destino.');
-        const source = state.flow.find(item => item.id === linking.source);
-        const target = state.flow.find(item => item.id === button.dataset.node);
-        if (target?.type === 'trigger') throw Error('O gatilho não pode receber conexões.');
-        if (linking.key === 'route') source.routes[linking.index].next = target.id;
-        else source[linking.key] = target.id;
-        selectedNode = source.id;
-        linking = null;
-        render();
-      } else if (el === 'node') {
-        selectedNode = button.dataset.node;
-        render();
-      } else if (el === 'add-node') {
-        if (state.flow.length >= 30) throw Error('O fluxo pode ter até 30 nós.');
-        selectedNode = crypto.randomUUID();
-        const i = state.flow.length;
-        state.flow.push({
-          id: selectedNode,
-          type: page.querySelector('[data-node-type]').value,
-          x: 20 + (i % 5) * 235,
-          y: 25 + Math.floor(i / 5) * 100,
-          minutes: 60,
-          text: ''
-        });
-        render();
-      } else if (el === 'remove-node') {
-        state.flow = state.flow.filter(node => node.id !== selectedNode);
-        for (const node of state.flow) {
-          if (node.next === selectedNode) delete node.next;
-          if (node.other === selectedNode) delete node.other;
-          for (const route of node.routes || []) if (route.next === selectedNode) route.next = '';
-        }
-        selectedNode = '';
-        render();
-      } else if (el === 'simulate') {
-        const result = await api('simulate', {
-          profile: state.profile,
-          flow: state.flow,
-          message: page.querySelector('[data-simulation]').value,
-          qualification: Object.fromEntries(
-            [...page.querySelectorAll('[data-simulation-field]')].map(field => [
-              field.dataset.simulationField,
-              field.value
-            ])
-          )
-        });
-        const trace = page.querySelector('[data-trace]');
-        trace.hidden = false;
-        trace.textContent = [...result.trace, result.output].filter(Boolean).join('\n') || 'Fluxo encerrado.';
-        tell('Simulação concluída. Nenhuma mensagem foi enviada.');
-      } else if (el === 'contacts' || el === 'consent') {
-        const search = page.querySelector('[data-search]').value;
-        if (el === 'consent') {
-          const evidence =
-            granted === 'true'
-              ? ''
-              : window.prompt('Onde e quando este contato autorizou mensagens de campanha?');
-          if (granted !== 'true' && !evidence?.trim()) return;
-          await api('consent', { id, granted: granted !== 'true', evidence });
-          if (granted === 'true') recipients.delete(id);
-        }
-        contacts = (await api('contacts', { search })).contacts;
-        showContacts();
-      } else if (el === 'campaign') {
-        if (!recipients.size) throw Error('Selecione os contatos com consentimento.');
-        if (!window.confirm('Enfileirar o envio de WhatsApp para ' + recipients.size + ' contatos?')) return;
-        await api('campaign', { ...campaignDraft, file: campaignFile, ids: [...recipients] });
-        recipients.clear();
-        campaignFile = null;
-        campaignDraft = { title: '', message: '' };
-        state.campaigns = (await api('load')).campaigns;
-        render();
-        tell('Campanha enfileirada.');
-      } else if (el === 'campaign-jobs' || el === 'campaign-status') {
-        const card = button.closest('[data-campaign]');
-        if (el === 'campaign-status') {
-          await api('campaignStatus', { id: card.dataset.campaign, status: button.dataset.status });
-          state.campaigns = (await api('load')).campaigns;
-          render();
-        } else {
-          const result = await api('campaignJobs', { id: card.dataset.campaign });
-          card.querySelector('[data-results]').innerHTML =
-            '<ul>' +
-            result
-              .map(
-                item =>
-                  `<li>${q(item.a1_cases?.client_name || 'Contato')} · ${q(labels[item.status])} ${q(item.detail || '')}</li>`
-              )
-              .join('') +
-            '</ul>';
-        }
-      } else if (el === 'googleConnect') {
-        location.assign((await api(el)).url);
-      } else if (el === 'googleDisconnect') {
-        await api(el);
-        state.google = false;
-        render();
-      } else if (el === 'googleBook') {
-        const value = key => page.querySelector(`[data-event="${key}"]`).value;
-        if (!value('start') || !value('end')) throw Error('Informe início e fim.');
-        const result = await api(el, {
-          title: value('title'),
-          start: new Date(value('start')).toISOString(),
-          end: new Date(value('end')).toISOString()
-        });
-        tell('Compromisso criado.');
-        if (result.hangoutLink) {
-          const link = document.createElement('a');
-          link.href = result.hangoutLink;
-          link.textContent = ' Abrir Google Meet';
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          status.append(link);
-        }
-      } else if (el === 'googleEvents' || el === 'googleCancel') {
-        if (el === 'googleCancel') {
-          if (!window.confirm('Cancelar este compromisso no Google Agenda?')) return;
-          await api(el, { id });
-        }
-        const month = page.querySelector('[data-month]').value;
-        const start = month
-          ? new Date(month + '-01T00:00:00')
-          : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-        const items = await api('googleEvents', { start: start.toISOString(), end: end.toISOString() });
-        page.querySelector('[data-events]').innerHTML = items.length
-          ? '<ul>' +
-            items
-              .map(item => {
-                const date = item.start?.dateTime
-                  ? new Date(item.start.dateTime).toLocaleString('pt-BR')
-                  : item.start?.date;
-                const link = /^https:\/\/(calendar\.google\.com|www\.google\.com|meet\.google\.com)\//.test(
-                  item.htmlLink || ''
-                )
-                  ? item.htmlLink
-                  : '';
-                return `<li>${q(date || '')} · ${q(item.summary || 'Ocupado')} ${link ? `<a href="${q(link)}" target="_blank" rel="noopener noreferrer">Abrir</a>` : ''}
-            ${item.extendedProperties?.private?.siimob === 'elia' ? `<button class="btn btn-ghost" data-el="googleCancel" data-id="${q(item.id)}">Cancelar</button>` : ''}</li>`;
-              })
-              .join('') +
-            '</ul>'
-          : '<p>Sem compromissos no período.</p>';
-      }
+      await fn(button, button.dataset);
     } catch (error) {
       tell(error.message, true);
     } finally {
       button.disabled = false;
     }
-  });
+  };
+  const abrirColecao = key => {
+    const lista = page.querySelectorAll('.elia-records')[Object.keys(collections).indexOf(key)];
+    if (lista) lista.open = true;
+  };
+  const destinoDaLigacao = button => {
+    if (button.dataset.node === linking.source) throw Error('Escolha outra etapa como destino.');
+    const source = state.flow.find(item => item.id === linking.source);
+    const target = state.flow.find(item => item.id === button.dataset.node);
+    if (target?.type === 'trigger') throw Error('O gatilho não pode receber conexões.');
+    if (linking.key === 'route') source.routes[linking.index].next = target.id;
+    else source[linking.key] = target.id;
+    selectedNode = source.id;
+    linking = null;
+  };
+  const consultarAgenda = async () => {
+    const month = page.querySelector('[data-month]').value;
+    const start = month
+      ? new Date(month + '-01T00:00:00')
+      : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    const items = await api('googleEvents', { start: start.toISOString(), end: end.toISOString() });
+    page.querySelector('[data-events]').innerHTML = items.length
+      ? '<ul>' +
+        items
+          .map(item => {
+            const date = item.start?.dateTime
+              ? new Date(item.start.dateTime).toLocaleString('pt-BR')
+              : item.start?.date;
+            const link = /^https:\/\/(calendar\.google\.com|www\.google\.com|meet\.google\.com)\//.test(
+              item.htmlLink || ''
+            )
+              ? item.htmlLink
+              : '';
+            return `<li>${q(date || '')} · ${q(item.summary || 'Ocupado')} ${link ? `<a href="${q(link)}" target="_blank" rel="noopener noreferrer">Abrir</a>` : ''}
+            ${item.extendedProperties?.private?.siimob === 'elia' ? `<button class="btn btn-ghost" data-acao="eliaGoogleCancelar" data-id="${q(item.id)}">Cancelar</button>` : ''}</li>`;
+          })
+          .join('') +
+        '</ul>'
+      : '<p>Sem compromissos no período.</p>';
+  };
+  const buscarContatos = async () => {
+    contacts = (await api('contacts', { search: page.querySelector('[data-search]').value })).contacts;
+    showContacts();
+  };
+  const linkExterno = (href, texto) => {
+    const link = document.createElement('a');
+    link.href = href;
+    link.textContent = texto;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    return link;
+  };
+
+  painel = {
+    eliaCampo: el => campo(el),
+    eliaMudou: el => mudou(el),
+    eliaAba: rodar(async (button, { key }) => {
+      tab = key;
+      render();
+      nav.querySelector('[aria-current="true"]').focus();
+      tell('');
+    }),
+    eliaSalvar: rodar(async () => {
+      await save();
+      showAgentStatus();
+      tell('Configuração salva.');
+    }),
+    eliaAddItem: rodar(async (button, { key }) => {
+      (state.profile[key] ||= []).push({ titulo: '', descricao: '', fotos: [] });
+      render();
+      abrirColecao(key);
+    }),
+    eliaRemoverItem: rodar(async button => {
+      const row = button.closest('[data-record]');
+      state.profile[row.dataset.record].splice(Number(row.dataset.index), 1);
+      render();
+      abrirColecao(row.dataset.record);
+    }),
+    eliaRemoverAnexo: rodar(async button => {
+      const row = button.closest('[data-record]');
+      recordFor(button).fotos.splice(Number(button.dataset.file), 1);
+      render();
+      abrirColecao(row.dataset.record);
+    }),
+    eliaAbrirAnexo: rodar(async button => {
+      const { url } = await api('asset', { file: recordFor(button).fotos[Number(button.dataset.file)] });
+      status.replaceChildren(linkExterno(url, 'Abrir anexo'));
+    }),
+    eliaTelaCheia: rodar(async () => {
+      const workspace = panel.querySelector('.elia-workspace');
+      if (document.fullscreenElement === workspace) await document.exitFullscreen();
+      else await workspace.requestFullscreen();
+      render();
+    }),
+    eliaAddCaminho: rodar(async () => {
+      const node = state.flow.find(item => item.id === selectedNode);
+      if ((node.routes || []).length >= 20) throw Error('Esta etapa pode ter até 20 caminhos.');
+      (node.routes ||= []).push({ text: '', next: '' });
+      render();
+    }),
+    eliaRemoverCaminho: rodar(async (button, { key }) => {
+      state.flow.find(item => item.id === selectedNode).routes.splice(Number(key), 1);
+      render();
+    }),
+    eliaLigarCaminho: rodar(async (button, { key }) => {
+      linking = { source: selectedNode, key: 'route', index: Number(key) };
+      render();
+    }),
+    eliaLigarNo: rodar(async (button, { key }) => {
+      linking = { source: selectedNode, key };
+      render();
+    }),
+    eliaCancelarLigacao: rodar(async () => {
+      linking = null;
+      render();
+    }),
+    eliaNo: rodar(async button => {
+      if (linking) destinoDaLigacao(button);
+      else selectedNode = button.dataset.node;
+      render();
+    }),
+    eliaAddNo: rodar(async () => {
+      if (state.flow.length >= 30) throw Error('O fluxo pode ter até 30 nós.');
+      selectedNode = crypto.randomUUID();
+      const i = state.flow.length;
+      state.flow.push({
+        id: selectedNode,
+        type: page.querySelector('[data-node-type]').value,
+        x: 20 + (i % 5) * 235,
+        y: 25 + Math.floor(i / 5) * 100,
+        minutes: 60,
+        text: ''
+      });
+      render();
+    }),
+    eliaRemoverNo: rodar(async () => {
+      state.flow = state.flow.filter(node => node.id !== selectedNode);
+      for (const node of state.flow) {
+        if (node.next === selectedNode) delete node.next;
+        if (node.other === selectedNode) delete node.other;
+        for (const route of node.routes || []) if (route.next === selectedNode) route.next = '';
+      }
+      selectedNode = '';
+      render();
+    }),
+    eliaSimular: rodar(async () => {
+      const result = await api('simulate', {
+        profile: state.profile,
+        flow: state.flow,
+        message: page.querySelector('[data-simulation]').value,
+        qualification: Object.fromEntries(
+          [...page.querySelectorAll('[data-simulation-field]')].map(field => [
+            field.dataset.simulationField,
+            field.value
+          ])
+        )
+      });
+      const trace = page.querySelector('[data-trace]');
+      trace.hidden = false;
+      trace.textContent = [...result.trace, result.output].filter(Boolean).join('\n') || 'Fluxo encerrado.';
+      tell('Simulação concluída. Nenhuma mensagem foi enviada.');
+    }),
+    eliaBuscarContatos: rodar(buscarContatos),
+    eliaConsentimento: rodar(async (button, { id, granted }) => {
+      const evidence =
+        granted === 'true'
+          ? ''
+          : window.prompt('Onde e quando este contato autorizou mensagens de campanha?');
+      if (granted !== 'true' && !evidence?.trim()) return;
+      await api('consent', { id, granted: granted !== 'true', evidence });
+      if (granted === 'true') recipients.delete(id);
+      await buscarContatos();
+    }),
+    eliaEnfileirar: rodar(async () => {
+      if (!recipients.size) throw Error('Selecione os contatos com consentimento.');
+      if (!window.confirm('Enfileirar o envio de WhatsApp para ' + recipients.size + ' contatos?')) return;
+      await api('campaign', { ...campaignDraft, file: campaignFile, ids: [...recipients] });
+      recipients.clear();
+      campaignFile = null;
+      campaignDraft = { title: '', message: '' };
+      state.campaigns = (await api('load')).campaigns;
+      render();
+      tell('Campanha enfileirada.');
+    }),
+    eliaStatusCampanha: rodar(async button => {
+      const card = button.closest('[data-campaign]');
+      await api('campaignStatus', { id: card.dataset.campaign, status: button.dataset.status });
+      state.campaigns = (await api('load')).campaigns;
+      render();
+    }),
+    eliaVerDestinatarios: rodar(async button => {
+      const card = button.closest('[data-campaign]');
+      const result = await api('campaignJobs', { id: card.dataset.campaign });
+      card.querySelector('[data-results]').innerHTML =
+        '<ul>' +
+        result
+          .map(
+            item =>
+              `<li>${q(item.a1_cases?.client_name || 'Contato')} · ${q(labels[item.status])} ${q(item.detail || '')}</li>`
+          )
+          .join('') +
+        '</ul>';
+    }),
+    eliaGoogleConectar: rodar(async () => {
+      location.assign((await api('googleConnect')).url);
+    }),
+    eliaGoogleDesconectar: rodar(async () => {
+      await api('googleDisconnect');
+      state.google = false;
+      render();
+    }),
+    eliaGoogleAgendar: rodar(async () => {
+      const value = key => page.querySelector(`[data-event="${key}"]`).value;
+      if (!value('start') || !value('end')) throw Error('Informe início e fim.');
+      const result = await api('googleBook', {
+        title: value('title'),
+        start: new Date(value('start')).toISOString(),
+        end: new Date(value('end')).toISOString()
+      });
+      tell('Compromisso criado.');
+      if (result.hangoutLink) status.append(linkExterno(result.hangoutLink, ' Abrir Google Meet'));
+    }),
+    eliaGoogleConsultar: rodar(consultarAgenda),
+    eliaGoogleCancelar: rodar(async (button, { id }) => {
+      if (!window.confirm('Cancelar este compromisso no Google Agenda?')) return;
+      await api('googleCancel', { id });
+      await consultarAgenda();
+    })
+  };
 
   await reload();
   showAgentStatus();

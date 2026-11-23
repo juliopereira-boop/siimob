@@ -30,3 +30,11 @@ Gestores e proprietários com a licença **ATENDIMENTO** encontram a ELIA em **C
 - O Google Agenda pode disparar um lembrete por WhatsApp para compromissos criados pela ELIA quando há consentimento. Antes de enviar, o worker consulta o horário atual do compromisso.
 - As campanhas usam texto e um anexo JPG, PNG, WebP ou PDF de até 5 MB por mensagem. Ao registrar consentimento, indique de onde ele veio. A autorização é vinculada ao telefone registrado. A fila reavalia o consentimento e os limites da Evolution antes do envio. Em caso de resultado incerto, a fila registra falha para revisão em vez de reenviar automaticamente.
 - O status indica que a Evolution aceitou o envio. A confirmação de entrega e leitura é independente desse status.
+
+## Código do painel
+
+- `src/modules/elia/painel.js`, montado por `src/pages/elia/main.js` em `/:slug/configuracoes/elia`.
+- Botões e campos seguem o padrão do sistema: `data-acao="elia..."` (clique), `data-acao-input="eliaCampo"` e `data-acao-change="eliaMudou"`, registrados com `acoes({})` (`src/shared/ui/acoes.js`). Nada de `onclick` nem de despacho próprio.
+- Exceção: o arraste de nós e de conexões no editor usa ouvintes de ponteiro no próprio quadro, porque `acoes()` não atende `pointerdown/move/up`.
+- Todo texto que vem do servidor passa por `esc()`. A página carrega a proteção LGPD (`src/shared/ui/lgpd.js`): telefone e e-mail da lista de contatos ficam foscos até o mouse chegar.
+- Prova: `testes/t-elia.js`.
