@@ -287,3 +287,7 @@ contato...) são recusados ao criar empresa no superadmin. Prova: `testes/t-entr
 - `toast`, `openModal`/`closeModal` e as formatações de data e dinheiro ainda têm versões diferentes
   por tela (o visual de cada uma difere); viram componentes em `src/shared/ui` na fase 3.
 - `a1_has_module` (a porta da tela) não honra `expires_at`; o RLS honra.
+
+## Selo "Um Produto Kortex"
+
+`public/kortex.js`, incluído antes do `</body>` de toda página de `src/pages` (`<script src="/kortex.js"></script>`). Só visual: fixo no canto inferior direito, `pointer-events:none` (nunca bloqueia clique), `z-index:10000`, some na impressão e não duplica. Desvia do WhatsApp flutuante do site (`BOTAO_CANTO = ['.zap']`). Toasts das telas aparecem no mesmo canto por poucos segundos, por cima dele. Página nova precisa incluir o script; `testes/t-kortex.js` confere.
