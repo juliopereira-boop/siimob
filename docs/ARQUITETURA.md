@@ -301,3 +301,13 @@ contato...) são recusados ao criar empresa no superadmin. Prova: `testes/t-entr
 - **Calculadora:** plano da faixa mais os módulos marcados; acima de 100 usuários, maior plano mais o usuário adicional.
 
 Provas: `testes/sql/prova-tabela-precos.sql`, `testes/t-superadmin-planos.js`.
+
+## Excluir cliente (superadmin)
+
+`a1_sa_excluir_cliente(p_tenant)` (`database/migrations/2026-11-25_excluir_cliente.sql`), chamada pelo botão Excluir do superadmin via `rpc`. Tudo ou nada, numa transação:
+
+- apaga as linhas do cliente em toda tabela com chave para `a1_tenants` ou com coluna `tenant_id`;
+- anula ou apaga as citações sem cascata aos usuários e parceiros dele;
+- apaga o cliente.
+
+Roda em voltas para desfazer cadeias (unidade → reserva). Se algo travar, nada é apagado e a mensagem diz qual tabela travou. Arquivos do Storage não são removidos. Provas: `testes/sql/prova-excluir-cliente.sql`, `testes/t-superadmin-excluir.js`.

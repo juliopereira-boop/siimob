@@ -2440,28 +2440,33 @@ async function deleteTenant(tenantId, tenantName) {
     return;
   }
 
+  // Uma chamada só, no banco, numa transação: ou apaga o cliente com tudo o que
+  // é dele, ou não apaga nada. Antes eram quatro DELETE soltos daqui do
+  // navegador: as licenças saíam e o resto travava (409), deixando o cliente
+  // pela metade. Ver database/migrations/2026-11-25_excluir_cliente.sql.
   try {
-    // Remove dados dependentes antes do tenant (ordem importa por FK)
-    await Promise.all([
-      fetch(`${saRest('a1_users')}?tenant_id=eq.${tenantId}`, { method: 'DELETE', headers: saHeaders() }),
-      fetch(`${saRest('a1_partners')}?tenant_id=eq.${tenantId}`, { method: 'DELETE', headers: saHeaders() }),
-      fetch(`${saRest('a1_tenant_modules')}?tenant_id=eq.${tenantId}`, {
-        method: 'DELETE',
-        headers: saHeaders()
-      })
-    ]);
-    const res = await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
-      method: 'DELETE',
-      headers: saHeaders()
+    const res = await fetch(saRest('rpc/a1_sa_excluir_cliente'), {
+      method: 'POST',
+      headers: saHeaders(),
+      body: JSON.stringify({ p_tenant: tenantId })
     });
-    if (res.ok || res.status === 204) {
+    const r = await res.json().catch(() => null);
+    if (res.ok && r && r.ok) {
       toast(`Cliente "${tenantName}" excluído permanentemente.`, 'info');
       await loadAll();
+    } else if (r && r.erro === 'nao_encontrado') {
+      toast('Este cliente já não existe.', 'warn');
+      await loadAll();
+    } else if (res.status === 404) {
+      toast(
+        'A exclusão ainda não foi instalada no banco (2026-11-25_excluir_cliente.sql). Nada foi apagado.',
+        'error'
+      );
     } else {
-      toast('Erro ao excluir cliente.', 'error');
+      toast('Não foi possível excluir. Nada foi apagado.', 'error');
     }
   } catch {
-    toast('Erro ao excluir cliente.', 'error');
+    toast('Não foi possível excluir. Nada foi apagado.', 'error');
   }
 }
 
