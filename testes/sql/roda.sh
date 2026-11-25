@@ -151,6 +151,15 @@ done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-atendimento-conectores.sql
 
+# Locação (fase 1). Antes da exclusão de cliente, que então também apaga os
+# dados da Locação de THE CRED (cobre as chaves novas).
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-25_locacao.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-locacao.sql
+
 # Excluir cliente (superadmin), tudo ou nada. Por último no banco principal:
 # apaga THE CRED inteira e confere que o outro cliente ficou igual.
 for i in 1 2; do
