@@ -783,3 +783,132 @@ tbody td {
 #sa-btn-destravar[hidden] {
   display: none !important;
 }
+
+/* ── Planos: tabela de preços (src/modules/sa/tabela-precos.js) ─────────── */
+.pr-bloco {
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.pr-cab {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.pr-sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.74rem;
+  color: var(--t3);
+}
+.pr-vazio {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--t3);
+  margin-bottom: 1rem;
+}
+.pr-tbl {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.pr-tbl td {
+  vertical-align: middle;
+}
+.pr-in {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+  background: var(--card, #fff);
+  color: var(--t1);
+  font-family: inherit;
+}
+.pr-nome {
+  width: 100%;
+  min-width: 10rem;
+}
+.pr-num {
+  width: 6.5rem;
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+}
+.pr-desc {
+  width: 100%;
+  min-width: 16rem;
+  resize: vertical;
+  line-height: 1.35;
+}
+.pr-rs {
+  font-size: 0.72rem;
+  color: var(--t3);
+  margin-right: 0.25rem;
+}
+.pr-calc {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--t2);
+  white-space: nowrap;
+}
+.pr-chave {
+  font-size: 0.66rem;
+  color: var(--t3);
+  margin-top: 0.2rem;
+}
+.pr-lista {
+  font-size: 0.74rem;
+  color: var(--t2);
+  max-width: 22rem;
+}
+.pr-extra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+.pr-calcula {
+  padding: 0.875rem 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.pr-calcula > label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pr-mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.76rem;
+  color: var(--t2);
+}
+.pr-mods label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.pr-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: #f1f7f5;
+  font-size: 0.78rem;
+  color: var(--t2);
+}
+.pr-total b {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.1rem;
+  color: #0b7568;
+}
+.pr-total small {
+  font-size: 0.7rem;
+  color: var(--t3);
+}

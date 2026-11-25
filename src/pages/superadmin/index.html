@@ -207,20 +207,9 @@
 
     <!-- ══ TAB: Planos ══ -->
     <div id="satab-planos" style="display:none">
-      <div class="panel" style="overflow:hidden">
-        <div style="padding:.875rem 1rem;border-bottom:1px solid var(--border)">
-          <div class="section-title">Planos disponíveis</div>
-        </div>
-        <div class="tbl-wrap" style="border:none;border-radius:0;box-shadow:none">
-          <table>
-            <thead><tr><th>Key</th><th>Nome</th><th>Max usuários</th><th>Preço</th></tr></thead>
-            <tbody id="plans-tbody"><tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--t3)">Carregando...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div style="margin-top:.875rem;font-size:.75rem;color:var(--t3);padding:0 .25rem">
-        Para alterar planos ou preços, edite diretamente na tabela <code style="font-family:DM Mono,monospace;background:#f1f5f9;padding:.1rem .3rem;border-radius:3px">a1_plans</code> do Supabase.
-      </div>
+      <!-- Tabela de preços 2026: planos por usuários, módulos, pacotes e
+           calculadora. Desenhada por src/modules/sa/tabela-precos.js. -->
+      <div id="precos-tabela"><div class="panel pr-vazio">Carregando...</div></div>
     </div>
 
     <!-- ══ TAB: Melhorias ══ -->

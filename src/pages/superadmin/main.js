@@ -18,6 +18,12 @@ import { hojeISO } from '../../shared/utils/datas.js';
 import { expor, exporVariavel } from '../../shared/utils/expor.js';
 import { acoes } from '../../shared/ui/acoes.js';
 import { siteAdminAbrir, siteAdminMontar } from '../../modules/site/admin-site.js';
+import {
+  precosCarregar,
+  precosConfigurar,
+  precosPlanosVigentes,
+  precosRedesenhar
+} from '../../modules/sa/tabela-precos.js';
 
 // Alcançáveis pela suíte de testes e por sondas typeof. Ver src/shared/utils/expor.js.
 expor({
@@ -1980,6 +1986,8 @@ function applyCustomLogo() {
 
 async function loadAll() {
   await Promise.all([loadTenants(), loadAllModules(), loadPlans(), loadLeads().catch(() => {})]);
+  // a coluna "Clientes" dos planos depende da lista de clientes, que chega junto
+  precosRedesenhar();
   updateKPIs();
   populateTenantSelect();
 }
@@ -2016,19 +2024,50 @@ async function loadPlans() {
     .then(r => r.json())
     .catch(() => []);
   PLANS = Array.isArray(data) ? data : [];
-  document.getElementById('plans-tbody').innerHTML =
-    Array.isArray(data) && data.length
-      ? data
-          .map(
-            p => `<tr>
-        <td><span class="mono">${esc(p.key)}</span></td>
-        <td>${esc(p.name)}</td>
-        <td>${p.max_users}</td>
-        <td>${p.price_brl > 0 ? 'R$ ' + Number(p.price_brl).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Gratuito'}</td>
-      </tr>`
-          )
-          .join('')
-      : '<tr><td colspan="4" style="padding:1.5rem;text-align:center;color:var(--t3)">Nenhum plano cadastrado. Insira na tabela a1_plans.</td></tr>';
+  preencherPlanosDoCadastro();
+  await precosCarregar(PLANS);
+}
+
+// Superadmin › Planos (tabela de preços). Salvar um plano relê a1_plans para o
+// cadastro de cliente já oferecer o valor novo.
+precosConfigurar({
+  saRest,
+  saHeaders,
+  toast,
+  clientes: () => TENANTS,
+  aoSalvarPlano: () => loadPlans()
+});
+
+// O cadastro de cliente oferece os planos da tabela vigente (a1_plans com
+// tabela 2026) + Customizado. Sem a tabela instalada, ficam as opções antigas
+// do HTML. Clientes nos planos antigos continuam neles.
+function preencherPlanosDoCadastro() {
+  const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('n-plan'));
+  const vigentes = precosPlanosVigentes(PLANS);
+  if (!sel || !vigentes.length) return;
+  const atual = sel.value;
+  sel.innerHTML =
+    vigentes
+      .map(
+        p =>
+          `<option value="${esc(p.key)}">${esc(p.name)} · R$ ${Number(p.price_brl).toLocaleString('pt-BR')}/mês</option>`
+      )
+      .join('') + '<option value="custom">Customizado</option>';
+  if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
+}
+
+/** Limite de usuários de um plano (a1_plans; os antigos têm reserva fixa). */
+function limiteDoPlano(/** @type {string} */ key) {
+  const p = PLANS.find(x => x.key === key);
+  if (p) return Number(p.max_users);
+  return { starter: 3, pro: 10, enterprise: 30 }[key];
+}
+
+/** Nome do plano para mostrar (a1_plans; reserva para os antigos e Customizado). */
+function nomeDoPlano(/** @type {string} */ key) {
+  const p = PLANS.find(x => x.key === key);
+  if (p) return p.name;
+  return { starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise', custom: 'Customizado' }[key] || key;
 }
 
 function updateKPIs() {
@@ -2283,8 +2322,7 @@ async function createTenant() {
     return;
   }
 
-  const maxMap = { starter: 3, pro: 10, enterprise: 30 };
-  let maxUsers = maxMap[plan];
+  let maxUsers = limiteDoPlano(plan);
   if (plan === 'custom') {
     maxUsers = parseInt(document.getElementById('n-custom-limit').value);
     if (!maxUsers || maxUsers < 1) {
@@ -2346,7 +2384,8 @@ async function createTenant() {
     document.getElementById(id).value = '';
   });
   document.getElementById('n-tipo').value = 'construtora';
-  document.getElementById('n-plan').value = 'starter';
+  const selPlano = /** @type {HTMLSelectElement} */ (document.getElementById('n-plan'));
+  selPlano.value = selPlano.options[0] ? selPlano.options[0].value : 'starter';
   document.getElementById('n-custom-limit').value = '';
   document.getElementById('n-custom-limit-wrap').style.display = 'none';
   await loadAll();
@@ -2365,16 +2404,25 @@ function nErr(msg) {
 }
 
 async function changePlan(tenantId) {
-  const plan = prompt('Novo plano (starter / pro / enterprise / custom):');
-  if (!['starter', 'pro', 'enterprise', 'custom'].includes(plan)) {
+  const vigentes = precosPlanosVigentes(PLANS);
+  const opcoes = vigentes.length
+    ? [...vigentes.map(p => p.key), 'custom']
+    : ['starter', 'pro', 'enterprise', 'custom'];
+  const lista = vigentes.length
+    ? vigentes
+        .map(p => `${p.key} (${p.name}, R$ ${Number(p.price_brl).toLocaleString('pt-BR')})`)
+        .join('\n') + '\ncustom'
+    : opcoes.join(' / ');
+  const plan = (prompt(`Novo plano:\n${lista}`) || '').trim();
+  if (!opcoes.includes(plan)) {
     toast('Plano inválido.', 'error');
     return;
   }
-  const maxMap = { starter: 3, pro: 10, enterprise: 30, custom: 999 };
+  const maxUsers = plan === 'custom' ? 999 : limiteDoPlano(plan);
   await fetch(`${saRest('a1_tenants')}?id=eq.${tenantId}`, {
     method: 'PATCH',
     headers: saHeaders(),
-    body: JSON.stringify({ plan_key: plan, max_users: maxMap[plan], status: 'active' })
+    body: JSON.stringify({ plan_key: plan, max_users: maxUsers, status: 'active' })
   });
   toast('Plano atualizado.', 'success');
   await loadTenants();
@@ -3243,9 +3291,8 @@ function openContrato(tenantId) {
   document.getElementById('ct-billing-day').value = billingDay;
 
   // Plan display
-  const PLAN_NAMES = { starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise', custom: 'Customizado' };
   document.getElementById('ct-plan-display').value =
-    `${PLAN_NAMES[CONTRACT_TENANT.plan_key] || CONTRACT_TENANT.plan_key} (${CONTRACT_TENANT.max_users} usuários)`;
+    `${nomeDoPlano(CONTRACT_TENANT.plan_key)} (${CONTRACT_TENANT.max_users} usuários)`;
 
   // Plan value from loaded plans table
   const plan = PLANS.find(p => p.key === CONTRACT_TENANT.plan_key);
@@ -3333,8 +3380,7 @@ function gerarContratoPDF() {
     })
   );
 
-  const PLAN_NAMES = { starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise', custom: 'Customizado' };
-  const planName = PLAN_NAMES[CONTRACT_TENANT?.plan_key] || CONTRACT_TENANT?.plan_key || '';
+  const planName = CONTRACT_TENANT?.plan_key ? nomeDoPlano(CONTRACT_TENANT.plan_key) : '';
 
   const html = geraHtmlContrato({
     saRazao,

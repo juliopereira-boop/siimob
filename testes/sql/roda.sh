@@ -174,3 +174,25 @@ for f in testes/sql/elia-roleta-fixture.sql \
   echo "carregando $f"
   psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$ELIA_BANCO" -q -v ON_ERROR_STOP=1 -f "$f"
 done
+
+# Tabela de preços 2026 (superadmin › Planos). Banco próprio com a1_plans como
+# produção (planos antigos starter/pro/enterprise). A migração roda duas vezes.
+PRECO_BANCO="${BANCO}_preco"
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "create database $PRECO_BANCO"
+trap 'for b in "$BANCO" "$ELIA_BANCO" "$PRECO_BANCO"; do psql -h 127.0.0.1 -p "$PORTA" -U postgres -q -c "drop database if exists $b" >/dev/null; done' EXIT
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$PRECO_BANCO" -q -v ON_ERROR_STOP=1 -c "
+  do \$\$ begin
+    if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
+    if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+    if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  end \$\$;
+  create table a1_plans (id uuid primary key default gen_random_uuid(), key text not null unique, name text not null,
+    max_users int not null default 3, price_brl numeric(10,2) not null default 0, created_at timestamptz not null default now());
+  insert into a1_plans (key, name, max_users, price_brl) values ('starter','Starter',3,600),('pro','Pro',10,1200),('enterprise','Enterprise',20,1800);
+  grant usage on schema public to anon, service_role;"
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$PRECO_BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-25_tabela_de_precos.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$PRECO_BANCO" -q -v ON_ERROR_STOP=1 \
+     -f testes/sql/prova-tabela-precos.sql

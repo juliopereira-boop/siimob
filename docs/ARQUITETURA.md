@@ -291,3 +291,13 @@ contato...) são recusados ao criar empresa no superadmin. Prova: `testes/t-entr
 ## Selo "Um Produto Kortex"
 
 `public/kortex.js`, incluído antes do `</body>` de toda página de `src/pages` (`<script src="/kortex.js"></script>`). Só visual: fixo no canto inferior direito, `pointer-events:none` (nunca bloqueia clique), `z-index:10000`, some na impressão e não duplica. Desvia do WhatsApp flutuante do site (`BOTAO_CANTO = ['.zap']`). Toasts das telas aparecem no mesmo canto por poucos segundos, por cima dele. Página nova precisa incluir o script; `testes/t-kortex.js` confere.
+
+## Tabela de preços (superadmin › Planos)
+
+`database/migrations/2026-11-25_tabela_de_precos.sql`, `src/modules/sa/tabela-precos.js`.
+
+- **Planos por usuários:** linhas de `a1_plans` com `tabela = '2026'` (ate8, ate20, ate40, ate70, ate100), editáveis na aba. São as oferecidas no cadastro e na troca de plano. Os planos antigos (starter, pro, enterprise) ficam intactos e aparecem à parte, só leitura, com quantos clientes usam cada um. O PATCH filtra `tabela=eq.2026`, então a tela não altera plano antigo.
+- **Módulos, pacotes e usuário adicional:** `a1_precos`, só para a chave de serviço.
+- **Calculadora:** plano da faixa mais os módulos marcados; acima de 100 usuários, maior plano mais o usuário adicional.
+
+Provas: `testes/sql/prova-tabela-precos.sql`, `testes/t-superadmin-planos.js`.
