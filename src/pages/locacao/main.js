@@ -1,4 +1,4 @@
-// ─── Módulo Locação (LOCACAO) · fase 1 ───────────────────────────────────────
+// ─── Módulo Locação (LOCACAO) · fases 1 e 2 ──────────────────────────────────
 //
 // O PEDIDO DO DONO
 //   "Agora vamos criar o módulo de locação". Fase 1 escolhida: cadastro próprio
@@ -10,9 +10,13 @@
 //   - Cadastros (pessoas, imóveis, donos, lançamentos, contrato em rascunho)
 //     gravam direto. Dinheiro passa por função: gerar cobranças, baixar,
 //     estornar, cancelar, pagar repasse, ativar e encerrar contrato.
-//   - Vistas na sub-barra: Painel, Contratos, Cobranças, Repasses, Imóveis e
-//     Pessoas (?vista=...). Tudo que vem do banco passa por esc(); CPF,
-//     telefone e e-mail ficam foscos pela proteção LGPD do casco.
+//   - Vistas na sub-barra: Painel, Contratos, Cobranças, Repasses, Imóveis,
+//     Pessoas e Vistorias (?vista=...). Tudo que vem do banco passa por esc();
+//     CPF, telefone e e-mail ficam foscos pela proteção LGPD do casco.
+//   - Fase 2 (database/migrations/2026-11-26_locacao_fase2.sql): ID automático
+//     (CT-0001, IM-0001), documento do contrato a partir de modelo
+//     (src/modules/locacao/documentos.js), reajuste pelo índice, renovação,
+//     rescisão com multa proporcional e vistoria (src/modules/locacao/vistorias.js).
 import { A1 } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
 import { hojeISO } from '../../shared/utils/datas.js';
@@ -20,6 +24,50 @@ import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/a
 import { a1MontarShell } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import { acoes } from '../../shared/ui/acoes.js';
+import {
+  ganchos,
+  TIPO_IMOVEL,
+  SIT_IMOVEL,
+  GARANTIA,
+  ST_CONTRATO,
+  FORMAS,
+  PAPEIS,
+  G,
+  $,
+  brl,
+  data,
+  mes,
+  num,
+  dias,
+  somaMeses,
+  pessoa,
+  imovel,
+  contrato,
+  idContrato,
+  idImovel,
+  nomeImovel,
+  fimContrato,
+  atrasada,
+  stCobranca,
+  ROT_COB,
+  selo,
+  aviso,
+  motivo,
+  carregar,
+  gravar,
+  rpc,
+  executar,
+  abrirModal,
+  fecharModal,
+  salvarModal,
+  campo,
+  opcoes,
+  opcoesPessoas,
+  tabela,
+  fmtDoc
+} from '../../modules/locacao/base.js';
+import '../../modules/locacao/documentos.js';
+import { vistorias } from '../../modules/locacao/vistorias.js';
 
 const VISTAS = /** @type {Record<string,[string,string]>} */ ({
   painel: ['Painel', 'Visão geral dos aluguéis administrados.'],
@@ -30,258 +78,15 @@ const VISTAS = /** @type {Record<string,[string,string]>} */ ({
   ],
   repasses: ['Repasses', 'O que cada proprietário recebe: aluguel − taxa de administração − despesas.'],
   imoveis: ['Imóveis', 'Imóveis administrados e seus proprietários.'],
-  pessoas: ['Pessoas', 'Proprietários, inquilinos e fiadores.']
+  pessoas: ['Pessoas', 'Proprietários, inquilinos e fiadores.'],
+  vistorias: ['Vistorias', 'Vistoria de entrada, saída e periódica, com fotos, laudo e comparativo.']
 });
-const TIPO_IMOVEL = /** @type {Record<string,string>} */ ({
-  apartamento: 'Apartamento',
-  casa: 'Casa',
-  sala: 'Sala',
-  loja: 'Loja',
-  galpao: 'Galpão',
-  terreno: 'Terreno',
-  outro: 'Outro'
+const INDICE_NOME = /** @type {Record<string,string>} */ ({
+  IGPM: 'IGP-M',
+  IPCA: 'IPCA',
+  INPC: 'INPC',
+  NENHUM: 'Sem reajuste'
 });
-const SIT_IMOVEL = /** @type {Record<string,string>} */ ({
-  disponivel: 'Disponível',
-  alugado: 'Alugado',
-  manutencao: 'Em manutenção',
-  inativo: 'Inativo'
-});
-const GARANTIA = /** @type {Record<string,string>} */ ({
-  nenhuma: 'Sem garantia',
-  caucao: 'Caução',
-  fiador: 'Fiador',
-  seguro_fianca: 'Seguro-fiança',
-  cessao_cotas: 'Cessão de cotas de fundo'
-});
-const ST_CONTRATO = /** @type {Record<string,string>} */ ({
-  rascunho: 'Rascunho',
-  ativo: 'Ativo',
-  encerrado: 'Encerrado',
-  rescindido: 'Rescindido'
-});
-const FORMAS = /** @type {Record<string,string>} */ ({
-  pix: 'PIX',
-  boleto: 'Boleto',
-  transferencia: 'Transferência',
-  dinheiro: 'Dinheiro',
-  outro: 'Outro'
-});
-const PAPEIS = /** @type {Record<string,string>} */ ({
-  proprietario: 'Proprietário',
-  inquilino: 'Inquilino',
-  fiador: 'Fiador'
-});
-const ERROS = /** @type {Record<string,string>} */ ({
-  sem_permissao: 'Só o gestor da empresa, com o módulo Locação liberado, pode fazer isso.',
-  proprietarios_nao_somam_100:
-    'As partes dos proprietários do imóvel precisam somar 100%. Ajuste em Imóveis.',
-  imovel_ja_alugado: 'Este imóvel já tem um contrato ativo.',
-  contrato_nao_e_rascunho: 'Só contrato em rascunho pode ser ativado ou editado.',
-  contrato_nao_ativo: 'O contrato não está ativo.',
-  cobranca_nao_aberta: 'Esta cobrança não está mais em aberto. A tela foi atualizada.',
-  cobranca_nao_paga: 'Esta cobrança não está paga.',
-  versao_desatualizada:
-    'Outra pessoa mexeu nesta cobrança agora. A tela foi atualizada; confira e tente de novo.',
-  repasse_ja_pago: 'Um repasse desta cobrança já foi pago: não dá para estornar.',
-  repasse_nao_pendente: 'Este repasse já foi pago ou cancelado.',
-  motivo_obrigatorio: 'Informe o motivo.',
-  data_invalida: 'Data inválida (não pode ser futura).',
-  desconto_invalido: 'Desconto inválido.',
-  lancamento_ja_repassado: 'Este lançamento já entrou num repasse e não pode mudar.',
-  referencia_de_outro_cliente: 'Registro de outra empresa.',
-  a1_lc_garantia_coerente:
-    'Confira a garantia: fiador exige escolher a pessoa; caução exige o valor, de até 3 aluguéis (Lei 8.245, art. 38).',
-  a1_lc_pessoas_doc_uq: 'Já existe uma pessoa com este CPF/CNPJ.',
-  a1_lc_um_ativo_por_imovel: 'Este imóvel já tem um contrato ativo.'
-});
-
-const G = {
-  vista: 'painel',
-  pessoas: /** @type {any[]} */ ([]),
-  imoveis: /** @type {any[]} */ ([]),
-  donos: /** @type {any[]} */ ([]),
-  contratos: /** @type {any[]} */ ([]),
-  cobrancas: /** @type {any[]} */ ([]),
-  repasses: /** @type {any[]} */ ([]),
-  lancamentos: /** @type {any[]} */ ([]),
-  filtro: { competencia: hojeISO().slice(0, 7), status: 'todas', busca: '' },
-  salvar: /** @type {null|(() => Promise<void>)} */ (null),
-  ocupado: false
-};
-const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
-
-// ─── Formatação ──────────────────────────────────────────────────────────────
-const brl = (/** @type {any} */ v) =>
-  Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const data = (/** @type {string|null|undefined} */ d) =>
-  d ? d.slice(0, 10).split('-').reverse().join('/') : '';
-const mes = (/** @type {string} */ d) => {
-  const [a, m] = String(d || '').split('-');
-  return a && m ? `${m}/${a}` : '';
-};
-const num = (/** @type {string} */ s) => {
-  const t = String(s ?? '').trim();
-  if (!t) return NaN;
-  return Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
-};
-const dias = (/** @type {string} */ a, /** @type {string} */ b) =>
-  Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
-const somaMeses = (/** @type {string} */ iso, /** @type {number} */ n) => {
-  const [a, m, d] = iso.split('-').map(Number);
-  const dt = new Date(Date.UTC(a, m - 1 + n, d));
-  return dt.toISOString().slice(0, 10);
-};
-const pessoa = (/** @type {string|null} */ id) => G.pessoas.find(p => p.id === id) || null;
-const imovel = (/** @type {string|null} */ id) => G.imoveis.find(i => i.id === id) || null;
-const contrato = (/** @type {string|null} */ id) => G.contratos.find(c => c.id === id) || null;
-const endereco = (/** @type {any} */ i) =>
-  i ? [i.logradouro, i.numero, i.complemento, i.bairro].filter(Boolean).join(', ') : '';
-const nomeImovel = (/** @type {any} */ i) => (i ? `${i.codigo ? i.codigo + ' · ' : ''}${endereco(i)}` : '—');
-const fimContrato = (/** @type {any} */ c) => somaMeses(c.data_inicio, Number(c.prazo_meses));
-const atrasada = (/** @type {any} */ b) => b.status === 'aberta' && b.vencimento < hojeISO();
-const stCobranca = (/** @type {any} */ b) =>
-  atrasada(b) ? 'atrasada' : b.status === 'aberta' ? 'aberta' : b.status === 'paga' ? 'paga' : 'cancelada';
-const ROT_COB = /** @type {Record<string,string>} */ ({
-  aberta: 'Em aberto',
-  atrasada: 'Atrasada',
-  paga: 'Paga',
-  cancelada: 'Cancelada'
-});
-const selo = (/** @type {string} */ tipo, /** @type {string} */ texto) =>
-  `<span class="lc-selo lc-selo-${esc(tipo)}">${esc(texto)}</span>`;
-
-function aviso(/** @type {string} */ msg, tipo = 'ok') {
-  const d = document.createElement('div');
-  d.className = `lc-toast lc-toast-${tipo}`;
-  d.textContent = msg;
-  $('lc-toasts').appendChild(d);
-  setTimeout(() => d.remove(), 4500);
-}
-async function motivo(/** @type {Response} */ r) {
-  const t = await r.text().catch(() => '');
-  const chave = Object.keys(ERROS).find(k => t.includes(k));
-  return chave ? ERROS[chave] : 'Não foi possível concluir agora. Confira os dados e tente de novo.';
-}
-
-// ─── Banco ───────────────────────────────────────────────────────────────────
-async function ler(/** @type {string} */ tabela, /** @type {string} */ ordem) {
-  const r = await A1.buscarTudo(`${A1.rest(tabela)}?select=*&order=${ordem}`);
-  return (r && r.linhas) || [];
-}
-async function carregar() {
-  const [pessoas, imoveis, donos, contratos, cobrancas, repasses, lancamentos] = await Promise.all([
-    ler('a1_lc_pessoas', 'nome.asc,id.asc'),
-    ler('a1_lc_imoveis', 'criado_em.desc,id.desc'),
-    ler('a1_lc_imovel_donos', 'imovel_id.asc'),
-    ler('a1_lc_contratos', 'criado_em.desc,id.desc'),
-    ler('a1_lc_cobrancas', 'vencimento.desc,id.desc'),
-    ler('a1_lc_repasses', 'criado_em.desc,id.desc'),
-    ler('a1_lc_lancamentos', 'criado_em.desc,id.desc')
-  ]);
-  Object.assign(G, { pessoas, imoveis, donos, contratos, cobrancas, repasses, lancamentos });
-}
-async function gravar(/** @type {string} */ tabela, /** @type {any} */ corpo, /** @type {string|null} */ id) {
-  const r = await fetch(id ? `${A1.rest(tabela)}?id=eq.${encodeURIComponent(id)}` : A1.rest(tabela), {
-    method: id ? 'PATCH' : 'POST',
-    headers: A1.returnHeaders(),
-    body: JSON.stringify(corpo)
-  });
-  if (!r.ok) throw new Error(await motivo(r));
-  const linhas = await r.json().catch(() => []);
-  if (id && (!Array.isArray(linhas) || !linhas.length))
-    throw new Error('Não foi possível salvar (registro não encontrado ou travado).');
-  return Array.isArray(linhas) ? linhas[0] : linhas;
-}
-async function rpc(/** @type {string} */ fn, /** @type {any} */ args) {
-  const r = await fetch(A1.rpc(fn), { method: 'POST', headers: A1.headers(), body: JSON.stringify(args) });
-  if (!r.ok) throw new Error(await motivo(r));
-  return r.json().catch(() => ({}));
-}
-/** Roda uma ação com o botão travado, recarrega e redesenha. */
-async function executar(/** @type {() => Promise<any>} */ fn, /** @type {string} */ ok) {
-  if (G.ocupado) return;
-  G.ocupado = true;
-  try {
-    await fn();
-    if (ok) aviso(ok);
-  } catch (e) {
-    aviso(/** @type {Error} */ (e).message, 'erro');
-  } finally {
-    G.ocupado = false;
-    await carregar().catch(() => {});
-    desenhar();
-  }
-}
-
-// ─── Modal ───────────────────────────────────────────────────────────────────
-function abrirModal(
-  /** @type {string} */ titulo,
-  /** @type {string} */ corpo,
-  /** @type {() => Promise<void>} */ salvar,
-  rotulo = 'Salvar'
-) {
-  $('lc-modal-titulo').textContent = titulo;
-  $('lc-modal-corpo').innerHTML = corpo;
-  $('lc-modal-erro').hidden = true;
-  $('lc-modal-pe').innerHTML = `<button type="button" class="lc-btn" data-acao="lcFechar">Cancelar</button>
-    <button type="button" class="lc-btn lc-btn-forte" data-acao="lcSalvarModal" id="lc-modal-ok">${esc(rotulo)}</button>`;
-  G.salvar = salvar;
-  $('lc-fundo').hidden = false;
-  const primeiro = /** @type {HTMLElement|null} */ (
-    $('lc-modal-corpo').querySelector('input,select,textarea')
-  );
-  if (primeiro) primeiro.focus();
-}
-function fecharModal() {
-  $('lc-fundo').hidden = true;
-  G.salvar = null;
-}
-async function salvarModal() {
-  if (!G.salvar || G.ocupado) return;
-  const b = /** @type {HTMLButtonElement} */ ($('lc-modal-ok'));
-  b.disabled = true;
-  G.ocupado = true;
-  try {
-    await G.salvar();
-    fecharModal();
-    G.ocupado = false;
-    await carregar().catch(() => {});
-    desenhar();
-  } catch (e) {
-    const msg = /** @type {Error} */ (e).message;
-    // Outra pessoa mexeu na cobrança: o modal está com a versão velha. Fecha,
-    // recarrega e avisa (a mensagem promete que a tela foi atualizada).
-    if (msg === ERROS.versao_desatualizada || msg === ERROS.cobranca_nao_aberta) {
-      fecharModal();
-      aviso(msg, 'erro');
-      G.ocupado = false;
-      await carregar().catch(() => {});
-      desenhar();
-      return;
-    }
-    $('lc-modal-erro').textContent = msg;
-    $('lc-modal-erro').hidden = false;
-  } finally {
-    G.ocupado = false;
-    b.disabled = false;
-  }
-}
-const campo = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ ($(id)).value.trim();
-const opcoes = (/** @type {Record<string,string>} */ m, /** @type {string} */ atual) =>
-  Object.entries(m)
-    .map(([k, v]) => `<option value="${esc(k)}"${k === atual ? ' selected' : ''}>${esc(v)}</option>`)
-    .join('');
-const opcoesPessoas = (
-  /** @type {string} */ papel,
-  /** @type {string|null} */ atual,
-  vazio = '— selecione —'
-) =>
-  `<option value="">${esc(vazio)}</option>` +
-  G.pessoas
-    .filter(p => p.ativo !== false && (!papel || (p.papeis || []).includes(papel) || p.id === atual))
-    .map(p => `<option value="${esc(p.id)}"${p.id === atual ? ' selected' : ''}>${esc(p.nome)}</option>`)
-    .join('');
 
 // ─── Ações ───────────────────────────────────────────────────────────────────
 acoes({
@@ -321,6 +126,10 @@ acoes({
       'Contrato ativado. O imóvel passou para Alugado.'
     ),
   lcEncerrar: el => formEncerrar(el.dataset.id || ''),
+  lcRescisaoCalc: () => calcularRescisao(),
+  lcAbrirContrato: el => abrirContrato(el.dataset.id || ''),
+  lcRenovar: el => formRenovar(el.dataset.id || ''),
+  lcReajustar: el => formReajuste(el.dataset.id || ''),
   lcGerarDoContrato: el =>
     executar(
       async () => {
@@ -376,7 +185,9 @@ function desenhar() {
   const botoes = {
     painel: '',
     contratos:
-      '<button type="button" class="lc-btn lc-btn-forte" data-acao="lcNovoContrato">+ Novo contrato</button>',
+      '<button type="button" class="lc-btn" data-acao="lcModelos">Modelos de documento</button> <button type="button" class="lc-btn lc-btn-forte" data-acao="lcNovoContrato">+ Novo contrato</button>',
+    vistorias:
+      '<button type="button" class="lc-btn lc-btn-forte" data-acao="lcVistNova">+ Nova vistoria</button>',
     cobrancas: `<button type="button" class="lc-btn lc-btn-forte" data-acao="lcGerarMes">Gerar cobranças de ${esc(mes(G.filtro.competencia))}</button>`,
     repasses: '',
     imoveis:
@@ -390,8 +201,9 @@ function desenhar() {
       <label>Situação <select id="lc-f-status" data-acao-change="lcFiltrar">${opcoes({ todas: 'Todas', aberta: 'Em aberto', atrasada: 'Atrasadas', paga: 'Pagas', cancelada: 'Canceladas' }, G.filtro.status)}</select></label>`,
     repasses: `<label>Situação <select id="lc-f-status" data-acao-change="lcFiltrar">${opcoes({ todas: 'Todos', pendente: 'Pendentes', pago: 'Pagos' }, G.filtro.status === 'todas' || ['pendente', 'pago'].includes(G.filtro.status) ? G.filtro.status : 'todas')}</select></label>`,
     contratos: `<label>Competência das ações <input type="month" id="lc-f-comp" value="${esc(G.filtro.competencia)}" data-acao-change="lcFiltrar"></label>
-      <input type="search" id="lc-f-busca" placeholder="Buscar inquilino ou endereço" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`,
-    imoveis: `<input type="search" id="lc-f-busca" placeholder="Buscar endereço ou código" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`,
+      <input type="search" id="lc-f-busca" placeholder="Buscar ID, inquilino ou endereço" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`,
+    vistorias: `<input type="search" id="lc-f-busca" placeholder="Buscar imóvel" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`,
+    imoveis: `<input type="search" id="lc-f-busca" placeholder="Buscar ID ou endereço" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`,
     pessoas: `<input type="search" id="lc-f-busca" placeholder="Buscar nome" value="${esc(G.filtro.busca)}" data-acao-input="lcFiltrar">`
   };
   $('lc-filtros').innerHTML = /** @type {any} */ (filtros)[G.vista] || '';
@@ -400,18 +212,11 @@ function desenhar() {
 
 function desenharConteudo() {
   const alvo = $('lc-conteudo');
-  const f = /** @type {any} */ ({ painel, contratos, cobrancas, repasses, imoveis, pessoas })[G.vista];
+  const f = /** @type {any} */ ({ painel, contratos, cobrancas, repasses, imoveis, pessoas, vistorias })[
+    G.vista
+  ];
   alvo.innerHTML = f();
 }
-
-const tabela = (
-  /** @type {string[]} */ cab,
-  /** @type {string[]} */ linhas,
-  vazio = 'Nada por aqui ainda.'
-) =>
-  linhas.length
-    ? `<div class="lc-tbl"><table><thead><tr>${cab.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${linhas.join('')}</tbody></table></div>`
-    : `<p class="lc-vazio">${esc(vazio)}</p>`;
 
 function painel() {
   const hoje = hojeISO();
@@ -427,13 +232,7 @@ function painel() {
     const d = dias(hoje, fimContrato(c));
     return d >= 0 && d <= 60;
   });
-  const mesAtual = Number(hoje.slice(5, 7));
-  const reajustes = ativos.filter(
-    c =>
-      c.indice_reajuste !== 'NENHUM' &&
-      Number(c.mes_reajuste) === mesAtual &&
-      c.data_inicio < somaMeses(hoje, -11)
-  );
+  const reajustes = ativos.filter(c => reajusteDoMes(c) === 'pendente');
   const kpi = (/** @type {string} */ r, /** @type {string} */ v, /** @type {string} */ d = '', tipo = '') =>
     `<div class="lc-kpi ${tipo}"><span>${esc(r)}</span><b>${esc(v)}</b>${d ? `<small>${esc(d)}</small>` : ''}</div>`;
   const recebido = doMes.filter(b => b.status === 'paga').reduce((s, b) => s + Number(b.valor_pago || 0), 0);
@@ -470,12 +269,13 @@ function painel() {
               .join('')}${reajustes
               .map(
                 c =>
-                  `<li><span>${esc((pessoa(c.inquilino_id) || {}).nome || '—')}<small>reajuste ${esc(c.indice_reajuste)} neste mês</small></span>${selo('info', 'Reajuste')}</li>`
+                  `<li><span>${esc((pessoa(c.inquilino_id) || {}).nome || '—')}<small>${esc(idContrato(c))} · reajuste ${esc(INDICE_NOME[c.indice_reajuste])} neste mês${c.reajuste_auto ? ' (automático)' : ''}</small></span><button class="lc-btn lc-btn-p" data-acao="lcReajustar" data-id="${esc(c.id)}">Reajustar</button></li>`
               )
               .join('')}</ul>`
-          : '<p class="lc-vazio">Nenhum contrato vencendo e nenhum reajuste neste mês.</p>'
+          : '<p class="lc-vazio">Nenhum contrato vencendo e nenhum reajuste pendente neste mês.</p>'
       }</section>
-    </div>`;
+    </div>
+    <p class="lc-dica lc-indices">${indicesResumo()}</p>`;
 }
 function listaCobrancas(/** @type {any[]} */ l, /** @type {string} */ vazio) {
   if (!l.length) return `<p class="lc-vazio">${esc(vazio)}</p>`;
@@ -491,30 +291,33 @@ function contratos() {
   const q = G.filtro.busca;
   const l = G.contratos.filter(c => {
     if (!q) return true;
-    const t = `${(pessoa(c.inquilino_id) || {}).nome || ''} ${nomeImovel(imovel(c.imovel_id))}`.toLowerCase();
+    const t =
+      `${idContrato(c)} ${(pessoa(c.inquilino_id) || {}).nome || ''} ${nomeImovel(imovel(c.imovel_id))} ${c.codigo || ''}`.toLowerCase();
     return t.includes(q);
   });
   return tabela(
-    ['Imóvel', 'Inquilino', 'Aluguel', 'Vence dia', 'Vigência', 'Garantia', 'Situação', ''],
+    ['ID', 'Imóvel', 'Inquilino', 'Aluguel', 'Vence dia', 'Vigência', 'Garantia', 'Situação', ''],
     l.map(c => {
       const st = c.status;
+      const doc = `<button class="lc-btn lc-btn-p" data-acao="lcDocumento" data-id="${esc(c.id)}">Documento</button>`;
       const acoesC =
         st === 'rascunho'
           ? `<button class="lc-btn lc-btn-p" data-acao="lcEditarContrato" data-id="${esc(c.id)}">Editar</button>
+             ${doc}
              <button class="lc-btn lc-btn-p lc-btn-forte" data-acao="lcAtivar" data-id="${esc(c.id)}">Ativar</button>`
-          : st === 'ativo'
-            ? `<button class="lc-btn lc-btn-p" data-acao="lcGerarDoContrato" data-id="${esc(c.id)}">Gerar cobrança ${esc(mes(G.filtro.competencia))}</button>
-               <button class="lc-btn lc-btn-p" data-acao="lcLancar" data-id="${esc(c.id)}">Lançar despesa</button>
-               <button class="lc-btn lc-btn-p lc-perigo" data-acao="lcEncerrar" data-id="${esc(c.id)}">Encerrar</button>`
-            : '';
+          : `${doc}
+             <button class="lc-btn lc-btn-p lc-btn-forte" data-acao="lcAbrirContrato" data-id="${esc(c.id)}">Abrir</button>`;
+      const reaj =
+        st === 'ativo' && reajusteDoMes(c) === 'pendente' ? ` ${selo('alerta', 'Reajuste do mês')}` : '';
       return `<tr data-id="${esc(c.id)}">
-        <td>${esc(nomeImovel(imovel(c.imovel_id)))}${c.codigo ? `<small class="lc-mono">${esc(c.codigo)}</small>` : ''}</td>
+        <td class="lc-mono"><b>${esc(idContrato(c))}</b>${c.codigo ? `<small>ref. ${esc(c.codigo)}</small>` : ''}</td>
+        <td>${esc(nomeImovel(imovel(c.imovel_id)))}</td>
         <td>${esc((pessoa(c.inquilino_id) || {}).nome || '—')}</td>
         <td class="lc-num">${esc(brl(c.valor_aluguel))}</td>
         <td>${esc(String(c.dia_vencimento))}</td>
         <td>${esc(data(c.data_inicio))} a ${esc(data(fimContrato(c)))}<small>${esc(String(c.prazo_meses))} meses</small></td>
         <td>${esc(GARANTIA[c.garantia_tipo] || c.garantia_tipo)}${c.garantia_tipo === 'fiador' ? `<small>${esc((pessoa(c.fiador_id) || {}).nome || '')}</small>` : ''}</td>
-        <td>${selo(st === 'ativo' ? 'ok' : st === 'rascunho' ? 'info' : 'off', ST_CONTRATO[st] || st)}</td>
+        <td>${selo(st === 'ativo' ? 'ok' : st === 'rascunho' ? 'info' : 'off', ST_CONTRATO[st] || st)}${reaj}</td>
         <td class="lc-acoes">${acoesC}</td></tr>`;
     }),
     'Nenhum contrato. Cadastre pessoas e imóveis e crie o primeiro contrato.'
@@ -607,7 +410,7 @@ function imoveis() {
       const donos = G.donos.filter(d => d.imovel_id === i.id);
       const soma = donos.reduce((s, d) => s + Number(d.percentual), 0);
       return `<tr data-id="${esc(i.id)}">
-        <td>${esc(nomeImovel(i))}<small>${esc([i.cidade, i.uf].filter(Boolean).join(' / '))}</small></td>
+        <td>${esc(nomeImovel(i))}<small>${esc([i.cidade, i.uf].filter(Boolean).join(' / '))}${i.codigo ? ` · ref. ${esc(i.codigo)}` : ''}</small></td>
         <td>${esc(TIPO_IMOVEL[i.tipo] || i.tipo)}<small>${esc(i.finalidade === 'comercial' ? 'Comercial' : 'Residencial')}</small></td>
         <td>${donos.map(d => `${esc((pessoa(d.pessoa_id) || {}).nome || '—')} ${esc(String(Number(d.percentual)))}%`).join('<br>') || '—'}${donos.length && soma !== 100 ? `<small class="lc-erro-txt">soma ${esc(String(soma))}%: precisa ser 100%</small>` : ''}</td>
         <td class="lc-num">${i.valor_aluguel ? esc(brl(i.valor_aluguel)) : '—'}</td>
@@ -635,12 +438,6 @@ function pessoas() {
     'Nenhuma pessoa cadastrada.'
   );
 }
-const fmtDoc = (/** @type {string|null} */ d) =>
-  !d
-    ? ''
-    : d.length === 11
-      ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-      : d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
 
 // ─── Formulários ─────────────────────────────────────────────────────────────
 function formPessoa(/** @type {string|null} */ id) {
@@ -702,7 +499,7 @@ function formImovel(/** @type {string|null} */ id) {
   abrirModal(
     id ? 'Editar imóvel' : 'Novo imóvel',
     `<div class="lc-form">
-      <label>Código<input id="li-codigo" maxlength="30" value="${esc(i.codigo || '')}"></label>
+      <label>ID<input value="${esc(id ? idImovel(i) : 'gerado ao salvar')}" disabled></label>
       <label>Tipo<select id="li-tipo">${opcoes(TIPO_IMOVEL, i.tipo)}</select></label>
       <label>Finalidade<select id="li-fin">${opcoes({ residencial: 'Residencial', comercial: 'Comercial' }, i.finalidade)}</select></label>
       <label>Situação<select id="li-sit"${i.situacao === 'alugado' ? ' disabled' : ''}>${opcoes(i.situacao === 'alugado' ? SIT_IMOVEL : { disponivel: 'Disponível', manutencao: 'Em manutenção', inativo: 'Inativo' }, i.situacao)}</select></label>
@@ -758,7 +555,6 @@ function formImovel(/** @type {string|null} */ id) {
         'a1_lc_imoveis',
         {
           ...(id ? {} : { tenant_id: (A1.user || {}).tenant_id }),
-          codigo: campo('li-codigo') || null,
           tipo: campo('li-tipo'),
           finalidade: campo('li-fin'),
           ...(sitEl.disabled ? {} : { situacao: sitEl.value }),
@@ -841,6 +637,7 @@ function formContrato(/** @type {string|null} */ id) {
     taxa_adm_pct: 10,
     repasse_dias: 5,
     encargos: [],
+    reajuste_auto: true,
     data_inicio: hojeISO()
   };
   const livres = G.imoveis.filter(
@@ -851,14 +648,15 @@ function formContrato(/** @type {string|null} */ id) {
     `<div class="lc-form">
       <label class="lc-largo">Imóvel *<select id="lk-imovel">${'<option value="">— selecione —</option>' + livres.map(i => `<option value="${esc(i.id)}"${i.id === c.imovel_id ? ' selected' : ''}>${esc(nomeImovel(i))}</option>`).join('')}</select></label>
       <label class="lc-largo">Inquilino *<select id="lk-inquilino">${opcoesPessoas('inquilino', c.inquilino_id || null)}</select></label>
-      <label>Código<input id="lk-codigo" maxlength="30" value="${esc(c.codigo || '')}"></label>
+      <label>ID<input value="${esc(id ? idContrato(c) : 'gerado ao salvar')}" disabled></label>
       <label>Finalidade<select id="lk-fin">${opcoes({ residencial: 'Residencial', comercial: 'Comercial' }, c.finalidade)}</select></label>
       <label>Início *<input id="lk-inicio" type="date" value="${esc(c.data_inicio || '')}"></label>
-      <label>Prazo (meses) *<input id="lk-prazo" type="number" min="1" max="240" value="${esc(c.prazo_meses)}"></label>
+      <label>Prazo (meses) *<input id="lk-prazo" type="number" min="1" max="600" value="${esc(c.prazo_meses)}"></label>
       <label>Dia do vencimento *<input id="lk-dia" type="number" min="1" max="28" value="${esc(c.dia_vencimento)}"></label>
       <label>Aluguel (R$) *<input id="lk-aluguel" inputmode="decimal" value="${esc(c.valor_aluguel ?? '')}"></label>
       <label>Índice de reajuste<select id="lk-indice">${opcoes({ IGPM: 'IGP-M', IPCA: 'IPCA', INPC: 'INPC', NENHUM: 'Sem reajuste' }, c.indice_reajuste)}</select></label>
       <label>Mês do reajuste<input id="lk-mesreaj" type="number" min="1" max="12" value="${esc(c.mes_reajuste ?? '')}" placeholder="aniversário"></label>
+      <label class="lc-check"><input type="checkbox" id="lk-auto"${c.reajuste_auto !== false ? ' checked' : ''}> Reajustar sozinho no mês do reajuste, pelo índice do Banco Central</label>
       <fieldset class="lc-largo"><legend>Garantia (uma só, Lei 8.245 art. 37)</legend>
         <div class="lc-form">
           <label>Tipo<select id="lk-gtipo" data-acao-change="lcGarantia">${opcoes(GARANTIA, c.garantia_tipo)}</select></label>
@@ -889,7 +687,7 @@ function formContrato(/** @type {string|null} */ id) {
       if (!campo('lk-imovel') || !campo('lk-inquilino') || !campo('lk-inicio'))
         throw new Error('Escolha o imóvel, o inquilino e o início.');
       if (!Number.isFinite(aluguel) || aluguel <= 0) throw new Error('Informe o aluguel.');
-      if (!Number.isInteger(prazo) || prazo < 1 || prazo > 240) throw new Error('Prazo de 1 a 240 meses.');
+      if (!Number.isInteger(prazo) || prazo < 1 || prazo > 600) throw new Error('Prazo de 1 a 600 meses.');
       if (!Number.isInteger(dia) || dia < 1 || dia > 28) throw new Error('Dia do vencimento de 1 a 28.');
       if (g === 'fiador' && !campo('lk-fiador')) throw new Error('Escolha o fiador.');
       if (g === 'caucao' && (gvalor == null || !Number.isFinite(gvalor) || gvalor > aluguel * 3))
@@ -917,7 +715,6 @@ function formContrato(/** @type {string|null} */ id) {
           ...(id ? {} : { tenant_id: (A1.user || {}).tenant_id, criado_por: (A1.user || {}).id || null }),
           imovel_id: campo('lk-imovel'),
           inquilino_id: campo('lk-inquilino'),
-          codigo: campo('lk-codigo') || null,
           finalidade: campo('lk-fin'),
           data_inicio: campo('lk-inicio'),
           prazo_meses: prazo,
@@ -925,6 +722,7 @@ function formContrato(/** @type {string|null} */ id) {
           valor_aluguel: aluguel,
           indice_reajuste: campo('lk-indice'),
           mes_reajuste: mesReaj >= 1 && mesReaj <= 12 ? mesReaj : null,
+          reajuste_auto: /** @type {HTMLInputElement} */ ($('lk-auto')).checked,
           garantia_tipo: g,
           garantia_valor: ['caucao', 'seguro_fianca', 'cessao_cotas'].includes(g) ? gvalor : null,
           fiador_id: g === 'fiador' ? campo('lk-fiador') : null,
@@ -974,37 +772,235 @@ function mostrarGarantia() {
           : '';
 }
 
+// ─── Reajuste, renovação, encerramento e a ficha do contrato (fase 2) ───────
+const primeiroDoMes = () => hojeISO().slice(0, 7) + '-01';
+/** 'pendente' | 'aplicado' | null para o reajuste do mês corrente (mesma regra do banco). */
+function reajusteDoMes(/** @type {any} */ c) {
+  if (c.status !== 'ativo' || c.indice_reajuste === 'NENHUM') return null;
+  const m = Number(c.mes_reajuste) || Number(String(c.data_inicio).slice(5, 7));
+  const atual = primeiroDoMes();
+  if (Number(atual.slice(5, 7)) !== m) return null;
+  if (somaMeses(String(c.data_inicio).slice(0, 7) + '-01', 12) > atual || atual >= fimContrato(c))
+    return null;
+  return G.aditivos.some(a => a.contrato_id === c.id && a.tipo === 'reajuste' && a.referencia === atual)
+    ? 'aplicado'
+    : 'pendente';
+}
+function indicesResumo() {
+  const ult = ['IGPM', 'IPCA', 'INPC']
+    .map(k => {
+      const m = G.indices
+        .filter(x => x.indice === k)
+        .sort((a, b) => String(b.mes).localeCompare(String(a.mes)))[0];
+      return m ? `${INDICE_NOME[k]} até ${mes(m.mes)}` : null;
+    })
+    .filter(Boolean);
+  return ult.length
+    ? `Índices do Banco Central: ${esc(ult.join(' · '))}. Atualizam sozinhos a cada 6 horas.`
+    : 'Índices do Banco Central ainda não carregados: atualizam sozinhos a cada 6 horas.';
+}
+const previaTexto = (/** @type {any} */ c, /** @type {any} */ p) => {
+  if (!p || !p.devido) return 'Sem reajuste devido agora.';
+  const quando = `Reajuste de ${mes(p.devido)}`;
+  if (p.aplicado) return `${quando} já aplicado.`;
+  if (p.percentual == null)
+    return `${quando} devido: o ${INDICE_NOME[c.indice_reajuste]} acumulado ainda não foi publicado. Dá para aplicar informando o percentual.`;
+  const pct = Number(p.acumulado).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+  return `${quando}: ${INDICE_NOME[c.indice_reajuste]} acumulado de ${pct}% (12 meses até ${mes(p.referencia_ate)})${
+    Number(p.acumulado) < 0 ? ', negativo: o aluguel é mantido' : ''
+  }. ${brl(p.valor_antes)} → ${brl(p.valor_depois)}.`;
+};
+
+function abrirContrato(/** @type {string} */ id) {
+  const c = contrato(id);
+  if (!c) return;
+  const ativo = c.status === 'ativo';
+  const fechado = c.status === 'encerrado' || c.status === 'rescindido';
+  const b = (/** @type {string} */ acao, /** @type {string} */ rot, extra = '', cls = '') =>
+    `<button type="button" class="lc-btn lc-btn-p ${cls}" data-acao="${acao}" data-id="${esc(c.id)}" ${extra}>${esc(rot)}</button>`;
+  const historico = G.aditivos
+    .filter(a => a.contrato_id === c.id)
+    .map(a => {
+      const txt =
+        a.tipo === 'reajuste'
+          ? `Reajuste ${a.origem === 'automatico' ? 'automático' : 'manual'} de ${mes(a.referencia)}: ${Number(a.percentual).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}% · ${brl(a.valor_antes)} → ${brl(a.valor_depois)}`
+          : a.tipo === 'renovacao'
+            ? `Renovação: prazo ${a.prazo_antes} → ${a.prazo_depois} meses · ${brl(a.valor_antes)} → ${brl(a.valor_depois)}`
+            : `Rescisão em ${data(a.data)}: multa ${brl((a.detalhe || {}).multa_cobrada)}${Number((a.detalhe || {}).proporcional_cobrado) ? ` + proporcional ${brl(a.detalhe.proporcional_cobrado)}` : ''}`;
+      return `<li><span>${esc(txt)}${a.observacao ? `<small>${esc(a.observacao)}</small>` : ''}</span><small>${esc(data(a.criado_em))}</small></li>`;
+    });
+  const vist = G.vistorias
+    .filter(v => v.contrato_id === c.id)
+    .map(
+      v =>
+        `<li><span>Vistoria de ${esc({ entrada: 'entrada', saida: 'saída', periodica: 'periódica' }[v.tipo] || v.tipo)} · ${esc(data(v.data))}</span><button type="button" class="lc-btn lc-btn-p" data-acao="lcVistAbrir" data-id="${esc(v.id)}">${v.status === 'concluida' ? 'Ver laudo' : 'Editar'}</button></li>`
+    );
+  abrirModal(
+    `Contrato ${idContrato(c)}`,
+    `<dl class="lc-ficha">
+      <dt>Imóvel</dt><dd>${esc(nomeImovel(imovel(c.imovel_id)))}</dd>
+      <dt>Inquilino</dt><dd>${esc((pessoa(c.inquilino_id) || {}).nome || '—')}</dd>
+      <dt>Aluguel</dt><dd>${esc(brl(c.valor_aluguel))} · vence dia ${esc(String(c.dia_vencimento))}</dd>
+      <dt>Vigência</dt><dd>${esc(data(c.data_inicio))} a ${esc(data(fimContrato(c)))} (${esc(String(c.prazo_meses))} meses)</dd>
+      <dt>Garantia</dt><dd>${esc(GARANTIA[c.garantia_tipo] || c.garantia_tipo)}</dd>
+      <dt>Reajuste</dt><dd>${esc(INDICE_NOME[c.indice_reajuste])}${c.indice_reajuste !== 'NENHUM' ? ` · ${c.reajuste_auto ? 'automático' : 'manual'}` : ''}</dd>
+      <dt>Situação</dt><dd>${esc(ST_CONTRATO[c.status] || c.status)}${c.encerrado_em ? ` em ${esc(data(c.encerrado_em))}` : ''}</dd>
+    </dl>
+    ${ativo ? `<div class="lc-previa" id="lc-reaj-box" data-id="${esc(c.id)}"><span>Consultando o reajuste…</span></div>` : ''}
+    <div class="lc-ficha-acoes">
+      ${b('lcDocumento', 'Documento do contrato')}
+      ${ativo ? b('lcGerarDoContrato', `Gerar cobrança ${mes(G.filtro.competencia)}`) : ''}
+      ${ativo ? b('lcLancar', 'Lançar despesa') : ''}
+      ${ativo && c.indice_reajuste !== 'NENHUM' ? b('lcReajustar', 'Reajuste') : ''}
+      ${ativo ? b('lcRenovar', 'Renovar') : ''}
+      ${b('lcVistNova', ativo ? 'Vistoria de entrada' : 'Vistoria de saída', `data-imovel="${esc(c.imovel_id)}" data-contrato="${esc(c.id)}" data-tipo="${ativo ? 'entrada' : 'saida'}"`)}
+      ${fechado ? b('lcDocumento', 'Termo de entrega de chaves', 'data-tipo="entrega_chaves"') : ''}
+      ${ativo ? b('lcEncerrar', 'Encerrar ou rescindir', '', 'lc-perigo') : ''}
+    </div>
+    <h3 class="lc-ficha-h">Histórico</h3>${historico.length ? `<ul class="lc-lista">${historico.join('')}</ul>` : '<p class="lc-dica">Sem reajustes, renovações ou rescisão ainda.</p>'}
+    <h3 class="lc-ficha-h">Vistorias</h3>${vist.length ? `<ul class="lc-lista">${vist.join('')}</ul>` : '<p class="lc-dica">Nenhuma vistoria deste contrato.</p>'}`,
+    null
+  );
+  if (ativo)
+    rpc('a1_lc_reajuste_previa', { p_contrato: c.id })
+      .then(p => {
+        const box = document.getElementById('lc-reaj-box');
+        if (box && box.dataset.id === c.id) box.innerHTML = `<span>${esc(previaTexto(c, p))}</span>`;
+      })
+      .catch(() => {
+        const box = document.getElementById('lc-reaj-box');
+        if (box) box.innerHTML = '<span>Não foi possível consultar o reajuste agora.</span>';
+      });
+}
+
+function formReajuste(/** @type {string} */ id) {
+  const c = contrato(id);
+  if (!c) return;
+  abrirModal(
+    `Reajuste · ${idContrato(c)}`,
+    `<div class="lc-form">
+      <div class="lc-largo lc-previa" id="lc-reaj-box" data-id="${esc(c.id)}"><span>Consultando o índice…</span></div>
+      <label>Percentual (%)<input id="lr-pct" inputmode="decimal" placeholder="usar o índice"></label>
+      <p class="lc-largo lc-dica">Deixe em branco para aplicar o índice acumulado (variação negativa mantém o aluguel). Informe outro valor só se foi negociado. Fica registrado no histórico do contrato.</p>
+    </div>`,
+    async () => {
+      const t = campo('lr-pct');
+      const pct = t ? num(t) : null;
+      if (t && !Number.isFinite(pct)) throw new Error('Percentual inválido.');
+      const r = await rpc('a1_lc_aplicar_reajuste', { p_contrato: c.id, p_percentual: pct });
+      aviso(`Aluguel reajustado: ${brl(r.valor_antes)} → ${brl(r.valor_depois)}.`);
+    },
+    'Aplicar reajuste'
+  );
+  rpc('a1_lc_reajuste_previa', { p_contrato: c.id })
+    .then(p => {
+      const box = document.getElementById('lc-reaj-box');
+      if (box && box.dataset.id === c.id) box.innerHTML = `<span>${esc(previaTexto(c, p))}</span>`;
+    })
+    .catch(() => {});
+}
+
+function formRenovar(/** @type {string} */ id) {
+  const c = contrato(id);
+  if (!c) return;
+  abrirModal(
+    `Renovar · ${idContrato(c)}`,
+    `<div class="lc-form">
+      <p class="lc-largo">Termina hoje em <b>${esc(data(fimContrato(c)))}</b> · aluguel ${esc(brl(c.valor_aluguel))}</p>
+      <label>Acrescentar (meses) *<input id="lw-meses" type="number" min="1" max="120" value="12"></label>
+      <label>Novo aluguel (R$)<input id="lw-valor" inputmode="decimal" placeholder="manter"></label>
+      <label class="lc-largo">Observação<input id="lw-obs" maxlength="1000" placeholder="Ex.: aditivo assinado em ..."></label>
+    </div>`,
+    async () => {
+      const meses = Number(campo('lw-meses'));
+      const v = campo('lw-valor') ? num(campo('lw-valor')) : null;
+      if (!Number.isInteger(meses) || meses < 1 || meses > 120) throw new Error('De 1 a 120 meses.');
+      if (v != null && (!Number.isFinite(v) || v <= 0)) throw new Error('Novo aluguel inválido.');
+      const r = await rpc('a1_lc_renovar_contrato', {
+        p_contrato: c.id,
+        p_meses: meses,
+        p_novo_valor: v,
+        p_observacao: campo('lw-obs') || null
+      });
+      aviso(`Contrato renovado: ${r.prazo_meses} meses no total.`);
+    },
+    'Renovar'
+  );
+}
+
 function formEncerrar(/** @type {string} */ id) {
   const c = contrato(id);
   if (!c) return;
   const hoje = hojeISO();
   const fim = fimContrato(c);
-  const restantes = Math.max(0, Math.ceil(dias(hoje, fim) / 30.4375));
-  const multa =
-    c.multa_rescisao_alugueis > 0
-      ? (Number(c.valor_aluguel) * Number(c.multa_rescisao_alugueis) * Math.min(restantes, c.prazo_meses)) /
-        Number(c.prazo_meses)
-      : 0;
   abrirModal(
-    'Encerrar contrato',
-    `<div class="lc-form">
-      <label>Motivo<select id="le-motivo">${opcoes({ encerrado: 'Fim do contrato / acordo', rescindido: 'Rescisão antecipada' }, dias(hoje, fim) > 0 ? 'rescindido' : 'encerrado')}</select></label>
-      <label>Data<input type="date" id="le-data" value="${esc(hoje)}"></label>
-      <p class="lc-largo lc-dica">Termina em ${esc(data(fim))}${restantes ? `, faltam cerca de ${esc(String(restantes))} mês(es)` : ''}. Multa rescisória proporcional (art. 4º): ${esc(String(c.multa_rescisao_alugueis))} aluguel(is) × ${esc(String(Math.min(restantes, c.prazo_meses)))}/${esc(String(c.prazo_meses))} meses ≈ <b>${esc(brl(multa))}</b>. Cobre a multa como lançamento ou cobrança à parte, se for o caso.</p>
-      <p class="lc-largo lc-dica">Ao encerrar, o imóvel volta para Disponível e as cobranças em aberto dos meses seguintes são canceladas.</p>
+    `Encerrar ${idContrato(c)}`,
+    `<div class="lc-form" id="le-box" data-id="${esc(c.id)}">
+      <label>Motivo<select id="le-motivo" data-acao-change="lcRescisaoCalc">${opcoes({ encerrado: 'Fim do contrato / acordo sem multa', rescindido: 'Rescisão antecipada' }, dias(hoje, fim) > 0 ? 'rescindido' : 'encerrado')}</select></label>
+      <label>Data da saída<input type="date" id="le-data" value="${esc(hoje)}" data-acao-change="lcRescisaoCalc"></label>
+      <p class="lc-largo lc-dica">Termina em ${esc(data(fim))}. Ao encerrar, o imóvel volta para Disponível e as cobranças em aberto dos meses seguintes são canceladas.</p>
+      <fieldset class="lc-largo" id="le-resc"><legend>Rescisão (Lei 8.245, art. 4º)</legend>
+        <div class="lc-form">
+          <p class="lc-largo lc-dica" id="le-calc">Calculando…</p>
+          <label>Multa rescisória (R$)<input id="le-multa" inputmode="decimal"></label>
+          <label>Vencimento da cobrança<input type="date" id="le-venc"></label>
+          <label class="lc-check lc-largo"><input type="checkbox" id="le-prop" checked> <span id="le-prop-txt">Cobrar o aluguel proporcional dos dias do mês</span></label>
+        </div>
+        <p class="lc-dica">Multa e proporcional vão numa cobrança avulsa, que segue para baixa e repasse. Multa zero quando o inquilino é transferido pelo empregador (art. 4º, parágrafo único).</p>
+      </fieldset>
     </div>`,
     async () => {
-      if (!campo('le-data')) throw new Error('Informe a data.');
-      await rpc('a1_lc_encerrar_contrato', {
-        p_contrato: id,
-        p_data: campo('le-data'),
-        p_motivo: campo('le-motivo')
+      const dt = campo('le-data');
+      if (!dt) throw new Error('Informe a data.');
+      if (campo('le-motivo') === 'encerrado') {
+        await rpc('a1_lc_encerrar_contrato', { p_contrato: c.id, p_data: dt, p_motivo: 'encerrado' });
+        aviso('Contrato encerrado.');
+        return;
+      }
+      const m = campo('le-multa') ? num(campo('le-multa')) : null;
+      if (m != null && (!Number.isFinite(m) || m < 0)) throw new Error('Multa inválida.');
+      const r = await rpc('a1_lc_rescindir_contrato', {
+        p_contrato: c.id,
+        p_data: dt,
+        p_multa: m,
+        p_proporcional: /** @type {HTMLInputElement} */ ($('le-prop')).checked,
+        p_vencimento: campo('le-venc') || null
       });
-      aviso('Contrato encerrado.');
+      aviso(
+        r.cobranca_id
+          ? `Contrato rescindido. Cobrança avulsa de ${brl(Number(r.multa) + Number(r.proporcional))} criada.`
+          : 'Contrato rescindido, sem cobrança.'
+      );
     },
     'Encerrar'
   );
+  calcularRescisao();
 }
+async function calcularRescisao() {
+  const box = document.getElementById('le-box');
+  if (!box) return;
+  const resc = campo('le-motivo') === 'rescindido';
+  $('le-resc').hidden = !resc;
+  if (!resc) return;
+  const dt = campo('le-data');
+  if (!dt) return;
+  /** @type {HTMLInputElement} */ ($('le-venc')).value = somaDias(dt, 10);
+  try {
+    const r = await rpc('a1_lc_rescisao_calculo', { p_contrato: box.dataset.id, p_data: dt });
+    if (campo('le-data') !== dt) return;
+    $('le-calc').textContent =
+      `Faltam ${r.meses_restantes} de ${r.prazo} meses: ${brl(r.multa)} de multa proporcional.` +
+      (Number(r.proporcional) ? '' : ' A cobrança mensal deste mês já existe: sem proporcional.');
+    /** @type {HTMLInputElement} */ ($('le-multa')).value = String(r.multa);
+    $('le-prop-txt').textContent = Number(r.proporcional)
+      ? `Cobrar o aluguel proporcional: ${r.dias} dia(s), ${brl(r.proporcional)}`
+      : 'Sem aluguel proporcional (a cobrança do mês já existe)';
+  } catch (e) {
+    $('le-calc').textContent = /** @type {Error} */ (e).message;
+  }
+}
+const somaDias = (/** @type {string} */ iso, /** @type {number} */ n) =>
+  new Date(Date.parse(iso + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
 
 function formLancamento(/** @type {string} */ id) {
   const c = contrato(id);
@@ -1162,6 +1158,7 @@ async function init() {
     }))
   });
   a1StartHeartbeat('locacao');
+  ganchos.redesenhar = desenhar;
   await carregar().catch(() => aviso('Não foi possível carregar a Locação agora.', 'erro'));
   desenhar();
 }

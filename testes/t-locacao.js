@@ -9,11 +9,25 @@
 //     estornar, cancelar, pagar repasse, encerrar);
 //   - a prévia da baixa faz a mesma conta do banco (multa + juros pró-rata);
 //   - erro do banco vira frase legível; nada vira HTML (XSS).
+//   Fase 2:
+//   - ID automático (CT-0001/IM-0001) no lugar do código digitado (o antigo
+//     aparece como "ref."); o formulário não manda código nem status;
+//   - ficha do contrato: reajuste pelo índice, renovação, rescisão com multa
+//     proporcional, histórico; documento gerado do modelo e impresso; editor
+//     de modelo com prévia (campo desconhecido marcado, texto escapado);
+//   - vistoria: roteiro, fotos no Storage da pasta do cliente, salvar grava
+//     antes de apagar, concluir, comparativo entrada × saída.
 const { abrir, checa, resumo } = require('./comum');
 
 const XSS = '<img src=x onerror="window.__XSS=(window.__XSS||0)+1">';
 const HOJE = new Date().toISOString().slice(0, 10);
 const COMP = HOJE.slice(0, 7) + '-01';
+const ANIV = (() => {
+  const d = new Date(COMP + 'T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() - 12);
+  return d.toISOString().slice(0, 10);
+})();
+const MES = Number(COMP.slice(5, 7));
 const venc = (() => {
   const d = new Date(HOJE + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() - 10);
@@ -21,7 +35,7 @@ const venc = (() => {
 })();
 
 function banco() {
-  const est = { escritas: [], rpc: [], lidas: [] };
+  const est = { escritas: [], rpc: [], lidas: [], uploads: [] };
   const tab = {
     a1_lc_pessoas: [
       {
@@ -40,7 +54,10 @@ function banco() {
       {
         id: 'im1',
         tenant_id: 't1',
+        seq: 1,
         codigo: 'AP-1',
+        cidade: 'São Luís',
+        uf: 'MA',
         tipo: 'apartamento',
         finalidade: 'residencial',
         logradouro: 'Rua ' + XSS,
@@ -50,6 +67,7 @@ function banco() {
       {
         id: 'im2',
         tenant_id: 't1',
+        seq: 2,
         codigo: 'CS-2',
         tipo: 'casa',
         finalidade: 'residencial',
@@ -66,16 +84,18 @@ function banco() {
       {
         id: 'ct1',
         tenant_id: 't1',
+        seq: 1,
         codigo: 'LOC-' + XSS,
         imovel_id: 'im1',
         inquilino_id: 'pe3',
         status: 'ativo',
-        data_inicio: '2026-01-01',
+        data_inicio: ANIV,
         prazo_meses: 30,
         dia_vencimento: 10,
         valor_aluguel: 2500,
         indice_reajuste: 'IGPM',
-        mes_reajuste: 1,
+        mes_reajuste: MES,
+        reajuste_auto: false,
         garantia_tipo: 'fiador',
         fiador_id: 'pe4',
         multa_atraso_pct: 10,
@@ -88,6 +108,7 @@ function banco() {
       {
         id: 'ct2',
         tenant_id: 't1',
+        seq: 2,
         imovel_id: 'im2',
         inquilino_id: 'pe3',
         status: 'rascunho',
@@ -151,7 +172,63 @@ function banco() {
         previsto_para: HOJE
       }
     ],
-    a1_lc_lancamentos: []
+    a1_lc_lancamentos: [],
+    a1_lc_aditivos: [
+      {
+        id: 'ad1',
+        contrato_id: 'ct1',
+        tipo: 'renovacao',
+        prazo_antes: 18,
+        prazo_depois: 30,
+        valor_antes: 2400,
+        valor_depois: 2500,
+        observacao: 'Aditivo ' + XSS,
+        criado_em: '2026-06-01T10:00:00Z'
+      }
+    ],
+    a1_lc_modelos: [],
+    a1_lc_vistorias: [
+      {
+        id: 'vs1',
+        tenant_id: 't1',
+        imovel_id: 'im1',
+        contrato_id: 'ct1',
+        tipo: 'entrada',
+        data: ANIV,
+        status: 'concluida',
+        concluida_em: ANIV + 'T12:00:00Z',
+        responsavel: 'Vist ' + XSS
+      },
+      {
+        id: 'vs2',
+        tenant_id: 't1',
+        imovel_id: 'im1',
+        contrato_id: 'ct1',
+        tipo: 'saida',
+        data: HOJE,
+        status: 'rascunho'
+      }
+    ],
+    a1_lc_indices: [{ indice: 'IGPM', mes: COMP, valor: 0.5 }]
+  };
+  const itens = {
+    vs1: [
+      { id: 'i1', vistoria_id: 'vs1', ordem: 0, comodo: 'Sala', item: 'Piso', estado: 'bom', fotos: [] },
+      { id: 'i2', vistoria_id: 'vs1', ordem: 1, comodo: 'Sala', item: 'Paredes', estado: 'novo', fotos: [] }
+    ],
+    vs2: [
+      { id: 'j1', vistoria_id: 'vs2', ordem: 0, comodo: 'Sala', item: 'Piso', estado: 'ruim', fotos: [] },
+      {
+        id: 'j2',
+        vistoria_id: 'vs2',
+        ordem: 1,
+        comodo: 'Sala',
+        item: 'Paredes',
+        estado: 'novo',
+        observacao: 'Obs ' + XSS,
+        fotos: []
+      }
+    ]
   };
   const antes = (url, metodo, corpo) => {
     const m = url.match(/rest\/v1\/(a1_lc_[a-z_]+)/);
@@ -165,11 +242,34 @@ function banco() {
       if (r[1] === 'a1_lc_cancelar_cobranca' && args.p_motivo === 'velha')
         return { __status: 400, corpo: { code: 'P0001', message: 'versao_desatualizada' } };
       if (r[1] === 'a1_lc_baixar_cobranca') return { ok: true, valor_pago: 2694.67, repasses: 2 };
+      if (r[1] === 'a1_lc_reajuste_previa')
+        return {
+          devido: COMP,
+          aplicado: false,
+          indice: 'IGPM',
+          referencia_ate: COMP,
+          acumulado: 4.5,
+          percentual: 4.5,
+          valor_antes: 2500,
+          valor_depois: 2612.5
+        };
+      if (r[1] === 'a1_lc_aplicar_reajuste') return { ok: true, valor_antes: 2500, valor_depois: 2612.5 };
+      if (r[1] === 'a1_lc_renovar_contrato') return { ok: true, prazo_meses: 42 };
+      if (r[1] === 'a1_lc_rescisao_calculo')
+        return { meses_restantes: 18, prazo: 30, multa: 4500, dias: 15, proporcional: 1209.68 };
+      if (r[1] === 'a1_lc_rescindir_contrato')
+        return { ok: true, multa: 4500, proporcional: 1209.68, cobranca_id: 'cbx' };
       return { ok: true };
+    }
+    if (/storage\/v1\/object\/case-documents\//.test(url) && metodo === 'POST') {
+      est.uploads.push(url);
+      return { Key: 'ok' };
     }
     if (!m) return undefined;
     if (metodo === 'GET') {
       est.lidas.push(m[1]);
+      if (m[1] === 'a1_lc_vistoria_itens')
+        return itens[(url.match(/vistoria_id=eq\.([^&]+)/) || [])[1]] || [];
       return url.includes('&or=') ? [] : tab[m[1]] || [];
     }
     est.escritas.push({ tabela: m[1], metodo, url, corpo: corpo ? JSON.parse(corpo) : null });
@@ -220,13 +320,24 @@ const salvar = async p => {
 
   console.log('\n== Gestor com a licença ==');
   const { est, antes } = banco();
-  const { b, p, erros } = await abrir('thecred/locacao', { antes, modulos: ['LOCACAO'] });
+  const { b, p, erros } = await abrir('thecred/locacao', {
+    antes,
+    modulos: ['LOCACAO'],
+    usuario: {
+      id: 'u1',
+      tenant_id: 't1',
+      name: 'Julio',
+      role: 'owner',
+      cpf: '99999999999',
+      tenant_name: 'Imob Teste'
+    }
+  });
   await p.waitForSelector('.lc-kpis');
   checa(
     'a aba Locação aparece na barra e está ativa',
     (await p.$$('a.sb-mod.ativo[href*="locacao"]')).length === 1
   );
-  checa('seis vistas na sub-barra', (await p.$$('.sb-sub-item[data-acao="lcVista"]')).length === 6);
+  checa('sete vistas na sub-barra', (await p.$$('.sb-sub-item[data-acao="lcVista"]')).length === 7);
   const painel = await texto(p);
   checa(
     'painel: em atraso mostra a cobrança vencida',
@@ -234,12 +345,23 @@ const salvar = async p => {
     painel.slice(0, 300)
   );
   checa('painel: repasse a pagar', /Repasses a pagar[\s\S]*R\$\s?1\.350,00/.test(painel));
+  checa(
+    'painel: reajuste do mês pendente com botão, e a data dos índices',
+    (await p.$$('#lc-conteudo [data-acao="lcReajustar"][data-id="ct1"]')).length === 1 &&
+      /IGP-M até/.test(painel)
+  );
 
   await vista(p, 'contratos');
   checa('vista na URL', /vista=contratos/.test(p.url()));
   const tc = await texto(p);
   checa('contratos: ativo e rascunho listados', /Ativo/.test(tc) && /Rascunho/.test(tc));
   checa('contratos: fiador aparece', /Fábio/.test(tc));
+  checa(
+    'contratos: ID automático e o código antigo como referência',
+    /CT-0001/.test(tc) && /ref\. LOC-/.test(tc)
+  );
+  checa('contratos: selo de reajuste do mês', /Reajuste do mês/.test(tc));
+  checa('contratos: imóvel pelo ID', /IM-0001/.test(tc));
 
   // Ativar falha com a mensagem traduzida.
   await p.click('[data-acao="lcAtivar"][data-id="ct2"]');
@@ -252,6 +374,12 @@ const salvar = async p => {
 
   // Novo contrato: caução acima de 3 aluguéis é barrada na tela.
   await p.click('[data-acao="lcNovoContrato"]');
+  checa(
+    'formulário sem campo de código; ID é gerado ao salvar',
+    (await p.$$('#lk-codigo')).length === 0 &&
+      /gerado ao salvar/.test(await p.inputValue('#lc-modal-corpo input[disabled]'))
+  );
+  checa('reajuste automático vem marcado', await p.isChecked('#lk-auto'));
   await p.selectOption('#lk-imovel', 'im2');
   await p.selectOption('#lk-inquilino', 'pe3');
   await p.fill('#lk-aluguel', '2.000,00');
@@ -282,9 +410,107 @@ const salvar = async p => {
     JSON.stringify(novo && novo.corpo)
   );
   checa('contrato novo nasce como rascunho (status não vai do navegador)', novo && !('status' in novo.corpo));
+  checa(
+    'nem código nem ID vão do navegador; reajuste automático vai',
+    novo && !('codigo' in novo.corpo) && !('seq' in novo.corpo) && novo.corpo.reajuste_auto === true
+  );
 
-  // Lançar despesa.
-  await p.click('[data-acao="lcLancar"][data-id="ct1"]');
+  // Documento do contrato.
+  await p.evaluate(() => {
+    window.__PRINT = 0;
+    window.print = () => {
+      window.__PRINT++;
+    };
+  });
+  await p.click('#lc-conteudo [data-acao="lcDocumento"][data-id="ct1"]');
+  const doc = await p.textContent('#lc-doc-previa');
+  checa(
+    'documento: modelo residencial preenchido (partes, aluguel, fiador, índice)',
+    /Contrato de locação residencial/i.test(doc) &&
+      /CT-0001/.test(doc) &&
+      /R\$\s?2\.500,00/.test(doc) &&
+      /FIADOR e principal pagador[\s\S]*Fábio/.test(doc) &&
+      /IGP-M\/FGV/.test(doc) &&
+      /São Luís/.test(doc) &&
+      /ADMINISTRADORA:\s*Imob Teste/.test(doc) &&
+      !/## /.test(doc),
+    doc.slice(0, 400)
+  );
+  checa('documento: nenhum campo ficou sem dado', (await p.$$('#lc-doc-previa .lc-doc-falta')).length === 0);
+  const h2s = await p.$$eval('#lc-doc-previa h2', hs => hs.map(h => h.textContent || ''));
+  checa(
+    'documento: título da cláusula é título; o corpo é parágrafo',
+    h2s.some(t => /^Cláusula 1ª/.test(t)) && !h2s.some(t => /Apartamento/.test(t)),
+    h2s.join(' | ')
+  );
+  await salvar(p);
+  checa(
+    'imprimir chama a impressão com o documento',
+    (await p.evaluate(() => window.__PRINT)) === 1 &&
+      (await p.$$('#lc-impressao article.lc-doc')).length === 1
+  );
+  await p.click('[data-acao="lcFechar"]');
+
+  // Editor de modelo.
+  await p.click('[data-acao="lcModelos"]');
+  await p.fill(
+    '#lm-texto',
+    '# Meu contrato\n\nInquilino: {{inquilino.nome}} {{campo.que.nao.existe}} ' + XSS
+  );
+  await p.waitForTimeout(100);
+  checa(
+    'prévia do modelo: campo preenchido, desconhecido marcado, texto não vira HTML',
+    /Inquilino: Inês/.test(await p.textContent('#lm-previa')) &&
+      (await p.$$('#lm-previa .lc-doc-falta')).length === 1 &&
+      (await p.$$('#lm-previa img')).length === 0
+  );
+  await salvar(p);
+  const mod = est.escritas.find(e => e.tabela === 'a1_lc_modelos');
+  checa(
+    'modelo gravado (upsert por cliente e tipo)',
+    mod &&
+      /on_conflict=tenant_id,tipo/.test(mod.url) &&
+      mod.corpo.tipo === 'contrato_residencial' &&
+      /campo\.que/.test(mod.corpo.texto)
+  );
+
+  // Ficha do contrato.
+  await p.click('#lc-conteudo [data-acao="lcAbrirContrato"][data-id="ct1"]');
+  await p.waitForTimeout(300);
+  const ficha = await p.textContent('#lc-modal-corpo');
+  checa(
+    'ficha: reajuste pelo índice com valores',
+    /acumulado de 4,5%/.test(ficha) && /2\.500,00 → R\$\s?2\.612,50/.test(ficha),
+    ficha.slice(0, 500)
+  );
+  checa('ficha: histórico mostra a renovação', /Renovação: prazo 18 → 30 meses/.test(ficha));
+  checa(
+    'ficha: vistorias do contrato',
+    (await p.$$('#lc-modal-corpo [data-acao="lcVistAbrir"]')).length === 2
+  );
+  await p.click('#lc-modal-corpo [data-acao="lcReajustar"]');
+  await p.waitForTimeout(200);
+  await salvar(p);
+  checa(
+    'reajuste: em branco aplica o índice (percentual nulo)',
+    est.rpc.some(
+      r => r.fn === 'a1_lc_aplicar_reajuste' && r.args.p_contrato === 'ct1' && r.args.p_percentual === null
+    )
+  );
+  await p.click('#lc-conteudo [data-acao="lcAbrirContrato"][data-id="ct1"]');
+  await p.click('#lc-modal-corpo [data-acao="lcRenovar"]');
+  await p.fill('#lw-valor', '2.700,00');
+  await salvar(p);
+  checa(
+    'renovar manda meses e novo valor',
+    est.rpc.some(
+      r => r.fn === 'a1_lc_renovar_contrato' && r.args.p_meses === 12 && r.args.p_novo_valor === 2700
+    )
+  );
+
+  // Lançar despesa (pela ficha).
+  await p.click('#lc-conteudo [data-acao="lcAbrirContrato"][data-id="ct1"]');
+  await p.click('#lc-modal-corpo [data-acao="lcLancar"]');
   await p.fill('#ll-desc', 'Conserto ' + XSS);
   await p.fill('#ll-valor', '120,50');
   await salvar(p);
@@ -294,16 +520,39 @@ const salvar = async p => {
     lan && lan.corpo.valor === 120.5 && lan.corpo.proprietario_id === null
   );
 
-  // Encerrar mostra a multa proporcional.
-  await p.click('[data-acao="lcEncerrar"][data-id="ct1"]');
+  // Rescisão: cálculo do banco, multa editável, proporcional e vencimento.
+  await p.click('#lc-conteudo [data-acao="lcAbrirContrato"][data-id="ct1"]');
+  await p.click('#lc-modal-corpo [data-acao="lcEncerrar"]');
+  await p.selectOption('#le-motivo', 'rescindido');
+  await p.waitForTimeout(300);
   checa(
-    'encerrar mostra a multa rescisória proporcional',
-    /Multa rescisória proporcional/.test(await p.textContent('#lc-modal-corpo'))
+    'rescisão mostra o cálculo proporcional e preenche a multa',
+    /Faltam 18 de 30 meses/.test(await p.textContent('#le-calc')) &&
+      (await p.inputValue('#le-multa')) === '4500' &&
+      /15 dia\(s\)/.test(await p.textContent('#le-prop-txt'))
   );
   await salvar(p);
+  const resc = est.rpc.find(r => r.fn === 'a1_lc_rescindir_contrato');
   checa(
-    'encerrar chama a função',
-    est.rpc.some(r => r.fn === 'a1_lc_encerrar_contrato' && r.args.p_contrato === 'ct1')
+    'rescindir manda data, multa, proporcional e vencimento (+10 dias)',
+    resc &&
+      resc.args.p_data === HOJE &&
+      resc.args.p_multa === 4500 &&
+      resc.args.p_proporcional === true &&
+      !!resc.args.p_vencimento,
+    JSON.stringify(resc)
+  );
+  await p.click('#lc-conteudo [data-acao="lcAbrirContrato"][data-id="ct1"]');
+  await p.click('#lc-modal-corpo [data-acao="lcEncerrar"]');
+  await p.selectOption('#le-motivo', 'encerrado');
+  checa('fim do contrato esconde a rescisão', await p.isHidden('#le-resc'));
+  await salvar(p);
+  checa(
+    'encerrar (fim do contrato) chama a função de encerrar',
+    est.rpc.some(
+      r =>
+        r.fn === 'a1_lc_encerrar_contrato' && r.args.p_contrato === 'ct1' && r.args.p_motivo === 'encerrado'
+    )
   );
 
   await vista(p, 'cobrancas');
@@ -409,6 +658,83 @@ const salvar = async p => {
       donos.corpo[1].pessoa_id === 'pe2' &&
       donos.corpo[0].imovel_id === 'im2'
   );
+
+  // Vistorias.
+  await vista(p, 'vistorias');
+  const tv = await texto(p);
+  checa(
+    'vistorias: lista com entrada concluída e saída em rascunho',
+    /Concluída/.test(tv) && /Rascunho/.test(tv)
+  );
+  await p.click('[data-acao="lcVistComparar"][data-id="vs2"]');
+  await p.waitForTimeout(300);
+  const cmp = await p.textContent('#lc-modal-corpo');
+  checa(
+    'comparativo: piso piorou de Bom para Ruim',
+    /1 item\(ns\) em estado pior/.test(cmp) && /Piorou/.test(cmp),
+    cmp.slice(0, 300)
+  );
+  await p.click('[data-acao="lcFechar"]');
+  await p.click('[data-acao="lcVistAbrir"][data-id="vs2"]');
+  await p.waitForTimeout(300);
+  checa('editor: itens da vistoria carregados', (await p.$$('#lv-itens .lc-vi')).length === 2);
+  await p.selectOption('#lv-comodo', 'Banheiro');
+  await p.click('[data-acao="lcVistComodo"]');
+  checa('cômodo com roteiro acrescenta os itens', (await p.$$('#lv-itens .lc-vi')).length === 9);
+  await p.click('#lv-itens .lc-vi[data-id="j2"] [data-acao="lcVistItemMenos"]');
+  await p.setInputFiles('#lv-itens .lc-vi[data-id="j1"] input[type=file]', {
+    name: 'piso.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+  });
+  await p.waitForTimeout(300);
+  checa(
+    'foto vai para o Storage, na pasta do cliente e da vistoria',
+    est.uploads.length === 1 &&
+      /case-documents\/t1\/locacao\/vistorias\/vs2\/[\w-]+\.jpg$/.test(est.uploads[0]),
+    est.uploads.join()
+  );
+  const antesSalvar = est.escritas.length;
+  await salvar(p);
+  const depois = est.escritas.slice(antesSalvar);
+  const up = depois.find(e => e.tabela === 'a1_lc_vistoria_itens' && e.metodo === 'POST');
+  const del = depois.find(e => e.tabela === 'a1_lc_vistoria_itens' && e.metodo === 'DELETE');
+  checa(
+    'salvar: cabeçalho, itens (upsert) e só depois apaga quem saiu',
+    depois.map(e => e.metodo).join() === 'PATCH,POST,DELETE' &&
+      /on_conflict=id/.test(up.url) &&
+      up.corpo.length === 8 &&
+      up.corpo[0].fotos.length === 1 &&
+      /id=not\.in\./.test(del.url) &&
+      !/j2/.test(del.url.split('not.in.')[1]),
+    depois.map(e => e.metodo + ' ' + e.url).join(' | ')
+  );
+  await p.click('[data-acao="lcVistConcluir"]');
+  await p.waitForTimeout(500);
+  checa(
+    'concluir salva e chama a função',
+    est.rpc.some(r => r.fn === 'a1_lc_concluir_vistoria' && r.args.p_vistoria === 'vs2')
+  );
+  await p.click('[data-acao="lcFechar"]');
+
+  await p.click('[data-acao="lcVistNova"]');
+  await p.selectOption('#lv-imovel', 'im2');
+  await p.selectOption('#lv-tipo', 'entrada');
+  const antesNova = est.escritas.length;
+  await salvar(p);
+  await p.waitForTimeout(300);
+  const nova = est.escritas.slice(antesNova);
+  checa(
+    'nova vistoria com o roteiro padrão (5 cômodos, 32 itens)',
+    nova[0] &&
+      nova[0].tabela === 'a1_lc_vistorias' &&
+      nova[0].corpo.imovel_id === 'im2' &&
+      nova.some(e => e.tabela === 'a1_lc_vistoria_itens' && e.metodo === 'POST' && e.corpo.length === 32),
+    nova
+      .map(e => e.tabela + ' ' + e.metodo + ' ' + (Array.isArray(e.corpo) ? e.corpo.length : ''))
+      .join(' | ')
+  );
+  await p.click('[data-acao="lcFechar"]');
 
   await vista(p, 'pessoas');
   checa('pessoas: CPF formatado e fosco (LGPD)', (await p.$$('#lc-conteudo .lgpd')).length > 0);

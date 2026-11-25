@@ -320,8 +320,16 @@ Administração de aluguéis (`/:slug/locacao`, `src/pages/locacao`). Nasce desl
 |---|---|---|
 | Banco | `database/migrations/2026-11-25_locacao.sql` | `a1_lc_pessoas` (proprietário, inquilino, fiador), `a1_lc_imoveis` + `a1_lc_imovel_donos` (partes somando 100%), `a1_lc_contratos`, `a1_lc_cobrancas`, `a1_lc_repasses`, `a1_lc_lancamentos`. Cadastros e contrato em rascunho gravam direto (RLS); referência a registro de outro cliente é barrada por gatilho. |
 | Dinheiro | `a1_lc_ativar_contrato`, `a1_lc_encerrar_contrato`, `a1_lc_gerar_cobrancas`, `a1_lc_baixar_cobranca`, `a1_lc_estornar_cobranca`, `a1_lc_cancelar_cobranca`, `a1_lc_pagar_repasse` | Toda mudança de dinheiro passa por função, com versão esperada na cobrança. A baixa calcula multa (% sobre o total) e juros pró-rata dia (juros ao mês / 30 × dias), e gera um repasse por proprietário: (aluguel + multa + juros − desconto) × parte − taxa de administração + encargos "repassar ao proprietário" − despesas lançadas. |
-| Tela | `src/pages/locacao` | Vistas Painel (KPIs, atrasos, a vencer, repasses, contratos vencendo e reajustes do mês), Contratos, Cobranças, Repasses, Imóveis e Pessoas (`?vista=`). A prévia da baixa faz a mesma conta do banco. |
+| Tela | `src/pages/locacao` + `src/modules/locacao` | Vistas Painel, Contratos (ficha do contrato com reajuste, renovação, rescisão, histórico, documento), Cobranças, Repasses, Imóveis, Pessoas e Vistorias (`?vista=`). Estado, banco e modal comuns em `base.js`. A prévia da baixa faz a mesma conta do banco. |
 
-Fora da fase 1: reajuste automático pelo índice, vistoria, renovação, boleto/PIX, cobrança por WhatsApp, DIMOB, portal do proprietário/inquilino.
+### Fase 2 (`database/migrations/2026-11-26_locacao_fase2.sql`)
 
-Provas: `testes/sql/prova-locacao.sql`, `testes/t-locacao.js`.
+- **ID automático:** coluna `seq` em contratos e imóveis, sequencial por cliente, preenchida e travada por gatilho (`a1_lc_numerar`). A tela mostra `CT-0001` / `IM-0001`; o `codigo` digitado na fase 1 continua no banco e aparece como "ref.". (`numero` não serve: em imóveis já é o número do endereço.)
+- **Documentos:** `src/modules/locacao/documentos.js`. Modelos padrão (contrato residencial, comercial, termo de entrega de chaves) com `{{campo}}`; o cliente edita o seu em Contratos › Modelos (`a1_lc_modelos`). Modelo e dados passam inteiros por `esc()`; campo desconhecido aparece marcado. Imprimir usa a impressão do navegador (salva em PDF) via `#lc-impressao`.
+- **Reajuste:** `a1_lc_indices` recebe IGP-M (SGS 189), IPCA (433) e INPC (188) da API do Banco Central pelo próprio banco (`a1_lc_indices_atualizar`, pg_net, agendado no pg_cron a cada 6 h). Devido = mês de reajuste já chegado, com 12 meses de contrato e ainda vigente; referência = 12 meses até o mês anterior (ou dois antes, se o índice não saiu). Deflação mantém o aluguel. `a1_lc_reajustes_automaticos` (pg_cron, diário) reajusta só contratos com `reajuste_auto`; contratos que já existiam nascem com `false`. O gestor aplica pela ficha (`a1_lc_aplicar_reajuste`, com ou sem percentual).
+- **Renovação e rescisão:** `a1_lc_renovar_contrato` (prazo + valor), `a1_lc_rescindir_contrato` (multa proporcional ao tempo que falta, art. 4º, editável; aluguel proporcional dos dias do mês se a mensal ainda não existe; cobrança `tipo = 'avulsa'`, que segue baixa e repasse). Tudo vai para `a1_lc_aditivos` (histórico na ficha do contrato).
+- **Vistoria:** `src/modules/locacao/vistorias.js`, tabelas `a1_lc_vistorias` + `a1_lc_vistoria_itens`. Roteiro por cômodo, fotos no bucket `case-documents` na pasta do cliente, edição só em rascunho, `a1_lc_concluir_vistoria` trava, comparativo entrada × saída, laudo impresso.
+
+Fora: boleto/PIX, cobrança por WhatsApp, DIMOB, portal do proprietário/inquilino.
+
+Provas: `testes/sql/prova-locacao.sql`, `testes/sql/prova-locacao-fase2.sql` (roda depois da fase 1, com os dados dela), `testes/t-locacao.js`.
