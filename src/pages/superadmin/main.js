@@ -217,6 +217,16 @@ const MODULES_DEF = [
     types: ['construtora'],
     dependeDe: []
   },
+  // Administração de aluguéis: cadastro próprio de imóveis, proprietários e
+  // inquilinos, contrato, cobrança mensal e repasse ao proprietário. Só o
+  // gestor do cliente opera (o banco confere: a1_lc_pode()).
+  {
+    key: 'LOCACAO',
+    name: 'Locação',
+    desc: 'Administração de aluguéis: imóveis, proprietários e inquilinos, contrato com garantia, cobrança mensal com multa e juros e repasse ao proprietário com taxa de administração.',
+    types: ['imobiliaria', 'construtora', 'correspondente_bancario'],
+    dependeDe: []
+  },
   {
     key: 'repasse',
     name: 'Repasse Imobiliário',

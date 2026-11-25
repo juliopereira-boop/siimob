@@ -78,6 +78,7 @@ export const A1_ICONES = {
     '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7M17.5 14v7"/>',
   repasse: '<path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/>',
   registro: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
+  locacao: '<circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M17 6l2.5 2.5M14.5 8.5 16 10"/>',
   config:
     '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.44.62.79.75H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
   lupa: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
@@ -163,6 +164,22 @@ export const A1_MODULOS = [
     vistas: [
       ['Andamento', 'registro'],
       ['Listagem', 'registro-listagem']
+    ]
+  },
+  // Locação é do gestor (o banco só abre as tabelas para quem não é parceiro):
+  // `soGestor` tira a aba da barra do parceiro.
+  {
+    chave: 'LOCACAO',
+    rotulo: 'Locação',
+    icone: 'locacao',
+    soGestor: true,
+    vistas: [
+      ['Painel', 'locacao'],
+      ['Contratos', 'locacao?vista=contratos'],
+      ['Cobranças', 'locacao?vista=cobrancas'],
+      ['Repasses', 'locacao?vista=repasses'],
+      ['Imóveis', 'locacao?vista=imoveis'],
+      ['Pessoas', 'locacao?vista=pessoas']
     ]
   }
 ];
@@ -607,7 +624,7 @@ export async function a1MontarShell(alvo, opcoes) {
       ${a1Svg('geral')}<span>Geral</span></a>`);
   }
   A1_MODULOS.forEach(m => {
-    if (!tem[m.chave]) return;
+    if (!tem[m.chave] || (m.soGestor && ehParceiro)) return;
     abas.push(`<a class="sb-mod${o.ativo === m.chave ? ' ativo' : ''}" href="${url(a1Esc(m.vistas[0][1]))}">
       ${a1Svg(m.icone)}<span>${a1Esc(m.rotulo)}</span></a>`);
   });

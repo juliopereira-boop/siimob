@@ -311,3 +311,17 @@ Provas: `testes/sql/prova-tabela-precos.sql`, `testes/t-superadmin-planos.js`.
 - apaga o cliente.
 
 Roda em voltas para desfazer cadeias (unidade → reserva). Se algo travar, nada é apagado e a mensagem diz qual tabela travou. Arquivos do Storage não são removidos. Provas: `testes/sql/prova-excluir-cliente.sql`, `testes/t-superadmin-excluir.js`.
+
+## Locação (módulo `LOCACAO`)
+
+Administração de aluguéis (`/:slug/locacao`, `src/pages/locacao`). Nasce desligado; o superadmin liga por cliente. Só o gestor (não parceiro) opera: a aba some da barra do parceiro (`soGestor` em `A1_MODULOS`) e o banco confere com `a1_lc_pode()` (cliente + gestor + licença).
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco | `database/migrations/2026-11-25_locacao.sql` | `a1_lc_pessoas` (proprietário, inquilino, fiador), `a1_lc_imoveis` + `a1_lc_imovel_donos` (partes somando 100%), `a1_lc_contratos`, `a1_lc_cobrancas`, `a1_lc_repasses`, `a1_lc_lancamentos`. Cadastros e contrato em rascunho gravam direto (RLS); referência a registro de outro cliente é barrada por gatilho. |
+| Dinheiro | `a1_lc_ativar_contrato`, `a1_lc_encerrar_contrato`, `a1_lc_gerar_cobrancas`, `a1_lc_baixar_cobranca`, `a1_lc_estornar_cobranca`, `a1_lc_cancelar_cobranca`, `a1_lc_pagar_repasse` | Toda mudança de dinheiro passa por função, com versão esperada na cobrança. A baixa calcula multa (% sobre o total) e juros pró-rata dia (juros ao mês / 30 × dias), e gera um repasse por proprietário: (aluguel + multa + juros − desconto) × parte − taxa de administração + encargos "repassar ao proprietário" − despesas lançadas. |
+| Tela | `src/pages/locacao` | Vistas Painel (KPIs, atrasos, a vencer, repasses, contratos vencendo e reajustes do mês), Contratos, Cobranças, Repasses, Imóveis e Pessoas (`?vista=`). A prévia da baixa faz a mesma conta do banco. |
+
+Fora da fase 1: reajuste automático pelo índice, vistoria, renovação, boleto/PIX, cobrança por WhatsApp, DIMOB, portal do proprietário/inquilino.
+
+Provas: `testes/sql/prova-locacao.sql`, `testes/t-locacao.js`.

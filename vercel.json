@@ -113,6 +113,10 @@
       "destination": "/atendimento.html"
     },
     {
+      "source": "/:slug/locacao",
+      "destination": "/locacao.html"
+    },
+    {
       "source": "/:slug/pre-analise",
       "destination": "/pre-analise.html"
     },
