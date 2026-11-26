@@ -442,11 +442,11 @@ begin
       delete from a1_lc_indices_pedidos where id = p.id;
     end if;
   end loop;
-  -- pede de novo (os últimos 24 meses de cada índice)
+  -- pede de novo (os últimos 20 meses de cada índice: a API do BCB recusa mais de 20)
   if not exists (select 1 from a1_lc_indices_pedidos) then
     for p in select * from (values ('IGPM', 189), ('IPCA', 433), ('INPC', 188)) s(indice, serie) loop
       execute 'select net.http_get($1)' into v_id
-        using format('https://api.bcb.gov.br/dados/serie/bcdata.sgs.%s/dados/ultimos/24?formato=json', p.serie);
+        using format('https://api.bcb.gov.br/dados/serie/bcdata.sgs.%s/dados/ultimos/20?formato=json', p.serie);
       insert into a1_lc_indices_pedidos (id, indice) values (v_id, p.indice);
       v_pedidos := v_pedidos + 1;
     end loop;

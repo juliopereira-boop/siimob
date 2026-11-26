@@ -188,7 +188,7 @@ export async function carregar() {
     ler('a1_lc_aditivos', 'criado_em.desc,id.desc'),
     ler('a1_lc_modelos', 'tipo.asc'),
     ler('a1_lc_vistorias', 'data.desc,id.desc'),
-    // índices são poucos e públicos: os 24 meses mais recentes de cada um bastam
+    // índices são poucos e públicos: os meses mais recentes de cada um bastam
     A1.buscarTudo(`${A1.rest('a1_lc_indices')}?select=indice,mes,valor&order=mes.desc&limit=80`, {
       chave: false
     }).then(r => (r && r.linhas) || [])
