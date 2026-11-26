@@ -133,6 +133,9 @@ create table if not exists a1_cases (
   documents jsonb default '[]'::jsonb, created_at timestamptz default now());
 -- Telefone do cliente: a visita agendada a partir do lead leva o número.
 alter table a1_cases add column if not exists client_phone text;
+-- Valor do negócio (Leads) existe em produção desde schema.sql. O Financeiro
+-- lê esta coluna quando o lead entra no GANHO.
+alter table a1_cases add column if not exists contract_value numeric;
 
 -- As filhas de a1_cases e o cadastro de empreendimentos existem em produção
 -- desde sempre e faltavam aqui. Sem elas, uma função que precise contar o
