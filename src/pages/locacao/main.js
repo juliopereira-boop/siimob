@@ -66,8 +66,10 @@ import {
   tabela,
   fmtDoc
 } from '../../modules/locacao/base.js';
-import '../../modules/locacao/documentos.js';
 import { vistorias } from '../../modules/locacao/vistorias.js';
+// Só registra as ações do documento. Fica por último: o leitor de import do
+// t-acoes junta um import sem `from` ao seguinte que tenha.
+import '../../modules/locacao/documentos.js';
 
 const VISTAS = /** @type {Record<string,[string,string]>} */ ({
   painel: ['Painel', 'Visão geral dos aluguéis administrados.'],
