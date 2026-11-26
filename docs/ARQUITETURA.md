@@ -260,6 +260,20 @@ Provas: `testes/sql/prova-atendimento-conectores.sql`, `testes/conectores/*.test
 
 Origem do lead: `src/shared/ui/canal-origem.js` dá o ícone (Instagram, Facebook, WhatsApp, Meta, site, indicação, manual) a partir de `payload.integracao` (na Meta, `dados.plataforma` separa `ig` de `fb`) ou do nome da origem. Usado no funil, na lista e na Central (`testes/t-canal-origem.js`).
 
+### WhatsApp oficial (Coexy) com a Evolution de reserva
+
+Decisões do dono: uma conta Coexy da plataforma (cada cliente conecta o próprio número pela página de conexão) e "oficial com reserva automática". Passo a passo e segredos: `docs/WHATSAPP-OFICIAL.md`.
+
+| Peça | Onde | O quê |
+|---|---|---|
+| Banco | `database/migrations/2026-11-26_whatsapp_oficial.sql` | `a1_wa_oficial` (canal do cliente: status, phone_number_id, waba_id, saúde, token do canal, reserva e criar leads), `a1_wa_coexy` (webhook da plataforma e o segredo HMAC). `canal` em `a1_whatsapp_envios` e `canal`/`entrega` em `a1_atendimento_mensagens`. `a1_wa_uso` conta só a Evolution (limites anti-bloqueio). `a1_wa_ligado` diz o canal e se há reserva. `a1_atend_elia` aceita o oficial. Funções antigas seguem iguais. |
+| Rota | `supabase/functions/atendimento-conectores/rota.mjs` | Oficial ativo: modelo ou janela de 24 h aberta saem pelo oficial; texto livre fora da janela ou recusa de canal (caiu, token, pagamento, limite da Meta) vão pela Evolution se a reserva estiver ligada. Recusa que a Evolution também teria (número sem WhatsApp, modelo inválido, marketing segurado pela Meta) não vai. Sem oficial ativo, a Evolution é o canal. |
+| Coexy | `supabase/functions/atendimento-conectores/coexy.mjs` | `x-api-key` (COEXY_API_KEY) só na API de canais e webhooks; `Bearer channel_token` só no meta-proxy (Cloud API v23). Envio de texto, mídia (upload ou link) e modelo, com `idempotency_key`. Modelos na conta WhatsApp Business do cliente. |
+| Avisos | `supabase/functions/coexy-webhook` | Um webhook da plataforma (criado pelo SIIMOB na primeira conexão; o segredo vai direto para `a1_wa_coexy`). Confere o HMAC do corpo; cliente pelo phone_number_id; mensagens, ecos do app (coexistência), status de entrega, status e saúde do canal. Banco fora: 500 para a Coexy tentar de novo (tudo idempotente). Publicada com verify_jwt desligado. |
+| Telas | `conectores.js`, `atendimento/main.js`, `elia/painel.js` | Integrações: cartão do oficial antes do QR Code (conectar, saúde com o motivo da Meta, reserva, criar leads, modelos). Central: janela de 24 h, "Enviar modelo", marca de entrega e de reserva. ELIA: campanha com modelo aprovado. |
+
+Testes: `testes/conectores/whatsapp-oficial.test.mjs` (node --test), `testes/sql/prova-whatsapp-oficial.sql`, `testes/t-whatsapp-oficial.js`.
+
 ## Site (`siimob.com`) e login universal (`/login`)
 
 `src/pages/index` é o site, servido na raiz: página isolada (sem casco, sem sessão), na identidade do

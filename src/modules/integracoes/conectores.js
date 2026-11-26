@@ -6,13 +6,16 @@
 //    openai, coloque dentro da configuraçao de integracoes, ao lado da meta."
 //   "eu vou integrar o evolution por enquanto (...) ja prepare essa integração
 //    com o whatsapp tambem."
+//   "quero manter com a evoluition, porem quero que o principal seja com a
+//    meta" -> cartão do WhatsApp oficial (API da Meta pela Coexy) em primeiro;
+//    a Evolution vira a reserva automática.
 //
 // Os dois fazem parte do pacote da Central de atendimento (módulo
 // ATENDIMENTO): sem a licença, os cartões não entram no DOM. Só o gestor vê.
 // Toda a conversa passa pela Edge Function atendimento-conectores, com a
 // sessão (x-session-token). A chave da OpenAI nunca volta para a tela (só os 4
-// últimos caracteres); a chave da Evolution e o token do aviso nem saem do
-// servidor.
+// últimos caracteres); a chave da Evolution, a chave da Coexy, o token do
+// canal oficial e o token do aviso nem saem do servidor.
 import { A1, A1_URL } from '../../shared/api/config.js';
 import { esc } from '../../shared/utils/texto.js';
 
@@ -23,8 +26,13 @@ let estado = null;
 let modelos = [];
 /** @type {ReturnType<typeof setInterval>|null} */
 let vigia = null;
+/** @type {ReturnType<typeof setInterval>|null} */
+let vigiaOficial = null;
+/** @type {any[]} */
+let modelosWa = [];
 
 // Apenas os selos, sem chaves ou dados de conexão, separados por empresa.
+const SELOS = ['ia-selo', 'wa-selo', 'wo-selo'];
 const chaveSelos = () => `a1_conectores_selos:${A1.slug || ''}`;
 function selosGuardados() {
   try {
@@ -35,7 +43,7 @@ function selosGuardados() {
 }
 function guardarSelos() {
   try {
-    const selos = ['ia-selo', 'wa-selo'].map(id => {
+    const selos = SELOS.map(id => {
       const el = $(id);
       return { classe: el.className, texto: el.querySelector('span')?.textContent || '' };
     });
@@ -57,6 +65,13 @@ const ERROS = /** @type {Record<string,string>} */ ({
   erro_evolution: 'O servidor do WhatsApp recusou o pedido. Tente de novo em instantes.',
   not_connected: 'O WhatsApp ainda não foi conectado.',
   forbidden: 'Só o gestor da empresa mexe nas integrações.',
+  coexy_nao_configurado: 'O WhatsApp oficial ainda não foi ligado no servidor do SIIMOB. Fale com o suporte.',
+  limite_canais: 'A conta do WhatsApp oficial da plataforma chegou ao limite de números. Fale com o suporte.',
+  chave_coexy: 'O servidor do WhatsApp oficial recusou a chave da plataforma. Fale com o suporte.',
+  assinatura_coexy: 'O WhatsApp oficial da plataforma está suspenso. Fale com o suporte.',
+  oficial_desconectado: 'O WhatsApp oficial não está conectado.',
+  modelo_recusado: 'A Meta recusou o modelo.',
+  invalid_request: 'Confira os campos e tente de novo.',
   temporarily_unavailable: 'Não foi possível concluir agora. Tente de novo em instantes.'
 });
 
@@ -74,7 +89,11 @@ async function chamar(/** @type {string} */ action, params = {}, espera = 20000)
     throw new Error('Não foi possível falar com o servidor agora. Confira a internet e tente de novo.');
   }
   const b = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(ERROS[b && b.error] || 'Não foi possível concluir agora. Tente de novo.');
+  if (!r.ok)
+    throw new Error(
+      (ERROS[b && b.error] || 'Não foi possível concluir agora. Tente de novo.') +
+        (b && typeof b.motivo === 'string' && b.motivo ? ` ${b.motivo}` : '')
+    );
   return b;
 }
 
@@ -106,7 +125,10 @@ const SVG_IA =
 const SVG_WA =
   '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#25d366"/><path fill="#fff" d="M24 10a14 14 0 0 0-12 21.2L10 38l7-1.8A14 14 0 1 0 24 10zm7.6 19.5c-.3.9-1.8 1.7-2.5 1.7-.7.1-1.4.3-4.6-1-3.9-1.5-6.4-5.6-6.6-5.9-.2-.3-1.5-2.1-1.5-3.9s1-2.8 1.3-3.2c.3-.4.7-.4 1-.4h.7c.2 0 .5 0 .8.7l1.2 2.9c.1.3.1.5 0 .8l-.6.8-.5.6c-.2.2-.4.4-.2.8.3.4 1.1 1.8 2.3 2.9 1.5 1.4 2.8 1.8 3.2 2 .4.2.7.1.9-.1l1.3-1.5c.3-.4.6-.3.9-.2l2.8 1.3c.4.2.7.3.8.5.1.2.1 1-.2 1.9z"/></svg>';
 
-/** Põe os dois cartões em Integrações. Chamar só com a licença confirmada. */
+const SVG_WO =
+  '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#128c7e"/><path fill="#fff" d="M23 11a13 13 0 0 0-11.1 19.7L10 37l6.5-1.7A13 13 0 1 0 23 11zm7 18.2c-.3.8-1.7 1.6-2.3 1.6-.6.1-1.3.3-4.3-.9-3.6-1.4-5.9-5.2-6.1-5.4-.2-.3-1.4-1.9-1.4-3.6s.9-2.6 1.2-3c.3-.3.7-.4.9-.4h.7c.2 0 .5 0 .7.6l1.1 2.7c.1.3.1.5 0 .7l-.5.8-.5.5c-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.4 1.3 2.6 1.7 3 1.9.4.2.6.1.8-.1l1.2-1.4c.3-.3.5-.3.8-.2l2.6 1.2c.4.2.6.3.7.5.1.2.1.9-.2 1.7z"/><circle cx="37" cy="37" r="8" fill="#1d9bf0" stroke="#fff" stroke-width="2"/><path d="M33.5 37l2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/** Põe os cartões em Integrações. Chamar só com a licença confirmada. */
 export function conectoresMontar() {
   const vista = document.getElementById('cfg-view-integracoes');
   if (!vista || document.getElementById('conectores')) return;
@@ -136,10 +158,36 @@ export function conectoresMontar() {
       <p id="ia-aviso" class="mi-aviso" role="status" hidden></p>
     </div>
 
+    <div id="wo-card" class="mi-cartao">
+      <div class="mi-topo">
+        <span class="mi-logo">${SVG_WO}</span>
+        <div class="mi-nome"><b>WhatsApp oficial</b><small>API oficial da Meta: o canal principal da Central e da ELIA</small></div>
+        <span id="wo-selo" class="mi-selo mi-selo-off" role="status" hidden><i aria-hidden="true"></i><span></span></span>
+      </div>
+      <p id="wo-resumo" class="mi-resumo"></p>
+      <div id="wo-painel" hidden></div>
+      <div class="mi-acoes">
+        <button id="wo-conectar" type="button" class="btn btn-primary" data-acao="woConectar" hidden>Conectar WhatsApp oficial</button>
+        <button id="wo-conferir" type="button" class="btn btn-ghost" data-acao="woConferir" hidden>Conferir conexão</button>
+        <button id="wo-remover" type="button" class="btn btn-ghost mi-perigo" data-acao="woRemover" hidden>Remover</button>
+      </div>
+      <p id="wo-aviso" class="mi-aviso" role="status" hidden></p>
+      <details class="mi-limites">
+        <summary>Como funciona o WhatsApp oficial</summary>
+        <ul>
+          <li>O número é conectado à API oficial da Meta pela página de conexão (login do Facebook da empresa). Dá para manter o app WhatsApp Business no celular (coexistência).</li>
+          <li>Quando o lead escreve, abre uma <b>janela de 24 h</b>: dentro dela a Central e a ELIA respondem com texto livre e arquivos.</li>
+          <li>Fora da janela (conversa iniciada pela empresa, lembretes, campanhas), a Meta só aceita <b>modelos aprovados</b>. Os modelos são criados aqui e revisados pela Meta.</li>
+          <li>Com a <b>reserva automática</b> ligada, o que o oficial não puder enviar (fora da janela, canal fora do ar, recusa da Meta) sai pela Evolution, com os limites anti-bloqueio dela.</li>
+          <li>As conversas iniciadas pela empresa são cobradas pela Meta na conta WhatsApp Business do número.</li>
+        </ul>
+      </details>
+    </div>
+
     <div id="wa-card" class="mi-cartao">
       <div class="mi-topo">
         <span class="mi-logo">${SVG_WA}</span>
-        <div class="mi-nome"><b>WhatsApp</b><small>Número da empresa conectado por QR Code (Evolution)</small></div>
+        <div class="mi-nome"><b>WhatsApp por QR Code</b><small>Reserva: número conectado pela Evolution (não oficial)</small></div>
         <span id="wa-selo" class="mi-selo mi-selo-off" role="status" hidden><i aria-hidden="true"></i><span></span></span>
       </div>
       <p id="wa-resumo" class="mi-resumo"></p>
@@ -166,7 +214,7 @@ export function conectoresMontar() {
   vista.appendChild(box);
   const guardados = selosGuardados();
   if (Array.isArray(guardados))
-    ['ia-selo', 'wa-selo'].forEach((id, i) => {
+    SELOS.forEach((id, i) => {
       const dado = guardados[i];
       if (!dado || typeof dado.classe !== 'string' || typeof dado.texto !== 'string') return;
       const el = $(id);
@@ -182,11 +230,13 @@ export async function conectoresCarregar(conferir = false) {
   try {
     estado = await chamar('status', { conferir });
     pintarIa();
+    pintarOficial();
     pintarWa();
     guardarSelos();
   } catch (e) {
     aviso('ia-aviso', /** @type {Error} */ (e).message);
     selo('ia-selo', 'off', 'Indisponível');
+    selo('wo-selo', 'off', 'Indisponível');
     selo('wa-selo', 'off', 'Indisponível');
   }
 }
@@ -256,11 +306,16 @@ function pintarWa() {
           ? 'Conectando'
           : 'Não conectado'
   );
+  const oficialAtivo = !!(estado.oficial && estado.oficial.estado === 'active');
   $('wa-resumo').textContent = conectado
-    ? `Conectado${w.perfil_nome ? ` como ${w.perfil_nome}` : ''}. As mensagens dos leads chegam na Central de atendimento e as respostas saem por este número.`
+    ? oficialAtivo
+      ? `Conectado${w.perfil_nome ? ` como ${w.perfil_nome}` : ''}. Fica de reserva do WhatsApp oficial.`
+      : `Conectado${w.perfil_nome ? ` como ${w.perfil_nome}` : ''}. As mensagens dos leads chegam na Central de atendimento e as respostas saem por este número.`
     : e === 'aguardando_qr' || e === 'conectando'
       ? 'Abra o WhatsApp do número da empresa › Aparelhos conectados › Conectar um aparelho, e aponte para o QR Code.'
-      : 'Conecte o número de WhatsApp da empresa. Use um número só para a empresa, de preferência já usado há algum tempo.';
+      : oficialAtivo
+        ? 'Opcional: conecte um número por QR Code para servir de reserva quando o oficial não puder enviar.'
+        : 'Conecte o número de WhatsApp da empresa. Use um número só para a empresa, de preferência já usado há algum tempo.';
   btn('wa-conectar', !conectado);
   $('wa-conectar').textContent = e === 'aguardando_qr' ? 'Gerar QR Code de novo' : 'Conectar WhatsApp';
   btn('wa-conferir', !conectado && e !== 'nao_criado' && e !== 'desconectado');
@@ -293,6 +348,269 @@ function pintarWa() {
     </div>
     <label class="mi-opcao"><input type="checkbox" id="wa-criar-leads" data-acao-change="waCriarLeads" ${w.criar_leads ? 'checked' : ''}>
       <span>Criar lead quando um número novo escrever <small>Desligado, só conversas de leads que já existem entram na Central.</small></span></label>`;
+}
+
+// ─── WhatsApp oficial ────────────────────────────────────────────────────────
+const SAUDE = /** @type {Record<string, [string, string]>} */ ({
+  warning: ['inativa', 'Atenção'],
+  restricted: ['expirou', 'Restrito'],
+  blocked: ['expirou', 'Bloqueado'],
+  banned: ['expirou', 'Banido']
+});
+const STATUS_MODELO = /** @type {Record<string, [string, string]>} */ ({
+  APPROVED: ['active', 'Aprovado'],
+  PENDING: ['pend', 'Em análise'],
+  IN_APPEAL: ['pend', 'Em recurso'],
+  REJECTED: ['archived', 'Recusado'],
+  PAUSED: ['archived', 'Pausado'],
+  DISABLED: ['archived', 'Desativado']
+});
+
+function pintarOficial() {
+  const o = estado && estado.oficial;
+  if (!o) return;
+  const btn = (/** @type {string} */ id, mostra = true) => ($(id).hidden = !mostra);
+  const painel = $('wo-painel');
+  if (!o.configurado) {
+    selo('wo-selo', 'off', 'Aguardando servidor');
+    $('wo-resumo').textContent =
+      'O WhatsApp oficial ainda não foi ligado no servidor do SIIMOB. Assim que estiver, o botão de conectar aparece aqui. Enquanto isso, a Evolution segue atendendo.';
+    ['wo-conectar', 'wo-conferir', 'wo-remover'].forEach(id => btn(id, false));
+    painel.hidden = true;
+    return;
+  }
+  const e = o.estado;
+  const ativo = e === 'active';
+  const s = ativo && o.saude ? SAUDE[o.saude] : null;
+  if (ativo) selo('wo-selo', s ? s[0] : 'ok', s ? s[1] : 'Conectado');
+  else if (e === 'pending') selo('wo-selo', 'verificando', 'Aguardando conexão');
+  else if (e === 'disconnected') selo('wo-selo', 'expirou', 'Desconectado');
+  else if (e === 'suspended') selo('wo-selo', 'expirou', 'Suspenso');
+  else selo('wo-selo', 'off', 'Não conectado');
+  $('wo-resumo').textContent = ativo
+    ? 'Conectado à API oficial da Meta. As mensagens dos leads chegam na Central; respostas, ELIA e campanhas saem por este número.'
+    : e === 'pending'
+      ? 'Abra a página de conexão abaixo com o login do Facebook que administra o WhatsApp da empresa e conclua na janela da Meta. Pode enviar o link para quem cuida do número.'
+      : e === 'disconnected'
+        ? 'A Meta desconectou o número (troca de senha ou permissão removida). Reconecte pela página de conexão: não é preciso criar outro.'
+        : e === 'suspended'
+          ? 'O número está suspenso. Fale com o suporte do SIIMOB.'
+          : 'Conecte o número da empresa à API oficial do WhatsApp. É o canal mais seguro: sem risco de bloqueio por automação.';
+  btn('wo-conectar', !ativo && e !== 'suspended');
+  $('wo-conectar').textContent = e === 'nao_criado' ? 'Conectar WhatsApp oficial' : 'Abrir página de conexão';
+  btn('wo-conferir', e !== 'nao_criado');
+  btn('wo-remover', e !== 'nao_criado');
+  if (ativo) pararVigiaOficial();
+
+  const link =
+    !ativo && typeof o.connect_url === 'string' && /^https:\/\//.test(o.connect_url) ? o.connect_url : '';
+  painel.hidden = !ativo && !link;
+  if (!ativo) {
+    painel.innerHTML = link
+      ? `<p class="mi-nota">Página de conexão: <a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(link)}</a></p>`
+      : '';
+    return;
+  }
+  painel.innerHTML = `
+    ${s ? `<p class="mi-faixa" role="${o.saude === 'warning' ? 'status' : 'alert'}">${esc(o.saude_motivo || 'A Meta limitou este número.')}</p>` : ''}
+    <div class="mi-wa-dados">
+      <div><span>Número</span><b>${esc(fone(o.numero))}</b></div>
+      <div><span>Limite da Meta</span><b>${esc(
+        String(o.limite || '')
+          .replace('TIER_', '')
+          .replace('UNLIMITED', 'Sem limite') || 'A confirmar'
+      )}</b><small>conversas iniciadas por dia</small></div>
+    </div>
+    <label class="mi-opcao"><input type="checkbox" id="wo-reserva" data-campo="reserva_auto" data-acao-change="woOpcao" ${o.reserva_auto ? 'checked' : ''}>
+      <span>Reserva automática pela Evolution <small>O que o oficial não puder enviar (fora da janela de 24 h, canal fora do ar, recusa da Meta) sai pelo WhatsApp por QR Code, se ele estiver conectado.</small></span></label>
+    <label class="mi-opcao"><input type="checkbox" id="wo-criar-leads" data-campo="criar_leads" data-acao-change="woOpcao" ${o.criar_leads ? 'checked' : ''}>
+      <span>Criar lead quando um número novo escrever <small>Desligado, só conversas de leads que já existem entram na Central.</small></span></label>
+    <div class="mi-bloco mi-modelos">
+      <div class="mi-bloco-cab"><h3>Modelos de mensagem</h3>
+        <button type="button" class="btn btn-ghost" data-acao="woModeloNovo">Novo modelo</button></div>
+      <p class="mi-nota">Para falar com quem não escreveu nas últimas 24 h. A Meta revisa cada modelo (minutos a algumas horas).</p>
+      <form id="wo-modelo-form" class="mi-form mi-modelo-form" hidden>
+        <label class="mi-campo"><span>Nome (minúsculas e _)</span><input id="wo-m-nome" maxlength="60" placeholder="boas_vindas" data-lgpd-livre></label>
+        <label class="mi-campo"><span>Categoria</span><select id="wo-m-cat"><option value="MARKETING">Marketing (ofertas, campanhas)</option><option value="UTILITY">Utilidade (lembrete, andamento)</option></select></label>
+        <label class="mi-campo mi-largo"><span>Texto (use {{1}}, {{2}}... para as variáveis)</span><textarea id="wo-m-corpo" rows="4" maxlength="1024" placeholder="Olá {{1}}, temos novidades do {{2}} para você." data-lgpd-livre></textarea></label>
+        <label class="mi-campo mi-largo"><span>Exemplo de cada variável, separados por ;</span><input id="wo-m-ex" maxlength="600" placeholder="Ana; Residencial Jardins" data-lgpd-livre></label>
+        <label class="mi-campo"><span>Rodapé (opcional)</span><input id="wo-m-rodape" maxlength="60" data-lgpd-livre></label>
+        <div class="mi-acoes"><button type="button" class="btn btn-primary" data-acao="woModeloCriar">Enviar para a Meta</button></div>
+      </form>
+      <div id="wo-modelos" class="mi-lista"><p class="mi-nota">Carregando modelos...</p></div>
+    </div>`;
+  woModelosCarregar();
+}
+
+async function woModelosCarregar() {
+  const alvo = document.getElementById('wo-modelos');
+  if (!alvo) return;
+  try {
+    const r = await chamar('wa_modelos');
+    modelosWa = Array.isArray(r.modelos) ? r.modelos : [];
+    alvo.innerHTML = modelosWa.length
+      ? modelosWa
+          .map(m => {
+            const st = STATUS_MODELO[m.status] || ['archived', m.status || '?'];
+            return `<div class="mi-item mi-modelo"><div class="mi-item-txt"><b>${esc(m.nome)}</b><small>${esc(m.categoria === 'UTILITY' ? 'Utilidade' : m.categoria === 'MARKETING' ? 'Marketing' : m.categoria)} · ${esc(m.idioma)}${m.suportado ? '' : ' · só pelo WhatsApp Manager'}</small><small class="mi-modelo-corpo">${esc(m.corpo)}</small></div>
+              <span class="mi-st mi-st-${st[0]}">${esc(st[1])}</span>
+              <button type="button" class="btn btn-ghost mi-perigo" data-acao="woModeloApagar" data-nome="${esc(m.nome)}" aria-label="Apagar o modelo ${esc(m.nome)}">Apagar</button></div>`;
+          })
+          .join('')
+      : '<p class="mi-nota">Nenhum modelo ainda.</p>';
+  } catch (e) {
+    alvo.innerHTML = `<p class="mi-nota">${esc(/** @type {Error} */ (e).message)}</p>`;
+  }
+}
+
+function pararVigiaOficial() {
+  if (vigiaOficial) clearInterval(vigiaOficial);
+  vigiaOficial = null;
+}
+
+export async function woConectar() {
+  const b = /** @type {HTMLButtonElement} */ ($('wo-conectar'));
+  // A página abre já no clique (depois do await o navegador bloquearia).
+  const atual = estado && estado.oficial && estado.oficial.connect_url;
+  const janela = window.open(
+    typeof atual === 'string' && /^https:\/\//.test(atual) ? atual : 'about:blank',
+    '_blank'
+  );
+  b.disabled = true;
+  aviso('wo-aviso', 'Preparando a conexão...', true);
+  try {
+    const r = await chamar('oficial_conectar', {}, 30000);
+    estado = { ...estado, oficial: r.oficial };
+    pintarOficial();
+    const url = r.oficial && r.oficial.connect_url;
+    if (janela && typeof url === 'string' && /^https:\/\//.test(url)) {
+      janela.opener = null;
+      janela.location.href = url;
+    } else if (janela) janela.close();
+    aviso('wo-aviso', url ? 'Conclua a conexão na página que abriu. Esta tela confere sozinha.' : '', true);
+    // Confere sozinho a cada 8 s por até 10 min, até conectar.
+    pararVigiaOficial();
+    let voltas = 0;
+    vigiaOficial = setInterval(async () => {
+      if (++voltas > 75 || !document.getElementById('wo-card')) return pararVigiaOficial();
+      await conectoresCarregar(true).catch(() => {});
+      if (estado && estado.oficial && estado.oficial.estado === 'active') {
+        pararVigiaOficial();
+        aviso('wo-aviso', 'WhatsApp oficial conectado.', true);
+      }
+    }, 8000);
+  } catch (e) {
+    if (janela) janela.close();
+    aviso('wo-aviso', /** @type {Error} */ (e).message);
+  } finally {
+    b.disabled = false;
+  }
+}
+
+export async function woConferir() {
+  await conectoresCarregar(true);
+}
+
+export async function woRemover() {
+  if (
+    !confirm(
+      'Remover o WhatsApp oficial? O número sai da API oficial no SIIMOB e as mensagens deixam de chegar por ele. Para voltar, será preciso conectar de novo.'
+    )
+  )
+    return;
+  try {
+    const r = await chamar('oficial_remover', {}, 30000);
+    pararVigiaOficial();
+    estado = { ...estado, oficial: r.oficial };
+    pintarOficial();
+    aviso('wo-aviso', 'WhatsApp oficial removido.', true);
+  } catch (e) {
+    aviso('wo-aviso', /** @type {Error} */ (e).message);
+  }
+}
+
+export async function woOpcao(/** @type {HTMLElement} */ el) {
+  const campo = el.dataset.campo || '';
+  if (campo !== 'reserva_auto' && campo !== 'criar_leads') return;
+  const marcado = /** @type {HTMLInputElement} */ (el).checked;
+  try {
+    const r = await chamar('oficial_opcoes', { [campo]: marcado });
+    estado = { ...estado, oficial: r.oficial };
+    aviso(
+      'wo-aviso',
+      campo === 'reserva_auto'
+        ? marcado
+          ? 'Reserva automática ligada.'
+          : 'Reserva automática desligada: fora da janela de 24 h, só modelos aprovados.'
+        : marcado
+          ? 'Número novo que escrever vira lead.'
+          : 'Só leads que já existem entram na Central.',
+      true
+    );
+  } catch (e) {
+    /** @type {HTMLInputElement} */ (el).checked = !marcado;
+    aviso('wo-aviso', /** @type {Error} */ (e).message);
+  }
+}
+
+export function woModeloNovo() {
+  const f = document.getElementById('wo-modelo-form');
+  if (f) f.hidden = !f.hidden;
+}
+
+export async function woModeloCriar() {
+  const v = (/** @type {string} */ id) =>
+    /** @type {HTMLInputElement} */ (document.getElementById(id))?.value.trim() || '';
+  const corpo = v('wo-m-corpo');
+  const exemplos = v('wo-m-ex')
+    .split(';')
+    .map(x => x.trim())
+    .filter(Boolean);
+  const nvars = new Set([...corpo.matchAll(/\{\{\s*(\d{1,2})\s*\}\}/g)].map(m => m[1])).size;
+  if (!/^[a-z0-9_]{1,60}$/.test(v('wo-m-nome')))
+    return aviso('wo-aviso', 'Nome do modelo: só letras minúsculas, números e _ (ex.: boas_vindas).');
+  if (!corpo) return aviso('wo-aviso', 'Escreva o texto do modelo.');
+  if (exemplos.length !== nvars)
+    return aviso(
+      'wo-aviso',
+      `O texto tem ${nvars} variável(is): informe ${nvars} exemplo(s), separados por ;.`
+    );
+  try {
+    const r = await chamar('modelo_criar', {
+      nome: v('wo-m-nome'),
+      categoria: v('wo-m-cat'),
+      idioma: 'pt_BR',
+      corpo,
+      rodape: v('wo-m-rodape'),
+      exemplos
+    });
+    aviso(
+      'wo-aviso',
+      r.status === 'APPROVED' ? 'Modelo aprovado.' : 'Modelo enviado para a revisão da Meta.',
+      true
+    );
+    const f = /** @type {HTMLFormElement|null} */ (document.getElementById('wo-modelo-form'));
+    if (f) {
+      f.reset();
+      f.hidden = true;
+    }
+    woModelosCarregar();
+  } catch (e) {
+    aviso('wo-aviso', /** @type {Error} */ (e).message);
+  }
+}
+
+export async function woModeloApagar(/** @type {HTMLElement} */ el) {
+  const nome = el.dataset.nome || '';
+  if (!nome || !confirm(`Apagar o modelo "${nome}" na Meta? Campanhas que usam este modelo deixam de sair.`))
+    return;
+  try {
+    await chamar('modelo_apagar', { nome });
+    aviso('wo-aviso', 'Modelo apagado.', true);
+    woModelosCarregar();
+  } catch (e) {
+    aviso('wo-aviso', /** @type {Error} */ (e).message);
+  }
 }
 
 // ─── OpenAI ──────────────────────────────────────────────────────────────────

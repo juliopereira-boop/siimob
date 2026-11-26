@@ -475,3 +475,18 @@
   color: var(--elia-muted);
   line-height: 1.5;
 }
+
+.elia-modelo-corpo {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #d9fdd3;
+  color: #111b21;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.elia-dica {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--t3, #5b6b66);
+}

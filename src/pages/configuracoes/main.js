@@ -42,7 +42,14 @@ import {
   waConectar,
   waConferir,
   waDesconectar,
-  waCriarLeads
+  waCriarLeads,
+  woConectar,
+  woConferir,
+  woRemover,
+  woOpcao,
+  woModeloNovo,
+  woModeloCriar,
+  woModeloApagar
 } from '../../modules/integracoes/conectores.js';
 import {
   dispAbrirVista,
@@ -134,6 +141,13 @@ acoes({
   waConferir: () => waConferir(),
   waDesconectar: () => waDesconectar(),
   waCriarLeads: el => waCriarLeads(el),
+  woConectar: () => woConectar(),
+  woConferir: () => woConferir(),
+  woRemover: () => woRemover(),
+  woOpcao: el => woOpcao(el),
+  woModeloNovo: () => woModeloNovo(),
+  woModeloCriar: () => woModeloCriar(),
+  woModeloApagar: el => woModeloApagar(el),
   closeEmprForm: () => closeEmprForm(),
   closeModal: el => closeModal(el.dataset.id),
   coEtapasTodas: el => coEtapasTodas(el.dataset.nivel ?? null),

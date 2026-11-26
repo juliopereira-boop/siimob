@@ -80,6 +80,7 @@ acoes({
   eliaRemoverNo: doPainel('eliaRemoverNo'),
   eliaSimular: doPainel('eliaSimular'),
   eliaBuscarContatos: doPainel('eliaBuscarContatos'),
+  eliaModelo: doPainel('eliaModelo'),
   eliaConsentimento: doPainel('eliaConsentimento'),
   eliaEnfileirar: doPainel('eliaEnfileirar'),
   eliaStatusCampanha: doPainel('eliaStatusCampanha'),
@@ -101,6 +102,23 @@ async function api(action, data = {}) {
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw Error(result.error || 'Não foi possível acessar a ELIA.');
   return result;
+}
+// Modelos aprovados do WhatsApp oficial (campanha fora da janela de 24 h).
+async function modelosOficiais() {
+  try {
+    const response = await fetch(A1_URL + '/functions/v1/atendimento-conectores', {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ action: 'wa_modelos' }),
+      signal: AbortSignal.timeout(20000)
+    });
+    const result = await response.json().catch(() => ({}));
+    return response.ok && Array.isArray(result.modelos)
+      ? result.modelos.filter(m => m.status === 'APPROVED' && m.suportado)
+      : [];
+  } catch {
+    return [];
+  }
 }
 const checked = value => (value ? ' checked' : '');
 const selected = (value, current) => (value === current ? ' selected' : '');
@@ -153,6 +171,9 @@ export async function eliaMontar(panel) {
   const recipients = new Set();
   let campaignFile = null;
   let campaignDraft = { title: '', message: '' };
+  let modelos = null; // null: ainda não carregou
+  let campaignModelo = -1;
+  let campaignParams = [];
   const tell = (message, error = false) => {
     status.textContent = message;
     status.classList.toggle('elia-error', error);
@@ -370,10 +391,31 @@ export async function eliaMontar(panel) {
   }
 
   function renderCampaigns() {
+    if (modelos === null)
+      modelosOficiais().then(lista => {
+        modelos = lista;
+        if (tab === 'campanhas') render();
+      });
+    const m = modelos && modelos[campaignModelo];
     return `<div class="elia-fields"><label>Título<input data-acao-input="eliaCampo" data-draft="title" maxlength="120" value="${q(campaignDraft.title)}"></label>
-      <label>Anexo opcional<input type="file" data-acao-change="eliaMudou" data-upload="campaign" accept="image/png,image/jpeg,image/webp,application/pdf">
-      ${q(campaignFile?.name || '')}</label>
-      <label class="elia-wide">Mensagem<textarea data-acao-input="eliaCampo" data-draft="message" maxlength="4000" placeholder="Olá, {{nome}}!">${q(campaignDraft.message)}</textarea></label></div>
+      ${
+        modelos && modelos.length
+          ? `<label>Modelo do WhatsApp oficial<select data-acao-change="eliaModelo" data-modelo-campanha>
+        <option value="-1">Sem modelo (texto livre)</option>${modelos.map((x, i) => `<option value="${i}"${i === campaignModelo ? ' selected' : ''}>${q(x.nome)} (${q(x.idioma)})</option>`).join('')}</select></label>`
+          : ''
+      }
+      ${
+        m
+          ? `<p class="elia-wide elia-modelo-corpo">${q(m.corpo)}</p>${Array.from(
+              { length: m.variaveis },
+              (_, i) =>
+                `<label>Variável {{${i + 1}}}<input data-acao-input="eliaCampo" data-modelo-param="${i}" maxlength="300" placeholder="${i === 0 ? '{{nome}}' : ''}" value="${q(campaignParams[i] || '')}"></label>`
+            ).join('')}`
+          : `<label>Anexo opcional<input type="file" data-acao-change="eliaMudou" data-upload="campaign" accept="image/png,image/jpeg,image/webp,application/pdf">
+      ${q(campaignFile?.name || '')}</label>`
+      }
+      <label class="elia-wide">${m ? 'Texto para a reserva (QR Code), se o oficial não puder enviar' : 'Mensagem'}<textarea data-acao-input="eliaCampo" data-draft="message" maxlength="4000" placeholder="Olá, {{nome}}!">${q(campaignDraft.message)}</textarea></label>
+      <p class="elia-wide elia-dica">Com o WhatsApp oficial, quem não escreveu nas últimas 24 h só recebe modelo aprovado. Use {{nome}} para o nome do lead.</p></div>
       <div class="elia-toolbar"><input data-search placeholder="Buscar leads por nome" aria-label="Buscar leads"><button class="btn btn-ghost" data-acao="eliaBuscarContatos">Buscar</button>
       <span data-recipient-count></span></div><div data-contacts></div>
       <button class="btn btn-primary" data-acao="eliaEnfileirar">Enfileirar campanha</button>
@@ -505,6 +547,8 @@ export async function eliaMontar(panel) {
         n === 'minutes' ? Number(field.value) : field.value;
     if (field.dataset.field) recordFor(field)[field.dataset.field] = field.value;
     if (field.dataset.draft) campaignDraft[field.dataset.draft] = field.value;
+    if (field.dataset.modeloParam !== undefined)
+      campaignParams[Number(field.dataset.modeloParam)] = field.value;
     if (field.dataset.recipient) {
       if (field.checked) recipients.add(field.dataset.recipient);
       else recipients.delete(field.dataset.recipient);
@@ -806,6 +850,11 @@ export async function eliaMontar(panel) {
       tell('Simulação concluída. Nenhuma mensagem foi enviada.');
     }),
     eliaBuscarContatos: rodar(buscarContatos),
+    eliaModelo: el => {
+      campaignModelo = Number(el.value);
+      campaignParams = [];
+      render();
+    },
     eliaConsentimento: rodar(async (button, { id, granted }) => {
       const evidence =
         granted === 'true'
@@ -819,10 +868,24 @@ export async function eliaMontar(panel) {
     eliaEnfileirar: rodar(async () => {
       if (!recipients.size) throw Error('Selecione os contatos com consentimento.');
       if (!window.confirm('Enfileirar o envio de WhatsApp para ' + recipients.size + ' contatos?')) return;
-      await api('campaign', { ...campaignDraft, file: campaignFile, ids: [...recipients] });
+      const m = modelos && modelos[campaignModelo];
+      const params = m ? Array.from({ length: m.variaveis }, (_, i) => (campaignParams[i] || '').trim()) : [];
+      if (m && params.some(v => !v)) throw Error('Preencha todas as variáveis do modelo.');
+      const message =
+        campaignDraft.message.trim() ||
+        (m ? m.corpo.replace(/\{\{\s*(\d{1,2})\s*\}\}/g, (x, n) => params[Number(n) - 1] || x) : '');
+      await api('campaign', {
+        ...campaignDraft,
+        message,
+        file: m ? null : campaignFile,
+        ids: [...recipients],
+        modelo: m ? { nome: m.nome, idioma: m.idioma, corpo: m.corpo, parametros: params } : null
+      });
       recipients.clear();
       campaignFile = null;
       campaignDraft = { title: '', message: '' };
+      campaignModelo = -1;
+      campaignParams = [];
       state.campaigns = (await api('load')).campaigns;
       render();
       tell('Campanha enfileirada.');

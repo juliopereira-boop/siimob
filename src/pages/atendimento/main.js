@@ -18,6 +18,10 @@
 //   - O WhatsApp ainda não está integrado: "Mensagem" abre o WhatsApp Web com o
 //     texto e registra aqui o que foi mandado. Quando a integração vier, o
 //     mesmo botão passa a mandar de verdade. "Nota interna" o lead nunca vê.
+//   - WhatsApp: o oficial (API da Meta) é o principal; a Evolution fica de
+//     reserva. Com o oficial, a tela mostra a janela de 24 h e, fora dela,
+//     oferece os modelos aprovados. Cada mensagem enviada mostra a entrega
+//     (enviada, entregue, lida, falhou) e, se saiu pela reserva, avisa.
 //   - A lista e a conversa aberta se atualizam sozinhas (a cada 8 s e ao voltar
 //     para a aba), como o funil de Leads.
 import { A1, A1_URL } from '../../shared/api/config.js';
@@ -46,8 +50,11 @@ const G = {
   qualDirty: false,
   qualVersao: /** @type {number|null} */ (null),
   enviando: false,
-  // WhatsApp da empresa (Evolution). Desligado: a mensagem abre no wa.me.
-  wa: /** @type {{ligado:boolean, pausado_ate?:string|null, pausa_motivo?:string|null}} */ ({ ligado: false })
+  // WhatsApp da empresa (oficial ou Evolution). Desligado: a mensagem abre no wa.me.
+  wa: /** @type {{ligado:boolean, oficial?:boolean, reserva?:boolean, pausado_ate?:string|null, pausa_motivo?:string|null}} */ ({
+    ligado: false
+  }),
+  modelos: /** @type {any[]} */ ([])
 };
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -93,6 +100,8 @@ acoes({
   atDistribuir: () => abrirVinculo(),
   atArquivo: () => $('at-arquivo').click(),
   atElia: el => trocarElia(el),
+  atModelo: () => abrirModelo(),
+  atModeloEscolher: () => desenharModelo(),
   atQualEdicao: () => {
     G.qualDirty = true;
   },
@@ -145,7 +154,7 @@ async function lerConversas() {
 
 async function lerMensagens(id) {
   const r = await fetch(
-    `${A1.rest('a1_atendimento_mensagens')}?atendimento_id=eq.${encodeURIComponent(id)}&select=id,autor_tipo,autor_nome,tipo,corpo,criado_em&order=criado_em.asc`,
+    `${A1.rest('a1_atendimento_mensagens')}?atendimento_id=eq.${encodeURIComponent(id)}&select=id,autor_tipo,autor_nome,tipo,corpo,criado_em,externo,canal,entrega&order=criado_em.asc`,
     { headers: A1.headers() }
   )
     .then(x => (x.ok ? x.json() : []))
@@ -346,7 +355,30 @@ function bolha(/** @type {any} */ m) {
   if (m.tipo === 'nota')
     return `<div class="at-msg at-nota"><div class="at-msg-rot">Nota interna · ${esc(m.autor_nome || '')}</div>${esc(m.corpo)}<time>${esc(hora(m.criado_em))}</time></div>`;
   const minha = m.autor_tipo === 'atendente' || m.autor_tipo === 'ia';
-  return `<div class="at-msg ${minha ? 'at-sai' : 'at-entra'}">${minha ? `<div class="at-msg-rot">${m.autor_tipo === 'ia' ? '<img class="at-elia-logo" src="/assets/elia/logo.png" width="18" height="18" alt=""> ELIA · agente de IA' : esc(m.autor_nome || '')}</div>` : ''}${esc(m.corpo)}<time>${esc(hora(m.criado_em))}${minha ? ' <span class="at-vistos" aria-hidden="true">✓✓</span>' : ''}</time></div>`;
+  const reserva = minha && m.canal === 'evolution' && G.wa.oficial;
+  return `<div class="at-msg ${minha ? 'at-sai' : 'at-entra'}">${minha ? `<div class="at-msg-rot">${m.autor_tipo === 'ia' ? '<img class="at-elia-logo" src="/assets/elia/logo.png" width="18" height="18" alt=""> ELIA · agente de IA' : esc(m.autor_nome || '')}${reserva ? ' <span class="at-canal" title="Saiu pelo WhatsApp por QR Code (reserva)">reserva</span>' : ''}</div>` : ''}${esc(m.corpo)}<time>${esc(hora(m.criado_em))}${minha ? ` ${entrega(m.entrega)}` : ''}</time></div>`;
+}
+
+// Marca de entrega do WhatsApp oficial. Sem status (Evolution, registro manual):
+// a marca de sempre.
+function entrega(/** @type {string|null} */ e) {
+  if (e === 'falhou')
+    return '<span class="at-vistos at-falhou" role="img" aria-label="Não entregue" title="Não entregue">!</span>';
+  if (e === 'enviada')
+    return '<span class="at-vistos at-cinza" role="img" aria-label="Enviada" title="Enviada">✓</span>';
+  if (e === 'entregue')
+    return '<span class="at-vistos at-cinza" role="img" aria-label="Entregue" title="Entregue">✓✓</span>';
+  if (e === 'lida') return '<span class="at-vistos" role="img" aria-label="Lida" title="Lida">✓✓</span>';
+  return '<span class="at-vistos" aria-hidden="true">✓✓</span>';
+}
+
+/** Até quando vai a janela de 24 h (última mensagem do lead pelo WhatsApp). */
+function janelaAte() {
+  let ultima = 0;
+  for (const m of G.msgs)
+    if (m.autor_tipo === 'lead' && m.externo) ultima = Math.max(ultima, new Date(m.criado_em).getTime() || 0);
+  const ate = ultima + 86400000;
+  return ultima && ate > Date.now() ? new Date(ate).toISOString() : null;
 }
 
 function desenharMensagens(rolar = false) {
@@ -381,6 +413,8 @@ function escolherTipo(/** @type {string} */ t) {
   const pode = podeEscrever(c);
   const whatsapp = G.wa.ligado && Boolean(soDigitos(l.client_phone));
   $('at-compor-clipe').hidden = !(G.tipo === 'mensagem' && pode && whatsapp);
+  const janela = G.wa.oficial ? janelaAte() : null;
+  $('at-chat-modelo').hidden = !(G.tipo === 'mensagem' && pode && whatsapp && G.wa.oficial);
   $('at-chat-vincular').hidden = !(c && G.gestor && c.status !== 'encerrada');
   const elia = $('at-chat-elia');
   elia.hidden = !(c && G.gestor && (c.elia_ativa || whatsapp));
@@ -404,9 +438,13 @@ function escolherTipo(/** @type {string} */ t) {
         ? 'Este lead não tem telefone. Registre o contato como nota interna.'
         : G.wa.ligado && G.wa.pausado_ate
           ? `Envios pelo WhatsApp pausados até ${hora(G.wa.pausado_ate)} para proteger o número. ${G.wa.pausa_motivo || ''}`.trim()
-          : G.wa.ligado
-            ? 'A mensagem sai pelo WhatsApp da empresa.'
-            : 'WhatsApp ainda não integrado: ao enviar, a conversa abre no WhatsApp com o texto e a mensagem fica registrada aqui.';
+          : G.wa.oficial
+            ? janela
+              ? `WhatsApp oficial · janela de 24 h aberta até ${hora(janela)}.`
+              : `Fora da janela de 24 h: use "Enviar modelo"${G.wa.reserva ? ' ou o texto sai pela reserva (QR Code)' : ''}.`
+            : G.wa.ligado
+              ? 'A mensagem sai pelo WhatsApp da empresa.'
+              : 'WhatsApp ainda não integrado: ao enviar, a conversa abre no WhatsApp com o texto e a mensagem fica registrada aqui.';
 }
 
 async function enviar() {
@@ -471,13 +509,19 @@ const ERROS_WA = /** @type {Record<string,string>} */ ({
   sem_permissao: 'Você não pode responder nesta conversa.',
   conversa_encerrada: 'Conversa encerrada.',
   sem_telefone: 'Este lead não tem telefone.',
+  fora_da_janela:
+    'Fora da janela de 24 h do WhatsApp oficial: envie um modelo aprovado (botão "Enviar modelo").',
+  falha_oficial: 'O WhatsApp oficial recusou a mensagem.',
+  oficial_desconectado: 'O WhatsApp oficial não está conectado.',
+  modelo_indisponivel: 'Este modelo não está aprovado para envio. Escolha outro.',
   anexo_invalido: 'Envie PDF, JPG, PNG, WebP, DOCX ou XLSX de até 5 MB, com legenda de até 900 caracteres.',
   falha_envio: 'O WhatsApp não aceitou a mensagem agora. Tente de novo em instantes.'
 });
 async function enviarPeloWhatsapp(
   /** @type {string} */ id,
   /** @type {string} */ texto,
-  /** @type {{nome:string,mime:string,dados:string}|null} */ anexo = null
+  /** @type {{nome:string,mime:string,dados:string}|null} */ anexo = null,
+  /** @type {{modelo:{nome:string,idioma:string}, parametros:string[]}|null} */ modelo = null
 ) {
   /** @type {Response} */
   let r;
@@ -485,7 +529,11 @@ async function enviarPeloWhatsapp(
     r = await fetch(`${A1_URL}/functions/v1/atendimento-conectores`, {
       method: 'POST',
       headers: A1.headers(),
-      body: JSON.stringify({ action: anexo ? 'wa_anexo' : 'wa_enviar', atendimento_id: id, texto, anexo }),
+      body: JSON.stringify(
+        modelo
+          ? { action: 'wa_modelo', atendimento_id: id, ...modelo }
+          : { action: anexo ? 'wa_anexo' : 'wa_enviar', atendimento_id: id, texto, anexo }
+      ),
       signal: AbortSignal.timeout(30000)
     });
   } catch {
@@ -499,8 +547,13 @@ async function enviarPeloWhatsapp(
       `${b.motivo || 'Limite de envio atingido.'}${b.volta_em ? ` Volta às ${hora(b.volta_em)}.` : ''}`
     );
   }
-  if (!r.ok) throw new Error(ERROS_WA[b.error] || 'Não foi possível enviar agora. Tente de novo.');
+  if (!r.ok)
+    throw new Error(
+      (ERROS_WA[b.error] || 'Não foi possível enviar agora. Tente de novo.') +
+        (b.error === 'falha_oficial' && b.motivo ? ` (${b.motivo})` : '')
+    );
   if (b.alerta) aviso('Atenção: o número está perto do limite seguro de envios. Vá com calma.', 'erro');
+  else if (b.reserva) aviso('Enviado pela reserva (WhatsApp por QR Code).', 'ok');
 }
 
 async function lerWhatsapp() {
@@ -511,6 +564,8 @@ async function lerWhatsapp() {
       b && typeof b === 'object'
         ? {
             ligado: b.ligado === true,
+            oficial: b.oficial === true,
+            reserva: b.reserva === true,
             pausado_ate: b.pausado_ate || null,
             pausa_motivo: b.pausa_motivo || null
           }
@@ -716,6 +771,113 @@ $('at-vincular').addEventListener('submit', async event => {
     aviso(`Lead vinculado a ${dados.corretor}.`, 'ok');
   } catch (error) {
     $('at-vincular-erro').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// ─── Modelo aprovado (WhatsApp oficial, fora da janela de 24 h) ─────────────
+async function abrirModelo() {
+  const conversa = conversaAberta();
+  const dialog = /** @type {HTMLDialogElement} */ ($('at-modelo'));
+  if (!conversa || dialog.open) return;
+  const select = /** @type {HTMLSelectElement} */ ($('at-modelo-escolha'));
+  const erro = $('at-modelo-erro');
+  const enviarBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('[value="enviar"]'));
+  enviarBtn.disabled = true;
+  select.innerHTML = '';
+  $('at-modelo-vars').innerHTML = '';
+  $('at-modelo-previa').textContent = '';
+  erro.textContent = 'Carregando modelos…';
+  dialog.showModal();
+  try {
+    const r = await fetch(`${A1_URL}/functions/v1/atendimento-conectores`, {
+      method: 'POST',
+      headers: A1.headers(),
+      body: JSON.stringify({ action: 'wa_modelos' }),
+      signal: AbortSignal.timeout(20000)
+    });
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error('Não foi possível carregar os modelos agora.');
+    G.modelos = (Array.isArray(b.modelos) ? b.modelos : []).filter(
+      m => m.status === 'APPROVED' && m.suportado
+    );
+    if (!G.modelos.length) {
+      erro.textContent =
+        'Nenhum modelo aprovado. O gestor cria em Configurações › Integrações › WhatsApp oficial.';
+      return;
+    }
+    G.modelos.forEach((m, i) => select.append(new Option(`${m.nome} (${m.idioma})`, String(i))));
+    erro.textContent = '';
+    enviarBtn.disabled = false;
+    desenharModelo();
+  } catch (e) {
+    erro.textContent = /** @type {Error} */ (e).message;
+  }
+}
+
+function desenharModelo() {
+  const m = G.modelos[Number(/** @type {HTMLSelectElement} */ ($('at-modelo-escolha')).value)];
+  const vars = $('at-modelo-vars');
+  if (!m) {
+    vars.innerHTML = '';
+    return;
+  }
+  const c = conversaAberta();
+  const nome = (c && (G.leads[c.case_id] || {}).client_name) || '';
+  const primeiro = String(nome).trim().split(/\s+/)[0] || '';
+  vars.innerHTML = Array.from(
+    { length: m.variaveis },
+    (_, i) =>
+      `<label>Variável {{${i + 1}}}<input data-var="${i}" maxlength="300" data-lgpd-livre value="${i === 0 ? esc(primeiro) : ''}"></label>`
+  ).join('');
+  previaModelo(m);
+}
+
+function valoresModelo() {
+  return Array.from(document.querySelectorAll('#at-modelo-vars input')).map(i =>
+    /** @type {HTMLInputElement} */ (i).value.trim()
+  );
+}
+
+function previaModelo(/** @type {any} */ m) {
+  const v = valoresModelo();
+  const corpo = String(m.corpo || '').replace(/\{\{\s*(\d{1,2})\s*\}\}/g, (x, n) => v[Number(n) - 1] || x);
+  $('at-modelo-previa').textContent = [m.cabecalho, corpo, m.rodape].filter(Boolean).join('\n');
+}
+
+$('at-modelo').addEventListener('input', () => {
+  const m = G.modelos[Number(/** @type {HTMLSelectElement} */ ($('at-modelo-escolha')).value)];
+  if (m) previaModelo(m);
+});
+
+$('at-modelo').addEventListener('submit', async event => {
+  const submit = /** @type {SubmitEvent} */ (event);
+  if (submit.submitter?.getAttribute('value') !== 'enviar') return;
+  event.preventDefault();
+  const button = /** @type {HTMLButtonElement} */ (submit.submitter);
+  const dialog = /** @type {HTMLDialogElement} */ ($('at-modelo'));
+  const c = conversaAberta();
+  const m = G.modelos[Number(/** @type {HTMLSelectElement} */ ($('at-modelo-escolha')).value)];
+  const valores = valoresModelo();
+  if (!c || !m || button.disabled) return;
+  if (valores.some(v => !v)) {
+    $('at-modelo-erro').textContent = 'Preencha todas as variáveis.';
+    return;
+  }
+  button.disabled = true;
+  try {
+    await enviarPeloWhatsapp(c.id, '', null, {
+      modelo: { nome: m.nome, idioma: m.idioma },
+      parametros: valores
+    });
+    dialog.close();
+    G.msgs = await lerMensagens(c.id);
+    desenharMensagens(true);
+    await atualizar();
+    aviso('Modelo enviado.', 'ok');
+  } catch (e) {
+    $('at-modelo-erro').textContent = /** @type {Error} */ (e).message;
   } finally {
     button.disabled = false;
   }

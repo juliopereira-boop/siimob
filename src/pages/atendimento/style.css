@@ -485,6 +485,24 @@ a.at-modo:hover {
   color: #53bdeb;
   letter-spacing: -0.15em;
 }
+.at-vistos.at-cinza {
+  color: #8696a0;
+}
+.at-vistos.at-falhou {
+  color: #c0392b;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.at-canal {
+  margin-left: 0.3rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #fff3d6;
+  color: #7a5200;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
 .at-msg-rot {
   font-size: 0.7rem;
   font-weight: 700;
@@ -916,4 +934,41 @@ a.at-modo:hover {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.at-modelo-ajuda {
+  margin: 0;
+  color: var(--t2);
+  font-size: 0.78rem;
+}
+.at-modelo-vars {
+  display: grid;
+  gap: 8px;
+}
+.at-modelo-vars:empty {
+  display: none;
+}
+.at-modelo-vars label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--t2);
+}
+.at-modelo-vars input {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.at-modelo-previa {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #d9fdd3;
+  color: #111b21;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

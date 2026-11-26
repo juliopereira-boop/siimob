@@ -61,6 +61,7 @@
           </div>
           <button type="button" class="at-compor-acao" id="at-chat-vincular" data-acao="atDistribuir" hidden>Vincular a corretor</button>
           <button type="button" class="at-compor-acao" id="at-chat-elia" data-acao="atElia" aria-pressed="false" hidden>Atendimento ELIA</button>
+          <button type="button" class="at-compor-acao" id="at-chat-modelo" data-acao="atModelo" hidden>Enviar modelo</button>
         </div>
         <p class="at-compor-aviso" id="at-compor-aviso"></p>
         <div class="at-compor-linha">
@@ -77,6 +78,21 @@
   </section>
 
   <aside class="at-lead" id="at-lead" aria-label="Dados do lead" hidden></aside>
+  <dialog id="at-modelo" class="at-vincular at-modelo" aria-labelledby="at-modelo-titulo">
+    <form method="dialog">
+      <h2 id="at-modelo-titulo">Enviar modelo aprovado</h2>
+      <p class="at-modelo-ajuda">Fora da janela de 24 h, o WhatsApp oficial só aceita modelos aprovados pela Meta.</p>
+      <label for="at-modelo-escolha">Modelo</label>
+      <select id="at-modelo-escolha" data-acao-change="atModeloEscolher"></select>
+      <div id="at-modelo-vars" class="at-modelo-vars"></div>
+      <p id="at-modelo-previa" class="at-modelo-previa"></p>
+      <p id="at-modelo-erro" role="status"></p>
+      <div class="at-vincular-acoes">
+        <button type="submit" class="at-btn at-btn-linha" value="cancelar" formnovalidate>Cancelar</button>
+        <button type="submit" class="at-btn at-btn-forte" value="enviar">Enviar</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="at-vincular" class="at-vincular" aria-labelledby="at-vincular-titulo">
     <form method="dialog">
       <h2 id="at-vincular-titulo">Vincular a corretor</h2>
