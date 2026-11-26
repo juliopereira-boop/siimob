@@ -1,5 +1,7 @@
-import { avaliar, intervaloCampanha } from '../atendimento-conectores/limites.mjs';
+import { intervaloCampanha } from '../atendimento-conectores/limites.mjs';
 import { criarEvolution } from '../atendimento-conectores/evolution.mjs';
+import { criarCoexy, preencher } from '../atendimento-conectores/coexy.mjs';
+import { enviarWhatsapp, ErroEnvio } from '../atendimento-conectores/rota.mjs';
 import { runFlow, validateFlow, qualificationFields } from './flow.mjs';
 import { validarQualificacao } from './qualificacao.mjs';
 import { authorization, calendar, digest, exchange, googleConfigured } from './google.ts';
@@ -47,6 +49,8 @@ const saveConfig = (tenant: string, data: Record<string, unknown>) =>
     'resolution=merge-duplicates,return=minimal'
   );
 const evolution = criarEvolution({ url: env('SIIMOB_EVOLUTION_URL'), chave: env('SIIMOB_EVOLUTION_KEY') });
+// WhatsApp oficial (Coexy): o principal. A Evolution fica de reserva (rota.mjs).
+const coexy = criarCoexy({ chave: env('COEXY_API_KEY') });
 const mimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 function attachment(value: any, tenant: string) {
@@ -169,6 +173,28 @@ class Deferred extends Error {
     super('Envio adiado.');
   }
 }
+// Recusa definitiva, com o motivo que vai para o histórico da fila.
+class Recusado extends Error {}
+
+// O lead escreveu nas últimas 24 h? (janela da Meta para texto livre)
+async function janelaAberta(tenant: string, caseId: string) {
+  const conv = await first(
+    'a1_atendimentos?' + tenantFilter(tenant) + '&case_id=eq.' + eq(caseId) + '&select=id'
+  );
+  if (!conv) return false;
+  const desde = new Date(Date.now() - 86400000).toISOString();
+  return Boolean(
+    await first(
+      'a1_atendimento_mensagens?' +
+        tenantFilter(tenant) +
+        '&atendimento_id=eq.' +
+        eq(conv.id) +
+        '&autor_tipo=eq.lead&externo=not.is.null&criado_em=gt.' +
+        eq(desde) +
+        '&select=id&limit=1'
+    )
+  );
+}
 
 async function send(
   job: any,
@@ -176,44 +202,71 @@ async function send(
   text: string,
   type: 'resposta' | 'iniciado' | 'campanha',
   file?: any,
-  author = 'ELIA'
+  author = 'ELIA',
+  modelo?: { nome: string; idioma: string; parametros: string[]; texto: string } | null
 ) {
   const tenant = job.tenant_id;
-  const wa = await first('a1_whatsapp_conexoes?' + tenantFilter(tenant) + '&select=estado,instancia');
-  if (wa?.estado !== 'conectado') throw new Deferred(new Date(Date.now() + 300000).toISOString());
-  const limit = avaliar({ uso: await rpc('a1_wa_uso', { p_tenant: tenant }), tipo: type });
-  if (!limit.pode) {
-    if (limit.pausarGeral)
-      await rpc('a1_wa_pausar', { p_tenant: tenant, p_ate: limit.esperarAte, p_motivo: limit.motivo });
-    throw new Deferred(limit.esperarAte!);
-  }
+  const [wa, oficial] = await Promise.all([
+    first('a1_whatsapp_conexoes?' + tenantFilter(tenant) + '&select=estado,instancia'),
+    first(
+      'a1_wa_oficial?' +
+        tenantFilter(tenant) +
+        '&select=status,phone_number_id,waba_id,channel_token,reserva_auto'
+    )
+  ]);
   const number = String(lead.client_phone || '').replace(/\D/g, '');
   const formatted = /^\d{10,11}$/.test(number || '') ? '55' + number : number;
-  if (!formatted || !text.trim()) throw Error('Mensagem ou telefone inválido.');
+  if (!formatted || !(modelo || text.trim())) throw new Recusado('Mensagem ou telefone inválido.');
   let sent;
   try {
-    sent = file
-      ? await evolution.enviarMidia(
-          wa.instancia,
-          formatted,
-          await signed(file),
-          file.mime,
-          file.name,
-          text.slice(0, 900)
-        )
-      : await evolution.enviarTexto(wa.instancia, formatted, text.slice(0, 4000));
+    sent = await enviarWhatsapp(
+      {
+        coexy,
+        evolution,
+        oficial,
+        conexao: wa,
+        uso: () => rpc('a1_wa_uso', { p_tenant: tenant }),
+        pausar: (ate: string, motivo: string) =>
+          rpc('a1_wa_pausar', { p_tenant: tenant, p_ate: ate, p_motivo: motivo }),
+        falha: (canal: string) =>
+          rpc('a1_wa_envio_falha', {
+            p_tenant: tenant,
+            p_tipo: type,
+            p_atendimento: job.atendimento_id,
+            p_canal: canal
+          }),
+        log: (m: string) => console.error(m)
+      },
+      {
+        numero: formatted,
+        tipo: type,
+        janela: type === 'resposta' || (await janelaAberta(tenant, lead.id)),
+        texto: file ? text.slice(0, 900) : text.slice(0, 4000),
+        anexo: file ? { url: await signed(file), mime: file.mime, nome: file.name } : null,
+        modelo: modelo || null
+      }
+    );
   } catch (error) {
-    await rpc('a1_wa_registrar_falha', { p_tenant: tenant, p_tipo: type, p_atendimento: job.atendimento_id });
-    throw error;
+    if (!(error instanceof ErroEnvio)) throw error;
+    if (error.codigo === 'whatsapp_desconectado')
+      throw new Deferred(new Date(Date.now() + 300000).toISOString());
+    if (error.codigo === 'limite')
+      throw new Deferred(String(error.extra.volta_em || new Date(Date.now() + 600000).toISOString()));
+    if (error.codigo === 'fora_da_janela')
+      throw new Recusado(
+        'Fora da janela de 24 h do WhatsApp oficial: escolha um modelo aprovado ou ligue a reserva.'
+      );
+    throw new Recusado('O WhatsApp não aceitou a mensagem.');
   }
-  await rpc('a1_elia_log_send', {
+  await rpc('a1_wa_envio_ok', {
     p_tenant: tenant,
     p_atendimento: job.atendimento_id,
-    p_corpo: text.slice(0, 4000),
+    p_corpo: (modelo ? modelo.texto : text).slice(0, 4000),
     p_autor: author,
     p_externo: sent.id,
     p_tipo: type,
-    p_autor_tipo: 'ia'
+    p_autor_tipo: 'ia',
+    p_canal: sent.canal
   });
 }
 
@@ -255,12 +308,25 @@ async function work(job: any) {
     await write('a1_elia_campaign?id=eq.' + eq(campaign.id), 'PATCH', {
       next_at: new Date(Date.now() + intervaloCampanha(attempts.length + 1) * 1000).toISOString()
     });
+    const nome = lead.client_name || '';
+    const valores = Array.isArray(campaign.modelo?.parametros)
+      ? campaign.modelo.parametros.map((v: string) => String(v).replace(/\{\{nome\}\}/g, nome || 'cliente'))
+      : [];
     await send(
       job,
       lead,
-      campaign.message.replace(/\{\{nome\}\}/g, lead.client_name || ''),
+      campaign.message.replace(/\{\{nome\}\}/g, nome),
       'campanha',
-      campaign.attachment
+      campaign.modelo ? null : campaign.attachment,
+      'ELIA',
+      campaign.modelo
+        ? {
+            nome: campaign.modelo.nome,
+            idioma: campaign.modelo.idioma,
+            parametros: valores,
+            texto: preencher(campaign.modelo.corpo || campaign.message, valores)
+          }
+        : null
     );
     return done(job.id, 'sent');
   }
@@ -345,12 +411,19 @@ async function work(job: any) {
       'Renda familiar só se o lead informar renda. Orçamento, valor do imóvel ou parcela não são renda.',
       'Use como evidência somente um trecho literal da última mensagem do lead; omita dados que não estejam nela.',
       'Não inclua campos ausentes. Não use falas da assistente como evidência.',
-      JSON.stringify({conversa:recent.toReversed()})
+      JSON.stringify({ conversa: recent.toReversed() })
     ].join('\n');
-    const extracao = validarQualificacao(await generate(tenant, row.config, prompt), [{autor_tipo:'lead',corpo:msg.corpo}]);
-    if (Object.keys(extracao).length) await rpc('a1_elia_qualificacao', {
-      p_tenant: tenant, p_atendimento: job.atendimento_id, p_versao: conv.versao, p_mensagem: job.message_id, p_dados: extracao
-    });
+    const extracao = validarQualificacao(await generate(tenant, row.config, prompt), [
+      { autor_tipo: 'lead', corpo: msg.corpo }
+    ]);
+    if (Object.keys(extracao).length)
+      await rpc('a1_elia_qualificacao', {
+        p_tenant: tenant,
+        p_atendimento: job.atendimento_id,
+        p_versao: conv.versao,
+        p_mensagem: job.message_id,
+        p_dados: extracao
+      });
   } catch {
     console.warn('Não foi possível atualizar a qualificação pela ELIA.');
   }
@@ -358,15 +431,23 @@ async function work(job: any) {
   let externalEffect = false;
   try {
     const qualificationLead = row.flow.some((node: any) => node.type === 'qualification')
-      ? await first('a1_cases?' + scope + '&id=eq.' + eq(lead.id) + '&select=client_name,client_phone,client_email,client_cpf,payload')
+      ? await first(
+          'a1_cases?' +
+            scope +
+            '&id=eq.' +
+            eq(lead.id) +
+            '&select=client_name,client_phone,client_email,client_cpf,payload'
+        )
       : null;
-    const qualification = qualificationLead ? {
-      ...qualificationLead.payload?.qualificacao,
-      nome: qualificationLead.client_name,
-      telefone: qualificationLead.client_phone,
-      email: qualificationLead.client_email,
-      cpf: qualificationLead.client_cpf
-    } : {};
+    const qualification = qualificationLead
+      ? {
+          ...qualificationLead.payload?.qualificacao,
+          nome: qualificationLead.client_name,
+          telefone: qualificationLead.client_phone,
+          email: qualificationLead.client_email,
+          cpf: qualificationLead.client_cpf
+        }
+      : {};
     await runFlow(
       row.flow,
       { name: lead.client_name, message: msg.corpo, ...job.payload, qualification },
@@ -416,8 +497,11 @@ async function work(job: any) {
           }),
         roulette: async (nodeId: string) => {
           const result = await rpc('a1_elia_roleta', {
-            p_tenant: tenant, p_atendimento: job.atendimento_id, p_versao: conv.versao,
-            p_mensagem: job.message_id, p_no: nodeId
+            p_tenant: tenant,
+            p_atendimento: job.atendimento_id,
+            p_versao: conv.versao,
+            p_mensagem: job.message_id,
+            p_no: nodeId
           });
           if (result !== 'distribuido') throw Error('Distribuição não concluída: ' + result);
           return '';
@@ -464,7 +548,13 @@ async function tick(request: Request) {
     ) {
       await retryAt(job.id, error.until);
     } else {
-      await done(job.id, 'failed', 'A execução não foi concluída. Revise a configuração e a conversa.');
+      await done(
+        job.id,
+        'failed',
+        error instanceof Recusado
+          ? error.message
+          : 'A execução não foi concluída. Revise a configuração e a conversa.'
+      );
     }
   }
   return json({ processed: true });
@@ -598,7 +688,13 @@ Deno.serve(async request => {
         const trace: string[] = [];
         const output = await runFlow(
           body.flow,
-          { message: input, name: 'Lead de teste', qualification: Object.fromEntries(qualificationFields.map((field: string) => [field, clean(body.qualification?.[field], 500)])) },
+          {
+            message: input,
+            name: 'Lead de teste',
+            qualification: Object.fromEntries(
+              qualificationFields.map((field: string) => [field, clean(body.qualification?.[field], 500)])
+            )
+          },
           {
             ai: async (task: string) =>
               generate(tenant, profile(body.profile || {}, tenant), JSON.stringify({ task, input })),
@@ -613,9 +709,11 @@ Deno.serve(async request => {
             roulette: (id: string) => {
               const node = body.flow.find((item: any) => item.id === id);
               const missing = node.fields.filter((field: string) => !clean(body.qualification?.[field], 500));
-              trace.push(missing.length
-                ? 'Distribuição não realizada: dados obrigatórios faltando: ' + missing.join(', ')
-                : 'Distribuição pela roleta simulada; nenhum lead foi atribuído.');
+              trace.push(
+                missing.length
+                  ? 'Distribuição não realizada: dados obrigatórios faltando: ' + missing.join(', ')
+                  : 'Distribuição pela roleta simulada; nenhum lead foi atribuído.'
+              );
             }
           }
         );
@@ -688,6 +786,27 @@ Deno.serve(async request => {
         const title = clean(body.title, 120);
         const message = clean(body.message, 4000);
         const file = body.file ? attachment(body.file, tenant) : null;
+        // modelo aprovado pela Meta: a campanha sai pelo oficial fora da janela
+        const m = body.modelo && typeof body.modelo === 'object' ? body.modelo : null;
+        const modelo = m
+          ? {
+              nome: clean(m.nome, 60),
+              idioma: clean(m.idioma, 8),
+              corpo: clean(m.corpo, 1024),
+              parametros: Array.isArray(m.parametros)
+                ? m.parametros.slice(0, 20).map((v: unknown) => clean(v, 300))
+                : []
+            }
+          : null;
+        if (
+          modelo &&
+          (!/^[a-z0-9_]{1,60}$/.test(modelo.nome) ||
+            !/^[a-z]{2}(_[A-Z]{2})?$/.test(modelo.idioma) ||
+            !modelo.corpo ||
+            file ||
+            modelo.parametros.some((v: string) => !v))
+        )
+          throw Error('Confira o modelo da campanha (sem anexo e com todas as variáveis).');
         if (
           !title ||
           !message ||
@@ -698,13 +817,15 @@ Deno.serve(async request => {
           !body.ids.every(uuid)
         )
           throw Error('Confira título, texto, anexo e contatos.');
-        await rpc('a1_elia_start_campaign', {
+        const created = await rpc('a1_elia_start_campaign', {
           p_tenant: tenant,
           p_title: title,
           p_message: message,
           p_attachment: file,
           p_cases: body.ids
         });
+        if (modelo && uuid(created))
+          await write('a1_elia_campaign?' + scope + '&id=eq.' + eq(created), 'PATCH', { modelo });
         return json({ ok: true });
       }
       case 'campaignStatus': {

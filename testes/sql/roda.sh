@@ -151,6 +151,15 @@ done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-atendimento-conectores.sql
 
+# WhatsApp oficial (Coexy) com a Evolution de reserva: depois dos conectores,
+# com o cenário deles. Roda duas vezes.
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-26_whatsapp_oficial.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-whatsapp-oficial.sql
+
 # Locação (fase 1). Antes da exclusão de cliente, que então também apaga os
 # dados da Locação de THE CRED (cobre as chaves novas).
 for i in 1 2; do

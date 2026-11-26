@@ -233,7 +233,15 @@ test('enviar: resposta sai rápido, grava com o id do WhatsApp e conta como resp
   assert.equal(r.ok, true);
   assert.equal(r.tipo, 'resposta');
   assert.deepEqual(st.evo[0], ['enviar', 'siimob-thecred', '5598981234567', 'Olá Joana!', 1200]);
-  assert.deepEqual(st.envios[0], ['tenant-a', AT, 'Olá Joana!', 'Gestor', 'wamid-1', 'resposta']);
+  assert.deepEqual(st.envios[0], [
+    'tenant-a',
+    AT,
+    'Olá Joana!',
+    'Gestor',
+    'wamid-1',
+    'resposta',
+    'evolution'
+  ]);
 });
 
 test('enviar no limite: segura, grava a pausa geral e devolve quando volta', async () => {
@@ -329,5 +337,13 @@ test('arquivo usa a mesma permissão do texto e registra o envio sem guardar bas
   );
   assert.equal((await h(req('wa_anexo', payload))).status, 200);
   assert.deepEqual(calls, [['siimob-thecred', '5598981234567', anexo.dados, anexo.mime, anexo.nome, '']]);
-  assert.deepEqual(st.envios[0], ['tenant-a', AT, '📎 ficha.pdf', 'Gestor', 'midia-1', 'resposta']);
+  assert.deepEqual(st.envios[0], [
+    'tenant-a',
+    AT,
+    '📎 ficha.pdf',
+    'Gestor',
+    'midia-1',
+    'resposta',
+    'evolution'
+  ]);
 });
