@@ -40,6 +40,7 @@
 /:slug/crm                             /crm.html                  200
 /:slug/atendimento                     /atendimento.html          200
 /:slug/locacao                         /locacao.html              200
+/:slug/financeiro                      /financeiro.html           200
 /:slug/pre-analise                     /pre-analise.html          200
 /:slug/pre-analise-listagem            /pre-analise.html          200
 /:slug/comercial                       /comercial.html            200

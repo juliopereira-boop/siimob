@@ -333,3 +333,28 @@ Administração de aluguéis (`/:slug/locacao`, `src/pages/locacao`). Nasce desl
 Fora: boleto/PIX, cobrança por WhatsApp, DIMOB, portal do proprietário/inquilino.
 
 Provas: `testes/sql/prova-locacao.sql`, `testes/sql/prova-locacao-fase2.sql` (roda depois da fase 1, com os dados dela), `testes/t-locacao.js`.
+
+## Financeiro (módulo `financeiro`)
+
+`/:slug/financeiro` (`src/pages/financeiro`), banco em `database/migrations/2026-11-26_financeiro.sql`. Nasce desligado; o superadmin liga. O kit visual (`lc-*`) é o da Locação.
+
+**De onde vêm os negócios** (gatilhos que só agem com a licença e nunca travam o módulo de origem: erro vira aviso no log):
+
+| Origem | Quando | Observação |
+|---|---|---|
+| Leads (`a1_cases` crm) | entra na etapa com selo **GANHO**; sair cancela; voltar reativa | só se o cliente NÃO tem o módulo Venda (com ele, a venda gera, para não duplicar) |
+| Venda (`a1_comerciais`) | situação com selo **VENDIDO**; FIM_NEGATIVO cancela | valor = `proposta.valor_venda` (centavos) |
+| Repasse (`a1_cases` repasse) | etapa escolhida em Cadastros (`a1_fin_config.etapa_repasse`) | com venda ligada (`payload.comercial_id`): marca a assinatura e libera as comissões "na assinatura"; sem venda: vira negócio (correspondente) com `valor_financiado` |
+| Registro | etapa escolhida (`etapa_registro`) | negócio do despachante (honorários) |
+| Locação (`a1_lc_repasses`) | cada repasse ao proprietário | lança a taxa de administração como receita recebida; estorno da cobrança apaga |
+| Manual | `a1_fin_salvar_negocio` | também edita/recalcula negócio sem pagamento |
+
+**Comissão:** `a1_fin_regras` (receber = empresa; pagar = corretor, captador, coordenador, imobiliária parceira, correspondente, CCA, analista, indicador). Base: valor, valor financiado ou comissão da empresa; percentual ou fixo; imposto descontado antes; liberação ao receber / na venda / na assinatura; escopo por origem, empreendimento e parceiro; prioridade. Uma regra por papel e participante: a mais específica (parceiro > empreendimento > origem), depois a de maior prioridade (`a1_fin_regra_para`). O coordenador do corretor (`a1_partners.extra.coordenador_id`) entra sozinho como participante. Regras-modelo por `a1_tenants.tipo_cliente` (`a1_fin_regras_modelo`).
+
+**Ciclo:** a comissão da empresa vira conta a receber. Receber (`a1_fin_baixar`, inclusive parcial) libera, na mesma proporção, as comissões "ao receber" (`a1_fin_liberar_negocio`), cada parte liberada vira conta a pagar. Estorno que desfaria comissão já paga é recusado (`comissao_ja_paga`). Negócio cancelado derruba o que não foi pago e mantém o pago.
+
+**Quem vê:** `a1_fin_pode()` = licença + `a1_perm('gerir_financeiro')` (gestor sempre). O parceiro sem a marca vê só `a1_fin_minhas_comissoes()` (as comissões em que ele é o beneficiário); a tela decide o modo pela resposta de `a1_fin_iniciar()`. Lançamento manual em aberto grava direto (RLS); baixa, estorno, cancelamento e tudo que o sistema gera só por função.
+
+Fora da fase 1: carteira de parcelas do cliente da construtora, conciliação bancária (OFX), DRE e nota fiscal.
+
+Provas: `testes/sql/prova-financeiro.sql`, `testes/t-financeiro.js`.

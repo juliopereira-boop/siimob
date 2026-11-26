@@ -502,6 +502,14 @@ async function init() {
   // quem pode configurar. Fica fora do laço acima porque não tem aba nesta
   // tela nem entra no Registro de integrações. Quem barra de verdade é o RLS
   // (a1_disp_pode('disp_configurar')).
+  // Financeiro: a permissão gerir_financeiro entra no catálogo com a licença.
+  a1HasModule('financeiro')
+    .then(ok => {
+      G.temFin = ok === true;
+      if (G.temFin && PERFIS && PERFIS.lista.length) perfisRender();
+    })
+    .catch(() => {});
+
   a1HasModule('DISPOSICAO')
     .then(ok => {
       // A licença é do cliente: as permissões da Disposição entram no catálogo
@@ -4469,7 +4477,8 @@ function perfisDisponiveis() {
     COMERCIAL: !!G.temCO,
     repasse: G.temRepasse === true,
     registro: !!G.temRegistro,
-    DISPOSICAO: !!G.temDisp
+    DISPOSICAO: !!G.temDisp,
+    financeiro: !!G.temFin
   });
 }
 

@@ -1,0 +1,5 @@
+/* Kit visual compartilhado com a Locação (tabelas, modal, selos, KPIs), depois
+   o específico do Financeiro e por último o CSS do casco (ver crm/index.css). */
+@import '../locacao/style.css';
+@import './style.css';
+@import '../../styles/siimob.css';

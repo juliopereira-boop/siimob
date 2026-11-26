@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financeiro — SIIMOB</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#04201D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="/src/pages/financeiro/index.css">
+</head>
+<body>
+<div id="sb-casco"></div>
+
+<!-- Módulo Financeiro (financeiro), fase 1: negócios, comissões, contas a
+     receber e a pagar, fluxo de caixa, regras e cadastros. O parceiro vê só as
+     próprias comissões. Ver src/pages/financeiro/main.js e
+     database/migrations/2026-11-26_financeiro.sql. O kit visual (lc-*) é o da
+     Locação, importado em index.css. -->
+<main class="lc" id="conteudo">
+  <header class="lc-cab">
+    <div>
+      <h1 id="lc-titulo">Financeiro</h1>
+      <p id="lc-sub" class="lc-sub"></p>
+    </div>
+    <div class="lc-cab-acoes" id="lc-cab-acoes"></div>
+  </header>
+  <div id="lc-filtros" class="lc-filtros"></div>
+  <section id="lc-conteudo" aria-live="polite"><p class="lc-vazio">Carregando...</p></section>
+</main>
+
+<div class="lc-fundo" id="lc-fundo" hidden data-acao="fnFecharFundo">
+  <div class="lc-modal" role="dialog" aria-modal="true" aria-labelledby="lc-modal-titulo">
+    <div class="lc-modal-cab"><h2 id="lc-modal-titulo"></h2>
+      <button type="button" class="lc-x" data-acao="fnFechar" aria-label="Fechar">×</button></div>
+    <div id="lc-modal-corpo" class="lc-modal-corpo"></div>
+    <p id="lc-modal-erro" class="lc-erro" role="alert" hidden></p>
+    <div class="lc-modal-pe" id="lc-modal-pe"></div>
+  </div>
+</div>
+<div class="lc-toasts" id="lc-toasts" aria-live="polite"></div>
+
+<script type="module" src="/src/pages/financeiro/main.js"></script>
+  <script src="/kortex.js"></script>
+</body>
+</html>

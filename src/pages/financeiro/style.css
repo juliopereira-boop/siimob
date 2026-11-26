@@ -1,0 +1,44 @@
+/* Financeiro (src/pages/financeiro/main.js). O kit lc-* vem da Locação. */
+.fn-part {
+  display: grid;
+  grid-template-columns: 11rem 1fr 1fr auto;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+.fn-part select,
+.fn-part input {
+  border: 1px solid var(--sb-linha-forte);
+  border-radius: var(--sb-r-p);
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  min-width: 0;
+  background: var(--sb-papel);
+}
+.fn-entrada {
+  color: var(--sb-mar-texto);
+}
+.fn-saida {
+  color: var(--sb-tijolo-texto);
+}
+.fn-mes-atual td {
+  background: var(--sb-mar-lavado);
+}
+.fn-aviso {
+  margin-bottom: 1rem;
+  align-items: center;
+}
+.fn-sec {
+  margin-bottom: 1rem;
+}
+.fn-sec h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+@media (max-width: 900px) {
+  .fn-part {
+    grid-template-columns: 1fr 1fr;
+  }
+}

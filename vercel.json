@@ -117,6 +117,10 @@
       "destination": "/locacao.html"
     },
     {
+      "source": "/:slug/financeiro",
+      "destination": "/financeiro.html"
+    },
+    {
       "source": "/:slug/pre-analise",
       "destination": "/pre-analise.html"
     },

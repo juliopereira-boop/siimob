@@ -273,6 +273,20 @@ export const A1_PERMISSOES = [
     rotulo: 'Ver dashboard da Disposição',
     ajuda: 'VSO, estoque, vendas por mês, reservas e tipologias.',
     lida_em: 'src/shared/ui/modulo-shell.js, disposicao.html'
+  },
+
+  // ── Financeiro ─────────────────────────────────────────────────────────────
+  // Sem esta marca, o parceiro vê só as próprias comissões. Com ela, ele opera
+  // o Financeiro inteiro como o gestor: negócios de todos, regras, contas a
+  // pagar e a receber, baixas e caixa.
+  {
+    chave: 'gerir_financeiro',
+    modulo: 'financeiro',
+    rotulo: 'Gerir o Financeiro',
+    ajuda:
+      'Vê e opera o Financeiro inteiro: comissões de todos, regras, contas a pagar e a receber e o caixa. ' +
+      'Desligado, a pessoa vê só as próprias comissões.',
+    lida_em: 'a1_fin_pode (SQL: a1_perm), financeiro.html'
   }
 ];
 
@@ -349,6 +363,7 @@ export function a1PermissoesPorModulo(tem) {
 
 export const A1_ROTULO_MODULO = {
   geral: 'Vale em todos os módulos',
+  financeiro: 'Financeiro',
   crm: 'Leads',
   repasse: 'Repasse',
   registro: 'Registro',

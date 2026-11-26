@@ -1413,7 +1413,8 @@ function responder(url, metodo, corpo0) {
       chave === 'crm' ||
       chave === 'DISPOSICAO' ||
       chave === 'ATENDIMENTO' ||
-      chave === 'LOCACAO'
+      chave === 'LOCACAO' ||
+      chave === 'financeiro'
     )
       return MODULOS_NOVOS.includes(chave);
     return true;
