@@ -187,6 +187,14 @@ done
 psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
      -P pager=off -f testes/sql/prova-financeiro.sql
 
+# Financeiro (fase 2): carteira, lembretes, OFX e DRE. Com o cenário da fase 1.
+for i in 1 2; do
+  psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -q -v ON_ERROR_STOP=1 \
+       -f database/migrations/2026-11-26_financeiro_fase2.sql
+done
+psql -h 127.0.0.1 -p "$PORTA" -U postgres -d "$BANCO" -v ON_ERROR_STOP=1 \
+     -P pager=off -f testes/sql/prova-financeiro-fase2.sql
+
 # Excluir cliente (superadmin), tudo ou nada. Por último no banco principal:
 # apaga THE CRED inteira e confere que o outro cliente ficou igual.
 for i in 1 2; do

@@ -42,3 +42,62 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ── Fase 2: carteira, conciliação, DRE ─────────────────────────────────── */
+.lc-modal.fn-modal-largo {
+  width: min(1180px, calc(100vw - 32px));
+  max-width: none;
+}
+.fn-ficha .lc-kpis {
+  margin: 12px 0;
+}
+.fn-ficha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.fn-serie {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 8px;
+}
+.fn-calc .lc-lista li.fn-total {
+  border-top: 1px solid var(--sb-linha);
+  font-weight: 700;
+}
+.fn-dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 12px;
+}
+.fn-dre table td:first-child,
+.fn-orc table td:first-child {
+  min-width: 220px;
+}
+.fn-dre-grupo td {
+  font-weight: 600;
+  background: var(--sb-vellum);
+}
+.fn-dre-cat td:first-child {
+  padding-left: 24px;
+}
+.fn-dre-total td {
+  font-weight: 700;
+  border-top: 2px solid var(--sb-linha);
+}
+.fn-orc input.fo-v {
+  width: 84px;
+  text-align: right;
+}
+@media (max-width: 720px) {
+  .fn-serie {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.fn-zero {
+  color: var(--sb-tinta3);
+}

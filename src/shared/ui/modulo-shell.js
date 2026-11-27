@@ -193,9 +193,12 @@ export const A1_MODULOS = [
       ['Painel', 'financeiro'],
       ['Negócios', 'financeiro?vista=negocios'],
       ['Comissões', 'financeiro?vista=comissoes'],
+      ['Carteira', 'financeiro?vista=carteira'],
       ['A receber', 'financeiro?vista=receber'],
       ['A pagar', 'financeiro?vista=pagar'],
-      ['Fluxo de caixa', 'financeiro?vista=fluxo']
+      ['Conciliação', 'financeiro?vista=conciliacao'],
+      ['Fluxo de caixa', 'financeiro?vista=fluxo'],
+      ['DRE', 'financeiro?vista=dre']
     ]
   }
 ];

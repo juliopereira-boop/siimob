@@ -23,6 +23,28 @@ import { a1RequireAuth, a1RequireModule, a1StartHeartbeat } from '../../shared/a
 import { a1MontarShell } from '../../shared/ui/modulo-shell.js';
 import '../../shared/ui/avisos.js';
 import { acoes } from '../../shared/ui/acoes.js';
+import { F } from '../../modules/financeiro/ctx.js';
+import {
+  vistaCarteira,
+  botoesCarteira,
+  filtrosCarteira,
+  cadastrosCarteira,
+  ERROS_CARTEIRA
+} from '../../modules/financeiro/carteira.js';
+import {
+  vistaConciliacao,
+  botoesConciliacao,
+  filtrosConciliacao,
+  ERROS_CONCILIACAO
+} from '../../modules/financeiro/conciliacao.js';
+import {
+  vistaDre,
+  botoesDre,
+  filtrosDre,
+  cadastrosCentros,
+  GRUPOS,
+  grupoPadrao
+} from '../../modules/financeiro/dre.js';
 
 const VISTAS = /** @type {Record<string,[string,string]>} */ ({
   painel: ['Painel', 'O caixa do mês, o que vence e as comissões a pagar.'],
@@ -34,9 +56,15 @@ const VISTAS = /** @type {Record<string,[string,string]>} */ ({
     'Comissões',
     'O que a empresa recebe e o que ela paga a cada participante, com a regra que gerou.'
   ],
+  carteira: [
+    'Carteira',
+    'As parcelas de cada venda direta, com correção, atraso e o valor do dia para receber.'
+  ],
   receber: ['A receber', 'Contas a receber: comissões, honorários, taxa de administração e outras receitas.'],
   pagar: ['A pagar', 'Contas a pagar: comissões liberadas e despesas da empresa.'],
+  conciliacao: ['Conciliação', 'O extrato do banco (OFX) casado com os lançamentos e as parcelas.'],
   fluxo: ['Fluxo de caixa', 'Realizado e previsto, mês a mês, e o saldo de cada conta.'],
+  dre: ['DRE', 'Demonstração do resultado por caixa ou competência, com o orçado ao lado.'],
   regras: ['Regras de comissão', 'Quem recebe quanto, sobre qual base e quando libera.'],
   cadastros: ['Cadastros', 'Contas, categorias e as etapas dos outros módulos que alimentam o Financeiro.']
 });
@@ -116,6 +144,10 @@ const ERROS = /** @type {Record<string,string>} */ ({
   referencia_de_outro_cliente: 'Registro de outra empresa.',
   a1_fin_regra_coerente:
     'Confira a regra: "receber" é sempre da empresa; base "comissão da empresa" só para pagar; informe o percentual ou o valor fixo.',
+  periodo_invalido: 'Período inválido (no máximo 3 anos).',
+  dados_invalidos: 'Confira os dados informados.',
+  ...ERROS_CARTEIRA,
+  ...ERROS_CONCILIACAO,
   'row-level security': 'Sem permissão para gravar isto.'
 });
 
@@ -133,7 +165,27 @@ const G = {
   parceiros: /** @type {any[]} */ ([]),
   etapas: /** @type {any[]} */ ([]),
   minhas: /** @type {any[]} */ ([]),
-  filtro: { mes: hojeISO().slice(0, 7), status: 'todas', busca: '', direcao: 'pagar' },
+  // fase 2
+  centros: /** @type {any[]} */ ([]),
+  carteiras: /** @type {any[]} */ ([]),
+  resumo: /** @type {Map<string, any>} */ (new Map()),
+  cartCfg: /** @type {any[]} */ ([]),
+  empreendimentos: /** @type {any[]} */ ([]),
+  extrato: /** @type {any[]} */ ([]),
+  extratos: /** @type {any[]} */ ([]),
+  filtro: /** @type {any} */ ({
+    mes: hojeISO().slice(0, 7),
+    status: 'todas',
+    busca: '',
+    direcao: 'pagar',
+    cart: 'ativa',
+    ext: 'pendente',
+    contaExt: '',
+    dreDe: '',
+    dreAte: '',
+    regime: 'caixa',
+    centro: ''
+  }),
   salvar: /** @type {null|(() => Promise<any>)} */ (null),
   ocupado: false
 };
@@ -239,7 +291,37 @@ async function carregar() {
       'select=id,name,module_key,position&module_key=in.(repasse,registro)&order=position.asc,id.asc'
     )
   ]);
+  // Fase 2: uma falha aqui (tabela ainda não criada) não derruba a fase 1.
+  const desde = somaDias(hojeISO(), -120);
+  const f2 = (/** @type {Promise<any>} */ pr) => pr.catch(() => []);
+  // Extrato: pendentes de qualquer data + o resto dos últimos 120 dias (duas
+  // leituras: buscarTudo já usa o "or" da paginação).
+  const [centros, carteiras, resumo, cartCfg, empreendimentos, pendentes, recentes, extratos] =
+    await Promise.all([
+      f2(ler('a1_fin_centros', 'select=*&order=nome.asc,id.asc')),
+      f2(ler('a1_fin_carteiras', 'select=*&order=seq.desc,id.desc')),
+      f2(rpc('a1_fin_carteiras_resumo', {})),
+      f2(ler('a1_fin_carteira_cfg', 'select=*')),
+      f2(ler('a1_developments', 'select=id,name&order=name.asc,id.asc')),
+      f2(ler('a1_fin_extrato_itens', 'select=*&status=eq.pendente&order=data.desc,id.desc')),
+      f2(
+        ler('a1_fin_extrato_itens', `select=*&status=neq.pendente&data=gte.${desde}&order=data.desc,id.desc`)
+      ),
+      f2(
+        ler(
+          'a1_fin_extratos',
+          'select=id,conta_id,arquivo,inicio,fim,itens,novos,criado_em&order=criado_em.desc,id.desc'
+        )
+      )
+    ]);
   Object.assign(G, {
+    centros,
+    carteiras,
+    resumo: new Map((Array.isArray(resumo) ? resumo : []).map((/** @type {any} */ r) => [r.carteira_id, r])),
+    cartCfg,
+    empreendimentos,
+    extrato: [...pendentes, ...recentes].sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0)),
+    extratos,
     config: config[0] || {},
     contas,
     categorias,
@@ -388,6 +470,20 @@ acoes({
     if (s) G.filtro.status = s.value;
     if (d) G.filtro.direcao = d.value;
     if (b) G.filtro.busca = b.value.trim().toLowerCase();
+    const v = (/** @type {string} */ id) =>
+      /** @type {HTMLInputElement|null} */ (document.getElementById(id))?.value;
+    const novos = /** @type {Record<string,string|undefined>} */ ({
+      cart: v('fn-f-cart'),
+      ext: v('fn-f-ext'),
+      contaExt: v('fn-f-conta'),
+      dreDe: v('fn-f-dre-de'),
+      dreAte: v('fn-f-dre-ate'),
+      regime: v('fn-f-regime'),
+      centro: v('fn-f-centro')
+    });
+    Object.entries(novos).forEach(([k, x]) => {
+      if (x !== undefined && (x || k === 'centro')) G.filtro[k] = x;
+    });
     desenharConteudo();
   },
   fnRegrasModelo: () =>
@@ -498,7 +594,10 @@ function desenhar() {
       '<button type="button" class="lc-btn lc-btn-forte" data-acao="fnNovoLanc" data-tipo="receber">+ Conta a receber</button>',
     pagar:
       '<button type="button" class="lc-btn lc-btn-forte" data-acao="fnNovoLanc" data-tipo="pagar">+ Conta a pagar</button>',
-    regras: `${G.regras.length ? '' : '<button type="button" class="lc-btn" data-acao="fnRegrasModelo">Usar regras-modelo do meu tipo</button> '}<button type="button" class="lc-btn lc-btn-forte" data-acao="fnNovaRegra">+ Nova regra</button>`
+    regras: `${G.regras.length ? '' : '<button type="button" class="lc-btn" data-acao="fnRegrasModelo">Usar regras-modelo do meu tipo</button> '}<button type="button" class="lc-btn lc-btn-forte" data-acao="fnNovaRegra">+ Nova regra</button>`,
+    carteira: botoesCarteira(),
+    conciliacao: botoesConciliacao(),
+    dre: botoesDre()
   });
   $('lc-cab-acoes').innerHTML = botoes[G.vista] || '';
   const busca = (/** @type {string} */ ph) =>
@@ -511,15 +610,28 @@ function desenhar() {
       ${busca('Buscar beneficiário ou negócio')}`,
     receber: `${mesF}<label>Situação <select id="fn-f-status" data-acao-change="fnFiltrar">${opcoes({ todas: 'Todas', aberto: 'Em aberto', vencido: 'Vencidas', pago: 'Pagas', cancelado: 'Canceladas' }, ROT_LANC[G.filtro.status] ? G.filtro.status : 'todas')}</select></label>${busca('Buscar descrição ou pessoa')}`,
     pagar: `${mesF}<label>Situação <select id="fn-f-status" data-acao-change="fnFiltrar">${opcoes({ todas: 'Todas', aberto: 'Em aberto', vencido: 'Vencidas', pago: 'Pagas', cancelado: 'Canceladas' }, ROT_LANC[G.filtro.status] ? G.filtro.status : 'todas')}</select></label>${busca('Buscar descrição ou pessoa')}`,
-    fluxo: mesF
+    fluxo: mesF,
+    carteira: filtrosCarteira(),
+    conciliacao: filtrosConciliacao(),
+    dre: filtrosDre()
   });
   $('lc-filtros').innerHTML = filtros[G.vista] || '';
   desenharConteudo();
 }
 function desenharConteudo() {
-  const f = /** @type {any} */ ({ painel, negocios, comissoes, receber, pagar, fluxo, regras, cadastros })[
-    G.vista
-  ];
+  const f = /** @type {any} */ ({
+    painel,
+    negocios,
+    comissoes,
+    carteira: vistaCarteira,
+    receber,
+    pagar,
+    conciliacao: vistaConciliacao,
+    fluxo,
+    dre: vistaDre,
+    regras,
+    cadastros
+  })[G.vista];
   $('lc-conteudo').innerHTML = G.gestor ? f() : minhas();
 }
 
@@ -824,13 +936,16 @@ function cadastros() {
       )}</section>
     <section class="lc-bloco fn-sec"><h3>Categorias <button type="button" class="lc-btn lc-btn-p" data-acao="fnNovaCategoria">+ Categoria</button></h3>
       ${tabela(
-        ['Categoria', 'Tipo', ''],
+        ['Categoria', 'Tipo', 'Grupo no DRE', ''],
         G.categorias.map(
           c => `<tr><td>${esc(c.nome)}${c.chave ? ` ${selo('info', 'do sistema')}` : ''}${c.ativo ? '' : ` ${selo('off', 'Inativa')}`}</td>
             <td>${c.tipo === 'receita' ? selo('ok', 'Receita') : selo('erro', 'Despesa')}</td>
+            <td>${esc(GRUPOS[grupoPadrao(c)] || '')}${c.grupo_dre ? '' : '<small>padrão</small>'}</td>
             <td class="lc-acoes"><button class="lc-btn lc-btn-p" data-acao="fnEditarCategoria" data-id="${esc(c.id)}">Editar</button></td></tr>`
         )
-      )}</section>`;
+      )}</section>
+    ${cadastrosCentros()}
+    ${cadastrosCarteira()}`;
 }
 
 function minhas() {
@@ -1116,6 +1231,15 @@ function formLancamento(/** @type {string|null} */ id, /** @type {string} */ tip
       <label>Vencimento *<input id="fl-venc" type="date" value="${esc(l.vencimento || hojeISO())}"></label>
       <label>${tipo === 'receber' ? 'De quem' : 'Para quem'}<input id="fl-pessoa" maxlength="160" value="${esc(l.pessoa || '')}"></label>
       ${
+        G.centros.length
+          ? `<label>Centro de custo<select id="fl-centro">${opcoesLista(
+              G.centros.filter(c => c.ativo || c.id === l.centro_id),
+              l.centro_id || null,
+              '— nenhum —'
+            )}</select></label>`
+          : ''
+      }
+      ${
         id
           ? ''
           : `<label>Repetir<select id="fl-modo">${opcoes({ uma: 'Uma vez', parcelado: 'Parcelado (divide o valor)', recorrente: 'Todo mês (mesmo valor)' }, 'uma')}</select></label>
@@ -1132,7 +1256,8 @@ function formLancamento(/** @type {string|null} */ id, /** @type {string} */ tip
         descricao: campo('fl-desc'),
         categoria_id: campo('fl-cat') || null,
         pessoa: campo('fl-pessoa') || null,
-        observacao: campo('fl-obs') || null
+        observacao: campo('fl-obs') || null,
+        ...(document.getElementById('fl-centro') ? { centro_id: campo('fl-centro') || null } : {})
       };
       if (id) {
         await gravar(
@@ -1268,6 +1393,7 @@ function formCategoria(/** @type {string|null} */ id) {
     `<div class="lc-form">
       <label class="lc-largo">Nome *<input id="fa-nome" maxlength="80" value="${esc(c.nome || '')}"></label>
       <label>Tipo<select id="fa-tipo"${c.chave ? ' disabled' : ''}>${opcoes({ receita: 'Receita', despesa: 'Despesa' }, c.tipo)}</select></label>
+      <label>Grupo no DRE<select id="fa-grupo">${opcoes({ '': 'Automático (pelo tipo)', ...GRUPOS }, c.grupo_dre || '')}</select></label>
       ${id ? `<label class="lc-check"><input type="checkbox" id="fa-ativo"${c.ativo ? ' checked' : ''}> Ativa</label>` : ''}
       ${c.chave ? '<p class="lc-largo lc-dica">Categoria do sistema: o nome pode mudar, o tipo não (os lançamentos automáticos usam ela).</p>' : ''}
     </div>`,
@@ -1280,6 +1406,7 @@ function formCategoria(/** @type {string|null} */ id) {
           ...(id ? {} : { tenant_id: (A1.user || {}).tenant_id }),
           nome: campo('fa-nome'),
           ...(c.chave ? {} : { tipo: campo('fa-tipo') }),
+          grupo_dre: campo('fa-grupo') || null,
           ativo: ativo ? /** @type {HTMLInputElement} */ (ativo).checked : true
         },
         id
@@ -1303,6 +1430,31 @@ async function init() {
   }
   // Quem gere o Financeiro? O banco responde: a1_fin_iniciar só passa para o
   // gestor (ou quem tem gerir_financeiro), e já prepara categorias e o Caixa.
+  Object.assign(F, {
+    G,
+    ERROS,
+    FORMAS,
+    rpc,
+    ler,
+    gravar,
+    motivo,
+    executar,
+    aviso,
+    abrirModal,
+    fecharModal,
+    desenharConteudo,
+    campo,
+    marcado,
+    opcoes,
+    opcoesLista,
+    tabela,
+    kpi,
+    selo,
+    brl,
+    data,
+    mes,
+    num
+  });
   G.gestor = await rpc('a1_fin_iniciar', {})
     .then(() => true)
     .catch(() => false);

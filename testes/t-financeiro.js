@@ -2,7 +2,7 @@
 //
 // O que este arquivo prova:
 //   - sem a licença a tela não lê nada e a aba não aparece;
-//   - gestor (a1_fin_iniciar passa): oito vistas, painel com saldo, vencidos e
+//   - gestor (a1_fin_iniciar passa): onze vistas (três da fase 2), painel com saldo, vencidos e
 //     comissões a pagar por pessoa;
 //   - negócio: ficha com comissões, recalcular, cancelar com motivo, negócio
 //     à mão com participantes (pessoa cadastrada ou nome livre);
@@ -356,7 +356,7 @@ const salvar = async p => {
   const { est, antes } = banco();
   const { b, p, erros } = await abrir('thecred/financeiro', { antes, modulos: ['financeiro'] });
   await p.waitForSelector('.lc-kpis');
-  checa('oito vistas na sub-barra', (await p.$$('.sb-sub-item[data-acao="fnVista"]')).length === 8);
+  checa('onze vistas na sub-barra', (await p.$$('.sb-sub-item[data-acao="fnVista"]')).length === 11);
   checa('a1_fin_iniciar prepara o Financeiro ao abrir', est.rpc[0] && est.rpc[0].fn === 'a1_fin_iniciar');
   const painel = await texto(p);
   // saldo: Caixa 1.000 + 10.000 recebidos; Banco 0
